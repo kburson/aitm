@@ -8,7 +8,7 @@ Hand-built until the core exists. The core will own this layout once it ships.
   drafts/<YYYY-MM>/<YYYYMMDD-HHMM>-<slug>/         brainstorming before a story exists
       draft.md
       attachments/
-  drafts/discarded.jsonl                           one line per discarded draft (title, reason, last SHA)
+  drafts/discarded/<YYYYMMDD-HHMM>-<slug>.json     one file per discarded draft (title, reason, last SHA); no shared append files
   stories/<bucket>/<id>/                           bucket = id // 100, zero-padded to 3 digits
       story.md                                     frontmatter + human-readable story (generated sections)
       events.jsonl                                 append-only event log (authority for state and timing)
