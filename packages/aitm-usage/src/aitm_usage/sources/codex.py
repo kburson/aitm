@@ -361,8 +361,11 @@ def _marker_command(payload: dict, project_root: Path) -> bool:
         payload.get("type") != "custom_tool_call"
         or payload.get("name") != "exec"
         or type(source) is not str
-        or len(source) > 8192
     ):
+        return False
+    # Desktop can append exactly one ASCII line feed to the tool input.
+    source = source.removesuffix("\n")
+    if len(source) > 8192:
         return False
     wrapper = _MARKER_WRAPPER.fullmatch(source)
     if wrapper is None:
