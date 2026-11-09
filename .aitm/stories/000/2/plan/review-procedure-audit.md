@@ -1,3 +1,18 @@
+# Review procedure resolution — 2026-11-09
+
+This is a provenance audit and its dated resolution, **not a retrospective**. The owner answered the historical question below by authorizing separate full-file validations of core design and implementation plan. Both now accepted in three rounds, under the requested Astra-6/ExtraHigh author and Opus 5.5/high reviewer selections. Every round's actual returned text was checked against every input physical line before proceeding.
+
+- Design: [3702cfd](https://github.com/kburson/aitm/commit/3702cfde855e7a2345e12439f19cc2ee9ebe7291), [per-round coverage](../design/reviews/xpr-2026-11-09-core-design-fullfile/coverage-audit.md), [phase retrospective](../design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md).
+- Plan: [bd4adf0](https://github.com/kburson/aitm/commit/bd4adf06c90fcf02bf0930bbdec5d477aa951740), [per-round coverage](reviews/xpr-2026-11-09-core-plan-fullfile/coverage-audit.md), [phase retrospective](reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md).
+
+The new reviews do not retroactively establish fresh reads in the old rounds, override their provenance or extend the old five-round cap. The six required plan body findings are fully mapped despite native ID-extraction omissions. The prior blocked native SPR and uncertain XPR remain preserved; no tool repair or global policy change was made. The task stops before implementation. See [current completion status](planning-completion.md).
+
+## Historical audit (retained)
+
+The unanswered-question wording below is historical; the owner instruction and separately accepted records above now resolve it.
+
+---
+
 # Native review reread procedure audit
 
 This is a post-review provenance audit, not another review round or an acceptance override. The owner requested full current-file review/rereading each round. Native protocol acceptance is recorded for both documents, but fresh full-file rereading every round was not followed in the observed native tool calls. The same continuing reviewer retained earlier full-file context; the audit cannot measure internal attention. It establishes that fresh retrieval was targeted in later rounds, so strict procedural compliance must not be inferred from native acceptance.

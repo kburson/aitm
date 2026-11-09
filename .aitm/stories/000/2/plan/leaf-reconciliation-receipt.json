@@ -1,0 +1,3488 @@
+{
+  "schema": "aitm.bootstrap-leaf-reconciliation/v0",
+  "recorded_at": "2026-11-09T13:53:09Z",
+  "source_publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+  "source_raw_sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+  "previous_creation_receipt": "leaf-issue-receipt.json",
+  "previous_plan_publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+  "previous_plan_raw_sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+  "route": "connected GitHub issue create/update; REST native relationships; manual-bootstrap planning records",
+  "runtime_transition": false,
+  "count": 79,
+  "agent_hours": 257.5,
+  "dependency_count": 317,
+  "parent": 2,
+  "children": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82
+  ],
+  "relationships_verified_at": "2026-11-09T13:52:18.989688+00:00",
+  "bodies_verified_at": "2026-11-09T13:46:35.782Z",
+  "original_parent_events_sha256": "3192bdd0727c8e8c499cf19d3bb9bba4b49aae40ab19185f02e7c6ca249fcb98",
+  "original_parent_events_bytes": 39294,
+  "issues": [
+    {
+      "key": "C01",
+      "number": 3,
+      "created": false,
+      "prior_story_sha256": "f6568fa596ad570a375ab4e807e48c692fd3fa779818c2d625d6124d004b3920",
+      "prior_events_sha256": "9934fbaaf21a521f4fc084cccc41184cc66a8eb8e39156697e65ab6a535b05aa",
+      "prior_events_bytes": 4588,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C01",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "fa26bded4a3b931eaa626d634fa6b810d99d00265582df24ec1485a4dd27ba8c"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C01",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "19886f6e7f6edf99ea5845662d405c09cb9d860aecc6ad23c63d285a94597c92"
+      },
+      "hours": 3.5,
+      "blocked_by": [],
+      "blocking": [
+        4,
+        5,
+        11,
+        64
+      ],
+      "story_sha256": "7d4a3aa0b4e8014eb4d1ca2782b0b1d4327d59e57f85da9bd9923cbec53ff31c",
+      "events_sha256": "9934fbaaf21a521f4fc084cccc41184cc66a8eb8e39156697e65ab6a535b05aa",
+      "issue_url": "https://github.com/kburson/aitm/issues/3",
+      "body_sha256": "df0eec65faf610aecd0ea545cbe62257340b0add62f968b9ffeeeb666bdeca2b"
+    },
+    {
+      "key": "C02",
+      "number": 4,
+      "created": false,
+      "prior_story_sha256": "ee5df25a53089b8e6d4fe014b940ba8f2bae0014a17e8b881cb5299b53bde85e",
+      "prior_events_sha256": "c925c0f5907b9762b4d8695e62ed58cff4c2db4cd39e3b8021794f15b57f0cd9",
+      "prior_events_bytes": 7708,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C02",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "cdd36ebf320b31ebf8b8fe0918f8321709b2cf33811847ff83f91509a2a3078b"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C02",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "cdd36ebf320b31ebf8b8fe0918f8321709b2cf33811847ff83f91509a2a3078b"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        3
+      ],
+      "blocking": [
+        6,
+        7,
+        8,
+        9,
+        14,
+        16,
+        23,
+        28,
+        29
+      ],
+      "story_sha256": "06cc063a6de2342a9ceee07ae1c3e09508858b1bcca185476900be387179f378",
+      "events_sha256": "c925c0f5907b9762b4d8695e62ed58cff4c2db4cd39e3b8021794f15b57f0cd9",
+      "issue_url": "https://github.com/kburson/aitm/issues/4",
+      "body_sha256": "1ede5c8a316143bb30f2d8ae1e035289ebe63f7e59db0bcb6035d27bf4ed76b5"
+    },
+    {
+      "key": "C03",
+      "number": 5,
+      "created": false,
+      "prior_story_sha256": "7e7ae918a9f53e611928379c0f3819bec8217a8a3ecb0741c4dd6518aff90737",
+      "prior_events_sha256": "2ecece056e668935678ef39b57d3303c1016806492afd0dcfcf5eb95900a037a",
+      "prior_events_bytes": 6151,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C03",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "6d0a283214b51c039ea59182d36996d5e5bbbd9a0612b38fb913de9196968ce5"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C03",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "ec1736f08d4f31252c9a7715221c0e7bca5a3d940a9317151869a0531982b543"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        3
+      ],
+      "blocking": [
+        6,
+        12,
+        16,
+        29,
+        75,
+        78,
+        53,
+        70
+      ],
+      "story_sha256": "2fd8170bb46c3afd595ee08569bb2b86bf81d7a9c093e7be21ca18e3e1562e33",
+      "events_sha256": "920a68a4988f0041e9a0e9d35c47fcde447e99cdf4a95b5e7c8585000e797e3c",
+      "issue_url": "https://github.com/kburson/aitm/issues/5",
+      "body_sha256": "24a94e69229d3b47c5916802123ecce6c8d7fcbdb8cdc4bd8f7d3a6ac34b5868"
+    },
+    {
+      "key": "C54",
+      "number": 6,
+      "created": false,
+      "prior_story_sha256": "5a31f45c9e11fb69dbf8ed509f57323d1a7d620f9c5f8f8a76ad607275e7b2c4",
+      "prior_events_sha256": "7f888abb809ef01d48227b1eb32bde08e11fb8c7db2e02846a7e624033c67c74",
+      "prior_events_bytes": 4592,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C54",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "dc033fb232c318bd9ddf522d231c51bd09c11c66eb284acaaa2d0bb288946f61"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C54",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "3a939072150c757328b8b98c6fbc8190c562282ed0ab6c012ca14135c2a264c7"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        4,
+        5
+      ],
+      "blocking": [
+        8,
+        9,
+        78
+      ],
+      "story_sha256": "cafe6c861215f5f44850a6e53061e217ba8cb74266f05c01afbbce969432a598",
+      "events_sha256": "cdbcb187725d0338cb41d0ef1ae2a727b2ab3aed2b52643651a35cd378a4684f",
+      "issue_url": "https://github.com/kburson/aitm/issues/6",
+      "body_sha256": "176288c5b135506df30459a4126c2f5fc6c76e40bd374e912054321775f33900"
+    },
+    {
+      "key": "C55",
+      "number": 7,
+      "created": false,
+      "prior_story_sha256": "1323527207edb10f13b079e69932b84b8c3f06368765f0c583ec4ebbcb255afd",
+      "prior_events_sha256": "fa3e350f711ec13773f310076a3e1c133250024f5e172b91881dd66a8382717e",
+      "prior_events_bytes": 4070,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C55",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "c05aeead2eb98d0aef07ab6b48fdd929c70860c7b73b42ca834292b57e7f9d51"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C55",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "c05aeead2eb98d0aef07ab6b48fdd929c70860c7b73b42ca834292b57e7f9d51"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        4
+      ],
+      "blocking": [
+        8,
+        9
+      ],
+      "story_sha256": "61bfe1685bb1adc9564d477609815e84dd90f6a6c603fc56fb76795ab067c381",
+      "events_sha256": "fa3e350f711ec13773f310076a3e1c133250024f5e172b91881dd66a8382717e",
+      "issue_url": "https://github.com/kburson/aitm/issues/7",
+      "body_sha256": "17781f57103da55875b53ec6e1d2ed8ef9abdf830016ab704c0b67256216c78c"
+    },
+    {
+      "key": "C56",
+      "number": 8,
+      "created": false,
+      "prior_story_sha256": "ff8bac766c2eeb053d3e4e119b8901e7ff8c1628e9a2ca9f5c70c29bd582a1a6",
+      "prior_events_sha256": "a6b5c09dca1dc44664127a6821e9a7bebf7c83b7357085b2c479bfebe050d933",
+      "prior_events_bytes": 5115,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C56",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "fad801716821dc5af9fc84865a9b0f236c75a3bd78498397920c950daa77780d"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C56",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a6c5c135e292c010c0ff6b2df760a98609fcd7a03ac852c88bef436d99f59bc3"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        4,
+        6,
+        7
+      ],
+      "blocking": [
+        9,
+        29,
+        77
+      ],
+      "story_sha256": "914ac61e2f5f5de7b92fc53349563f38a9d9e1d08176e6b6fe4fcdeef92a99b6",
+      "events_sha256": "8e2c3c50b771cfbb160c8118ba6c034afd5d9ca9e1d622959e5c22eb3cb14336",
+      "issue_url": "https://github.com/kburson/aitm/issues/8",
+      "body_sha256": "b257651d7ae1c7d39c8ac0eeb9257a82219dfafb621913977b25993dd6e3fa99"
+    },
+    {
+      "key": "C04",
+      "number": 9,
+      "created": false,
+      "prior_story_sha256": "cffb1a6f274bcd1bbc976dada3a72b5b78c35c6ce72e137fc0f4edb803f09243",
+      "prior_events_sha256": "25bfd3d137a6fba14582a69087034006e9910fdad3a564f52fb3e175ff52242e",
+      "prior_events_bytes": 6678,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C04",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "a1ab7e794e9a693ac7a295fa5df4ac82684a3900343040a5bad037fa217882a4"
+      },
+      "prior_hours": 4.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C04",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a1ab7e794e9a693ac7a295fa5df4ac82684a3900343040a5bad037fa217882a4"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        4,
+        6,
+        7,
+        8
+      ],
+      "blocking": [
+        10,
+        15,
+        16,
+        17
+      ],
+      "story_sha256": "574d22cceb92f13b87fdc9468c1884bb68027bb7e515172b0c485bbb79af29d4",
+      "events_sha256": "25bfd3d137a6fba14582a69087034006e9910fdad3a564f52fb3e175ff52242e",
+      "issue_url": "https://github.com/kburson/aitm/issues/9",
+      "body_sha256": "d062338e9feca4db13d0131c596ac9271463a0863f80c8b8cb778aabf992eaa6"
+    },
+    {
+      "key": "C05",
+      "number": 10,
+      "created": false,
+      "prior_story_sha256": "9f48e6864668479b6939829360039b82cc2093914a03708213f5a235cfff1e42",
+      "prior_events_sha256": "0bc87a55880a76586ec9f53fdc87555515fced85091565d62d6885c84d40e7d4",
+      "prior_events_bytes": 3559,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C05",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "04f3e764e5319d782092163975963fe599c64faedb83f5b6ed9e939d7b2ed4fb"
+      },
+      "prior_hours": 4.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C05",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "04f3e764e5319d782092163975963fe599c64faedb83f5b6ed9e939d7b2ed4fb"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        9
+      ],
+      "blocking": [
+        11
+      ],
+      "story_sha256": "29e54025a1d906fc3013b4bc86147bc52c9d0f112df36786e76b90adf7d73ca5",
+      "events_sha256": "0bc87a55880a76586ec9f53fdc87555515fced85091565d62d6885c84d40e7d4",
+      "issue_url": "https://github.com/kburson/aitm/issues/10",
+      "body_sha256": "1ae7fdd7dbe9c5c25b465a7cfa42eb8b56b2a14a0a247612354e107a7a59f1c6"
+    },
+    {
+      "key": "C06",
+      "number": 11,
+      "created": false,
+      "prior_story_sha256": "e15f9d20ef289fe4d104d604e8e155d1febe72711ae49ea80a9ab980cea318f0",
+      "prior_events_sha256": "5381615c49a69e96c99c363bf42030f413ac5d47910e88a4d28d2d91fad3a956",
+      "prior_events_bytes": 7209,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C06",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "4bfafedd20eac429a96dd71d271818338756e2a0e9ae67e5651b0f27d671502e"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C06",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "4bfafedd20eac429a96dd71d271818338756e2a0e9ae67e5651b0f27d671502e"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        10,
+        3
+      ],
+      "blocking": [
+        12,
+        13,
+        18,
+        20,
+        21,
+        48,
+        53
+      ],
+      "story_sha256": "d61d845cb6eef0cf5940afb5766bdddd84d5687ade005335f0094e4289f75fc2",
+      "events_sha256": "5381615c49a69e96c99c363bf42030f413ac5d47910e88a4d28d2d91fad3a956",
+      "issue_url": "https://github.com/kburson/aitm/issues/11",
+      "body_sha256": "48520a5d02d6dcb7b13a561d30e80e6a76c8288ed4332379378afbf78f1a24ea"
+    },
+    {
+      "key": "C07",
+      "number": 12,
+      "created": false,
+      "prior_story_sha256": "f563b1d3bbe38abfe7c17a79e8c310ac72feb153c830cb824c6d0059e1ffb42c",
+      "prior_events_sha256": "f46edb44a070d311821ea0bf8cfd49e680fb9d43fecface10152d8509d3f75d0",
+      "prior_events_bytes": 6688,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C07",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "8a343aa194a10d8c251b0c378da1df31f7b1b8e6b1c845853383dfec9db4a58e"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C07",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "8883c9016590560fb001fc98412ed06776b428c10bd63d1c311044901ce0ee72"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        5,
+        11
+      ],
+      "blocking": [
+        13,
+        14,
+        19,
+        21,
+        30,
+        75,
+        77,
+        54
+      ],
+      "story_sha256": "616ea7f6c1be04e0f7d32d800b532f5123ffba3b7976d54c51ea6b9fc3ab5846",
+      "events_sha256": "beb1a422733d0f1422cfa1be6f7bae1deb4202af0b11e61ec7a8a22a94edb931",
+      "issue_url": "https://github.com/kburson/aitm/issues/12",
+      "body_sha256": "1005926521569c318c787d5f97eb9ae0a80524fe87764609fbb28285fe60a547"
+    },
+    {
+      "key": "C08",
+      "number": 13,
+      "created": false,
+      "prior_story_sha256": "0f5ceb7f934346589625ea0c627e45d9c2696e1f28b3fd9f175b50359a711684",
+      "prior_events_sha256": "103f21f9395e01adc01f2bdf3b036c74ba8b82ea7d45646606818b458a116d07",
+      "prior_events_bytes": 5647,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C08",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "98010d6bc41e67fc2e29330d569a5532eab4a92cf5c6bea0a01bfab7adb243ce"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C08",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "8162080179b323d7d23d4c5656a3e2622bdb5d51e314e593030d5bba78182d07"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        11,
+        12
+      ],
+      "blocking": [
+        15,
+        17,
+        18,
+        23
+      ],
+      "story_sha256": "8465df8779d79d4e74c53d3cb45f00361477a58a9a08cc378f43cb19662dabc9",
+      "events_sha256": "103f21f9395e01adc01f2bdf3b036c74ba8b82ea7d45646606818b458a116d07",
+      "issue_url": "https://github.com/kburson/aitm/issues/13",
+      "body_sha256": "52a48f9c65fd62627bce1dac70640af96cb85537fccb02c6ec2bbafa163ce2d8"
+    },
+    {
+      "key": "C13",
+      "number": 14,
+      "created": false,
+      "prior_story_sha256": "8c0669b00b8bb42c353ade2e9adfe0480441a96bbfd45a69d011c7c3ef8ff22e",
+      "prior_events_sha256": "c67f064cfc060b5378b9a1200bd708d912979577da2782ceaa3d63f63b298e28",
+      "prior_events_bytes": 6167,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C13",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "378e27d96518ccc5f869dd9ab0958a6952dc6e6b160f8c6760ad4dd4e286314d"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C13",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "378e27d96518ccc5f869dd9ab0958a6952dc6e6b160f8c6760ad4dd4e286314d"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        4,
+        12
+      ],
+      "blocking": [
+        15,
+        25,
+        28,
+        50,
+        64
+      ],
+      "story_sha256": "d3010bfe00e30117cd7a035ef29016b8190df558ace59995886544dd3cf822e0",
+      "events_sha256": "c67f064cfc060b5378b9a1200bd708d912979577da2782ceaa3d63f63b298e28",
+      "issue_url": "https://github.com/kburson/aitm/issues/14",
+      "body_sha256": "32314d1075caed1bda4a891e8aa1c7ed8202a1c7c5f65faf956d50b090144d9c"
+    },
+    {
+      "key": "C14",
+      "number": 15,
+      "created": false,
+      "prior_story_sha256": "3c0952d90e3da4ce71ca83e7197b3725cffe20608191e095a59119c911eb898e",
+      "prior_events_sha256": "24726446483c99c4db4220d4c351f30731d7c54979c117b4a6f86fda7af3bbe1",
+      "prior_events_bytes": 6691,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C14",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "f2f1bd77e7d06cf35776b2c6ca101d7c155b54c1c89562c417906382e4a26fba"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C14",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "cb227dc8a6131be47d8ff55f650b945bc58ec636501fd27330b340e8fc506883"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        9,
+        14,
+        13
+      ],
+      "blocking": [
+        17,
+        22,
+        35,
+        40,
+        64
+      ],
+      "story_sha256": "bec1778d30d93293cb81ced4f2ca75a28033218ed2812ade3f8604b54b404b01",
+      "events_sha256": "24726446483c99c4db4220d4c351f30731d7c54979c117b4a6f86fda7af3bbe1",
+      "issue_url": "https://github.com/kburson/aitm/issues/15",
+      "body_sha256": "861345876c19be9c746cbe2adb90ee47cad21b2ad64d6badacffb0609f9cfa21"
+    },
+    {
+      "key": "C15",
+      "number": 16,
+      "created": false,
+      "prior_story_sha256": "282308f396f2ea3ecb1ee2c0c9537ac1727b12414b81215a56fb83531017f791",
+      "prior_events_sha256": "49220316c683437d1afdd11b560ccfe89054d11ba776a51e1010438ebbb334ae",
+      "prior_events_bytes": 6689,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C15",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "dbdbb17b6aa60b961dbde055745c4040a154faf7bce02e8778306e8fbf04b68a"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C15",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "dbdbb17b6aa60b961dbde055745c4040a154faf7bce02e8778306e8fbf04b68a"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        4,
+        5,
+        9
+      ],
+      "blocking": [
+        17,
+        21,
+        24,
+        26,
+        37
+      ],
+      "story_sha256": "66a3e7e4e0a676eb2da2bbfd01b9c6ded1d487693ff92f3ce76908b56edda2f2",
+      "events_sha256": "49220316c683437d1afdd11b560ccfe89054d11ba776a51e1010438ebbb334ae",
+      "issue_url": "https://github.com/kburson/aitm/issues/16",
+      "body_sha256": "e551d289dd6316bf5c7465b9f3eb1012e4a10cf82c07fed33f94c9d154e75465"
+    },
+    {
+      "key": "C09",
+      "number": 17,
+      "created": false,
+      "prior_story_sha256": "c5d997efe31d40ae8c2b61c7932c5a2b4141edeedfb1d29711e9d057a2f33d93",
+      "prior_events_sha256": "218694864e42f1554786ed193c70e10ea8c0704be6b0b12f98c053420d204a5b",
+      "prior_events_bytes": 10341,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C09",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "697dbab4375d37bc7c8315f6cfaef995333220a54781ef68750e3650fa33dbe5"
+      },
+      "prior_hours": 4.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C09",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "697dbab4375d37bc7c8315f6cfaef995333220a54781ef68750e3650fa33dbe5"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        9,
+        13,
+        16,
+        15
+      ],
+      "blocking": [
+        18,
+        19,
+        22,
+        24,
+        25,
+        34,
+        37,
+        41,
+        50,
+        55,
+        58
+      ],
+      "story_sha256": "96a4af43f4b465bdb50e07a9a90f7a02a0d94fd2ca66123262ccc88035095d9a",
+      "events_sha256": "218694864e42f1554786ed193c70e10ea8c0704be6b0b12f98c053420d204a5b",
+      "issue_url": "https://github.com/kburson/aitm/issues/17",
+      "body_sha256": "611d9f90ea1f0f157f829ff34c4bca9e27210f973bced3186dc285fee9160765"
+    },
+    {
+      "key": "C10",
+      "number": 18,
+      "created": false,
+      "prior_story_sha256": "72e0619c870bc53b972549828f23bcf834046ea28c3742a182e338bdcdb73e89",
+      "prior_events_sha256": "7147be4b5e21214277fddafb5a097d8e13284ef9c91f4e214c0ae64217d3c1bc",
+      "prior_events_bytes": 6171,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C10",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "a6dc347ed1914866bcbd7d17da859e9ab6f0eb84798d7ddf355ab4a5c3b0ec59"
+      },
+      "prior_hours": 4.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C10",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "704394780be9311814423f5a4bb2d978b692b628a2771bedad722da35b61ddb8"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        13,
+        17,
+        11
+      ],
+      "blocking": [
+        19,
+        55,
+        58,
+        65
+      ],
+      "story_sha256": "5df2907879d7d4cb5a719dbde3fcab89a33f3108aedf21b58da4e0e6eec003e0",
+      "events_sha256": "7147be4b5e21214277fddafb5a097d8e13284ef9c91f4e214c0ae64217d3c1bc",
+      "issue_url": "https://github.com/kburson/aitm/issues/18",
+      "body_sha256": "c16b133fa86e05d952bdfdef93c46cfa1386843fcfc25a031f647b03761448e9"
+    },
+    {
+      "key": "C11",
+      "number": 19,
+      "created": false,
+      "prior_story_sha256": "e1e02fee05ae7c96da8de88d00c7493185f6c51a4709fb83d0e22ea8be2b7a1b",
+      "prior_events_sha256": "2d9c5a4ecd3db70855ae4b0e6f89747cf57e442fefb41d8be0838e75ae5be9ca",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C11",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "91bf6beaca831e39148d18eb70f0ecd3b9bbcb26f695ba7262c8bff9fb783ce4"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C11",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "c7657057cf43e6d10b7eaff90a6a8ace780770dc7fa63a0c813acf89c30b4813"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        12,
+        17,
+        18
+      ],
+      "blocking": [
+        20,
+        54
+      ],
+      "story_sha256": "2abeb420fbdf511d542c78199946ccfb9fa564e5ccd2faaef607ba47d9b3ade6",
+      "events_sha256": "5124cea7a15bc3f52c6dd4f1b6bc237d63f00f1e8464bf1f0aaf89e629812ba9",
+      "issue_url": "https://github.com/kburson/aitm/issues/19",
+      "body_sha256": "792bdf746c12577b294b828b4eebf32af7b33c59e5357c18eae6986b27fed9ab"
+    },
+    {
+      "key": "C12",
+      "number": 20,
+      "created": false,
+      "prior_story_sha256": "c3ee28c120e54a1cc267e45e4f6632de7090d447bf5b2aacee1cfba7e0e4b956",
+      "prior_events_sha256": "ecccdd141776ef94f49fea1b494b7a804de46d7bf5523978f75a8eb4c1c0d89d",
+      "prior_events_bytes": 5647,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C12",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "0c0449af795c161103dd73c886c0a4f56eac17ac4f36959018220897af94d35b"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C12",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a3e29e3eb2be73f24ec8d5cc37c42f3ca0683e47a6b3952ef0589ba58e70e9b0"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        11,
+        19
+      ],
+      "blocking": [
+        22,
+        42,
+        64,
+        65
+      ],
+      "story_sha256": "f09f417ba8b9c5a6b2b84fddf0e1d6e91c00c2796ae3342274134bdda229902d",
+      "events_sha256": "ecccdd141776ef94f49fea1b494b7a804de46d7bf5523978f75a8eb4c1c0d89d",
+      "issue_url": "https://github.com/kburson/aitm/issues/20",
+      "body_sha256": "4e2d4b59243adbf1535508851d957574a2a9c28c280aacfbc315bf82337ae810"
+    },
+    {
+      "key": "C16",
+      "number": 21,
+      "created": false,
+      "prior_story_sha256": "16e03cd1d2401b6f084ac09d5b8ec8f085d050d3cee9ab8e77dade1dea40271b",
+      "prior_events_sha256": "de5c251d68e2648cefd7e2ed6a0edf31afd47384988730f5e492208933c2465e",
+      "prior_events_bytes": 7213,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C16",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "ba43c7279c929657ff07d7af4efb9151ef82c135073d406fd6f58e03115aa1c5"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C16",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "43d374033e1889fd4d602422dc63f58bb487230e363fd38ade5afa0ffaf43a03"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        11,
+        12,
+        16
+      ],
+      "blocking": [
+        22,
+        74,
+        30,
+        36,
+        41,
+        77,
+        52,
+        57
+      ],
+      "story_sha256": "76ca51176a45cfdd390b3f7a07471466e8cad6d3a3b3347e1658c0eb048bd38a",
+      "events_sha256": "725b471210cf3f8f3b3b8bcdeb091745ef71fa8a079721a5a004906a4fcfef88",
+      "issue_url": "https://github.com/kburson/aitm/issues/21",
+      "body_sha256": "eda72ee01e202459a668d08894bbf06ec79fa8d03811531e82cfa88e84f6c03b"
+    },
+    {
+      "key": "C17",
+      "number": 22,
+      "created": false,
+      "prior_story_sha256": "85f710ca9f56da2ec5acd68b72519aec0c332d3029d5570faea24f3dfdc69300",
+      "prior_events_sha256": "1537e8d02a7e24b2eb4502f86f03cdf33ede402c5d7bf3da71b981dde6664552",
+      "prior_events_bytes": 8258,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C17",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "928612fd62de40a6677080136505c2b3cb8cb5686a9b0b3fb44ad2e44786f0b3"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C17",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "acddad31ff6b429120b096c2756d878e67ce743a771e8792d4f3affafa615d71"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        17,
+        15,
+        21,
+        20
+      ],
+      "blocking": [
+        74,
+        27,
+        35,
+        37,
+        40,
+        50,
+        55,
+        60
+      ],
+      "story_sha256": "be152e2b3c01b03748eae7286c5ccaaf2df53a1b0639c3e144bac49fa450ae92",
+      "events_sha256": "430dc2d1d2443f35749fb9d19a0bfbefec8b74033be612bb88ee1a81d6ed52a3",
+      "issue_url": "https://github.com/kburson/aitm/issues/22",
+      "body_sha256": "7d641c84c1868c0d10cd0fa6760abc2e21273c174a2d33ce0814e8406478887a"
+    },
+    {
+      "key": "C18",
+      "number": 23,
+      "created": false,
+      "prior_story_sha256": "a370e1a9a23615275932a0656b066ab24452f83390e71e5962fa52c65c954dc9",
+      "prior_events_sha256": "60e1e9662430b40fd578758ac062079ae2c33d522a3ba8772e5e7576b6c8bc31",
+      "prior_events_bytes": 5125,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C18",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "e2ae3cbf40079d029936f3586ca78eba514492ce81a94a162d21ddfcaf67bf6f"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C18",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "6b5d95b9e618d4d5c3aa6f59d679792a3ca122d8ed2503c6739fa272db5602a3"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        4,
+        13
+      ],
+      "blocking": [
+        56,
+        81,
+        65,
+        68
+      ],
+      "story_sha256": "20e476d5cf80abdfa864bf5de6bc321226ddc4782807949912931d9c03bc604b",
+      "events_sha256": "90c4c0344e9e314d1ea5d94f361826bd6b24a65cd105c4b7cf199f5d6e8d6036",
+      "issue_url": "https://github.com/kburson/aitm/issues/23",
+      "body_sha256": "79af7a2627dc9150c862e47407cde4beef8d49ba33c6127ee85420ac806d6fa6"
+    },
+    {
+      "key": "C19",
+      "number": 24,
+      "created": false,
+      "prior_story_sha256": "146e57b9160162055ad377974695c2c7e568108785bd94c728c0759a6e1f9014",
+      "prior_events_sha256": "11a2e4884b9e1842ce195e9e8d1a167f226b80115957c2bb8a14ecd747ae113b",
+      "prior_events_bytes": 4605,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C19",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "904013a954ddba91ba0dd345dfa1f90de078185e7792562b63a9be4d78cc847e"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C19",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "0d93c88041437f96c473441e8e7e2b830095940479d4812a70b2cbc487597e55"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        17,
+        16
+      ],
+      "blocking": [
+        74,
+        25,
+        65
+      ],
+      "story_sha256": "9dc8dec54654b57fb2b787346e4f6c8232d1dc7defcf8dc496879d3266147707",
+      "events_sha256": "9e95cf2f7434c5e6746de4092b750cd1626bea723c458a6b61dda86e795ca05c",
+      "issue_url": "https://github.com/kburson/aitm/issues/24",
+      "body_sha256": "32e51b63b908186f6ea53f92a67c88bab7c1b1557a9c8b98fe780b714725907e"
+    },
+    {
+      "key": "C74",
+      "number": 74,
+      "created": true,
+      "created_at": "2026-11-09T13:42:06Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C74",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "b924929379782a37195c7b63b264e4c3cf2fb3e9afdfd81c721676886d3fb46a"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        21,
+        22,
+        24
+      ],
+      "blocking": [
+        25,
+        26,
+        27,
+        40,
+        50,
+        66
+      ],
+      "story_sha256": "d40d578e8b09b202646567c95aef934a8b0da560a3235272bc5eaf0f7a2cc642",
+      "events_sha256": "9b3256344e1025be4d919ccb0ec7ab769c07fcc896b82d3c550f8405114e75f5",
+      "issue_url": "https://github.com/kburson/aitm/issues/74",
+      "body_sha256": "61c221f0c6a1fbe124ff30d8c475647bb95419a4bec6d1fbf9d55c12dea364df"
+    },
+    {
+      "key": "C20",
+      "number": 25,
+      "created": false,
+      "prior_story_sha256": "91b8e3bf40838cad122b4494f88455a1b4ed4ab834dae5fedc1b6823a95ac0f3",
+      "prior_events_sha256": "bef1a6285b997ce7591e6d2dd31500580ef3af61e4a2609c32fe24c4b2a622f5",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C20",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "de4ee58422210f8e11e3dfa0a99fae1b1d42b9b29271ac082448c667a4691024"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C20",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "599a44fb568851dfe4cda271fe737b8602940541c071b3f6fc27162f998fff01"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        17,
+        14,
+        24,
+        74
+      ],
+      "blocking": [
+        26,
+        75,
+        39
+      ],
+      "story_sha256": "e4426f997532d3ec12cb68ef59d4e1dcc9b43c72eeddaf2708c36b63090745e8",
+      "events_sha256": "13340ea169978ef74437747e0545fd1907d2915cce62607f139558a67e788bc8",
+      "issue_url": "https://github.com/kburson/aitm/issues/25",
+      "body_sha256": "a7edd880d3c07b5cde9da515ee90612e5e5f980c7cb7bf24995b20f8e07c1a11"
+    },
+    {
+      "key": "C22",
+      "number": 26,
+      "created": false,
+      "prior_story_sha256": "2b12cb5d654a32a4a6b574994511f9b55976d503f72bee2b4a31747b6cb58404",
+      "prior_events_sha256": "0af43722be0e7241e8c6db7a7068a2d7b3d2735a5c7a4792f165a23879448651",
+      "prior_events_bytes": 6168,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C22",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "6c4e34f9f32455cc17838a4046880a59d110f850c3b3e398cceee4b13221ce9e"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C22",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "582f77ebf4c60bfd94c5aa5bcce645f9f8dc9e5b2a845301af15a21451b80a8d"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        16,
+        25,
+        74
+      ],
+      "blocking": [
+        27,
+        37,
+        76,
+        39,
+        63,
+        65,
+        82
+      ],
+      "story_sha256": "6aa4dbd9a46bcea55b40b7997e6b0b85d77e052c54a01fb5ae4f64f9892cd02a",
+      "events_sha256": "1182c65ce7fe77666ee5e581dab3d5c448aef0e2dc5770f5eaa0f5f4bad0286b",
+      "issue_url": "https://github.com/kburson/aitm/issues/26",
+      "body_sha256": "cfc976e30933b90adf75e5f1270104c1fa07cf890b6e7c741a5a4b958bb17906"
+    },
+    {
+      "key": "C21",
+      "number": 27,
+      "created": false,
+      "prior_story_sha256": "a32547de7ff424d711aefdb69eedd513d9e063cb24b4d0693761f3fdf41c9cbb",
+      "prior_events_sha256": "0eb98c756eb8e38b0a5fccddfaf468c8c67d7488d019ddbf649ce558edebe22a",
+      "prior_events_bytes": 5647,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C21",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "302119a3538e086b05314396e3ab01b6736bf5295a63339516e2abc22ea10fb4"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C21",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "24532ff332ae5b1380ca0797c05b586afed95900e5d97772b923cf1c08c780c7"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        26,
+        22,
+        74
+      ],
+      "blocking": [
+        37,
+        39,
+        58,
+        65,
+        82
+      ],
+      "story_sha256": "d8d39d87f5426193e49b6c2927d1eca7ae252526ac1c9833746c95da14b29326",
+      "events_sha256": "9ee6263e46d06114d561c94d49605e68e1c94f969969c39c5a865a05230ae836",
+      "issue_url": "https://github.com/kburson/aitm/issues/27",
+      "body_sha256": "0561e9772bd28ef9e116980251380c13411b700ecec762a606b6a8f7fa8a352b"
+    },
+    {
+      "key": "C23",
+      "number": 28,
+      "created": false,
+      "prior_story_sha256": "109f3225850b9767c85633d2d6e11ea82d684ad1d32c5cd47b1174a3b1265783",
+      "prior_events_sha256": "fa083fb08c33cbbc329ec264e1c9881e8acc38a062078738451dc7db87f87c5e",
+      "prior_events_bytes": 6167,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C23",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "ec15330001311945cbd0c34f1125deb03d306a7dbb47df5c6c99b285d74015b3"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C23",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "ec15330001311945cbd0c34f1125deb03d306a7dbb47df5c6c99b285d74015b3"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        4,
+        14
+      ],
+      "blocking": [
+        34,
+        36,
+        39,
+        40,
+        51
+      ],
+      "story_sha256": "6f6fa8193df1bee3c0d59051c6c5ec2883079ee67ca33d41ddfc455eaa555792",
+      "events_sha256": "fa083fb08c33cbbc329ec264e1c9881e8acc38a062078738451dc7db87f87c5e",
+      "issue_url": "https://github.com/kburson/aitm/issues/28",
+      "body_sha256": "e4ac8599f5ad4ad6d41ba49e1052bf29b9d391b5afde33a35ac5cafc9769375a"
+    },
+    {
+      "key": "C24",
+      "number": 29,
+      "created": false,
+      "prior_story_sha256": "eb5db49048d3268e857068922349f052db2a5916aa9e1c56f0304833e75b153a",
+      "prior_events_sha256": "e1e903e8ffa3bfad1045a0d66ed9dea7db0a566e4acc3beb491de97118dc53be",
+      "prior_events_bytes": 4605,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C24",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "a9b0e96dd9485628757d9f6028c274655345d4fa35b08c8dc79d9c3c9f0969c1"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C24",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a9b0e96dd9485628757d9f6028c274655345d4fa35b08c8dc79d9c3c9f0969c1"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        4,
+        5,
+        8
+      ],
+      "blocking": [
+        32
+      ],
+      "story_sha256": "6bec3758f74523906a83d6f148191abc99d433ffde1ed0657b4722fb7cf60dfc",
+      "events_sha256": "e1e903e8ffa3bfad1045a0d66ed9dea7db0a566e4acc3beb491de97118dc53be",
+      "issue_url": "https://github.com/kburson/aitm/issues/29",
+      "body_sha256": "ccb3ca5a9deea1f44e7aacd0f21dd5f20445596f3a3fdc7e5ce99f3e4ea21884"
+    },
+    {
+      "key": "C33",
+      "number": 30,
+      "created": false,
+      "prior_story_sha256": "ac038f1fa424eb9aa997f3977abdfb8b7f1feb75714d6535ae20c175599bc064",
+      "prior_events_sha256": "1ee421f0d02eedb607562037b08dc7b05499f40c147af8adfd306110706be8f5",
+      "prior_events_bytes": 4605,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C33",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "af7bbec9ca0546a4bc42b1f2838b17cd6e23d5f96c9e01f93589914fdf246116"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C33",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "af7bbec9ca0546a4bc42b1f2838b17cd6e23d5f96c9e01f93589914fdf246116"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        12,
+        21
+      ],
+      "blocking": [
+        31,
+        52
+      ],
+      "story_sha256": "8dbab0c4acc0d0c7b385cd150d9c8f058b9325c16228c9f2282154b641287380",
+      "events_sha256": "1ee421f0d02eedb607562037b08dc7b05499f40c147af8adfd306110706be8f5",
+      "issue_url": "https://github.com/kburson/aitm/issues/30",
+      "body_sha256": "5275f6db9e53a73d9b6ed7ed29424f3c6c1bf21229df5a31a2610ad703af863a"
+    },
+    {
+      "key": "C34",
+      "number": 31,
+      "created": false,
+      "prior_story_sha256": "585ade63c02465943e87ead01783a022c7f3d1cc8441e3140de5248dcdce8735",
+      "prior_events_sha256": "ea0b469d2acdf2d83dc58a2c59534a3447334d5a3fd47465078617f8bf77d337",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C34",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "518906b232919029e07e22b86eb9313dad3ee425f3e7cb87812f0bdf5078db28"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C34",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "518906b232919029e07e22b86eb9313dad3ee425f3e7cb87812f0bdf5078db28"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        30
+      ],
+      "blocking": [
+        42
+      ],
+      "story_sha256": "5ee1967232dec12c59e7f180d7f8e017e513d56af7fef3b7c4aaf88c9c2d0e16",
+      "events_sha256": "ea0b469d2acdf2d83dc58a2c59534a3447334d5a3fd47465078617f8bf77d337",
+      "issue_url": "https://github.com/kburson/aitm/issues/31",
+      "body_sha256": "2e7b1929da0c68ef3ea1c5f8e36262ea20f1ba3fe5332eecf728fbb95b1d3004"
+    },
+    {
+      "key": "C57",
+      "number": 32,
+      "created": false,
+      "prior_story_sha256": "694c520a10cf8aa11eece06536b6932d0f898a72d64e7a7b9a9bab9e8f7a9f2c",
+      "prior_events_sha256": "4cd764210e4725606399d0e9809e71064b515da501ce9974a4d33dec9aa9ac75",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C57",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "9e820de1473a4b966233bb3c2aa1f517878f46388a8f801eac37d547e5fe894f"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C57",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "112f61df2549ac9c47198e3725426a699f748b3d56d9b0e8c7312c5e4386f1ac"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        29
+      ],
+      "blocking": [
+        33,
+        77
+      ],
+      "story_sha256": "d09a94711edb7b3f4891b2f6dc883d722a6edd37c87ea3bfd4e70b2ebda431e9",
+      "events_sha256": "0e44be4cb23d4db54add0602874405dfdc439caf941751df74bb890ea9ba1b33",
+      "issue_url": "https://github.com/kburson/aitm/issues/32",
+      "body_sha256": "4d36139fee6d39a0de435a7942563bcf6228fd82cd01a7ca18f66a7bc7634267"
+    },
+    {
+      "key": "C58",
+      "number": 33,
+      "created": false,
+      "prior_story_sha256": "aca50dea169931a7033bbbbd9ec6e956b241175f3cbce521efc74b05d646aeb3",
+      "prior_events_sha256": "957ce624e45885f95253ee60d8fd39ddfb2d7a728c1ae1b5a5833f729cf3867b",
+      "prior_events_bytes": 4602,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C58",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "464f02501fb0dc29893a070a82ebeaa25af0a598a87448e4ce9839e9d7dd73f7"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C58",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "464f02501fb0dc29893a070a82ebeaa25af0a598a87448e4ce9839e9d7dd73f7"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        32
+      ],
+      "blocking": [
+        34,
+        35,
+        53
+      ],
+      "story_sha256": "3a3e3d2891f53cceab55de52aaae34eb2ac660502dd427f27772983c9ae2e5da",
+      "events_sha256": "957ce624e45885f95253ee60d8fd39ddfb2d7a728c1ae1b5a5833f729cf3867b",
+      "issue_url": "https://github.com/kburson/aitm/issues/33",
+      "body_sha256": "fbf0764c58c20214b439e74dd0f048381096fb12d938d8b3667da25ca310a78f"
+    },
+    {
+      "key": "C25",
+      "number": 34,
+      "created": false,
+      "prior_story_sha256": "d555462f5eb2be88c41da568b3a931a1d57ac740266df605b27218ee01372019",
+      "prior_events_sha256": "ace85ca0ec17f39535b18e23168b70567f6ceefe384edd620d68649f5e718a87",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C25",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "d36fe7c96024ec0b8792f90d550fbf86b09e2001368075a168154aa942bb605a"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C25",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "598e8a508017cf71b8793b447e5b585980c7658eb5d7eec53114c4089284c16f"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        17,
+        28,
+        33
+      ],
+      "blocking": [
+        35,
+        53
+      ],
+      "story_sha256": "99e000531be82ce5e373e8d85068b0294a360622a8421d6d23ed95ceac1ecf73",
+      "events_sha256": "ace85ca0ec17f39535b18e23168b70567f6ceefe384edd620d68649f5e718a87",
+      "issue_url": "https://github.com/kburson/aitm/issues/34",
+      "body_sha256": "4fac6824ec9b708b00ae0e1b8ebe6db73b9afd7998f145b83bff7d532183f588"
+    },
+    {
+      "key": "C26",
+      "number": 35,
+      "created": false,
+      "prior_story_sha256": "9589bb141a6382dcedacec380df3a611ce44b54d0be148ed4c33905e15bbd0e7",
+      "prior_events_sha256": "163ba0875cae1b2b1e363a8117bb07ddd68d3bd0a413efd1f325f75c6904044d",
+      "prior_events_bytes": 6695,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C26",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "37d70ab81afd753bf33d179d4cdd3eb4353abe8df558ca0c529fea062ec6a264"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C26",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "60ff6b1629c42a401e65def14af6fcafd0014091c3984080ce01c35b75ba91f0"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        15,
+        22,
+        34,
+        33
+      ],
+      "blocking": [
+        36,
+        75,
+        37,
+        76,
+        55,
+        65
+      ],
+      "story_sha256": "de22a6fb94c8f4c355ffca52b2b19429a9dc70b73cf44b49ebf5a31b7b3bed4b",
+      "events_sha256": "650e02044871747dcce3130d6a745b3c2e513346d08ab3ca24ff2082d85bf433",
+      "issue_url": "https://github.com/kburson/aitm/issues/35",
+      "body_sha256": "dad483a0b09daf9e40e9288babd7f891941e7174729697956b159cc3a30dbdc2"
+    },
+    {
+      "key": "C27",
+      "number": 36,
+      "created": false,
+      "prior_story_sha256": "847bba9f233c2406514a808fdac9f3cfcfee94e2798bbae824843106e680402d",
+      "prior_events_sha256": "0f11a9f3292e9724dc69000d30251afbdb26d49c13414ec6ab1a16cefda6e8af",
+      "prior_events_bytes": 7213,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C27",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "61806d99c8f445c5dc2a7f98a409fd5048aa43b98f0b03b101532a3f9b1f452e"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C27",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "dd6af25e235dd1179e115167351f333b1315cf9689ae1b3a12ca501697f8448a"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        21,
+        28,
+        35
+      ],
+      "blocking": [
+        75,
+        37,
+        76,
+        40,
+        51,
+        57,
+        59,
+        65
+      ],
+      "story_sha256": "f91986f664acd7043894eddca94c79e872be107b06d6e1d30b927e4b38377531",
+      "events_sha256": "8ea6dfe0b207620198dd5642267f7fac01db50fbb775049e89fd914870870fcc",
+      "issue_url": "https://github.com/kburson/aitm/issues/36",
+      "body_sha256": "9595e3c9d21c0c6373e93a1bd577c34859782e3161f8a6d5c38bd51524fa697d"
+    },
+    {
+      "key": "C72",
+      "number": 75,
+      "created": true,
+      "created_at": "2026-11-09T13:42:07Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C72",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "c291805b48e01fb13932df320b15a231fb409bcbe712f43671a6957a2c8970e2"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        5,
+        12,
+        25,
+        35,
+        36
+      ],
+      "blocking": [
+        37,
+        53,
+        82
+      ],
+      "story_sha256": "29accba05def9e4f79bbfc32b13747f9fab0dce2eff910b2285f5b635e3af298",
+      "events_sha256": "3035659cfd7516520495deb248a181c92e32f271ff70369f837b581ee9c31bf9",
+      "issue_url": "https://github.com/kburson/aitm/issues/75",
+      "body_sha256": "a31dea1ea715882e6e8aacd10110956d4ffa07ae578dd9a17195e093e9f1eae1"
+    },
+    {
+      "key": "C28",
+      "number": 37,
+      "created": false,
+      "prior_story_sha256": "af74c3d3e51cac2947bc32eacc94aa50b4eaba11b0d7f7a84eb3035b537eac9c",
+      "prior_events_sha256": "8cf2baccfd10dc02118a1dae29f1175ec38393d6f76d8774193a9a1fc7a66d8c",
+      "prior_events_bytes": 8788,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C28",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "1b0a5b1f08e1ec4395be15dd6b57d9a348665ae2599c43051f446eb9d0c47216"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C28",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "68c6f2e4ba76f2e12ef3369efa0e36d87678979ceed511a4e3aa9347279ad31f"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        16,
+        26,
+        35,
+        36,
+        22,
+        27,
+        17,
+        75
+      ],
+      "blocking": [
+        76,
+        38,
+        39,
+        40,
+        50,
+        59,
+        79,
+        81,
+        82
+      ],
+      "story_sha256": "0403b5fe09991415535b0c7828243c345d072bdad08fef0bffd004afb7bb76d9",
+      "events_sha256": "23d7ea1ecb4bebcfd867cf78d0ff6f4b10076342499d77c49092e5243668318c",
+      "issue_url": "https://github.com/kburson/aitm/issues/37",
+      "body_sha256": "580275fddf336d77acdfdb247a61c6768536d2efbcef12a22ed88df4089d6b49"
+    },
+    {
+      "key": "C71",
+      "number": 76,
+      "created": true,
+      "created_at": "2026-11-09T13:42:07Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C71",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "749fbce4b86eb57cc4fdbed702c0d287e7d9ff7815cedeab909fe8558c1e098f"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        37,
+        26,
+        35,
+        36
+      ],
+      "blocking": [
+        38,
+        40,
+        66
+      ],
+      "story_sha256": "0c9815bfeab0c90562dd8d16cb69d3666949bb867d03470de3c3d3aa3305b36c",
+      "events_sha256": "7639cc2a52118b803fb450b947a4a9be3bc36a01b1db20a3e6cc00f12cde4486",
+      "issue_url": "https://github.com/kburson/aitm/issues/76",
+      "body_sha256": "8f76c81274a7cc20906c0833522efc50ed73da1ec41db669451899773665a868"
+    },
+    {
+      "key": "C29",
+      "number": 38,
+      "created": false,
+      "prior_story_sha256": "5bf0940a3eb3afc3f27502c84d954c9723b18f08b39e0cd377a62e7a174fe9b9",
+      "prior_events_sha256": "59104c35d9ef174e26efbf6dc4abf7f6240d9ae63d6c4db6fc4967d208d7bce1",
+      "prior_events_bytes": 5123,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C29",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "8f7bbdb233c2bb839bf40b544ba50f151591fd430da624f56010fd38fc72e797"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C29",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "1635a74cf76d80886f2446f425da74b33c9e692539c32b40e7f92bdd306a83ea"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        37,
+        76
+      ],
+      "blocking": [
+        39,
+        40,
+        45,
+        49,
+        52,
+        63,
+        79,
+        81
+      ],
+      "story_sha256": "0427658b963847004b6a9b8caf5428099a8ac67ef582cf04a96baed216404d69",
+      "events_sha256": "af1653e41c462398b6b510a674c2195ae24bb9d9f0084dcc41f9089ecf676188",
+      "issue_url": "https://github.com/kburson/aitm/issues/38",
+      "body_sha256": "e3eb62a671fe06d2ffb11373af736f8014747fbc41fb9a263ef58695db31f3e6"
+    },
+    {
+      "key": "C30",
+      "number": 39,
+      "created": false,
+      "prior_story_sha256": "1136d37d1087d981b2ca5943a71f36816339ad88e470c92d9a901c163b487923",
+      "prior_events_sha256": "35651c264cc8e81ba83c8a21b8958e274eb13c946ce5f5dd4c809bde948d2c62",
+      "prior_events_bytes": 7219,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C30",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "174c7566f6f401881b6ebc0ba56c94dedbe04f55f1e9c4408ad19c0d744fa2fe"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C30",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "06afa17d01281ff2199f3a3444ef2f979c24e76ca547432a48c50a154d2af243"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        25,
+        27,
+        26,
+        28,
+        37,
+        38
+      ],
+      "blocking": [
+        40,
+        59,
+        60,
+        61
+      ],
+      "story_sha256": "0fc433351c1d2b6baca518f9eca5e15e0043d88f40ee95791758a1a79797a2b0",
+      "events_sha256": "d8a6450d8f3dc7714c58e9e848847121bfbaf6a17dcf1f01570473eb53447dd0",
+      "issue_url": "https://github.com/kburson/aitm/issues/39",
+      "body_sha256": "7497d7967b7e91cf67d620646826e0af2dab04b3f8f3909661f761507f5b5e6d"
+    },
+    {
+      "key": "C31",
+      "number": 40,
+      "created": false,
+      "prior_story_sha256": "23a99b7f45829ce174166d0186153efe3e8ce0d7fc84997611f92ca564708cdd",
+      "prior_events_sha256": "6eb0eb58384ad96f7ccbb4fa7536a140c25891083f2aede199428ca8d95aea5d",
+      "prior_events_bytes": 8785,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C31",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "b5a8d3aecc6416614ddd42a052ef568c564affa220416ecc38350dce9d55db35"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C31",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "fcb1317d050bb41815f1cadae215f504eb637f1cd7aff29ed22023cd0d297a71"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        28,
+        36,
+        37,
+        39,
+        15,
+        22,
+        76,
+        74,
+        38
+      ],
+      "blocking": [
+        41,
+        42,
+        50,
+        59,
+        79,
+        61,
+        65,
+        82
+      ],
+      "story_sha256": "94f888d5bcd54a403a1c2e4de12f1b614fc0a3748eda5c9f0655bdeef3ee48a4",
+      "events_sha256": "409e0f08201b936209b1c49faa83c670e19c2a29bb9808536ee6f985f82e4dfc",
+      "issue_url": "https://github.com/kburson/aitm/issues/40",
+      "body_sha256": "17a37bde34c7321c176494c7c302a002ec8fa03e94e6480053005142a8fa196e"
+    },
+    {
+      "key": "C32",
+      "number": 41,
+      "created": false,
+      "prior_story_sha256": "967a424aa34c0a0b5999516f2428638a6414f386d6354a17249899740b16b22c",
+      "prior_events_sha256": "8fab0a6ad398942816418927ff17d3f6df353f26df4d7d8300d537644077d684",
+      "prior_events_bytes": 6171,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C32",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "681967ac8941e848232c1d71ad736caf84102a3145e0fe77e1df92d306faa998"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C32",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "681967ac8941e848232c1d71ad736caf84102a3145e0fe77e1df92d306faa998"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        17,
+        21,
+        40
+      ],
+      "blocking": [
+        42,
+        48,
+        57,
+        61
+      ],
+      "story_sha256": "b1f172ee0d671475d46e2b388b5adbaa3e686c2d14e0f2d68668b542bbfeaaf9",
+      "events_sha256": "8fab0a6ad398942816418927ff17d3f6df353f26df4d7d8300d537644077d684",
+      "issue_url": "https://github.com/kburson/aitm/issues/41",
+      "body_sha256": "cc9d915763b501d4a8e8896d0ee7f74a4b5fbd4871c782735d967394f2865e3f"
+    },
+    {
+      "key": "C35",
+      "number": 42,
+      "created": false,
+      "prior_story_sha256": "8a019d6263f5014cd2d1984543d87a3dd4de5174d41890727dc118a0fee29ebd",
+      "prior_events_sha256": "1e5015fbc39d195c8b4e331fed4c9e284df9e755c3b4fba3cb518bd309c768d1",
+      "prior_events_bytes": 8779,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C35",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "9b81e2841c2d17fb1109a552faa12fce8b659c899ba02f133c4e9b0a06df68a6"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C35",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "90231e955745521f8a7eb7e8a073c72bba8ca6f1969d490967b813c84a52e9f4"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        20,
+        41,
+        31,
+        40
+      ],
+      "blocking": [
+        43,
+        44,
+        45,
+        50,
+        52,
+        57,
+        79,
+        80,
+        61,
+        65
+      ],
+      "story_sha256": "63a8152d7ec267291ca2eeda40928723831753416a243681f1ffde3744196765",
+      "events_sha256": "ffba1be144884f59c7a2469fa3325a9e8ea310e32890ecfcb08ef42d657eb82a",
+      "issue_url": "https://github.com/kburson/aitm/issues/42",
+      "body_sha256": "ac0284826af88b4f22985071f063120f07150022214660269899d6853d2d8b2d"
+    },
+    {
+      "key": "C73",
+      "number": 77,
+      "created": true,
+      "created_at": "2026-11-09T13:42:08Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C73",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "ca1734e797629a9965ca7d2728487b24ff9d91d6f510d9a862b603bd180dc095"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        12,
+        21,
+        8,
+        32
+      ],
+      "blocking": [
+        45
+      ],
+      "story_sha256": "6fee2b954cec3c86f6b483c7b8d7f02e11fd1fb89b38f45f83b57ec77874032f",
+      "events_sha256": "e8db0b386d5d91684fb0662c9bb866be326f7431fd0657da2ddce66c46220868",
+      "issue_url": "https://github.com/kburson/aitm/issues/77",
+      "body_sha256": "bcfc28838b88df21d7a556090f9c4d76b506b4c13421402ed4ddb4bd39423e64"
+    },
+    {
+      "key": "C36",
+      "number": 43,
+      "created": false,
+      "prior_story_sha256": "285c30b4a4b3649dfdece8ab2f222fa08608bb77b2e4c1cfd9d9c4460fa0b445",
+      "prior_events_sha256": "d0a5292e8502aa109c988f9126bd6636d26d9c31a7c899ef00d1529f1469906d",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C36",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "b0d6c9896fb15e42a9d70597e2b3a56daff416c60e1a1f07854f585d88c63c69"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C36",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "b0d6c9896fb15e42a9d70597e2b3a56daff416c60e1a1f07854f585d88c63c69"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        42
+      ],
+      "blocking": [
+        69
+      ],
+      "story_sha256": "582aa076a1ac6e14f9eff08a57b1d8554442a2e9d31640365c061948b5ddc87a",
+      "events_sha256": "d0a5292e8502aa109c988f9126bd6636d26d9c31a7c899ef00d1529f1469906d",
+      "issue_url": "https://github.com/kburson/aitm/issues/43",
+      "body_sha256": "e245dbd5cb90dca805b47b1e5b00469f3d9ea196b0617c0cf80b3bb09f870694"
+    },
+    {
+      "key": "C37",
+      "number": 44,
+      "created": false,
+      "prior_story_sha256": "74a4ac5ee009e7ad28731a882334d7967ae277752aa3a56a554fd8b6b3ac5bfb",
+      "prior_events_sha256": "52abde904edd077dc4cb54cde9da7e65bc25f7d81945894064b25d6b8b6b7cec",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C37",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "67bf5154ed34f6067a7e29e334401abdf1f63d1b9cdd3ddf378f7a3432d8bc7a"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C37",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "67bf5154ed34f6067a7e29e334401abdf1f63d1b9cdd3ddf378f7a3432d8bc7a"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        42
+      ],
+      "blocking": [
+        69
+      ],
+      "story_sha256": "afaca718e43cf185667ecec5972d6ee699f7daa4b25b252c32493e0082a4a3be",
+      "events_sha256": "52abde904edd077dc4cb54cde9da7e65bc25f7d81945894064b25d6b8b6b7cec",
+      "issue_url": "https://github.com/kburson/aitm/issues/44",
+      "body_sha256": "8fa80ad2b86cb6c3b198149996bc085398f80208f16af51e4a04f6da4d055288"
+    },
+    {
+      "key": "C38",
+      "number": 45,
+      "created": false,
+      "prior_story_sha256": "17a5c0be3de2acb798c09a33596b7548c37f176753fe0029ce01afaafa87a04d",
+      "prior_events_sha256": "ca2a204ff0dbf29f27b1203a9b9cd64721823969220a5566a055f45fba9169e6",
+      "prior_events_bytes": 7210,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C38",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "57f88216a9ed9949299531d6a02618b1ffba87093d057ea0957452056b75ba00"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C38",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "12d4dbad75a87a0163283b755783c5693d5fa3eacfd2ac0535f4faa89d2a2c7a"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        38,
+        42,
+        77
+      ],
+      "blocking": [
+        46,
+        49,
+        52,
+        57,
+        63,
+        79,
+        80,
+        61,
+        65
+      ],
+      "story_sha256": "b881cad839a7cee083945bb36ce68dc605fb66f229ff55ef985ca639a90d3488",
+      "events_sha256": "0ffa58bb63954c30fa4d352ee9c8d73153fb9a22682ab9926753641ef1da6a7f",
+      "issue_url": "https://github.com/kburson/aitm/issues/45",
+      "body_sha256": "855c2d69d307f1727fe7d81e6195db3bca9680bba63e243ab4c7d60f815809c7"
+    },
+    {
+      "key": "C39",
+      "number": 46,
+      "created": false,
+      "prior_story_sha256": "c3dd72558d066d5f072294a984ed9bc329796fb7dd37f9408c8398dd83f42274",
+      "prior_events_sha256": "2b0b216ab2820273d0cd11ad3c38d2a8df398834591881446cdbcdc717709f58",
+      "prior_events_bytes": 5644,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C39",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "18fe01eb954a96fb7fcd047cd014876bc53944863e9dd84df447b17649b4f561"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C39",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "18fe01eb954a96fb7fcd047cd014876bc53944863e9dd84df447b17649b4f561"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        45
+      ],
+      "blocking": [
+        47,
+        48,
+        49,
+        52,
+        79,
+        80,
+        65
+      ],
+      "story_sha256": "9aec7b9326c19d2be44c083d1ef7b1ab2f1b94227df32d574eb616f6aaad903e",
+      "events_sha256": "01e6a4db261381e4aee93158198899a74143caceb7a5cbbee54070b49f078239",
+      "issue_url": "https://github.com/kburson/aitm/issues/46",
+      "body_sha256": "d60a34cc86669bf87d108f0af4f55d3071f2fe3c0eb791bed78ba899f43a01d5"
+    },
+    {
+      "key": "C40",
+      "number": 47,
+      "created": false,
+      "prior_story_sha256": "8bf179b8ec389946cc6232b6e8fed5a82fb850b402723a0c45fe785243a38333",
+      "prior_events_sha256": "baf68bc8a68282847957da32c85e873c5838c33c5c972630489a9d3d55a4e227",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C40",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "a36e70f85863a4007b8b1c0928f3c4ed8032bf853dd2415871825f764f70ea61"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C40",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a36e70f85863a4007b8b1c0928f3c4ed8032bf853dd2415871825f764f70ea61"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        46
+      ],
+      "blocking": [
+        48,
+        79
+      ],
+      "story_sha256": "7c07ec3ff0ada80386a1b16226c44d2f206604da9e26da3956bbc5f5bd7b4d58",
+      "events_sha256": "07548629b28f4f2c7c3685ce8c2339477bc9aa5de54a054b2df1f40a609f35ae",
+      "issue_url": "https://github.com/kburson/aitm/issues/47",
+      "body_sha256": "d7d402d1df817c9f57521645592b689a76d5831bd6436b97eb2753a4909341bb"
+    },
+    {
+      "key": "C41",
+      "number": 48,
+      "created": false,
+      "prior_story_sha256": "ebdfbf634038666f890ac679ef7deff0c613a819c432f9b540e43837bfa51230",
+      "prior_events_sha256": "b9b1fc60539928a0b17eb67dd20ba6b908998bed7c7a137e71abbf5e913b1578",
+      "prior_events_bytes": 5653,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C41",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "7813ce14a39b136b17977c1f56f74d8d34d6deede4743b5003b5c2d9f7c4dd0c"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C41",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "b74c1c6f4a6837734f37e2119d356d97273424a68df59a93a299d675001c756e"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        41,
+        47,
+        11,
+        46
+      ],
+      "blocking": [
+        79,
+        62,
+        65
+      ],
+      "story_sha256": "7a68d374e1f872d697c4920415f8d338d1afc925d35220d03f29a04e4e09c944",
+      "events_sha256": "5047111697749d78db433552b1010bbe932e2a4c1ca49eb26cac2874122b898c",
+      "issue_url": "https://github.com/kburson/aitm/issues/48",
+      "body_sha256": "94000831cdbad403868114d65cfab7be6ef0a83e19b8ae8e86f90e942f5014c9"
+    },
+    {
+      "key": "C42",
+      "number": 49,
+      "created": false,
+      "prior_story_sha256": "270fa7d54c16de157e5f6ee614181f22963f1982d326788eabe9ce8f053cc62b",
+      "prior_events_sha256": "cb79efa340dd3b1845be913b8dbbe19b86b646e76815ab8110fc0a6a0f4cfda2",
+      "prior_events_bytes": 7734,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C42",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "77ea28eda3e67296624843b24f0cb24b1ab76fa85d2bd6b7b2b87fa22153bc0b"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C42",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "857dc46e8bc5842f827b804a610b6a68595a3d317453676ebed11571d4d89c88"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        38,
+        45,
+        46
+      ],
+      "blocking": [
+        51,
+        52,
+        57,
+        63,
+        79,
+        80,
+        61,
+        62,
+        65
+      ],
+      "story_sha256": "c665e1dc16c92f2e7a09289a6d86397ad5045680bb7428b21f6673189edcf9af",
+      "events_sha256": "1a9566df7bb80fc5bb25cd96106aa35dcbd83e96fd16ec78255ec9ca8133a196",
+      "issue_url": "https://github.com/kburson/aitm/issues/49",
+      "body_sha256": "410f26014eeb7b1b54a03e728c568187dceacf63722315b752c0fdb2b5efe4ca"
+    },
+    {
+      "key": "C43",
+      "number": 50,
+      "created": false,
+      "prior_story_sha256": "178422ec32fcbe5130baf370893d044649422007f6f1466813893087158620ce",
+      "prior_events_sha256": "287945fe618f7be06dd7712afbf1accac003d9f32cbab6e34977a563b8fc4513",
+      "prior_events_bytes": 7222,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C43",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "fa5a19732396fde50308e0331d8cc60e72f204d3d7efe4886824939db2b0cbd2"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C43",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "f3c03eed37bd0770318f8df98464b0a0c158e8ae60d989ca17cafb3b9cd92410"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        17,
+        14,
+        22,
+        37,
+        42,
+        40,
+        74
+      ],
+      "blocking": [
+        58,
+        63,
+        64,
+        65
+      ],
+      "story_sha256": "a73907859239922c0d0b2f1a7bcc71f584bc125a636ef9986e5c4d600bbb7b62",
+      "events_sha256": "617fec7536f0d97b7533d8a01476f39af106ddf5a4b4c7124055ad3e4bd4a0e6",
+      "issue_url": "https://github.com/kburson/aitm/issues/50",
+      "body_sha256": "2c2eee72d78a38ca82bdb3736f28a6a5d5711451d2c30237d3aed503a8646a85"
+    },
+    {
+      "key": "C44",
+      "number": 51,
+      "created": false,
+      "prior_story_sha256": "3ad514299937e91d5cc454ff4be7a088e3311d9cb3098c0698ec82889ae76303",
+      "prior_events_sha256": "f7b967175ab689b291db717c1dfe82d2b4c8e7e7a72d32a21274c8903eb9c246",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C44",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "f2d78e974e1d689be029d77cc71f8327f9003bd9ae924845c3f125c92044c966"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C44",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "af858b3a966ae189b96fab9d3ae3bd9be52761609c89ff1bb39bb29bb01f5397"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        28,
+        36,
+        49
+      ],
+      "blocking": [
+        65,
+        66
+      ],
+      "story_sha256": "575009e7ca5e845367891d07692232c9d4b1291ba57ba1e88aefe8c1a5cea4c1",
+      "events_sha256": "f7b967175ab689b291db717c1dfe82d2b4c8e7e7a72d32a21274c8903eb9c246",
+      "issue_url": "https://github.com/kburson/aitm/issues/51",
+      "body_sha256": "7241fedb1f6d37137c91438e9e88e310407743bf3ed311c3c4cf9ecf1258fedb"
+    },
+    {
+      "key": "C45",
+      "number": 52,
+      "created": false,
+      "prior_story_sha256": "f7d625f1a864ab9ffa301b0ccae7af861e9b6788b586bb44063f4ca1a230572f",
+      "prior_events_sha256": "9da8dfe758edaf7189deb714eb159a08db28fe2fbe8bb8acee596e1259f1b507",
+      "prior_events_bytes": 7225,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C45",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "c8cef512e34c5c9ba1be8178a138269adebdcc62ea6915ff8d2d5a0b0dfd36af"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C45",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "c8cef512e34c5c9ba1be8178a138269adebdcc62ea6915ff8d2d5a0b0dfd36af"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        38,
+        30,
+        42,
+        45,
+        46,
+        49,
+        21
+      ],
+      "blocking": [
+        57,
+        65
+      ],
+      "story_sha256": "35fbedb855f7e579597c30a3e5ce3dcbeec709c7f72865b0a12e426e71f1a8ee",
+      "events_sha256": "9da8dfe758edaf7189deb714eb159a08db28fe2fbe8bb8acee596e1259f1b507",
+      "issue_url": "https://github.com/kburson/aitm/issues/52",
+      "body_sha256": "ae39f3fba6f3f194317ae30f49fa53cf9ff9fe8c8b364bd167fb1e7e8beddfd9"
+    },
+    {
+      "key": "C77",
+      "number": 78,
+      "created": true,
+      "created_at": "2026-11-09T13:42:09Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C77",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "35eb268529173fb55c14fc63e78ad3206c3e738367554c25f2fc8712d42ffab5"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        5,
+        6
+      ],
+      "blocking": [
+        53
+      ],
+      "story_sha256": "6f7d9038f2fc8d4bcbe58d03195be0f37d1ddeb6c73e74d9e2b4fea4e0eac9fd",
+      "events_sha256": "9c9bd338b27564141b909a8943389adfef79d739a7618bfa340351975c5ceb8b",
+      "issue_url": "https://github.com/kburson/aitm/issues/78",
+      "body_sha256": "cad09b47f229b4b2d3f3908d0d14ccba303d84c0585bd84641b4909d2c0ae03e"
+    },
+    {
+      "key": "C46",
+      "number": 53,
+      "created": false,
+      "prior_story_sha256": "5608638af68873576d1cf6d394fcd98e61d4395d6298fe86dd14f8b35d2b7ea8",
+      "prior_events_sha256": "db29c79455e479b2f44ea9fa8e6e5ef9154a9688b8044cb6c0b98372ca3376af",
+      "prior_events_bytes": 5131,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C46",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "335501a9a314721c76f1f4d6588f3ddb1886a98c13fdae1c97fe64d8d23584f1"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C46",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "abc9d63f1fbc4d33f4651d652b78f807d268a73d3c5eaa0287f85ac68f219a25"
+      },
+      "hours": 4.0,
+      "blocked_by": [
+        5,
+        11,
+        34,
+        33,
+        75,
+        78
+      ],
+      "blocking": [
+        54
+      ],
+      "story_sha256": "c166480b7b74d602e42b5c94a0378e0e8f6306edc6d3b491ca58d40b844a232e",
+      "events_sha256": "832b5032d381b853efbd353577ed1742dd195b8a64e29f17fdf2a64f5c0027c5",
+      "issue_url": "https://github.com/kburson/aitm/issues/53",
+      "body_sha256": "4abd2f500b0a65d5025982a15673fe781cdee4c323932a06b4af676399498f7d"
+    },
+    {
+      "key": "C47",
+      "number": 54,
+      "created": false,
+      "prior_story_sha256": "d1e64790175b69dc24150c56d4f95206361b8ed948a5f248adf7a945bba09a1d",
+      "prior_events_sha256": "32836b06e359630de6c94f823766db9df0736909c0e433d3577771e1beca014d",
+      "prior_events_bytes": 4608,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C47",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "9140a404c7dd6f93d02a77a6a6f38a0eb0ae7ed8a7fe03c896208d42fd9ef7db"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C47",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "589cf896fb1e28d1732d6d0dad44ad2b88ddae9a43c3fb75ec0a8a45f8831ecd"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        12,
+        19,
+        53
+      ],
+      "blocking": [
+        55
+      ],
+      "story_sha256": "76740ef48cf290e775bf4b25795eb181088078d56da98e8a80bd055d1f16de8b",
+      "events_sha256": "32836b06e359630de6c94f823766db9df0736909c0e433d3577771e1beca014d",
+      "issue_url": "https://github.com/kburson/aitm/issues/54",
+      "body_sha256": "f0296161c3195cd9d035840f1585f83e9c40976c2f363286761596e0725e0da9"
+    },
+    {
+      "key": "C48",
+      "number": 55,
+      "created": false,
+      "prior_story_sha256": "b779b94f727dceaec0715c7cf78d8c71d83539ad95ef40c63ea23ab2d07bbc37",
+      "prior_events_sha256": "7c86420d087a1a57a49902990cfd5e8e3451f4c884334d336c7aa11cb0bed1a2",
+      "prior_events_bytes": 6177,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C48",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "3869d4fb316e357b97e54b06e5a30d1f6263ef879109a4eb6d237aa8ab1fef6a"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C48",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "e42e4364978e3a408f39fcd5976b8c9a4f9f4f3cd9ba3cc944ca8d84e078d451"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        17,
+        22,
+        35,
+        54,
+        18
+      ],
+      "blocking": [
+        56,
+        65
+      ],
+      "story_sha256": "d6c856fc3eb1f35c661e95b8f230ee1e344676b76a6a3aeb93e2af297c4fd960",
+      "events_sha256": "7c86420d087a1a57a49902990cfd5e8e3451f4c884334d336c7aa11cb0bed1a2",
+      "issue_url": "https://github.com/kburson/aitm/issues/55",
+      "body_sha256": "2c6220fa55df2102081ab7579fc147e068495df4e965a1bd8a54bd70c0954ea2"
+    },
+    {
+      "key": "C51",
+      "number": 56,
+      "created": false,
+      "prior_story_sha256": "de4ded77af8e0ee99b3cc8395912e05007c8c85f607a57a46891204bd9fcef45",
+      "prior_events_sha256": "c7c3a50122fe73e8a580fd32112f4b1dc7d9a2c253d6b5c4508baf4d4f73aeab",
+      "prior_events_bytes": 5126,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C51",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "88abe31c6df678c12697ba4ee90dc16ef49d87f93e294007d089d516f6e1413e"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C51",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "66c148d074db63fbb86360c992cfeb36cdd6889be2d2da1df518e241b7199b05"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        55,
+        23
+      ],
+      "blocking": [
+        66,
+        68,
+        69
+      ],
+      "story_sha256": "98653624200b1f01db246f5409b719b1b5875f0c8eb7b24aeab56e55b1922501",
+      "events_sha256": "497be2aff562fb1c18689fda5a706ac5a929383b148ba47237a0424c03b545e6",
+      "issue_url": "https://github.com/kburson/aitm/issues/56",
+      "body_sha256": "5ed10b222709a9404e830b4822d473902d708f013c157bf40fc805f89cd64306"
+    },
+    {
+      "key": "C61",
+      "number": 57,
+      "created": false,
+      "prior_story_sha256": "b689b940893fddf74a4b637bbf550fe9bf2f4f8f2b0af642614422598e58d550",
+      "prior_events_sha256": "afb8ab35586137df169cd908d5c91653f318521c454d7e71c1e0a81072484125",
+      "prior_events_bytes": 7746,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C61",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "6b4a7422e590ec719fd12a84a7cbc34af79e4e9f224ef064f708594ae6602875"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C61",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "3ad24fb837cd77990818adf364470ed6f5d9eaa88d618bc0389de8773f5be4f6"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        21,
+        36,
+        41,
+        42,
+        45,
+        49,
+        52
+      ],
+      "blocking": [
+        61,
+        65,
+        67
+      ],
+      "story_sha256": "b0e33260b2494ac218a4bbe90f76244974a7e412f707bbc23804ce0414c948c1",
+      "events_sha256": "afb8ab35586137df169cd908d5c91653f318521c454d7e71c1e0a81072484125",
+      "issue_url": "https://github.com/kburson/aitm/issues/57",
+      "body_sha256": "272300017635763e7e2c66bf5696c366951502c80b09f0ed7ae325d9a6a61e31"
+    },
+    {
+      "key": "C64",
+      "number": 58,
+      "created": false,
+      "prior_story_sha256": "cc38d2b4fb226cd95e97fbcb6b54dc83f02fda7c200099e2e014989387ebfcf3",
+      "prior_events_sha256": "f7752f5b78d25b4c58b66f5cd603e8f8e79f0b4d174affef717a23015bb10e77",
+      "prior_events_bytes": 6695,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C64",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "6138278a4c4ec472dde990c22fc48246f25475451e6a577d5e0e4c199cfed47b"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C64",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "6138278a4c4ec472dde990c22fc48246f25475451e6a577d5e0e4c199cfed47b"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        17,
+        18,
+        27,
+        50
+      ],
+      "blocking": [
+        59,
+        60,
+        61,
+        62,
+        82
+      ],
+      "story_sha256": "48c2c451832024efd450f83bee4eb222d4e197718c3fe70553bc5acdd860fa54",
+      "events_sha256": "ef35a09298845e6b24cc2b38bc781cf2a562b1683d2b4a6fb5f79ae1057a0abf",
+      "issue_url": "https://github.com/kburson/aitm/issues/58",
+      "body_sha256": "d1374f299804758fd0870373d3bfd86c86b9cefed28596a933a76da43ecb5423"
+    },
+    {
+      "key": "C70",
+      "number": 59,
+      "created": false,
+      "prior_story_sha256": "7df1b75a093950f17814630500d5d8c3421ba3c4b12c04c92136adb34839a16c",
+      "prior_events_sha256": "bac9fdc11732c72af51f9501179c11c4e5d8639eb5f9b5dd742a6ba18c03c47a",
+      "prior_events_bytes": 6177,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C70",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "7546a42ef8211179f9550a93f7b31317009f6282ea3597cc01d8562055696c25"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C70",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "7546a42ef8211179f9550a93f7b31317009f6282ea3597cc01d8562055696c25"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        40,
+        58,
+        36,
+        37,
+        39
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "2d1addca72f67a7865e98cff7e2304e391305cf7ffd25432137c35328f599da9",
+      "events_sha256": "bac9fdc11732c72af51f9501179c11c4e5d8639eb5f9b5dd742a6ba18c03c47a",
+      "issue_url": "https://github.com/kburson/aitm/issues/59",
+      "body_sha256": "748ca03d6d8214ded624f08c788828bcd2e05f5722751907498a9437d0541830"
+    },
+    {
+      "key": "C50",
+      "number": 60,
+      "created": false,
+      "prior_story_sha256": "fae7a1afee38bf82bd34e1cafa66bded8b36cee455ea44d8f6aecaaa4ee0c978",
+      "prior_events_sha256": "0ab446265ee18e54801cd911c0a0af195825e6737a460e19dec795800337cfb6",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C50",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "7fd21eae240091faed932551b8955043425202bcf2f6dc3ba7815d0b81a99de9"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C50",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "7fd21eae240091faed932551b8955043425202bcf2f6dc3ba7815d0b81a99de9"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        58,
+        22,
+        39
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "a8ea06e0170049f518a72fa5f5258ad6101b9204f5775b61cd020c90de8d7b04",
+      "events_sha256": "0ab446265ee18e54801cd911c0a0af195825e6737a460e19dec795800337cfb6",
+      "issue_url": "https://github.com/kburson/aitm/issues/60",
+      "body_sha256": "d3b919668c91de91844c95e00fddf573a49f79029d706e5b86f4bc1157779f36"
+    },
+    {
+      "key": "C62",
+      "number": 63,
+      "created": false,
+      "prior_story_sha256": "d4fbbb459a22d29280ba936dcab1e5c5ee5044c664b1c4a1aab91df567a0419e",
+      "prior_events_sha256": "57c48ce5137adf7f4ab6aee1173a44318b2810f2fca5fedcbd2058e30fdc84ca",
+      "prior_events_bytes": 5132,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C62",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "21a4bfc15642d00f1432f0c4337cd2aeed254751c64116c2d1bba7eeeabd2825"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C62",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "9d18a59713d21301ebe3547e1d2daa9a2363b1c0015b5e8f400f899c87f73563"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        26,
+        38,
+        45,
+        49,
+        50
+      ],
+      "blocking": [
+        64,
+        79,
+        80,
+        81,
+        65
+      ],
+      "story_sha256": "d95101e0a26de273fbafa41636d9f5ca9382121b61353e494217f776f13aaeae",
+      "events_sha256": "08519aaddaac1db9ceb0d0f1a66b9a935cf748b24d764cbf109de0d8afc043ec",
+      "issue_url": "https://github.com/kburson/aitm/issues/63",
+      "body_sha256": "da7338f87d013bdfff7ea5fcdf833851fbaab452cc6457c0f65b67e52958b293"
+    },
+    {
+      "key": "C63",
+      "number": 64,
+      "created": false,
+      "prior_story_sha256": "6e75d99fe5187323e0565750f097fba1f741f0f697d5439b9c47e767b337ed9b",
+      "prior_events_sha256": "cf783000ccf4f97685b15917d3a4b7bd84100aeb4bae3d032864b10c14690b82",
+      "prior_events_bytes": 6697,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C63",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "dc042b5c8674bb8d3589f75e8c4aca9fc27d49d22153ec8f9820aadcc881dd0f"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C63",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "a3388b811dad08bf625075fd7a851b03cf2bed2b2cd4b7407e2fcdd5f1c717c2"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        20,
+        14,
+        15,
+        50,
+        3,
+        63
+      ],
+      "blocking": [
+        79,
+        65,
+        82,
+        66,
+        69
+      ],
+      "story_sha256": "1124de152c62f4448eb42b41cf85c8b46acbbe0b91b3b271473953a6eb774904",
+      "events_sha256": "850c5036331d4a636510837df2103d61cee4f069d81f885d1cf3a9991aa348fe",
+      "issue_url": "https://github.com/kburson/aitm/issues/64",
+      "body_sha256": "6f2411e0eb38fb05ea43350e8c7a19da81a7c7b9a62fabb0fe386e2c58510765"
+    },
+    {
+      "key": "C76",
+      "number": 79,
+      "created": true,
+      "created_at": "2026-11-09T13:42:10Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C76",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "cd996ca3e63bba34abbda6cda18d03e7a801f126a690ea43c1bf7fb25dfa5e9d"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        37,
+        38,
+        40,
+        42,
+        45,
+        46,
+        47,
+        48,
+        49,
+        63,
+        64
+      ],
+      "blocking": [
+        80,
+        61,
+        62,
+        81,
+        65,
+        82,
+        66
+      ],
+      "story_sha256": "24592c5c63aa5d2cd39b36a228b847eacf4de13f869f7b2c4df9ff5faf5fae4e",
+      "events_sha256": "a4a8cfce279d6f83f798ab10420f685b72fb93167db956c8c4ea2e59b857274d",
+      "issue_url": "https://github.com/kburson/aitm/issues/79",
+      "body_sha256": "8d7d211ed694a3da19a73f5573cdf7e8c8551cf13cc67031174117f787ed6f2f"
+    },
+    {
+      "key": "C79",
+      "number": 80,
+      "created": true,
+      "created_at": "2026-11-09T13:42:11Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C79",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "b780dff78b37e38aa62830b75a68917d9367a5ad9375fa5c6354c25c622c0b75"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        79,
+        42,
+        45,
+        46,
+        49,
+        63
+      ],
+      "blocking": [
+        61,
+        62,
+        81,
+        65,
+        82,
+        66
+      ],
+      "story_sha256": "233503e587568f9b72d0b67cc395364bf2abb4733cf7e746d9514cacc96ea39b",
+      "events_sha256": "35f4c832cf176519232f6b044d7cd5f3d4e573ac2dcda00997381e313b177a98",
+      "issue_url": "https://github.com/kburson/aitm/issues/80",
+      "body_sha256": "50a03679b83eb7d5fd620c0fa8164d53707245c3b2331813d84d9f95a727940b"
+    },
+    {
+      "key": "C65",
+      "number": 61,
+      "created": false,
+      "prior_story_sha256": "13b89b8edb2b753c9c554ddce24e4c6ebe6d8282c52350a336434cdf1429a0e3",
+      "prior_events_sha256": "2d7592a788104ea3707013757c4712f0e8e0ca516bdae2a0b764bedfaa2d6732",
+      "prior_events_bytes": 7749,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C65",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "8b290dd1d7b9f8adfc111afa6e9ae328469c228c773131ea4b043c37a938e85f"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C65",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "4f91a91331bfb5fc2e5eada026da96bf619004141fa5da9aca95e1a1ad2ad1f4"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        58,
+        39,
+        40,
+        41,
+        42,
+        45,
+        49,
+        57,
+        79,
+        80
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "6387cd992bc740fa53ae1f0d145d74a0504465948b77e49fef6ab54f18f308e6",
+      "events_sha256": "198a40feefbdd796902f267986096c86b7c697860b12f77db2eb60b679c73fee",
+      "issue_url": "https://github.com/kburson/aitm/issues/61",
+      "body_sha256": "500c4df4a094dae8fbca1a4fddb95a03111dc3aaf63bb53c74fb4c6f6b7ddf9a"
+    },
+    {
+      "key": "C66",
+      "number": 62,
+      "created": false,
+      "prior_story_sha256": "6bd9b639a05c4ae1babd157810ded1a3645f22f9662227e79234d3efcf3eee92",
+      "prior_events_sha256": "261c8d803b852863c28ab4d8c52bac2e703e759e0f409ee46013361f9b188bba",
+      "prior_events_bytes": 5129,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C66",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "3fb8b72c29d265f6db03200619f514c2beb7afa839f275a0ef84fa83d5cffc33"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C66",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "7214a390d4c36f250302a5f66b34fd6de63050067897f031eb5f25ee685656ed"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        58,
+        48,
+        49,
+        79,
+        80
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "1d8acd49861902c299c63925478c2e79d883d667f5733c49a025699c15accc53",
+      "events_sha256": "156cdbff5899c3eda9e2d747eb288d3811b2ea1c843df7157e4b0ab0a8cf0d71",
+      "issue_url": "https://github.com/kburson/aitm/issues/62",
+      "body_sha256": "f2a5e91e8d242c0f8dd3d41a7bb353979b6e2e0f501214f4f9929bfd5b37d9c5"
+    },
+    {
+      "key": "C78",
+      "number": 81,
+      "created": true,
+      "created_at": "2026-11-09T13:42:12Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C78",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "7dc89ec29bd73668378447ef5794a5cd3553a46a9cc79b686e006e4f9160f3cd"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        23,
+        37,
+        38,
+        63,
+        79,
+        80
+      ],
+      "blocking": [
+        65,
+        66
+      ],
+      "story_sha256": "e0bb3835b856875f9cfc8cd26cae078ed7389ba1e27dea8deec0f4ea2783e9d3",
+      "events_sha256": "a1c41c695d47d8c78e8da58a58b508d1d53e03d434a4fc93b6bd675415a4655b",
+      "issue_url": "https://github.com/kburson/aitm/issues/81",
+      "body_sha256": "9572abb3f0e6abf1980ef8577fe4052967ca3026572dc408db6137057934d11a"
+    },
+    {
+      "key": "C49",
+      "number": 65,
+      "created": false,
+      "prior_story_sha256": "e0fe1eef29b9b72abea7490a02fa02accd898e7c0a4b772bac12a3d7d35ca8a1",
+      "prior_events_sha256": "9c7b278740a6a00352d1f2f61bd820d236d3a9866f1db1da14a88ae3a007c7ec",
+      "prior_events_bytes": 15603,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C49",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "bef8bb31e99862b432f75bd1f90cca80b174c0a5df331629ea3e0b4b7c859082"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C49",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "6525929513b816d5c443023bd0069be5a865f2162988094703fe1627d1fbdc7b"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        20,
+        23,
+        24,
+        26,
+        35,
+        36,
+        40,
+        42,
+        45,
+        46,
+        49,
+        50,
+        51,
+        52,
+        57,
+        63,
+        27,
+        18,
+        48,
+        55,
+        64,
+        79,
+        81,
+        80
+      ],
+      "blocking": [
+        66,
+        67,
+        68,
+        69
+      ],
+      "story_sha256": "ffa753098832a68a7e0b09a72a158240fb43c9e8f989e6e76e88c57b3b2a0cbe",
+      "events_sha256": "35f4b76f7cfcb0aebbb751cc49df0970efffae084b93c2d467d12cc9a3d96ac2",
+      "issue_url": "https://github.com/kburson/aitm/issues/65",
+      "body_sha256": "25937de99abfdb0c3b7339d6b808e8ee3802f10d080c54cb3b846bd3ba7cdaa5"
+    },
+    {
+      "key": "C75",
+      "number": 82,
+      "created": true,
+      "created_at": "2026-11-09T13:42:14Z",
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C75",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "f165431a5c590a27f3fedaac03ea5dc3d4998e6271999343b83e9fc9b3f6888e"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        75,
+        27,
+        26,
+        37,
+        40,
+        58,
+        64,
+        79,
+        80
+      ],
+      "blocking": [
+        66,
+        69
+      ],
+      "story_sha256": "04e55e67492d307006777428a4c4fcb6ba141617712816271dca23976f2e5667",
+      "events_sha256": "96a03a9fd098f4e90bf9bdb9fe614284cf4f0af4519a7f252e26c2df0d1b6ddd",
+      "issue_url": "https://github.com/kburson/aitm/issues/82",
+      "body_sha256": "2e739c815ecb3c23dda8ca8ce686bc988f1f8169de8bbb4c77bbfbfcd3813d97"
+    },
+    {
+      "key": "C67",
+      "number": 66,
+      "created": false,
+      "prior_story_sha256": "17cb444b27c5cbf2f61fa5f01bb16849d140257eaa0559cf73ebfda0e95bc1b8",
+      "prior_events_sha256": "4c819db6c364b8c9c6d24f5d9c9d723c340026a5297291f07ad8e41ad367d096",
+      "prior_events_bytes": 5653,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C67",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "2b3e83bb81e6ffa5a8d44ad26364deb12ee229d838ef3b6012795d557d71d341"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C67",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "f218b6d432fee065f46b34ba7441c8cfd416d352d9a7a8e8ed9f158e2f816097"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        65,
+        56,
+        64,
+        51,
+        76,
+        74,
+        82,
+        79,
+        81,
+        80
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "107c49dc6eebcd1fef131e83eb334a7487ef7062051eb1d1742f69e1aa376347",
+      "events_sha256": "3d0be5e4cc230ec55f9a6dc689611581f44a038e087c46c43cd72189be48ec02",
+      "issue_url": "https://github.com/kburson/aitm/issues/66",
+      "body_sha256": "276a64ad8b570e83ac6cf71386b55aa7812fefb93fdd1a62b11d143fb8f70a04"
+    },
+    {
+      "key": "C68",
+      "number": 67,
+      "created": false,
+      "prior_story_sha256": "9a6314462497d01ffe6d697bc53b805aa28ae7708a4658e19a7dd406f1fbefe7",
+      "prior_events_sha256": "1ce2f9852d6430e606001e206a1673a66e60fa1ccf2633380d1084c4af6c045a",
+      "prior_events_bytes": 4605,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C68",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "1913dd11e25c934ee4854d578e532e4883c5debe89d3f6dd2683c52e2987413c"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C68",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "1913dd11e25c934ee4854d578e532e4883c5debe89d3f6dd2683c52e2987413c"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        65,
+        57
+      ],
+      "blocking": [
+        68,
+        69
+      ],
+      "story_sha256": "3482ba132cdda274fc6975c2cdba6bef585e9cb0fb2f6b9f17d31b90f0bf5afa",
+      "events_sha256": "1ce2f9852d6430e606001e206a1673a66e60fa1ccf2633380d1084c4af6c045a",
+      "issue_url": "https://github.com/kburson/aitm/issues/67",
+      "body_sha256": "49789c6fb15d7852746a0e9046e46e9e1af97e27a7a9890446bcb25bd46ec002"
+    },
+    {
+      "key": "C52",
+      "number": 68,
+      "created": false,
+      "prior_story_sha256": "c0e51315554ee617b2a6b92022f99a0e85679b7a58bd27cd48c7f0a368cfc708",
+      "prior_events_sha256": "a7f6e72004c2a52bd2eeed1217ca376d39fe1171182a87cf5f00157d1b77b73b",
+      "prior_events_bytes": 7752,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C52",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "b33a5ffdc93bf67a668dbbb8cf413c9d3b9a4c2c5f297f610db98b63a1953518"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C52",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "e0dae14d85ca05687d6297e1083ea2b03f395ab3e88ef20802acfec8e8bcaf20"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        23,
+        65,
+        60,
+        56,
+        61,
+        62,
+        66,
+        67,
+        59
+      ],
+      "blocking": [
+        69
+      ],
+      "story_sha256": "db4d09a74d077bb839ad83f3842c3f839f8aec0593f2de986abc6274f2f748d0",
+      "events_sha256": "a7f6e72004c2a52bd2eeed1217ca376d39fe1171182a87cf5f00157d1b77b73b",
+      "issue_url": "https://github.com/kburson/aitm/issues/68",
+      "body_sha256": "e04faea69f23b9b9ec660d644cca87b90d71dd44a493ceed068dbde467ae1f9b"
+    },
+    {
+      "key": "C59",
+      "number": 69,
+      "created": false,
+      "prior_story_sha256": "e8b02454de511df3347ddaf6569aebe70147f1b08f11b3efdcc95860b3dc707e",
+      "prior_events_sha256": "b55a00e5c5a0ca63228fb17e17591d4104a058c52755f09bbde09d07fee7931a",
+      "prior_events_bytes": 9324,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C59",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "37460f511c7792ceafa982d470dfe7ee35de38d932e5a4b8d405428de1c1bd02"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C59",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "111b1a495dfdfaf87b6c5119e20067c6ffcc0f6ce591eb3f90d124d434ecb04c"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        43,
+        44,
+        65,
+        60,
+        56,
+        68,
+        64,
+        61,
+        62,
+        66,
+        67,
+        59,
+        82
+      ],
+      "blocking": [
+        70
+      ],
+      "story_sha256": "7da59667422677689e6e433bc5068316f3e69bb94777bccda6d0f6f77104ab77",
+      "events_sha256": "1da74deb6f36336ba14afbdb440ec82508634c17e448ad95be6ab95525819248",
+      "issue_url": "https://github.com/kburson/aitm/issues/69",
+      "body_sha256": "db18301af7f2ccd5787dda6d104a298d0db92d1f7513b7e4825e8a67c7338110"
+    },
+    {
+      "key": "C53",
+      "number": 70,
+      "created": false,
+      "prior_story_sha256": "8b66d08890f8bb11aaae1841d341bfc02a1731007beca9b4e28ef8fcff0bfbba",
+      "prior_events_sha256": "0974800798c8f334269a29103f79f3532067e30f9d968bf1511770f4239c9d53",
+      "prior_events_bytes": 4604,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C53",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "c115de2c349bb69e7ecd54c64be7ff7526557892e5220b2145847cf36bd66b69"
+      },
+      "prior_hours": 3.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C53",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "c115de2c349bb69e7ecd54c64be7ff7526557892e5220b2145847cf36bd66b69"
+      },
+      "hours": 3.5,
+      "blocked_by": [
+        69,
+        5
+      ],
+      "blocking": [
+        71,
+        72
+      ],
+      "story_sha256": "5eeb89e9a3c9aef9847d49ce3b40524fbe8e3ee783d3a3e856b7636857e35eb8",
+      "events_sha256": "0974800798c8f334269a29103f79f3532067e30f9d968bf1511770f4239c9d53",
+      "issue_url": "https://github.com/kburson/aitm/issues/70",
+      "body_sha256": "dabf2f49482d7853f1e41d99d0f751adbd160ad950ee5c811729ba3dc16e73f9"
+    },
+    {
+      "key": "C69",
+      "number": 71,
+      "created": false,
+      "prior_story_sha256": "54b308d40d626e2a4f8eb2b868471c5b6918735e7322653f1a855496c2274e8e",
+      "prior_events_sha256": "16718c8a0dc028f9991ec06a14166f8612d2e66b0a8d83745bd17900e33bb633",
+      "prior_events_bytes": 3560,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C69",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "7775cd9009a35e67d6bbce33439e8409f511313b8295c2d4c143e092b16fba60"
+      },
+      "prior_hours": 3.0,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C69",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "7775cd9009a35e67d6bbce33439e8409f511313b8295c2d4c143e092b16fba60"
+      },
+      "hours": 3.0,
+      "blocked_by": [
+        70
+      ],
+      "blocking": [
+        72
+      ],
+      "story_sha256": "beaa6db1f0e07277436524a03d187a893251eff5ce05b42fa59cd8420a44e469",
+      "events_sha256": "16718c8a0dc028f9991ec06a14166f8612d2e66b0a8d83745bd17900e33bb633",
+      "issue_url": "https://github.com/kburson/aitm/issues/71",
+      "body_sha256": "637306370808340ece3bfb566e7fdf1c59a5f357e07a95f483da7cb0c11e9862"
+    },
+    {
+      "key": "C60",
+      "number": 72,
+      "created": false,
+      "prior_story_sha256": "4eb0010035da37dd6801c9960894ca70fd3089bc306a38d7c3758c0e3204c9da",
+      "prior_events_sha256": "e6257ff861508994a8644cd46eaf88727e43f4ec84dd40d3f3af953310224db3",
+      "prior_events_bytes": 3563,
+      "prior_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C60",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "55b94bbe77a19002ff077c122560cf185652d25c",
+        "raw-sha256": "2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd",
+        "section-sha256": "2aa13ab9c3838ef90ea7f847503cf2b8920a44fedb7a5c3c45886bba038cf172"
+      },
+      "prior_hours": 2.5,
+      "current_plan_origin": {
+        "kind": "accepted-parent-plan",
+        "story": 2,
+        "key": "C60",
+        "path": ".aitm/stories/000/2/plan/core-implementation-plan.md",
+        "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740",
+        "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8",
+        "section-sha256": "b4aab95d2d975ccc60f6f5e92f0ec1802cb033052096ec39c391c410bd39e22b"
+      },
+      "hours": 2.5,
+      "blocked_by": [
+        70,
+        71
+      ],
+      "blocking": [],
+      "story_sha256": "567ed3927b5aa864d7365a6537c1988010fd37c14d79f21f3fd64bee9604d883",
+      "events_sha256": "e6257ff861508994a8644cd46eaf88727e43f4ec84dd40d3f3af953310224db3",
+      "issue_url": "https://github.com/kburson/aitm/issues/72",
+      "body_sha256": "9c1a0f6a5d742229f5f028e14f072e7d64b70f911b9e0fa54219a081ece4a104"
+    }
+  ],
+  "parent_issue_updates": [
+    {
+      "number": 1,
+      "url": "https://github.com/kburson/aitm/issues/1",
+      "state": "open",
+      "before_body_sha256": "bb6b1c1868f2c3f574c3e0b7742c0fcca29fd7cd39b97ab77d6417c5bb2e6d3b",
+      "current_body_sha256": "fb56c4c7b78cb248e220e4b0a4a6a9e5cea438986b6bb00f3539912b5a772f82",
+      "verified_at": "2026-11-09T13:54:00.459Z"
+    },
+    {
+      "number": 2,
+      "url": "https://github.com/kburson/aitm/issues/2",
+      "state": "open",
+      "before_body_sha256": "a57f421f7feb77f6a27bedfd1cda1ad618208fa90e55b47582c199b15f524fd6",
+      "current_body_sha256": "d64bf2a236d8121a720fa9c5889fed0dc86754d7d53226dc64e484590a8bf140",
+      "verified_at": "2026-11-09T13:54:02.255Z"
+    }
+  ]
+}

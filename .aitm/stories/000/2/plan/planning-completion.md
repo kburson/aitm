@@ -1,3 +1,41 @@
+# Planning completion update — separate validations
+
+This file is an operational completion/publication handoff. It is **not a design or plan retrospective**. The phase retrospectives are [core design](../design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md) and [implementation plan](reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md); they discuss alignment, misses, lessons, confidence and remaining risks. They do not claim epic Review→Done sign-off.
+
+## Current status — 2026-11-09
+
+The owner authorized separate full-file validations of both documents. Both are accepted and published, using **gpt-6-astra/xhigh author** and **claude-opus-5-5/high reviewer**, with no model substitution. Actual fresh retrieval of every physical input line was verified before each subsequent revision/finalization.
+
+| Document | Outcome | Publication |
+| --- | --- | --- |
+| Core design | 3 rounds; 5 required findings resolved; 657/657, 709/709 and 726/726 lines verified | [3702cfd](https://github.com/kburson/aitm/commit/3702cfde855e7a2345e12439f19cc2ee9ebe7291), [record](../design/reviews/xpr-2026-11-09-core-design-fullfile/review-manifest.md) |
+| Core implementation plan | 3 rounds; 6 substantive required body findings resolved; 1487/1487, 1559/1559 and 1579/1579 lines verified | [bd4adf0](https://github.com/kburson/aitm/commit/bd4adf06c90fcf02bf0930bbdec5d477aa951740), [record](reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md) |
+| Leaf backlog reconciliation and this update | 79 open/Backlog leaves, 257.5 estimated h; 317 verified native blocking edges | The planning commit containing this update; [receipt](leaf-reconciliation-receipt.json) |
+
+The plan's native protected finding lists were empty despite six required body findings. Original responses remain unchanged; the portable manifest maps all six findings to author dispositions and explicit reviewer confirmation. No unresolved required body finding was treated as acceptance. Full-file coverage audits inspect actual Read results, not merely requests. Native authority assurance remains unavailable; declared participant/runtime evidence is not independent attestation or measured engagement.
+
+Current accepted plan raw SHA-256: `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`. Design raw SHA-256: `5eaafbc1af04f13d4de25dcf5e9dacb35042ef775e0f230be89e4fba9452f3e7`. Both preparation and native patch chains were replayed byte-for-byte. The plan preserves the published 70-leaf baseline and separately attributes preparation from the newly accepted design before review; candidate commit ab631c0 was an isolated review input, not a planning publication.
+
+## Current leaf backlog and limits
+
+The [ordered ledger and dependency waves](leaf-stories.md) maps all 79 stable keys to actual issues. Original C01–C70 remain #3–#72; only new keys were created: C74/#74, C72/#75, C71/#76, C73/#77, C77/#78, C76/#79, C79/#80, C78/#81 and C75/#82. The independently created cost-measurement spike #73 is separate and was preserved unchanged. Start with C01/#3; C02/#4 and C03/#5 become independent after its required interfaces/evidence are delivered. Follow the ledger's topological order, not numerical C-key order.
+
+All leaf estimates remain ≤4 h. The current Plan estimate is 257.5 h; original Refine 180 h/XL/P1 and earlier accepted Plan 220.5 h/70 leaves remain retained. Old events and initial drafts are not rewritten; current plan-origin changes retain the original metadata in each record and receipt. New event tails explicitly declare manual-bootstrap provenance and runtime_transition=false. The original [issue-creation receipt](leaf-issue-receipt.json) remains historical; the new reconciliation receipt records current bodies, graph, old/new source digests and preserved event-prefix hashes.
+
+All issues/epics remain open; historical story state remains Backlog. No code, product tests, runtime transitions, leaf Design/Plan/JIT acceptance, implementation clock, trunk merge, release, adoption, global permission/configuration change or tooling repair occurred. Planning checks verify estimates/DAG/shared paths, response/digest/patch lineage, exact GitHub readbacks, local record/event/link consistency and scoped publication. Product behavior remains unimplemented.
+
+## Procedure resolution and remaining choices
+
+The owner's earlier decision about an additional validation is now fulfilled by these **separate** accepted records. Historical native acceptance and the historical reread shortfall remain documented in [review-procedure-audit.md](review-procedure-audit.md); no old rounds were changed, backdated or extended beyond their cap. Both blocked native attempts remain preserved. For each new successful validation, all 34 selected private files, including its full reviewer transcript, were archived and compared byte-for-byte before app archival; reinstallable runtime caches/sockets were excluded. Public originals and portable collateral were verified first.
+
+Open owner choices remain global review depth/sequence, expansion completion, second-trip cap, hosted every-push audit, later provider/harness details and full-install name. Production review policy, M2 identity-provider readiness, release authority and C6 freeze/handoff/issuer proof remain later checkpoints. They do not block completion of this planning-only assignment. Before future implementation, obtain its scope/authority and satisfy each leaf's own applicable Design/Plan/JIT against current source; acceptance here does not start that work.
+
+## Historical completion report (retained)
+
+The report below describes the earlier 70-leaf publication and the then-unresolved reread decision. Its outstanding-decision language is historical and is resolved by the current update above.
+
+---
+
 # Autonomous planning results
 
 The scoped planning artifacts and leaf backlog are published. Native XPR accepted the final core plan, but **the requested fresh full-file reread pattern was not followed in later XPR rounds**; that process decision remains open before implementation. All sealed required findings were resolved within the five-round cap. No implementation, trunk merge, release, production adoption, global configuration change, tooling repair or epic closure was performed.
