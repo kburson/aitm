@@ -152,3 +152,16 @@ A reviewer read the core design as its builder would and raised eight questions.
 - **[user]** The branch starts from the very base, before anything was committed, so its workspace is clean. **[call]** Implemented as an orphan whose root commit has an empty tree (no shared files, no shared history), marked with an `aitm-planning-root` trailer so `init` and `doctor` can recognise it.
 - **[user]** Installation must protect the planning branch. Where the API can't do it, initialization gives the user instructions. **[call]** The git host provider gets `protect_branch` and `default_branch`. GitHub uses the rulesets API first and classic protection as the fallback. `init` never commits to the default branch itself; it writes `.aitm.toml` and `.gitignore` for the user to land through their PR flow.
 - **[agreed]** Found 2026-11-08: neither `trunk` nor `planning` on kburson/aitm was protected. **[user]** Protect both. Done 2026-11-08 with rulesets: "aitm: protect trunk" (id 26821811: no deletion, no force-push, PR required with 0 approvals) and "aitm: protect planning" (id 26821812: no deletion, no force-push). **[call]** No bypass actors on either, because agents use the owner's token; an override means an admin editing or disabling the ruleset in Settings → Rules.
+
+## Guarding the planning branch (2026-11-08)
+
+- **[user]** How do we protect the planning branch from an agent merging implementation code into it, a PR targeting it, or a user checking it out to edit directly and leaving it open in a worktree that is implementing story code?
+- **[agreed]** Six layers, recorded in the core design ("Guarding the planning branch"):
+  1. Unrelated history: verified, GitHub reports "No common ancestor between planning and trunk".
+  2. A host ruleset with required linear history.
+  3. Git hooks installed by `init`: pre-commit, pre-merge-commit and pre-push checks of the planning invariants.
+  4. Harness deny rules.
+  5. Core checks: a worktree check on every command; fetch validation that stops writes even in advisory mode; `aitm planning repair` as a fast-forward fix.
+  6. A GitHub Action that audits every push.
+- **[agreed]** Server-side path restriction is impossible: GitHub's file-path push rules apply repo-wide, not per branch.
+- **[open]** Add `required_linear_history` to the live "aitm: protect planning" ruleset (26821812). Not yet applied.

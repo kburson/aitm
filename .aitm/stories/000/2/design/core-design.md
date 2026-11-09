@@ -118,11 +118,30 @@ Everywhere else in this document, "`planning`" means the branch named by `[store
 1. **Detect the default branch.** It reads the remote's HEAD (`git symbolic-ref refs/remotes/<remote>/HEAD`, or the git host provider when one is configured) and writes it as `[store] trunk`.
 2. **Choose the planning branch name.** It suggests `planning`. Interactively, the user can accept it or type another name. Non-interactively, `--planning-branch <name>` sets it, and the default is `planning`. The name must be a valid ref name and must differ from the default branch (`trunk`, `main`, `master` or whatever step 1 found). It must not already exist locally or on the remote, unless that branch is already an aitm planning branch (its root commit carries the `aitm-planning-root` trailer).
 3. **Create the branch with no shared history.** The branch is an orphan: its root commit has no parent and the empty tree, so nothing from the default branch is in it, and none of the default branch's history is either. The root commit message carries the trailer `aitm-planning-root: v1`. A second commit adds `.aitm/README.md`. Both commits are written through the plumbing backend, so nothing is checked out. The branch is then pushed.
-4. **Protect the branch.** It calls `githost.protect_branch(branch, rules)` with: no deletion, no force-push (fast-forward only), no PR requirement, and no bypass actors *(builder's call: agents run with the owner's token, so an admin bypass would also be an agent bypass; the deliberate override is an admin editing or disabling the rule)*. The provider returns `applied`, `already-protected`, or `manual` with step-by-step instructions and a settings URL. It returns `manual` when the API can't do it (no admin permission, a plan that doesn't support protection on this repo, or a host without an API). `init` prints those instructions and records the result. With no git host provider, it always prints the generic instructions.
+4. **Protect the branch.** It calls `githost.protect_branch(branch, rules)` with: no deletion, no force-push (fast-forward only), linear history required (no merge commits), no PR requirement, and no bypass actors *(builder's call: agents run with the owner's token, so an admin bypass would also be an agent bypass; the deliberate override is an admin editing or disabling the rule)*. The provider returns `applied`, `already-protected`, or `manual` with step-by-step instructions and a settings URL. It returns `manual` when the API can't do it (no admin permission, a plan that doesn't support protection on this repo, or a host without an API). `init` prints those instructions and records the result. With no git host provider, it always prints the generic instructions.
 5. **Write the trunk-side files.** It writes `.aitm.toml` and adds `.aitm/` to `.gitignore` in the working tree. It does not commit them: trunk is normally protected, so the user lands them through their usual PR flow. `init` prints the exact commands to do that.
-6. **Run provider init steps.** Provider extensions add their own steps (the GitHub extension creates the Project and fields, and protects the default branch the same way).
+6. **Install git hooks.** It installs the planning-branch hooks described below into the clone's shared hooks directory (`git rev-parse --git-common-dir`/hooks, or the configured `core.hooksPath`). It chains to any hook already there rather than replacing it.
+7. **Run provider init steps.** Provider extensions add their own steps (the GitHub extension creates the Project and fields, and protects the default branch the same way).
 
-`aitm doctor` re-checks the steps that can drift. These are: the configured branch exists and is an aitm planning branch, it isn't checked out in any worktree, `.aitm.toml` is on trunk, and the branch is protected (where the provider can read protection). It prints the fix for anything missing, including the manual protection steps again.
+## Guarding the planning branch
+
+The planning branch must hold only `.aitm/` story data. Three accidents threaten that: an agent merges implementation code into it, someone opens a PR into it, or someone checks it out and commits story code there. Six layers defend it, from strongest to weakest:
+
+1. **Unrelated history (structural).** The planning branch shares no ancestor with the default branch. GitHub refuses to compare or open a PR between them (verified on kburson/aitm 2026-11-08: "No common ancestor between planning and trunk"), and `git merge` refuses without `--allow-unrelated-histories`.
+2. **Host ruleset.** No deletion, no force-push, linear history required. Linear history rejects every merge commit, whether pushed directly or created by merging a PR. aitm's writes are single-parent commits and pass. (GitHub's file-path push rules apply to the whole repo, not to one branch, so "only `.aitm/` on this branch" cannot be enforced on the server.)
+3. **Git hooks installed by `init`.**
+   - `pre-commit` and `pre-merge-commit` refuse any commit or merge while the planning branch is checked out. aitm's writer uses `commit-tree`, which runs no hooks, so it is unaffected.
+   - `pre-push` checks every new commit bound for the planning branch against the **planning invariants**: one parent; changes only under `.aitm/` (plus the root `README.md`); no ancestor shared with the default branch.
+   - Hooks can be skipped with `--no-verify`. They stop confusion, not intent.
+4. **Harness hooks** (`aitm-harness`). They deny agent commands that check out or switch to the planning branch, add a worktree on it, open a PR with it as the base, or merge with `--allow-unrelated-histories`. Like all hooks here, a backstop, never required for correctness.
+5. **Core checks.**
+   - Every command checks `git worktree list --porcelain`. If the planning branch is checked out anywhere, writes are refused with the worktree's path and the fix (`git worktree remove <path>` or `git switch <story-branch>`). `aitm bind` refuses to bind in a worktree on the planning branch.
+   - Every fetch of the remote planning branch validates new commits against the planning invariants. On a violation the core stops writing, **in advisory mode too**, because the store itself is damaged, and records the bad commits.
+   - `aitm planning repair` writes a new commit whose tree is the last valid tree, on top of the bad tip. It is a fast-forward, so the ruleset allows it. The bad commit stays in history; the files are clean.
+   - If the default branch's history was merged in, layer 1 is lost: the branches now share history. Restoring it needs an admin to disable the ruleset and reset the branch. `aitm doctor` reports this and prints the steps; aitm never does it.
+6. **Server-side audit** (`aitm-github`). A GitHub Action on every push to the planning branch runs the same invariant check and opens an issue on violation. This catches pushes from clones without the hooks.
+
+`aitm doctor` re-checks the steps that can drift. These are: the configured branch exists and is an aitm planning branch, it isn't checked out in any worktree, `.aitm.toml` is on trunk, the hooks are installed, the remote branch passes the planning invariants and still shares no history with the default branch, and the branch is protected (where the provider can read protection). It prints the fix for anything missing, including the manual protection steps again.
 
 ## Store layout
 
@@ -425,7 +444,7 @@ Every command supports `--json` (stable output schema) and exits non-zero only o
 
 | Group | Commands |
 | --- | --- |
-| setup | `init`, `doctor`, `index rebuild` |
+| setup | `init`, `doctor`, `index rebuild`, `planning repair` |
 | ideas | `idea add`, `idea list` |
 | drafts | `draft new`, `draft open`, `draft discard`, `draft list` |
 | stories | `graduate`, `describe`, `show`, `list`, `search`, `explain`, `link` |
@@ -460,6 +479,7 @@ The core is done when, in a temporary repo with only `aitm-core` installed:
 6. Eight concurrent processes binding eight different stories and syncing 50 times each produce a linear `planning` history with no lost writes.
 7. Deleting the index and running any command rebuilds it with identical query results.
 8. A sample extension registers an event type, a guard and a command; a second extension claiming the same event type is refused at load.
+8a. In a temporary repo with the hooks installed: a commit while the planning branch is checked out is refused; a push to it of a merge commit, a commit touching a path outside `.aitm/`, or a commit sharing history with the default branch is refused; aitm's own writes pass. A violating commit injected past the hooks stops core writes, and `aitm planning repair` restores the last valid tree as a fast-forward.
 9. `aitm migrate v0` upgrades the hand-built #1 and #2 records with no data loss.
 10. Performance budgets are met.
 

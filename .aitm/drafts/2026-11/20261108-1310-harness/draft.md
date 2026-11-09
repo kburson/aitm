@@ -18,6 +18,7 @@ depends-on: [aitm-core]
 - One Python hook entrypoint; per-harness translators normalise each harness's envelope in and denormalise the result out (replaces `grok-wire.mjs`). Contract tests against recorded real payloads from each harness.
 - Hooks are accelerators and recorders, never required for correctness. Double-firing (Grok native + Claude-compatible hooks) must be harmless.
 - Per-harness quirks live in the translator: session ID variable, transcript location, deny semantics, trust model.
+- Pre-tool-use deny rules guarding the planning branch (layer 4 of "Guarding the planning branch" in the core design). They deny checking out or switching to the configured planning branch, `git worktree add` on it, `gh pr create --base <planning>`, and `git merge --allow-unrelated-histories`. They also deny agent calls to `aitm pivot`, the one human-only command.
 - Optional MCP server over the same functions as the CLI.
 - `uvx aitm install --agent claude,codex,grok` writes each harness's files.
 - Hook latency target < 100 ms; import-light hook module; never via `uv run`.

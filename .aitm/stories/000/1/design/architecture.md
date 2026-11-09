@@ -80,6 +80,14 @@ The rewrite exists because ai-task-manager made the GitHub issue body its databa
 
 When `aitm init` installs aitm into a host repo, it detects the default branch and suggests `planning` as the planning branch name; the user can choose another name, but it must differ from the default branch. The choice is stored in `.aitm.toml` on the default branch. The planning branch is an orphan whose root commit has an empty tree, so it shares no files or history with the default branch. `init` protects it through the git host's API, or prints step-by-step instructions where the API can't (no admin rights, plan limits, no API).
 
+The planning branch must never receive implementation code. Six layers guard it, detailed in the core design ("Guarding the planning branch"):
+1. Unrelated history: GitHub can't open a PR between it and trunk.
+2. A host ruleset requiring linear history.
+3. Git hooks installed by `init` that refuse commits on a checked-out planning branch and pushes that break the planning rules.
+4. Harness hooks that deny agents' checkout, PR and merge commands.
+5. Core checks that refuse writes while the branch is checked out anywhere and stop on a damaged remote, with `aitm planning repair` as a forward fix.
+6. A GitHub Action that audits every push.
+
 `planning` is never merged into `trunk`. Its history is never rewritten, so `blob/planning/...` links always resolve to the latest file and SHA links are permanent snapshots. The store location (remote and branch) is configuration, so moving planning data to its own repo later is a config change.
 
 ## Data model
