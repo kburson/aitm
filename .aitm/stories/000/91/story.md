@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 91
 title: "[Usage U07] As-of export and C44 compatibility proof"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/91"
 parent: 83
 children: []
 blocking: [92]
 blocked-by: [86, 90]
 created: "2026-11-09T14:42:20Z"
-updated: "2026-11-09T19:11:40+00:00"
+updated: "2026-11-09T19:29:20+00:00"
 last-branch: "codex/aitm-usage-u07"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U07", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "fea861f3410e15445e87d45afc00bd36b07026184cfb958f6e05b19d3d05b50c"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U07", "path":
 
 # [Usage U07] As-of export and C44 compatibility proof
 
-[GitHub issue](https://github.com/kburson/aitm/issues/91) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/91) · [Parent #83](../83/story.md) · Review
 
 **Required predecessors** [#86](../86/story.md), [#90](../90/story.md)
 
@@ -39,3 +39,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U07", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
