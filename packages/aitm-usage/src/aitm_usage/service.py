@@ -327,6 +327,58 @@ def stage_source_anchor(ledger: Ledger, anchor_path: Path) -> InboxCommand:
     return command
 
 
+def _anchor_attestation(
+    ledger: Ledger, command: InboxCommand, effect: Revision, sequence: int
+) -> tuple[str, bytes]:
+    digest = ledger.validate_command(command)
+    identity = json.dumps(
+        (sequence, digest.value, _encode(effect, Revision)),
+        separators=(",", ":"),
+    )
+    proof = ledger.pseudonymize("collector-anchor-admission", identity)
+    return f"{command.command_id}.{sequence}.attested", proof.value.encode("ascii")
+
+
+def _anchor_commit_sequence(
+    ledger: Ledger, receipt: Revision, effect: Revision, cutoff: int
+) -> int | None:
+    # The fixed view identifies the exact canonical revisions. A second
+    # verified read-only snapshot is bounded to the same historical cutoff.
+    with ledger.reader() as conn:
+        row = conn.execute(
+            """
+            SELECT receipt.sequence
+            FROM revisions AS receipt
+            JOIN revisions AS effect ON effect.sequence = receipt.sequence
+            JOIN commits AS committed ON committed.sequence = receipt.sequence
+            WHERE receipt.key = ? AND receipt.revision = ? AND receipt.payload = ?
+              AND effect.key = ? AND effect.revision = ? AND effect.payload = ?
+              AND receipt.sequence <= ?
+            """,
+            (
+                receipt.key.value,
+                receipt.revision,
+                _encode(receipt, Revision),
+                effect.key.value,
+                effect.revision,
+                _encode(effect, Revision),
+                cutoff,
+            ),
+        ).fetchone()
+    return None if row is None else row[0]
+
+
+def _has_anchor_attestation(
+    ledger: Ledger, command: InboxCommand, effect: Revision, sequence: int
+) -> bool:
+    name, expected = _anchor_attestation(ledger, command, effect, sequence)
+    with (
+        _pin_directory(ledger.root) as project,
+        _private_child(project, ANCHORS_NAME, create=False) as staged,
+    ):
+        return staged is not None and _read_private(staged, name) == expected
+
+
 def source_anchor_decision(
     ledger: Ledger, payload: SourceAnchorCommand, view: LedgerView
 ) -> tuple[MarkerDisposition, tuple[Revision, ...]]:
@@ -345,7 +397,20 @@ def source_anchor_decision(
         return MarkerDisposition.CONFLICT, ()
     if not _directory_available(path):
         return MarkerDisposition.PENDING, ()
-    return MarkerDisposition.ACCEPTED, (_anchor_revision(ledger, payload),)
+    effect = _anchor_revision(ledger, payload)
+    if any(entry.key == effect.key for entry in view.current):
+        return MarkerDisposition.CONFLICT, ()
+    command = InboxCommand(payload.command_id, payload.project_id, payload)
+    name, proof = _anchor_attestation(ledger, command, effect, view.sequence + 1)
+    with (
+        _pin_directory(ledger.root) as project,
+        _private_child(project, ANCHORS_NAME, create=False) as staged,
+    ):
+        if staged is None:
+            raise LedgerError("Private anchor staging disappeared")
+        ledger.require_writer()
+        _publish_exact(staged, name, proof)
+    return MarkerDisposition.ACCEPTED, (effect,)
 
 
 def _effective_registration(
@@ -374,6 +439,11 @@ def _effective_registration(
             continue
         expected = _anchor_revision(ledger, payload)
         if current.get(expected.key) != expected:
+            continue
+        sequence = _anchor_commit_sequence(ledger, entry, expected, view.sequence)
+        if sequence is None or not _has_anchor_attestation(
+            ledger, command, expected, sequence
+        ):
             continue
         path = _staged_anchor(ledger, payload)
         if path is None:
@@ -671,12 +741,16 @@ class _Collector:
 
     def _commit(self, projection: _Projection) -> SourceCheckpoint | None:
         batch, result = projection.batch, projection.result
+        # A held source has a real, authenticated zero frontier. Save that
+        # identity without retaining any look-ahead usage or provider progress.
+        held_at_origin = batch.cursor is not None and batch.cursor.offset == 0
+        if held_at_origin:
+            result = AdapterResult(
+                diagnostics=result.diagnostics,
+                provider_checkpoint=batch.provider_checkpoint,
+            )
         accounted = account_observations(result, self.rates, ledger=self.writer)
-        if (
-            batch.cursor is None
-            or result.provider_checkpoint is None
-            or batch.cursor.offset == 0
-        ):
+        if batch.cursor is None or result.provider_checkpoint is None:
             if accounted.revisions:
                 self.writer.apply(accounted)
             return None
@@ -684,6 +758,8 @@ class _Collector:
         self.writer.apply(
             LedgerBatch(accounted.revisions, checkpoint, projection.prior)
         )
+        if held_at_origin:
+            return checkpoint
         state = projection.state
         if isinstance(state, CodexState):
             advanced = advance_codex_state(state, batch, result)

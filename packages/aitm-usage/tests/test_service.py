@@ -800,7 +800,8 @@ def test_unstaged_typed_anchor_command_cannot_enroll(project):
     assert enqueue_command(root, proposal) is None
     command("collect-once", "--json")
     assert ledger.command_receipt(proposal).disposition is MarkerDisposition.CONFLICT
-    assert not ledger.as_of().checkpoints
+    checkpoints = ledger.as_of().checkpoints
+    assert checkpoints and all(entry.cursor.offset == 0 for entry in checkpoints)
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
@@ -827,7 +828,8 @@ def test_exact_queued_anchor_retries_when_checkout_returns(project):
     added.rename(elsewhere)
     command("collect-once", "--json")
     assert command(*args)["status"] == "pending"
-    assert not Ledger.open(root, PROJECT).as_of().checkpoints
+    checkpoints = Ledger.open(root, PROJECT).as_of().checkpoints
+    assert checkpoints and all(entry.cursor.offset == 0 for entry in checkpoints)
     elsewhere.rename(added)
     command("collect-once", "--json")
     assert command(*args)["status"] == "accepted"
@@ -857,3 +859,187 @@ def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(pro
     status = command("status", "--json")
     assert status["missing_sources"] == 1
     assert status["coverage"]["codex"]["diagnostics"] > 0
+
+
+@pytest.mark.parametrize("layout", ["effect-first", "receipt-first", "same-commit"])
+def test_generic_anchor_writes_cannot_replace_inbox_admission(
+    project, monkeypatch, layout
+):
+    from aitm_usage import service
+    from aitm_usage.types import (
+        CommandReceipt,
+        Diagnostic,
+        DiagnosticCode,
+        LedgerBatch,
+        MarkerDisposition,
+        Revision,
+        SourceAnchor,
+    )
+
+    root, sources, checkout, config, command = project
+    added = checkout.with_name("new-private-anchor")
+    added.mkdir()
+    _fixtures(sources, added)
+    command("register", "--config", str(config), "--json")
+    ledger = Ledger.open(root, PROJECT)
+    anchor_id = UUID(int=933)
+    anchor = _json_file(
+        root.parent,
+        "new-anchor.json",
+        {
+            "command_id": str(anchor_id),
+            "project_id": str(PROJECT),
+            "checkout": str(added),
+        },
+    )
+    staged = service.stage_source_anchor(ledger, anchor)
+    payload = staged.payload
+    effect = Revision(
+        ledger.pseudonymize("collector-source-anchor", str(anchor_id)),
+        1,
+        SourceAnchor(
+            payload.command_id,
+            payload.project_id,
+            payload.configuration_ref,
+            payload.anchor_ref,
+        ),
+    )
+    receipt = CommandReceipt(
+        staged, ledger.validate_command(staged), MarkerDisposition.ACCEPTED
+    )
+    if layout != "same-commit":
+        # A genuine dispatcher decision is interrupted before commit. A
+        # private route proof must not turn split writes into an atomic pair.
+        assert (
+            command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
+            == "queued"
+        )
+
+        def interrupted(*args, **kwargs):
+            assert (
+                len(list((root / "source-anchors").glob(f"{anchor_id}.*.attested")))
+                == 1
+            )
+            raise OSError("synthetic interruption before inbox commit")
+
+        with monkeypatch.context() as patch:
+            patch.setattr(Ledger, "commit_command", interrupted)
+            command("collect-once", "--json", expected=1)
+        if layout == "effect-first":
+            ledger.apply(LedgerBatch((effect,)))
+        effects = (
+            Revision(
+                ledger.pseudonymize("fixture", "unrelated-diagnostic"),
+                1,
+                Diagnostic(
+                    DiagnosticCode.SOURCE_UNAVAILABLE, datetime.fromisoformat(CUTOFF)
+                ),
+            ),
+        )
+    else:
+        # The two canonical revisions really share one commit here. No
+        # collector inbox decision authorized that commit.
+        effects = (effect,)
+    with ledger.writer() as writer:
+        writer.commit_command(
+            receipt, effects, expected_sequence=writer.as_of().sequence
+        )
+        if layout == "receipt-first":
+            writer.apply(LedgerBatch((effect,)))
+    assert service.load_registration(ledger).checkout_anchors == (checkout,)
+    command("collect-once", "--json")
+    assert not any(
+        isinstance(r.record, UsageObservation) for r in ledger.as_of().current
+    )
+
+
+def test_anchor_route_retry_after_private_attestation_interruption(
+    project, monkeypatch
+):
+    from aitm_usage import service
+    from aitm_usage.types import Diagnostic, DiagnosticCode, LedgerBatch, Revision
+
+    root, sources, checkout, config, command = project
+    added = checkout.with_name("retry-after-attestation")
+    added.mkdir()
+    _fixtures(sources, added)
+    command("register", "--config", str(config), "--json")
+    ledger = Ledger.open(root, PROJECT)
+    anchor_id = UUID(int=934)
+    anchor = _json_file(
+        root.parent,
+        "retry-anchor.json",
+        {
+            "command_id": str(anchor_id),
+            "project_id": str(PROJECT),
+            "checkout": str(added),
+        },
+    )
+    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+    assert command(*args)["status"] == "queued"
+    proofs = root / "source-anchors"
+
+    def interrupted(*args, **kwargs):
+        assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 1
+        raise OSError("synthetic interruption after attestation")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Ledger, "commit_command", interrupted)
+        command("collect-once", "--json", expected=1)
+    assert service.load_registration(ledger).checkout_anchors == (checkout,)
+    assert command(*args)["status"] == "queued"
+    (orphan,) = proofs.glob(f"{anchor_id}.*.attested")
+    original = orphan.read_bytes()
+
+    # Retry after another legitimate commit moved the expected sequence.
+    ledger.apply(
+        LedgerBatch(
+            (
+                Revision(
+                    ledger.pseudonymize("fixture", "intervening-diagnostic"),
+                    1,
+                    Diagnostic(
+                        DiagnosticCode.SOURCE_UNAVAILABLE,
+                        datetime.fromisoformat(CUTOFF),
+                    ),
+                ),
+            )
+        )
+    )
+    command("collect-once", "--json")
+    assert command(*args)["status"] == "accepted"
+    assert service.load_registration(ledger).checkout_anchors == tuple(
+        sorted((checkout, added))
+    )
+    assert orphan.read_bytes() == original
+    assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 2
+    command("collect-once", "--json")
+    assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
+
+
+def test_zero_held_frontier_pins_identity_before_source_replacement(project):
+    root, sources, checkout, config, command = project
+    unapproved = checkout.with_name("unbound-private")
+    unapproved.mkdir()
+    source = sources / "codex.jsonl"
+    fixture = (FIXTURES / "codex" / "usage.jsonl").read_bytes()
+    source.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(unapproved)))
+    command("register", "--config", str(config), "--json")
+    command("collect-once", "--json")
+    ledger = Ledger.open(root, PROJECT)
+    (checkpoint,) = ledger.as_of().checkpoints
+    assert checkpoint.cursor.offset == checkpoint.provider.ordinal == 0
+    assert checkpoint.provider.baseline is None
+    assert checkpoint.provider.epoch_ref is None
+    assert not any(
+        isinstance(r.record, UsageObservation) for r in ledger.as_of().current
+    )
+
+    replacement = sources / "replacement"
+    replacement.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(checkout)))
+    replacement.replace(source)
+    command("collect-once", "--json")
+    view = ledger.as_of()
+    assert view.checkpoints == (checkpoint,)
+    assert not any(isinstance(r.record, UsageObservation) for r in view.current)
+    assert command("status", "--json")["coverage"]["codex"]["diagnostics"] > 0
