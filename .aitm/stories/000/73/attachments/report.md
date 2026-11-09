@@ -31,9 +31,45 @@ The scope is the recorded implementation plan review pair. Earlier brainstorming
 | OpenAI | Unknown. The credit balance snapshot was stable across the author slices. A balance snapshot alone cannot reconcile charges. | One seven-day Codex bucket was retained. The SPR author saw the account reading rise by **1 percentage point** within the same reset window. The SPR reviewer and XPR author each saw a flat reading while their usage counters rose. Account-level updates, sampling cadence and overlapping work prevent assigning a task or role a quota delta. |
 | Anthropic | Unknown. Claude Code's recorded cost agrees with public token pricing. The recovered evidence establishes an estimate. | No weekly or other subscription-limit readings were retained in the reviewer transcript. Claude Code documents conditional five-hour and seven-day status-line fields, which future runs would need to capture separately. |
 
-Neither provider record exposes a monthly subscription allowance for these runs. We can bucket observed task usage by calendar month. A monthly share requires the provider's actual denominator. The experiment used historical evidence. It did not perform a fresh isolated quota test or retrieve account billing records. [Codex rate limit schema](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt) · [Claude Code quota fields](https://code.claude.com/docs/en/statusline#rate-limit-usage) · [Claude Code estimated request cost](https://code.claude.com/docs/en/monitoring-usage#api-request-event)
+Neither provider record exposes a monthly subscription allowance for these runs. We can bucket observed task usage by calendar month. A monthly share requires the provider's actual denominator. These retrospective figures use historical evidence. The live follow-up below samples subscription readings separately. Invoiced spend remains unknown. [Codex rate limit schema](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt) · [Claude Code quota fields](https://code.claude.com/docs/en/statusline#rate-limit-usage) · [Claude Code estimated request cost](https://code.claude.com/docs/en/monitoring-usage#api-request-event)
 
 The review manifests also yield response timing. From the first recorded response start to the last submission, SPR spanned **15m 09s** and XPR **24m 57s**. XPR includes claim and prior-submission time proxies. These spans can contain waiting and exclude work outside the recorded bounds. Continuous agent engagement is unknown.
+
+## Live follow-up on subscription limits
+
+November 9, 2026, Central Standard Time. Codex CLI 0.167.0-alpha.3.2 used ChatGPT sign-in. Claude Code 2.1.318 used Claude subscription sign-in. The test used the existing subscriptions and five disposable model calls with tools disabled or unused. The probes requested GPT-6 Astra and used Claude Opus 5.5, with low effort and a fixed synthetic output task. The original probes requested 100 lines and a shorter Codex repeat requested 20.
+
+### The live XPR
+
+I observed the separate [Core plan full-file validation XPR](../../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/review-manifest.md) from about 7:20 to 7:36 a.m. without intervening in the review. Both local participant records matched the review's provider-qualified fingerprints. This is an observation slice of that validation and is separate from the retrospective dollar total above.
+
+| Live participant | Observed model usage in the slice | Subscription evidence |
+| --- | --- | --- |
+| Codex author, GPT-6 Astra / xhigh | 31 positive counter increments, 3,223,717 tokens | The inline seven-day account reading moved from 5% to 6% in one reset window. The account endpoint then returned 6% on all 21 polls from 7:33:32 to 7:37:01 a.m. |
+| Claude Code reviewer, Opus 5.5 / high | 47 distinct requests, 8,079,952 tokens | The retained reviewer transcript contained request usage but no subscription readings. Account-level Claude readings were available from a separate CLI process. |
+
+Thirteen Codex token observations fell between the recorded start and last usage row of a matched Claude request. This establishes overlapping observed work across the two providers. The Codex account change lacks a per-request attribution key. The separate Claude account readings lack a historical baseline for the review and cannot isolate that reviewer.
+
+### Controlled probes
+
+Before and after each trial, I read Codex's `account/rateLimits/read` and ran Claude Code's local `/usage` command through print-mode JSON. The Claude result counters for those snapshots reported zero input, cache and output tokens. I checked reset-window identity and repeated the account reads 12 seconds after the overlap. The controlled model calls reported the following token totals, including cached input.
+
+| Trial | Per-agent usage | What the account readings showed |
+| --- | --- | --- |
+| Serial Codex | 19,089 tokens | Codex stayed at 6% weekly. The XPR author and the measurement chat also recorded Codex usage during the trial. |
+| Serial Claude Code | 4,647 tokens | Claude's `/usage` display stayed at 68% in the five-hour window and 21% in the seven-day window. The monitored reviewer logged no requests during this probe. |
+| Concurrent Codex and Claude Code | Codex 17,567 tokens, Claude 4,647 tokens | About 15 seconds of Claude response streaming overlapped an open Codex turn. Both account displays held at their preceding readings, including the delayed check. Neither XPR participant recorded usage inside the probe interval. |
+| Short serial Codex repeat | 18,118 tokens | Codex stayed at 6% weekly. The monitored XPR author had two usage increments within the full before-to-delayed-check bracket, so the repeat also lacked a clean Codex baseline. |
+
+The serial runs isolated the probes from each other. The live author and measurement chat prevented verified same-account isolation for the serial Codex trials. Two subsequent waits for a 35-second quiet period in the monitored logs expired without launching another request. Other devices and unmonitored sessions were outside the observation. The cross-provider overlap kept the two subscription readings separate, with no concurrent usage observed in the monitored XPR logs during the model calls.
+
+The standalone Claude model calls also emitted a session-associated `rate_limit_event` after each response. In this version the payload exposed account window utilization and reset timestamps. It reported five-hour utilization of **67%** in the serial probe and **68%** in the concurrent probe, with **20%** weekly both times. The surrounding `/usage` displays read **68% / 21%** for the same reset windows. The display later moved to **69% / 21%** before the short Codex repeat, between Claude probe calls. The spike could not distinguish update lag from differences in how the two surfaces report utilization. Both events reported `isUsingOverage: false`. The overage reset field provided neither a monthly included-use reading nor a billing receipt. [Codex App Server rate limits](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt) · [Claude Code stream event and local command reference](https://code.claude.com/docs/en/agent-sdk/typescript#sdkratelimitevent) · [Claude Code status-line rate limits](https://code.claude.com/docs/en/statusline#rate-limit-usage)
+
+### What the spike establishes
+
+AITM can tie observed model usage to individual agents, even during XPR overlap. The subscription APIs and CLI surfaces tested return **account-window observations**. A session-associated event tells us where the observation was seen. It does not identify how much that session contributed to the account window. Flat readings leave a small probe's burn unresolved. Changes during concurrent same-provider work are shared account movements. Cross-provider overlap can be reported as two separate observations, one per provider and reset window. Actual billed spend remained unverified.
+
+For capture, keep the agent's model usage and the quota observation as separate records. Store the provider, account alias, bucket, reset, observation source and timestamp. For Codex, use the account endpoint and retain inline observations where available. For Claude Code, capture structured rate-limit events when the launch surface emits them, or sample the local `/usage` command. Label a same-window delta from a verified isolated test as an observed account change at the available display precision. In ordinary operation, mark per-agent quota attribution unknown and preserve API-equivalent USD for the feature rollup.
 
 ## What AITM should capture
 
