@@ -12,7 +12,7 @@ blocked-by: []
 created: 2026-11-08T19:24:00Z
 updated: 2026-11-08T19:24:30Z
 last-branch: planning
-last-worktree: /Users/kpburson/projects/Vibe-Coding/aitm-planning
+last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: null, size: null }
 origin: .aitm/drafts/2026-11/20261108-0852-aitm-rewrite-brainstorm
 files:

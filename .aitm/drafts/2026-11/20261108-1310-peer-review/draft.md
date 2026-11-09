@@ -69,7 +69,7 @@ Which levels a story needs could become config (`[review] design = ["sar","spr",
 For one document at one level (SAR, SPR or XPR):
 
 1. In the hand-built planning checkout, `git pull --ff-only` so the planning branch has every earlier level's results.
-2. Create a throwaway branch `review/<story>-<doc>-<level>` from the planning tip, in its own worktree (e.g. `~/projects/Vibe-Coding/aitm-review`). It is never pushed or merged.
+2. Create a throwaway branch `review/<story>-<doc>-<level>` from the planning tip, in its own worktree (e.g. `~/projects/aitm-workspace/review/<story>-<doc>-<level>`). It is never pushed or merged.
 3. Run the level there. SPR and XPR use ai-peer-review 0.4.0 with `reviews_root` set to the story's `design/reviews` or `plan/reviews` and `--issue <story>`. SAR is run by hand in the same file formats (ai-peer-review's `templates/reviewer-response.md` and `author-response.md`).
 4. At the end, generate the per-turn patches from the review branch's revision commits (`patch-000` = the base from empty, then one per author turn). Copy only the revised FUR and the review folder (responses, manifest, patches) into the planning checkout, and commit them there with a fast-forward push. Nothing outside the story folder is copied: no setup files, no `.scratch/`.
 5. Delete the review worktree and branch.

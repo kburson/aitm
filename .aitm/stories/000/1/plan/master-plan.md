@@ -49,7 +49,16 @@ M2 and M3 can run in parallel once M1's interfaces are stable. M6 can start afte
 
 ## Retiring the hand-built layout
 
-Until M1 ships, `planning` is edited through a normal checkout at `/Users/kpburson/projects/Vibe-Coding/aitm-planning`. Before the core's plumbing writer is used for real, that checkout must be removed (`git worktree remove`), because writing to a checked-out branch by moving its ref leaves the checkout out of sync. The first core release includes a migration that validates the hand-built `v0` files and upgrades them to the core's schema.
+The local clone is one repository with several worktrees, collected under `/Users/kpburson/projects/aitm-workspace/` (moved there 2026-11-08):
+
+```
+aitm-workspace/
+  trunk/      main worktree (holds .git), always on trunk
+  planning/   linked worktree on planning (hand-built phase only)
+  review/     temporary review worktrees, review/<story>-<doc>-<level>
+```
+
+Until M1 ships, `planning` is edited through a normal checkout at `/Users/kpburson/projects/aitm-workspace/planning`. Before the core's plumbing writer is used for real, that checkout must be removed (`git worktree remove`), because writing to a checked-out branch by moving its ref leaves the checkout out of sync. The first core release includes a migration that validates the hand-built `v0` files and upgrades them to the core's schema.
 
 ## Learning track
 
