@@ -252,7 +252,14 @@ class CandidateSource:
 @dataclass(frozen=True, slots=True)
 class _Snapshot:
     identity: tuple[_FileID, ...]
+    directory_ctimes: tuple[int, ...]
     stat: os.stat_result
+
+    def same_path(self, other: "_Snapshot") -> bool:
+        return (
+            self.identity == other.identity
+            and self.directory_ctimes == other.directory_ctimes
+        )
 
 
 class _ChangedSource(OSError):
@@ -269,18 +276,24 @@ def _file_id(info: os.stat_result) -> _FileID:
 
 
 @contextmanager
-def _directory(path: Path) -> Iterator[tuple[int, tuple[_FileID, ...]]]:
+def _directory(
+    path: Path,
+) -> Iterator[tuple[int, tuple[_FileID, ...], tuple[int, ...]]]:
     if not path.is_absolute() or ".." in path.parts:
         raise _ChangedSource
     fd = os.open(path.anchor, _DIRECTORY_FLAGS)
     try:
-        chain = [_file_id(os.fstat(fd))]
+        info = os.fstat(fd)
+        chain = [_file_id(info)]
+        ctimes = [info.st_ctime_ns]
         for name in path.parts[1:]:
             child = os.open(name, _DIRECTORY_FLAGS, dir_fd=fd)
             os.close(fd)
             fd = child
-            chain.append(_file_id(os.fstat(fd)))
-        yield fd, tuple(chain)
+            info = os.fstat(fd)
+            chain.append(_file_id(info))
+            ctimes.append(info.st_ctime_ns)
+        yield fd, tuple(chain), tuple(ctimes)
     finally:
         os.close(fd)
 
@@ -293,9 +306,9 @@ def _regular_info(directory: int, name: str) -> os.stat_result:
 
 
 def _probe(path: Path) -> _Snapshot:
-    with _directory(path.parent) as (directory, chain):
+    with _directory(path.parent) as (directory, chain, ctimes):
         info = _regular_info(directory, path.name)
-        return _Snapshot((*chain, _file_id(info)), info)
+        return _Snapshot((*chain, _file_id(info)), ctimes, info)
 
 
 def _reprobe(path: Path) -> _Snapshot:
@@ -309,7 +322,7 @@ def _reprobe(path: Path) -> _Snapshot:
 def _open_snapshot(
     path: Path, *, identity_prefix: tuple[_FileID, ...]
 ) -> Iterator[tuple[BinaryIO, _Snapshot]]:
-    with _directory(path.parent) as (directory, chain):
+    with _directory(path.parent) as (directory, chain, ctimes):
         info = _regular_info(directory, path.name)
         identity = (*chain, _file_id(info))
         if identity[: len(identity_prefix)] != identity_prefix:
@@ -317,14 +330,15 @@ def _open_snapshot(
         fd = os.open(path.name, _FILE_FLAGS, dir_fd=directory)
     with os.fdopen(fd, "rb") as stream:
         opened = os.fstat(stream.fileno())
+        snapshot = _Snapshot(identity, ctimes, opened)
         if (
             not stat.S_ISREG(opened.st_mode)
             or opened.st_nlink != 1
             or _file_id(opened) != identity[-1]
-            or _reprobe(path).identity != identity
+            or not snapshot.same_path(_reprobe(path))
         ):
             raise _ChangedSource
-        yield stream, _Snapshot(identity, opened)
+        yield stream, snapshot
 
 
 def _transcripts(directory: int, path: Path) -> Iterator[Path]:
@@ -472,7 +486,7 @@ def discover(registration: Registration) -> Iterator[CandidateSource]:
     seen = set()
     for root in registration.source_roots:
         try:
-            with _directory(root) as (directory, chain):
+            with _directory(root) as (directory, chain, _):
                 for path in _transcripts(directory, root):
                     if path in seen:
                         continue
@@ -482,7 +496,7 @@ def discover(registration: Registration) -> Iterator[CandidateSource]:
                             snapshot,
                         ):
                             origin = _origin(stream, snapshot.stat.st_size, ledger)
-                            if _probe(path).identity != snapshot.identity:
+                            if not snapshot.same_path(_probe(path)):
                                 continue
                     except OSError:
                         continue
@@ -703,7 +717,9 @@ def _verify_snapshot(
         if _hash_prefix(stream, complete_size) != prefix:
             raise _ChangedSource
     current = _reprobe(source._path)
-    if current.identity != snapshot.identity or _mtime(current.stat) != _mtime(after):
+    # A directory can be moved out and back with identical inodes at both
+    # endpoints. Directory ctime witnesses apply only to this open snapshot.
+    if not snapshot.same_path(current) or _mtime(current.stat) != _mtime(after):
         raise _ChangedSource
 
 
@@ -854,8 +870,11 @@ def _read(
                     raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
         proof_gap = None
         if selection is not None:
-            if selection.scope.anchor_ref == segment.anchor and (
-                end <= prior or selection.prefix == prefix
+            # The prior prefix is authenticated before this projection can
+            # escape. Registration additions only affect proof for new rows.
+            if end <= prior or (
+                selection.scope.anchor_ref == segment.anchor
+                and selection.prefix == prefix
             ):
                 admitted.setdefault(segment.ref, ordinal)
             else:
@@ -892,10 +911,12 @@ def _read(
             )
     if not prior_verified:
         _verify_prior(source, origin, checkpoint, end, prefix)
-    _verify_snapshot(stream, source, snapshot, end, prefix)
-    if selections or any(
+    if any(
         _checkout_anchor(cwd, source) != anchor for cwd, anchor in checkouts.items()
     ):
+        raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
+    _verify_snapshot(stream, source, snapshot, end, prefix)
+    if selections:
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
     return _project(source, checkpoint, origin, records, admitted, pending, end, prefix)
 
@@ -905,7 +926,6 @@ def _eligibility(
     source: CandidateSource,
     admitted: dict[SourceRef, int],
     pending: dict[SourceRef, int],
-    first_enrollment: int,
 ) -> Eligibility:
     start = admitted.get(frame.segment_ref)
     unproven = pending.get(frame.segment_ref)
@@ -920,7 +940,7 @@ def _eligibility(
         )
     if frame.anchor_ref is not None:
         return Eligibility.EXCLUDED if frame.pre_cutoff else Eligibility.ELIGIBLE
-    if frame.segment_ref in source._excluded or frame.ordinal < first_enrollment:
+    if frame.segment_ref in source._excluded:
         return Eligibility.EXCLUDED
     return Eligibility.UNKNOWN
 
@@ -935,7 +955,6 @@ def _project(
     offset: int,
     prefix: str,
 ) -> FrameBatch:
-    first_enrollment = min(admitted.values(), default=-1)
     frames = []
     commit_frames = []
     diagnostics = []
@@ -948,7 +967,7 @@ def _project(
             diagnostics.append(entry.diagnostic)
         if frame is None:
             continue
-        eligibility = _eligibility(frame, source, admitted, pending, first_enrollment)
+        eligibility = _eligibility(frame, source, admitted, pending)
         if not held and eligibility is Eligibility.UNKNOWN:
             offset, prefix = entry.start, entry.prefix_before
             held = True

@@ -357,15 +357,15 @@ def test_coverage_projects_classifications_for_committable_frames(project):
     }
 
 
-def _marker_and_boundary(store, frame):
-    marker_id = UUID(int=120)
+def _marker_and_boundary(store, frame, *, marker_number=120, sequence=1):
+    marker_id = UUID(int=marker_number)
     marker = ScopeMarker(
         marker_id,
         frame.provider,
         frame.session_ref,
-        1,
+        sequence,
         BoundaryKind.REQUEST,
-        store.pseudonymize("request", "enrolled-reviewer-first"),
+        store.pseudonymize("request", f"enrolled-reviewer-first:{marker_id}"),
         BEFORE,
         ItemKey(ItemKind.ISSUE, 87),
         WorkPhase.SOURCE_REVIEW,
@@ -784,3 +784,193 @@ def test_exact_archive_duplicate_does_not_churn_checkpoint(project):
         store.apply(LedgerBatch(checkpoint=_checkpoint(batch), prior_checkpoint=first))
         == head
     )
+
+
+def test_later_enrollment_keeps_earlier_pending_segment_replayable(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    first_review = root.parent / "first-review"
+    second_review = root.parent / "second-review"
+    first_review.mkdir()
+    second_review.mkdir()
+    path = root / "review.jsonl"
+    baseline = _header(checkout) + _usage(5, BEFORE)
+    path.write_bytes(
+        baseline
+        + _turn(first_review)
+        + _usage(7)
+        + _usage(11)
+        + _turn(second_review)
+        + _usage(15)
+        + _usage(17)
+    )
+
+    (candidate,) = scanner.discover(registration)
+    lookahead = scanner.scan(candidate, None, CUTOFF)
+    held = SourceCheckpoint(
+        lookahead.cursor,
+        replace(
+            lookahead.provider_checkpoint,
+            ordinal=1,
+            baseline=TokenCounts(output_tokens=5),
+        ),
+    )
+    store.apply(LedgerBatch(checkpoint=held))
+    first, first_boundary = _marker_and_boundary(store, lookahead.frames[4])
+    second, second_boundary = _marker_and_boundary(
+        store, lookahead.frames[7], marker_number=121, sequence=2
+    )
+    first_hint = lookahead.scope_evidence(replace(first_boundary, receipt_ref=None))
+    second_proof = lookahead.scope_evidence(second_boundary)
+    for marker in (first, second):
+        enqueue_command(store.root, InboxCommand(marker.marker_id, PROJECT, marker))
+    with store.writer() as writer:
+        outcome = drain_inbox(writer, (first_hint, second_proof))
+    assert [receipt.disposition for receipt in outcome.receipts] == [
+        MarkerDisposition.PENDING,
+        MarkerDisposition.ACCEPTED,
+    ]
+
+    (accepted_second,) = (
+        revision.record
+        for revision in store.as_of().current
+        if isinstance(revision.record, ScopeEnrollment)
+    )
+    selected = candidate.with_enrollment(
+        accepted_second, batch=lookahead, evidence=second_proof
+    )
+    still_held = scanner.scan(selected, held, CUTOFF)
+    assert still_held.cursor == held.cursor
+    assert still_held.commit_frames == ()
+    assert still_held.provider_checkpoint == held.provider
+    store.apply(LedgerBatch(checkpoint=_checkpoint(still_held), prior_checkpoint=held))
+
+    reopened = Ledger.open(store.root, PROJECT)
+    (durable,) = reopened.as_of().checkpoints
+    assert durable == held
+    (fresh,) = scanner.discover(registration)
+    replay = scanner.scan(fresh, durable, CUTOFF)
+    assert [frame.ordinal for frame in replay.frames] == [2, 3, 4, 5, 6, 7]
+    first_proof = replay.scope_evidence(first_boundary)
+    assert first_proof is not None
+    with reopened.writer() as writer:
+        drained = drain_inbox(writer, (first_proof,))
+    assert drained.receipts[0].disposition is MarkerDisposition.ACCEPTED
+
+    accepted = {
+        revision.record.marker.marker_id: revision.record
+        for revision in reopened.as_of().current
+        if isinstance(revision.record, ScopeEnrollment)
+    }
+    selected = fresh.with_enrollment(
+        accepted[first.marker_id], batch=replay, evidence=first_proof
+    ).with_enrollment(
+        accepted[second.marker_id],
+        batch=replay,
+        evidence=replay.scope_evidence(second_boundary),
+    )
+    resumed = scanner.scan(selected, durable, CUTOFF)
+    assert [(frame.ordinal, tokens) for frame, tokens in _fixture_debits(resumed)] == [
+        (4, 11),
+        (7, 17),
+    ]
+    assert resumed.cursor.offset == path.stat().st_size
+
+
+def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    review = root.parent / "newly-registered"
+    review.mkdir()
+    path = root / "review.jsonl"
+    path.write_bytes(_header(checkout) + _turn(review) + _usage(7) + _usage(11))
+    (candidate,) = scanner.discover(registration)
+    lookahead = scanner.scan(candidate, None, CUTOFF)
+    marker, boundary = _marker_and_boundary(store, lookahead.frames[-1])
+    proof = lookahead.scope_evidence(boundary)
+    assert proof.anchor_ref is None
+    enqueue_command(store.root, InboxCommand(marker.marker_id, PROJECT, marker))
+    with store.writer() as writer:
+        outcome = drain_inbox(writer, (proof,))
+    assert outcome.receipts[0].disposition is MarkerDisposition.ACCEPTED
+    (accepted,) = (
+        revision.record
+        for revision in store.as_of().current
+        if isinstance(revision.record, ScopeEnrollment)
+    )
+
+    expanded = replace(registration, checkout_anchors=(checkout, review))
+    (new_candidate,) = scanner.discover(expanded)
+    stale_selector = new_candidate.with_enrollment(
+        accepted, batch=lookahead, evidence=proof
+    )
+    uncommitted = scanner.scan(stale_selector, _checkpoint(lookahead), CUTOFF)
+    assert _codes(uncommitted) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
+    assert uncommitted.commit_frames == ()
+
+    selected = candidate.with_enrollment(accepted, batch=lookahead, evidence=proof)
+    first = scanner.scan(selected, None, CUTOFF)
+    assert [tokens for _, tokens in _fixture_debits(first)] == [11]
+    store.apply(LedgerBatch(checkpoint=_checkpoint(first)))
+    with path.open("ab") as output:
+        output.write(_usage(14))
+
+    reopened = Ledger.open(store.root, PROJECT)
+    (durable,) = reopened.as_of().checkpoints
+    (new_candidate,) = scanner.discover(expanded)
+    continued = scanner.scan(new_candidate.with_enrollment(accepted), durable, CUTOFF)
+    assert _codes(continued) == set()
+    assert [
+        (frame.ordinal, tokens) for frame, tokens in _fixture_debits(continued)
+    ] == [
+        (4, 14),
+    ]
+    assert continued.commit_frames[0].anchor_ref == scanner.checkout_anchor_reference(
+        reopened, review
+    )
+    assert continued.cursor.offset == path.stat().st_size
+
+
+def test_directory_moved_outside_root_and_restored_during_read_is_quarantined(
+    project,
+    monkeypatch,
+):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    directory = root / "source-parent"
+    directory.mkdir()
+    path = directory / "rollout.jsonl"
+    path.write_bytes(_header(registration.checkout_anchors[0]) + _usage(22))
+    (candidate,) = scanner.discover(registration)
+    outside = root.parent / "outside"
+    original_inode = directory.stat().st_ino
+    original_lines = scanner._lines
+    read_rows = []
+
+    def read_while_displaced(stream, size):
+        directory.rename(outside)
+        try:
+            for entry in original_lines(stream, size):
+                assert not path.exists()
+                read_rows.append(entry[0])
+                yield entry
+        finally:
+            outside.rename(directory)
+
+    with monkeypatch.context() as controlled:
+        controlled.setattr(scanner, "_lines", read_while_displaced)
+        rejected = scanner.scan(candidate, None, CUTOFF)
+    assert read_rows == [0, 1]
+    assert directory.stat().st_ino == original_inode
+    assert rejected.frames == rejected.commit_frames == ()
+    assert rejected.cursor is None
+    assert _codes(rejected) == {DiagnosticCode.SOURCE_REPLACED}
+
+    retry = scanner.scan(candidate, None, CUTOFF)
+    assert _codes(retry) == set()
+    assert [tokens for _, tokens in _fixture_debits(retry)] == [22]
