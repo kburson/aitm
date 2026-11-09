@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 94
 title: "[Usage U09] LaunchAgent install, upgrade and restore"
 kind: "story"
-state: "develop"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/94"
 parent: 83
 children: []
 blocking: [95]
 blocked-by: [93]
 created: "2026-11-09T14:42:22Z"
-updated: "2026-11-09T20:15:49+00:00"
+updated: "2026-11-09T20:43:02+00:00"
 last-branch: "codex/aitm-usage-u09"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U09", "path":
 
 # [Usage U09] LaunchAgent install, upgrade and restore
 
-[GitHub issue](https://github.com/kburson/aitm/issues/94) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/94) · [Parent #83](../83/story.md) · Planning
 
 **Required predecessors** [#93](../93/story.md)
 
@@ -39,3 +39,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U09", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Launch health producer amendment under review](../83/plan/usage-capture-launch-health-replan.md). The #94 source candidate is preserved pending exact process-attribution proof.
