@@ -7,6 +7,7 @@ from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from .export import export_as_of
 from .ledger import (
     STORE_NAME,
     ConflictError,
@@ -18,6 +19,7 @@ from .ledger import (
     _project_path,
     _state_files,
 )
+from .pricing import load_rate_card
 from .scopes import MAX_COMMAND_BYTES, enqueue_command, session_reference
 from .types import (
     DevelopmentBinding,
@@ -136,6 +138,37 @@ def _queue_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _export_command(args: argparse.Namespace) -> int:
+    try:
+        rate_id = args.rate_card
+        parts = rate_id.split(":")
+        card = load_rate_card(parts[1] if len(parts) == 4 else rate_id)
+        if rate_id not in (card.version, card.basis.identifier):
+            raise ValueError("Invalid rate card identifier")
+        view = open_project(args.project).as_of(args.as_of)
+        receipt = export_as_of(view, card, args.output)
+    except (LedgerError, OSError, ValueError, sqlite3.Error):
+        print("aitm-usage: unable to export the requested snapshot", file=sys.stderr)
+        return 1
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "schema": receipt.schema,
+                    "project_id": str(receipt.project_id),
+                    "cutoff": receipt.cutoff,
+                    "rate_basis": receipt.rate_basis,
+                    "sha256": receipt.sha256,
+                    "row_count": receipt.row_count,
+                },
+                sort_keys=True,
+            )
+        )
+    else:
+        print(f"{receipt.project_id} {receipt.cutoff} {receipt.sha256}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="aitm-usage", description="Private local AITM usage"
@@ -172,10 +205,16 @@ def main() -> int:
             command.add_argument(option, required=True)
         command.add_argument("--json", action="store_true")
         command.set_defaults(handler=_queue_command, command_factory=_item_command)
+    export = groups.add_parser("export", help="Export one fixed ledger sequence")
+    export.add_argument("--as-of", type=int, required=True, metavar="SEQUENCE")
+    export.add_argument("--rate-card", required=True, metavar="ID")
+    export.add_argument("--output", type=Path, required=True, metavar="DIRECTORY")
+    export.add_argument("--json", action="store_true")
+    export.set_defaults(handler=_export_command)
     args = parser.parse_args()
     if not hasattr(args, "handler"):
         parser.print_help()
         return 0
     if args.project is None:
-        parser.error("--project is required for private inbox commands")
+        parser.error("--project is required")
     return args.handler(args)
