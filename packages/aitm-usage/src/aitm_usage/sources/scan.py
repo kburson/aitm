@@ -98,8 +98,10 @@ class FrameBatch:
     """Look-ahead and an independent commit frontier from one verified snapshot.
 
     Adapters inspect frames for boundaries. Only commit_frames may advance
-    provider state or yield usage. Publish cursor, adapter state and observations
-    together through Ledger.apply, using the exact input checkpoint as its prior.
+    provider state or yield usage. Reapply current accepted enrollments and rescan
+    before committing, including after a checkout becomes registered. Publish
+    cursor, adapter state and observations together through Ledger.apply with
+    the exact input checkpoint as its prior.
     """
 
     frames: tuple[SourceFrame, ...] = ()
@@ -174,6 +176,7 @@ class FrameBatch:
 class _Enrollment:
     scope: ScopeEnrollment
     prefix: str | None
+    anchor_ref: SourceRef | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,8 +214,9 @@ class CandidateSource:
         If its boundary is beyond the durable cursor, pass fresh adapter
         evidence joined through batch.scope_evidence and the batch that produced
         it. The rescan verifies that the exact prefix through the boundary still
-        matches before admitting usage. A verified committed prefix suffices for
-        earlier boundaries.
+        matches before admitting usage. Fresh evidence may establish a checkout
+        for an enrollment originally accepted without one. A verified committed
+        prefix suffices for earlier boundaries.
         """
         if (
             type(enrollment) is not ScopeEnrollment
@@ -224,23 +228,30 @@ class CandidateSource:
         ):
             raise ValueError("Expected a verified enrollment for this source")
         prefix = None
+        anchor_ref = None
         if batch is not None or evidence is not None:
             if (
                 batch is None
-                or evidence
-                != BoundaryEvidence(enrollment.boundary, enrollment.anchor_ref)
+                or evidence is None
                 or batch.scope_evidence(enrollment.boundary) != evidence
+                or (
+                    enrollment.anchor_ref is not None
+                    and enrollment.anchor_ref != evidence.anchor_ref
+                )
             ):
                 raise ValueError("Expected fresh evidence for the verified enrollment")
             frame = batch._matching_frame(enrollment.boundary)
             assert frame is not None
             prefix = frame._prefix
+            anchor_ref = evidence.anchor_ref
         updated = tuple(
             selector
             for selector in self._enrollments
             if selector.scope.boundary.ordinal != enrollment.boundary.ordinal
         )
-        return replace(self, _enrollments=(*updated, _Enrollment(enrollment, prefix)))
+        return replace(
+            self, _enrollments=(*updated, _Enrollment(enrollment, prefix, anchor_ref))
+        )
 
     def with_exclusion(self, frame: SourceFrame) -> "CandidateSource":
         """Resolve an unanchored segment that the caller knows is unrelated."""
@@ -873,8 +884,7 @@ def _read(
             # The prior prefix is authenticated before this projection can
             # escape. Registration additions only affect proof for new rows.
             if end <= prior or (
-                selection.scope.anchor_ref == segment.anchor
-                and selection.prefix == prefix
+                selection.anchor_ref == segment.anchor and selection.prefix == prefix
             ):
                 admitted.setdefault(segment.ref, ordinal)
             else:

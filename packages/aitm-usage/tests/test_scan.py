@@ -974,3 +974,96 @@ def test_directory_moved_outside_root_and_restored_during_read_is_quarantined(
     retry = scanner.scan(candidate, None, CUTOFF)
     assert _codes(retry) == set()
     assert [tokens for _, tokens in _fixture_debits(retry)] == [22]
+
+
+@pytest.mark.parametrize("initially_anchored", [False, True])
+def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
+    project, initially_anchored
+):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    reviewer_area = root.parent / "review-area"
+    review = reviewer_area / "review"
+    review.mkdir(parents=True)
+    if initially_anchored:
+        registration = replace(registration, checkout_anchors=(checkout, reviewer_area))
+
+    path = root / "review.jsonl"
+    baseline = _header(checkout) + _usage(5, BEFORE)
+    path.write_bytes(baseline)
+    (candidate,) = scanner.discover(registration)
+    held = _checkpoint(scanner.scan(candidate, None, CUTOFF))
+    store.apply(LedgerBatch(checkpoint=held))
+    original = baseline + _turn(review) + _usage(7) + _usage(11) + _usage(14)
+    path.write_bytes(original)
+    lookahead = scanner.scan(candidate, held, CUTOFF)
+    marker, boundary = _marker_and_boundary(store, lookahead.frames[2])
+    old_proof = lookahead.scope_evidence(boundary)
+    expected_old_anchor = (
+        scanner.checkout_anchor_reference(store, reviewer_area)
+        if initially_anchored
+        else None
+    )
+    assert old_proof.anchor_ref == expected_old_anchor
+    command = InboxCommand(marker.marker_id, PROJECT, marker)
+    enqueue_command(store.root, command)
+    with store.writer() as writer:
+        (receipt,) = drain_inbox(writer, (old_proof,)).receipts
+    assert receipt.disposition is MarkerDisposition.ACCEPTED
+    assert receipt.anchor_ref == expected_old_anchor
+
+    reopened = Ledger.open(store.root, PROJECT)
+    view = reopened.as_of()
+    assert view.checkpoints == (held,)
+    (accepted,) = (
+        revision.record
+        for revision in view.current
+        if isinstance(revision.record, ScopeEnrollment)
+    )
+    expanded = replace(
+        registration, checkout_anchors=(*registration.checkout_anchors, review)
+    )
+    (updated,) = scanner.discover(expanded)
+    fresh = scanner.scan(updated, held, CUTOFF)
+    _, fresh_boundary = _marker_and_boundary(reopened, fresh.frames[2])
+    assert fresh_boundary == accepted.boundary
+    proof = fresh.scope_evidence(fresh_boundary)
+    assert proof.anchor_ref == scanner.checkout_anchor_reference(reopened, review)
+
+    if initially_anchored:
+        with pytest.raises(ValueError, match="fresh evidence"):
+            updated.with_enrollment(accepted, batch=fresh, evidence=proof)
+        return
+
+    no_proof = scanner.scan(updated.with_enrollment(accepted), held, CUTOFF)
+    assert no_proof.cursor == held.cursor
+    assert no_proof.commit_frames == ()
+    assert _codes(no_proof) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
+
+    wrong_receipt = replace(proof, boundary=replace(fresh_boundary, receipt_ref=None))
+    with pytest.raises(ValueError, match="fresh evidence"):
+        updated.with_enrollment(accepted, batch=fresh, evidence=wrong_receipt)
+    selected = updated.with_enrollment(accepted, batch=fresh, evidence=proof)
+    path.write_bytes(original.replace(_usage(11), _usage(91)))
+    stale = scanner.scan(selected, held, CUTOFF)
+    assert stale.cursor == held.cursor
+    assert stale.commit_frames == ()
+    assert _codes(stale) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
+
+    path.write_bytes(original)
+    admitted = scanner.scan(selected, held, CUTOFF)
+    assert _codes(admitted) == set()
+    assert [(frame.ordinal, tokens) for frame, tokens in _fixture_debits(admitted)] == [
+        (4, 11),
+        (5, 14),
+    ]
+    assert admitted.commit_frames[1].eligibility is Eligibility.EXCLUDED
+    assert admitted.cursor.offset == path.stat().st_size
+    reopened.apply(LedgerBatch(checkpoint=_checkpoint(admitted), prior_checkpoint=held))
+
+    final = Ledger.open(store.root, PROJECT)
+    assert final.command_receipt(command) == receipt
+    assert accepted.anchor_ref is None
+    assert accepted in [revision.record for revision in final.as_of().current]
