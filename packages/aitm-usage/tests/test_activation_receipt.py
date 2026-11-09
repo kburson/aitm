@@ -469,6 +469,9 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
         "core-ancestor",
         "core-epic-parent",
         "core-catchup",
+        "late-alias",
+        "late-ancestor",
+        "late-live-alias",
     ],
 )
 def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
@@ -485,6 +488,7 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         QualificationError,
         _usage,
         _verify_catchup,
+        _verify_relationship_continuity,
         _verify_workflow,
         _Workflow,
         decode_activation_receipt,
@@ -675,6 +679,12 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         with pytest.raises(QualificationError, match="workflow-evidence"):
             _verify_workflow(ledger, view, forged, start, start + timedelta(seconds=9))
 
+    if scope_case == "late-alias":
+        relationship(DraftAlias(UUID(int=927), project_id, child_b, core))
+    elif scope_case == "late-ancestor":
+        relationship(ItemParent(UUID(int=928), project_id, core, epic))
+        relationship(ItemParent(UUID(int=929), project_id, child_b, core))
+
     author_catchup = append(
         9,
         6,
@@ -721,8 +731,15 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
     if scope_case == "core-catchup":
         with pytest.raises(QualificationError, match="replay-evidence"):
             _verify_catchup(receipt, view, after)
+    elif scope_case in ("late-alias", "late-ancestor"):
+        with pytest.raises(QualificationError, match="relationship-changed"):
+            _verify_catchup(receipt, view, after)
     else:
         _verify_catchup(receipt, view, after)
+    if scope_case == "late-live-alias":
+        relationship(DraftAlias(UUID(int=930), project_id, child_b, core))
+        with pytest.raises(QualificationError, match="relationship-changed"):
+            _verify_relationship_continuity(after, ledger.as_of())
 
 
 def test_recovery_proves_exact_retained_bundle_and_fixed_parity(

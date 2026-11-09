@@ -1359,9 +1359,17 @@ def _verify_selected_sources(
         )
 
 
+def _verify_relationship_continuity(before: LedgerView, after: LedgerView) -> None:
+    _require(
+        canonical_relationships(before) == canonical_relationships(after),
+        "relationship-changed",
+    )
+
+
 def _verify_catchup(
     receipt: ActivationReceipt, before: LedgerView, after: LedgerView
 ) -> None:
+    _verify_relationship_continuity(before, after)
     previous, current = _usage(before), _usage(after)
     _require(previous.keys() <= current.keys(), "replay-evidence")
     approved_scopes = {
@@ -1598,7 +1606,7 @@ def verify_installed_activation(
         _verify_order(entry, private, card, observed_at=receipt.observed_at)
     _verify_recovery(receipt.recovery, proof.recovery, collector, card)
 
-    # Keep the actual process inspection last, after the historical and source reads.
+    # Inspect the live process after reading historical evidence and selected sources.
     live_view = ledger.as_of()
     _verify_selected_sources(ledger, live_view, receipt.providers, card)
     current = _verify_running(ledger, collector, proof.lifecycle, launchctl)
@@ -1609,4 +1617,5 @@ def verify_installed_activation(
         "service-changed",
     )
     _verify_watermarks(ledger, after, captured, current, receipt.providers)
+    _verify_relationship_continuity(after, ledger.as_of())
     return validate_activation_receipt(receipt)
