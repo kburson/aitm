@@ -1,0 +1,55 @@
+diff --git a/.aitm/stories/000/83/design/usage-capture-design.md b/.aitm/stories/000/83/design/usage-capture-design.md
+new file mode 100644
+index 0000000..7e3c3b5
+--- /dev/null
++++ b/.aitm/stories/000/83/design/usage-capture-design.md
+@@ -0,0 +1,49 @@
++---
++schema: aitm.design/v0
++story: 83
++title: Continuous agent usage capture
++---
++
++# Continuous agent usage capture
++
++## Intent and sequence
++
++AITM needs a measurement system for the life of the project. Install and qualify it before [Core #2](../../2/story.md) enters delivery work, starting with [C01 / #3](../../3/story.md). Early adoption sets the start date for the evidence. The same collector and ledger continue during and after Core delivery. Core later adds workflow-supplied bindings and usage ingestion while this producer continues to observe the providers.
++
++Capture model usage for brainstorming, design, planning and document review, development, test, source review, delivery and housekeeping. Preserve task and feature rollups, API-equivalent dollars for Buy a Feature, and separate actual billing and provider subscription observations. The [#73 spike](../../73/attachments/report.md) establishes the supported evidence and limits. Viewer surfaces, automated billing reconciliation, delivery forecasts, and cloud or remote capture are separate work.
++
++## Local collection and operation
++
++Ship a standalone Python 3.13+ package `aitm-usage` in `packages/aitm-usage/` on trunk. It can be installed on the project Mac before any `aitm-core` package exists. Ship the CLI, the collector and a versioned export together. Use standard-library SQLite and a per-user macOS LaunchAgent. The service runs on login, scans every 15 seconds while awake, and catches up on retained records after restart. Keep the interpreter and application paths absolute in the plist. A versioned install or upgrade reuses the same project identity and ledger. Stop and uninstall leave the database and export available. Back up the database using SQLite's backup API so an active writer cannot leave a torn backup. Show installed version, heartbeat, source watermarks and gaps in `status --json`.
++
++The project registration has a stable project UUID, approved source roots and permitted checkout or worktree anchors. A reader may identify candidate sessions from local metadata. Only eligible project sessions or explicit bindings may contribute observations. Store the database and private logs under a per-user directory outside Git with restricted permissions. Store provider request and session identifiers only as stable local keyed pseudonyms, with the key backed up alongside the database and kept out of exports. Never persist or export prompt text, reasoning content, tool arguments, credentials or account labels that identify the account owner. The service performs local reads and no model calls. Its health and coverage do not enforce workflow transitions.
++
++## Work scopes
++
++A scope binds project, stable draft or GitHub issue, work phase and participant to a provider session. A scope may also carry attempt, review ID and role. A monotonic per-session scope sequence and a verifiable request or turn boundary order changes. A marker created mid-request takes effect at the next identifiable boundary. It never retroactively reassigns earlier usage. An agent can emit markers via the CLI during standalone operation. Later launchers and workflow actions can submit the same records.
++
++- **Before Develop** the shared planning chat and worktree can cover many items. Record epic hydration and cross-child planning once directly on the epic. Scope focused child refinement, planning or review to that child when a request boundary is known. If a request serves several children in a known epic batch, retain it as direct epic usage. Keep unknown attribution in a separate bucket that can be corrected by a recorded decision.
++- **During Develop through delivery** bind the fresh story worktree, assigned owner and attempt to the story. A dedicated binding is a default for that owner only. Record each independent reviewer separately and carry the same item and review ID across providers. Project-wide housekeeping has a project scope. Housekeeping tied to a story or epic carries that scope and phase, including work after delivery.
++- **On graduation** retain the draft ID and add its permanent issue alias. Keep explicit parent links for rollup. Reject cycles and contradictory aliases. Sum an epic's direct usage and each unique descendant's direct usage exactly once. Scope corrections are append-only decisions with recorded evidence. Unknown items stay visible outside the attributed totals.
++
++## Provider records and accounting
++
++V1 supports the local Codex and Claude Code surfaces observed in #73. Checkpoint each source as one SQLite transaction with its observations. Keep a source incarnation, byte cursor and a validation anchor. A partial final line waits for completion. Handle a replaced file by resuming only with verified continuity or opening a separate source incarnation with an explicit coverage gap. Replay stable identities without double-counting. Conflicting duplicates go to diagnostics and leave the prior observation intact. Missing history remains Unknown.
++
++- **Codex** reads session metadata, turn context and `token_count` rows, including supported archived rollouts. Use positive differences in cumulative token categories, checked against last-request usage when present. A known zero start can contribute its first delta. A truncated file establishes a baseline. Equal totals add no usage, and regressions or differences that cannot be reconciled to a request create a coverage gap. Preserve known aggregate usage for an unallocated span without presenting it as fully priced request usage. Track model and effort with the boundary that supplied them.
++- **Claude Code** reads allowlisted local project JSONL. Group usage by session and request identity, cross-checking message ID. Repeated streamed rows are cumulative revisions of one observation. Monotonic newer versions replace the current projection while history stays traceable. A transcript ending mid-request keeps that observation partial unless a supported terminal checkpoint proves completion. Distinct reviewer and author usage is counted independently. Provider rows without a verifiable session or identity create a gap.
++- **Token and API-equivalent cost** keep uncached and cached input, cache write classes, output and any reasoning subset with source units and availability. Reasoning included in output is counted once. Version the public rate table and retain model, processing tier, supported context thresholds and pricing basis. A model or rate category with insufficient evidence retains its measured tokens and an Unknown price. Effort is an analysis dimension. No flat token multiplier or elapsed-time cost proxy.
++- **Account subscription and actual spend** are independent records. Keep provider, pseudonymous account, bucket, reset window, source, timestamp and observed precision for quota. Prefer inline observations and optional explicitly invoked read-only sampling. A flat or concurrent account reading leaves per-agent burn Unknown. No assumed monthly bucket. Actual spend requires attributable billing evidence. V1 retains an availability field and no billing connector.
++
++## Durable handoff to Core
++
++The collector ledger is the authority for captured provider observations, scope events and corrections. It is independent of Core's rebuildable index. The versioned JSONL export uses stable source keys, normalized quantities, scope, coverage and pricing provenance. Exports include an explicit cut-off and can be replayed. A later adapter presents compatible records through [C44 / #51](../../51/story.md). It carries stable source identity, enforces idempotent import and tracks the accepted export watermark. The collector keeps writing to the same database across that integration. Core owns accepted usage facts and downstream projections. It does not ingest raw provider transcripts.
++
++Until the later adapter proves compatibility, preserve the export and the local history. If C44 accepts only immutable observations, import a final compatible observation once. Corrections to already imported observations require a supported additive correction or an explicit reconciliation queue. Never resend a different payload under an accepted source key. Ledger upgrades and rollback retain existing data and either run a versioned migration with backup and validation or refuse an unsupported schema. Before adopting a new collector or Core import path, reconcile overlap by stable identity and verify parity over a known export.
++
++## Acceptance and readiness
++
++- Observe a single planning chat hydrating at least two children, then scoping focused refinement and planning in the same checkout. Verify direct epic usage, each child's direct usage, graduation continuity, separate review participants and one inclusive rollup. Also exercise story ownership and related housekeeping in a dedicated development worktree on authorized work or a controlled fixture.
++- Verify Codex repeats, truncation, cumulative resets and uncertain boundaries. Verify Claude streamed revisions, deduplication, partial terminal state and replay after restart. Confirm that unknown scope, price and quota remain visible.
++- Verify unattended startup on the project Mac, normal log collection while awake, catch-up after a service restart, private state permissions, and a recoverable backup and upgrade rehearsal. Compare sanitized exports before and after reprocessing and show no duplicate observations or private content.
++- Before Core C01 pickup, retain a dated activation receipt from real Codex and Claude Code work on the normal local routes. It names the installed collector version, live heartbeat, both source watermarks, scoped usage evidence and export verification. The receipt is a sequencing checkpoint for this project. Installation, activation and Core delivery follow later execution authority.
