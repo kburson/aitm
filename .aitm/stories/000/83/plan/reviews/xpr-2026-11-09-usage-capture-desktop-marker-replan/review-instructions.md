@@ -1,0 +1,3 @@
+# Task-scoped #83 Desktop marker compatibility XPR
+
+Use the exact installed native invitation and review protocol. Only edit the pending reviewer response and run the exact permitted join and submit commands. Read the current artifact through EOF in contiguous Read tool ranges of at most 20 lines, state coverage and truncation, verify any prior author dispositions. Review the exact #96 live Codex marker blocker and scoped U04 fix, narrow transport framing and strict identity/order/authority, original actual evidence, protected source and #96 resume, caps and Core exclusion. The package remains the permanent collector. Do not edit source, run Git or write elsewhere.

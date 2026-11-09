@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 83
 title: "[Epic] Continuous agent usage capture"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/83"
 parent: null
 children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T22:13:01+00:00"
+updated: "2026-11-09T22:19:55+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -49,3 +49,5 @@ Implementation resumed on the accepted [launch health producer amendment](plan/u
 [Exact protected-trunk source delivery](attachments/source-delivery.md) is recorded. [#96](../96/story.md) verifies live installation and provider evidence before #83 closes.
 
 [Codex Desktop carrier amendment under review](plan/usage-capture-desktop-marker-replan.md). Live qualification paused at the exact released source. Protected source delivery remains recorded.
+
+The exact [Desktop marker carrier amendment](plan/usage-capture-desktop-marker-replan.md) passed SAR, SPR and native XPR. #88 resumes, and #96 remains in Planning until the accepted repair is delivered and repinned.
