@@ -294,11 +294,42 @@ class ScopeCorrection:
             raise ValueError("Scope correction requires its own command ID")
 
 
-InboxPayload = ScopeMarker | DevelopmentBinding | ScopeCorrection
+@dataclass(frozen=True, slots=True)
+class DraftAlias:
+    command_id: UUID
+    project_id: UUID
+    draft: ItemKey
+    issue: ItemKey
+
+    def __post_init__(self) -> None:
+        if (
+            self.draft.kind is not ItemKind.DRAFT
+            or self.issue.kind is not ItemKind.ISSUE
+        ):
+            raise ValueError("An alias requires a draft and a permanent issue")
+
+
+@dataclass(frozen=True, slots=True)
+class ItemParent:
+    command_id: UUID
+    project_id: UUID
+    child: ItemKey
+    parent: ItemKey
+
+    def __post_init__(self) -> None:
+        if self.child.kind is ItemKind.PROJECT or self.parent.kind is ItemKind.PROJECT:
+            raise ValueError("A parent link requires draft or issue items")
+
+
+InboxPayload = (
+    ScopeMarker | DevelopmentBinding | ScopeCorrection | DraftAlias | ItemParent
+)
 _COMMAND_TYPES = {
     "scope-mark": ScopeMarker,
     "development-bind": DevelopmentBinding,
     "scope-correct": ScopeCorrection,
+    "item-alias": DraftAlias,
+    "item-parent": ItemParent,
 }
 MarkerId = UUID
 
@@ -315,11 +346,12 @@ class InboxCommand:
             raise ValueError("Unsupported inbox command")
         if isinstance(payload, DevelopmentBinding):
             payload = payload.marker
-        payload_id = (
-            payload.correction_id
-            if isinstance(payload, ScopeCorrection)
-            else payload.marker_id
-        )
+        if isinstance(payload, ScopeCorrection):
+            payload_id = payload.correction_id
+        elif isinstance(payload, (DraftAlias, ItemParent)):
+            payload_id = payload.command_id
+        else:
+            payload_id = payload.marker_id
         if self.command_id != payload_id or self.project_id != payload.project_id:
             raise ValueError("Inbox command identity mismatch")
 
@@ -402,13 +434,23 @@ class Diagnostic:
             _nonnegative(self.ordinal)
 
 
-Record = UsageObservation | ScopeMarker | Diagnostic | ScopeEnrollment | CommandReceipt
+Record = (
+    UsageObservation
+    | ScopeMarker
+    | Diagnostic
+    | ScopeEnrollment
+    | CommandReceipt
+    | DraftAlias
+    | ItemParent
+)
 _RECORD_TYPES = {
     "usage": UsageObservation,
     "scope-marker": ScopeMarker,
     "diagnostic": Diagnostic,
     "scope-enrollment": ScopeEnrollment,
     "command-receipt": CommandReceipt,
+    "draft-alias": DraftAlias,
+    "item-parent": ItemParent,
 }
 _TAGGED_CODECS = {
     Record: (

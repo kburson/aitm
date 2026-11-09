@@ -25,7 +25,9 @@ from .types import (
     CommandAcknowledgment,
     CommandReceipt,
     DevelopmentBinding,
+    DraftAlias,
     InboxCommand,
+    ItemParent,
     LedgerView,
     MarkerDisposition,
     MarkerId,
@@ -347,6 +349,8 @@ def _dispatch_order(command: InboxCommand) -> tuple[int, int, int]:
         return 2, 0, command.command_id.int
     if isinstance(payload, DevelopmentBinding):
         return 0, payload.generation, command.command_id.int
+    if isinstance(payload, (DraftAlias, ItemParent)):
+        return 3, 0, command.command_id.int
     return 1, payload.scope_sequence, command.command_id.int
 
 
@@ -540,6 +544,14 @@ def _evaluate(
     receipts: dict[UUID, CommandReceipt],
 ) -> tuple[MarkerDisposition, BoundaryEvidence | None, tuple[Revision, ...]]:
     payload = command.payload
+    if isinstance(payload, (DraftAlias, ItemParent)):
+        from .rollup import relationship_revisions
+
+        try:
+            effects = relationship_revisions(ledger, payload, view)
+        except ConflictError:
+            return MarkerDisposition.CONFLICT, None, ()
+        return MarkerDisposition.ACCEPTED, None, effects
     if isinstance(payload, ScopeCorrection):
         status, candidate = _correction(payload, receipts)
         if candidate is None:
