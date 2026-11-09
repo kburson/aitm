@@ -3,7 +3,7 @@ kind: draft
 slug: aitm-rewrite-brainstorm
 title: aitm — Python rewrite of ai-task-manager
 created: 2026-11-08T14:52:09Z
-updated: 2026-11-08T19:10:12Z
+updated: 2026-11-09T04:25:31Z
 origin: Claude Code brainstorm session 7046edcc-744e-49cf-847a-549bc0ec11ba (ai-task-manager worktree python-rewrite-backlog-state)
 attachments:
   - attachments/transcript.md
@@ -170,3 +170,22 @@ A reviewer read the core design as its builder would and raised eight questions.
   6. A GitHub Action that audits every push.
 - **[agreed]** Server-side path restriction is impossible: GitHub's file-path push rules apply repo-wide, not per branch.
 - **[user]** Add `required_linear_history` to the live "aitm: protect planning" ruleset (26821812). Done 2026-11-08; active rules on `planning`: deletion, non_fast_forward, required_linear_history.
+
+## Review timing (2026-11-09)
+
+- **[user]** After the architecture XPR: the SAR, SPR and XPR sessions have no timing in `events.jsonl`. Why not?
+- **[agreed]** Three causes:
+  1. Nothing writes events yet; the hand-built `v0` lines were typed by the Claude brainstorm session.
+  2. Neither review handoff asked for events. The first handoff (Claude) omitted it and the XPR handoff (Codex) inherited the omission.
+  3. The core design had no event for a document review. `core.review.recorded` is a pull-request verdict, and `core.doc.accepted` carries review refs but no time.
+- **[user]** Option 1: fix the design, then backfill.
+- **[call]** Core design changes:
+  - New events `core.doc-review.submitted` (one per response turn) and `core.doc-review.completed` (one per level).
+  - Planning time is recorded per story, by state and by review level, role and model. It never feeds a guard or a trip.
+  - Each turn's start carries a basis: `recorded`, `claim` or `prior-submit`.
+  - Backfilled events carry a `backfill` block naming the source record.
+  - New CLI commands: `aitm review turn`, `aitm review complete` and `aitm review import <folder>`.
+- **[agreed]** `architecture.md` is unchanged. XPR accepted its exact bytes, and the architecture already requires planning-phase telemetry for calibration (SAR R1-F011); the detail belongs to the core design.
+- **[agreed]** ai-peer-review 0.4.1 writes each participant's registration time into every response's `started_at`. The XPR manifest says so: its `started_at` values are "not elapsed-time measurements". Backfilled XPR turns therefore take their start from the native manifest's claim times, or from the previous turn's submission.
+- **[agreed]** Turn spans measure response writing only. They exclude setup, reading before the claim, and publication.
+- **[open]** Future review handoffs, and later `aitm-peer-review`, must emit these events as each turn lands rather than relying on backfill. ai-peer-review should record a true per-turn start.
