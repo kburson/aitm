@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 83
 title: "[Epic] Continuous agent usage capture"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/83"
 parent: null
 children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T15:17:05+00:00"
+updated: "2026-11-09T15:17:49+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -36,4 +36,4 @@ As an AITM maintainer, I want the same continuous usage collector and durable le
 
 Qualify the installed collector and record its live activation before [Core C01 / #3](../3/story.md) enters Develop. The reviewed Core #2 decomposition remains the baseline for the Core work itself. C44 later imports compatible observations while the collector and ledger continue in service.
 
-Implementation paused at #84 source review. [Accepted planning amendment](plan/usage-capture-replan.md). The accepted baseline and prior development history are retained. [Agent usage evidence](attachments/agent-usage.md). Each leaf's own design, plan, JIT and execution follow applicable authority.
+Implementation resumed with #84 on the [accepted planning amendment](plan/usage-capture-replan.md). The original pickup and pause remain in the event history. [Agent usage evidence](attachments/agent-usage.md). Each leaf's own design, plan, JIT and execution follow applicable authority.

@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 84
 title: "[Usage U01] Package and private durable ledger"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/84"
 parent: 83
 children: []
 blocking: [85]
 blocked-by: []
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T15:05:15+00:00"
+updated: "2026-11-09T15:17:49+00:00"
 last-branch: "codex/aitm-usage-u01"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/recovery-plan.md", "plan/recovery-jit.md", "plan/recovery-pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "0d587ef665cd23fa8f0fb240100f9b0440d33f97f58a84ea87887e0ab4dd8c02"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 # [Usage U01] Package and private durable ledger
 
-[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Planning
+[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** None.
 
@@ -38,4 +38,8 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 ## Current pickup
 
-[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This was the manual Develop admission. Source candidate `be02ad0562669552c810643efb874f5cd3d41881` is preserved on its dedicated branch. [Planning amendment under review](../83/plan/usage-capture-replan.md). The source review requires changes before integration.
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This was the manual Develop admission. Source candidate `be02ad0562669552c810643efb874f5cd3d41881` is preserved on its dedicated branch. [Accepted planning amendment](../83/plan/usage-capture-replan.md). The source review requires changes before integration.
+
+## Repair pickup
+
+[Plan](plan/recovery-plan.md) · [JIT](plan/recovery-jit.md) · [Independent acceptance](plan/recovery-pickup-review.md). Resume in the preserved source worktree.
