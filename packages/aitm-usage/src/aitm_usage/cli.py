@@ -32,6 +32,13 @@ from .ledger import (
     _state_files,
 )
 from .pricing import load_rate_card
+from .qualification import (
+    PROOF_NAME,
+    QualificationError,
+    read_activation_receipt,
+    validate_activation_receipt,
+    verify_installed_activation,
+)
 from .rollup import rollup
 from .scopes import MAX_COMMAND_BYTES, enqueue_command, session_reference
 from .service import (
@@ -262,6 +269,39 @@ def _status_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _qualify_command(args: argparse.Namespace) -> int:
+    try:
+        receipt = read_activation_receipt(args.receipt)
+    except (LedgerError, OSError, ValueError, RecursionError):
+        return _collector_failure(args, "invalid-receipt")
+    result = validate_activation_receipt(receipt)
+    if not result.qualified:
+        return _collector_failure(args, result.status)
+    if not (args.project / PROOF_NAME).exists():
+        return _collector_failure(args, "proof-required")
+    try:
+        ledger = open_project(args.project)
+    except (LedgerError, OSError, ValueError, sqlite3.Error):
+        return _collector_failure(args, "ledger-read-gap")
+    try:
+        result = verify_installed_activation(receipt, ledger, LaunchControl())
+    except QualificationError as error:
+        return _collector_failure(args, str(error))
+    except (
+        LedgerError,
+        OSError,
+        ValueError,
+        sqlite3.Error,
+        subprocess.SubprocessError,
+        RecursionError,
+    ):
+        return _collector_failure(args, "invalid-installed-proof")
+    if not result.qualified:
+        return _collector_failure(args, result.status)
+    _print_result({"status": result.status}, as_json=args.json)
+    return 0
+
+
 def _lifecycle_command(args: argparse.Namespace) -> int:
     action = args.lifecycle_action
     try:
@@ -422,6 +462,10 @@ def main() -> int:
         recovery.add_argument(option, type=Path, required=True)
         recovery.add_argument("--json", action="store_true")
         recovery.set_defaults(handler=_lifecycle_command, lifecycle_action=action)
+    qualify = groups.add_parser("qualify", help="Verify installed activation evidence")
+    qualify.add_argument("--receipt", type=Path, required=True)
+    qualify.add_argument("--json", action="store_true")
+    qualify.set_defaults(handler=_qualify_command)
     status = groups.add_parser("status")
     status.add_argument("--json", action="store_true")
     status.set_defaults(handler=_status_command)
