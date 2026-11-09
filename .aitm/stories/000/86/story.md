@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 86
 title: "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
 blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T15:17:05+00:00"
-last-branch: "planning"
+updated: "2026-11-09T16:13:46+00:00"
+last-branch: "codex/aitm-usage-u13"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "266835e43f20043047ae4394ffdb2aa6eb88c119d7a5b71676f37eed1650e2bc"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 # [Usage U13] Draft aliases, ancestry and direct/inclusive rollups
 
-[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Backlog
+[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -39,3 +39,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 ## Accepted amendment
 
 [Revised implementation plan](../83/plan/usage-capture-replan.md). Extend types.py with typed draft alias and ancestry records and their static codecs. Edit only the corresponding command dispatch cases in scopes.py and use the existing revision store. Prove sequence-specific rollup, corrections and cycle refusal after restart.
+
+## Current pickup
+
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
