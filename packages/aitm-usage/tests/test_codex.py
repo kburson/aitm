@@ -470,14 +470,15 @@ def tool_output(command_id=COMMAND, *, stdout=None):
 
 
 @pytest.mark.parametrize(
-    "native_output,aligned",
+    "native_output,aligned,carrier_suffix",
     [
-        ("message", True),
-        ("reasoning", True),
-        ("next-tool", True),
-        (None, True),
-        ("message", False),
-        (None, False),
+        ("message", True, ""),
+        ("reasoning", True, ""),
+        ("next-tool", True, ""),
+        (None, True, ""),
+        ("message", False, ""),
+        (None, False, ""),
+        ("message", True, "\n"),
     ],
 )
 def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
@@ -486,6 +487,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     capsys,
     native_output,
     aligned,
+    carrier_suffix,
 ):
     codex = adapter()
     ledger, registration, path, _, outside = project
@@ -523,10 +525,12 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     }.get(native_output)
     display_total = usage(14, 4) if aligned else usage(22, 6)
     later_total = usage(22, 6) if aligned else usage(30, 8)
+    call = tool_call(ledger, marker_path)
+    call["payload"]["input"] += carrier_suffix
     rows = [
         startup(outside),
         *begin(outside),
-        tool_call(ledger, marker_path),
+        call,
         response("before-marker-secret", first, first),
         tool_output(stdout=stdout),
         counter(first, first),
@@ -774,6 +778,15 @@ def test_restarted_repeat_response_is_not_a_second_observation(project):
     "disproof",
     [
         "unrecognized",
+        "two-lf",
+        "crlf",
+        "trailing-space",
+        "trailing-tab",
+        "leading-space",
+        "leading-code",
+        "extra-shell-space",
+        "unsupported-command",
+        "unsupported-output",
         "mismatched",
         "unpaired",
         "parallel",
@@ -791,8 +804,37 @@ def test_lookahead_cannot_use_unverified_tool_receipt(project, disproof):
     after = response("after-response", total, amount)
     output = tool_output()
     intervening = []
-    if disproof == "unrecognized":
-        call["payload"]["input"] += " text('another action');"
+    suffixes = {
+        "unrecognized": " text('another action');",
+        "two-lf": "\n\n",
+        "crlf": "\r\n",
+        "trailing-space": " \n",
+        "trailing-tab": "\t",
+    }
+    if disproof in suffixes:
+        call["payload"]["input"] += suffixes[disproof]
+    elif disproof == "leading-space":
+        call["payload"]["input"] = " " + call["payload"]["input"]
+    elif disproof == "leading-code":
+        call["payload"]["input"] = "text('extra'); " + call["payload"]["input"]
+    elif disproof == "extra-shell-space":
+        call["payload"]["input"] = (
+            call["payload"]["input"].replace(
+                "aitm-usage --project", "aitm-usage  --project"
+            )
+            + "\n"
+        )
+    elif disproof == "unsupported-command":
+        call["payload"]["input"] = (
+            call["payload"]["input"].replace(
+                "scope mark --marker", "scope correct --correction"
+            )
+            + "\n"
+        )
+    elif disproof == "unsupported-output":
+        call["payload"]["input"] += "\n"
+        receipt = output["payload"]["output"][1]
+        receipt["text"] = receipt["text"].replace('"queued"', '"accepted"')
     elif disproof == "mismatched":
         output["payload"]["call_id"] = "wrong-call"
     elif disproof == "unpaired":
