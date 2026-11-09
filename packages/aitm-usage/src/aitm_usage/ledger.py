@@ -643,6 +643,16 @@ def _current_command(
     return row[0], receipt
 
 
+def _refines_pending(current: CommandReceipt, proposed: CommandReceipt) -> bool:
+    """Keep an exact location or publication proof when it first becomes known."""
+    previous = current.boundary
+    boundary = proposed.boundary
+    return boundary is not None and (
+        previous is None
+        or (previous.receipt_ref is None and boundary.receipt_ref is not None)
+    )
+
+
 def _append_checkpoint(
     conn: sqlite3.Connection,
     sequence: int,
@@ -846,9 +856,9 @@ class Ledger:
             previous = _current_command(conn, key, command, receipt.digest)
             if previous is not None:
                 number, current = previous
-                if (
-                    current.disposition is not MarkerDisposition.PENDING
-                    or receipt.disposition is MarkerDisposition.PENDING
+                if current.disposition is not MarkerDisposition.PENDING or (
+                    receipt.disposition is MarkerDisposition.PENDING
+                    and not _refines_pending(current, receipt)
                 ):
                     return current
             else:

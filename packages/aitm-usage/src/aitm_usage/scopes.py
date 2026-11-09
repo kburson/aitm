@@ -38,6 +38,7 @@ from .types import (
     SourceBoundary,
     SourceRef,
     UsageObservation,
+    WorkPhase,
     _decode,
     _encode,
     decode_command,
@@ -357,15 +358,21 @@ def _select_evidence(
         for entry in boundaries
         if _boundary_target(entry.boundary) == _marker_target(marker)
     }
-    proven = {
+    proven = [
         entry
         for entry in targets
         if attest_marker(marker, entry.boundary) is MarkerDisposition.ACCEPTED
-    }
+    ]
+    proven_boundaries = {entry.boundary for entry in proven}
+    anchors = {entry.anchor_ref for entry in proven if entry.anchor_ref is not None}
+    contradictory = len(proven_boundaries) > 1 or len(anchors) > 1
+
     # A location hint can bound Unknown without authorizing attribution.
     locations = {replace(entry.boundary, receipt_ref=None) for entry in targets}
     hint = next(iter(locations)) if len(locations) == 1 else None
-    return (next(iter(proven)) if len(proven) == 1 else None, hint, len(proven) > 1)
+    if not proven or contradictory:
+        return None, hint, contradictory
+    return BoundaryEvidence(proven[0].boundary, next(iter(anchors), None)), hint, False
 
 
 def _enrollments(view: LedgerView) -> Iterator[tuple[Revision, ScopeEnrollment]]:
@@ -424,40 +431,47 @@ def _binding_for(
 
 def _check_scope(
     candidate: ScopeEnrollment, scopes: tuple[ScopeEnrollment, ...]
-) -> bool:
+) -> MarkerDisposition:
     marker = candidate.marker
+    boundary = candidate.boundary
     for scope in scopes:
-        if (
-            scope.marker.provider is marker.provider
-            and scope.marker.session_ref == marker.session_ref
-        ):
+        same_stream = _same_stream(scope.boundary, boundary)
+        later = boundary.ordinal > scope.boundary.ordinal
+        if _same_session(scope.boundary, boundary):
             other_sequence = scope.marker.scope_sequence
             if other_sequence == marker.scope_sequence:
-                return False
-            if _same_stream(scope.boundary, candidate.boundary):
-                other_ordinal = scope.boundary.ordinal
-                ordinal = candidate.boundary.ordinal
-                if ordinal == other_ordinal or (
-                    (ordinal > other_ordinal)
-                    != (marker.scope_sequence > other_sequence)
-                ):
-                    return False
+                return MarkerDisposition.CONFLICT
+            if same_stream and (
+                boundary.ordinal == scope.boundary.ordinal
+                or later != (marker.scope_sequence > other_sequence)
+            ):
+                return MarkerDisposition.CONFLICT
         if (
             candidate.generation is not None
             and scope.generation is not None
             and scope.anchor_ref == candidate.anchor_ref
-            and candidate.generation <= scope.generation
         ):
-            return False
+            generation = candidate.generation
+            if generation == scope.generation:
+                return MarkerDisposition.CONFLICT
+            generation_later = generation > scope.generation
+            if same_stream and generation_later != later:
+                return MarkerDisposition.CONFLICT
+            if not same_stream and not generation_later:
+                return MarkerDisposition.CONFLICT
     if candidate.generation is not None:
-        return True
+        return MarkerDisposition.ACCEPTED
 
     bindings = _binding_for(candidate, scopes)
     if not bindings:
-        return True
-    if len(bindings) != 1:
-        return False
-    return _compatible_development_scope(candidate, bindings[0])
+        return (
+            MarkerDisposition.PENDING
+            if marker.phase is WorkPhase.DEVELOPMENT
+            else MarkerDisposition.ACCEPTED
+        )
+    if len(bindings) == 1 and _compatible_development_scope(candidate, bindings[0]):
+        return MarkerDisposition.ACCEPTED
+    return MarkerDisposition.CONFLICT
 
 
 def _compatible_development_scope(
@@ -475,7 +489,8 @@ def _compatible_development_scope(
             and marker.role in (None, ReviewRole.AUTHOR)
         )
     return (
-        marker.role in _REVIEW_ROLES
+        marker.phase is not WorkPhase.DEVELOPMENT
+        and marker.role in _REVIEW_ROLES
         and marker.review_ref is not None
         and marker.participant_ref != owner.participant_ref
     )
@@ -518,29 +533,40 @@ def _correction(
 
 
 def _evaluate(
+    ledger: Ledger,
     command: InboxCommand,
     view: LedgerView,
     boundaries: tuple[BoundaryEvidence, ...],
     receipts: dict[UUID, CommandReceipt],
-) -> tuple[MarkerDisposition, BoundaryEvidence | None, ScopeEnrollment | None]:
+) -> tuple[MarkerDisposition, BoundaryEvidence | None, tuple[Revision, ...]]:
     payload = command.payload
     if isinstance(payload, ScopeCorrection):
         status, candidate = _correction(payload, receipts)
         if candidate is None:
-            return status, None, None
+            return status, None, ()
         evidence = BoundaryEvidence(candidate.boundary, candidate.anchor_ref)
     else:
         marker = _marker(command)
         assert marker is not None
+        prior = receipts.get(command.command_id)
+        if (
+            prior is not None
+            and prior.boundary is not None
+            and attest_marker(marker, prior.boundary) is MarkerDisposition.ACCEPTED
+        ):
+            boundaries = (
+                *boundaries,
+                BoundaryEvidence(prior.boundary, prior.anchor_ref),
+            )
         evidence, hint, contradictory = _select_evidence(marker, boundaries)
         location = None if hint is None else BoundaryEvidence(hint)
         if contradictory:
-            return MarkerDisposition.CONFLICT, location, None
+            return MarkerDisposition.CONFLICT, location, ()
         if evidence is None or (
             isinstance(payload, DevelopmentBinding)
             and payload.anchor_ref != evidence.anchor_ref
         ):
-            return MarkerDisposition.PENDING, location, None
+            return MarkerDisposition.PENDING, location, ()
         candidate = ScopeEnrollment(
             marker,
             evidence.boundary,
@@ -552,12 +578,18 @@ def _evaluate(
         for _, scope in _enrollments(view)
         if scope.marker.marker_id != candidate.marker.marker_id
     )
-    if not _check_scope(candidate, scopes):
-        return MarkerDisposition.CONFLICT, evidence, None
-    return MarkerDisposition.ACCEPTED, evidence, candidate
+    disposition = _check_scope(candidate, scopes)
+    effects = (
+        (_scope_revision(ledger, candidate, view),)
+        if disposition is MarkerDisposition.ACCEPTED
+        else ()
+    )
+    return disposition, evidence, effects
 
 
-def _effect(ledger: Ledger, scope: ScopeEnrollment, view: LedgerView) -> Revision:
+def _scope_revision(
+    ledger: Ledger, scope: ScopeEnrollment, view: LedgerView
+) -> Revision:
     key = ledger.pseudonymize("scope-enrollment", str(scope.marker.marker_id))
     number = next(
         (revision.revision for revision in view.current if revision.key == key), 0
@@ -607,10 +639,9 @@ def drain_inbox(writer: Ledger, boundaries: Iterable[BoundaryEvidence]) -> Inbox
                     _acknowledge(inbox, acknowledgments, current)
                     outcomes.append(current)
                     continue
-                disposition, evidence, scope = _evaluate(
-                    command, view, boundaries, receipts
+                disposition, evidence, effects = _evaluate(
+                    writer, command, view, boundaries, receipts
                 )
-                effects = () if scope is None else (_effect(writer, scope, view),)
                 inbox.check()
                 receipt = writer.commit_command(
                     CommandReceipt(
@@ -632,6 +663,46 @@ def drain_inbox(writer: Ledger, boundaries: Iterable[BoundaryEvidence]) -> Inbox
         return InboxDrain(tuple(outcomes), invalid)
 
 
+def _within_owner_generation(
+    observation: UsageObservation,
+    owner: ScopeEnrollment,
+    enrollments: tuple[tuple[Revision, ScopeEnrollment], ...],
+    view: LedgerView,
+) -> bool:
+    assert owner.generation is not None
+    replacements = {
+        revision.key
+        for revision, scope in enrollments
+        if scope.anchor_ref == owner.anchor_ref
+        and scope.generation is not None
+        and scope.generation > owner.generation
+        and not _same_stream(scope.boundary, owner.boundary)
+    }
+    if not replacements:
+        return True
+
+    # Independent streams have no common provider ordinal. Require both the
+    # old enrollment and this exact observation identity to be in the durable
+    # ledger prefix that precedes the first replacement.
+    boundary = replace(observation.boundary, receipt_ref=None)
+    enrolled = recorded = False
+    for revision in view.revisions:
+        record = revision.record
+        if isinstance(record, ScopeEnrollment):
+            if revision.key in replacements:
+                return enrolled and recorded
+            if record == owner:
+                enrolled = True
+        elif (
+            isinstance(record, UsageObservation)
+            and record.request_ref == observation.request_ref
+            and record.message_ref == observation.message_ref
+            and replace(record.boundary, receipt_ref=None) == boundary
+        ):
+            recorded = True
+    return False
+
+
 def resolve_scope(observation: UsageObservation, view: LedgerView) -> ScopeResolution:
     """Project an already admitted observation at this ledger snapshot."""
     boundary = observation.boundary
@@ -645,21 +716,19 @@ def resolve_scope(observation: UsageObservation, view: LedgerView) -> ScopeResol
     ]
     current = max(candidates, key=lambda pair: pair[1].boundary.ordinal, default=None)
     active = None if current is None else current[1]
-    if active is not None and active.generation is None:
+    if active is not None:
         # A delayed owner receipt may prove a binding before an already
         # enrolled marker. Only compare ordinals within that same stream.
         owner = max(
-            (
-                scope
-                for _, scope in candidates
-                if scope.generation is not None
-                and scope.boundary.ordinal <= active.boundary.ordinal
-            ),
+            (scope for _, scope in candidates if scope.generation is not None),
             key=lambda scope: scope.boundary.ordinal,
             default=None,
         )
-        if owner is not None and not _compatible_development_scope(active, owner):
-            return ScopeResolution(reason=MarkerDisposition.CONFLICT)
+        if owner is not None:
+            if active != owner and not _compatible_development_scope(active, owner):
+                return ScopeResolution(reason=MarkerDisposition.CONFLICT)
+            if not _within_owner_generation(observation, owner, enrollments, view):
+                return ScopeResolution()
     resolved_ids = {scope.marker.marker_id for _, scope in enrollments}
     blockers = set()
     for revision in view.current:
