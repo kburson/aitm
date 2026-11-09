@@ -10,12 +10,12 @@ children: []
 blocking: [88, 89]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T17:18:47+00:00"
+updated: "2026-11-09T17:27:24+00:00"
 last-branch: "codex/aitm-usage-u03"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md", "plan/claude-sideband-repair.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U03", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "c857dc2a70fbd5acc6d67a1fb38287ca93ed5d1666d6dca4c3e94361298ab489"}
@@ -41,3 +41,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U03", "path":
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+## Supplemental scanner pickup
+
+The [native Claude metadata plan](plan/claude-sideband-repair.md) passed scoped independent review at raw SHA-256 `8df8dc435006f4520defef5f5b255cb7df136ca0b8a544f1460735bcc952e2d8`. The review verified that untimed metadata cannot change eligibility, cutoff or watermarks. The original reviewed scanner remains staged while #88 finishes. Reopen the scanner in its owned worktree on the exact subsequent integration base before #89 starts.
