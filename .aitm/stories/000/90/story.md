@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 90
 title: "[Usage U06] Pricing and quota availability"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/90"
 parent: 83
 children: []
 blocking: [91]
 blocked-by: [86, 88, 89]
 created: "2026-11-09T14:42:19Z"
-updated: "2026-11-09T18:43:36+00:00"
+updated: "2026-11-09T18:56:29+00:00"
 last-branch: "codex/aitm-usage-u06"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "60f4e2f8f6a19994486f509191eb87e653b35c4f93b73edbcb58409a75d686f2"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 
 # [Usage U06] Pricing and quota availability
 
-[GitHub issue](https://github.com/kburson/aitm/issues/90) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/90) · [Parent #83](../83/story.md) · Review
 
 **Required predecessors** [#86](../86/story.md), [#88](../88/story.md), [#89](../89/story.md)
 
@@ -43,3 +43,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
