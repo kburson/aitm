@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 93
 title: "[Usage U12] Integrated restart, enrollment and privacy proof"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/93"
 parent: 83
 children: []
 blocking: [94]
 blocked-by: [92]
 created: "2026-11-09T14:42:21Z"
-updated: "2026-11-09T20:02:08+00:00"
+updated: "2026-11-09T20:13:56+00:00"
 last-branch: "codex/aitm-usage-u12"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U12", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "63b9a18289b7be20fb80a925e1979de281ea1c5b25384225f69e2f36f55e7237"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U12", "path":
 
 # [Usage U12] Integrated restart, enrollment and privacy proof
 
-[GitHub issue](https://github.com/kburson/aitm/issues/93) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/93) · [Parent #83](../83/story.md) · Review
 
 **Required predecessors** [#92](../92/story.md)
 
@@ -40,3 +40,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U12", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
