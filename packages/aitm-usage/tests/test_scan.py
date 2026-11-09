@@ -1222,6 +1222,7 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
         + _claude_timed("assistant", review, request="unrelated-before-enrollment")
         + _claude_cost()
         + _claude_timed("assistant", review, request="first-eligible")
+        + _claude_timed("user", review)
     )
     torn_terminal = _claude_cost()
     path.write_bytes(complete + torn_terminal[:-1])
@@ -1232,7 +1233,7 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
     assert lookahead.commit_sideband == ()
     assert lookahead.observed_through == BEFORE
 
-    marker, boundary = _marker_and_boundary(store, lookahead.frames[-1])
+    marker, boundary = _marker_and_boundary(store, lookahead.frames[-2])
     proof = lookahead.scope_evidence(boundary)
     assert proof.anchor_ref is None
     held = _checkpoint(lookahead)
@@ -1251,23 +1252,25 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
     )
     (rediscovered,) = scanner.discover(registration)
     fresh = scanner.scan(rediscovered, held, CUTOFF)
-    _, fresh_boundary = _marker_and_boundary(reopened, fresh.frames[-1])
+    _, fresh_boundary = _marker_and_boundary(reopened, fresh.frames[-2])
     selected = rediscovered.with_enrollment(
         accepted, batch=fresh, evidence=fresh.scope_evidence(fresh_boundary)
     )
     admitted = scanner.scan(selected, held, CUTOFF)
     assert admitted.cursor.offset == len(complete)
-    assert [frame.ordinal for frame in admitted.commit_frames] == [2, 3, 5]
+    assert [frame.ordinal for frame in admitted.commit_frames] == [2, 3, 5, 6]
     assert [frame.eligibility for frame in admitted.commit_frames] == [
         Eligibility.EXCLUDED,
         Eligibility.EXCLUDED,
         Eligibility.ELIGIBLE,
+        Eligibility.ELIGIBLE,
     ]
-    assert admitted.commit_frames[-1].row["requestId"] == "first-eligible"
+    assert admitted.commit_frames[-2].row["requestId"] == "first-eligible"
     assert [entry.ordinal for entry in admitted.sideband] == [4]
     assert admitted.commit_sideband == ()
     committed = _checkpoint(admitted)
-    reopened.apply(LedgerBatch(checkpoint=committed, prior_checkpoint=held))
+    measured = _claude_fixture_observation(reopened, admitted.commit_frames[-2])
+    reopened.apply(LedgerBatch((measured,), committed, held))
 
     with path.open("ab") as output:
         output.write(
@@ -1278,9 +1281,9 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
     (rediscovered,) = scanner.discover(registration)
     selected = rediscovered.with_enrollment(accepted)
     after_restart = scanner.scan(selected, durable, CUTOFF)
-    assert [entry.ordinal for entry in after_restart.sideband] == [6, 8]
-    assert [entry.ordinal for entry in after_restart.commit_sideband] == [6]
-    assert after_restart.commit_sideband[0].timed_ordinal == 5
+    assert [entry.ordinal for entry in after_restart.sideband] == [7, 9]
+    assert [entry.ordinal for entry in after_restart.commit_sideband] == [7]
+    assert after_restart.commit_sideband[0].timed_ordinal == 6
     assert after_restart.commit_frames == ()
     assert after_restart.observed_through is None
     assert after_restart.cursor.offset == len(complete + torn_terminal)
@@ -1289,7 +1292,7 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
     excluded = scanner.scan(
         selected.with_exclusion(after_restart.frames[0]), durable, CUTOFF
     )
-    assert [entry.ordinal for entry in excluded.commit_sideband] == [6]
+    assert [entry.ordinal for entry in excluded.commit_sideband] == [7]
     assert excluded.cursor.offset == path.stat().st_size
 
 
@@ -1301,6 +1304,11 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
             DiagnosticCode.MALFORMED_USAGE,
         ),
         (_claude_line("tools-used", tools="private"), DiagnosticCode.MALFORMED_USAGE),
+        (
+            _claude_line("tools-used", tools=[{"name": "private"}]),
+            DiagnosticCode.MALFORMED_USAGE,
+        ),
+        (_claude_line("tools-used", tools=[""]), DiagnosticCode.MALFORMED_USAGE),
         (
             _claude_cost(modelUsage={"claude-opus-5-5": {"outputTokens": -1}}),
             DiagnosticCode.MALFORMED_USAGE,
@@ -1335,3 +1343,71 @@ def test_native_claude_untimed_drift_or_identity_is_a_gap(project, bad_row, gap)
         assert batch.sideband[0].segment_ref is None
         assert batch.frames[0].segment_ref != batch.frames[-1].segment_ref
     assert "private" not in repr(batch)
+
+
+def _claude_fixture_observation(store, frame):
+    assert frame.eligibility is Eligibility.ELIGIBLE
+    request = store.pseudonymize("fixture-request", frame.row["requestId"])
+    message = store.pseudonymize("fixture-message", frame.row["message"]["id"])
+    boundary = SourceBoundary(
+        frame.provider,
+        frame.stream_ref,
+        frame.session_ref,
+        frame.ordinal,
+        BoundaryKind.REQUEST,
+        request,
+    )
+    return Revision(
+        store.pseudonymize("fixture-observation", request.value),
+        1,
+        UsageObservation(
+            boundary,
+            frame.observed_at,
+            frame.client_version,
+            frame.format_version,
+            TokenCounts(output_tokens=4),
+            Availability.PARTIAL,
+            request,
+            message,
+        ),
+    )
+
+
+def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    newly_registered = root.parent / "later-anchor"
+    newly_registered.mkdir()
+    path = root / "native.jsonl"
+    path.write_bytes(
+        _claude_timed("user", checkout)
+        + _claude_timed("assistant", checkout, request="prior-admitted")
+        + _claude_timed("assistant", newly_registered, request="historically-excluded")
+    )
+
+    (candidate,) = scanner.discover(registration)
+    lookahead = scanner.scan(candidate, None, CUTOFF)
+    selected = candidate.with_exclusion(lookahead.frames[-1])
+    initial = scanner.scan(selected, None, CUTOFF)
+    assert initial.commit_frames[-1].eligibility is Eligibility.EXCLUDED
+    earlier = _claude_fixture_observation(store, initial.commit_frames[-2])
+    checkpoint = _checkpoint(initial)
+    store.apply(LedgerBatch((earlier,), checkpoint))
+
+    with path.open("ab") as output:
+        output.write(_claude_cost())
+    reopened = Ledger.open(store.root, PROJECT)
+    durable = reopened.as_of()
+    assert durable.checkpoints == (checkpoint,)
+    assert durable.current == (earlier,)
+    expanded = replace(registration, checkout_anchors=(checkout, newly_registered))
+    (updated,) = scanner.discover(expanded)
+    result = scanner.scan(updated, checkpoint, CUTOFF)
+    assert result.frames == result.commit_frames == ()
+    assert result.observed_through is None
+    (terminal,) = result.sideband
+    assert terminal.timed_ordinal == 2
+    assert result.commit_sideband == ()
+    assert result.cursor.offset == path.stat().st_size

@@ -29,6 +29,7 @@ from ..types import (
     SourceCheckpoint,
     SourceCursor,
     SourceRef,
+    UsageObservation,
     normalize_client_version,
 )
 
@@ -137,7 +138,8 @@ class FrameBatch:
 
     Adapters inspect frames for boundaries and use commit_frames for timed
     usage. Commit-sideband records have an eligible timed predecessor within
-    the same frontier. They may only reconcile already eligible timed prefixes.
+    the same frontier. Historical predecessors require durable usage evidence
+    in the same segment. Sideband may only reconcile already eligible prefixes.
     Reapply current accepted enrollments and rescan before committing, including
     after a checkout becomes registered. Publish cursor, adapter state and
     observations together through Ledger.apply with the exact prior checkpoint.
@@ -643,6 +645,7 @@ def _checkout_anchor(
 class _Segment:
     cwd: Path | None = field(repr=False)
     ref: SourceRef
+    start_ordinal: int
     checkout: tuple[SourceRef, _FileID] | None
 
     @property
@@ -656,7 +659,7 @@ def _segment(
     ref = source._ledger.pseudonymize(
         "source-segment", f"{source.stream_ref.value}:{ordinal}:{prefix}"
     )
-    return _Segment(cwd, ref, _checkout_anchor(cwd, source))
+    return _Segment(cwd, ref, ordinal, _checkout_anchor(cwd, source))
 
 
 def _row_context(
@@ -704,8 +707,13 @@ def _claude_sideband_content(row: _Row, ledger: Ledger) -> _Row | None:
     kind = row["type"]
     if kind in _CLAUDE_BOOKKEEPING:
         key, expected = _CLAUDE_BOOKKEEPING[kind]
-        if type(row.get(key)) is not expected:
+        value = row.get(key)
+        if type(value) is not expected:
             raise ValueError("Malformed native bookkeeping")
+        if kind == "tools-used" and any(
+            type(label) is not str or not label.strip() for label in value
+        ):
+            raise ValueError("Malformed native tool labels")
         return None
     if kind == SidebandKind.SESSION_OWNER:
         account = row.get("accountUuid")
@@ -736,6 +744,7 @@ def _claude_sideband_content(row: _Row, ledger: Ledger) -> _Row | None:
 class _SidebandRecord:
     frame: SidebandFrame
     context: SourceFrame | None
+    segment_start: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -967,7 +976,13 @@ def _read(
                             _CompleteRow(
                                 start,
                                 before,
-                                _SidebandRecord(sideband, last_timed),
+                                _SidebandRecord(
+                                    sideband,
+                                    last_timed,
+                                    segment.start_ordinal
+                                    if segment is not None
+                                    else None,
+                                ),
                                 None,
                             )
                         )
@@ -1072,6 +1087,26 @@ def _eligibility(
     return Eligibility.UNKNOWN
 
 
+def _durable_usage_ordinals(
+    source: CandidateSource, checkpoint: SourceCheckpoint | None
+) -> tuple[int, ...]:
+    if checkpoint is None:
+        return ()
+    view = source._ledger.as_of()
+    if checkpoint not in view.checkpoints:
+        return ()
+    ordinals = []
+    for revision in view.current:
+        record = revision.record
+        if (
+            isinstance(record, UsageObservation)
+            and source._matches(record.boundary)
+            and record.observed_at >= source._registration.cutoff
+        ):
+            ordinals.append(record.boundary.ordinal)
+    return tuple(ordinals)
+
+
 def _project(
     source: CandidateSource,
     checkpoint: SourceCheckpoint | None,
@@ -1086,6 +1121,7 @@ def _project(
     commit_frames = []
     sideband = []
     commit_sideband = []
+    durable_usage = None
     diagnostics = []
     held = False
     for entry in records:
@@ -1098,11 +1134,23 @@ def _project(
             continue
         if isinstance(frame, _SidebandRecord):
             sideband.append(frame.frame)
+            context = frame.context
             if (
-                not held
-                and frame.context is not None
-                and _eligibility(frame.context, source, admitted, pending)
-                is Eligibility.ELIGIBLE
+                held
+                or context is None
+                or _eligibility(context, source, admitted, pending)
+                is not Eligibility.ELIGIBLE
+            ):
+                continue
+            if commit_frames and commit_frames[-1].ordinal == context.ordinal:
+                commit_sideband.append(frame.frame)
+                continue
+            if durable_usage is None:
+                durable_usage = _durable_usage_ordinals(source, checkpoint)
+            assert frame.segment_start is not None
+            if any(
+                frame.segment_start <= ordinal <= context.ordinal
+                for ordinal in durable_usage
             ):
                 commit_sideband.append(frame.frame)
             continue
