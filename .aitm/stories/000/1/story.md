@@ -10,7 +10,7 @@ children: [2]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:00Z
-updated: 2026-11-08T19:24:30Z
+updated: 2026-11-09T08:17:42Z
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: null, size: null }
@@ -18,8 +18,8 @@ origin: .aitm/drafts/2026-11/20261108-0852-aitm-rewrite-brainstorm
 files:
   draft: draft.md
   events: events.jsonl
-  design: []
-  plan: []
+  design: [design/architecture.md]
+  plan: [plan/master-plan.md]
   attachments: [attachments/transcript.md, attachments/research-ai-task-manager-survey.md]
 expansions: []
 trips: []
@@ -58,3 +58,7 @@ Root epic for the aitm product: a Python rewrite of ai-task-manager as a core pl
 ```
 
 </details>
+
+## Accepted architecture and master plan
+
+[Architecture](design/architecture.md) completed SAR/SPR/XPR. [Master plan](plan/master-plan.md) was reconciled to the accepted core design and accepted by the authorized SAR, published `ca14c5de346235488d71f223c226385ad8a290f5`. [SAR collateral](plan/reviews/sar-2026-11-09-master-plan/review-manifest.md). Historical Backlog and open owner choices remain; no implementation, production cutover or epic closure is implied.
