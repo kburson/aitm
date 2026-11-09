@@ -18,6 +18,7 @@ depends-on: [aitm-core]
 - REST wherever possible; GraphQL only where REST can't. Projects v2 REST read endpoints verified live; item-field PATCH not yet verified.
 - Projection runs as a resident action on state entry: one sparse sync per state change.
 - `init` translates ai-task-manager's `init-project-config.sh`: create/configure the Project, fields (Status, Priority, Size, Estimate, Engaged, Rank, Blocked By, Disposition…), and rulesets protecting `trunk` and `planning` (no delete, no force-push; PRs required on trunk only).
+- Implements `protect_branch` for the core's `init`. It uses the rulesets API first (`POST /repos/{owner}/{repo}/rulesets`, target = the configured planning branch name), and classic branch protection if rulesets aren't available. It needs admin permission. On GitHub Free, protection works on public repos but not private ones. When the API can't apply protection, it returns `manual` with click-by-click steps and the repo's `settings/rules` URL. It also reads protection back so `aitm doctor` can check it.
 - Issue body is a projection: user story, scope, metadata, dependencies, link to `story.md` on `planning`. Never parsed back for decisions.
 - Together with the core it forms the first usable slice.
 

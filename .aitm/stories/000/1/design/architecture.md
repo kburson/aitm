@@ -74,9 +74,11 @@ The rewrite exists because ai-task-manager made the GitHub issue body its databa
 
 | Branch | Holds | Rules |
 | --- | --- | --- |
-| `trunk` | Implementation code, `.aitm.toml`, `docs/learn/` | No delete, no force-push, PR required |
-| `planning` | `.aitm/` story data only | No delete, no force-push, **no PR requirement**; fast-forward only |
+| default branch (`trunk` here; `main`, `master`… elsewhere) | Implementation code, `.aitm.toml`, `docs/learn/` | No delete, no force-push, PR required |
+| planning branch (suggested name `planning`, chosen at init) | `.aitm/` story data only | No delete, no force-push, **no PR requirement**; fast-forward only |
 | story branches | Code for one story | Normal PR flow into trunk; never carry `.aitm/` (gitignored) |
+
+When `aitm init` installs aitm into a host repo, it detects the default branch and suggests `planning` as the planning branch name; the user can choose another name, but it must differ from the default branch. The choice is stored in `.aitm.toml` on the default branch. The planning branch is an orphan whose root commit has an empty tree, so it shares no files or history with the default branch. `init` protects it through the git host's API, or prints step-by-step instructions where the API can't (no admin rights, plan limits, no API).
 
 `planning` is never merged into `trunk`. Its history is never rewritten, so `blob/planning/...` links always resolve to the latest file and SHA links are permanent snapshots. The store location (remote and branch) is configuration, so moving planning data to its own repo later is a config change.
 

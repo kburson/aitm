@@ -86,7 +86,8 @@ packages/aitm-core/
 ```toml
 [store]
 remote = "origin"
-branch = "planning"
+branch = "planning"           # chosen at init; "planning" is the suggested default
+trunk = "origin/trunk"        # the host repo's default branch, detected at init
 
 [enforcement]
 mode = "advisory"            # or "enforce"
@@ -108,7 +109,20 @@ enabled = []                 # e.g. ["github", "harness"]
 command = "uv run pytest"    # what `aitm test` runs
 ```
 
-`aitm init` writes this file, adds `.aitm/` to trunk's `.gitignore`, and creates an orphan `planning` branch with the `.aitm/` README if none exists. Provider extensions extend `init` with their own steps.
+Everywhere else in this document, "`planning`" means the branch named by `[store] branch`. No code hard-codes the name.
+
+## `aitm init`: installing into a host repo
+
+`init` is safe to re-run. Each step checks first and skips what's already in place.
+
+1. **Detect the default branch.** It reads the remote's HEAD (`git symbolic-ref refs/remotes/<remote>/HEAD`, or the git host provider when one is configured) and writes it as `[store] trunk`.
+2. **Choose the planning branch name.** It suggests `planning`. Interactively, the user can accept it or type another name. Non-interactively, `--planning-branch <name>` sets it, and the default is `planning`. The name must be a valid ref name and must differ from the default branch (`trunk`, `main`, `master` or whatever step 1 found). It must not already exist locally or on the remote, unless that branch is already an aitm planning branch (its root commit carries the `aitm-planning-root` trailer).
+3. **Create the branch with no shared history.** The branch is an orphan: its root commit has no parent and the empty tree, so nothing from the default branch is in it, and none of the default branch's history is either. The root commit message carries the trailer `aitm-planning-root: v1`. A second commit adds `.aitm/README.md`. Both commits are written through the plumbing backend, so nothing is checked out. The branch is then pushed.
+4. **Protect the branch.** It calls `githost.protect_branch(branch, rules)` with: no deletion, no force-push (fast-forward only), no PR requirement, and the repo admin as the only bypass. The provider returns `applied`, `already-protected`, or `manual` with step-by-step instructions and a settings URL. It returns `manual` when the API can't do it (no admin permission, a plan that doesn't support protection on this repo, or a host without an API). `init` prints those instructions and records the result. With no git host provider, it always prints the generic instructions.
+5. **Write the trunk-side files.** It writes `.aitm.toml` and adds `.aitm/` to `.gitignore` in the working tree. It does not commit them: trunk is normally protected, so the user lands them through their usual PR flow. `init` prints the exact commands to do that.
+6. **Run provider init steps.** Provider extensions add their own steps (the GitHub extension creates the Project and fields, and protects the default branch the same way).
+
+`aitm doctor` re-checks the steps that can drift. These are: the configured branch exists and is an aitm planning branch, it isn't checked out in any worktree, `.aitm.toml` is on trunk, and the branch is protected (where the provider can read protection). It prints the fix for anything missing, including the manual protection steps again.
 
 ## Store layout
 
@@ -374,6 +388,9 @@ class GitHostProvider(Protocol):
     def fetch(self, ref: str) -> None: ...
     def file_url(self, branch: str, path: str) -> str: ...
     def commit_url(self, sha: str) -> str: ...
+    def default_branch(self) -> str: ...
+    def protect_branch(self, branch: str, rules: ProtectionRules) -> ProtectResult: ...
+    # ProtectResult: status (applied | already-protected | manual), instructions, settings_url
 ```
 
 Hierarchy, dependency links, PRs, CI and rulesets belong to the provider extensions and are passed through `project()` and their own commands; the core interface stays small.
@@ -433,7 +450,7 @@ The first release ships `aitm migrate v0`, which reads `.aitm/stories/*/*/story.
 
 The core is done when, in a temporary repo with only `aitm-core` installed:
 
-1. `aitm init` creates `.aitm.toml`, the `.gitignore` entry and an orphan `planning` branch.
+1. `aitm init` creates `.aitm.toml`, the `.gitignore` entry and an orphan planning branch with an empty-tree root commit, under the suggested name or one chosen with `--planning-branch`. With no git host provider it prints the manual protection steps. Re-running it changes nothing, and it refuses a name that is already taken by a branch that isn't an aitm planning branch.
 2. An idea and a draft can be created, the draft graduated through the local provider, and the story walked backlog → done with every core guard passing, using only CLI commands.
 3. The same walk in enforce mode is refused at each guard when its condition is missing, with an `explain` output that names the missing condition and the command that fixes it.
 4. Advisory mode records each failing guard as an event and continues.
