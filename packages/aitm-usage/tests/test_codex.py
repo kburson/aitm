@@ -13,7 +13,7 @@ import pytest
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
 from aitm_usage.rollup import rollup
-from aitm_usage.scopes import drain_inbox, session_reference
+from aitm_usage.scopes import drain_inbox, enqueue_marker, session_reference
 from aitm_usage.sources.scan import checkout_anchor_reference, discover, scan
 from aitm_usage.types import (
     Availability,
@@ -469,10 +469,12 @@ def tool_output(command_id=COMMAND, *, stdout=None):
     )
 
 
+@pytest.mark.parametrize("native_output", ["message", "reasoning", "next-tool"])
 def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     project,
     monkeypatch,
     capsys,
+    native_output,
 ):
     codex = adapter()
     ledger, registration, path, _, outside = project
@@ -498,6 +500,16 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     assert main() == 0
     stdout = capsys.readouterr().out
     assert json.loads(stdout) == {"command_id": str(COMMAND), "status": "queued"}
+    output = {
+        "message": {"type": "message", "role": "assistant", "content": []},
+        "reasoning": {"type": "reasoning", "summary": []},
+        "next-tool": {
+            "type": "function_call",
+            "call_id": "next-tool-secret",
+            "name": "exec_command",
+            "arguments": "{}",
+        },
+    }[native_output]
     rows = [
         startup(outside),
         *begin(outside),
@@ -505,6 +517,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
         response("before-marker-secret", first, first),
         tool_output(stdout=stdout),
         counter(first, first),
+        row("response_item", output),
         response("after-marker-secret", usage(14, 4), last),
         counter(usage(14, 4), last),
         counter(usage(22, 6), last),
@@ -517,7 +530,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     (boundary,) = tuple(
         entry for entry in result.boundaries if entry.receipt_ref == scope.receipt_ref
     )
-    assert boundary.ordinal == 7
+    assert boundary.ordinal == 8
     assert boundary.boundary_ref == scope.boundary_ref
     assert result.revisions == ()
     assert lookahead.commit_frames == ()
@@ -642,7 +655,7 @@ def test_decline_inside_excluded_segment_cannot_rebase_eligible_usage(project):
     held = next(frame for frame in batch.frames if frame.boundary_only)
     _, result = read(codex, candidate.with_exclusion(held), codex.CodexState(ledger))
     assert [record.tokens.total_tokens for record in observations(result)] == [16]
-    assert result.provider_checkpoint.baseline.total_tokens == 16
+    assert result.provider_checkpoint.baseline == TokenCounts(12, 0, 0, 0, 4, 0)
 
 
 def test_verified_child_epoch_authenticates_response_after_restart(project):
@@ -842,7 +855,7 @@ def test_invalid_or_unverified_quota_cannot_create_an_account_record(
     _, result = read(codex, source(registration), codex.CodexState(ledger, account))
     assert [record.tokens.total_tokens for record in observations(result)] == [16]
     assert result.quota == ()
-    assert (4, DiagnosticCode.COVERAGE_GAP) in codes(result)
+    assert ((4, DiagnosticCode.COVERAGE_GAP) in codes(result)) is configured
 
 
 def test_usage_remains_measured_when_model_context_is_missing(project):
@@ -1182,3 +1195,367 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
     (record,) = observations(second)
     assert record.tokens.total_tokens == 10
     assert record.processing_tier is None
+
+
+@pytest.mark.parametrize("stale_in", ["excluded", "eligible"])
+@pytest.mark.parametrize("restart", [False, True])
+def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
+    project, stale_in, restart
+):
+    codex = adapter()
+    ledger, registration, path, checkout, outside = project
+    unrelated, returned, later = (UUID(int=value) for value in (0x180, 0x181, 0x182))
+    first = usage(8, 2)
+    stale = counter(first, first, rate_limits={"limit_id": "codex", "primary": None})
+    outside_rows = [*begin(outside, unrelated)]
+    returned_rows = [*begin(checkout, returned)]
+    (outside_rows if stale_in == "excluded" else returned_rows).append(stale)
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            counter(first, first),
+            end(),
+            *outside_rows,
+            end(unrelated),
+            *returned_rows,
+            end(returned),
+        ],
+    )
+    candidate = source(registration)
+    held = scan(candidate, None, CUTOFF)
+    candidate = candidate.with_exclusion(
+        next(frame for frame in held.frames if frame.boundary_only)
+    )
+    state = codex.CodexState(ledger)
+    batch, result = read(codex, candidate, state)
+    assert [record.tokens.total_tokens for record in observations(result)] == [10]
+    prior = commit(ledger, batch, result)
+    state = (
+        codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        if restart
+        else codex.advance_codex_state(state, batch, result)
+    )
+    write(
+        path,
+        [
+            *begin(checkout, later),
+            counter(first, first, rate_limits={"limit_id": "codex", "secondary": None}),
+            counter(usage(14, 3), usage(6, 1)),
+            counter(usage(21, 5), usage(7, 2)),
+            end(later),
+        ],
+        append=True,
+    )
+    _, result = read(codex, candidate, state, prior)
+    assert [record.tokens.total_tokens for record in observations(result)] == [9]
+
+
+@pytest.mark.parametrize("phase", ["excluded", "pre-cutoff", "suppressed"])
+@pytest.mark.parametrize("restart", [False, True])
+def test_unpublished_response_identity_is_deduplicated_after_commit(
+    project, phase, restart
+):
+    codex = adapter()
+    ledger, registration, path, checkout, outside = project
+    time = BEFORE if phase == "pre-cutoff" else AFTER
+    cwd = outside if phase == "excluded" else checkout
+    first = usage(8, 2)
+    write(
+        path,
+        [
+            startup(cwd, time),
+            *begin(cwd, time=time),
+            response("already-observed-secret", first, first, time=time),
+            counter(first, first, time=time),
+            end(time=time),
+        ],
+    )
+    candidate = source(registration)
+    if phase == "excluded":
+        batch = scan(candidate, None, CUTOFF)
+        candidate = candidate.with_exclusion(batch.frames[0])
+    state = codex.CodexState(ledger)
+    batch = scan(candidate, None, CUTOFF)
+    eligibility = (
+        Eligibility.EXCLUDED if phase == "suppressed" else Eligibility.ELIGIBLE
+    )
+    result = codex.read_codex(batch, state, eligibility)
+    assert result.revisions == ()
+    (tombstone,) = result.provider_checkpoint.request_prefix
+    assert tombstone.ordinal == 3
+    assert tombstone.tokens == TokenCounts()
+    assert b"already-observed-secret" not in repr(tombstone).encode()
+    prior = commit(ledger, batch, result)
+    state = (
+        codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        if restart
+        else codex.advance_codex_state(state, batch, result)
+    )
+    later = UUID(int=0x183)
+    total = usage(16, 4)
+    write(
+        path,
+        [
+            *begin(checkout, later),
+            response("already-observed-secret", total, first, turn=later),
+            counter(total, first),
+            end(later),
+        ],
+        append=True,
+    )
+    _, result = read(codex, candidate, state, prior)
+    assert result.revisions == ()
+    assert (8, DiagnosticCode.IDENTITY_CONFLICT) in codes(result)
+
+
+def compaction(record):
+    return row(
+        "compacted",
+        {
+            "window_number": 2,
+            "first_window_id": str(UUID(int=0x190)),
+            "previous_window_id": str(UUID(int=0x190)),
+            "window_id": str(UUID(int=0x191)),
+            "compaction_response_id": record["payload"]["response_id"],
+            "latest_token_usage_record": record["payload"],
+            "replacement_history": [{"private_content": "compaction-secret"}],
+        },
+    )
+
+
+@pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
+def test_compaction_reconciles_separate_counter_windows(project, split):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    first, compact_amount, next_amount = usage(8, 2), usage(4, 1), usage(6, 1)
+    compact_response = response("compaction-response", usage(12, 3), compact_amount)
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            response("pre-compaction", first, first),
+            counter(first, first),
+            compact_response,
+            compaction(compact_response),
+            row("world_state", {"full": True, "state": {}}),
+            begin(checkout)[1],
+            event(
+                "thread_settings_applied",
+                thread_id=str(SESSION),
+                thread_settings={
+                    "model": "gpt-6-astra",
+                    "model_provider_id": "openai",
+                    "service_tier": "default",
+                },
+            ),
+            counter(usage(10, 3), first),
+            end(),
+        ],
+    )
+    candidate = source(registration)
+    state = codex.CodexState(ledger)
+    prior = None
+    if split != "same-batch":
+        batch, result = read(codex, candidate, state)
+        assert [
+            (record.tokens.total_tokens, record.availability)
+            for record in observations(result)
+        ] == [(10, Availability.COMPLETE)]
+        prior = commit(ledger, batch, result)
+        state = (
+            codex.CodexState(Ledger.open(ledger.root, PROJECT))
+            if split == "restart"
+            else codex.advance_codex_state(state, batch, result)
+        )
+    later = UUID(int=0x184)
+    write(
+        path,
+        [
+            *begin(checkout, later),
+            response("post-compaction-first", usage(18, 4), next_amount, turn=later),
+            counter(usage(16, 4), next_amount),
+            response("post-compaction-second", usage(24, 5), next_amount, turn=later),
+            counter(usage(22, 5), next_amount),
+            end(later),
+        ],
+        append=True,
+    )
+    _, result = read(codex, candidate, state, prior)
+    projected = [
+        (record.tokens.total_tokens, record.availability)
+        for record in observations(result)
+    ]
+    expected = [(7, Availability.COMPLETE), (7, Availability.COMPLETE)]
+    if split == "same-batch":
+        expected.insert(0, (10, Availability.COMPLETE))
+    elif split == "restart":
+        expected[0] = (7, Availability.PARTIAL)
+    assert projected == expected
+    assert "compaction-secret" not in repr(result)
+
+
+def test_conflicting_reasoning_is_detected_when_last_omits_subset(project):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    first = usage(8, 2, reasoning=1)
+    last = usage(6, 3)
+    last.pop("reasoning_output_tokens")
+    thread_total = usage(14, 5)
+    thread_total.pop("reasoning_output_tokens")
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            response("before-reasoning", first, first),
+            counter(first, first),
+            response("conflicting-reasoning", thread_total, usage(6, 3, reasoning=2)),
+            counter(usage(14, 5, reasoning=2), last),
+            end(),
+        ],
+    )
+    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    first_request, second = observations(result)
+    assert first_request.availability is Availability.COMPLETE
+    assert second.availability is Availability.PARTIAL
+    assert second.tokens.reasoning_output_tokens is None
+    assert (6, DiagnosticCode.UNRECONCILED_USAGE) in codes(result)
+
+
+def test_warm_scanner_frontier_keeps_provisional_first_request_output(project):
+    codex = adapter()
+    ledger, registration, path, _, outside = project
+    first, second = usage(8, 2), usage(6, 2)
+    write(
+        path,
+        [
+            startup(outside),
+            *begin(outside),
+            tool_call(ledger),
+            response("before-frontier", first, first),
+            tool_output(),
+            counter(first, first),
+            row("response_item", {"type": "reasoning", "summary": []}),
+        ],
+    )
+    candidate = source(registration)
+    held = scan(candidate, None, CUTOFF)
+    candidate = candidate.with_exclusion(held.frames[0])
+    state = codex.CodexState(ledger)
+    batch, result = read(codex, candidate, state)
+    assert result.revisions == ()
+    prior = commit(ledger, batch, result)
+    state = codex.advance_codex_state(state, batch, result)
+    write(
+        path,
+        [
+            response("after-frontier", usage(14, 4), second),
+            counter(usage(14, 4), second),
+            end(),
+        ],
+        append=True,
+    )
+    scope = marker(codex, ledger)
+    batch, result = read(codex, candidate, state, prior)
+    (proof,) = [
+        batch.scope_evidence(entry)
+        for entry in result.boundaries
+        if entry.receipt_ref == scope.receipt_ref
+    ]
+    with ledger.writer() as writer:
+        enqueue_marker(ledger.root, scope)
+        drain_inbox(writer, [proof])
+    (enrollment,) = [
+        entry.record
+        for entry in ledger.as_of().current
+        if isinstance(entry.record, ScopeEnrollment)
+    ]
+    candidate = candidate.with_enrollment(enrollment, batch=batch, evidence=proof)
+    batch, result = read(codex, candidate, state, prior)
+    (record,) = observations(result)
+    assert record.tokens.total_tokens == 8
+    assert record.boundary == proof.boundary
+
+
+@pytest.mark.parametrize(
+    "broken", ["missing-world-state", "contradictory-embedded-turn"]
+)
+@pytest.mark.parametrize("display", ["decline", "positive"])
+def test_unproven_compaction_cannot_allocate_display_change(project, broken, display):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    amount = usage(8, 2)
+    compact_record = response("possible-compaction", usage(16, 4), amount)
+    witness = compaction(compact_record)
+    followup = [row("world_state", {"full": True, "state": {}})]
+    if broken == "missing-world-state":
+        followup = []
+    else:
+        witness["payload"]["latest_token_usage_record"] = dict(
+            compact_record["payload"], turn_token_usage=usage(1, 1)
+        )
+    total = usage(6, 1) if display == "decline" else usage(10, 3)
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            response("first-display", amount, amount),
+            counter(amount, amount),
+            compact_record,
+            witness,
+            *followup,
+            begin(checkout)[1],
+            event(
+                "thread_settings_applied",
+                thread_id=str(SESSION),
+                thread_settings={
+                    "model": "gpt-6-astra",
+                    "model_provider_id": "openai",
+                    "service_tier": "default",
+                },
+            ),
+            counter(total, amount),
+            end(),
+        ],
+    )
+    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    assert [record.tokens.total_tokens for record in observations(result)] == [10]
+    if display == "decline":
+        assert result.provider_checkpoint.baseline.input_tokens == 8
+        assert DiagnosticCode.COUNTER_REGRESSION in {code for _, code in codes(result)}
+    else:
+        assert DiagnosticCode.COVERAGE_GAP in {code for _, code in codes(result)}
+
+
+def test_inconsistent_positive_counter_cannot_separate_excluded_activity(project):
+    codex = adapter()
+    ledger, registration, path, checkout, outside = project
+    unrelated, returned = (UUID(int=value) for value in (0x195, 0x196))
+    first = usage(8, 2)
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            counter(first, first),
+            end(),
+            *begin(outside, unrelated),
+            end(unrelated),
+            *begin(checkout, returned),
+            counter(usage(12, 3, cache=5), usage(4, 1)),
+            counter(usage(18, 5, cache=5), usage(6, 2)),
+            counter(usage(24, 7, cache=5), usage(6, 2)),
+            end(returned),
+        ],
+    )
+    candidate = source(registration)
+    batch = scan(candidate, None, CUTOFF)
+    candidate = candidate.with_exclusion(
+        next(frame for frame in batch.frames if frame.boundary_only)
+    )
+    _, result = read(codex, candidate, codex.CodexState(ledger))
+    assert [record.tokens.total_tokens for record in observations(result)] == [10, 8]

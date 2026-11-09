@@ -6,6 +6,8 @@ import shlex
 from dataclasses import dataclass, field, fields, replace
 from datetime import UTC, datetime
 from decimal import Decimal
+from enum import Enum
+from itertools import combinations
 from pathlib import Path
 from uuid import UUID
 
@@ -27,6 +29,7 @@ from ..types import (
     QuotaBucket,
     QuotaEvidence,
     QuotaSource,
+    RequestPrefix,
     Revision,
     SourceBoundary,
     SourceRef,
@@ -111,10 +114,25 @@ class _Response:
     request_ref: SourceRef
     counts: TokenCounts
     thread_counts: TokenCounts
+    turn_counts: TokenCounts | None
+    thread_delta: TokenCounts | None
     model: ModelLabel
     effort: Effort | None
     processing_tier: ProcessingTier | None
     eligible: bool
+
+
+class _CompactionStage(Enum):
+    WORLD_STATE = 1
+    TURN_CONTEXT = 2
+    SETTINGS = 3
+    DISPLAY = 4
+
+
+@dataclass(frozen=True, slots=True)
+class _Compaction:
+    segment_ref: SourceRef
+    stage: _CompactionStage = _CompactionStage.WORLD_STATE
 
 
 @dataclass(slots=True)
@@ -130,6 +148,8 @@ class _Context:
     conflict: bool = False
     closed_turn: SourceRef | None = None
     tainted: bool = False
+    enrollment_output: bool = False
+    compaction: _Compaction | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +168,7 @@ class CodexState:
     _context: _Context = field(default_factory=_Context, repr=False)
     _seen_requests: frozenset[SourceRef] = field(default=frozenset(), repr=False)
     _have_history: bool = field(default=False, repr=False)
+    _thread_counts: TokenCounts | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.account_ref is not None:
@@ -282,6 +303,19 @@ def _coherent(counts: TokenCounts) -> bool:
     )
 
 
+def _decode_baseline(stored: TokenCounts | None) -> tuple[TokenCounts | None, bool]:
+    if stored is None or stored.total_tokens is not None:
+        return stored, False
+    # An incomplete cumulative checkpoint can retain a high-water witness
+    # without representing a qualified baseline for the intervening span.
+    if stored.input_tokens is not None and stored.output_tokens is not None:
+        total = _number(stored.input_tokens + stored.output_tokens)
+        high_water = replace(stored, total_tokens=total)
+        if _coherent(high_water):
+            return high_water, True
+    return None, False
+
+
 def _quota_window(
     raw: object, account_ref: SourceRef, observed_at: datetime
 ) -> QuotaEvidence | None:
@@ -381,16 +415,12 @@ def _marker_output(payload: dict) -> UUID | None:
     return None
 
 
-def _initial_context(
-    state: CodexState, batch: FrameBatch
-) -> tuple[_Context, set[SourceRef], bool]:
-    if (
+def _matching_context(state: CodexState, batch: FrameBatch) -> bool:
+    return (
         batch.cursor is not None
         and batch.cursor.source_ref == state._stream_ref
         and batch.provider_checkpoint == state._checkpoint
-    ):
-        return replace(state._context), set(state._seen_requests), state._have_history
-    return _Context(), set(), False
+    )
 
 
 class _Walk:
@@ -400,16 +430,28 @@ class _Walk:
         self.state = state
         self.record_usage = eligibility is Eligibility.ELIGIBLE
         state.ledger.validate_source_ref(batch.cursor.source_ref)
-        self.context, self.seen_requests, self.have_history = _initial_context(
-            state, batch
-        )
+        matching = _matching_context(state, batch)
+        self.context = replace(state._context) if matching else _Context()
+        self.seen_requests = set(state._seen_requests) if matching else set()
+        self.have_history = matching and state._have_history
         self.prior = batch.provider_checkpoint
         self.checkpoint = self.prior
         self.epoch = None if self.prior is None else self.prior.epoch_ref
         self.ordinal = (
             None if self.prior is None or self.epoch is None else self.prior.ordinal
         )
-        self.baseline = None if self.prior is None else self.prior.baseline
+        self.baseline, withheld = _decode_baseline(
+            None if self.prior is None else self.prior.baseline
+        )
+        if not matching:
+            self.context.tainted = withheld
+        self.thread_counts = state._thread_counts if matching else None
+        self.lookahead_total: TokenCounts | None = None
+        self.unpublished = {
+            entry.request_ref: entry
+            for entry in (() if self.prior is None else self.prior.request_prefix)
+        }
+        self.seen_requests.update(self.unpublished)
         self.boundaries: list[SourceBoundary] = []
         self.diagnostics: list[Diagnostic] = list(batch.diagnostics)
         self.revisions: list[Revision] = []
@@ -524,7 +566,9 @@ class _Walk:
             if commit:
                 self.gap(frame, DiagnosticCode.MALFORMED_USAGE)
                 self.baseline = None
-            self.context = _Context(tainted=context.tainted)
+            self.context = _Context(
+                tainted=context.tainted or context.enrollment_output
+            )
             return
         if commit and context.turn is not None:
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
@@ -552,7 +596,7 @@ class _Walk:
                 codex_turn_boundary_reference(self.ledger, frame.session_ref, root_id),
                 not frame.pre_cutoff,
             ),
-            tainted=context.tainted or frame.pre_cutoff,
+            tainted=context.tainted or context.enrollment_output or frame.pre_cutoff,
         )
 
     def matches_turn(
@@ -587,7 +631,9 @@ class _Walk:
         if not self.matches_turn(frame, payload, turn):
             if commit:
                 self.gap(frame, DiagnosticCode.BOUNDARY_UNVERIFIED)
-            self.context = _Context(ambiguous=True, tainted=context.tainted)
+            self.context = _Context(
+                ambiguous=True, tainted=context.tainted or context.enrollment_output
+            )
             return
         raw_model = payload.get("model")
         model = (
@@ -602,6 +648,8 @@ class _Walk:
         if not turn.seen_context and turn.segment_ref == frame.segment_ref:
             self.boundaries.append(turn.start)
         if turn.segment_ref != frame.segment_ref:
+            self.discard_serial_output()
+            context.compaction = None
             context.call = None
             context.serial_output = None
             context.receipt = None
@@ -645,17 +693,40 @@ class _Walk:
         context = self.context
         turn = context.turn
         matches = self.matches_turn(frame, payload, turn)
-        if commit and (
-            not matches or not turn.seen_counter or context.response is not None
-        ):
+        unsettled = context.response is not None or (turn is not None and not matches)
+        if commit and (not matches or not turn.seen_counter or unsettled):
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
-            if context.response is not None or (turn is not None and not matches):
-                self.baseline = None
         self.context = _Context(
             closed_turn=turn.start.boundary_ref if matches else None,
             next_turn_receipt=context.next_turn_receipt if matches else None,
-            tainted=context.tainted,
+            tainted=context.tainted or context.enrollment_output or unsettled,
         )
+
+    def discard_serial_output(self) -> None:
+        context = self.context
+        context.tainted |= context.enrollment_output
+        context.enrollment_output = False
+        context.receipt = None
+        context.serial_output = None
+
+    def response_output(self, frame: SourceFrame, commit: bool) -> None:
+        if not commit or self.eligible(frame):
+            return
+        context = self.context
+        if (
+            context.receipt is not None
+            and context.serial_output == frame.segment_ref
+            and context.turn is not None
+            and context.turn.segment_ref == frame.segment_ref
+            and not frame.pre_cutoff
+            and not context.conflict
+            and not context.ambiguous
+        ):
+            # U03 enrolls at the exact response record. Earlier native
+            # output can belong to that request if its serial proof survives.
+            context.enrollment_output = True
+        else:
+            context.tainted = True
 
     def tool(self, frame: SourceFrame, payload: dict, kind: str, commit: bool) -> None:
         context = self.context
@@ -663,15 +734,13 @@ class _Walk:
         if raw_call is None:
             context.call = None
             context.parallel = True
-            context.receipt = None
-            context.serial_output = None
+            self.discard_serial_output()
             return
         ref = self.ledger.pseudonymize(
             "codex-tool-call", f"{frame.session_ref.value}:{raw_call}"
         )
         if kind in _CALLS:
-            if commit and not self.eligible(frame):
-                context.tainted = True
+            self.response_output(frame, commit)
             if context.call is not None or context.parallel:
                 context.call = None
                 context.parallel = True
@@ -690,9 +759,9 @@ class _Walk:
             or call.call_ref != ref
             or call.segment_ref != frame.segment_ref
         ):
-            context.receipt = None
-            context.serial_output = None
+            self.discard_serial_output()
             return
+        self.discard_serial_output()
         context.serial_output = frame.segment_ref if not frame.pre_cutoff else None
         command = (
             _marker_output(payload) if call.marker and not frame.pre_cutoff else None
@@ -713,9 +782,9 @@ class _Walk:
         context = self.context
         context.conflict = True
         context.call = None
-        context.receipt = None
+        self.discard_serial_output()
         context.next_turn_receipt = None
-        context.serial_output = None
+        context.compaction = None
         if commit:
             self.gap(frame, code)
 
@@ -734,14 +803,10 @@ class _Walk:
             self.reject_response(frame, DiagnosticCode.IDENTITY_CONFLICT, commit)
             return
         response_id = _identifier(payload.get("response_id"))
-        counts = _counts(payload.get("usage"))
-        thread_counts = _counts(payload.get("thread_token_usage"))
         if (
             response_id is None
             or _identifier(payload.get("turn_id")) is None
             or _identifier(payload.get("root_turn_id")) is None
-            or counts is None
-            or thread_counts is None
         ):
             self.reject_response(frame, DiagnosticCode.MALFORMED_USAGE, commit)
             return
@@ -756,6 +821,26 @@ class _Walk:
         if not self.remember(frame, request_ref):
             self.reject_response(frame, DiagnosticCode.IDENTITY_CONFLICT, commit)
             return
+        if commit:
+            # Codex uses the prefix envelope as an identity-only tombstone.
+            # The response ID is the only durable identity for unpublished usage.
+            self.unpublished[request_ref] = RequestPrefix(
+                request_ref, request_ref, frame.ordinal, TokenCounts()
+            )
+        counts = _counts(payload.get("usage"))
+        thread_counts = _counts(payload.get("thread_token_usage"))
+        if counts is None or thread_counts is None:
+            self.reject_response(frame, DiagnosticCode.MALFORMED_USAGE, commit)
+            return
+        thread_delta = None
+        if commit and self.thread_counts is not None:
+            try:
+                thread_delta = _difference(self.thread_counts, thread_counts)
+            except ValueError:
+                self.reject_response(frame, DiagnosticCode.COUNTER_REGRESSION, commit)
+                return
+        if commit:
+            self.thread_counts = thread_counts
         serial = context.serial_output == frame.segment_ref and not frame.pre_cutoff
         same_turn = turn is not None and turn.segment_ref == frame.segment_ref
         receipt = (
@@ -771,12 +856,18 @@ class _Walk:
         )
         if same_turn:
             self.boundaries.append(boundary)
+        if context.enrollment_output:
+            context.tainted |= receipt is None or not self.eligible(frame)
+            context.enrollment_output = False
+        context.compaction = None
         context.ambiguous |= context.response is not None
         context.response = _Response(
             boundary,
             request_ref,
             counts,
             thread_counts,
+            _counts(payload.get("turn_token_usage")),
+            thread_delta,
             turn.model if same_turn else ModelLabel.UNKNOWN,
             turn.effort if same_turn else None,
             turn.processing_tier if same_turn else None,
@@ -793,12 +884,96 @@ class _Walk:
         else:
             context.parallel = False
 
+    def compacted(self, frame: SourceFrame, payload: dict) -> bool:
+        context = self.context
+        response = context.response
+        turn = context.turn
+        checkpoint = _object(payload.get("latest_token_usage_record"))
+        response_id = _identifier(checkpoint.get("response_id"))
+        first = _uuid(payload.get("first_window_id"))
+        previous = _uuid(payload.get("previous_window_id"))
+        current = _uuid(payload.get("window_id"))
+        number = _number(payload.get("window_number"))
+        root = _session(self.ledger, checkpoint.get("session_id"))
+        if (
+            response is None
+            or turn is None
+            or response.boundary.ordinal + 1 != frame.ordinal
+            or turn.segment_ref != frame.segment_ref
+            or context.conflict
+            or context.ambiguous
+            or first is None
+            or previous is None
+            or current is None
+            or current in (first, previous)
+            or not number
+            or response_id is None
+            or response_id != payload.get("compaction_response_id")
+            or root is None
+            or self.epoch != self.epoch_reference(frame, root)
+            or _session(self.ledger, checkpoint.get("thread_id")) != frame.session_ref
+            or not self.matches_turn(frame, checkpoint, turn, require_root=True)
+            or response.request_ref
+            != self.ledger.pseudonymize(
+                "codex-response", f"{self.epoch.value}:{response_id}"
+            )
+            or _counts(checkpoint.get("usage")) != response.counts
+            or _counts(checkpoint.get("thread_token_usage")) != response.thread_counts
+            or response.turn_counts is None
+            or _counts(checkpoint.get("turn_token_usage")) != response.turn_counts
+        ):
+            return False
+        self.discard_serial_output()
+        # Require independent thread-delta proof before display rebaselining.
+        if response.thread_delta is not None and _compatible(
+            response.thread_delta, response.counts
+        ):
+            context.compaction = _Compaction(frame.segment_ref)
+        else:
+            context.tainted = True
+        return True
+
+    def continue_compaction(
+        self, frame: SourceFrame, kind: str, item: str | None, payload: dict
+    ) -> None:
+        witness = self.context.compaction
+        if witness is None:
+            return
+        stage = witness.stage
+        next_stage = None
+        if witness.segment_ref == frame.segment_ref:
+            if stage is _CompactionStage.WORLD_STATE:
+                if kind == "world_state" and payload.get("full") is True:
+                    next_stage = _CompactionStage.TURN_CONTEXT
+            elif stage is _CompactionStage.TURN_CONTEXT:
+                if kind == "turn_context" and self.matches_turn(
+                    frame, payload, self.context.turn
+                ):
+                    next_stage = _CompactionStage.SETTINGS
+            elif stage is _CompactionStage.SETTINGS:
+                if (
+                    kind == "event_msg"
+                    and item == "thread_settings_applied"
+                    and _session(self.ledger, payload.get("thread_id"))
+                    == frame.session_ref
+                ):
+                    next_stage = _CompactionStage.DISPLAY
+            elif kind == "event_msg" and item == "token_count":
+                next_stage = stage
+        if next_stage is None:
+            self.context.compaction = None
+            self.context.tainted = True
+        elif next_stage is not stage:
+            self.context.compaction = replace(witness, stage=next_stage)
+
     def rate_limits(self, frame: SourceFrame, raw: object) -> None:
         if raw is None or not self.record_usage or not self.eligible(frame):
             return
         account = self.state.account_ref
+        if account is None:
+            return  # Expected absence, exposed as Unknown in accounting.
         limits = _object(raw)
-        if account is None or limits.get("limit_id") != "codex":
+        if limits.get("limit_id") != "codex":
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
         windows: dict[QuotaBucket, QuotaEvidence] = {}
@@ -819,63 +994,94 @@ class _Walk:
             quota for key, quota in windows.items() if key not in conflicting
         )
 
+    def finish_counter(self, *, retain_output: bool = False) -> None:
+        context = self.context
+        if context.enrollment_output and not retain_output:
+            self.discard_serial_output()
+        context.response = None
+        context.compaction = None
+        context.ambiguous = context.conflict = False
+
     def counter(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
-        if not commit:
-            # The marker proof does not depend on counter values.
-            self.context.response = None
-            self.context.ambiguous = False
-            self.context.conflict = False
-            return
-        self.rate_limits(frame, payload.get("rate_limits"))
+        if commit:
+            self.rate_limits(frame, payload.get("rate_limits"))
         raw_info = payload.get("info")
         if raw_info is None and "info" in payload:
             return  # A quota-only tick does not consume pending response evidence.
         info = _object(raw_info)
         total = _counts(info.get("total_token_usage"))
-        last = _counts(info.get("last_token_usage"))
+        if not commit:
+            # Compare look-ahead snapshots only to preserve structural order
+            # through repeated display counters. This never updates accounting.
+            if total is not None and (
+                self.lookahead_total is None
+                or self.lookahead_total.total_tokens != total.total_tokens
+            ):
+                self.lookahead_total = total
+                self.finish_counter(retain_output=True)
+            return
         context = self.context
-        response = context.response
-        ambiguous, conflict, tainted = (
-            context.ambiguous,
-            context.conflict,
-            context.tainted,
-        )
-        context.response = None
-        context.ambiguous = context.conflict = context.tainted = False
         if total is None:
             self.gap(frame, DiagnosticCode.MALFORMED_USAGE)
-            self.baseline = None
-            return
-        if self.epoch is None:
-            self.gap(frame, DiagnosticCode.COVERAGE_GAP)
+            self.finish_counter()
+            context.tainted = True
             return
         before = self.baseline
         if before is None or not _coherent(before):
+            self.finish_counter()
             self.baseline = total
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
+        if before.total_tokens == total.total_tokens:
+            # Codex can re-emit a stale usage snapshot with a quota update.
+            # It does not settle any pending response or excluded activity.
+            if not _compatible(before, total):
+                self.gap(frame, DiagnosticCode.UNRECONCILED_USAGE)
+            if context.tainted or context.enrollment_output:
+                self.gap(frame, DiagnosticCode.COVERAGE_GAP)
+            return
+
+        compacted = (
+            context.compaction is not None
+            and context.compaction.stage is _CompactionStage.DISPLAY
+        )
         try:
             difference = _difference(before, total)
         except ValueError:
-            # Without independent reset evidence retain the high-water mark.
-            self.gap(frame, DiagnosticCode.COUNTER_REGRESSION)
-            return
-        self.baseline = total
-        if difference.total_tokens == 0:
-            if tainted:
+            self.finish_counter()
+            if compacted:
+                self.baseline = total
                 self.gap(frame, DiagnosticCode.COVERAGE_GAP)
-            if (
-                difference.input_tokens
-                or difference.output_tokens
-                or difference.cached_input_tokens
-                or difference.reasoning_output_tokens
-            ):
-                self.gap(frame, DiagnosticCode.UNRECONCILED_USAGE)
-                self.baseline = before
+            else:
+                self.gap(frame, DiagnosticCode.COUNTER_REGRESSION)
             return
+
+        last = _counts(info.get("last_token_usage"))
+        response = context.response
+        ambiguous, conflict = context.ambiguous, context.conflict
+        # A separating positive snapshot may settle the preceding request
+        # while output of the next receipt-proven request is already present.
+        preceding = (
+            response is not None
+            and last is not None
+            and not ambiguous
+            and not conflict
+            and all(
+                _compatible(a, b)
+                for a, b in combinations((response.counts, difference, last), 2)
+            )
+        )
+        self.finish_counter(retain_output=preceding)
+        tainted = context.tainted
+        coherent = _coherent(difference)
+        if compacted or (coherent and not conflict):
+            context.tainted = False
+        self.baseline = total
         turn = context.turn
         if turn is not None:
             context.turn = replace(turn, seen_counter=True)
+        if response is None and not conflict:
+            self.thread_counts = None
         if not self.record_usage or not self.eligible(frame) or conflict:
             return
         safe = (
@@ -887,21 +1093,32 @@ class _Walk:
                 and turn.segment_ref == frame.segment_ref
             )
         )
-        if tainted or not safe:
+        if compacted or tainted or not safe:
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
-        if not _coherent(difference):
+        if not coherent:
             self.gap(frame, DiagnosticCode.UNRECONCILED_USAGE)
             return
+
+        evidence = [difference]
+        if last is not None:
+            evidence.append(last)
+        if response is not None:
+            evidence.append(response.counts)
+            if response.thread_delta is not None:
+                evidence.append(response.thread_delta)
+        reasoning = {
+            counts.reasoning_output_tokens
+            for counts in evidence
+            if counts.reasoning_output_tokens is not None
+        }
         agrees = (
             last is not None
-            and _compatible(difference, last)
+            and all(_compatible(a, b) for a, b in combinations(evidence, 2))
             and (
                 response is None
-                or (
-                    _compatible(response.counts, last)
-                    and _compatible(response.thread_counts, total)
-                )
+                or response.thread_delta is not None
+                or _compatible(response.thread_counts, total)
             )
         )
         if before == _ZERO and not agrees:
@@ -912,6 +1129,8 @@ class _Walk:
         complete = agrees and not ambiguous
         if not complete:
             self.gap(frame, DiagnosticCode.UNRECONCILED_USAGE)
+        if len(reasoning) > 1:
+            difference = replace(difference, reasoning_output_tokens=None)
         self.observe(frame, difference, response, turn, complete)
 
     def observe(
@@ -992,11 +1211,13 @@ class _Walk:
             self.context = _Context(ambiguous=True)
             if commit:
                 self.baseline = None
+                self.thread_counts = None
         self.ordinal = frame.ordinal
         kind = frame.row["type"]
         payload = _object(frame.row.get("payload"))
         item = payload.get("type")
         item = item if type(item) is str else None
+        self.continue_compaction(frame, kind, item, payload)
 
         if kind == "session_meta":
             self.startup(frame, payload, commit)
@@ -1009,6 +1230,12 @@ class _Walk:
             self.response(frame, payload, commit)
         elif kind == "event_msg" and item == "token_count":
             self.counter(frame, payload, commit)
+        elif kind == "compacted":
+            if not self.compacted(frame, payload):
+                self.discard_serial_output()
+                self.context.tainted = True
+                if commit:
+                    self.gap(frame, DiagnosticCode.UNKNOWN_USAGE)
         elif kind == "event_msg" and item == "thread_settings_applied":
             self.settings(frame, payload)
         elif kind == "event_msg" and item == "task_started":
@@ -1020,8 +1247,8 @@ class _Walk:
         elif kind == "event_msg" and item in _ATTEMPT_ERRORS:
             self.context.ambiguous = True
             self.context.call = None
-            self.context.receipt = None
-            self.context.serial_output = None
+            self.discard_serial_output()
+            self.context.compaction = None
             if commit:
                 self.gap(frame, DiagnosticCode.COVERAGE_GAP)
                 if not self.eligible(frame):
@@ -1031,27 +1258,22 @@ class _Walk:
             or (kind == "event_msg" and item in _NONUSAGE_EVENTS)
             or (kind == "response_item" and item in _NONUSAGE_ITEMS)
         ):
-            if (
-                commit
-                and not self.eligible(frame)
-                and kind == "response_item"
-                and (
-                    item == "reasoning"
-                    or (item == "message" and payload.get("role") == "assistant")
-                )
+            if kind == "response_item" and (
+                item == "reasoning"
+                or (item == "message" and payload.get("role") == "assistant")
             ):
-                self.context.tainted = True
+                self.response_output(frame, commit)
         else:
             self.context.ambiguous = True
             self.context.call = None
-            self.context.receipt = None
-            self.context.serial_output = None
+            self.discard_serial_output()
+            self.context.compaction = None
             if commit:
                 self.gap(frame, DiagnosticCode.UNKNOWN_USAGE)
                 if not self.eligible(frame):
                     self.context.tainted = True
 
-    def committed(self) -> None:
+    def committed(self, published: tuple[Revision, ...] = ()) -> None:
         for frame in self.batch.commit_frames:
             self.step(frame, commit=True)
         # A scanner-rejected row has no SourceFrame. A malformed committed
@@ -1067,13 +1289,22 @@ class _Walk:
         if invalid:
             self.ordinal = max(invalid)
             self.baseline = None
+            self.thread_counts = None
             self.context = _Context(ambiguous=True)
+        for revision in (*self.revisions, *published):
+            self.unpublished.pop(revision.record.request_ref, None)
         if self.prior is not None and self.ordinal is not None:
+            baseline = self.baseline
+            if baseline is not None and (
+                self.context.tainted or self.context.enrollment_output
+            ):
+                baseline = replace(baseline, total_tokens=None)
             self.checkpoint = replace(
                 self.prior,
                 epoch_ref=self.epoch,
                 ordinal=self.ordinal,
-                baseline=None if self.context.tainted else self.baseline,
+                baseline=baseline,
+                request_prefix=tuple(self.unpublished.values()),
             )
 
 
@@ -1096,6 +1327,7 @@ def read_codex(
         raise ValueError("Expected a Codex provider checkpoint")
     walk = _Walk(batch, state, eligibility)
     walk.committed()
+    walk.lookahead_total = walk.baseline
     for frame in batch.frames[len(batch.commit_frames) :]:
         walk.step(frame, commit=False)
     ordinals = {frame.ordinal for frame in batch.frames}
@@ -1119,7 +1351,7 @@ def advance_codex_state(
     if batch.cursor is None or result.provider_checkpoint is None:
         return state
     walk = _Walk(batch, state, Eligibility.EXCLUDED)
-    walk.committed()
+    walk.committed(result.revisions)
     if walk.checkpoint != result.provider_checkpoint:
         raise ValueError("Expected the matching committed Codex result")
     return replace(
@@ -1129,4 +1361,5 @@ def advance_codex_state(
         _context=walk.context,
         _seen_requests=frozenset(walk.seen_requests),
         _have_history=walk.have_history,
+        _thread_counts=walk.thread_counts,
     )
