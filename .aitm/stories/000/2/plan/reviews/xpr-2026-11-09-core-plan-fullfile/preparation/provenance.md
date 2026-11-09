@@ -1,0 +1,13 @@
+# Author preparation before native plan validation
+
+Initial published planning base: `3702cfde855e7a2345e12439f19cc2ee9ebe7291`; plan raw SHA-256 `2106b881d255f4547247e2ec0b9adfdfa7e51be9ec4ac12fd0cca5f05b9bf0dd`. The design at that commit is the newly accepted separate validation, raw SHA-256 `5eaafbc1af04f13d4de25dcf5e9dacb35042ef775e0f230be89e4fba9452f3e7`.
+
+Native candidate base: `ab631c02f2eef28517f8a864e54679fdd548f467` on an unpublished temporary review branch; plan raw SHA-256 `ef3f278a4ce014e7f8a4e5866c25b1b9d3070f2ab0ce93168bfd1a2199e18719`. This commit is **not a planning publication**. Astra gpt-6-astra/xhigh prepared it before the native plan reviewer began. These changes are not credited to reviewer findings.
+
+The candidate reconciles the new accepted design: kind/split and common planning guards, typed source-review envelope/independence, entity editing, review-open fact and scalar typing, typed plan-entry source/own-document coverage/estimate provenance, pivot/reconfiguration proof and current-corpus migration. Five separately bounded leaves C71–C75 and associated producer/interface/test/dependency updates keep every leaf ≤4 h. Candidate totals:75 leaves,242.5 h; original Refine180 h and preceding accepted Plan220.5 h/70 leaves remain historical baselines. All225 overlapping path pairs are ordered;274 required predecessor edges are explicit.
+
+Two original physical lines exceeded the native Read display limit (2,337 and3,412 characters). Prose is wrapped into bounded physical lines (candidate maximum1,715 characters), preserving meaningful Markdown paragraphs and list continuations. Formatting changes are part of this new reviewed raw candidate; no historical digest is upgraded.
+
+Reconstruct the published original by applying [published-base.diff](published-base.diff) in an empty directory, then apply [candidate.diff](candidate.diff) to obtain the exact initial native candidate. This chain was byte-verified. Separately, the native portable record's patch-000 creates that same candidate and each numbered author patch follows the native rounds. Record both bases and verify their meeting point; never label the unpublished candidate as the initial planning tip. Final import compares planning against the published base above, not against an unpublished preparation commit.
+
+This is task-specific review preparation, not an extra review round, a policy waiver, implementation or permission to close any issue. Existing C01–C70 IDs are preserved; new/revised leaf issues are reconciled only after acceptance. The current candidate has not yet been accepted when this note is written; native terminal records establish the subsequent outcome.

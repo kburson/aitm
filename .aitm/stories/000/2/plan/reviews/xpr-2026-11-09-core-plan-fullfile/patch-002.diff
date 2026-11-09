@@ -1,0 +1,351 @@
+diff --git a/.aitm/stories/000/2/plan/core-implementation-plan.md b/.aitm/stories/000/2/plan/core-implementation-plan.md
+index 97cae59..a87ae8d 100644
+--- a/.aitm/stories/000/2/plan/core-implementation-plan.md
++++ b/.aitm/stories/000/2/plan/core-implementation-plan.md
+@@ -4,7 +4,7 @@ story: 2
+ role: plan
+ title: aitm-core implementation plan
+ created: 2026-11-09T06:44:00Z
+-updated: 2026-11-09T13:28:54Z
++updated: 2026-11-09T13:37:37Z
+ last-branch: review/2-core-plan-fullfile
+ status: review candidate (acceptance is in review records)
+ design: ../design/core-design.md
+@@ -36,13 +36,13 @@ parent-plan: ../../1/plan/master-plan.md
+ 
+ ## Estimate and scope baseline
+ 
+-[Initial Refine record](../refinement.md): **180 implementation agent-hours, XL epic, P1**. Bottom-up Plan estimate: **255.5 h over 78 leaves**, all 2.5–4 h, including local verification and source-review engagement. P1 reflects the foundational dependency, not emergency work; XL is this epic's aggregation label, not a universal size-policy change. Each leaf is a small deliverable, provisionally S (≤4 h). No calendar duration is promised and no implementation clock has started.
++[Initial Refine record](../refinement.md): **180 implementation agent-hours, XL epic, P1**. Bottom-up Plan estimate: **257.5 h over 79 leaves**, all 2.5–4 h, including local verification and source-review engagement. P1 reflects the foundational dependency, not emergency work; XL is this epic's aggregation label, not a universal size-policy change. Each leaf is a small deliverable, provisionally S (≤4 h). No calendar duration is promised and no implementation clock has started.
+ 
+ These are estimates, not proven throughput. Concurrency/recovery/platform/migration uncertainty is high. At JIT, split or redesign a leaf before Develop if the verified baseline, dependencies or proof burden makes four hours implausible. Do not consume its expansion allowance as planned overflow or relax acceptance to fit the estimate. Changes to leaf scope/dependencies invalidate the relevant accepted decomposition and need applicable review. Record Plan/JIT revisions separately; never overwrite the original Refine estimate.
+ 
+ This is a new repository: inspected trunk `4e896e049370df58fe870dc80790401056218b97` contains README and LICENSE only. All listed implementation paths are proposed new files except those explicitly described as shared updates. JIT must re-read current trunk rather than treating this empty baseline as permanent.
+ 
+-The preceding accepted Plan baseline was 220.5 h / 70 leaves. This pre-review reconciliation adds C71–C75 (17 h) for independently reviewable split, descriptor/applicability, source-review record, entity editing and decompose integration contracts. Existing producers receive 5 h of explicit added schema/acceptance work (C03/C54/C11/C16/C22/C28/C31/C38/C46), preserving every ≤4 h bound. These were author preparation changes following the separately accepted design, not findings from the subsequent plan review. The native review records establish their validation outcome. Round-1 revisions add C76 (4 h), C77 (2.5 h), C78 (3 h) and 3.5 h across C17/C29/C30/C51/C62 for explicit guard, wiring, sync, kind and explain proofs. The resulting Plan estimate is 255.5 h / 78 leaves, with the original 180 h Refine and earlier Plan baselines retained.
++The preceding accepted Plan baseline was 220.5 h / 70 leaves. This pre-review reconciliation adds C71–C75 (17 h) for independently reviewable split, descriptor/applicability, source-review record, entity editing and decompose integration contracts. Existing producers receive 5 h of explicit added schema/acceptance work (C03/C54/C11/C16/C22/C28/C31/C38/C46), preserving every ≤4 h bound. These were author preparation changes following the separately accepted design, not findings from the subsequent plan review. The native review records establish their validation outcome. Round-1 revisions add C76 (4 h), C77 (2.5 h), C78 (3 h) and 3.5 h across C17/C29/C30/C51/C62 for explicit guard, wiring, sync, kind and explain proofs. That round-1 Plan estimate was 255.5 h / 78 leaves, with the original 180 h Refine and earlier Plan baselines retained. Round 2 adds the required C76/C79 prerequisites to C65/C66 and proactively splits the capped guard leaf: C76 becomes 3 h source-evidence work and new C79 is 3 h completion/signoff work, adding 2 h for separate integration/verification. Current total: 257.5 h / 79 leaves.
+ 
+ ## File and interface map
+ 
+@@ -66,7 +66,7 @@ Each owning leaf also implements its named thin CLI module and `--json` adapter;
+ 
+ ## Execution and evidence contract for every leaf
+ 
+-Before Develop, create its design/plan/JIT records as required by the explicitly applicable policy. The accepted epic plan is input to those records, not an invented leaf acceptance. Bootstrap issue/story creation records intent and dependencies, not runtime readiness. All leaf issues are children of #2 (itself a child of #1); they are **not expansions**. Stable plan keys C01…C78 are mapped to actual issue IDs only after decomposition acceptance, in a separate ledger so issue creation does not mutate this reviewed file.
++Before Develop, create its design/plan/JIT records as required by the explicitly applicable policy. The accepted epic plan is input to those records, not an invented leaf acceptance. Bootstrap issue/story creation records intent and dependencies, not runtime readiness. All leaf issues are children of #2 (itself a child of #1); they are **not expansions**. Stable plan keys C01…C79 are mapped to actual issue IDs only after decomposition acceptance, in a separate ledger so issue creation does not mutate this reviewed file.
+ 
+ Each leaf executes this cycle with its concrete proof and interface below:
+ 
+@@ -80,7 +80,7 @@ Test command convention: `uv run --package aitm-core pytest <root-relative test-
+ 
+ Acceptance evidence per leaf is its concrete proof below plus the common command/head/result/source-review/delivery record. If a test is unavailable on the host, retain a precise capability result and run the required supported lane elsewhere before claiming that capability proved. An unavailable containment probe is a tested behavior, not proof that containment itself works. No leaf may mark a skipped requirement passed.
+ 
+-C71 owns the bounded split, C72 owns pure typed plan-entry preparation/applicability, C73 owns source-review parsing/independence, C74 completes entity editing and C75 integrates decompose through the actual identity protocol. C76 completes story/defect exit-evidence guards, C77 supplies pure legacy-kind mapping, and C78 wires full installed explain. C72 declares the applicability implementation before C28 consumes it; C75 later installs the production service. Until then a plan-entry child cannot obtain verified readiness from an absent port. Source-kind interfaces in C20/C22 already handle both frozen sources; later decompose does not create a draft-only escape from identity reservation.
++C71 owns the bounded split, C72 owns pure typed plan-entry preparation/applicability, C73 owns source-review parsing/independence, C74 completes entity editing and C75 integrates decompose through the actual identity protocol. C76/C79 complete story/defect exit-evidence guards, C77 supplies pure legacy-kind mapping, and C78 wires full installed explain. C72 declares the applicability implementation before C28 consumes it; C75 later installs the production service. Until then a plan-entry child cannot obtain verified readiness from an absent port. Source-kind interfaces in C20/C22 already handle both frozen sources; later decompose does not create a draft-only escape from identity reservation.
+ 
+ ## Review focus and risks
+ 
+@@ -92,7 +92,7 @@ C71 owns the bounded split, C72 owns pure typed plan-entry preparation/applicabi
+ 
+ ## Ordered leaf backlog
+ 
+-Dependencies below are required delivered interfaces/evidence and mandatory shared-file integration predecessors, not mere issue closure. Independent means all listed predecessors are satisfied and touched shared exports/CLI registry are serialized. The table order is a valid topological execution order, not a demand to run everything serially. Keys are stable identities, not ordinal positions: added split leaves C54–C78 appear at their prerequisite position.
++Dependencies below are required delivered interfaces/evidence and mandatory shared-file integration predecessors, not mere issue closure. Independent means all listed predecessors are satisfied and touched shared exports/CLI registry are serialized. The table order is a valid topological execution order, not a demand to run everything serially. Keys are stable identities, not ordinal positions: added split leaves C54–C79 appear at their prerequisite position.
+ 
+ 
+ ### Production composition ownership
+@@ -196,15 +196,16 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ | C64 | Deterministic two-clone qualification fixtures | 2.5 | C09, C10, C21, C43 |
+ | C70 | Post-preflight consumer integration qualification | 3 | C31, C64, C27, C28, C30 |
+ | C50 | Shared-store conflicts and publication recovery qualification | 3 | C64, C17, C30 |
+-| C65 | Execution fences and clock-rebuild qualification | 3.5 | C64, C30, C31, C32, C35, C38, C42, C61 |
+-| C66 | Managed-delivery race and recovery qualification | 3 | C64, C41, C42 |
+ | C62 | Epic aggregation and scope-resolution checkpoint | 3 | C22, C29, C38, C42, C43 |
+ | C63 | Installed extension discovery and command/init composition | 3 | C12, C13, C14, C43, C01, C62 |
+-| C76 | Story exit evidence guards and source commit binding | 4 | C28, C29, C31, C35, C38, C39, C40, C41, C42, C62, C63 |
+-| C78 | Installed transition explanation and unknown guards | 3 | C18, C28, C29, C62, C76 |
+-| C49 | Core-only nominal lifecycle qualification | 3 | C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63, C76, C78 |
+-| C75 | Plan-entry graduation and provenance reconciliation | 3.5 | C72, C21, C22, C28, C31, C64, C63, C76 |
+-| C67 | Complete installed CLI surface audit | 2.5 | C49, C51, C63, C44, C71, C74, C75, C76, C78 |
++| C76 | Source commit guard and retained source evidence | 3 | C28, C29, C31, C35, C38, C39, C40, C41, C42, C62, C63 |
++| C79 | Test and Review exit composites with atomic signoff | 3 | C76, C35, C38, C39, C42, C62 |
++| C65 | Execution fences and clock-rebuild qualification | 3.5 | C64, C30, C31, C32, C35, C38, C42, C61, C76, C79 |
++| C66 | Managed-delivery race and recovery qualification | 3 | C64, C41, C42, C76, C79 |
++| C78 | Installed transition explanation and unknown guards | 3 | C18, C28, C29, C62, C76, C79 |
++| C49 | Core-only nominal lifecycle qualification | 3 | C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63, C76, C78, C79 |
++| C75 | Plan-entry graduation and provenance reconciliation | 3.5 | C72, C21, C22, C28, C31, C64, C63, C76, C79 |
++| C67 | Complete installed CLI surface audit | 2.5 | C49, C51, C63, C44, C71, C74, C75, C76, C78, C79 |
+ | C68 | Lifecycle reconciliation and limited-rerun qualification | 3 | C49, C61 |
+ | C52 | Entrypoint performance and unit-isolation budgets | 3 | C18, C49, C50, C51, C65, C66, C67, C68, C70 |
+ | C59 | Cross-platform wheel and CI qualification | 3 | C36, C37, C49, C50, C51, C52, C63, C65, C66, C67, C68, C70, C75 |
+@@ -221,7 +222,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `CommandResult(operation_id, local, publication, pending, evidence, recovery); main() -> int; StoreAnchor, RefObservation, RefreshResult and ServicePorts structural records`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+ - [ ] **Test first:** test_installed_entrypoint: wheel installs on Python 3.13, aitm --help works without Node, JSON schema/version and distinct refused/conflict/integrity/pending exit codes round-trip. Imports make no Git/network/model call. Define mandatory ports for policy resolution/refresh, validation gate, write authorization, attempt preflight, init hooks, action retry and lane selection; absent required implementation returns unavailable. No permissive production fallback. Create regular packages with empty __init__.py files for every listed package; root aitm_core.__file__ must resolve to the installed wheel. Own lazy core route catalog in cli/catalog.py: a fixed route-to-module table for the complete CLI map below, loaded by cli/app.py without importing unused modules. A missing not-yet-delivered module reports unavailable, not success; each later command module exports its declared handler without editing this catalog. C09 cli/dispatch.py is the operation/publication executor, not the route registry. Install tests/unit/conftest.py autouse guards rejecting subprocess creation and network socket access before any unit leaf; integration tests verify those guards with deliberately failing temporary test cases. Pin Python/runtime/dev/build dependencies and root uv.lock: Pydantic, Typer, RFC8785 and strict-YAML support, pytest, Ruff and the chosen uv-compatible wheel builder. C03 may refine canonicalization dependencies under its explicit serialized manifest ownership; other later dependency additions require a coordinated allowlist/contract revision before edits, not an implicit permission. Own pytest import configuration: --import-mode=importlib in the package
+-  pyproject.toml, with tests/conftest.py adding only the resolved test-package parent to the harness import path. Tests are a regular tests package with the listed subpackage markers; helpers use qualified imports such as tests.support.shared_store and tests.packaging.installed_runner. Refuse a preloaded foreign tests package rather than silently importing it. Prove a cross-directory helper import in the integration scaffold and prove the test path setup does not add src/ or an editable core installation. Missing module/port negative vectors use deliberately unregistered test compositions and remain valid as later implementations land. The fixed lazy route catalog includes split, decompose, idea open and entity-scoped sync/unbind from the updated accepted design. Missing later handlers report unavailable; their owners install separate modules without editing the catalog. Declare mandatory KindRequirements, AggregateEvidence and StoryExitGuards slots with producer-owned protocols from C28/C29/C76. Missing required kind/edge evaluators return unavailable/unknown; no generic story guard is applied to exempt kinds.
++  pyproject.toml, with tests/conftest.py adding only the resolved test-package parent to the harness import path. Tests are a regular tests package with the listed subpackage markers; helpers use qualified imports such as tests.support.shared_store and tests.packaging.installed_runner. Refuse a preloaded foreign tests package rather than silently importing it. Prove a cross-directory helper import in the integration scaffold and prove the test path setup does not add src/ or an editable core installation. Missing module/port negative vectors use deliberately unregistered test compositions and remain valid as later implementations land. The fixed lazy route catalog includes split, decompose, idea open and entity-scoped sync/unbind from the updated accepted design. Missing later handlers report unavailable; their owners install separate modules without editing the catalog. Declare mandatory KindRequirements, AggregateEvidence and StoryExitGuards slots with producer-owned protocols from C28/C29/C76/C79. Missing required kind/edge evaluators return unavailable/unknown; no generic story guard is applied to exempt kinds.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c01.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -759,7 +760,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `transition(request: TransitionRequest) -> OperationResult; explain(snapshot, story) -> TransitionExplanation`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+ - [ ] **Test first:** test_transition_matrix: eight-state edges and entry/exit slots evaluated core then stable extensions on one pinned read-set. Enforce refusal records no transition; advisory advances with failed guards; illegal edge/integrity never waived. CAS race re-evaluates all related predicates. Real advisory promote to Develop with absent plan and implementation-unbound creates one provisional attempt/clock and failed guards. Later accepted plan, bind --implementation and attempt reconcile preserve attempt ID, cumulative coverage and consumed allowance. Own the normal state-command pipeline: C04 typed preflight first (declared fixture until C31 installs the real implementation), then C17 sync of eligible bound authored inputs as a separate saved/reported operation, then pin a fresh planning/policy/read-set before transition evaluation. Authored-sync has its own operation category so it does not recursively request pre-sync. A sync conflict retains both versions and prevents the normal transition; successful sync is not rolled back by a later guard refusal. Run these real CLI/Git/binding/sync cases in integration, with the preflight fixture explicitly supplied to the test service composition. Separately assert an attempt-bearing command returns preflight-unavailable with that slot deliberately unregistered in an explicit test service composition; no permissive fallback is enabled. The transition matrix itself may use MemoryBackend within this integration suite. C31 proves one representative real promote/qualifying-stop pipeline; C70 separately qualifies provisional-attempt/reconcile behavior with actual production preflight. The complete early-state matrix
+-  covers Backlog description/own-design acceptance, Refine estimate/size/priority and Ready dependency satisfaction for all kinds. Four-hour leaf-size applies to story/defect/spike; an epic may have a larger aggregate estimate. Plan-entry provenance/readiness uses the C72 port, not parent-plan acceptance as a leaf design pass. Its pre-C75 producer tests explicitly inject that typed implementation; C75 proves actual production registration and unavailable behavior without rewriting those fixtures. Declare the typed KindRequirements and StoryExitGuards ports used by the transition evaluator. C29 installs kind selection/substitutions; C76 installs only story/defect Develop/Test/Review exit evidence evaluation. Unknown/missing required evaluation cannot become pass; enforce refuses, advisory records unknown, and integrity rules remain mandatory. Earlier fixture-composed producer tests explicitly inject these typed ports; no default permissive implementation. C28 explain returns a TransitionExplanation over that same pinned evaluator; C78 owns its installed read-command wiring.
++  covers Backlog description/own-design acceptance, Refine estimate/size/priority and Ready dependency satisfaction for all kinds. Four-hour leaf-size applies to story/defect/spike; an epic may have a larger aggregate estimate. Plan-entry provenance/readiness uses the C72 port, not parent-plan acceptance as a leaf design pass. Its pre-C75 producer tests explicitly inject that typed implementation; C75 proves actual production registration and unavailable behavior without rewriting those fixtures. Declare the typed KindRequirements and StoryExitGuards ports used by the transition evaluator. C29 installs kind selection/substitutions; C76 installs story/defect Develop-exit source evaluation and C79 installs Test/Review composites in the same edge-dispatched StoryExitGuards port. Unknown/missing required evaluation cannot become pass; enforce refuses, advisory records unknown, and integrity rules remain mandatory. Earlier fixture-composed producer tests explicitly inject these typed ports; no default permissive implementation. C28 explain returns a TransitionExplanation over that same pinned evaluator; C78 owns its installed read-command wiring.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c28.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -791,7 +792,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `kind_requirements(kind, slot) -> Requirements; dispose(request: DispositionRequest) -> OperationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_kind_matrix: epic initial Develop does not need children already active or its own JIT/PR/test; later aggregation requires child evidence/resolved scope. Spike uses deliverable binding/validation. Abandoned/superseded/duplicate need reason and replacement where required; no automatic dependency satisfaction. test_kind_registration uses actual promote through production KindRequirements registration in services.py and the C28 guards/transitions call sites. Story/defect later exits dispatch to the required StoryExitGuards port; absent port is unknown/unavailable until C76. Spike substitutions read registered immutable deliverable/validation/review/archive facts, never source-commit or story-test requirements. Epic Plan exit needs a nonempty accepted child set, Develop entry needs no binding/JIT/clock, and later exits call the typed AggregateEvidence port declared here, installed by C62. Before the later evidence producers exist, these integration cases explicitly seed authoritative typed fixture facts and inject fixture aggregate evidence; a separately unregistered aggregate port refuses. Production registration and normal entry are proved, not import-time side effects.
++- [ ] **Test first:** test_kind_matrix: epic initial Develop does not need children already active or its own JIT/PR/test; later aggregation requires child evidence/resolved scope. Spike uses deliverable binding/validation. Abandoned/superseded/duplicate need reason and replacement where required; no automatic dependency satisfaction. test_kind_registration uses actual promote through production KindRequirements registration in services.py and the C28 guards/transitions call sites. Story/defect later exits dispatch to the required StoryExitGuards port; an absent required edge evaluator is unknown/unavailable until C76 (Develop) or C79 (Test/Review). Spike substitutions read registered immutable deliverable/validation/review/archive facts, never source-commit or story-test requirements. Epic Plan exit needs a nonempty accepted child set, Develop entry needs no binding/JIT/clock, and later exits call the typed AggregateEvidence port declared here, installed by C62. Before the later evidence producers exist, these integration cases explicitly seed authoritative typed fixture facts and inject fixture aggregate evidence; a separately unregistered aggregate port refuses. Production registration and normal entry are proved, not import-time side effects.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c29.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -911,7 +912,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `record_source_review(evidence) -> OperationResult; reconcile_review(story, source) -> ActivationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_effective_review: retained early pass cannot stop time until Review and all predecessor evidence apply; source changes/rework invalidate and reopen remaining clock. Provider claims require observation; declared core-only review needs retained source/session/provenance, not bare pass. Before activation, call the same C31 preflight after retained evidence ingestion and on each CAS retry. The normal review pass command with a qualifying overrun cannot activate its pass before the stop. Consume C73's validated source-review envelope rather than parsing ad hoc JSON here. Prove actual review pass cannot activate self-review, unknown identity, missing response bytes, unresolved required findings or stale source/attempt/generation; the conforming independent record stops time only at genuine eligible activation. Reuse the validated binding-history participant set and explicit current source-review policy.
++- [ ] **Test first:** test_effective_review: retained early pass cannot stop time until Review and all predecessor evidence apply; source changes/rework invalidate and reopen remaining clock. Provider claims require observation; declared core-only review needs retained source/session/provenance, not bare pass. Before activation, call the same C31 preflight after retained evidence ingestion and on each CAS retry. The normal review pass command with a qualifying overrun cannot activate its pass before the stop. Consume C73's validated source-review envelope rather than parsing ad hoc JSON here. Prove actual review pass cannot activate self-review, unknown identity, missing response bytes, unresolved required findings or stale source/attempt/generation; the conforming independent record stops time only at genuine eligible activation. Reuse the validated binding-history participant set and explicit current source-review policy. Any producer test here that crosses a story/defect Develop/Test/Review exit uses an explicitly composed typed StoryExitGuards fixture until C76/C79 deliver the real evaluators. An explicitly unregistered required edge must refuse as unavailable; no permissive production default. C49/C68 and C65/C66 later re-prove the relevant paths with actual C76/C79 registrations and specific guard causes.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c38.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -955,7 +956,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `execute_delivery(intent: DeliveryIntent, admission) -> DeliveryResult; reconcile_delivery(intent) -> DeliveryResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_delivery_once: durable intent/admission precede expected-head CAS on non-checked-out target; checked-out target refuses. Crash after CAS recovers exact result through retained intent/history despite later target advance; invalidation/cancellation cannot authorize second mutation. Use C06 ref_gate with DELIVERY_TARGET around exact target-head CAS, inventory immediately before/after, and preserve target refs/index/unsynced bytes on detected out-of-band checkout. Fence further mutation/publication eligibility and require explicit reconciliation without reset; an already-landed result stays retained historical evidence. Real Git fixture injects external checkout across CAS as well as serializes supported operations; a pre-existing checked-out target alone is not sufficient proof.
++- [ ] **Test first:** test_delivery_once: durable intent/admission precede expected-head CAS on non-checked-out target; checked-out target refuses. Crash after CAS recovers exact result through retained intent/history despite later target advance; invalidation/cancellation cannot authorize second mutation. Use C06 ref_gate with DELIVERY_TARGET around exact target-head CAS, inventory immediately before/after, and preserve target refs/index/unsynced bytes on detected out-of-band checkout. Fence further mutation/publication eligibility and require explicit reconciliation without reset; an already-landed result stays retained historical evidence. Real Git fixture injects external checkout across CAS as well as serializes supported operations; a pre-existing checked-out target alone is not sufficient proof. Any producer test here that crosses a story/defect Develop/Test/Review exit uses an explicitly composed typed StoryExitGuards fixture until C76/C79 deliver the real evaluators. An explicitly unregistered required edge must refuse as unavailable; no permissive production default. C49/C68 and C65/C66 later re-prove the relevant paths with actual C76/C79 registrations and specific guard causes.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c41.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -971,7 +972,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `build_close_outcome(snapshot, retro) -> Outcome; signoff(retro: RetroInput) -> OperationResult; reconcile_evidence(request) -> EvidenceResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_signoff_atomic: current review/delivery/applicable prior lifecycle proof and proposed retro close in one transaction, never require prior signoff; missing earlier conditions yield Done/unverified without satisfying delivered dependency. Reconstruct derived receipts only from retained authoritative proof; preserve already stopped clock. Missing actual proof returns typed rerun requirement for C61, not a fabricated pass. C42 owns construction of the complete typed Close outcome from C56 schema, current estimate/attempt/source/coverage/retro facts. Real signoff commits outcome, retrospective, session end, Done and related-story resolution with one operation ID/CAS; refusal or crash before CAS leaves none, retry after CAS returns the single whole close. No later callback appends the missing outcome. Wire evidence reconcile to C38 reconcile_review after retaining/reconstructing applicable proof and running current preflight. It may activate a single retained early verdict only in Review with current prerequisites, recording the genuine later clock stop without a second verdict. A missing real test reports the managed rerun route and never activates prematurely.
++- [ ] **Test first:** test_signoff_atomic: current review/delivery/applicable prior lifecycle proof and proposed retro close in one transaction, never require prior signoff; missing earlier conditions yield Done/unverified without satisfying delivered dependency. Reconstruct derived receipts only from retained authoritative proof; preserve already stopped clock. Missing actual proof returns typed rerun requirement for C61, not a fabricated pass. C42 owns construction of the complete typed Close outcome from C56 schema, current estimate/attempt/source/coverage/retro facts. Real signoff commits outcome, retrospective, session end, Done and related-story resolution with one operation ID/CAS; refusal or crash before CAS leaves none, retry after CAS returns the single whole close. No later callback appends the missing outcome. Wire evidence reconcile to C38 reconcile_review after retaining/reconstructing applicable proof and running current preflight. It may activate a single retained early verdict only in Review with current prerequisites, recording the genuine later clock stop without a second verdict. A missing real test reports the managed rerun route and never activates prematurely. Any producer test here that crosses a story/defect Develop/Test/Review exit uses an explicitly composed typed StoryExitGuards fixture until C76/C79 deliver the real evaluators. An explicitly unregistered required edge must refuse as unavailable; no permissive production default. C49/C68 and C65/C66 later re-prove the relevant paths with actual C76/C79 registrations and specific guard causes.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c42.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -1111,7 +1112,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `reopen_evidence(story, source) -> RecoveryAuthority; recover_missing_proof(authority) -> RecoveryResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_evidence_only_rerun: real reopen --for evidence from unchanged Done/unverified retains old disposition/waivers/signoff, used budget and allowance. bind --evidence grants new generation via C16, then real admission/test yields later eligible interval and activation before new signoff. Old, tripped, pivoted or superseded generation refuses. Evidence-only binding cannot edit source, expand or mutate target; reconstruction of existing valid receipt leaves stopped clock unchanged. Shared mode obeys published admission/stop order.
++- [ ] **Test first:** test_evidence_only_rerun: real reopen --for evidence from unchanged Done/unverified retains old disposition/waivers/signoff, used budget and allowance. bind --evidence grants new generation via C16, then real admission/test yields later eligible interval and activation before new signoff. Old, tripped, pivoted or superseded generation refuses. Evidence-only binding cannot edit source, expand or mutate target; reconstruction of existing valid receipt leaves stopped clock unchanged. Shared mode obeys published admission/stop order. Any producer test here that crosses a story/defect Develop/Test/Review exit uses an explicitly composed typed StoryExitGuards fixture until C76/C79 deliver the real evaluators. An explicitly unregistered required edge must refuse as unavailable; no permissive production default. C49/C68 and C65/C66 later re-prove the relevant paths with actual C76/C79 registrations and specific guard causes.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c61.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -1159,34 +1160,6 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Risk/boundary:** Bounded shared-store matrix over delivered behavior; missing production semantics return to their owning leaf/replan.
+ 
+-### C65: Execution fences and clock-rebuild qualification
+-
+-**Estimate:** 3.5 h · **Depends on:** C64, C30, C31, C32, C35, C38, C42, C61 · **Parent:** #2 · **Priority/size:** P1/S.
+-
+-**Touched files:** tests/integration/test_execution_races.py.
+-
+-**Consumes:** delivered contracts from the listed dependencies. **Produces:** `run_execution_races(fixture: SharedStoreFixture) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+-
+-- [ ] **Test first:** Using C64 and delivered producer cases, collect test_expansion_completion_fence (pending expansion versus actual test/promote/signoff), test_shared_stop_no_test_launch (published enforce stop versus offline test, no subprocess marker), test_trip_before_sync_and_pass (qualifying overrun before sync, CAS retry and completion), and test_reservation_and_review_rebuild (lost identity response resolved without child plus early verdict/later evidence-reconcile activation, discard private caches and rebuild pause/resume/stop from events). Retain workspace/results; no authored import, second launch or effective pass overtakes a stop. Four focused scenarios reuse contract-conforming activity and race hooks; no harness implementation here.
+-- [ ] **Implement:** the named qualification/checker contract within these paths; no missing product behavior is hidden here.
+-- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_execution_races.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+-
+-**Risk/boundary:** No fabricated engagement, source-review authority or real provider capability; fixture evidence is explicit.
+-
+-### C66: Managed-delivery race and recovery qualification
+-
+-**Estimate:** 3 h · **Depends on:** C64, C41, C42 · **Parent:** #2 · **Priority/size:** P1/S.
+-
+-**Touched files:** tests/integration/test_delivery_races.py.
+-
+-**Consumes:** delivered contracts from the listed dependencies. **Produces:** `run_delivery_races(fixture: SharedStoreFixture) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+-
+-- [ ] **Test first:** Collect test_local_delivery_admission: local-only admitted core-run delivery succeeds with publication N/A; checked-out/invalidated targets refuse. test_delivery_crash_reconcile: crash before/after target CAS and lost result re-observe one target outcome without a repeated mutation. test_delivery_checkout_race: an external checkout between the common pre/post gate checks is detected and fenced with target/ref/index/workspace evidence retained. Reuse C41/C64 injection seams.
+-- [ ] **Implement:** the named qualification/checker contract within these paths; no missing product behavior is hidden here.
+-- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_delivery_races.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+-
+-**Risk/boundary:** Only disposable target refs; no production delivery authority or checkout race prevention beyond the accepted cooperative-gate guarantee.
+-
+ ### C62: Epic aggregation and scope-resolution checkpoint
+ 
+ **Estimate:** 3 h · **Depends on:** C22, C29, C38, C42, C43 · **Parent:** #2 · **Priority/size:** P1/S.
+@@ -1219,25 +1192,69 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Risk/boundary:** this leaf proves generic installed integration with a fixture package, not GitHub or harness functionality. Existing hooks/config remain preserved and plugin code is trusted in-process, not sandboxed. Budget reuses C13/C14 logic and C12 init ports; no second registry implementation.
+ 
+-### C76: Story exit evidence guards and source commit binding
++### C76: Source commit guard and retained source evidence
+ 
+-**Estimate:** 4 h · **Depends on:** C28, C29, C31, C35, C38, C39, C40, C41, C42, C62, C63 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C28, C29, C31, C35, C38, C39, C40, C41, C42, C62, C63 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+-**Mandatory shared-file predecessors:** C29, C31, C63, C42. These are included in Depends on and must be carried into the leaf issue graph.
++**Mandatory shared-file predecessors:** C29, C31, C63. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+-**Touched files:** src/aitm_core/machine/source_guards.py; src/aitm_core/machine/guards.py; src/aitm_core/machine/transitions.py; src/aitm_core/services.py; src/aitm_core/signoff.py; packages/aitm-core/tests/integration/test_c76.py.
++**Touched files:** src/aitm_core/machine/source_guards.py; src/aitm_core/machine/guards.py; src/aitm_core/machine/transitions.py; src/aitm_core/services.py; packages/aitm-core/tests/integration/test_c76.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies. **Produces:** `evaluate_story_exit(snapshot, attempt, edge) -> GuardResults; capture_source_commits(attempt, source) -> SourceCommitEvidence`. Domain records live with this producer and reuse the existing typed evidence/guard contracts.
++**Consumes:** delivered contracts from the listed dependencies. **Produces:** `evaluate_source_exit(snapshot, attempt) -> GuardResults; capture_source_commits(attempt, source) -> SourceCommitEvidence`. Domain records live with this producer and reuse the existing typed evidence/guard contracts.
+ 
+-- [ ] **Test first:** test_source_commit_guard exercises real story/defect promote with production StoryExitGuards registration: exact subject prefix [#<positive decimal story ID>] including its trailing space, no substring matching; reject [#12] for story 1, embedded prefixes, missing trailing space, nondecimal/zero/negative IDs, commits outside the recorded attempt branch or before the pinned baseline, and empty/tagged merge-only changes with no implementation delta. Preflight/evaluation retains matching source commit IDs plus reviewed head/tree in its typed evidence read-set; recheck on CAS/source changes. C31's trip preflight remains prior to this later-state evidence evaluation. test_test_exit_binding requires the tool-produced passing receipt for the current clean source and attempt/generation; stale/dirty/wrong-attempt receipts refuse. test_review_exit_composite compares effective review, source-to-target delivery mapping, retrospective and all applicable lifecycle proof on the same source/attempt; no mix-and-match or target-message substitution. Wire signoff.py to the same registered exit evaluator using C42's single atomic signoff proposal so no prior-signoff cycle is introduced: validate proposed retro/outcome together with existing proof, then commit. Reuse C39/C40/C41 delivered transformations to prove squash/rebase target messages without the prefix still pass through retained matching source commits. Assert absent required evaluator remains unavailable in an explicitly unregistered composition. Existing kind substitutions remain intact; C29/C62 own spike/epic guards. C49 consumes the fully installed story pipeline after this leaf.
++- [ ] **Test first:** test_source_commit_guard exercises real story/defect Develop-exit promote with the production source-edge evaluator registered in StoryExitGuards: exact subject prefix [#<positive decimal story ID>] including its trailing space, no substring matching; reject [#12] for story 1, embedded prefixes, missing trailing space, nondecimal/zero/negative IDs, commits outside the recorded attempt branch or before its pinned baseline, and empty/tagged merge-only changes with no implementation delta. Preflight/evaluation retains matching source commit IDs and reviewed head/tree in typed evidence/read-set; recheck on CAS/source changes. C31 trip preflight remains first. Reuse C39/C40/C41 source-mapping fixtures to prove squash/rebase target messages without the prefix preserve valid source evidence; target-message text alone is insufficient. Register only the Develop-exit evaluator here through services.py and C28's edge-dispatched port. Until C79 supplies Test/Review exit evaluators those required edges remain unknown/unavailable, not passing. Prove this with explicit unregistered-edge fixtures. Existing C29/C62 spike/epic substitutions stay intact.
+ - [ ] **Implement:** the named bounded contract and production adapter within these paths; no hidden later wiring.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c76.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+-**Risk/boundary:** Bounded evidence comparison and registration over already delivered producers; no new test runner, delivery engine or signoff path. Tests reuse those fixtures. Re-estimate/split at JIT if the 4 h bound is not defensible.
++**Risk/boundary:** Bounded source-commit selection, retained evidence and one edge registration over delivered Git/delivery interfaces. C79 separately owns completion composites and signoff wiring. Re-estimate/split before Develop if the 3 h bound is not defensible.
++
++### C79: Test and Review exit composites with atomic signoff
++
++**Estimate:** 3 h · **Depends on:** C76, C35, C38, C39, C42, C62 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C76, C42. These are included in Depends on and must be carried into the leaf issue graph.
++
++**Touched files:** src/aitm_core/machine/completion_guards.py; src/aitm_core/machine/guards.py; src/aitm_core/machine/transitions.py; src/aitm_core/services.py; src/aitm_core/signoff.py; packages/aitm-core/tests/integration/test_c79.py.
++
++**Consumes:** delivered source/evidence/guard contracts and the C76 Develop-exit evaluator. **Produces:** `evaluate_completion_exit(snapshot, attempt, edge, proposed_close=None) -> GuardResults`. Register the Test/Review edge evaluators in the existing StoryExitGuards port; do not create an alternate guard engine.
++
++- [ ] **Test first:** test_test_exit_binding uses actual promote and the production evaluator to require a tool-produced passing receipt for the current clean source and attempt/generation; stale/dirty/wrong-attempt receipts refuse with the specific reason. test_review_exit_composite compares effective review, verified source-to-target delivery, retrospective and every applicable lifecycle proof on the same source/attempt, rejecting mixed evidence and target-message substitution. Wire signoff.py to the same registered evaluator using C42's proposed atomic retrospective/outcome plus existing authoritative facts; no prior-signoff requirement or second commit is introduced. Exercise one real signoff success and one mismatch refusal, proving all-or-none outcome publication. Reuse delivered source/review/delivery fixtures and retain C76 source evidence. Explicitly unregister each required edge to prove unavailable rather than pass; default production composition resolves all story exit evaluators. Kind-specific spike/epic paths remain C29/C62 responsibilities. Later C49/C65/C66/C68 prove complete real lifecycles.
++- [ ] **Implement:** the bounded composite evaluation and explicit production call-site registration within these paths.
++- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c79.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
++
++**Risk/boundary:** Reuse C42's transactional signoff constructor and producer fixtures. This is evidence comparison and wiring, not a new runner, delivery engine or retrospective schema. Re-estimate/split at JIT if three hours is not defensible.
++
++### C65: Execution fences and clock-rebuild qualification
++
++**Estimate:** 3.5 h · **Depends on:** C64, C30, C31, C32, C35, C38, C42, C61, C76, C79 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Touched files:** tests/integration/test_execution_races.py.
++
++**Consumes:** delivered contracts from the listed dependencies. **Produces:** `run_execution_races(fixture: SharedStoreFixture) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
++
++- [ ] **Test first:** Using C64 and delivered producer cases, collect test_expansion_completion_fence (pending expansion versus actual test/promote/signoff), test_shared_stop_no_test_launch (published enforce stop versus offline test, no subprocess marker), test_trip_before_sync_and_pass (qualifying overrun before sync, CAS retry and completion), and test_reservation_and_review_rebuild (lost identity response resolved without child plus early verdict/later evidence-reconcile activation, discard private caches and rebuild pause/resume/stop from events). Retain workspace/results; no authored import, second launch or effective pass overtakes a stop. Four focused scenarios reuse contract-conforming activity and race hooks; no harness implementation here. Resolve the actual production StoryExitGuards edge evaluators from C76/C79; no fixture evaluator is installed. Before injected failures, establish the applicable positive source/receipt/review/delivery prerequisites through the real pipeline. Assert the specific intended refusal cause (expansion-pending, trip, admission-fenced or stale-generation as appropriate), and reject evaluator-unavailable as a satisfying outcome. This prevents missing composition from making negative assertions pass vacuously.
++- [ ] **Implement:** the named qualification/checker contract within these paths; no missing product behavior is hidden here.
++- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_execution_races.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
++
++**Risk/boundary:** No fabricated engagement, source-review authority or real provider capability; fixture evidence is explicit.
++
++### C66: Managed-delivery race and recovery qualification
++
++**Estimate:** 3 h · **Depends on:** C64, C41, C42, C76, C79 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Touched files:** tests/integration/test_delivery_races.py.
++
++**Consumes:** delivered contracts from the listed dependencies. **Produces:** `run_delivery_races(fixture: SharedStoreFixture) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
++
++- [ ] **Test first:** Collect test_local_delivery_admission: local-only admitted core-run delivery succeeds with publication N/A; checked-out/invalidated targets refuse. test_delivery_crash_reconcile: crash before/after target CAS and lost result re-observe one target outcome without a repeated mutation. test_delivery_checkout_race: an external checkout between the common pre/post gate checks is detected and fenced with target/ref/index/workspace evidence retained. Reuse C41/C64 injection seams. Resolve the actual production StoryExitGuards edge evaluators from C76/C79; no fixture evaluator is installed. Before injected failures, establish the applicable positive source/receipt/review/delivery prerequisites through the real pipeline. Assert the specific intended refusal cause (expansion-pending, trip, admission-fenced or stale-generation as appropriate), and reject evaluator-unavailable as a satisfying outcome. This prevents missing composition from making negative assertions pass vacuously.
++- [ ] **Implement:** the named qualification/checker contract within these paths; no missing product behavior is hidden here.
++- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_delivery_races.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
++
++**Risk/boundary:** Only disposable target refs; no production delivery authority or checkout race prevention beyond the accepted cooperative-gate guarantee.
+ 
+ ### C78: Installed transition explanation and unknown guards
+ 
+-**Estimate:** 3 h · **Depends on:** C18, C28, C29, C62, C76 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C18, C28, C29, C62, C76, C79 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+ **Mandatory shared-file predecessors:** C18. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+@@ -1253,7 +1270,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C49: Core-only nominal lifecycle qualification
+ 
+-**Estimate:** 3 h · **Depends on:** C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63, C76, C78 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63, C76, C78, C79 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+ **Touched files:** tests/integration/test_core_walk.py; tests/fixtures/reviews/; docs/learn/core-cli-walk.md.
+ 
+@@ -1269,9 +1286,9 @@ C48 remains a conservative integration predecessor because it installs the final
+ 
+ ### C75: Plan-entry graduation and provenance reconciliation
+ 
+-**Estimate:** 3.5 h · **Depends on:** C72, C21, C22, C28, C31, C64, C63, C76 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C72, C21, C22, C28, C31, C64, C63, C76, C79 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+-**Mandatory shared-file predecessors:** C22, C76. These are included in Depends on and must be carried into the leaf issue graph.
++**Mandatory shared-file predecessors:** C22, C79. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/decompose.py; src/aitm_core/graduation.py; src/aitm_core/cli/decompose.py; src/aitm_core/services.py; packages/aitm-core/tests/integration/test_c75.py.
+ 
+@@ -1285,13 +1302,13 @@ C48 remains a conservative integration predecessor because it installs the final
+ 
+ ### C67: Complete installed CLI surface audit
+ 
+-**Estimate:** 2.5 h · **Depends on:** C49, C51, C63, C44, C71, C74, C75, C76, C78 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 2.5 h · **Depends on:** C49, C51, C63, C44, C71, C74, C75, C76, C78, C79 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+ **Touched files:** tests/integration/test_cli_surface.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies. **Produces:** `audit_cli_surface(required_routes) -> RouteCoverageReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_cli_surface parametrizes every route and option in the complete CLI map: installed lazy registration, help, argument validation and versioned JSON/unavailable statuses. Assert init --planning-branch and all documented global/route options are exposed; no new unmapped command is shipped. Collect a route-to-positive-operational-test ledger from C49/C50/C51/C65/C66/C68/C59 instead of claiming help alone proves behavior. Future suite names are declared references; Gate C/D validates their actual collection once all owners are delivered. The positive operational ledger additionally includes C71 split, C74 entity editing and C75 decompose/provenance reconciliation; help/argument coverage alone is insufficient. The positive ledger also collects C17::test_sync_reconcile_cli/test_sync_push_cli, C29::test_kind_registration, C30::test_expansion_finalizer_registration, C62::test_epic_aggregate, C76's source/test/review exit vectors and C78::test_installed_explain. An unavailable or parse-only route cannot satisfy this ledger.
++- [ ] **Test first:** test_cli_surface parametrizes every route and option in the complete CLI map: installed lazy registration, help, argument validation and versioned JSON/unavailable statuses. Assert init --planning-branch and all documented global/route options are exposed; no new unmapped command is shipped. Collect a route-to-positive-operational-test ledger from C49/C50/C51/C65/C66/C68/C59 instead of claiming help alone proves behavior. Future suite names are declared references; Gate C/D validates their actual collection once all owners are delivered. The positive operational ledger additionally includes C71 split, C74 entity editing and C75 decompose/provenance reconciliation; help/argument coverage alone is insufficient. The positive ledger also collects C17::test_sync_reconcile_cli/test_sync_push_cli, C29::test_kind_registration, C30::test_expansion_finalizer_registration, C62::test_epic_aggregate, C76's source and C79's Test/Review exit vectors and C78::test_installed_explain. An unavailable or parse-only route cannot satisfy this ledger.
+ - [ ] **Implement:** the named qualification/checker contract within these paths; no missing product behavior is hidden here.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_cli_surface.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -1408,7 +1425,7 @@ C74 follows the generic binding/sync and entity operations before graduation con
+ | Operations/concurrency/publication/continuity/repair | C04–C10, C17; C50/C65/C66 (8×50 plus races) |
+ | Binding, snapshot index and full kind/guard explanation | C16–C18/C28/C78; C49/C50/C52 |
+ | Ideas/drafts/graduation/local numbering/relationships | C19–C22, C30; C49/C50 |
+-| State slots, common planning guards, kinds/split/dispositions/epics | C27–C31/C54/C71/C76, C42/C45/C61/C62; C49/C71/C76; migrated kinds C77/C46/C51 |
++| State slots, common planning guards, kinds/split/dispositions/epics | C27–C31/C54/C71/C76/C79, C42/C45/C61/C62; C49/C71/C76/C79; migrated kinds C77/C46/C51 |
+ | Typed decomposition, own-document coverage and proposal estimates | C03/C07/C20–C22/C26/C27/C72; C75 |
+ | Entity editing, source finalization and discard | C16/C17/C19/C74/C22; C74 |
+ | Explicit source-review record, independence and assurance | C07/C57/C73/C38; C49/C73 |
+@@ -1422,7 +1439,7 @@ C74 follows the generic binding/sync and entity operations before graduation con
+ | Real v0 migration, kind backfill and accepted snapshots | C77/C46–C48; C51 |
+ | Complete CLI walk, performance and released-package behavior | C49–C53/C59/C60/C64–C70 |
+ 
+-Gate A (after C14 and needed contract leaves): freeze versioned operation/provider/canonicalization contracts and pin fixtures; no production readiness claim. Gate B: C31/C32 plus prerequisites establish the control baseline; full Gate B remains pending until C70 qualifies the post-installation consumer paths using C64 fixtures. This is not released-package or production-adoption readiness. Gate C (C49–C51/C64–C68/C70–C78): complete accepted-design nominal and failure matrix with actual artifacts and reconstructable evidence. Gate D (C52/C59 candidate proof, C53 source delivery and C69 observer delivery, then C60 released proof; master C5): packaged macOS/Linux capability, budgets, installed smoke, release version/hash and learning artifacts. Any unresolved required test/finding or unsupported required capability keeps the relevant gate pending.
++Gate A (after C14 and needed contract leaves): freeze versioned operation/provider/canonicalization contracts and pin fixtures; no production readiness claim. Gate B: C31/C32 plus prerequisites establish the control baseline; full Gate B remains pending until C70 qualifies the post-installation consumer paths using C64 fixtures. This is not released-package or production-adoption readiness. Gate C (C49–C51/C64–C68/C70–C79): complete accepted-design nominal and failure matrix with actual artifacts and reconstructable evidence. Gate D (C52/C59 candidate proof, C53 source delivery and C69 observer delivery, then C60 released proof; master C5): packaged macOS/Linux capability, budgets, installed smoke, release version/hash and learning artifacts. Any unresolved required test/finding or unsupported required capability keeps the relevant gate pending.
+ 
+ C60 release evidence must include the full acceptance matrix, package source/review/delivery revision, built/released hashes, tested platforms and declared assurance. Consumer fixtures pin a released core version; a local wheel smoke proves the candidate only until the actual release artifact is verified. C53 tests the candidate workflow/artifact before its source commit/review/delivery; C69 separately delivers the observer/checker and post-release workflow. C60 then uses those delivered workflows under later explicit release-task authority and verifies the resulting released artifact. C60's own evidence commit is not a prerequisite part of that target package. C5 remains pending until exact released hash/version checks on both platforms and delivered tutorial/rationale are recorded, including the complete C5 installed-artifact manifest from C59, executed by C69/C60 (local-only, two-clone, repair, migration/import, performance and platform capability evidence). Later release authority is distinct from this planning assignment. Extension API 1.0/repo split and full-install meta-package remain later master-plan scope.
+ 
+@@ -1452,7 +1469,7 @@ The commands in C49–C53/C59/C60/C64–C70 select the actual listed suite files
+ 
+ | Scenario | Collected suite/test and prerequisite owner |
+ | --- | --- |
+-| Story/defect source-commit, Test receipt and Review composite guards; kind/finalizer production registration | tests/integration/test_c76.py::test_source_commit_guard, ::test_test_exit_binding, ::test_review_exit_composite; test_c29.py::test_kind_registration; test_c30.py::test_expansion_finalizer_registration; test_c62.py::test_epic_aggregate |
++| Story/defect source-commit, Test receipt and Review composite guards; kind/finalizer production registration | tests/integration/test_c76.py::test_source_commit_guard; test_c79.py::test_test_exit_binding, ::test_review_exit_composite; test_c29.py::test_kind_registration; test_c30.py::test_expansion_finalizer_registration; test_c62.py::test_epic_aggregate |
+ | Publication-conflict CLI resolution and explicit push retain operation lineage | tests/integration/test_c17.py::test_sync_reconcile_cli and ::test_sync_push_cli |
+ | Full installed explain: kind edges, pass/fail/unknown, pending effects and exact command | tests/integration/test_c78.py::test_installed_explain; tests/performance/test_budgets.py (C52) |
+ | Explicit legacy kind provenance, #1/#2 epics, unresolved-kind blockers and no synthetic split | tests/unit/test_c77.py::test_legacy_kind_mapping; tests/integration/test_c46.py::test_actual_v0_kind; test_v0_cutover.py::test_migrated_kinds (C51), apply blocker C48 |
+@@ -1466,10 +1483,10 @@ The commands in C49–C53/C59/C60/C64–C70 select the actual listed suite files
+ | Unverified Done real missing-test rerun; new limited generation, old one fenced, genuine later clock interval | test_lifecycle_recovery.py::test_evidence_only_rerun (C61/C42/C38, C68) |
+ | Actual installed preflight with reconcile, provisional attempt and local/shared expand construction/retry/lost ACK | tests/integration/test_preflight_consumers.py::test_reconcile_with_real_preflight, ::test_provisional_attempt_with_real_preflight, ::test_expand_with_real_preflight (C27/C28/C30/C31/C64, C70) |
+ | 8 stories ×50 syncs; related-story/policy/authored publication conflicts | tests/integration/test_shared_store.py::test_eight_by_fifty and ::test_conflicting_inputs (C50) |
+-| Two clones: pending expansion fences actual test/promote/signoff; enforce stop wins before test launch | tests/integration/test_execution_races.py::test_expansion_completion_fence and ::test_shared_stop_no_test_launch (C30/C31/C32/C35/C42/C61, C65) |
+-| Trip before authored sync, on CAS retry and at completion before effective pass | test_execution_races.py::test_trip_before_sync_and_pass (C31/C32/C38, C65) |
+-| Lost issue reply resolved without child; early review activated later; full rebuild without private state | test_execution_races.py::test_reservation_and_review_rebuild (C20/C23/C30/C38, C65) |
+-| Local-only core-run target delivery succeeds with publication N/A; checked-out/invalidated target refuses; post-CAS crash observes one result | test_delivery_races.py::test_local_delivery_admission and ::test_delivery_crash_reconcile (C39–C41, C66) |
++| Two clones: pending expansion fences actual test/promote/signoff; enforce stop wins before test launch | tests/integration/test_execution_races.py::test_expansion_completion_fence and ::test_shared_stop_no_test_launch (C30/C31/C32/C35/C42/C61/C76/C79, C65; actual exit evaluators and specific refusal causes) |
++| Trip before authored sync, on CAS retry and at completion before effective pass | test_execution_races.py::test_trip_before_sync_and_pass (C31/C32/C38/C76/C79, C65; actual evaluators, specific trip cause) |
++| Lost issue reply resolved without child; early review activated later; full rebuild without private state | test_execution_races.py::test_reservation_and_review_rebuild (C20/C23/C30/C38/C76/C79, C65; actual exit evaluators) |
++| Local-only core-run target delivery succeeds with publication N/A; checked-out/invalidated target refuses; post-CAS crash observes one result | test_delivery_races.py::test_local_delivery_admission and ::test_delivery_crash_reconcile (C39–C41/C76/C79, C66; actual evaluators and specific admission/refusal causes) |
+ | No-mutation dry-run; forged declaration/receipt/legacy extension rejected; second clone adoption identity and index parity | tests/integration/test_v0_cutover.py::test_dry_run_read_only, ::test_receipt_forgery, ::test_two_clone_cutover (C46–C48, C51) |
+ | Real portable/native bytes, historical levels and qualified timing live/backfill normalize without duplicate acceptance | tests/integration/test_review_import.py::test_actual_review_records (C24–C26/C57/C58, C51) |
+ | Forward repair validates through the normal fresh-clone path; managed target mutation detects external checkout interference | tests/integration/test_c10.py and test_delivery_races.py::test_delivery_checkout_race (C06/C10/C41, C66) |
+@@ -1550,10 +1567,13 @@ Functional dependencies are retained. Each consecutive writer below is an explic
+ | `packages/aitm-core/src/aitm_core/machine/guards.py` | C29 | C76 |
+ | `packages/aitm-core/src/aitm_core/machine/transitions.py` | C31 | C76 |
+ | `packages/aitm-core/src/aitm_core/services.py` | C63 | C76 |
+-| `packages/aitm-core/src/aitm_core/signoff.py` | C42 | C76 |
++| `packages/aitm-core/src/aitm_core/machine/guards.py` | C76 | C79 |
++| `packages/aitm-core/src/aitm_core/machine/transitions.py` | C76 | C79 |
++| `packages/aitm-core/src/aitm_core/services.py` | C76 | C79 |
++| `packages/aitm-core/src/aitm_core/signoff.py` | C42 | C79 |
+ | `packages/aitm-core/src/aitm_core/cli/read.py` | C18 | C78 |
+ | `packages/aitm-core/src/aitm_core/graduation.py` | C22 | C75 |
+-| `packages/aitm-core/src/aitm_core/services.py` | C76 | C75 |
++| `packages/aitm-core/src/aitm_core/services.py` | C79 | C75 |
+ | `uv.lock` | C03 | C53 |
+ | `packages/aitm-core/pyproject.toml` | C03 | C53 |
+ | `docs/release/core-m1.md` | C53 | C60 |
