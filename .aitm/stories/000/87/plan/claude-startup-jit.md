@@ -1,0 +1,9 @@
+# U03 Claude startup scanner recovery pickup
+
+Pin protected trunk `e65c86ba4c7d19e7844a5d23a3aa33446a885f4c` and exact clean tree `15a22e275e20407bb6234bc5650b38e2b6737514` in the existing #87 dedicated worktree. Preserve [previous source acceptance](claude-sideband-source-review.md). Admission requires exact parent [Claude startup amendment](../../83/plan/usage-capture-claude-startup-replan.md) SHA-256 `bbfbae3508646b570345eeaadbb13ad0e186edce13cc3d1f02448761ebf157bc` accepted by SAR, SPR and native XPR. Repin this JIT if the reviewed parent bytes or protected base change.
+
+Own only the scanner and scanner tests. Recognize the exact pinned Claude typed startup prefix as non-accounting before the first authenticated origin. Preserve original bytes, ordinals, scope evidence, pending boundary and cutoff rules. Verify exact queue shape, hook subtype, sidechain, native parent linkage and first user origin. No positive checkout or enrollment authority from startup records. Keep unknown startup, later metadata and genuinely unanchored work on their existing paths.
+
+Retain scoped RED, GREEN and read-only or isolated original native proof. Verify actual source identity and the real command across the supported scanner and adapter, exactly one selected first request, and no outside-scope admission. Exercise both processing orders, durable restart and source continuity, static and serial locked suite, and independent exact source review. The protected PR must match the exact reviewed source and tree. Keep prior #96 collector evidence historical and rebuild from the exact delivered release.
+
+The cumulative #87 cap remains 3.5 agent-hours, with up to 0.75 additional for this repair, review and verification. Stop for any ownership or forecast deviation. No Core or production activity.

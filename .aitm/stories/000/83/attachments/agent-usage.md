@@ -1,19 +1,19 @@
 # #83 agent usage evidence
 
-Evidence observed through November 09, 2026 16:46:00 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
+Evidence observed through November 09, 2026 16:48:39 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
 
 | Work scope and participant | Observed model / effort | Observed tokens | API-equivalent USD | Unpriced records | Coverage gaps |
 | --- | --- | ---: | ---: | ---: | ---: |
 | Accounting integration follow-up plan review | gpt-6.1-sol / high | 1,122,168 | $0.2680 | 0 | 0 |
 | Builder check | gpt-6.1-sol / high | 266,105 | $0.1270 | 0 | 0 |
-| Claude startup amendment SPR and pickup | gpt-6.1-sol / high | 655,906 | $0.0785 | 0 | 0 |
-| Claude startup amendment XPR | claude-opus-5-5 / high | 1,293,383 | $1.0914 | 0 | 0 |
+| Claude startup amendment SPR and pickup | gpt-6.1-sol / high | 2,003,224 | $0.2465 | 0 | 0 |
+| Claude startup amendment XPR | claude-opus-5-5 / high | 2,027,438 | $1.4966 | 0 | 0 |
 | Design SPR | gpt-6.1-sol / high | 611,312 | $0.2069 | 0 | 0 |
 | Design XPR | claude-opus-5-5 / high | 1,132,258 | $1.0917 | 0 | 0 |
 | Design and plan coordinator | gpt-6.1-sol / high | 32,789,051 | $7.7862 | 0 | 0 |
 | Desktop marker amendment SPR and pickup | gpt-6.1-sol / high | 2,361,422 | $0.3039 | 0 | 0 |
 | Desktop marker amendment XPR | claude-opus-5-5 / high | 1,685,760 | $1.3896 | 0 | 0 |
-| Implementation and delivery coordinator | gpt-6.1-sol / high | 318,975,660 | $60.5860 | 0 | 0 |
+| Implementation and delivery coordinator | gpt-6.1-sol / high | 321,221,515 | $60.8951 | 0 | 0 |
 | Launch health amendment SPR | gpt-6.1-sol / high | 1,544,193 | $0.2612 | 0 | 0 |
 | Launch health amendment XPR | claude-opus-5-5 / high | 1,788,376 | $1.4299 | 0 | 0 |
 | Mixed #73 and #83 coordinator work | gpt-6.1-sol / high | 4,092,966 | $0.5920 | 0 | 0 |
@@ -76,12 +76,12 @@ Evidence observed through November 09, 2026 16:46:00 CST. Measured model-token u
 | U13 pickup review | gpt-6.1-sol / high | 1,189,657 | $0.2055 | 0 | 0 |
 | U13 source review | gpt-6.1-sol / high | 2,621,623 | $0.6105 | 0 | 0 |
 
-**Attributed #83 observed subtotal** 677,171,150 tokens and $145.4756 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
+**Attributed #83 observed subtotal** 681,498,378 tokens and $146.3579 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
 
 | Provider | Observed tokens | API-equivalent USD | Billed spend | Task-attributable subscription debit |
 | --- | ---: | ---: | --- | --- |
-| Anthropic Claude Code | 11,251,115 | $11.0774 | Unknown | Unknown |
-| OpenAI Codex | 665,920,035 | $134.3982 | Unknown | Unknown |
+| Anthropic Claude Code | 11,985,170 | $11.4826 | Unknown | Unknown |
+| OpenAI Codex | 669,513,208 | $134.8753 | Unknown | Unknown |
 
 **Evidence unavailable** U11 Claude interactive trust check.
 

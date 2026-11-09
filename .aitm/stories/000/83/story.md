@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 83
 title: "[Epic] Continuous agent usage capture"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/83"
 parent: null
 children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T22:39:52+00:00"
+updated: "2026-11-09T22:48:38+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -53,3 +53,5 @@ Implementation resumed on the accepted [launch health producer amendment](plan/u
 The exact [Desktop marker carrier amendment](plan/usage-capture-desktop-marker-replan.md) passed SAR, SPR and native XPR. The accepted repair is on protected trunk. [#96 resumed](../96/plan/desktop-marker-recovery-jit.md) on that release for fresh live activation evidence.
 
 [Claude startup prefix amendment under review](plan/usage-capture-claude-startup-replan.md). The live qualification paused after both Codex order cases passed and the Claude scanner held the target behind timed startup bookkeeping.
+
+The exact [Claude startup prefix amendment](plan/usage-capture-claude-startup-replan.md) passed SAR, independent SPR and native XPR. #87 resumes on protected trunk. #96 stays in Planning until the scanner fix is independently accepted, delivered and repinned.
