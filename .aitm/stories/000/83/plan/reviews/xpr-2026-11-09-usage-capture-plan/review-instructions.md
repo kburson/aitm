@@ -1,0 +1,9 @@
+# Task-scoped #83 review
+
+Follow the exact invitation and registered peer-review skill. Use the provided join/submit commands. Write only the exact pending reviewer response body. Read files with the Read tool. No Git commands, other writes, permissions changes, or direct transport commands.
+
+Freshly read the full current file under review in every round, including acceptance. Read it in contiguous chunks of at most 20 lines through EOF. Read prior response documents when present and freshly verify each required disposition. In each response record the contiguous Read ranges, line count, and whether any output was truncated. Full-file review covers unchanged sections as well. Report material findings with distinct identifiers and classify required versus optional in the response body. Accept only when no required changes remain.
+
+Owner intent: keep measurement for the life of the project. Qualify the Mac-local collector before Core #2 pickup. Preserve the same collector and ledger through Core integration, using C44 as a later import seam. Planning uses one shared chat/worktree with epic-wide and focused child scopes. A dedicated worktree gives a story binding from Develop through delivery. Preserve distinct participant attribution and separate actual spend, API-equivalent price and provider-wide quota observations. User authorized design review and planning for #83.
+
+For the design, assess scope and cutoff, replay, source privacy, worktree and participant binding, failure handling, long-lived operations, and transition to Core. For the implementation plan, read the accepted #83 design as context and assess exact design coverage, prerequisites, public entry points, fresh restart/privacy and on-host qualification proof, and delivery leaves of at most four hours. Preserve the distinction between review outcome and project-wide policy.
