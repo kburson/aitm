@@ -10,9 +10,9 @@ children: []
 blocking: [86, 87]
 blocked-by: [84]
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T14:43:23+00:00"
+updated: "2026-11-09T15:17:05+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -37,3 +37,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path":
 
 - [ ] Write `test_planning_scope_and_development_owner` with one epic and two children in a single session. Verify first child request and switch-back for marker-first and observation-first arrival, Unknown while unresolved, scope before the next turn when the request boundary cannot be proven, owner-only development default, unmarked nonowner, compatible marked reviewer, conflicting marker quarantine, housekeeping and two review roles. Exercise actual CLI marker publication, idempotent inbox replay, recorded correction that preserves an earlier as-of result, invalid retroactive claim and duplicate sequence.
 - [ ] Run `test_scopes.py` to show failure, implement the marker and rollup contract, then pass leaf verification.
+
+## Accepted amendment
+
+[Revised implementation plan](../83/plan/usage-capture-replan.md). Own the typed development binding, scope correction and shared inbox command identity, digest and disposition. Put durable envelopes in types.py. Wire exact admission and replay in ledger.py only where needed to make consumption and disposition atomic. Write consumption and its disposition in the same ledger transaction. A replay returns the current recorded disposition. Pending may advance to final once. Final dispositions are immutable and conflicting bytes never overwrite either. Verify these transitions and ignore unpublished temporary files.

@@ -1,6 +1,6 @@
 # #83 agent usage evidence
 
-Evidence observed through November 09, 2026 09:04:21 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
+Evidence observed through November 09, 2026 09:17:27 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
 
 | Work scope and participant | Observed tokens | API-equivalent USD | Unpriced records | Coverage gaps |
 | --- | ---: | ---: | ---: | ---: |
@@ -9,13 +9,17 @@ Evidence observed through November 09, 2026 09:04:21 CST. Measured model-token u
 | Design XPR | 1,132,258 | $1.0917 | 0 | 0 |
 | Design and plan coordinator | 32,789,051 | $7.7862 | 0 | 0 |
 | Mixed #73 and #83 coordinator work | 4,092,966 | $0.5920 | 0 | 0 |
-| Plan SPR | 1,795,173 | $0.4727 | 0 | 0 |
+| Plan SPR | 1,197,965 | $0.3542 | 0 | 0 |
 | Plan XPR | 1,873,902 | $1.8174 | 0 | 0 |
-| Plan finalization and delivery coordinator | 22,561,331 | $5.4179 | 0 | 0 |
+| Plan finalization and delivery coordinator | 22,143,186 | $5.3197 | 0 | 0 |
+| Replan SPR | 1,741,411 | $0.3267 | 0 | 0 |
+| Replan XPR | 1,547,243 | $2.0892 | 0 | 0 |
+| Replan coordinator | 7,487,917 | $1.2381 | 0 | 0 |
 | U01 implementation | 2,216,794 | $0.7378 | 0 | 0 |
-| U01 source review | 941,927 | $0.2977 | 0 | 0 |
+| U01 pickup review | 597,208 | $0.1186 | 0 | 0 |
+| U01 source review | 1,592,302 | $0.4244 | 0 | 0 |
 
-**Attributed #83 observed subtotal** 64,187,853 tokens and $17.9554 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal.
+**Attributed #83 observed subtotal** 75,196,654 tokens and $21.6379 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal.
 
 The coordinator is scoped by observed cutoff, so any ambiguous boundary remains approximate. Codex repeated cumulative counters are deduplicated and reconciled to last-request values. Claude streamed usage is grouped by request. Prompt text, private handles, raw traces and personal account details stay local. Work after the observation cutoff and provider usage absent from the retained sources remain outside these figures.
 

@@ -10,9 +10,9 @@ children: []
 blocking: []
 blocked-by: [95]
 created: "2026-11-09T14:42:23Z"
-updated: "2026-11-09T14:43:23+00:00"
+updated: "2026-11-09T15:17:05+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -35,3 +35,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 - [ ] Build the two rehearsal environments from the reviewed wheel and a version-only rehearsal wheel of the same reviewed source, each with a recorded digest. Rehearse upgrade and rollback in isolated project state before installing the production collector.
 - [ ] Install the reviewed package on the project Mac. Observe unattended launchd startup, verify restart catch-up, rehearse supported backup and upgrade with verified recovery and same-cutoff parity, exercise the real routes including supported nested work, model/effort changes and retry evidence or explicit coverage gaps, and validate and publish the receipt with the version, dated evidence and digest. Demonstrate an export replay without duplication and that Unknown remains visible.
 - [ ] Verify that the collector is active and coverage is current before authorizing C01 pickup. The same service and ledger continue when Core is released and when C44 starts accepting compatible usage.
+
+## Accepted amendment
+
+[Revised implementation plan](../83/plan/usage-capture-replan.md). Include up to 0.5 agent-hour total for the short dedicated controlled Codex and Claude qualification workload below. The prior 3.5 hours cover installation, recovery rehearsal, receipt verification and reporting.

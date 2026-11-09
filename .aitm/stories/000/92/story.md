@@ -10,9 +10,9 @@ children: []
 blocking: [93]
 blocked-by: [91]
 created: "2026-11-09T14:42:21Z"
-updated: "2026-11-09T14:43:23+00:00"
+updated: "2026-11-09T15:17:05+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -35,3 +35,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path":
 
 - [ ] Write `test_service_commands_and_coverage` through the actual service entry point with temporary project roots and both providers. Verify the command table, confirmed registration, `collect-once` lease refusal, and that a bind, correction and anchor addition are queued and acknowledged while the same service keeps its writer lock. Test permission loss, incomplete rows, and separate heartbeat, watermarks and source lag. Verify known price reaches direct and inclusive rollups, Unknown price preserves tokens, and quota and spend remain separate.
 - [ ] Run `test_service.py` to show failure, implement the loop and commands, then pass leaf verification.
+
+## Accepted amendment
+
+[Revised implementation plan](../83/plan/usage-capture-replan.md). Extend types.py with typed registration and source anchor records and their static codecs. Edit only the source-anchor dispatch case in scopes.py. Keep approved raw roots in private configuration and store only pseudonymous anchor records and configuration identity in the ledger. Prove restart and acknowledgment of an added anchor without resetting the activation boundary.

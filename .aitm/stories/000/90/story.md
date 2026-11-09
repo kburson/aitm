@@ -8,11 +8,11 @@ issue: "https://github.com/kburson/aitm/issues/90"
 parent: 83
 children: []
 blocking: [91]
-blocked-by: [88, 89]
+blocked-by: [86, 88, 89]
 created: "2026-11-09T14:42:19Z"
-updated: "2026-11-09T14:43:23+00:00"
+updated: "2026-11-09T15:17:05+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -25,7 +25,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 
 [GitHub issue](https://github.com/kburson/aitm/issues/90) · [Parent #83](../83/story.md) · Backlog
 
-**Required predecessors** [#88](../88/story.md), [#89](../89/story.md)
+**Required predecessors** [#86](../86/story.md), [#88](../88/story.md), [#89](../89/story.md)
 
 ## Accepted parent decomposition
 
@@ -35,3 +35,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 
 - [ ] Write `test_standard_rates_and_account_only_evidence` from sanitized #73 vectors. Verify cached input subtraction, supported long-context treatment and Claude cache-write TTL, with reasoning counted once. Check that unknown rates leave tokens visible, a changing same-window quota fixture leaves per-agent burn Unknown, and absent billing evidence remains Unknown.
 - [ ] Run `test_accounting.py` to show failure, implement independent price, quota and spend records, then pass leaf verification.
+
+## Accepted amendment
+
+[Revised implementation plan](../83/plan/usage-capture-replan.md). Extend types.py with AccountObservation and independent price and spend records and their static codecs. Interpret the shared QuotaEvidence envelope from U01. Verify write and recovery without raw account handles.

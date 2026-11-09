@@ -7,12 +7,12 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
-blocking: [91]
+blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T14:43:23+00:00"
+updated: "2026-11-09T15:17:05+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": 2.5, "size": "S"}
+estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -35,3 +35,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 - [ ] Write `test_graduation_and_inclusive_rollup` with an epic, two children, an alias from draft to issue, epic batch usage and per-child usage. Assert each observation contributes once, previous as-of results remain intact and cycles or contradictory aliases are refused. Exercise real CLI publication of alias and parent commands. Use price fixtures until U06 supplies accounting.
 - [ ] Run `test_rollup.py` to show failure, implement the rollup and alias/ancestry commands, then pass leaf verification.
+
+## Accepted amendment
+
+[Revised implementation plan](../83/plan/usage-capture-replan.md). Extend types.py with typed draft alias and ancestry records and their static codecs. Edit only the corresponding command dispatch cases in scopes.py and use the existing revision store. Prove sequence-specific rollup, corrections and cycle refusal after restart.
