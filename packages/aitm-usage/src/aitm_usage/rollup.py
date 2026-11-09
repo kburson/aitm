@@ -3,7 +3,7 @@
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, fields
-from decimal import Decimal
+from decimal import Context, Decimal
 from typing import Protocol, runtime_checkable
 
 from .relationships import canonical_relationships
@@ -108,6 +108,9 @@ def _totals(
 ) -> RollupTotals:
     token_fields = fields(TokenCounts)
     tokens = {}
+    # U06 admits up to 24 integer and 13 fractional digits per price.
+    # Even the full 64-bit SQLite row ID space adds at most 20 digits to a sum.
+    usd_context = Context(prec=64, Emin=-64, Emax=64)
     known = Decimal(0)
     unknown = count = 0
     for counts, usd in observations:
@@ -115,7 +118,7 @@ def _totals(
         if usd is None:
             unknown += 1
         else:
-            known += usd
+            known = usd_context.add(known, usd)
         for field in token_fields:
             quantity = getattr(counts, field.name)
             if quantity is not None:

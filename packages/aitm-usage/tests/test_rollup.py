@@ -8,15 +8,15 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import Context, Decimal, Inexact, Rounded, localcontext
 from pathlib import Path
 from threading import Event, current_thread
 from uuid import UUID
 
 import pytest
 
+from aitm_usage import accounting, pricing, scopes
 from aitm_usage import ledger as store
-from aitm_usage import scopes
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError, WriterActive
 from aitm_usage.rollup import rollup
 from aitm_usage.scopes import (
@@ -26,6 +26,7 @@ from aitm_usage.scopes import (
     enqueue_marker,
 )
 from aitm_usage.types import (
+    AdapterResult,
     Availability,
     BoundaryKind,
     ClientVersion,
@@ -37,6 +38,8 @@ from aitm_usage.types import (
     ItemParent,
     LedgerBatch,
     MarkerDisposition,
+    ModelLabel,
+    ProcessingTier,
     Provider,
     ReviewRole,
     Revision,
@@ -444,6 +447,86 @@ def test_rollup_prices_only_current_observations_in_its_view(project, item_cli):
     free = rollup(CHILD, _priced_view(project, revised, zero, zero)).direct
     assert free.known_usd == Decimal(0)
     assert free.unknown_price_count == 1
+
+
+@pytest.mark.parametrize(
+    ("context", "wide", "direct", "inclusive"),
+    [
+        (Context(prec=2), False, "0.0228", "0.0342"),
+        (
+            Context(prec=28),
+            True,
+            "91311303126417235628.2686107870208",
+            "91311303126417235628.2800107870208",
+        ),
+        (
+            Context(prec=2, Emin=-1, Emax=1, traps=[Inexact, Rounded]),
+            True,
+            "91311303126417235628.2686107870208",
+            "91311303126417235628.2800107870208",
+        ),
+    ],
+    ids=("ordinary-low-precision", "wide-default-precision", "wide-restricted-context"),
+)
+def test_rollup_sums_durable_prices_exactly(
+    project, item_cli, context, wide, direct, inclusive
+):
+    standard = pricing.load_rate_card()
+    astra = next(row for row in standard.entries if row.model is ModelLabel.GPT_6_ASTRA)
+    custom = replace(
+        standard,
+        codex_long_context=replace(
+            standard.codex_long_context, input_multiplier=Decimal("9.9")
+        ),
+        entries=(replace(astra, uncached_input=Decimal("999999.123456")),),
+    )
+    with project.writer() as writer:
+        _consume(writer, item_cli, "parent", DRAFT, EPIC)
+        _consume(writer, item_cli, "alias", DRAFT, CHILD)
+        boundaries = []
+        for index, (item, long_request) in enumerate(
+            ((EPIC, wide), (EPIC, False), (DRAFT, False), (None, wide), (None, False)),
+            start=1,
+        ):
+            marker, evidence, observation = _usage_fixture(writer, item, index)
+            if marker is not None:
+                enqueue_marker(writer.root, marker)
+                boundaries.append(evidence)
+            counts = (
+                TokenCounts(2**63 - 1, 0, 0, 0, 0)
+                if long_request
+                else TokenCounts(500, 400, 0, 0, 200)
+            )
+            observed = replace(
+                observation.record,
+                tokens=counts,
+                context_tokens=counts.input_tokens,
+                model=ModelLabel.GPT_6_ASTRA,
+                processing_tier=ProcessingTier.STANDARD,
+            )
+            batch = AdapterResult((replace(observation, record=observed),))
+            writer.apply(
+                accounting.account_observations(
+                    batch, custom if long_request else standard, ledger=writer
+                )
+            )
+        assert len(drain_inbox(writer, boundaries).receipts) == 3
+
+    view = Ledger.open(project.root, PROJECT).as_of()
+    reordered = replace(view, revisions=view.revisions[::-1])
+    with localcontext(context):
+        totals = rollup(EPIC, view)
+        assert rollup(EPIC, reordered) == totals
+    assert totals.direct.known_usd == Decimal(direct)
+    assert totals.inclusive.known_usd == Decimal(inclusive)
+    assert totals.unattributed.known_usd == Decimal(direct)
+    for subtotal, count in (
+        (totals.direct, 2),
+        (totals.inclusive, 3),
+        (totals.unattributed, 2),
+    ):
+        assert subtotal.observation_count == count
+        assert subtotal.unknown_price_count == 0
 
 
 def _command(payload):
