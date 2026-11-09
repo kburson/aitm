@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 90
 title: "[Usage U06] Pricing and quota availability"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/90"
 parent: 83
 children: []
 blocking: [91]
 blocked-by: [86, 88, 89]
 created: "2026-11-09T14:42:19Z"
-updated: "2026-11-09T15:17:05+00:00"
-last-branch: "planning"
+updated: "2026-11-09T18:43:36+00:00"
+last-branch: "codex/aitm-usage-u06"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "60f4e2f8f6a19994486f509191eb87e653b35c4f93b73edbcb58409a75d686f2"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 
 # [Usage U06] Pricing and quota availability
 
-[GitHub issue](https://github.com/kburson/aitm/issues/90) · [Parent #83](../83/story.md) · Backlog
+[GitHub issue](https://github.com/kburson/aitm/issues/90) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#86](../86/story.md), [#88](../88/story.md), [#89](../89/story.md)
 
@@ -39,3 +39,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U06", "path":
 ## Accepted amendment
 
 [Revised implementation plan](../83/plan/usage-capture-replan.md). Extend types.py with AccountObservation and independent price and spend records and their static codecs. Interpret the shared QuotaEvidence envelope from U01. Verify write and recovery without raw account handles.
+
+## Current pickup
+
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
