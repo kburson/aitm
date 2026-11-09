@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 96
 title: "[Usage U11] Project Mac activation and dogfood proof"
 kind: "story"
-state: "develop"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/96"
 parent: 83
 children: []
 blocking: []
 blocked-by: [95]
 created: "2026-11-09T14:42:23Z"
-updated: "2026-11-09T22:02:35+00:00"
+updated: "2026-11-09T22:13:01+00:00"
 last-branch: "codex/aitm-usage-u11"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 
 # [Usage U11] Project Mac activation and dogfood proof
 
-[GitHub issue](https://github.com/kburson/aitm/issues/96) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/96) · [Parent #83](../83/story.md) · Planning
 
 **Required predecessors** [#95](../95/story.md)
 
@@ -43,3 +43,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Codex Desktop carrier amendment under review](../83/plan/usage-capture-desktop-marker-replan.md). Live qualification paused at the exact released source. Protected source delivery remains recorded.

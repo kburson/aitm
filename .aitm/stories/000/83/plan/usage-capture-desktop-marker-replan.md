@@ -1,0 +1,15 @@
+# Codex Desktop marker carrier amendment
+
+Live #96 qualification stopped on the exact protected trunk release `c2f3582d07d0f3dfeb680ab565fb3a5c5339d2ac` from PR #97. The actual registered Codex Desktop client recorded the canonical single-line marker wrapper followed by one transport line feed. Its native tool result joined to the exact queued command. A second distinct single-line call repeated the same transport suffix. The released U04 full-match parser rejected the first call before validating the receipt. No production installation, Claude workload or Core activity followed. Keep the original source and live evidence.
+
+## Owner and verification
+
+U04 / #88 owns a narrow carrier compatibility fix in the Codex adapter and its tests. On the verified current Desktop route, accept the canonical existing wrapper exactly as before with zero or one final ASCII line feed. Interpret the final line feed only as carrier framing. Reject other trailing or leading bytes, alternate whitespace, extra code, unsupported wrapper shapes, mismatched commands, output and receipt identity, and uncertain native tool order. No generic stripping, parsing of arbitrary code, or wider source admission. Preserve all existing accounting and privacy behavior. Add the exact retained shape as a sanitized positive regression and explicit negative shape coverage.
+
+Verify RED on the exact released code, GREEN with genuine same-session tool evidence and existing adapter tests, and a read-only or disposable-state proof against the original unmodified authorized #96 native record. Confirm the actual queued command's receipt and first request can be joined through the approved scanner/adapter path, with zero use admitted outside authorized scope. Run the full serial locked suite and retain exact independent source review. Deliver the small reviewed fix through a normal protected-trunk PR. Verify its exact merge tree and wheel before using it for qualification.
+
+## Sequencing and estimates
+
+Return #83 and #96 to Planning until this amendment passes SAR, independent SPR and native XPR on the exact bytes. Reopen #88 on the exact current protected trunk release in its existing dedicated worktree. Preserve prior U04 source acceptance and add a separate repair receipt. Only resume #96 on the exact independently accepted and delivered source with a fresh reviewed JIT. Reuse authentic early #96 evidence where it qualifies, and record its cost under the same controlled workload limit. Repeat the actual isolated proof and required rehearsal before production installation, and validate the full real receipt before closing #83. Keep the same project identity and eventual ledger, and leave Core #2 outside execution.
+
+The four agent-hour U04 and U11 caps and 48.5-hour epic estimate remain in force. U11 includes the existing 0.5 agent-hour actual controlled workload cap. Stop before any ownership or forecast deviation. This amendment fixes a verified native carrier difference without changing the lifetime scope, metrics, installed command or later C44 handoff.
