@@ -2,14 +2,18 @@ import importlib
 import json
 import shlex
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 from uuid import UUID
 
 import pytest
 
+from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
+from aitm_usage.pricing import load_rate_card
 from aitm_usage.rollup import rollup
 from aitm_usage.scopes import drain_inbox, session_reference
 from aitm_usage.sources.scan import discover, scan
@@ -1216,3 +1220,205 @@ def test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total(projec
     )
     _, result = read(claude, source(registration), claude.ClaudeState(ledger))
     assert result.revisions[-1].record.availability is Availability.COMPLETE
+
+
+def _accounted_scan(claude, ledger, candidate, prior=None, *, reserved_session_id=None):
+    with ledger.writer() as writer:
+        batch, result = read(
+            claude,
+            candidate,
+            claude.ClaudeState(writer, reserved_session_id=reserved_session_id),
+            prior,
+        )
+        if reserved_session_id is not None:
+            drain_inbox(
+                writer,
+                [batch.scope_evidence(boundary) for boundary in result.boundaries],
+            )
+        checkpoint = SourceCheckpoint(batch.cursor, result.provider_checkpoint)
+        accounting = account_observations(result, load_rate_card(), ledger=writer)
+        sequence = writer.apply(
+            replace(accounting, checkpoint=checkpoint, prior_checkpoint=prior)
+        )
+    return result, checkpoint, sequence
+
+
+def _with_processing(counts, metadata):
+    counts = counts.copy()
+    for key in ("service_tier", "speed", "inference_geo"):
+        del counts[key]
+    counts.update(metadata)
+    return counts
+
+
+@pytest.mark.parametrize(
+    ("processing", "expected_tier", "expected_price"),
+    [
+        ({"speed": "fast", "inference_geo": "us"}, None, Decimal(0)),
+        ({"service_tier": "priority"}, None, Decimal(0)),
+        ({"speed": None}, None, Decimal(0)),
+        ({"inference_geo": {"unsupported": "private-field"}}, None, Decimal(0)),
+        ({}, ProcessingTier.STANDARD, Decimal("0.000136")),
+        ({"inference_geo": "global"}, ProcessingTier.STANDARD, Decimal("0.000136")),
+    ],
+    ids=[
+        "fast-us",
+        "other-tier",
+        "explicit-null",
+        "malformed",
+        "omitted",
+        "sparse-confirmed",
+    ],
+)
+def test_streamed_processing_evidence_controls_accounting_across_restart(
+    project, processing, expected_tier, expected_price
+):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    write(path, [user(checkout), request(checkout, counts=usage(3), stop=None)])
+    candidate = source(registration)
+    initial, prior, first_sequence = _accounted_scan(claude, ledger, candidate)
+    (r1,) = initial.revisions
+    assert r1.record.availability is Availability.PARTIAL
+    assert r1.record.processing_tier is ProcessingTier.STANDARD
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    write(
+        path,
+        [request(checkout, counts=_with_processing(usage(), processing))],
+        append=True,
+    )
+    changed, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    (r2,) = changed.revisions
+    assert (r2.key, r2.revision) == (r1.key, 2)
+    assert r2.record.processing_tier is expected_tier
+    assert r2.record.boundary == r1.record.boundary
+    assert r2.record.tokens == TokenCounts(7, 5, 3, 4, 4, 2, 18)
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    write(path, [cost(**{MODEL: model_counts()})], append=True)
+    terminal, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    (r3,) = terminal.revisions
+    assert (r3.key, r3.revision) == (r1.key, 3)
+    assert r3.record.availability is Availability.COMPLETE
+    assert r3.record.processing_tier is expected_tier
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    write(path, [request(checkout)], append=True)
+    replay, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    assert replay.revisions == ()
+    item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
+    before = rollup(item, ledger.as_of(first_sequence)).unattributed
+    current = rollup(item, ledger.as_of()).unattributed
+    assert before.unknown_price_count == 1
+    assert current.tokens["output_tokens"] == 4
+    assert current.known_usd == expected_price
+    assert current.unknown_price_count == (expected_tier is None)
+
+
+def test_initial_unproven_processing_stays_unknown_after_standard_revision(project):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    write(
+        path,
+        [
+            user(checkout),
+            request(checkout, counts=_with_processing(usage(3), {}), stop=None),
+        ],
+    )
+    candidate = source(registration)
+    initial, prior, _ = _accounted_scan(claude, ledger, candidate)
+    assert initial.revisions[0].record.processing_tier is None
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    write(path, [request(checkout), cost(**{MODEL: model_counts()})], append=True)
+    result, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    assert result.revisions[-1].record.availability is Availability.COMPLETE
+    assert all(revision.record.processing_tier is None for revision in result.revisions)
+    item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
+    assert rollup(item, ledger.as_of()).unattributed.unknown_price_count == 1
+
+
+@pytest.mark.parametrize(
+    "late_output", [4, 5, 3, True], ids=["unchanged", "increase", "decrease", "invalid"]
+)
+def test_late_processing_contradiction_revokes_price_with_original_scope(
+    project, monkeypatch, capsys, late_output
+):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
+    item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
+    marker_path = ledger.root / "marker.json"
+    marker = ScopeMarker(
+        COMMAND,
+        Provider.CLAUDE,
+        session,
+        1,
+        BoundaryKind.REQUEST,
+        claude.claude_request_boundary_reference(ledger, session, COMMAND),
+        AFTER,
+        item,
+        WorkPhase.PLANNING,
+        ledger.pseudonymize("participant", "fixture"),
+        PROJECT,
+        receipt_ref=claude.claude_receipt_reference(ledger, session, COMMAND),
+    )
+    marker_path.write_bytes(encode_marker(marker))
+    marker_path.chmod(0o600)
+    arguments = [
+        "aitm-usage",
+        "--project",
+        str(ledger.root),
+        "scope",
+        "mark",
+        "--marker",
+        str(marker_path),
+        "--session-id",
+        str(SESSION),
+        "--json",
+    ]
+    monkeypatch.setattr(sys, "argv", arguments)
+    assert main() == 0
+    output = capsys.readouterr().out.strip()
+    rows = _native_tool_turn(checkout, shlex.join(arguments), output)
+    write(path, [user(checkout), *rows, cost(**{MODEL: model_counts(8, 4, 10, 6, 8)})])
+    candidate = source(registration)
+    first, prior, priced_sequence = _accounted_scan(
+        claude, ledger, candidate, reserved_session_id=SESSION
+    )
+    priced = first.revisions[-1]
+    assert priced.record.boundary.receipt_ref == marker.receipt_ref
+    assert priced.record.availability is Availability.COMPLETE
+    assert rollup(item, ledger.as_of(priced_sequence)).direct.known_usd == Decimal(
+        "0.000136"
+    )
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    counts = _with_processing(usage(late_output), {"speed": "fast"})
+    write(
+        path,
+        [
+            request(
+                checkout, req="req-next", msg="msg-next", counts=counts, effort="max"
+            )
+        ],
+        append=True,
+    )
+    result, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    (downgraded,) = result.revisions
+    assert (downgraded.key, downgraded.revision) == (priced.key, priced.revision + 1)
+    assert downgraded.record == replace(priced.record, processing_tier=None)
+    current = rollup(item, ledger.as_of())
+    assert current.direct.known_usd == 0
+    assert current.direct.unknown_price_count == 1
+    assert current.direct.tokens["output_tokens"] == 4
+    assert rollup(item, ledger.as_of(priced_sequence)).direct.known_usd == Decimal(
+        "0.000136"
+    )
+
+    ledger = Ledger.open(ledger.root, PROJECT)
+    write(path, [request(checkout, req="req-next", msg="msg-next")], append=True)
+    ordinary, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    assert ordinary.revisions == ()
+    assert rollup(item, ledger.as_of()).direct.unknown_price_count == 1

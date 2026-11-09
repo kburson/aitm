@@ -40,6 +40,11 @@ _PROVIDER = Provider.CLAUDE
 _MODEL = ModelLabel.CLAUDE_OPUS_5_5
 _EMPTY = TokenCounts()
 _ZERO = TokenCounts(0, 0, 0, 0, 0, total_tokens=0)
+_STANDARD_PROCESSING = (
+    ("service_tier", "standard"),
+    ("speed", "standard"),
+    ("inference_geo", "global"),
+)
 _STOP_REASONS = ("end_turn", "tool_use", "max_tokens", "stop_sequence", "refusal")
 _EFFORTS = {
     e.value: e
@@ -728,23 +733,23 @@ def _report_key(ledger: Ledger, stream: SourceRef, tool: SourceRef) -> SourceRef
     return ledger.pseudonymize("claude-agent-report", f"{stream.value}:{tool.value}")
 
 
-def _metadata(
-    frame: SourceFrame, message: dict
-) -> tuple[ModelLabel, Effort | None, ProcessingTier | None]:
-    raw = _object(message.get("usage"))
+def _metadata(frame: SourceFrame, message: dict) -> tuple[ModelLabel, Effort | None]:
     effort = frame.row.get("effort")
-    selected = _EFFORTS.get(effort) if type(effort) is str else None
-    tier = (
-        ProcessingTier.STANDARD
-        if (raw.get("service_tier"), raw.get("speed"), raw.get("inference_geo"))
-        == ("standard", "standard", "global")
-        else None
-    )
     return (
         (_MODEL if message.get("model") == _MODEL.value else ModelLabel.UNKNOWN),
-        selected,
-        tier,
+        _EFFORTS.get(effort) if type(effort) is str else None,
     )
+
+
+def _processing(raw: dict) -> tuple[ProcessingTier | None, bool]:
+    """Qualify Standard only with all fields and distinguish sparse rows."""
+    if any(
+        key in raw and raw[key] != expected for key, expected in _STANDARD_PROCESSING
+    ):
+        return None, True
+    if all(key in raw for key, _ in _STANDARD_PROCESSING):
+        return ProcessingTier.STANDARD, False
+    return None, False
 
 
 def _context(counts: TokenCounts) -> int | None:
@@ -935,9 +940,11 @@ class _UsageWalk:
         ) != req:
             self.problem(frame, DiagnosticCode.IDENTITY_CONFLICT)
             return
-        counts = _usage(_object(message.get("usage")))
+        raw_usage = _object(message.get("usage"))
+        counts = _usage(raw_usage)
         stopped = message.get("stop_reason") in _STOP_REASONS
-        model, effort, tier = _metadata(frame, message)
+        model, effort = _metadata(frame, message)
+        tier, contradictory_processing = _processing(raw_usage)
         client_ref = _pseudonym(
             self.ledger, frame, "api-request", frame.row.get("requestRef")
         )
@@ -967,10 +974,9 @@ class _UsageWalk:
             # A revision in an excluded segment cannot change an eligible record.
             self.baseline = None
             return
-        if counts is None:
-            if prior is None:
-                self.prefix[req] = RequestPrefix(req, msg, frame.ordinal, _EMPTY)
-                self.messages[msg] = req
+        if counts is None and prior is None:
+            self.prefix[req] = RequestPrefix(req, msg, frame.ordinal, _EMPTY)
+            self.messages[msg] = req
             self.problem(frame, DiagnosticCode.MALFORMED_USAGE)
             return
         key = _key(self.ledger, self.stream, req)
@@ -1024,6 +1030,7 @@ class _UsageWalk:
             record = previous.record
             if (
                 model is ModelLabel.UNKNOWN
+                and counts is not None
                 and counts != record.tokens
                 and (model_ref is None or self.unknown_models.get(req) != model_ref)
             ):
@@ -1033,16 +1040,34 @@ class _UsageWalk:
             if nested_stream != _nested(frame):
                 self.problem(frame, DiagnosticCode.IDENTITY_CONFLICT)
                 return
-            if not _monotonic(record.tokens, counts):
-                self.problem(frame, DiagnosticCode.COUNTER_REGRESSION)
+            # Only the original request can qualify a tier. Later processing
+            # evidence can invalidate it independently of rejected token counts.
+            revised_tier = None if contradictory_processing else record.processing_tier
+            issue = None
+            if counts is None:
+                issue = DiagnosticCode.MALFORMED_USAGE
+            elif not _monotonic(record.tokens, counts):
+                issue = DiagnosticCode.COUNTER_REGRESSION
+            elif (
+                record.availability is Availability.COMPLETE
+                and counts != record.tokens
+                or prior.complete
+                and not stopped
+            ):
+                issue = DiagnosticCode.UNRECONCILED_USAGE
+            if issue is not None:
+                self.problem(frame, issue)
+                if revised_tier is not record.processing_tier:
+                    self.publish(
+                        key, replace(record, processing_tier=revised_tier), previous
+                    )
                 return
-            if record.availability is Availability.COMPLETE and counts != record.tokens:
-                self.problem(frame, DiagnosticCode.UNRECONCILED_USAGE)
-                return
-            if prior.complete and not stopped:
-                self.problem(frame, DiagnosticCode.UNRECONCILED_USAGE)
-                return
-            record = replace(record, tokens=counts, context_tokens=_context(counts))
+            record = replace(
+                record,
+                tokens=counts,
+                context_tokens=_context(counts),
+                processing_tier=revised_tier,
+            )
         self.prefix[req] = RequestPrefix(
             req, msg, record.boundary.ordinal, counts, stopped
         )
