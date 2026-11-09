@@ -322,8 +322,34 @@ class ItemParent:
             raise ValueError("A parent link requires draft or issue items")
 
 
+@dataclass(frozen=True, slots=True)
+class ProjectRegistration:
+    project_id: UUID
+    configuration_ref: SourceRef
+    cutoff: datetime
+    anchor_refs: tuple[SourceRef, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SourceAnchorCommand:
+    command_id: UUID
+    project_id: UUID
+    configuration_ref: SourceRef
+    anchor_ref: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
+class SourceAnchor(SourceAnchorCommand):
+    """An anchor accepted together with its exact command receipt."""
+
+
 InboxPayload = (
-    ScopeMarker | DevelopmentBinding | ScopeCorrection | DraftAlias | ItemParent
+    ScopeMarker
+    | DevelopmentBinding
+    | ScopeCorrection
+    | DraftAlias
+    | ItemParent
+    | SourceAnchorCommand
 )
 _COMMAND_TYPES = {
     "scope-mark": ScopeMarker,
@@ -331,6 +357,7 @@ _COMMAND_TYPES = {
     "scope-correct": ScopeCorrection,
     "item-alias": DraftAlias,
     "item-parent": ItemParent,
+    "source-add-anchor": SourceAnchorCommand,
 }
 MarkerId = UUID
 
@@ -349,7 +376,7 @@ class InboxCommand:
             payload = payload.marker
         if isinstance(payload, ScopeCorrection):
             payload_id = payload.correction_id
-        elif isinstance(payload, (DraftAlias, ItemParent)):
+        elif isinstance(payload, (DraftAlias, ItemParent, SourceAnchorCommand)):
             payload_id = payload.command_id
         else:
             payload_id = payload.marker_id
@@ -589,6 +616,8 @@ Record = (
     | PriceObservation
     | AccountObservation
     | SpendObservation
+    | ProjectRegistration
+    | SourceAnchor
 )
 _RECORD_TYPES = {
     "usage": UsageObservation,
@@ -601,6 +630,8 @@ _RECORD_TYPES = {
     "api-equivalent-price": PriceObservation,
     "account-observation": AccountObservation,
     "actual-spend": SpendObservation,
+    "project-registration": ProjectRegistration,
+    "source-anchor": SourceAnchor,
 }
 _TAGGED_CODECS = {
     Record: (
@@ -628,6 +659,12 @@ class Revision:
             self.record, (PriceObservation, AccountObservation, SpendObservation)
         ):
             raise ValueError("Accounting records are immutable at their own keys")
+        if self.revision != 1 and isinstance(
+            self.record, (ProjectRegistration, SourceAnchor)
+        ):
+            raise ValueError(
+                "Registration and source anchors are immutable at their own keys"
+            )
 
 
 @dataclass(frozen=True, slots=True)

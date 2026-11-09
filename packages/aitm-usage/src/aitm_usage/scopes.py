@@ -38,6 +38,7 @@ from .types import (
     ScopeCorrection,
     ScopeEnrollment,
     ScopeMarker,
+    SourceAnchorCommand,
     SourceBoundary,
     SourceRef,
     UsageObservation,
@@ -437,7 +438,7 @@ def _dispatch_order(publication: _Publication) -> tuple[int, int, int]:
     payload = command.payload
     if publication.order is not None:
         return 3, publication.order, 0
-    if isinstance(payload, ScopeCorrection):
+    if isinstance(payload, (ScopeCorrection, SourceAnchorCommand)):
         return 2, 0, command.command_id.int
     if isinstance(payload, DevelopmentBinding):
         return 0, payload.generation, command.command_id.int
@@ -636,6 +637,11 @@ def _evaluate(
     payload = command.payload
     if isinstance(payload, (DraftAlias, ItemParent)):
         disposition, effects = relationship_decision(payload, view, ledger.pseudonymize)
+        return disposition, None, effects
+    if isinstance(payload, SourceAnchorCommand):
+        from .service import source_anchor_decision
+
+        disposition, effects = source_anchor_decision(ledger, payload, view)
         return disposition, None, effects
     if isinstance(payload, ScopeCorrection):
         status, candidate = _correction(payload, receipts)
