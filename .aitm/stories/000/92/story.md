@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 92
 title: "[Usage U08] Collector service, live commands and status"
 kind: "story"
-state: "review"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/92"
 parent: 83
 children: []
 blocking: [93]
 blocked-by: [91]
 created: "2026-11-09T14:42:21Z"
-updated: "2026-11-09T20:01:57+00:00"
+updated: "2026-11-09T20:52:23+00:00"
 last-branch: "codex/aitm-usage-u08"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md", "plan/launch-health-jit.md", "plan/launch-health-pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "6bdc895734ef1dbc8d838cc8e8b4486b6eb2c26f6b9adf3dbfe7c24d5674c11e"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path":
 
 # [Usage U08] Collector service, live commands and status
 
-[GitHub issue](https://github.com/kburson/aitm/issues/92) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/92) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#91](../91/story.md)
 
@@ -45,3 +45,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path":
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+[Launch health supplemental JIT](plan/launch-health-jit.md) · [Independent pickup review](plan/launch-health-pickup-review.md). The original collector source receipt is preserved.

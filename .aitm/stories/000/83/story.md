@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 83
 title: "[Epic] Continuous agent usage capture"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/83"
 parent: null
 children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T20:43:02+00:00"
+updated: "2026-11-09T20:52:23+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -43,3 +43,5 @@ Implementation resumed with #86 after the [relationship admission amendment](pla
 [Accounting integration follow-up](plan/usage-capture-accounting-integration-supplement.md) and [independent review](plan/usage-capture-accounting-integration-supplement-review.md) record the scoped Claude tier, Codex quota coverage and exact rollup corrections. [#93](../93/story.md) records the accepted real process crash and privacy verification.
 
 [Launch health producer amendment under review](plan/usage-capture-launch-health-replan.md). The #94 source candidate is preserved pending exact process-attribution proof.
+
+Implementation resumed on the accepted [launch health producer amendment](plan/usage-capture-launch-health-replan.md). #94 remains in Planning until the U08 producer witness and U12 exact rerun pass.
