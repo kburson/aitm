@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 86
 title: "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups"
 kind: "story"
-state: "review"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
 blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T16:48:48+00:00"
+updated: "2026-11-09T19:07:42+00:00"
 last-branch: "codex/aitm-usage-u13"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md", "plan/recovery-plan.md", "plan/recovery-jit.md", "plan/recovery-pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/source-review.md", "plan/recovery-plan.md", "plan/recovery-jit.md", "plan/recovery-pickup-review.md", "plan/accounting-integration-jit.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "266835e43f20043047ae4394ffdb2aa6eb88c119d7a5b71676f37eed1650e2bc"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 # [Usage U13] Draft aliases, ancestry and direct/inclusive rollups
 
-[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -51,3 +51,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 [Plan](plan/recovery-plan.md) · [JIT](plan/recovery-jit.md) · [Independent acceptance](plan/recovery-pickup-review.md). Resume in the preserved source worktree.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+[Accounting integration resume evidence](plan/accounting-integration-jit.md).
