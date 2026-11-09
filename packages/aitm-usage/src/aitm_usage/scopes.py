@@ -771,6 +771,10 @@ def drain_inbox(writer: Ledger, boundaries: Iterable[BoundaryEvidence]) -> Inbox
                     if current != receipt:
                         view = writer.as_of()
                 writer.require_writer()
+                if isinstance(command.payload, SourceAnchorCommand):
+                    from .service import verify_source_anchor_receipt
+
+                    verify_source_anchor_receipt(writer, receipt, view)
                 _acknowledge(inbox, acknowledgments, receipt, publication.data)
                 outcomes.append(receipt)
         return InboxDrain(tuple(outcomes), invalid, halted)

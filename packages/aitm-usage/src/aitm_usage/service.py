@@ -413,43 +413,77 @@ def source_anchor_decision(
     return MarkerDisposition.ACCEPTED, (effect,)
 
 
+def _verified_anchor_path(
+    ledger: Ledger,
+    registration: ProjectRegistration,
+    current: dict[SourceRef, Revision],
+    entry: Revision,
+    cutoff: int,
+) -> Path:
+    receipt = entry.record
+    assert isinstance(receipt, CommandReceipt)
+    command = receipt.command
+    payload = command.payload
+    assert type(payload) is SourceAnchorCommand
+    if (
+        receipt.boundary is not None
+        or receipt.anchor_ref is not None
+        or payload.project_id != registration.project_id
+        or payload.configuration_ref != registration.configuration_ref
+        or receipt.digest != ledger.validate_command(command)
+        or entry.key != ledger.pseudonymize("inbox-command", str(command.command_id))
+    ):
+        raise LedgerError("Accepted anchor receipt has invalid authority")
+    effect = _anchor_revision(ledger, payload)
+    if current.get(effect.key) != effect:
+        raise LedgerError("Accepted anchor effect is unavailable")
+    sequence = _anchor_commit_sequence(ledger, entry, effect, cutoff)
+    if sequence is None or not _has_anchor_attestation(
+        ledger, command, effect, sequence
+    ):
+        raise LedgerError("Accepted anchor lacks commit attestation")
+    path = _staged_anchor(ledger, payload)
+    if path is None:
+        raise LedgerError("Accepted anchor's private proposal is unavailable")
+    return path
+
+
+def _accepted_anchors(
+    ledger: Ledger, view: LedgerView, registration: ProjectRegistration
+) -> tuple[Path, ...]:
+    current = {entry.key: entry for entry in view.current}
+    return tuple(
+        _verified_anchor_path(ledger, registration, current, entry, view.sequence)
+        for entry in current.values()
+        if isinstance(entry.record, CommandReceipt)
+        and type(entry.record.command.payload) is SourceAnchorCommand
+        and entry.record.disposition is MarkerDisposition.ACCEPTED
+    )
+
+
+def verify_source_anchor_receipt(
+    ledger: Ledger, receipt: CommandReceipt, view: LedgerView | None = None
+) -> None:
+    """Verify an accepted anchor before publishing or replaying its acknowledgment."""
+    if receipt.disposition is not MarkerDisposition.ACCEPTED:
+        return
+    view = ledger.as_of() if view is None else view
+    _, registration = _authorized_config(ledger, view)
+    current = {entry.key: entry for entry in view.current}
+    key = ledger.pseudonymize("inbox-command", str(receipt.command.command_id))
+    entry = current.get(key)
+    if entry is None or entry.record != receipt:
+        raise LedgerError("Accepted anchor receipt is unavailable")
+    _verified_anchor_path(ledger, registration, current, entry, view.sequence)
+
+
 def _effective_registration(
     ledger: Ledger, view: LedgerView
 ) -> tuple[Registration, _Config]:
     config, registration = _authorized_config(ledger, view)
-    current = {entry.key: entry for entry in view.current}
-    additions = []
-    for entry in current.values():
-        receipt = entry.record
-        if not isinstance(receipt, CommandReceipt):
-            continue
-        command = receipt.command
-        payload = command.payload
-        if (
-            type(payload) is not SourceAnchorCommand
-            or receipt.disposition is not MarkerDisposition.ACCEPTED
-            or receipt.boundary is not None
-            or receipt.anchor_ref is not None
-            or payload.project_id != registration.project_id
-            or payload.configuration_ref != registration.configuration_ref
-            or receipt.digest != ledger.validate_command(command)
-            or entry.key
-            != ledger.pseudonymize("inbox-command", str(command.command_id))
-        ):
-            continue
-        expected = _anchor_revision(ledger, payload)
-        if current.get(expected.key) != expected:
-            continue
-        sequence = _anchor_commit_sequence(ledger, entry, expected, view.sequence)
-        if sequence is None or not _has_anchor_attestation(
-            ledger, command, expected, sequence
-        ):
-            continue
-        path = _staged_anchor(ledger, payload)
-        if path is None:
-            raise LedgerError("Accepted anchor's private proof is unavailable")
-        additions.append(path)
-    return _registration(ledger, config, tuple(additions)), config
+    return _registration(
+        ledger, config, _accepted_anchors(ledger, view, registration)
+    ), config
 
 
 def load_registration(ledger: Ledger) -> Registration:
@@ -978,6 +1012,7 @@ def status_report(root: Path, ledger: Ledger | None) -> dict:
     status = _read_status(root)
     view = registration = config = None
     read_gap = ledger is None
+    registration_gap = None
     if ledger is not None:
         try:
             view = ledger.as_of()
@@ -986,8 +1021,11 @@ def status_report(root: Path, ledger: Ledger | None) -> dict:
         if view is not None:
             try:
                 config, registration = _authorized_config(ledger, view)
-            except (OSError, LedgerError, ValueError):
-                pass
+                _accepted_anchors(ledger, view, registration)
+            except (OSError, LedgerError, ValueError, sqlite3.Error):
+                registration_gap = True
+            else:
+                registration_gap = False
         if status is not None and (
             status.project_id != ledger.identity.project_id
             or (
@@ -1055,6 +1093,7 @@ def status_report(root: Path, ledger: Ledger | None) -> dict:
         "status_sequence": None if last_poll is None else last_poll.sequence,
         "cutoff": None if registration is None else registration.cutoff.isoformat(),
         "read_gap": read_gap,
+        "registration_gap": registration_gap,
         "root_gaps": None if last_poll is None else last_poll.root_gaps,
         "missing_sources": None if last_poll is None else last_poll.missing_sources,
         "held_sources": None if last_poll is None else last_poll.held_sources,

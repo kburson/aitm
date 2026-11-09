@@ -866,6 +866,7 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     project, monkeypatch, layout
 ):
     from aitm_usage import service
+    from aitm_usage.ledger import LedgerError
     from aitm_usage.types import (
         CommandReceipt,
         Diagnostic,
@@ -946,8 +947,18 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
         )
         if layout == "receipt-first":
             writer.apply(LedgerBatch((effect,)))
-    assert service.load_registration(ledger).checkout_anchors == (checkout,)
-    command("collect-once", "--json")
+    with pytest.raises(LedgerError):
+        service.load_registration(ledger)
+    assert command("collect-once", "--json", expected=1) == {
+        "status": "collection-failed"
+    }
+    retry = command(
+        "source", "add-anchor", "--anchor", str(anchor), "--json", expected=1
+    )
+    assert retry.strip() == "aitm-usage: invalid private inbox command or project"
+    if layout != "same-commit":
+        assert (root / "inbox" / f"{anchor_id}.json").exists()
+    assert not (root / "inbox" / "acks" / f"{anchor_id}.json").exists()
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
@@ -1043,3 +1054,86 @@ def test_zero_held_frontier_pins_identity_before_source_replacement(project):
     assert view.checkpoints == (checkpoint,)
     assert not any(isinstance(r.record, UsageObservation) for r in view.current)
     assert command("status", "--json")["coverage"]["codex"]["diagnostics"] > 0
+
+
+@pytest.mark.parametrize("loss", ["after-interrupted-ack", "before-first-ack"])
+def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
+    project, monkeypatch, loss
+):
+    from aitm_usage import scopes
+
+    root, sources, checkout, config, command = project
+    added = checkout.with_name("private-proof-lost")
+    added.mkdir()
+    _fixtures(sources, added)
+    command("register", "--config", str(config), "--json")
+    ledger = Ledger.open(root, PROJECT)
+    anchor_id = UUID(int=935)
+    anchor = _json_file(
+        root.parent,
+        "proof-lost.json",
+        {
+            "command_id": str(anchor_id),
+            "project_id": str(PROJECT),
+            "checkout": str(added),
+        },
+    )
+    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+    assert command(*args)["status"] == "queued"
+    queued = root / "inbox" / f"{anchor_id}.json"
+    ack = root / "inbox" / "acks" / f"{anchor_id}.json"
+    proof_dir = root / "source-anchors"
+    saved = None
+
+    def remove_proof():
+        nonlocal saved
+        (proof,) = proof_dir.glob(f"{anchor_id}.*.attested")
+        saved = (proof, proof.read_bytes())
+        proof.unlink()
+
+    original_commit = Ledger.commit_command
+
+    def commit_without_proof(*args, **kwargs):
+        receipt = original_commit(*args, **kwargs)
+        remove_proof()
+        return receipt
+
+    def interrupt_ack(*args, **kwargs):
+        raise OSError("synthetic interruption before acknowledgment")
+
+    with monkeypatch.context() as patch:
+        if loss == "before-first-ack":
+            patch.setattr(Ledger, "commit_command", commit_without_proof)
+        else:
+            patch.setattr(scopes, "_acknowledge", interrupt_ack)
+        assert command("collect-once", "--json", expected=1) == {
+            "status": "collection-failed"
+        }
+    assert queued.exists()
+    assert not ack.exists()
+    if loss == "after-interrupted-ack":
+        remove_proof()
+    sequence = ledger.as_of().sequence
+    assert command("collect-once", "--json", expected=1) == {
+        "status": "collection-failed"
+    }
+    retry = command(*args, expected=1)
+    assert retry.strip() == "aitm-usage: invalid private inbox command or project"
+    status = command("status", "--json")
+    assert status["registration_gap"] is True
+    assert status["read_gap"] is False
+    assert str(added) not in json.dumps(status)
+    assert queued.exists()
+    assert not ack.exists()
+    assert ledger.as_of().sequence == sequence
+    assert not ledger.as_of().checkpoints
+
+    proof, data = saved
+    proof.write_bytes(data)
+    proof.chmod(0o600)
+    command("collect-once", "--json")
+    assert command(*args)["status"] == "accepted"
+    assert ack.exists()
+    assert not queued.exists()
+    assert command("status", "--json")["registration_gap"] is False
+    assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)

@@ -32,6 +32,7 @@ from .service import (
     run_service,
     stage_source_anchor,
     status_report,
+    verify_source_anchor_receipt,
 )
 from .types import (
     DevelopmentBinding,
@@ -40,8 +41,10 @@ from .types import (
     ItemKey,
     ItemKind,
     ItemParent,
+    MarkerDisposition,
     Provider,
     ScopeCorrection,
+    SourceAnchorCommand,
     decode_binding,
     decode_correction,
     decode_marker,
@@ -139,6 +142,14 @@ def _queue_command(args: argparse.Namespace) -> int:
     try:
         command = args.command_factory(args)
         receipt = enqueue_command(args.project, command)
+        if (
+            receipt is not None
+            and receipt.disposition is MarkerDisposition.ACCEPTED
+            and isinstance(command.payload, SourceAnchorCommand)
+        ):
+            verify_source_anchor_receipt(
+                Ledger.open(args.project, command.project_id), receipt
+            )
     except ConflictError:
         print("aitm-usage: inbox command conflict", file=sys.stderr)
         return 1
