@@ -64,6 +64,8 @@ The full conversation is in [`attachments/transcript.md`](attachments/transcript
 - **[user]** Keep the three-part state object: entry guards, resident actions, exit guards.
 - **[agreed]** Guards are fast local checks (files + index, no network, no markdown parsing). Resident actions are idempotent; the GitHub projection is the resident action on state entry — that is the sparse sync cadence.
 - **[user]** ai-peer-review needs a refactor so each review session writes to a caller-chosen location. **[call]** SAR = single-agent review, SPR = same-provider peer review, XPR = cross-provider review.
+- **[user] (2026-11-08)** SAR confirmed: a model and effort level from the current provider run a multi-phase review, iterating review/revise until nothing is left to revise. No broker or cross-provider conduit (SPR doesn't need them either). SAR exists so all review collateral has one format: reviewer and author responses follow the same format and frontmatter rules, and every revision gets a diff file.
+- **[user] (2026-11-08)** The ai-peer-review refactor records a patch file of the file under review for every author turn that revises it. Patches are numbered by turn and committed with the review record, so every revision from the base can be rebuilt and compared with the notes, and the record survives squash merges. Details and open items are in the peer-review draft.
 
 ## Human role
 
