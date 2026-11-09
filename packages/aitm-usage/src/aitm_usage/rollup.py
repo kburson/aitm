@@ -2,16 +2,14 @@
 
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass, fields, replace
+from dataclasses import dataclass, fields
 from decimal import Decimal
 from typing import Protocol, runtime_checkable
 
-from .ledger import ConflictError, Ledger
+from .relationships import canonical_relationships
 from .scopes import resolve_scope
 from .types import (
-    DraftAlias,
     ItemKey,
-    ItemParent,
     LedgerView,
     Revision,
     SourceRef,
@@ -64,79 +62,6 @@ class UsageRollup:
     direct: RollupTotals
     inclusive: RollupTotals
     unattributed: RollupTotals
-
-
-def _relationships(
-    view: LedgerView,
-) -> tuple[dict[ItemKey, ItemKey], dict[ItemKey, tuple[Revision, ItemParent]]]:
-    aliases = {}
-    links = {}
-    for revision in view.current:
-        record = revision.record
-        if isinstance(record, DraftAlias) and record.project_id == view.project_id:
-            aliases[record.draft] = record.issue
-        elif isinstance(record, ItemParent) and record.project_id == view.project_id:
-            links[record.child] = (revision, record)
-    return aliases, links
-
-
-def _canonical_parents(
-    aliases: dict[ItemKey, ItemKey], links: Iterable[ItemParent]
-) -> dict[ItemKey, ItemKey]:
-    parents = {}
-    for link in links:
-        child = aliases.get(link.child, link.child)
-        parent = aliases.get(link.parent, link.parent)
-        if parents.setdefault(child, parent) != parent:
-            raise ConflictError("Canonical item has contradictory parents")
-    return parents
-
-
-def _check_cycles(parents: dict[ItemKey, ItemKey]) -> None:
-    visited = set()
-    for child in parents:
-        path = set()
-        while child in parents and child not in visited:
-            if child in path:
-                raise ConflictError("Canonical item ancestry contains a cycle")
-            path.add(child)
-            child = parents[child]
-        visited.update(path)
-
-
-def relationship_revisions(
-    ledger: Ledger, payload: DraftAlias | ItemParent, view: LedgerView
-) -> tuple[Revision, ...]:
-    """Validate an inbox proposal and prepare its atomic revision effects."""
-    aliases, links = _relationships(view)
-    if isinstance(payload, DraftAlias):
-        prior = aliases.get(payload.draft)
-        if prior is not None and prior != payload.issue:
-            raise ConflictError("Draft already has a different permanent issue")
-        aliases[payload.draft] = payload.issue
-        parents = _canonical_parents(aliases, (record for _, record in links.values()))
-        _check_cycles(parents)
-        key = ledger.pseudonymize("item-alias", str(payload.draft.identifier))
-        existing = next((entry for entry in view.current if entry.key == key), None)
-        number = 1 if existing is None else existing.revision + 1
-        return (Revision(key, number, payload),)
-
-    child = aliases.get(payload.child, payload.child)
-    parent = aliases.get(payload.parent, payload.parent)
-    parents = _canonical_parents(aliases, (record for _, record in links.values()))
-    parents[child] = parent
-    _check_cycles(parents)
-    # A graduation can join previously separate links with the same canonical
-    # parent. A later reparent revises those links together in one commit.
-    effects = tuple(
-        Revision(revision.key, revision.revision + 1, replace(payload, child=raw_child))
-        for raw_child, (revision, _) in links.items()
-        if aliases.get(raw_child, raw_child) == child
-    )
-    if effects:
-        return effects
-    key = ledger.pseudonymize("item-parent", f"{child.kind.value}:{child.identifier}")
-    return (Revision(key, 1, replace(payload, child=child)),)
 
 
 def _descendants(root: ItemKey, parents: dict[ItemKey, ItemKey]) -> set[ItemKey]:
@@ -200,10 +125,8 @@ def _totals(
 
 def rollup(root: ItemKey, view: LedgerView) -> UsageRollup:
     """Count each current observation once against canonical fixed-view items."""
-    aliases, links = _relationships(view)
+    aliases, parents = canonical_relationships(view)
     root = aliases.get(root, root)
-    parents = _canonical_parents(aliases, (record for _, record in links.values()))
-    _check_cycles(parents)
     included = _descendants(root, parents)
     current = view.current
     prices = _prices(current)

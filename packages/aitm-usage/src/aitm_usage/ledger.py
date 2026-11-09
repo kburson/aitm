@@ -21,11 +21,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
 
+from .relationships import relationship_decision
 from .types import (
     CommandDigest,
     CommandReceipt,
     DevelopmentBinding,
+    DraftAlias,
     InboxCommand,
+    ItemParent,
     LedgerBatch,
     LedgerView,
     MarkerDisposition,
@@ -835,6 +838,8 @@ class Ledger:
         """Atomically append command effects and the pending or final receipt."""
         self.require_writer()
         command = receipt.command
+        payload = command.payload
+        is_relationship = isinstance(payload, (DraftAlias, ItemParent))
         if self.validate_command(command) != receipt.digest:
             raise ValueError("Inbox command digest mismatch")
         if bool(effects) != (receipt.disposition is MarkerDisposition.ACCEPTED):
@@ -843,6 +848,13 @@ class Ledger:
             record = effect.record
             if isinstance(record, CommandReceipt):
                 raise ValueError("An inbox receipt cannot be a command effect")
+            if is_relationship or isinstance(record, (DraftAlias, ItemParent)):
+                if (
+                    type(record) is not type(payload)
+                    or record.project_id != command.project_id
+                    or record.command_id != command.command_id
+                ):
+                    raise ValueError("Relationship effect does not match its command")
             marker = record.marker if isinstance(record, ScopeEnrollment) else record
             if isinstance(marker, ScopeMarker):
                 self.validate_marker(marker)
@@ -857,7 +869,8 @@ class Ledger:
             if previous is not None:
                 number, current = previous
                 if current.disposition is not MarkerDisposition.PENDING or (
-                    receipt.disposition is MarkerDisposition.PENDING
+                    not is_relationship
+                    and receipt.disposition is MarkerDisposition.PENDING
                     and not _refines_pending(current, receipt)
                 ):
                     return current
@@ -866,6 +879,19 @@ class Ledger:
             head = _head(conn)
             if head != expected_sequence:
                 raise ConflictError("Ledger changed during inbox evaluation")
+            if isinstance(payload, (DraftAlias, ItemParent)):
+                disposition, required_effects = relationship_decision(
+                    payload, self.as_of(head), self.pseudonymize
+                )
+                if (
+                    receipt.disposition is not disposition
+                    or receipt.boundary is not None
+                    or receipt.anchor_ref is not None
+                    or effects != required_effects
+                ):
+                    raise ConflictError(
+                        "Relationship receipt or effects do not match ledger history"
+                    )
             sequence = head + 1
             conn.execute("INSERT INTO commits VALUES (?)", (sequence,))
             _append_revisions(
@@ -908,7 +934,9 @@ class Ledger:
         _encode(batch, LedgerBatch, validate_ref=self.validate_source_ref)
         for revision in batch.revisions:
             record = revision.record
-            if isinstance(record, (CommandReceipt, ScopeEnrollment)):
+            if isinstance(
+                record, (CommandReceipt, ScopeEnrollment, DraftAlias, ItemParent)
+            ):
                 raise LedgerError("Inbox records require atomic command admission")
             if (
                 isinstance(record, ScopeMarker)

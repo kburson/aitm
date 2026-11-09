@@ -21,6 +21,7 @@ from .ledger import (
     _PinnedPath,
     _private,
 )
+from .relationships import relationship_decision
 from .types import (
     CommandAcknowledgment,
     CommandReceipt,
@@ -43,6 +44,7 @@ from .types import (
     WorkPhase,
     _decode,
     _encode,
+    _positive,
     decode_command,
     encode_command,
 )
@@ -78,6 +80,37 @@ class ScopeResolution:
 class InboxDrain:
     receipts: tuple[CommandReceipt, ...] = ()
     invalid_publications: int = 0
+    relationship_halted: bool = False
+
+
+def _is_relationship(command: InboxCommand) -> bool:
+    return isinstance(command.payload, (DraftAlias, ItemParent))
+
+
+@dataclass(frozen=True, slots=True)
+class _OrderedCommand:
+    command: InboxCommand
+    order: int
+
+    def __post_init__(self) -> None:
+        _positive(self.order)
+        if not _is_relationship(self.command):
+            raise ValueError("Only relationship commands have publication order")
+
+
+@dataclass(frozen=True, slots=True)
+class _Publication:
+    command: InboxCommand
+    data: bytes
+    order: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _InboxSnapshot:
+    publications: tuple[_Publication, ...]
+    invalid: int
+    relationship_halted: bool
+    last_relationship_order: int
 
 
 def session_reference(
@@ -249,6 +282,23 @@ def _filename(command_id: UUID) -> str:
     return f"{command_id}.json"
 
 
+def _publication_bytes(command: InboxCommand, order: int | None) -> bytes:
+    if order is None:
+        return encode_command(command)
+    return _encode(_OrderedCommand(command, order), _OrderedCommand).encode("utf-8")
+
+
+def _decode_publication(data: bytes) -> _Publication:
+    try:
+        command = decode_command(data)
+    except ValueError:
+        ordered = _decode(data, _OrderedCommand)
+        return _Publication(ordered.command, data, ordered.order)
+    if _is_relationship(command):
+        raise ValueError("Relationship publication is missing its order")
+    return _Publication(command, data)
+
+
 def enqueue_command(directory: Path, command: InboxCommand) -> CommandReceipt | None:
     """Queue canonical command bytes without taking the collector lease.
 
@@ -277,10 +327,33 @@ def enqueue_command(directory: Path, command: InboxCommand) -> CommandReceipt | 
                         raise LedgerError("Private inbox command changed")
                     name = _filename(command.command_id)
                     existing = _read_private(inbox, name)
-                    if existing is None and not _publish(inbox, name, data):
-                        existing = _read_private(inbox, name)
-                    if existing is not None and existing != data:
-                        raise ConflictError("Inbox command ID has conflicting bytes")
+                    if existing is None:
+                        publication = data
+                        if _is_relationship(command):
+                            snapshot = _read_publications(inbox, ledger)
+                            if snapshot.relationship_halted:
+                                raise LedgerError(
+                                    "Private relationship queue is halted"
+                                )
+                            order = snapshot.last_relationship_order + 1
+                            publication = _publication_bytes(command, order)
+                        if not _publish(inbox, name, publication):
+                            existing = _read_private(inbox, name)
+                    if existing is not None:
+                        try:
+                            prior = _decode_publication(existing)
+                        except ValueError:
+                            raise ConflictError(
+                                "Inbox command ID has conflicting bytes"
+                            ) from None
+                        if (
+                            prior.command != command
+                            or _publication_bytes(prior.command, prior.order)
+                            != existing
+                        ):
+                            raise ConflictError(
+                                "Inbox command ID has conflicting bytes"
+                            )
                 project.check()
     except OSError:
         raise LedgerError("Private inbox publication failed") from None
@@ -295,12 +368,18 @@ def enqueue_marker(directory: Path, marker: ScopeMarker) -> MarkerId:
 
 
 def _acknowledge(
-    inbox: _PinnedPath, directory: _PinnedPath, receipt: CommandReceipt
+    inbox: _PinnedPath,
+    directory: _PinnedPath,
+    receipt: CommandReceipt,
+    captured: bytes,
 ) -> None:
     expected = receipt.acknowledgment
     data = _encode(expected, CommandAcknowledgment).encode("utf-8")
     name = _filename(expected.command_id)
     with _publication(inbox):
+        final = receipt.disposition is not MarkerDisposition.PENDING
+        if final and _read_private(inbox, name) != captured:
+            raise ConflictError("Inbox publication changed before retirement")
         existing = _read_private(directory, name)
         if existing != data:
             if existing is not None:
@@ -313,44 +392,55 @@ def _acknowledge(
                 directory, name, data, replace_pending=existing is not None
             ):
                 raise ConflictError("Inbox acknowledgment path changed")
-        if receipt.disposition is not MarkerDisposition.PENDING:
-            if _read_private(inbox, name) != encode_command(receipt.command):
-                raise ConflictError("Inbox publication changed before retirement")
+        if final:
             os.unlink(name, dir_fd=inbox.fd)
             os.fsync(inbox.fd)
 
 
-def _read_publications(
-    inbox: _PinnedPath, ledger: Ledger
-) -> tuple[list[InboxCommand], int]:
-    commands = []
+def _read_publications(inbox: _PinnedPath, ledger: Ledger) -> _InboxSnapshot:
+    """Read a consistent set of final publications while holding the inbox mutex."""
+    publications = []
     invalid = 0
+    halted = False
+    orders = set()
     for name in os.listdir(inbox.fd):
         if name.startswith(".") or not name.endswith(".json"):
             continue
+        publication = None
         try:
             data = _read_private(inbox, name)
             if data is None:
-                continue
-            command = decode_command(data)
+                raise LedgerError("Private inbox publication disappeared")
+            publication = _decode_publication(data)
+            command = publication.command
             ledger.validate_command(command)
-            if _filename(command.command_id) != name or encode_command(command) != data:
-                raise ValueError("Invalid canonical inbox command")
+            if (
+                _filename(command.command_id) != name
+                or _publication_bytes(command, publication.order) != data
+            ):
+                raise ValueError("Invalid canonical inbox publication")
+            if publication.order is not None:
+                if publication.order in orders:
+                    raise ValueError("Duplicate relationship publication order")
+                orders.add(publication.order)
         except (LedgerError, OSError, ValueError):
             invalid += 1
+            # Unclassifiable final bytes could hide an earlier relationship.
+            halted |= publication is None or _is_relationship(publication.command)
         else:
-            commands.append(command)
-    return commands, invalid
+            publications.append(publication)
+    return _InboxSnapshot(tuple(publications), invalid, halted, max(orders, default=0))
 
 
-def _dispatch_order(command: InboxCommand) -> tuple[int, int, int]:
+def _dispatch_order(publication: _Publication) -> tuple[int, int, int]:
+    command = publication.command
     payload = command.payload
+    if publication.order is not None:
+        return 3, publication.order, 0
     if isinstance(payload, ScopeCorrection):
         return 2, 0, command.command_id.int
     if isinstance(payload, DevelopmentBinding):
         return 0, payload.generation, command.command_id.int
-    if isinstance(payload, (DraftAlias, ItemParent)):
-        return 3, 0, command.command_id.int
     return 1, payload.scope_sequence, command.command_id.int
 
 
@@ -545,13 +635,8 @@ def _evaluate(
 ) -> tuple[MarkerDisposition, BoundaryEvidence | None, tuple[Revision, ...]]:
     payload = command.payload
     if isinstance(payload, (DraftAlias, ItemParent)):
-        from .rollup import relationship_revisions
-
-        try:
-            effects = relationship_revisions(ledger, payload, view)
-        except ConflictError:
-            return MarkerDisposition.CONFLICT, None, ()
-        return MarkerDisposition.ACCEPTED, None, effects
+        disposition, effects = relationship_decision(payload, view, ledger.pseudonymize)
+        return disposition, None, effects
     if isinstance(payload, ScopeCorrection):
         status, candidate = _correction(payload, receipts)
         if candidate is None:
@@ -623,9 +708,12 @@ def drain_inbox(writer: Ledger, boundaries: Iterable[BoundaryEvidence]) -> Inbox
     ):
         if inbox is None:
             return InboxDrain()
-        commands, invalid = _read_publications(inbox, writer)
-        if not commands:
-            return InboxDrain(invalid_publications=invalid)
+        with _publication(inbox):
+            snapshot = _read_publications(inbox, writer)
+        invalid = snapshot.invalid
+        halted = snapshot.relationship_halted
+        if not snapshot.publications:
+            return InboxDrain(invalid_publications=invalid, relationship_halted=halted)
         outcomes = []
         with _private_child(inbox, ACKS_NAME, create=True) as acknowledgments:
             assert acknowledgments is not None
@@ -635,44 +723,51 @@ def drain_inbox(writer: Ledger, boundaries: Iterable[BoundaryEvidence]) -> Inbox
                 for revision in view.current
                 if isinstance(revision.record, CommandReceipt)
             }
-            for command in sorted(commands, key=_dispatch_order):
+            for publication in sorted(snapshot.publications, key=_dispatch_order):
+                command = publication.command
+                relationship = publication.order is not None
+                if relationship and halted:
+                    break
                 digest = writer.validate_command(command)
                 current = receipts.get(command.command_id)
                 if current is not None and (
                     current.digest != digest or current.command != command
                 ):
                     invalid += 1
+                    if relationship:
+                        halted = True
+                        break
                     continue
-                if (
-                    current is not None
-                    and current.disposition is not MarkerDisposition.PENDING
-                ):
-                    writer.require_writer()
-                    _acknowledge(inbox, acknowledgments, current)
-                    outcomes.append(current)
-                    continue
-                disposition, evidence, effects = _evaluate(
-                    writer, command, view, boundaries, receipts
-                )
-                inbox.check()
-                receipt = writer.commit_command(
-                    CommandReceipt(
-                        command,
-                        digest,
-                        disposition,
-                        None if evidence is None else evidence.boundary,
-                        None if evidence is None else evidence.anchor_ref,
-                    ),
-                    effects,
-                    expected_sequence=view.sequence,
-                )
-                receipts[command.command_id] = receipt
-                if current != receipt:
-                    view = writer.as_of()
+                receipt = current
+                if current is None or current.disposition is MarkerDisposition.PENDING:
+                    disposition, evidence, effects = _evaluate(
+                        writer, command, view, boundaries, receipts
+                    )
+                    inbox.check()
+                    receipt = writer.commit_command(
+                        CommandReceipt(
+                            command,
+                            digest,
+                            disposition,
+                            None if evidence is None else evidence.boundary,
+                            None if evidence is None else evidence.anchor_ref,
+                        ),
+                        effects,
+                        expected_sequence=view.sequence,
+                    )
+                    if (
+                        relationship
+                        and receipt.disposition is MarkerDisposition.PENDING
+                    ):
+                        halted = True
+                        break
+                    receipts[command.command_id] = receipt
+                    if current != receipt:
+                        view = writer.as_of()
                 writer.require_writer()
-                _acknowledge(inbox, acknowledgments, receipt)
+                _acknowledge(inbox, acknowledgments, receipt, publication.data)
                 outcomes.append(receipt)
-        return InboxDrain(tuple(outcomes), invalid)
+        return InboxDrain(tuple(outcomes), invalid, halted)
 
 
 def _within_owner_generation(
