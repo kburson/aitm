@@ -254,12 +254,21 @@ def _write_private(path, data):
     return path
 
 
-@pytest.mark.parametrize("provider", ["codex", "claude"])
-@pytest.mark.parametrize("arrival", ["marker-first", "boundary-first"])
+@pytest.mark.parametrize(
+    ("provider", "arrival", "withhold_target"),
+    [
+        ("codex", "marker-first", False),
+        ("claude", "marker-first", False),
+        ("codex", "boundary-first", False),
+        ("claude", "boundary-first", False),
+        pytest.param("claude", "boundary-first", True, id="held-without-target"),
+    ],
+)
 def test_processing_orders_require_native_prefix_and_fixed_ledger(
-    tmp_path, monkeypatch, provider, arrival
+    tmp_path, monkeypatch, provider, arrival, withhold_target
 ):
     import shlex
+    from dataclasses import replace
     from hashlib import sha256
 
     import test_claude as claude
@@ -338,20 +347,32 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     saved = _write_private(tmp_path / "original-publication.json", queued.read_bytes())
     if arrival == "boundary-first":
         queued.unlink()
-        write(source, rows)
+        write(source, rows[:-2] if withhold_target else rows)
         source.chmod(0o600)
+    before_prefix = source.read_bytes() if source.exists() else b""
+    before_source = _write_private(tmp_path / "prior-source.jsonl", before_prefix)
+    before_captured_at = datetime.now(UTC)
     before = collect_once(registration, ledger)
     snapshot = _write_private(
         tmp_path / "prior-status.json", (root / STATUS_NAME).read_bytes()
     )
+    assert (source.read_bytes() if source.exists() else b"") == before_prefix
+    before_confirmed_at = datetime.now(UTC)
+    released_at = None
     if arrival == "marker-first":
         write(source, rows)
         source.chmod(0o600)
     else:
         assert before.held_sources == 1
         _write_private(queued, saved.read_bytes())
+        released_at = datetime.now(UTC)
+        if withhold_target:
+            write(source, rows)
     collect_once(registration, ledger)
     after = collect_once(registration, ledger)
+    settled = _write_private(
+        tmp_path / "settled-status.json", (root / STATUS_NAME).read_bytes()
+    )
     accepted = ledger.command_receipt(command)
     assert accepted is not None and accepted.boundary is not None
     (first,) = [
@@ -366,15 +387,41 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         _Order(arrival),
         ledger.pseudonymize("inbox-command", str(target)).value.split(":")[1],
         sha256(saved.read_bytes()).hexdigest(),
+        sha256(before_prefix).hexdigest(),
         sha256(source.read_bytes()).hexdigest(),
         first,
         before.sequence,
         after.sequence,
     )
     proof = _OrderProof(
-        str(root), str(saved), str(source), source.stat().st_size, str(snapshot)
+        str(root),
+        str(saved),
+        str(source),
+        source.stat().st_size,
+        str(snapshot),
+        str(settled),
+        str(before_source),
+        len(before_prefix),
+        before_captured_at,
+        before_confirmed_at,
+        released_at,
     )
+    if withhold_target:
+        with pytest.raises(QualificationError, match="processing-order"):
+            _verify_order(entry, proof, load_rate_card())
+        return
     _verify_order(entry, proof, load_rate_card())
+    late_capture = _write_private(tmp_path / "late-capture.jsonl", before_prefix)
+    with pytest.raises(QualificationError, match="processing-order"):
+        _verify_order(
+            entry, replace(proof, before_source=str(late_capture)), load_rate_card()
+        )
+    with pytest.raises(QualificationError, match="processing-order"):
+        _verify_order(
+            entry,
+            replace(proof, before_captured_at=before_confirmed_at),
+            load_rate_card(),
+        )
     saved.write_bytes(saved.read_bytes() + b" ")
     with pytest.raises(QualificationError, match="processing-order"):
         _verify_order(entry, proof, load_rate_card())
@@ -412,7 +459,21 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
         )
 
 
-def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
+@pytest.mark.parametrize(
+    "scope_case",
+    [
+        "controlled",
+        "real-96",
+        "core-graduation",
+        "core-child-b",
+        "core-ancestor",
+        "core-epic-parent",
+        "core-catchup",
+    ],
+)
+def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
+    project, scope_case
+):
     from dataclasses import replace
     from datetime import timedelta
     from uuid import UUID
@@ -422,8 +483,11 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
 
     from aitm_usage.qualification import (
         QualificationError,
+        _usage,
+        _verify_catchup,
         _verify_workflow,
         _Workflow,
+        decode_activation_receipt,
     )
     from aitm_usage.scopes import BoundaryEvidence, drain_inbox, enqueue_command
     from aitm_usage.sources.scan import checkout_anchor_reference
@@ -449,7 +513,13 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
     epic = ItemKey(ItemKind.ISSUE, 83)
     child_a = ItemKey(ItemKind.DRAFT, UUID(int=812))
     child_b = ItemKey(ItemKind.DRAFT, UUID(int=813))
-    graduated = ItemKey(ItemKind.ISSUE, 814)
+    core = ItemKey(ItemKind.ISSUE, 2)
+    delivery = ItemKey(ItemKind.ISSUE, 96)
+    graduated = (
+        core
+        if scope_case == "core-graduation"
+        else ItemKey(ItemKind.ISSUE, 1_000_000_095)
+    )
     _add_anchor(registration, ledger, ledger.root.parent, 998)
     dev_checkout = checkout_anchor_reference(ledger, ledger.root.parent / "anchor-998")
     planning_checkout = checkout_anchor_reference(
@@ -554,7 +624,24 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
     )
     returned = append(6, 4, epic, WorkPhase.PLANNING, "author", 6)
     graduation = relationship(DraftAlias(UUID(int=922), project_id, child_a, graduated))
-    development = append(7, 1, graduated, WorkPhase.DEVELOPMENT, "development", 7)
+    owner_item = graduated
+    if scope_case == "core-child-b":
+        relationship(DraftAlias(UUID(int=923), project_id, child_b, core))
+    elif scope_case == "core-epic-parent":
+        relationship(ItemParent(UUID(int=924), project_id, epic, core))
+    elif scope_case in ("core-ancestor", "real-96"):
+        owner_item = delivery
+        if scope_case == "core-ancestor":
+            relationship(ItemParent(UUID(int=925), project_id, core, epic))
+        relationship(
+            ItemParent(
+                UUID(int=926),
+                project_id,
+                delivery,
+                core if scope_case == "core-ancestor" else epic,
+            )
+        )
+    development = append(7, 1, owner_item, WorkPhase.DEVELOPMENT, "development", 7)
     housekeeping = append(8, 5, epic, WorkPhase.HOUSEKEEPING, "author", 8)
     workflow = _Workflow(
         batch,
@@ -568,10 +655,16 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
         graduation,
         3,
         8,
-        2,
+        2 if owner_item == graduated else 1,
         3,
     )
     view = ledger.as_of()
+    if scope_case.startswith("core-") and scope_case != "core-catchup":
+        with pytest.raises(QualificationError, match="workflow-evidence"):
+            _verify_workflow(
+                ledger, view, workflow, start, start + timedelta(seconds=9)
+            )
+        return
     _verify_workflow(ledger, view, workflow, start, start + timedelta(seconds=9))
     for forged in (
         replace(workflow, review_start=review_end, review_end=review_start),
@@ -581,6 +674,55 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(project):
     ):
         with pytest.raises(QualificationError, match="workflow-evidence"):
             _verify_workflow(ledger, view, forged, start, start + timedelta(seconds=9))
+
+    author_catchup = append(
+        9,
+        6,
+        core if scope_case == "core-catchup" else epic,
+        WorkPhase.PLANNING,
+        "author",
+        10,
+        new_marker=scope_case == "core-catchup",
+    )
+    review_catchup = append(
+        10,
+        1,
+        child_b,
+        WorkPhase.DOCUMENT_REVIEW,
+        "review",
+        11,
+        new_marker=False,
+    )
+    after = ledger.as_of()
+    measurements = _usage(after)
+    keys = {Provider.CODEX: author_catchup, Provider.CLAUDE: review_catchup}
+    receipt = decode_activation_receipt(FIXTURE.read_bytes())
+    receipt = replace(
+        receipt,
+        workflow=workflow,
+        collector=replace(
+            receipt.collector,
+            previous_heartbeat=start + timedelta(seconds=9),
+            producer_started=start + timedelta(seconds=12),
+        ),
+        export=replace(
+            receipt.export, catchup_codex=author_catchup, catchup_claude=review_catchup
+        ),
+        providers=tuple(
+            replace(
+                provider,
+                stream=measurements[
+                    keys[provider.provider]
+                ].boundary.stream_ref.value.split(":")[1],
+            )
+            for provider in receipt.providers
+        ),
+    )
+    if scope_case == "core-catchup":
+        with pytest.raises(QualificationError, match="replay-evidence"):
+            _verify_catchup(receipt, view, after)
+    else:
+        _verify_catchup(receipt, view, after)
 
 
 def test_recovery_proves_exact_retained_bundle_and_fixed_parity(

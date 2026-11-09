@@ -87,6 +87,8 @@ _VERSION = re.compile(
     r"[0-9]{1,8}(?:\.[0-9]{1,8}){2}(?:(?:a|b|rc|\.post|\.dev)[0-9]{1,8})?"
 )
 _MAX_EVIDENCE_BYTES = 256 * 1024
+_MAX_PREFIX_BYTES = 32 * 1024 * 1024
+_DISPOSABLE_ISSUES = range(1_000_000_000, 1_000_001_000)
 PROOF_NAME = "activation-proof.json"
 
 
@@ -246,6 +248,7 @@ class _OrderEvidence:
     order: _Order
     command: str
     publication_sha256: str
+    before_prefix_sha256: str
     prefix_sha256: str
     first_request: str
     before_sequence: int
@@ -256,6 +259,7 @@ class _OrderEvidence:
             _DIGEST,
             self.command,
             self.publication_sha256,
+            self.before_prefix_sha256,
             self.prefix_sha256,
             self.first_request,
         )
@@ -450,6 +454,10 @@ def validate_activation_receipt(
         or any(
             entry.before_sequence >= entry.after_sequence
             or entry.project_id in (receipt.project_id, recovery.project_id)
+            or (
+                entry.order is _Order.MARKER_FIRST
+                and entry.before_prefix_sha256 == entry.prefix_sha256
+            )
             for entry in receipt.orders
         )
     ):
@@ -673,9 +681,19 @@ class _OrderProof:
     source: str
     prefix_bytes: int
     before_status: str
+    after_status: str
+    before_source: str
+    before_prefix_bytes: int
+    before_captured_at: datetime
+    before_confirmed_at: datetime
+    publication_released_at: datetime | None
 
     def __post_init__(self) -> None:
         _positive(self.prefix_bytes)
+        _nonnegative(self.before_prefix_bytes)
+        _utc(self.before_captured_at, self.before_confirmed_at)
+        if self.publication_released_at is not None:
+            _utc(self.publication_released_at)
 
 
 def _snapshot_status(ledger: Ledger, view: LedgerView, path: str) -> _Status:
@@ -709,9 +727,16 @@ def _verify_order(
     before = ledger.as_of(entry.before_sequence)
     after = ledger.as_of(entry.after_sequence)
     status = _snapshot_status(ledger, before, proof.before_status)
+    settled = _snapshot_status(ledger, after, proof.after_status)
     observed_at = _now() if observed_at is None else observed_at
     _require(
-        status.heartbeat <= observed_at
+        status.producer_mode is settled.producer_mode is _ProducerMode.ONE_SHOT
+        and proof.before_captured_at
+        <= status.heartbeat
+        <= proof.before_confirmed_at
+        <= settled.heartbeat
+        <= observed_at
+        and settled.report.held_sources == settled.report.deferred_sources == 0
         and status.report.root_gaps
         == status.report.missing_sources
         == status.report.deferred_sources
@@ -730,6 +755,7 @@ def _verify_order(
         and marker.item == ItemKey(ItemKind.ISSUE, 83)
         and marker.boundary_kind is BoundaryKind.REQUEST
         and marker.provider is entry.provider
+        and marker.published_at <= proof.before_captured_at
         and published.order is None
         and _digest(key) == entry.command
         and sha256(raw).hexdigest() == entry.publication_sha256
@@ -792,12 +818,28 @@ def _verify_order(
         ),
         None,
     )
-    source = _read_proof(candidate._path, 32 * 1024 * 1024)
+    source = _read_proof(candidate._path, _MAX_PREFIX_BYTES)
     prefix = source[: proof.prefix_bytes]
+    captured = Path(proof.before_source)
+    before_prefix = _read_proof(captured, _MAX_PREFIX_BYTES)
+    captured_info = captured.stat(follow_symlinks=False)
     _require(
         len(prefix) == proof.prefix_bytes
         and prefix.endswith(b"\n")
-        and sha256(prefix).hexdigest() == entry.prefix_sha256,
+        and sha256(prefix).hexdigest() == entry.prefix_sha256
+        and len(before_prefix) == proof.before_prefix_bytes
+        and (not before_prefix or before_prefix.endswith(b"\n"))
+        and sha256(before_prefix).hexdigest() == entry.before_prefix_sha256
+        and prefix.startswith(before_prefix)
+        and all(not captured.is_relative_to(root) for root in registration.source_roots)
+        and not captured.samefile(candidate._path)
+        and max(
+            captured_info.st_mtime,
+            captured_info.st_ctime,
+            getattr(captured_info, "st_birthtime", captured_info.st_ctime),
+        )
+        <= proof.before_captured_at.timestamp()
+        and (checkpoint is None or checkpoint.cursor.offset <= len(before_prefix)),
         "processing-order",
     )
     # Reuse the collector's discovery, scanner and adapter projection. This only
@@ -810,6 +852,9 @@ def _verify_order(
         config,
     )
     frame = projection.batch._matching_frame(boundary)
+    # The native adapter binds the current request to its preceding receipt.
+    # This is the exact byte prefix through that authenticated request frame.
+    target_prefix = b"\n".join(prefix.split(b"\n", boundary.ordinal + 1)[:-1]) + b"\n"
     _require(
         frame is not None
         and registration.cutoff
@@ -817,12 +862,10 @@ def _verify_order(
         <= frame.observed_at
         <= observed_at
         and boundary.ordinal < prefix.count(b"\n")
-        and frame._prefix
-        == sha256(
-            b"\n".join(prefix.split(b"\n", boundary.ordinal + 1)[:-1]) + b"\n"
-        ).hexdigest()
+        and frame._prefix == sha256(target_prefix).hexdigest()
         and any(entry.boundary == boundary for entry in projection.evidence())
-        and source == _read_proof(candidate._path, 32 * 1024 * 1024),
+        and source == _read_proof(candidate._path, _MAX_PREFIX_BYTES)
+        and before_prefix == _read_proof(captured, _MAX_PREFIX_BYTES),
         "processing-order",
     )
     if entry.order is _Order.MARKER_FIRST:
@@ -832,7 +875,9 @@ def _verify_order(
             and prior.digest == digest
             and prior.disposition is MarkerDisposition.PENDING
             and prior.boundary is None
-            and status.report.held_sources == 0,
+            and status.report.held_sources == 0
+            and len(before_prefix) < len(target_prefix)
+            and proof.publication_released_at is None,
             "processing-order",
         )
     else:
@@ -840,6 +885,12 @@ def _verify_order(
             prior is None
             and status.report.held_sources == 1
             and checkpoint is not None
+            and before_prefix.startswith(target_prefix)
+            and frame.observed_at <= proof.before_captured_at
+            and proof.publication_released_at is not None
+            and proof.before_confirmed_at
+            <= proof.publication_released_at
+            <= settled.heartbeat
             and projection.batch.cursor == checkpoint.cursor
             and frame.boundary_only,
             "processing-order",
@@ -966,10 +1017,11 @@ def _verify_workflow(
         target is not None
         and target != epic
         and target.kind is ItemKind.ISSUE
+        and target.identifier in _DISPOSABLE_ISSUES
         and draft_a not in previous_aliases
         and aliases.get(draft_a) == target
-        and aliases.get(draft_b, draft_b) != target
-        and parents.get(target) == parents.get(aliases.get(draft_b, draft_b)) == epic
+        and draft_b not in aliases
+        and parents.get(target) == parents.get(draft_b) == epic
         and all(key in _usage(just_before) for key in evidence.samples[:4])
         and rollup(target, just_before).direct.observation_count == 0
         and rollup(draft_a, just_before).direct == rollup(target, graduation).direct,
@@ -982,6 +1034,15 @@ def _verify_workflow(
             cursor = parents[cursor]
         return cursor == epic
 
+    # Relationship entries describe attribution. Only this leaf's authorized
+    # real scopes and its two designated drafts can authorize the controlled run.
+    approved = {epic, ItemKey(ItemKind.ISSUE, 96), draft_a, draft_b, target}
+    _require(
+        epic not in parents
+        and all(item in approved for item in parents if in_epic(item))
+        and all(draft == draft_a for draft, issue in aliases.items() if in_epic(issue)),
+        "workflow-evidence",
+    )
     owner = scope_for(development)
     maintenance = scope_for(housekeeping)
     _require(
@@ -990,8 +1051,10 @@ def _verify_workflow(
         and owner.anchor_ref in anchors
         and owner.anchor_ref != author.anchor_ref
         and owner.marker.attempt_ref is not None
+        and owner.marker.item in approved
         and in_epic(owner.marker.item)
         and maintenance.marker.phase is WorkPhase.HOUSEKEEPING
+        and maintenance.marker.item in approved
         and in_epic(maintenance.marker.item),
         "workflow-evidence",
     )
@@ -1301,6 +1364,11 @@ def _verify_catchup(
 ) -> None:
     previous, current = _usage(before), _usage(after)
     _require(previous.keys() <= current.keys(), "replay-evidence")
+    approved_scopes = {
+        resolve_scope(previous[key], before).scope
+        for key in receipt.workflow.samples
+        if key in previous
+    } - {None}
     keys = {
         Provider.CODEX: receipt.export.catchup_codex,
         Provider.CLAUDE: receipt.export.catchup_claude,
@@ -1314,6 +1382,7 @@ def _verify_catchup(
             and usage.boundary.provider is provider.provider
             and _digest(usage.boundary.stream_ref) == provider.stream
             and usage.availability is not Availability.UNKNOWN
+            and resolve_scope(usage, after).scope in approved_scopes
             and receipt.collector.previous_heartbeat
             < usage.observed_at
             < receipt.collector.producer_started,
