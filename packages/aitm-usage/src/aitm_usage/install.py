@@ -1,5 +1,6 @@
 """Owned macOS LaunchAgent lifecycle and exact, offline wheel environments."""
 
+import ctypes
 import hashlib
 import io
 import json
@@ -7,6 +8,7 @@ import os
 import plistlib
 import pwd
 import re
+import shlex
 import shutil
 import sqlite3
 import stat
@@ -17,6 +19,7 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
 from email.parser import BytesParser
+from functools import cache
 from pathlib import Path
 from secrets import token_hex
 from uuid import UUID, uuid4
@@ -26,6 +29,7 @@ from zipfile import BadZipFile, ZipFile
 from .backup import (
     BackupReceipt,
     RestoreReceipt,
+    _require_outside,
     _restore_stopped,
     backup,
     verify_backup,
@@ -57,6 +61,7 @@ _VERSIONS = "versions"
 _WHEELS = "wheels"
 _BACKUPS = "service-backups"
 _RUNTIME = "runtime.json"
+_RUNTIME_FORMAT = "isolated-pure-wheel-v1"
 _POLL_INTERVAL = 15
 _VERSION = r"[0-9]{1,8}(?:\.[0-9]{1,8}){2}[a-z0-9.+-]{0,32}"
 _DIGEST = r"[0-9a-f]{64}"
@@ -69,7 +74,6 @@ _STOP_TIMEOUT = 10
 _ENVIRONMENT = {
     "LC_ALL": "C",
     "PATH": "/usr/bin:/bin",
-    "PIP_CONFIG_FILE": "/dev/null",
 }
 _FAILURES = (
     LedgerError,
@@ -84,6 +88,10 @@ import json
 import platform
 import sys
 from importlib.metadata import distribution, distributions
+
+site = sys.argv[1]
+sys.path.insert(0, site)
+from aitm_usage import service
 from aitm_usage.ledger import APPLICATION_ID, SCHEMA_VERSION, _supported_schema
 
 package = distribution('aitm-usage')
@@ -91,13 +99,39 @@ schema = json.dumps(_supported_schema(), separators=(',', ':')).encode()
 print(json.dumps({
     'version': package.version,
     'interpreter_version': platform.python_version(),
-    'interpreter': sys._base_executable,
-    'prefix': sys.prefix,
+    'interpreter': sys.executable,
     'schema': [APPLICATION_ID, SCHEMA_VERSION, hashlib.sha256(schema).hexdigest()],
-    'packages': sorted(item.metadata['Name'] for item in distributions()),
+    'packages': sorted(item.metadata['Name'] for item in distributions(path=[site])),
+    'witness_capable': {'producer_mode', 'producer_pid'} <= service._Status.__dataclass_fields__.keys(),
     'entry_points': [[point.group, point.name, point.value] for point in package.entry_points],
 }))
 """
+_CREATE_VENV = """
+import os
+import sys
+import venv
+from pathlib import Path
+
+class CollectorEnv(venv.EnvBuilder):
+    def setup_python(self, context):
+        os.symlink(sys.executable, Path(context.bin_path) / 'python')
+
+    def setup_scripts(self, context):
+        pass
+
+    def create_configuration(self, context):
+        (Path(context.env_dir) / 'pyvenv.cfg').write_text(sys.argv[2], encoding='utf-8')
+
+CollectorEnv(symlinks=True).create(sys.argv[1])
+"""
+_RUN_CONSOLE = """
+import sys
+sys.path.insert(0, sys.argv.pop(1))
+from aitm_usage.cli import main
+raise SystemExit(main())
+"""
+_CONSOLE_ENTRY = b"[console_scripts]\naitm-usage = aitm_usage.cli:main\n"
+_DIST_FILES = {"METADATA", "WHEEL", "entry_points.txt", "RECORD"}
 
 
 class InstallError(LedgerError):
@@ -115,6 +149,90 @@ class LaunchJob:
     program: Path
     arguments: tuple[str, ...]
     pid: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class _ProcessIdentity:
+    pid: int
+    started: datetime
+    executable: Path
+
+
+@dataclass(frozen=True, slots=True)
+class _Health:
+    heartbeat: str
+    process: _ProcessIdentity
+
+
+class _BSDProcessInfo(ctypes.Structure):
+    # Darwin sys/proc_info.h, PROC_PIDTBSDINFO.
+    _fields_ = [
+        ("flags", ctypes.c_uint32),
+        ("status", ctypes.c_uint32),
+        ("xstatus", ctypes.c_uint32),
+        ("pid", ctypes.c_uint32),
+        ("parent_pid", ctypes.c_uint32),
+        ("uid", ctypes.c_uint32),
+        ("credentials", ctypes.c_uint32 * 6),
+        ("command", ctypes.c_char * 16),
+        ("name", ctypes.c_char * 32),
+        ("terminal_and_priority", ctypes.c_uint32 * 6),
+        ("start_seconds", ctypes.c_uint64),
+        ("start_microseconds", ctypes.c_uint64),
+    ]
+
+
+@cache
+def _libproc() -> ctypes.CDLL:
+    library = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
+    library.proc_pidinfo.argtypes = [
+        ctypes.c_int,
+        ctypes.c_int,
+        ctypes.c_uint64,
+        ctypes.c_void_p,
+        ctypes.c_int,
+    ]
+    library.proc_pidinfo.restype = ctypes.c_int
+    library.proc_pidpath.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
+    library.proc_pidpath.restype = ctypes.c_int
+    return library
+
+
+def _process_identity(pid: int) -> _ProcessIdentity | None:
+    if type(pid) is not int or not 0 < pid < 2**31:
+        return None
+    try:
+        library = _libproc()
+
+        def incarnation() -> tuple[int, int] | None:
+            info = _BSDProcessInfo()
+            size = ctypes.sizeof(info)
+            if (
+                library.proc_pidinfo(pid, 3, 0, ctypes.byref(info), size) != size
+                or info.pid != pid
+                or info.uid != os.geteuid()
+                or info.status == 5  # SZOMB
+                or not info.start_seconds
+                or info.start_microseconds >= 1_000_000
+            ):
+                return None
+            return info.start_seconds, info.start_microseconds
+
+        before = incarnation()
+        buffer = ctypes.create_string_buffer(4096)  # PROC_PIDPATHINFO_MAXSIZE
+        if (
+            before is None
+            or library.proc_pidpath(pid, buffer, len(buffer)) <= 0
+            or incarnation() != before
+        ):
+            return None
+        start = datetime.fromtimestamp(before[0], UTC) + timedelta(
+            microseconds=before[1]
+        )
+        executable = Path(os.fsdecode(buffer.value)).resolve(strict=True)
+        return _ProcessIdentity(pid, start, executable)
+    except (AttributeError, OSError, ValueError, OverflowError, RuntimeError):
+        return None
 
 
 class LaunchControl:
@@ -162,6 +280,9 @@ class LaunchControl:
                 return None
             raise InstallError("Unable to inspect the owned LaunchAgent")
         return _parse_job(target, label, result.stdout)
+
+    def process(self, pid: int) -> _ProcessIdentity | None:
+        return _process_identity(pid)
 
     def is_disabled(self, label: str) -> bool:
         data = self._required("print-disabled", self.domain)
@@ -223,6 +344,9 @@ class InstallReceipt:
     poll_interval_seconds: int = _POLL_INTERVAL
     backup: BackupReceipt | None = None
     backup_id: str | None = None
+    producer_mode: str | None = None
+    producer_pid: int | None = None
+    producer_started: str | None = None
 
     def as_dict(self) -> dict:
         data = asdict(self)
@@ -236,6 +360,7 @@ class _Wheel:
     version: str
     digest: str
     data: bytes
+    files: dict[Path, bytes]
 
 
 @dataclass(frozen=True, slots=True)
@@ -244,6 +369,8 @@ class _Runtime:
     version: str
     wheel_sha256: str
     interpreter_version: str
+    interpreter: Path
+    witness_capable: bool
 
 
 def _absolute(path: Path) -> None:
@@ -310,48 +437,74 @@ def _read_owned(path: Path, *, private: bool, limit: int) -> bytes | None:
             return data
 
 
-def _wheel_metadata(path: Path, data: bytes) -> str:
+def _wheel_metadata(path: Path, data: bytes) -> tuple[str, dict[Path, bytes]]:
     match = _WHEEL_NAME.fullmatch(path.name)
     if match is None:
         raise InstallError("Expected a supported aitm-usage wheel")
     version = match[1]
-    metadata_dir = f"aitm_usage-{version}.dist-info"
+    metadata_dir = Path(f"aitm_usage-{version}.dist-info")
+    files = {}
+    directories = set()
     try:
         with ZipFile(io.BytesIO(data)) as archive:
-            names = archive.namelist()
+            entries = archive.infolist()
+            names = [entry.filename.rstrip("/") for entry in entries]
             if (
-                len(names) != len(set(names))
-                or sum(entry.file_size for entry in archive.infolist()) > _WHEEL_LIMIT
-                or any(
-                    name.startswith("/")
-                    or any(
-                        part in ("", ".", "..") for part in name.rstrip("/").split("/")
+                len(entries) > 4096
+                or len(names) != len({name.casefold() for name in names})
+                or sum(entry.file_size for entry in entries) > _WHEEL_LIMIT
+            ):
+                raise InstallError("Unsupported wheel size or duplicate path")
+            for entry, name in zip(entries, names, strict=True):
+                parts = name.split("/")
+                kind = stat.S_IFMT(entry.external_attr >> 16)
+                if any(
+                    not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.+-]*", part)
+                    for part in parts
+                ) or kind not in {0, stat.S_IFDIR if entry.is_dir() else stat.S_IFREG}:
+                    raise InstallError("Unsupported wheel path")
+                relative = Path(*parts)
+                if entry.is_dir():
+                    directories.add(relative)
+                    continue
+                if not (
+                    (
+                        len(parts) > 1
+                        and parts[0] == "aitm_usage"
+                        and relative.suffix in {".py", ".json"}
                     )
-                    or name.split("/")[0] not in {"aitm_usage", metadata_dir}
-                    for name in names
-                )
-                or "aitm_usage/cli.py" not in names
-                or archive.testzip() is not None
-            ):
-                raise InstallError("Unsupported wheel file layout")
-            metadata = BytesParser().parsebytes(
-                archive.read(f"{metadata_dir}/METADATA")
-            )
-            tags = BytesParser().parsebytes(archive.read(f"{metadata_dir}/WHEEL"))
-            if (
-                metadata.get_all("Name") != ["aitm-usage"]
-                or metadata.get_all("Version") != [version]
-                or metadata.get_all("Requires-Python") != [">=3.13"]
-                or metadata.get_all("Requires-Dist")
-                or tags.get_all("Tag") != ["py3-none-any"]
-                or tags.get_all("Root-Is-Purelib") != ["true"]
-            ):
-                raise InstallError("Unsupported wheel metadata")
-    except (BadZipFile, KeyError, RuntimeError) as error:
+                    or (
+                        relative.parent == metadata_dir and relative.name in _DIST_FILES
+                    )
+                ):
+                    raise InstallError("Unsupported pure-wheel file")
+                files[relative] = archive.read(entry)
+    except (BadZipFile, RuntimeError, NotImplementedError) as error:
         if isinstance(error, InstallError):
             raise
         raise InstallError("Invalid aitm-usage wheel") from None
-    return version
+
+    if (
+        not {Path("aitm_usage/__init__.py"), Path("aitm_usage/cli.py")} <= files.keys()
+        or not directories <= {parent for entry in files for parent in entry.parents}
+        or not {metadata_dir / name for name in _DIST_FILES} <= files.keys()
+        or files[metadata_dir / "entry_points.txt"]
+        not in {_CONSOLE_ENTRY, _CONSOLE_ENTRY + b"\n"}
+    ):
+        raise InstallError("Incomplete pure-wheel contents")
+    metadata = BytesParser().parsebytes(files[metadata_dir / "METADATA"])
+    tags = BytesParser().parsebytes(files[metadata_dir / "WHEEL"])
+    if (
+        metadata.get_all("Name") != ["aitm-usage"]
+        or metadata.get_all("Version") != [version]
+        or metadata.get_all("Requires-Python") != [">=3.13"]
+        or metadata.get_all("Requires-Dist")
+        or tags.get_all("Wheel-Version") != ["1.0"]
+        or tags.get_all("Tag") != ["py3-none-any"]
+        or tags.get_all("Root-Is-Purelib") != ["true"]
+    ):
+        raise InstallError("Unsupported wheel metadata")
+    return version, files
 
 
 def _wheel(path: Path, expected: str | None, *, private: bool = False) -> _Wheel:
@@ -361,12 +514,13 @@ def _wheel(path: Path, expected: str | None, *, private: bool = False) -> _Wheel
     digest = hashlib.sha256(data).hexdigest()
     if expected is not None and digest != expected:
         raise InstallError("Wheel digest does not match the approved artifact")
-    return _Wheel(_wheel_metadata(path, data), digest, data)
+    version, files = _wheel_metadata(path, data)
+    return _Wheel(version, digest, data, files)
 
 
 def _run_python(python: Path, *args: str) -> str:
     result = subprocess.run(
-        [str(python), "-I", "-B", *args],
+        [str(python), "-I", "-S", "-B", *args],
         env=_ENVIRONMENT,
         capture_output=True,
         text=True,
@@ -386,6 +540,7 @@ def _interpreter(python: Path) -> str:
         "-c",
         "import platform,sys\n"
         "assert sys.version_info >= (3,13) and sys.prefix == sys.base_prefix\n"
+        "assert sys.flags.no_site and sys.flags.isolated\n"
         "print(platform.python_version())",
     ).strip()
     if not re.fullmatch(_VERSION, version):
@@ -412,45 +567,126 @@ def _wheel_path(ledger: Ledger, version: str, digest: str) -> Path:
     return ledger.root / _WHEELS / digest / f"aitm_usage-{version}-py3-none-any.whl"
 
 
-def _installed_files(environment: Path, python_version: str, wheel: _Wheel) -> None:
-    python_minor = ".".join(python_version.split(".")[:2])
-    site = environment / "lib" / f"python{python_minor}" / "site-packages"
-    with ZipFile(io.BytesIO(wheel.data)) as archive:
-        for name in archive.namelist():
-            if name.endswith("/") or name.endswith(".dist-info/RECORD"):
-                continue
-            expected = archive.read(name)
-            if _read_owned(site / name, private=False, limit=len(expected)) != expected:
-                raise InstallError(
-                    "Installed wheel contents do not match the retained artifact"
-                )
+def _venv_config(interpreter: Path, version: str) -> bytes:
+    return (
+        f"home = {interpreter.parent}\n"
+        "include-system-site-packages = false\n"
+        f"version = {version}\n"
+        f"executable = {interpreter}\n"
+    ).encode()
 
 
-def _probe_runtime(executable: Path, interpreter: Path, wheel: _Wheel) -> _Runtime:
+def _minor(version: str) -> str:
+    return ".".join(version.split(".")[:2])
+
+
+def _site(environment: Path, version: str) -> Path:
+    return environment / "lib" / f"python{_minor(version)}" / "site-packages"
+
+
+def _launcher(python: Path, site: Path) -> bytes:
+    argv = [
+        "/usr/bin/env",
+        "-i",
+        *(f"{key}={value}" for key, value in _ENVIRONMENT.items()),
+        str(python),
+        "-I",
+        "-S",
+        "-B",
+        "-c",
+        _RUN_CONSOLE,
+        str(site),
+    ]
+    return f'#!/bin/sh\nexec {shlex.join(argv)} "$@"\n'.encode()
+
+
+def _write_runtime_file(
+    path: Path, contents: bytes, *, executable: bool = False
+) -> None:
+    mode = 0o700 if executable else 0o600
+    with _open_parent(path) as parent:
+        fd = os.open(
+            path.name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+            mode,
+            dir_fd=parent,
+        )
+        with os.fdopen(fd, "wb") as file:
+            os.fchmod(fd, mode)
+            _check_acl(fd)
+            file.write(contents)
+            file.flush()
+            os.fsync(fd)
+        os.fsync(parent)
+
+
+def _inspect_surface(
+    executable: Path, interpreter: Path, python_version: str, wheel: _Wheel
+) -> Path:
     environment = executable.parent.parent
-    python = executable.parent / "python"
-    program = _read_owned(executable, private=False, limit=8192)
-    try:
-        pinned_python = python.resolve(strict=True)
-    except (OSError, RuntimeError):
-        raise InstallError("Unable to resolve the pinned runtime Python") from None
-    if (
-        program is None
-        or pinned_python != interpreter
-        or not os.access(executable, os.X_OK)
-        or not os.access(python, os.X_OK)
-    ):
-        raise InstallError("Owned console or runtime Python is unavailable")
-    python_version = _interpreter(interpreter)
-    _installed_files(environment, python_version, wheel)
-    observed = json.loads(_run_python(python, "-c", _PROBE))
+    python = executable.with_name("python")
+    site = _site(environment, python_version)
+    config = environment / "pyvenv.cfg"
+    contents = {
+        config: _venv_config(interpreter, python_version),
+        executable: _launcher(python, site),
+        **{site / path: data for path, data in wheel.files.items()},
+    }
+    directories = {environment / "include" / f"python{_minor(python_version)}", site}
+    for path in (*contents, python, *directories):
+        directories.update(
+            parent for parent in path.parents if parent.is_relative_to(environment)
+        )
+    children = {directory: set() for directory in directories}
+    for entry in (*contents, python, *directories):
+        if entry != environment:
+            children[entry.parent].add(entry.name)
+    with _pin_directory(environment) as pinned:
+        for directory, names in children.items():
+            with _open_parent(directory / ".surface") as fd:
+                if set(os.listdir(fd)) != names:
+                    raise InstallError("Unexpected installed runtime entry")
+        with _open_parent(python) as parent:
+            info = os.stat(python.name, dir_fd=parent, follow_symlinks=False)
+            if (
+                not stat.S_ISLNK(info.st_mode)
+                or info.st_uid != os.geteuid()
+                or os.readlink(python.name, dir_fd=parent) != str(interpreter)
+            ):
+                raise InstallError(
+                    "Runtime Python link is not the pinned base interpreter"
+                )
+        for path, expected in contents.items():
+            if (
+                _read_owned(
+                    path, private=path.is_relative_to(site), limit=len(expected)
+                )
+                != expected
+            ):
+                raise InstallError(
+                    "Installed runtime bytes differ from the approved wheel or launcher"
+                )
+        if not os.access(executable, os.X_OK):
+            raise InstallError("Verified launcher is not executable")
+        pinned.check()
+    return site
+
+
+def _probe_runtime(
+    executable: Path, interpreter: Path, python_version: str, wheel: _Wheel
+) -> _Runtime:
+    site = _inspect_surface(executable, interpreter, python_version, wheel)
+    python = executable.with_name("python")
+    observed = json.loads(_run_python(python, "-c", _PROBE, str(site)))
+    if not isinstance(observed, dict):
+        raise InstallError("Invalid isolated runtime probe")
+    witness_capable = observed.pop("witness_capable", None)
     schema_bytes = json.dumps(_supported_schema(), separators=(",", ":")).encode()
     expected = {
         "version": wheel.version,
         "interpreter_version": python_version,
-        "interpreter": str(interpreter),
-        "prefix": str(environment),
-        "packages": ["aitm-usage", "pip"],
+        "interpreter": str(python),
+        "packages": ["aitm-usage"],
         "schema": [
             APPLICATION_ID,
             SCHEMA_VERSION,
@@ -458,10 +694,8 @@ def _probe_runtime(executable: Path, interpreter: Path, wheel: _Wheel) -> _Runti
         ],
         "entry_points": [["console_scripts", "aitm-usage", "aitm_usage.cli:main"]],
     }
-    if observed != expected:
+    if observed != expected or type(witness_capable) is not bool:
         raise InstallError("Installed environment identity or schema is incompatible")
-    if not any(os.fsencode(python) in line for line in program.splitlines()[:4]):
-        raise InstallError("Owned console does not use the verified interpreter")
     console = subprocess.run(
         [str(executable), "--version"],
         env=_ENVIRONMENT,
@@ -471,7 +705,14 @@ def _probe_runtime(executable: Path, interpreter: Path, wheel: _Wheel) -> _Runti
     )
     if console.returncode or console.stdout.strip() != f"aitm-usage {wheel.version}":
         raise InstallError("Installed console reports an unexpected package version")
-    return _Runtime(executable, wheel.version, wheel.digest, python_version)
+    return _Runtime(
+        executable,
+        wheel.version,
+        wheel.digest,
+        python_version,
+        interpreter,
+        witness_capable,
+    )
 
 
 def _read_runtime(
@@ -485,10 +726,18 @@ def _read_runtime(
     if (
         not isinstance(record, dict)
         or set(record)
-        != {"environment", "interpreter", "console_sha256", "interpreter_sha256"}
+        != {
+            "format",
+            "environment",
+            "interpreter",
+            "console_sha256",
+            "interpreter_sha256",
+        }
         or any(type(value) is not str for value in record.values())
+        or record["format"] != _RUNTIME_FORMAT
+        or raw != json.dumps(record, sort_keys=True).encode()
     ):
-        raise InstallError("Invalid installed runtime receipt")
+        raise InstallError("Installed runtime requires explicit recovery")
     environment = record["environment"]
     if not _RUNTIME_DIR.fullmatch(environment):
         raise InstallError("Invalid installed runtime directory")
@@ -505,11 +754,11 @@ def _read_runtime(
         data = _read_owned(path, private=False, limit=limit)
         if data is None or hashlib.sha256(data).hexdigest() != record[field]:
             raise InstallError("Verified runtime files changed")
-    return _probe_runtime(executable, base, retained)
+    return _probe_runtime(executable, base, _interpreter(base), retained)
 
 
 def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
-    _interpreter(interpreter)
+    python_version = _interpreter(interpreter)
     retained = _wheel_path(ledger, wheel.version, wheel.digest)
     _ensure_private_directory(retained.parent)
     with _pin_directory(retained.parent) as parent:
@@ -526,42 +775,35 @@ def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
         environment.mkdir(mode=0o700)
         executable = environment / "bin" / "aitm-usage"
         python = executable.with_name("python")
+        site = _site(environment, python_version)
         with _pin_directory(environment) as env:
             _run_python(
                 interpreter,
-                "-m",
-                "venv",
-                "--symlinks",
-                "--without-pip",
+                "-c",
+                _CREATE_VENV,
                 str(environment),
+                _venv_config(interpreter, python_version).decode(),
             )
             env.check()
-            _run_python(python, "-m", "ensurepip", "--default-pip")
-            _run_python(
-                python,
-                "-m",
-                "pip",
-                "--isolated",
-                "--disable-pip-version-check",
-                "install",
-                "--no-index",
-                "--no-deps",
-                "--no-compile",
-                str(retained),
-            )
-            runtime = _probe_runtime(executable, interpreter, wheel)
+            # The approved wheel is pure Python with no dependencies or .data.
+            # Its files already have their final relative site-packages paths.
+            for path, data in wheel.files.items():
+                destination = site / path
+                _ensure_private_directory(destination.parent)
+                _write_runtime_file(destination, data)
+            launcher = _launcher(python, site)
+            _write_runtime_file(executable, launcher, executable=True)
+            runtime = _probe_runtime(executable, interpreter, python_version, wheel)
+            base_bytes = _read_owned(interpreter, private=False, limit=_WHEEL_LIMIT)
+            if base_bytes is None:
+                raise InstallError("Base interpreter disappeared during preparation")
             record = {
+                "format": _RUNTIME_FORMAT,
                 "environment": environment.name,
                 "interpreter": str(interpreter),
+                "console_sha256": hashlib.sha256(launcher).hexdigest(),
+                "interpreter_sha256": hashlib.sha256(base_bytes).hexdigest(),
             }
-            for path, field, limit in (
-                (executable, "console_sha256", 8192),
-                (interpreter, "interpreter_sha256", _WHEEL_LIMIT),
-            ):
-                data = _read_owned(path, private=False, limit=limit)
-                if data is None:
-                    raise InstallError("Runtime file disappeared during preparation")
-                record[field] = hashlib.sha256(data).hexdigest()
             env.check()
             if not _publish(
                 parent, _RUNTIME, json.dumps(record, sort_keys=True).encode()
@@ -699,29 +941,49 @@ class _Agent:
         ):
             raise InstallError("LaunchAgent is not confirmed stopped")
 
-    def healthy(self, runtime: _Runtime, plist: bytes, after: datetime) -> str | None:
+    def healthy(
+        self, runtime: _Runtime, plist: bytes, after: datetime
+    ) -> _Health | None:
         job = self.inspect(plist)
-        if job is None or job.pid is None:
+        if not runtime.witness_capable or job is None or job.pid is None:
+            return None
+        process = self.launchctl.process(job.pid)
+        if (
+            process is None
+            or process.pid != job.pid
+            or process.executable != runtime.interpreter
+        ):
             return None
         status = status_report(self.ledger.root, self.ledger)
         if (
-            status["read_gap"]
+            status["read_gap"] is not False
             or status["registration_gap"] is not False
             or status["status_sequence"] is None
             or status["collector_version"] != runtime.version
             or status["collector_interpreter_version"] != runtime.interpreter_version
+            or status["producer_mode"] != "service"
+            or type(status["producer_pid"]) is not int
+            or status["producer_pid"] != job.pid
         ):
             return None
         raw = status["heartbeat"]
-        if (
-            raw is not None
-            and after < datetime.fromisoformat(raw) <= datetime.now(UTC)
-            and self.inspect(plist) == job
+        if raw is None or not (
+            max(after, process.started)
+            < datetime.fromisoformat(raw)
+            <= datetime.now(UTC)
         ):
-            return raw
-        return None
+            return None
+        if self.read() != plist or _runtime_for(self, runtime.executable) != runtime:
+            raise InstallError(
+                "Launch registration or runtime changed during health verification"
+            )
+        if self.inspect(plist) != job or self.launchctl.process(job.pid) != process:
+            return None
+        return _Health(raw, process)
 
-    def start(self, runtime: _Runtime, plist: bytes) -> str:
+    def start(self, runtime: _Runtime, plist: bytes) -> _Health:
+        if not runtime.witness_capable:
+            raise InstallError("Runtime cannot provide service process evidence")
         if self.read() != plist or self.inspect(plist) is not None:
             raise InstallError("Unexpected LaunchAgent state before bootstrap")
         if _runtime_for(self, runtime.executable) != runtime:
@@ -735,9 +997,9 @@ class _Agent:
         self.launchctl.bootstrap(self.plist)
         deadline = time.monotonic() + self.launchctl.activation_timeout
         while True:
-            heartbeat = self.healthy(runtime, plist, started)
-            if heartbeat is not None:
-                return heartbeat
+            health = self.healthy(runtime, plist, started)
+            if health is not None:
+                return health
             if time.monotonic() >= deadline:
                 raise InstallError(
                     "LaunchAgent did not provide a fresh compatible heartbeat"
@@ -865,11 +1127,19 @@ def _recover(agent: _Agent, directory: _PinnedPath, guard: _PinnedPath) -> None:
                 raise InstallError(
                     "Interrupted upgrade backup does not match its receipt"
                 )
+        if (
+            prior is not None
+            and not prior.witness_capable
+            and current == operation.prior
+        ):
+            raise InstallError("Retained prior runtime requires explicit recovery")
         guard.check()
         agent.stop(operation.prior, operation.candidate)
         with _stopped_writer(agent, guard):
             if current != operation.prior:
                 agent.write(operation.prior, current)
+        if prior is not None and not prior.witness_capable:
+            raise InstallError("Retained prior runtime requires explicit recovery")
         if operation.was_loaded:
             assert prior is not None
             agent.start(prior, operation.prior)
@@ -893,7 +1163,7 @@ def _receipt(
     status: str,
     runtime: _Runtime | None = None,
     *,
-    heartbeat: str | None = None,
+    health: _Health | None = None,
     saved: BackupReceipt | None = None,
     backup_id: str | None = None,
 ) -> InstallReceipt:
@@ -904,9 +1174,12 @@ def _receipt(
         None if runtime is None else runtime.version,
         None if runtime is None else runtime.wheel_sha256,
         None if runtime is None else runtime.interpreter_version,
-        heartbeat,
+        None if health is None else health.heartbeat,
         backup=saved,
         backup_id=backup_id,
+        producer_mode=None if health is None else "service",
+        producer_pid=None if health is None else health.process.pid,
+        producer_started=None if health is None else health.process.started.isoformat(),
     )
 
 
@@ -917,21 +1190,32 @@ def _activate(
     directory: _PinnedPath,
     guard: _PinnedPath,
 ) -> InstallReceipt:
+    if not runtime.witness_capable:
+        raise InstallError(
+            "Candidate runtime cannot provide service process evidence",
+            status="witness-unavailable",
+        )
     previous = agent.read()
     prior_job = agent.inspect(previous)
     previous_program = agent.program(previous) if previous else None
     candidate = plistlib.dumps(agent.payload(runtime.executable))
     if previous_program == runtime.executable and prior_job is not None:
         oldest = datetime.now(UTC) - timedelta(seconds=3 * _POLL_INTERVAL)
-        heartbeat = agent.healthy(runtime, previous, oldest)
-        if heartbeat is not None:
-            return _receipt(agent, "already-active", runtime, heartbeat=heartbeat)
+        health = agent.healthy(runtime, previous, oldest)
+        if health is not None:
+            return _receipt(agent, "already-active", runtime, health=health)
     if action == "install" and previous_program not in (None, runtime.executable):
         raise InstallError("Use upgrade to replace a different installed wheel")
     if action == "upgrade" and previous_program is None:
         raise InstallError("Install an owned service before upgrading it")
-    if previous_program is not None:
-        _runtime_for(agent, previous_program)
+    if (
+        previous_program is not None
+        and not _runtime_for(agent, previous_program).witness_capable
+    ):
+        raise InstallError(
+            "Installed runtime cannot provide service process evidence",
+            status="witness-unavailable",
+        )
 
     saved = None
     backup_id = str(uuid4()) if action == "upgrade" else ""
@@ -961,7 +1245,7 @@ def _activate(
                     replace_pending=True,
                 )
             agent.write(candidate, previous)
-        heartbeat = agent.start(runtime, candidate)
+        health = agent.start(runtime, candidate)
     except _FAILURES:
         _recover(agent, directory, guard)
         raise InstallError(
@@ -974,7 +1258,7 @@ def _activate(
         agent,
         "upgraded" if action == "upgrade" else "installed",
         runtime,
-        heartbeat=heartbeat,
+        health=health,
         saved=saved,
         backup_id=backup_id or None,
     )
@@ -1110,11 +1394,19 @@ def prune_version(
         directory = ledger.root / _VERSIONS / f"{version}-{digest}"
         if plist and _runtime_layout(ledger, agent.program(plist))[0] == directory:
             raise InstallError("Cannot prune the currently registered runtime")
-        saved = verify_backup(source, ledger)
-        retained = _wheel(_wheel_path(ledger, version, digest), digest, private=True)
-        with _pin_directory(directory) as selected:
+        wheel_path = _wheel_path(ledger, version, digest)
+        with (
+            _pin_directory(directory) as selected,
+            _pin_directory(source) as bundle,
+        ):
+            _require_outside(selected, source)
+            _require_outside(selected, wheel_path, file=True)
+            saved = verify_backup(source, ledger)
+            retained = _wheel(wheel_path, digest, private=True)
             guard.check()
-            selected.check()
+            bundle.check()
+            _require_outside(selected, source)
+            _require_outside(selected, wheel_path, file=True)
             if not dry_run:
                 shutil.rmtree(directory)
                 with _pin_directory(directory.parent) as parent:

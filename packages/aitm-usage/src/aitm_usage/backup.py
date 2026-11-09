@@ -115,6 +115,18 @@ def _absolute(path: Path) -> Path:
     return path
 
 
+def _require_outside(
+    directory: _PinnedPath, path: Path, *, file: bool = False, missing: bool = False
+) -> None:
+    """Reject physical containment, including alternate APFS path spellings."""
+    directory.check()
+    ancestry = _validated_path(
+        _absolute(path), directory=not file, allow_missing=missing
+    )
+    if directory.identities[-1] in ancestry:
+        raise BackupError("Recovery material overlaps a replaceable directory")
+
+
 def _copy_file(directory: _PinnedPath, name: str, destination: Path) -> str:
     """Copy a private regular file by descriptor and hash the bytes copied."""
     directory.check()
@@ -289,7 +301,8 @@ def _authority_digests(data: dict[str, bytes]) -> dict[str, str]:
 
 
 @contextmanager
-def _publication_parent(destination: Path) -> Iterator[int]:
+def _publication_parent(destination: Path, store: _PinnedPath) -> Iterator[int]:
+    _require_outside(store, destination, missing=True)
     ancestry = _validated_path(destination, directory=True, allow_missing=True)
     if len(ancestry) != len(destination.parents):
         raise BackupError("Backup destination must be new with an existing parent")
@@ -307,7 +320,8 @@ def backup(ledger: Ledger, destination: Path) -> BackupReceipt:
     try:
         destination = _absolute(destination)
         with (
-            _publication_parent(destination) as parent,
+            _pin_directory(ledger.database_path.parent) as live_store,
+            _publication_parent(destination, live_store) as parent,
             _pin_directory(ledger.root) as live,
             TemporaryDirectory(prefix=".usage-backup-", dir=destination.parent) as work,
             _pin_directory(Path(work)) as staging,
@@ -363,6 +377,7 @@ def backup(ledger: Ledger, destination: Path) -> BackupReceipt:
                 staging.check()
                 staged.check()
                 staged_store.check()
+                _require_outside(live_store, destination, missing=True)
                 if staging.identities[-2] != _path_id(os.fstat(parent)):
                     raise BackupError("Backup destination parent changed")
                 if _rename_exclusive()(
@@ -599,10 +614,12 @@ def _restore_stopped(
             _lease(root / LOCK_NAME) as local,
             _pin_directory(root) as project,
             _pin_directory(root / STORE_NAME) as live_store,
+            _pin_directory(_absolute(source)) as bundle,
             TemporaryDirectory(prefix=".usage-restore-", dir=root) as directory,
             _pin_directory(Path(directory)) as staged,
         ):
             verify_stopped()
+            _require_outside(live_store, bundle.path)
             live = Ledger.open(root, expected.project_id)
             if live.identity != expected:
                 raise BackupError("Restore target identity mismatch")
@@ -631,6 +648,7 @@ def _restore_stopped(
                         staged,
                         staged_store,
                         inbox,
+                        bundle,
                     ):
                         pin.check()
                     if (
@@ -638,6 +656,7 @@ def _restore_stopped(
                         or _state_files(staged.path) != staged_files
                     ):
                         raise BackupError("Private restore store files changed")
+                    _require_outside(live_store, bundle.path)
                     _swap_store(project, staged)
             return RestoreReceipt(
                 receipt.project_id,
