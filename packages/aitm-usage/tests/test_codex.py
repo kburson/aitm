@@ -857,22 +857,68 @@ def test_turn_receipt_requires_the_next_verified_start_in_the_same_segment(proje
     assert batch.scope_evidence(boundary).anchor_ref is not None
 
 
-@pytest.mark.parametrize("configured", [False, True])
-def test_invalid_or_unverified_quota_cannot_create_an_account_record(
-    project, configured
-):
+@pytest.mark.parametrize(
+    "case", ["missing-account", "malformed", "absent", "credits-only"]
+)
+def test_unavailable_inline_quota_reports_only_observed_window_gaps(project, case):
     codex = adapter()
     ledger, registration, path, checkout, _ = project
     rows = [json.loads(line) for line in FIXTURE.read_text().splitlines()]
     rows[0]["payload"]["cwd"] = rows[2]["payload"]["cwd"] = str(checkout)
-    if configured:
-        rows[4]["payload"]["rate_limits"]["primary"]["resets_at"] = 0
+    counter_payload = rows[4]["payload"]
+    account = None
+    if case == "malformed":
+        counter_payload["rate_limits"]["primary"]["resets_at"] = 0
+        account = ledger.pseudonymize("codex-account", "configured")
+    elif case == "absent":
+        del counter_payload["rate_limits"]
+    elif case == "credits-only":
+        counter_payload["rate_limits"]["primary"] = None
+    rows.insert(
+        3,
+        event(
+            "thread_settings_applied",
+            thread_id=str(SESSION),
+            thread_settings={
+                "model": "gpt-6-astra",
+                "model_provider_id": "openai",
+                "service_tier": "default",
+            },
+        ),
+    )
     write(path, rows)
-    account = ledger.pseudonymize("codex-account", "configured") if configured else None
-    _, result = read(codex, source(registration), codex.CodexState(ledger, account))
-    assert [record.tokens.total_tokens for record in observations(result)] == [16]
+    candidate = source(registration)
+    _, result = read(codex, candidate, codex.CodexState(ledger, account))
+    (record,) = observations(result)
+    assert record.tokens == TokenCounts(12, 8, 0, 0, 4, 2, 16)
+    assert record.availability is Availability.COMPLETE
+    assert record.processing_tier is ProcessingTier.STANDARD
     assert result.quota == ()
-    assert ((4, DiagnosticCode.COVERAGE_GAP) in codes(result)) is configured
+    if case in ("missing-account", "malformed"):
+        (gap,) = result.diagnostics
+        assert (gap.code, gap.ordinal, gap.provider, gap.source_ref) == (
+            DiagnosticCode.COVERAGE_GAP,
+            5,
+            Provider.CODEX,
+            candidate.stream_ref,
+        )
+        assert "credits-secret" not in repr(gap)
+    else:
+        assert result.diagnostics == ()
+
+
+@pytest.mark.parametrize("excluded", [False, True])
+def test_inline_quota_does_not_leak_from_unadmitted_source(project, excluded):
+    codex = adapter()
+    ledger, registration, path, _, outside = project
+    path.write_text(FIXTURE.read_text().replace("CHECKOUT", str(outside)))
+    candidate = source(registration)
+    if excluded:
+        batch = scan(candidate, None, CUTOFF)
+        candidate = candidate.with_exclusion(batch.frames[0])
+    batch, result = read(codex, candidate, codex.CodexState(ledger))
+    assert bool(batch.commit_frames) is excluded
+    assert result.revisions == result.quota == result.diagnostics == ()
 
 
 def test_usage_remains_measured_when_model_context_is_missing(project):
