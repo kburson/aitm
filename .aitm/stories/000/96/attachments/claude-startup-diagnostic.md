@@ -1,0 +1,7 @@
+# Live Claude Code startup prefix diagnostic
+
+The live #96 recovery pickup used protected [PR #98](https://github.com/kburson/aitm/pull/98), merge `e65c86ba4c7d19e7844a5d23a3aa33446a885f4c`. Both fresh Codex arrival-order cases passed the installed order verifier with measured first requests, immutable pre-poll captures and exact pending or absent to accepted transitions.
+
+In the first isolated Claude Code 2.1.318 format-1 case, the native client returned successfully and the released adapter recognized the actual Bash tool result, queued command and following request. Two timed queue operations preceded two timed startup-hook attachments and the first checkout-bearing user row. The queue operations had no checkout. The scanner kept that first segment unresolved, so it reached the target only in boundary-only look-ahead. Exact protected output showed 24 projected timed frames, zero committed frames, one held source and zero admitted usage rows. The target at native ordinal 33 was verified. This diagnostic preserves the distinction between native scope proof and ledger admission.
+
+The same startup ordering appeared in 13 recent retained Claude source files examined for structure. The isolated records and source bytes are retained privately. A separate interactive invocation reached a workspace trust prompt. Trust was unchanged. [Scoped planning amendment](../../83/plan/usage-capture-claude-startup-replan.md).
