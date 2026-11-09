@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 84
 title: "[Usage U01] Package and private durable ledger"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/84"
 parent: 83
 children: []
 blocking: [85]
 blocked-by: []
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T14:43:23+00:00"
-last-branch: "planning"
+updated: "2026-11-09T14:46:26+00:00"
+last-branch: "codex/aitm-usage-u01"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "0d587ef665cd23fa8f0fb240100f9b0440d33f97f58a84ea87887e0ab4dd8c02"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 # [Usage U01] Package and private durable ledger
 
-[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Backlog
+[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** None.
 
@@ -35,3 +35,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 - [ ] Write `test_atomic_cursor_and_revisions` with a forced exception between append and cursor advance, a second writer, same-key same-payload retry, and same-key conflicting immutable payload. Assert rollback, writer refusal, lease release on process exit, idempotence and explicit conflict. Verify state permissions and that unsupported schema and mismatched project/key fail before writes.
 - [ ] Run `test_ledger.py` to show failure, implement the package, typed ledger and private state initialization, then pass leaf verification.
+
+## Current pickup
+
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
