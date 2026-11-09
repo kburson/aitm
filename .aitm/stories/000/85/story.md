@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 85
 title: "[Usage U02] Scope inbox and provider-session binding"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/85"
 parent: 83
 children: []
 blocking: [86, 87]
 blocked-by: [84]
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T15:17:05+00:00"
-last-branch: "planning"
+updated: "2026-11-09T15:36:34+00:00"
+last-branch: "codex/aitm-usage-u02"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "5bd0ab66177ad25c20eda276e12acca18f184037c58b97be353a012782120984"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path":
 
 # [Usage U02] Scope inbox and provider-session binding
 
-[GitHub issue](https://github.com/kburson/aitm/issues/85) · [Parent #83](../83/story.md) · Backlog
+[GitHub issue](https://github.com/kburson/aitm/issues/85) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#84](../84/story.md)
 
@@ -41,3 +41,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path":
 ## Accepted amendment
 
 [Revised implementation plan](../83/plan/usage-capture-replan.md). Own the typed development binding, scope correction and shared inbox command identity, digest and disposition. Put durable envelopes in types.py. Wire exact admission and replay in ledger.py only where needed to make consumption and disposition atomic. Write consumption and its disposition in the same ledger transaction. A replay returns the current recorded disposition. Pending may advance to final once. Final dispositions are immutable and conflicting bytes never overwrite either. Verify these transitions and ignore unpublished temporary files.
+
+## Current pickup
+
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
