@@ -1097,7 +1097,10 @@ def test_same_stream_binding_generations_follow_proven_order(
             assert resolve_scope(new, writer.as_of()).scope.generation == 2
 
 
-def test_cross_stream_rebind_preserves_recorded_prefix_only(project):
+@pytest.mark.parametrize(
+    "enrich_identity", [False, True], ids=["tokens", "request-message"]
+)
+def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_identity):
     f = Fixture(project)
     anchor = f.ref("anchor")
     previous = f.marker(
@@ -1144,6 +1147,12 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project):
         unproven = f.observe(writer, f.boundary(later, 11, proven=False, anchor=anchor))
         new_usage = f.observe(writer, new_proof)
         corrected_usage = replace(old, tokens=TokenCounts(output_tokens=11))
+        if enrich_identity:
+            corrected_usage = replace(
+                corrected_usage,
+                request_ref=f.ref("newly-known-request"),
+                message_ref=f.ref("newly-known-message"),
+            )
         writer.apply(
             LedgerBatch(
                 (
@@ -1159,8 +1168,25 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project):
         view = writer.as_of()
         assert resolve_scope(unproven, view).scope is None
         assert resolve_scope(new_usage, view).scope.generation == 2
-        assert resolve_scope(corrected_usage, view).scope.generation == 1
+        retained = resolve_scope(corrected_usage, view).scope
+        assert retained is not None
+        assert retained.generation == 1
         assert resolve_scope(old, writer.as_of(before.sequence)).scope.generation == 1
+
+        writer.apply(
+            LedgerBatch(
+                (
+                    Revision(
+                        f.ref("separately-admitted-observation"), 1, corrected_usage
+                    ),
+                )
+            )
+        )
+        assert resolve_scope(corrected_usage, writer.as_of()).scope is None
+        assert (
+            resolve_scope(corrected_usage, writer.as_of(view.sequence)).scope.generation
+            == 1
+        )
 
 
 def test_pending_receipt_refines_location_without_authorizing_attribution(project):

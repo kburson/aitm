@@ -681,10 +681,15 @@ def _within_owner_generation(
     if not replacements:
         return True
 
-    # Independent streams have no common provider ordinal. Require both the
-    # old enrollment and this exact observation identity to be in the durable
-    # ledger prefix that precedes the first replacement.
-    boundary = replace(observation.boundary, receipt_ref=None)
+    # Independent streams have no common provider ordinal. Preserve an old
+    # enrollment only for a uniquely identified, admitted observation lineage
+    # already present in the durable prefix before the first replacement.
+    matches = [
+        revision.key for revision in view.current if revision.record == observation
+    ]
+    if len(matches) != 1:
+        return False
+    (observation_key,) = matches
     enrolled = recorded = False
     for revision in view.revisions:
         record = revision.record
@@ -693,12 +698,7 @@ def _within_owner_generation(
                 return enrolled and recorded
             if record == owner:
                 enrolled = True
-        elif (
-            isinstance(record, UsageObservation)
-            and record.request_ref == observation.request_ref
-            and record.message_ref == observation.message_ref
-            and replace(record.boundary, receipt_ref=None) == boundary
-        ):
+        elif revision.key == observation_key:
             recorded = True
     return False
 
