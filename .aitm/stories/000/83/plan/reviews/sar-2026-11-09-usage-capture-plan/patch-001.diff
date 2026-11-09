@@ -1,0 +1,68 @@
+diff --git a/.aitm/stories/000/83/plan/usage-capture-implementation-plan.md b/.aitm/stories/000/83/plan/usage-capture-implementation-plan.md
+index de1a6eb..bfa7a36 100644
+--- a/.aitm/stories/000/83/plan/usage-capture-implementation-plan.md
++++ b/.aitm/stories/000/83/plan/usage-capture-implementation-plan.md
+@@ -40,11 +40,11 @@ P1 is the backlog priority. #83 is first in the delivery sequence for this proje
+ | U05 | Claude Code request usage adapter | 3.5 | U03 |
+ | U06 | Pricing and quota availability | 3 | U04, U05 |
+ | U07 | As-of export and C44 compatibility proof | 3.5 | U02, U06 |
+-| U08 | Continuous service and status | 3.5 | U02, U04, U05, U06 |
++| U08 | Continuous service and status | 3.5 | U07 |
+ | U09 | LaunchAgent install, upgrade and restore | 4 | U07, U08 |
+ | U10 | Project Mac activation and dogfood proof | 3.5 | U09 |
+ 
+-Paths below are relative to `packages/aitm-usage/`. Source files live in `src/aitm_usage/` and tests in `tests/`. U01 owns `pyproject.toml` and the package-local lockfile. No root workspace bootstrap files are required. Each CLI command is added in its owning leaf. Leaves touching the shared CLI entry point run in order U01, U02, U07, U08, U09. Other dependency-ready leaves may proceed independently on their owned files.
++Paths below are relative to `packages/aitm-usage/`. Source files live in `src/aitm_usage/` and tests in `tests/`. U01 owns `pyproject.toml` and the package-local lockfile. No root workspace bootstrap files are required. Each CLI command is added in its owning leaf. Leaves touching the shared CLI entry point run in order U01, U02, U07, U08, U09, U10. Other dependency-ready leaves may proceed independently on their owned files.
+ 
+ For each leaf, write the named tests first, run the leaf test file to show the expected missing behavior, implement the named contract, then run `uv run --project packages/aitm-usage pytest packages/aitm-usage/tests/<file> -q` and `uv run --project packages/aitm-usage ruff check packages/aitm-usage`. Require passing results and applicable review and delivery evidence on the actual source version. Retain the initial failure and passing proof. Product source and tests are execution deliverables.
+ 
+@@ -52,16 +52,16 @@ For each leaf, write the named tests first, run the leaf test file to show the e
+ 
+ **Files** `pyproject.toml`, `uv.lock`, `src/aitm_usage/{__init__,cli,types,ledger}.py`, `tests/test_ledger.py`.
+ 
+-**Contract** `Ledger.open(root: Path, project_id: UUID) -> Ledger`, `apply(batch: LedgerBatch) -> int`, and `as_of(sequence: int) -> LedgerView`. Define typed observation, revision, scope marker, diagnostic and cursor envelopes. One writer lease per project guards the service. A transaction appends revisions and moves the corresponding cursor together. Store pseudonyms with a project key and include a key identifier in metadata.
++**Contract** `Ledger.initialize(root: Path, project_id: UUID) -> Ledger`, `Ledger.open(root: Path, project_id: UUID) -> Ledger`, `apply(batch: LedgerBatch) -> int`, and `as_of(sequence: int) -> LedgerView`. Define typed observation, revision, scope marker, diagnostic and cursor envelopes. Acquire a nonblocking process-held exclusive file lock per project before any write path. Keep the lock file stable across the database lifetime so the kernel releases ownership on process exit. Open status and backup reads without a writer lease. Initialize a missing ledger explicitly and validate identity/schema on every ordinary open. A transaction appends revisions and moves the corresponding cursor together. Store pseudonyms with a project key and include a key identifier in metadata.
+ 
+-- [ ] Write `test_atomic_cursor_and_revisions` with a forced exception between append and cursor advance, a second writer, same-key same-payload retry, and same-key conflicting immutable payload. Assert rollback, writer refusal, idempotence and explicit conflict. Verify state permissions and that unsupported schema and mismatched project/key fail before writes.
++- [ ] Write `test_atomic_cursor_and_revisions` with a forced exception between append and cursor advance, a second writer, same-key same-payload retry, and same-key conflicting immutable payload. Assert rollback, writer refusal, lease release on process exit, idempotence and explicit conflict. Verify state permissions and that unsupported schema and mismatched project/key fail before writes.
+ - [ ] Run `test_ledger.py` to show failure, implement the package, typed ledger and private state initialization, then pass leaf verification.
+ 
+ ### U02 — Scope inbox, aliases and rollups
+ 
+ **Files** `src/aitm_usage/{scopes,rollup,cli}.py`, `tests/test_scopes.py`.
+ 
+-**Contract** `enqueue_marker(directory: Path, marker: ScopeMarker) -> MarkerId`, `resolve_scope(observation: Observation, view: LedgerView) -> ScopeResolution`, and `rollup(root: ItemKey, view: LedgerView) -> UsageRollup`. The private inbox uses atomic file publication. A stable request or turn boundary plus session pseudonym orders markers. Enrollment binds the explicit owner provider session and generation. A same-story marked reviewer keeps its own role and an unproven session is unassigned. Consume into the ledger before acknowledging. Expose scope mark, development bind, scope correct, alias and parent operations through the CLI.
++**Contract** `enqueue_marker(directory: Path, marker: ScopeMarker) -> MarkerId`, `resolve_scope(observation: Observation, view: LedgerView) -> ScopeResolution`, and `rollup(root: ItemKey, view: LedgerView) -> UsageRollup`. The private inbox uses atomic file publication. A stable request or turn boundary plus session pseudonym orders markers. Return pending until the enrolled adapter validates the boundary, then commit the marker and return an accepted receipt. A supported serial request marker precedes the first child response in provider order. A turn-only marker is emitted before the child turn begins. Enrollment binds the explicit owner provider session and generation. A same-story marked reviewer keeps its own role and an unproven session is unassigned. Consume into the ledger before acknowledging. Expose scope mark, development bind, scope correct, alias and parent operations through the CLI.
+ 
+ - [ ] Write `test_planning_scope_and_development_owner` with one epic and two children in a single session. Verify first child request and switch-back for marker-first and observation-first arrival, Unknown while unresolved, scope before the next turn when the request boundary cannot be proven, owner-only development default, unmarked nonowner, compatible marked reviewer, conflicting marker quarantine, housekeeping and two review roles. Exercise actual CLI marker publication, idempotent inbox replay, recorded correction, draft graduation, cycles and one inclusive total.
+ - [ ] Run `test_scopes.py` to show failure, implement the marker and rollup contract, then pass leaf verification.
+@@ -115,7 +115,7 @@ For each leaf, write the named tests first, run the leaf test file to show the e
+ 
+ **Files** `src/aitm_usage/{service,cli}.py`, `tests/test_service.py`.
+ 
+-**Contract** `collect_once(registration: Registration, ledger: Ledger) -> CollectionReport` and `run_service(registration: Registration, interval_seconds: int = 15) -> int`. Wire actual providers, cursors, inbox and heartbeat in the same process. `status --json` reports version, heartbeat, interpreter version, per-source observed-through time, lag, known retention limits and coverage. Poll local sources without model calls. Restart from durable state.
++**Contract** `collect_once(registration: Registration, ledger: Ledger) -> CollectionReport` and `run_service(registration: Registration, interval_seconds: int = 15) -> int`. Wire actual providers, cursors, inbox and heartbeat in the same process. An explicit register command pins approved roots and the activation cut-off before scanning. A restart reloads the registration without resetting the cut-off. `status --json` reports version, heartbeat, interpreter version, per-source observed-through time, lag, known retention limits and coverage. Poll local sources without model calls. Restart from durable state.
+ 
+ - [ ] Write `test_service_restart_and_coverage` through the actual service entry point with temporary project roots and both providers. Simulate permission loss, incomplete rows, missed scans and restart. Assert processed inputs catch up once, stale source lag remains distinct from live heartbeat, and service diagnostics remain sanitized.
+ - [ ] Run `test_service.py` to show failure, implement loop, read-only status and recovery behavior, then pass leaf verification.
+@@ -124,16 +124,16 @@ For each leaf, write the named tests first, run the leaf test file to show the e
+ 
+ **Files** `src/aitm_usage/{install,backup,cli}.py`, `tests/test_install.py`.
+ 
+-**Contract** `install_agent(project: Registration, executable: Path, launchctl: LaunchControl) -> InstallReceipt`, `backup(ledger: Ledger, destination: Path) -> BackupReceipt`, and `restore(source: Path, destination: Path, expected: LedgerIdentity) -> RestoreReceipt`. Plan and apply explicit install, stop and upgrade actions. Validate absolute paths, ownership and installed version. Use the SQLite backup API and verify project/key identity. Preserve ledger and key when stopping or uninstalling.
++**Contract** `install_agent(project: Registration, executable: Path, launchctl: LaunchControl) -> InstallReceipt`, `backup(ledger: Ledger, destination: Path) -> BackupReceipt`, and `restore(source: Path, destination: Path, expected: LedgerIdentity) -> RestoreReceipt`. Plan and apply explicit install, stop and upgrade actions. Put RunAtLoad, KeepAlive and the absolute versioned executable in the plist. Upgrade backs up state before activation and restores the previous compatible service registration on failure. Restore only into a stopped target under the same writer lock and replace state atomically after validation. Validate absolute paths, ownership and installed version. Use the SQLite backup API and verify project/key identity. Preserve ledger and key when stopping or uninstalling.
+ 
+-- [ ] Write `test_owned_launchagent_and_recoverable_upgrade` with a fake launchctl and temporary state. Check correct plist paths and 15-second polling, idempotent install, failure before activation leaving prior service recoverable, stop and uninstall preserving data, wrong-key and wrong-project restore refusal, and same-cutoff export parity after a supported restore. Verify that an unsupported schema refuses the upgrade before data mutation.
++- [ ] Write `test_owned_launchagent_and_recoverable_upgrade` with a fake launchctl and temporary state. Check correct plist paths, RunAtLoad, KeepAlive and 15-second polling, idempotent install, failure before activation leaving prior service recoverable, stop and uninstall preserving data, wrong-key and wrong-project restore refusal, and same-cutoff export parity after a supported restore. Verify that an unsupported schema refuses the upgrade before data mutation.
+ - [ ] Run `test_install.py` to show failure, implement installation and backup operations, then pass leaf verification.
+ 
+ ### U10 — Project Mac activation and dogfood proof
+ 
+-**Files** `README.md`, `tests/test_activation_receipt.py`, `tests/fixtures/activation/receipt.json`.
++**Files** `README.md`, `src/aitm_usage/{qualification,cli}.py`, `tests/test_activation_receipt.py`, `tests/fixtures/activation/receipt.json`.
+ 
+-**Contract** `validate_activation_receipt(receipt: ActivationReceipt) -> QualificationResult`. The on-host runbook uses the installed CLI, both observed local provider routes and actual launchd. Record approved project scope, collector version, both provider routes and client versions, heartbeat, watermarks, coverage, sanitized sample observation keys and export digest. Store the approved sanitized live receipt with #83 on `planning`.
++**Contract** `validate_activation_receipt(receipt: ActivationReceipt) -> QualificationResult`. Expose the validator as `aitm-usage qualify --receipt <file> --json`. The on-host runbook uses that installed command, both observed local provider routes and actual launchd. Record approved project scope, collector version, both provider routes and client versions, heartbeat, watermarks, coverage, sanitized sample observation keys and export digest. Store the approved sanitized live receipt with #83 on `planning`.
+ 
+ - [ ] Write `test_activation_requires_live_both_providers_and_parity` for fixture-only, stale heartbeat, one missing provider, missing scopes, duplicate records after restart, and receipt privacy. Require correct proof from one real shared planning session with epic hydration and at least two child scopes, overlapping author and reviewer, and authorized development and housekeeping. Development ownership can be exercised in a controlled worktree with a clearly labeled proof basis.
+ - [ ] Run `test_activation_receipt.py` to show failure, implement validation and runbook, then pass leaf verification.
