@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 89
 title: "[Usage U05] Claude Code request usage adapter"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/89"
 parent: 83
 children: []
 blocking: [90]
 blocked-by: [87]
 created: "2026-11-09T14:42:19Z"
-updated: "2026-11-09T19:02:28+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u05"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U05", "path":
 
 # [Usage U05] Claude Code request usage adapter
 
-[GitHub issue](https://github.com/kburson/aitm/issues/89) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/89) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#87](../87/story.md)
 
@@ -45,3 +45,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U05", "path":
 [Accounting integration resume evidence](plan/accounting-integration-jit.md).
 
 [Accounting integration stage evidence](plan/accounting-integration-source-review.md).
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

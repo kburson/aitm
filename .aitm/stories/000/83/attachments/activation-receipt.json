@@ -1,0 +1,151 @@
+{
+  "basis": "real-controlled",
+  "collector": {
+    "activation_heartbeat": "2026-11-09T23:16:15.977887+00:00",
+    "heartbeat": "2026-11-09T23:16:15.977887+00:00",
+    "interpreter_version": "3.13.9",
+    "owned_unattended": true,
+    "poll_interval_seconds": 15,
+    "previous_heartbeat": "2026-11-09T23:11:11.153968+00:00",
+    "previous_started": "2026-11-09T23:06:07.054469+00:00",
+    "private_state": true,
+    "producer_started": "2026-11-09T23:15:55.247413+00:00",
+    "same_process": true,
+    "version": "0.1.0",
+    "wheel_sha256": "d154f57022ed9d3eb39c999a3fc5b39bc49bdc400c957d9daeb4e018780f5bc5"
+  },
+  "export": {
+    "catchup_claude": "9b2f483d8680372ddaf66a6bcd57c94625965d36f5133ccda69cece6e15c8a8f",
+    "catchup_codex": "81af4343e0cf4141960b79f7bb4737ee3ea5aa0a5fdf864e39c31c2c57d44664",
+    "cutoff": 409,
+    "replay_rows": 42,
+    "replay_sha256": "886d328bb062c0c735354c2da2eaf79cac1cf0af38987a254e8ec23b3034bc55",
+    "rows": 42,
+    "sha256": "886d328bb062c0c735354c2da2eaf79cac1cf0af38987a254e8ec23b3034bc55"
+  },
+  "observed_at": "2026-11-09T23:16:19.856065+00:00",
+  "orders": [
+    {
+      "after_sequence": 4,
+      "before_prefix_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sequence": 2,
+      "command": "ac366ffce350cc111e72175e01887d9e54b153719de47798b4498f9870ff6632",
+      "first_request": "00cad3a7581e1df5f05ca3f3d19f0707aac9faa828a34875918a628c628a4e31",
+      "order": "marker-first",
+      "prefix_sha256": "29df15593b83062ed5ebe1b676ad4a49ebcbbe5ff1a7b1ef1a35f97d33e98fb1",
+      "project_id": "69153f4b-1b19-4bc1-abcf-dfbc7172aedb",
+      "provider": "codex",
+      "publication_sha256": "a4d79493f7d7a4ad911e852623fa62b86194b4492b0c51eb77ab68b4df916d23"
+    },
+    {
+      "after_sequence": 4,
+      "before_prefix_sha256": "26f71bd2504d1162fcf5537f2f1acff0d30114a9a5f399d10810a77f2bb9cf62",
+      "before_sequence": 2,
+      "command": "6563c539e659bb4df608bf7756feba1bbb50964792b18598baaaa7c645e84654",
+      "first_request": "75e1bc264f6b49995e1576c1dd486ee6941e347724e20a10517d96e28ea12352",
+      "order": "boundary-first",
+      "prefix_sha256": "26f71bd2504d1162fcf5537f2f1acff0d30114a9a5f399d10810a77f2bb9cf62",
+      "project_id": "0478ec06-0a92-40c6-b1c2-dc4135af17fa",
+      "provider": "codex",
+      "publication_sha256": "e7ef59d363ade390ef02783ae0152293d297b4dcc294e3b6f679db1fb2fea1f4"
+    },
+    {
+      "after_sequence": 4,
+      "before_prefix_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "before_sequence": 2,
+      "command": "543c987f094fbe2ad119579bc9218c52265d7da884853456932a2d2b2db5c542",
+      "first_request": "2d041d41cdfd5093e7ddfc2b79029f023b08ba5b39c13d1b1d5394869c4cbb21",
+      "order": "marker-first",
+      "prefix_sha256": "23c8bdecf1a4029f2ec975a698fb81505d1a7b842d8e7bcdf0aa89de99dd3cca",
+      "project_id": "cef87d8e-a7c6-4604-b3aa-57eed5cd0626",
+      "provider": "claude",
+      "publication_sha256": "a4f77b19a884320f6e69d4384e94542a31a5a10adffcb350c85062c9be12acf5"
+    },
+    {
+      "after_sequence": 4,
+      "before_prefix_sha256": "3953da0aea7c1c8fcc31162814b8cc58f07f66c70c066448f33a705f9686da84",
+      "before_sequence": 2,
+      "command": "695b7d4597cd168454eb9c2077e2ec91d2d740a419d47301d33d30939870b8ec",
+      "first_request": "5dc92e474fc0bf898affd16b23eef5a55ac1e83e71a2e6a2d5abd52086c73205",
+      "order": "boundary-first",
+      "prefix_sha256": "3953da0aea7c1c8fcc31162814b8cc58f07f66c70c066448f33a705f9686da84",
+      "project_id": "de9effb9-893b-4d70-9830-6af66e3dacc5",
+      "provider": "claude",
+      "publication_sha256": "6cde6236411eb214107e3d75366ad7783dab717d1a225d769bbb1bd0996b36c8"
+    }
+  ],
+  "project_id": "87177d54-50f5-5d58-b1b8-62ab5c56cf53",
+  "providers": [
+    {
+      "client_version": "0.167.0-alpha.3.2",
+      "coverage": {
+        "actual_spend": "unknown",
+        "effort_switch": "source-gap",
+        "model_switch": "source-gap",
+        "nested": "source-gap",
+        "retry": "source-gap",
+        "task_quota": "unknown"
+      },
+      "format_version": 1,
+      "observed_through": "2026-11-09T23:16:02.229000+00:00",
+      "offset": 2696708,
+      "provider": "codex",
+      "retention_seconds": null,
+      "route": "codex-desktop",
+      "stream": "d27a83afda487fd55ec820656a53679daeca5fc22e08478e6de3b14d22902c62"
+    },
+    {
+      "client_version": "2.1.318",
+      "coverage": {
+        "actual_spend": "unknown",
+        "effort_switch": "observed",
+        "model_switch": "source-gap",
+        "nested": "source-gap",
+        "retry": "source-gap",
+        "task_quota": "unknown"
+      },
+      "format_version": 1,
+      "observed_through": "2026-11-09T23:15:26.369000+00:00",
+      "offset": 110834,
+      "provider": "claude",
+      "retention_seconds": null,
+      "route": "claude-code-native",
+      "stream": "0b7663df8bf584e030cdcce6be763b90e88dff07a61a8d09701ed705add1c1b5"
+    }
+  ],
+  "recovery": {
+    "backed_up_at": "2026-11-09T23:04:16.298896+00:00",
+    "backup_manifest_sha256": "489fee0a5f8442fb3b11afc7fc6ee21e4e458db6497444f6327c2a0b3892f9e6",
+    "before_sha256": "a52061e1e405c246c7e92576686b14dfc005dd2399a068087525baa2742eee70",
+    "cutoff": 2,
+    "project_id": "56bf8fd4-7681-4f8b-a524-1c86264cd0e8",
+    "rehearsal_version": "0.1.1",
+    "rehearsal_wheel_sha256": "54f114d8757a64c49176f4e789e5d9a83d532a8a2e153bcaff1c6a0c2b890542",
+    "restored_at": "2026-11-09T23:04:16.796217+00:00",
+    "restored_sha256": "a52061e1e405c246c7e92576686b14dfc005dd2399a068087525baa2742eee70",
+    "rolled_back_at": "2026-11-09T23:04:26.934589+00:00",
+    "rolled_back_sha256": "a52061e1e405c246c7e92576686b14dfc005dd2399a068087525baa2742eee70",
+    "rows": 3,
+    "started_at": "2026-11-09T23:04:15.399163+00:00",
+    "upgraded_at": "2026-11-09T23:04:23.445252+00:00",
+    "upgraded_sha256": "a52061e1e405c246c7e92576686b14dfc005dd2399a068087525baa2742eee70"
+  },
+  "registration_cutoff": "2026-11-09T23:06:05.589056+00:00",
+  "schema": "aitm-usage-activation/v1",
+  "source_commit": "f80f22645e2008c4cac9dc6e4003640bba976b5f",
+  "workflow": {
+    "child_a": "b8ad467738ea1035aa7576d9e116a28df3f5b3206771c1f403a4a1993ae38274",
+    "child_a_direct": 2,
+    "child_b": "b5a8e8642bda64591c1f06e5133005e6883f2dba79ec3c46b01898f49b74037f",
+    "child_b_direct": 7,
+    "development": "df1b973f865450d5633acbb3aff0fe3e9c5d9d4a44619aa09ffed8a6f383c919",
+    "direct": 23,
+    "epic": "58795031b461a9c0d23dc6d26ef9bf5111e3273a1e5981999003002f88b628f3",
+    "graduation_sequence": 397,
+    "housekeeping": "7418ee401a28e00032b59cf62b9644ca6cfdd00ad8db8ad00c714fe9d28fedad",
+    "inclusive": 33,
+    "return_to_epic": "de34c0e46cae3efb92c873ff80711e26d8ab1671b4faec598889f682cdb52cf0",
+    "review_end": "f5c7f45c36c5adf07e614f82e9611653e5cf28b1ba01772da493b0502ff0df23",
+    "review_start": "2eb04c9fa4b9312a30bb62a9d72563f8094deedf9bb72a8cf8ea0edead324246"
+  }
+}

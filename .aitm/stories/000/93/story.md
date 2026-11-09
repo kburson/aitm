@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 93
 title: "[Usage U12] Integrated restart, enrollment and privacy proof"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/93"
 parent: 83
 children: []
 blocking: [94]
 blocked-by: [92]
 created: "2026-11-09T14:42:21Z"
-updated: "2026-11-09T20:13:56+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u12"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U12", "path":
 
 # [Usage U12] Integrated restart, enrollment and privacy proof
 
-[GitHub issue](https://github.com/kburson/aitm/issues/93) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/93) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#92](../92/story.md)
 
@@ -42,3 +42,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U12", "path":
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 85
 title: "[Usage U02] Scope inbox and provider-session binding"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/85"
 parent: 83
 children: []
 blocking: [86, 87]
 blocked-by: [84]
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T16:12:30+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u02"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path":
 
 # [Usage U02] Scope inbox and provider-session binding
 
-[GitHub issue](https://github.com/kburson/aitm/issues/85) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/85) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#84](../84/story.md)
 
@@ -47,3 +47,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U02", "path":
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

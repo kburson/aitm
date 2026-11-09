@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 96
 title: "[Usage U11] Project Mac activation and dogfood proof"
 kind: "story"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/96"
 parent: 83
 children: []
 blocking: []
 blocked-by: [95]
 created: "2026-11-09T14:42:23Z"
-updated: "2026-11-09T23:02:12+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u11"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/desktop-marker-recovery-jit.md", "plan/desktop-marker-recovery-review.md", "plan/claude-startup-recovery-jit.md", "plan/claude-startup-recovery-review.md"], "attachments": ["attachments/desktop-marker-diagnostic.md", "attachments/claude-startup-diagnostic.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/desktop-marker-recovery-jit.md", "plan/desktop-marker-recovery-review.md", "plan/claude-startup-recovery-jit.md", "plan/claude-startup-recovery-review.md"], "attachments": ["attachments/desktop-marker-diagnostic.md", "attachments/claude-startup-diagnostic.md", "attachments/activation-summary.md"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "b5ed262c26a3ce66312ea851a5e1b8161dff72e5074df7b8180cc7785fe58d2e"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 
 # [Usage U11] Project Mac activation and dogfood proof
 
-[GitHub issue](https://github.com/kburson/aitm/issues/96) · [Parent #83](../83/story.md) · Development
+[GitHub issue](https://github.com/kburson/aitm/issues/96) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#95](../95/story.md)
 
@@ -51,3 +51,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 [Live Claude startup diagnostic](attachments/claude-startup-diagnostic.md). Return to Planning pending the reviewed scanner amendment and exact protected release. Production activation remains pending.
 
 [Claude startup recovery JIT](plan/claude-startup-recovery-jit.md) and [independent review](plan/claude-startup-recovery-review.md). Resume live qualification on the exact protected PR #99 release.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.
+
+[Project Mac activation summary](attachments/activation-summary.md).

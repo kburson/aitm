@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 84
 title: "[Usage U01] Package and private durable ledger"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/84"
 parent: 83
 children: []
 blocking: [85]
 blocked-by: []
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T15:35:15+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u01"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 # [Usage U01] Package and private durable ledger
 
-[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** None.
 
@@ -45,3 +45,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 [Plan](plan/recovery-plan.md) · [JIT](plan/recovery-jit.md) · [Independent acceptance](plan/recovery-pickup-review.md). Resume in the preserved source worktree.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

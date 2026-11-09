@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 86
 title: "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
 blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T19:11:37+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u13"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 # [Usage U13] Draft aliases, ancestry and direct/inclusive rollups
 
-[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -55,3 +55,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 [Accounting integration resume evidence](plan/accounting-integration-jit.md).
 
 [Accounting integration stage evidence](plan/accounting-integration-source-review.md).
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

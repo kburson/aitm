@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 87
 title: "[Usage U03] Eligible source cursor and activation boundary"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/87"
 parent: 83
 children: []
 blocking: [88, 89]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T23:00:16+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u03"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U03", "path":
 
 # [Usage U03] Eligible source cursor and activation boundary
 
-[GitHub issue](https://github.com/kburson/aitm/issues/87) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/87) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -53,3 +53,5 @@ The [native Claude metadata plan](plan/claude-sideband-repair.md) passed scoped 
 [Claude startup scanner JIT](plan/claude-startup-jit.md) · [Independent pickup review](plan/claude-startup-pickup-review.md). Earlier source acceptance remains retained.
 
 [Claude startup exact independent source review](plan/claude-startup-source-review.md). Earlier source reviews remain retained.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

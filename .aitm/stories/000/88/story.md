@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 88
 title: "[Usage U04] Codex cumulative usage adapter"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/88"
 parent: 83
 children: []
 blocking: [90]
 blocked-by: [87]
 created: "2026-11-09T14:42:18Z"
-updated: "2026-11-09T22:27:05+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u04"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U04", "path":
 
 # [Usage U04] Codex cumulative usage adapter
 
-[GitHub issue](https://github.com/kburson/aitm/issues/88) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/88) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#87](../87/story.md)
 
@@ -49,3 +49,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U04", "path":
 [Desktop carrier supplemental JIT](plan/desktop-marker-jit.md) · [Independent pickup review](plan/desktop-marker-pickup-review.md). Prior exact source acceptance remains retained.
 
 [Desktop carrier exact independent acceptance](plan/desktop-marker-source-review.md). The original and accounting source reviews remain retained.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

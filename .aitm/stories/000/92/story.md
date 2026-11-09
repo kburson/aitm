@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 92
 title: "[Usage U08] Collector service, live commands and status"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/92"
 parent: 83
 children: []
 blocking: [93]
 blocked-by: [91]
 created: "2026-11-09T14:42:21Z"
-updated: "2026-11-09T20:58:06+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u08"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path":
 
 # [Usage U08] Collector service, live commands and status
 
-[GitHub issue](https://github.com/kburson/aitm/issues/92) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/92) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#91](../91/story.md)
 
@@ -49,3 +49,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U08", "path":
 [Launch health supplemental JIT](plan/launch-health-jit.md) · [Independent pickup review](plan/launch-health-pickup-review.md). The original collector source receipt is preserved.
 
 [Launch health supplemental source acceptance](plan/launch-health-source-review.md). Original collector review and real process proof retained.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.

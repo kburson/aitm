@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 94
 title: "[Usage U09] LaunchAgent install, upgrade and restore"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/94"
 parent: 83
 children: []
 blocking: [95]
 blocked-by: [93]
 created: "2026-11-09T14:42:22Z"
-updated: "2026-11-09T21:18:05+00:00"
+updated: "2026-11-09T23:17:20+00:00"
 last-branch: "codex/aitm-usage-u09-launch-health"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U09", "path":
 
 # [Usage U09] LaunchAgent install, upgrade and restore
 
-[GitHub issue](https://github.com/kburson/aitm/issues/94) · [Parent #83](../83/story.md) · Review
+[GitHub issue](https://github.com/kburson/aitm/issues/94) · [Parent #83](../83/story.md) · Done
 
 **Required predecessors** [#93](../93/story.md)
 
@@ -45,3 +45,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U09", "path":
 [Reviewed launch health recovery pickup](plan/launch-health-recovery-jit.md) · [Independent acceptance](plan/launch-health-recovery-pickup-review.md). The rejected original candidate remains preserved.
 
 [Source verification and independent review](plan/source-review.md). Staged for the reviewed #83 integration. Delivery evidence is recorded when the package lands.
+
+Protected source and project Mac activation verified. [Qualified activation receipt](../83/attachments/activation-receipt.json) SHA-256 `9ec31a4f320a6a36eed2bde0970697444db5bdf6cff4eefbef80c75a7b4d5062`. The production service and ledger remain active.
