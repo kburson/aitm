@@ -1,0 +1,38 @@
+diff --git a/.aitm/stories/000/1/plan/master-plan.md b/.aitm/stories/000/1/plan/master-plan.md
+index 297fbac..bd48c8e 100644
+--- a/.aitm/stories/000/1/plan/master-plan.md
++++ b/.aitm/stories/000/1/plan/master-plan.md
+@@ -4,7 +4,7 @@ story: 1
+ role: plan
+ title: aitm master plan
+ created: 2026-11-08T19:55:00Z
+-updated: 2026-11-09T06:32:20Z
++updated: 2026-11-09T06:34:30Z
+ last-branch: planning
+ status: review candidate (acceptance is in review records)
+ design: ../design/architecture.md
+@@ -25,7 +25,7 @@ core-design: ../../2/design/core-design.md
+ 
+ - Planning is `.aitm/` data only, never merged into trunk. Code, workflows, policy and tutorials live on trunk through PRs. Store history is never rewritten automatically.
+ - Only implementation is limited to four engaged agent-hours per leaf attempt, from Develop entry through effective passing source review (deliverable review for spikes). Epics use aggregate child evidence with no implementation clock. Planning is unbounded; tool elapsed time is not agent engagement. Parallel agents add engagement but can reduce calendar time.
+-- A section stays a draft until its own brainstorm; section design belongs in Backlog and its accepted implementation plan decomposes into leaves of at most four hours. A dependent brainstorm may begin after its prerequisite reaches Develop, without declaring the prerequisite delivered.
++- Each later section epic is a child of #1. A section stays a draft until its own brainstorm; section design belongs in Backlog and its accepted implementation plan decomposes into leaves of at most four hours. A dependent brainstorm may begin after its prerequisite reaches Develop, without declaring the prerequisite delivered.
+ - Agent sign-off follows verified delivery; there is no routine human sign-off. Passing review, publication, package release, runtime adoption and epic closure are separate facts.
+ - Core runs advisory on aitm. Store integrity always applies. Consumers pin released packages, never live trunk; hooks are optional backstops.
+ - This assignment authorizes **SAR alone for this master plan**, and **SAR → manual SPR → native Claude XPR for #2's implementation plan**. It does not decide the global review-depth matrix or authorize implementation, trunk merges, epic closure, host configuration changes or tooling repairs.
+@@ -72,13 +72,13 @@ aitm already uses GitHub issue numbers. M1's local provider cannot replace that
+ 
+ Cutover is **not** simply `git worktree remove`. A stale snapshot, dirty checkout, live author reservation, incompatible required fact, ambiguous adoption or unavailable proof needed for safe apply leaves adoption pending with retained evidence. Optional unsupported records may remain opaque and incomplete historical reviews remain unaccepted evidence when safe to preserve; neither alone blocks cutover or confers acceptance. A fresh clone must verify the bounded legacy segment, declaration and cutover receipt. Do not remove unrelated or blocked review worktrees; they use distinct review refs. If apply has not committed, retain the bootstrap route. If migration has committed, recover forward with the same adoption identity; do not reset planning or resume arbitrary manual writes over the migrated store. An operator may keep the checkout absent while resolving a pending publication.
+ 
+-The configured planning ref must not be checked out once plumbing writes begin. From M1 through M4, reviews still use temporary review refs/worktrees, but **FUR + collateral import uses `aitm review import` with path reservations, base/content checks and CAS**, never a recreated planning checkout. Prove this before retiring bootstrap. M4 changes review production and timing integration, not the safety requirement or the authoritative storage route.
++The configured planning ref must not be checked out once plumbing writes begin. Until the C6 freeze, including after C5 release, the legacy aitm store continues the authorized bootstrap publication of complete FUR and collateral through its planning checkout. C5 proves the core route in disposable migrated fixtures. After C6 verifies cutover publication and adopted readiness, production reviews still use temporary review refs/worktrees, but **FUR + collateral import uses `aitm review import` with path reservations, base/content checks and CAS**, never a recreated planning checkout. Prove this before retiring bootstrap. M4 changes review production and timing integration, not the safety requirement or the authoritative storage route.
+ 
+ ## Review and timing obligations
+ 
+ Every completed level publishes the final FUR, response pairs including final acknowledgement, reconstructable patches, manifest, actual model/effort/session provenance, finding dispositions, changed calls and open choices. Native originals and qualified timing anchors remain available; private credentials/handles are excluded. A five-round cap with unresolved required findings is not acceptance.
+ 
+-M1 owns review open, live provisional review turn, review complete and final import/validation, as well as the portable v0 adapter and migration. Between M1 and M4, the coordinator opens a level through core before review, ingests each submitted manual/native response and available public timing anchors, completes the bundle, and uses the core writer for final FUR import. Missing native claim/start evidence stays Unknown until a public source supports it. M4 owns the no-precommit record-only producer, automatic true per-turn starts where supported and automatic handoff to that existing sink. Planning time is recorded by story/state/level/role/model but never feeds trips. Registration time reused across native rounds is not per-turn engagement; claim/prior-submit bounds, unknown spans, setup and publication exclusions remain explicit. Backfill names and hashes its sources, deduplicates turns and does not manufacture observations. Live and backfilled import of the same record must normalize identically.
++M1 owns review open, live provisional review turn, review complete and final import/validation, as well as the portable v0 adapter and migration. On a ready adopted store after C6, until M4 automation, the coordinator opens a level through core before review, ingests each submitted manual/native response and available public timing anchors, completes the bundle, and uses the core writer for final FUR import. Missing native claim/start evidence stays Unknown until a public source supports it. M4 owns the no-precommit record-only producer, automatic true per-turn starts where supported and automatic handoff to that existing sink. Planning time is recorded by story/state/level/role/model but never feeds trips. Registration time reused across native rounds is not per-turn engagement; claim/prior-submit bounds, unknown spans, setup and publication exclusions remain explicit. Backfill names and hashes its sources, deduplicates turns and does not manufacture observations. Live and backfilled import of the same record must normalize identically.
+ 
+ The core design's published SAR/SPR/XPR and this assignment's plan levels are historical digest-bound decisions. If migration policy requires several levels on one current digest, it requests only the missing current-content coverage or a legitimate scoped exception; it neither upgrades historical approvals nor silently rewrites them. The assignment's chosen depths remain scoped evidence, not the global default.
+ 
