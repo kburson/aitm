@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import BinaryIO
+from uuid import UUID
 
 from ..ledger import Ledger, LedgerError
 from ..scopes import BoundaryEvidence, session_reference
@@ -38,6 +39,21 @@ _SUPPORTED_CLIENTS = {
     Provider.CLAUDE: ClientVersion.CLAUDE_2_1_318,
 }
 _CLAUDE_SESSION_ROWS = {"user", "assistant", "system", "result", "rate_limit_event"}
+_CLAUDE_BOOKKEEPING = {
+    "api-request-blob": ("hash", str),
+    "atis-latch": ("atis", str),
+    "last-prompt": ("lastPrompt", str),
+    "tools-used": ("tools", list),
+    "mode": ("mode", str),
+}
+_CLAUDE_COST_COUNTS = (
+    "inputTokens",
+    "outputTokens",
+    "cacheReadInputTokens",
+    "cacheCreationInputTokens",
+    "cacheCreationEphemeral5mInputTokens",
+    "cacheCreationEphemeral1hInputTokens",
+)
 _MAX_ROW_BYTES = 16 * 1024 * 1024
 _READ_CHUNK = 64 * 1024
 type _Row = dict[str, object]
@@ -93,15 +109,38 @@ class SourceFrame:
     _prefix: str = field(repr=False, compare=False, default="")
 
 
+class SidebandKind(StrEnum):
+    COST_STATE = "cost-state"
+    SESSION_OWNER = "session-owner"
+
+
+_CLAUDE_UNTIMED = _CLAUDE_BOOKKEEPING.keys() | {kind.value for kind in SidebandKind}
+
+
+@dataclass(frozen=True, slots=True)
+class SidebandFrame:
+    """Untimed Claude metadata with the nearest preceding timed context, if any."""
+
+    kind: SidebandKind
+    provider: Provider
+    session_ref: SourceRef
+    stream_ref: SourceRef
+    ordinal: int
+    segment_ref: SourceRef | None
+    timed_ordinal: int | None
+    content: _Row = field(repr=False, compare=False)
+
+
 @dataclass(frozen=True, slots=True)
 class FrameBatch:
     """Look-ahead and an independent commit frontier from one verified snapshot.
 
-    Adapters inspect frames for boundaries. Only commit_frames may advance
-    provider state or yield usage. Reapply current accepted enrollments and rescan
-    before committing, including after a checkout becomes registered. Publish
-    cursor, adapter state and observations together through Ledger.apply with
-    the exact input checkpoint as its prior.
+    Adapters inspect frames for boundaries and use commit_frames for timed
+    usage. Commit-sideband records have an eligible timed predecessor within
+    the same frontier. They may only reconcile already eligible timed prefixes.
+    Reapply current accepted enrollments and rescan before committing, including
+    after a checkout becomes registered. Publish cursor, adapter state and
+    observations together through Ledger.apply with the exact prior checkpoint.
     """
 
     frames: tuple[SourceFrame, ...] = ()
@@ -110,6 +149,8 @@ class FrameBatch:
     provider_checkpoint: ProviderCheckpoint | None = None
     diagnostics: tuple[Diagnostic, ...] = ()
     observed_through: datetime | None = None
+    sideband: tuple[SidebandFrame, ...] = ()
+    commit_sideband: tuple[SidebandFrame, ...] = ()
 
     def _matching_frame(self, boundary: SourceBoundary) -> SourceFrame | None:
         matches = [
@@ -631,7 +672,12 @@ def _row_context(
         updates = kind in ("session_meta", "turn_context")
     else:
         metadata = row
-        if kind in _CLAUDE_SESSION_ROWS or "sessionId" in row or "session_id" in row:
+        if (
+            kind in _CLAUDE_SESSION_ROWS
+            or kind in _CLAUDE_UNTIMED
+            or "sessionId" in row
+            or "session_id" in row
+        ):
             session = _claude_session(row, source._ledger)
             if session is None:
                 return DiagnosticCode.IDENTITY_CONFLICT, False, None
@@ -652,11 +698,51 @@ def _row_context(
     return None, updates, _checkout_path(metadata.get("cwd")) if updates else None
 
 
+def _claude_sideband_content(row: _Row, ledger: Ledger) -> _Row | None:
+    if "timestamp" in row:
+        raise ValueError("Native bookkeeping must be untimed")
+    kind = row["type"]
+    if kind in _CLAUDE_BOOKKEEPING:
+        key, expected = _CLAUDE_BOOKKEEPING[kind]
+        if type(row.get(key)) is not expected:
+            raise ValueError("Malformed native bookkeeping")
+        return None
+    if kind == SidebandKind.SESSION_OWNER:
+        account = row.get("accountUuid")
+        if type(account) is not str:
+            raise ValueError("Missing native account identity")
+        return {
+            "account_ref": ledger.pseudonymize("claude-account", str(UUID(account)))
+        }
+
+    model_usage = row.get("modelUsage")
+    if not isinstance(model_usage, dict):
+        raise ValueError("Malformed native cost state")
+    retained = {}
+    for model, raw in model_usage.items():
+        if not model or not isinstance(raw, dict):
+            raise ValueError("Malformed native model usage")
+        counts = {key: raw[key] for key in _CLAUDE_COST_COUNTS if key in raw}
+        if not counts or any(
+            type(value) is not int or not 0 <= value < 2**63
+            for value in counts.values()
+        ):
+            raise ValueError("Malformed native token quantities")
+        retained[model] = counts
+    return {"modelUsage": retained}
+
+
+@dataclass(frozen=True, slots=True)
+class _SidebandRecord:
+    frame: SidebandFrame
+    context: SourceFrame | None
+
+
 @dataclass(frozen=True, slots=True)
 class _CompleteRow:
     start: int
     prefix_before: str
-    frame: SourceFrame | None
+    frame: SourceFrame | _SidebandRecord | None
     diagnostic: Diagnostic | None
 
 
@@ -830,6 +916,7 @@ def _read(
     stream.seek(0)
     records = []
     segment = None
+    last_timed = None
     checkouts: dict[Path, tuple[SourceRef, _FileID]] = {}
     selections = {entry.scope.boundary.ordinal: entry for entry in source._enrollments}
     admitted: dict[SourceRef, int] = {}
@@ -851,12 +938,47 @@ def _read(
             if row is not None
             else (DiagnosticCode.MALFORMED_USAGE, False, None)
         )
+        if (
+            row is not None
+            and origin.provider is Provider.CLAUDE
+            and row["type"] in _CLAUDE_UNTIMED
+        ):
+            moment = None
+            if issue is None:
+                if selection is not None:
+                    raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
+                try:
+                    content = _claude_sideband_content(row, source._ledger)
+                except ValueError:
+                    issue = DiagnosticCode.MALFORMED_USAGE
+                else:
+                    if content is not None and start >= prior:
+                        sideband = SidebandFrame(
+                            SidebandKind(row["type"]),
+                            origin.provider,
+                            origin.session_ref,
+                            source.stream_ref,
+                            ordinal,
+                            last_timed.segment_ref if last_timed is not None else None,
+                            last_timed.ordinal if last_timed is not None else None,
+                            content,
+                        )
+                        records.append(
+                            _CompleteRow(
+                                start,
+                                before,
+                                _SidebandRecord(sideband, last_timed),
+                                None,
+                            )
+                        )
+                    continue
         if issue is None and moment is None:
             issue = DiagnosticCode.MALFORMED_USAGE
         if issue is not None:
             if selection is not None:
                 raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
             segment = None
+            last_timed = None
             if start >= prior:
                 records.append(
                     _CompleteRow(
@@ -896,29 +1018,24 @@ def _read(
                     source.stream_ref,
                     ordinal,
                 )
-        if start >= prior:
+        if start >= prior or origin.provider is Provider.CLAUDE:
             assert moment is not None and row is not None
-            records.append(
-                _CompleteRow(
-                    start,
-                    before,
-                    SourceFrame(
-                        origin.provider,
-                        origin.session_ref,
-                        source.stream_ref,
-                        ordinal,
-                        moment,
-                        origin.client,
-                        origin.format,
-                        segment.ref,
-                        segment.anchor,
-                        moment < cutoff,
-                        row,
-                        _prefix=prefix,
-                    ),
-                    proof_gap,
-                )
+            last_timed = SourceFrame(
+                origin.provider,
+                origin.session_ref,
+                source.stream_ref,
+                ordinal,
+                moment,
+                origin.client,
+                origin.format,
+                segment.ref,
+                segment.anchor,
+                moment < cutoff,
+                row,
+                _prefix=prefix,
             )
+            if start >= prior:
+                records.append(_CompleteRow(start, before, last_timed, proof_gap))
     if not prior_verified:
         _verify_prior(source, origin, checkpoint, end, prefix)
     if any(
@@ -967,6 +1084,8 @@ def _project(
 ) -> FrameBatch:
     frames = []
     commit_frames = []
+    sideband = []
+    commit_sideband = []
     diagnostics = []
     held = False
     for entry in records:
@@ -976,6 +1095,16 @@ def _project(
         ):
             diagnostics.append(entry.diagnostic)
         if frame is None:
+            continue
+        if isinstance(frame, _SidebandRecord):
+            sideband.append(frame.frame)
+            if (
+                not held
+                and frame.context is not None
+                and _eligibility(frame.context, source, admitted, pending)
+                is Eligibility.ELIGIBLE
+            ):
+                commit_sideband.append(frame.frame)
             continue
         eligibility = _eligibility(frame, source, admitted, pending)
         if not held and eligibility is Eligibility.UNKNOWN:
@@ -1010,12 +1139,16 @@ def _project(
         format_version=origin.format,
     )
     return FrameBatch(
-        tuple(frames),
-        tuple(commit_frames),
-        cursor,
-        provider,
-        tuple(diagnostics),
-        max((frame.observed_at for frame in commit_frames), default=None),
+        frames=tuple(frames),
+        commit_frames=tuple(commit_frames),
+        cursor=cursor,
+        provider_checkpoint=provider,
+        diagnostics=tuple(diagnostics),
+        observed_through=max(
+            (frame.observed_at for frame in commit_frames), default=None
+        ),
+        sideband=tuple(sideband),
+        commit_sideband=tuple(commit_sideband),
     )
 
 

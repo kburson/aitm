@@ -1067,3 +1067,271 @@ def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
     assert final.command_receipt(command) == receipt
     assert accepted.anchor_ref is None
     assert accepted in [revision.record for revision in final.as_of().current]
+
+
+def _claude_line(kind, *, session=SESSION, **fields):
+    return (
+        json.dumps(
+            {"type": kind, "sessionId": str(session), **fields}, ensure_ascii=True
+        ).encode()
+        + b"\n"
+    )
+
+
+def _claude_timed(kind, cwd, *, time=AFTER, request=None):
+    fields = {"cwd": str(cwd), "version": "2.1.318", "timestamp": time.isoformat()}
+    if request is not None:
+        fields.update(
+            requestId=request,
+            message={"id": f"message-{request}", "usage": {"output_tokens": 4}},
+        )
+    return _claude_line(kind, **fields)
+
+
+def _claude_cost(**extra):
+    model_usage = {
+        "inputTokens": 3,
+        "outputTokens": 4,
+        "cacheReadInputTokens": 5,
+        "cacheCreationInputTokens": 6,
+        "cacheCreationEphemeral5mInputTokens": 2,
+        "cacheCreationEphemeral1hInputTokens": 4,
+        "thinkingTokens": 1,
+        "webSearchRequests": 9,
+        "costUSD": 123.45,
+        "private": "model-private",
+    }
+    fields = {
+        "startTime": 9_999_999_999_999,
+        "totalCostUSD": 123.45,
+        "modelUsage": {"claude-opus-5-5": model_usage},
+        "private": "cost-private",
+    }
+    return _claude_line("cost-state", **(fields | extra))
+
+
+def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "native.jsonl"
+    owner_id = UUID(int=12345)
+    owner = _claude_line(
+        "session-owner",
+        accountUuid=str(owner_id),
+        organizationUuid="organization-private",
+        arbitrary="owner-private",
+    )
+    later = AFTER + timedelta(seconds=1)
+    path.write_bytes(
+        owner
+        + _claude_cost()
+        + _claude_timed("user", checkout)
+        + _claude_timed("assistant", checkout, request="first")
+        + _claude_line(
+            "api-request-blob",
+            hash="blob-private",
+            message={"value": "request-private"},
+        )
+        + _claude_line("atis-latch", atis="latch-private")
+        + _claude_line(
+            "last-prompt", lastPrompt="prompt-private", leafUuid="leaf-private"
+        )
+        + _claude_line("tools-used", tools=["tool-private"])
+        + _claude_line("mode", mode="mode-private", cwd="/unrelated-private")
+        + owner
+        + _claude_timed("assistant", checkout, time=later, request="second")
+        + _claude_cost()
+    )
+
+    (candidate,) = scanner.discover(registration)
+    batch = scanner.scan(candidate, None, CUTOFF)
+    assert _codes(batch) == set()
+    assert [frame.ordinal for frame in batch.frames] == [2, 3, 10]
+    assert batch.commit_frames == batch.frames
+    assert [frame.row["requestId"] for frame in batch.frames[1:]] == ["first", "second"]
+    assert len({frame.segment_ref for frame in batch.frames}) == 1
+    assert [frame.eligibility for frame in batch.frames] == [Eligibility.ELIGIBLE] * 3
+    assert batch.observed_through == later
+
+    assert [frame.ordinal for frame in batch.sideband] == [0, 1, 9, 11]
+    assert [frame.ordinal for frame in batch.commit_sideband] == [9, 11]
+    assert [frame.timed_ordinal for frame in batch.sideband] == [None, None, 3, 10]
+    assert [frame.segment_ref for frame in batch.sideband] == [
+        None,
+        None,
+        batch.frames[0].segment_ref,
+        batch.frames[0].segment_ref,
+    ]
+    owner_record, terminal = batch.commit_sideband
+    assert owner_record.kind is scanner.SidebandKind.SESSION_OWNER
+    assert owner_record.content == {
+        "account_ref": store.pseudonymize("claude-account", str(owner_id)),
+    }
+    assert terminal.kind is scanner.SidebandKind.COST_STATE
+    assert terminal.content == {
+        "modelUsage": {
+            "claude-opus-5-5": {
+                "inputTokens": 3,
+                "outputTokens": 4,
+                "cacheReadInputTokens": 5,
+                "cacheCreationInputTokens": 6,
+                "cacheCreationEphemeral5mInputTokens": 2,
+                "cacheCreationEphemeral1hInputTokens": 4,
+            },
+        },
+    }
+    assert terminal.provider is Provider.CLAUDE
+    assert terminal.session_ref == candidate.session_ref
+    assert terminal.stream_ref == candidate.stream_ref
+    assert not hasattr(terminal, "observed_at")
+    assert not hasattr(terminal, "eligibility")
+    assert not hasattr(terminal, "pre_cutoff")
+    _, invented = _marker_and_boundary(store, batch.frames[-1])
+    assert batch.scope_evidence(replace(invented, ordinal=terminal.ordinal)) is None
+    assert (
+        batch.coverage(
+            (
+                scanner.FrameClassification(
+                    terminal.ordinal, scanner.CoverageKind.UNFAMILIAR_USAGE
+                ),
+            )
+        )
+        == ()
+    )
+    assert batch.cursor.offset == path.stat().st_size
+    assert "-private" not in repr(batch)
+    assert str(owner_id) not in repr(batch)
+
+
+def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    review = root.parent / "review"
+    unrelated = root.parent / "unrelated"
+    review.mkdir()
+    unrelated.mkdir()
+    path = root / "native.jsonl"
+    before = _claude_timed("user", checkout, time=BEFORE) + _claude_cost()
+    complete = (
+        before
+        + _claude_timed("user", review)
+        + _claude_timed("assistant", review, request="unrelated-before-enrollment")
+        + _claude_cost()
+        + _claude_timed("assistant", review, request="first-eligible")
+    )
+    torn_terminal = _claude_cost()
+    path.write_bytes(complete + torn_terminal[:-1])
+    (candidate,) = scanner.discover(registration)
+    lookahead = scanner.scan(candidate, None, CUTOFF)
+    assert lookahead.cursor.offset == len(before)
+    assert [entry.ordinal for entry in lookahead.sideband] == [1, 4]
+    assert lookahead.commit_sideband == ()
+    assert lookahead.observed_through == BEFORE
+
+    marker, boundary = _marker_and_boundary(store, lookahead.frames[-1])
+    proof = lookahead.scope_evidence(boundary)
+    assert proof.anchor_ref is None
+    held = _checkpoint(lookahead)
+    store.apply(LedgerBatch(checkpoint=held))
+    enqueue_command(store.root, InboxCommand(marker.marker_id, PROJECT, marker))
+    with store.writer() as writer:
+        (receipt,) = drain_inbox(writer, (proof,)).receipts
+    assert receipt.disposition is MarkerDisposition.ACCEPTED
+
+    reopened = Ledger.open(store.root, PROJECT)
+    assert reopened.as_of().checkpoints == (held,)
+    (accepted,) = (
+        revision.record
+        for revision in reopened.as_of().current
+        if isinstance(revision.record, ScopeEnrollment)
+    )
+    (rediscovered,) = scanner.discover(registration)
+    fresh = scanner.scan(rediscovered, held, CUTOFF)
+    _, fresh_boundary = _marker_and_boundary(reopened, fresh.frames[-1])
+    selected = rediscovered.with_enrollment(
+        accepted, batch=fresh, evidence=fresh.scope_evidence(fresh_boundary)
+    )
+    admitted = scanner.scan(selected, held, CUTOFF)
+    assert admitted.cursor.offset == len(complete)
+    assert [frame.ordinal for frame in admitted.commit_frames] == [2, 3, 5]
+    assert [frame.eligibility for frame in admitted.commit_frames] == [
+        Eligibility.EXCLUDED,
+        Eligibility.EXCLUDED,
+        Eligibility.ELIGIBLE,
+    ]
+    assert admitted.commit_frames[-1].row["requestId"] == "first-eligible"
+    assert [entry.ordinal for entry in admitted.sideband] == [4]
+    assert admitted.commit_sideband == ()
+    committed = _checkpoint(admitted)
+    reopened.apply(LedgerBatch(checkpoint=committed, prior_checkpoint=held))
+
+    with path.open("ab") as output:
+        output.write(
+            torn_terminal[-1:] + _claude_timed("user", unrelated) + _claude_cost()
+        )
+    reopened = Ledger.open(store.root, PROJECT)
+    (durable,) = reopened.as_of().checkpoints
+    (rediscovered,) = scanner.discover(registration)
+    selected = rediscovered.with_enrollment(accepted)
+    after_restart = scanner.scan(selected, durable, CUTOFF)
+    assert [entry.ordinal for entry in after_restart.sideband] == [6, 8]
+    assert [entry.ordinal for entry in after_restart.commit_sideband] == [6]
+    assert after_restart.commit_sideband[0].timed_ordinal == 5
+    assert after_restart.commit_frames == ()
+    assert after_restart.observed_through is None
+    assert after_restart.cursor.offset == len(complete + torn_terminal)
+    assert _codes(after_restart) == set()
+
+    excluded = scanner.scan(
+        selected.with_exclusion(after_restart.frames[0]), durable, CUTOFF
+    )
+    assert [entry.ordinal for entry in excluded.commit_sideband] == [6]
+    assert excluded.cursor.offset == path.stat().st_size
+
+
+@pytest.mark.parametrize(
+    ("bad_row", "gap"),
+    [
+        (
+            _claude_line("unknown-sideband", arbitrary="private"),
+            DiagnosticCode.MALFORMED_USAGE,
+        ),
+        (_claude_line("tools-used", tools="private"), DiagnosticCode.MALFORMED_USAGE),
+        (
+            _claude_cost(modelUsage={"claude-opus-5-5": {"outputTokens": -1}}),
+            DiagnosticCode.MALFORMED_USAGE,
+        ),
+        (_claude_cost(timestamp=AFTER.isoformat()), DiagnosticCode.MALFORMED_USAGE),
+        (b'{"type":"mode","mode":"private"}\n', DiagnosticCode.IDENTITY_CONFLICT),
+        (
+            _claude_line("mode", session=UUID(int=444), mode="private"),
+            DiagnosticCode.IDENTITY_CONFLICT,
+        ),
+    ],
+)
+def test_native_claude_untimed_drift_or_identity_is_a_gap(project, bad_row, gap):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "native.jsonl"
+    path.write_bytes(
+        _claude_timed("user", checkout)
+        + bad_row
+        + _claude_cost()
+        + _claude_timed("assistant", checkout, request="after-gap")
+    )
+    (candidate,) = scanner.discover(registration)
+    batch = scanner.scan(candidate, None, CUTOFF)
+    assert _codes(batch) == {gap}
+    assert batch.commit_sideband == ()
+    assert all(frame.ordinal != 1 for frame in batch.frames)
+    if batch.cursor is not None:
+        assert [entry.ordinal for entry in batch.sideband] == [2]
+        assert batch.sideband[0].segment_ref is None
+        assert batch.frames[0].segment_ref != batch.frames[-1].segment_ref
+    assert "private" not in repr(batch)
