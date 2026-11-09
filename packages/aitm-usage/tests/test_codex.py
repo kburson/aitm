@@ -469,12 +469,23 @@ def tool_output(command_id=COMMAND, *, stdout=None):
     )
 
 
-@pytest.mark.parametrize("native_output", ["message", "reasoning", "next-tool"])
+@pytest.mark.parametrize(
+    "native_output,aligned",
+    [
+        ("message", True),
+        ("reasoning", True),
+        ("next-tool", True),
+        (None, True),
+        ("message", False),
+        (None, False),
+    ],
+)
 def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     project,
     monkeypatch,
     capsys,
     native_output,
+    aligned,
 ):
     codex = adapter()
     ledger, registration, path, _, outside = project
@@ -509,7 +520,9 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
             "name": "exec_command",
             "arguments": "{}",
         },
-    }[native_output]
+    }.get(native_output)
+    display_total = usage(14, 4) if aligned else usage(22, 6)
+    later_total = usage(22, 6) if aligned else usage(30, 8)
     rows = [
         startup(outside),
         *begin(outside),
@@ -517,10 +530,10 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
         response("before-marker-secret", first, first),
         tool_output(stdout=stdout),
         counter(first, first),
-        row("response_item", output),
+        *([] if output is None else [row("response_item", output)]),
         response("after-marker-secret", usage(14, 4), last),
-        counter(usage(14, 4), last),
-        counter(usage(22, 6), last),
+        counter(display_total, last),
+        counter(later_total, last),
         end(),
     ]
     write(path, rows)
@@ -530,7 +543,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     (boundary,) = tuple(
         entry for entry in result.boundaries if entry.receipt_ref == scope.receipt_ref
     )
-    assert boundary.ordinal == 8
+    assert boundary.ordinal == (7 if output is None else 8)
     assert boundary.boundary_ref == scope.boundary_ref
     assert result.revisions == ()
     assert lookahead.commit_frames == ()
@@ -547,9 +560,13 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
         enrollment, batch=lookahead, evidence=lookahead.scope_evidence(boundary)
     )
     batch, result = read(codex, selected, state)
-    (request, aggregate) = observations(result)
-    assert request.boundary == boundary
-    assert request.tokens.total_tokens == 8
+    if aligned:
+        (request, aggregate) = observations(result)
+        assert request.boundary == boundary
+        assert request.tokens.total_tokens == 8
+    else:
+        (aggregate,) = observations(result)
+        assert (boundary.ordinal + 1, DiagnosticCode.COVERAGE_GAP) in codes(result)
     assert aggregate.availability is Availability.PARTIAL
     assert aggregate.tokens.total_tokens == 10
     assert aggregate.boundary.stream_ref != boundary.stream_ref
@@ -558,8 +575,8 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     assert aggregate.boundary not in result.boundaries
     commit(ledger, batch, result)
     usage_rollup = rollup(scope.item, ledger.as_of())
-    assert usage_rollup.direct.tokens["total_tokens"] == 8
-    assert usage_rollup.inclusive.tokens["total_tokens"] == 8
+    assert usage_rollup.direct.tokens.get("total_tokens", 0) == (8 if aligned else 0)
+    assert usage_rollup.inclusive.tokens.get("total_tokens", 0) == (8 if aligned else 0)
     assert usage_rollup.unattributed.tokens["total_tokens"] == 10
 
 
@@ -1392,7 +1409,7 @@ def test_compaction_reconciles_separate_counter_windows(project, split):
     if split == "same-batch":
         expected.insert(0, (10, Availability.COMPLETE))
     elif split == "restart":
-        expected[0] = (7, Availability.PARTIAL)
+        expected.pop(0)
     assert projected == expected
     assert "compaction-secret" not in repr(result)
 
@@ -1559,3 +1576,83 @@ def test_inconsistent_positive_counter_cannot_separate_excluded_activity(project
     )
     _, result = read(codex, candidate, codex.CodexState(ledger))
     assert [record.tokens.total_tokens for record in observations(result)] == [10, 8]
+
+
+@pytest.mark.parametrize("aligned", [True, False])
+@pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
+def test_activation_frontier_requires_exact_first_eligible_delta(
+    project, aligned, split
+):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    first = usage(8, 2)
+    write(
+        path,
+        [
+            startup(checkout, BEFORE),
+            *begin(checkout, time=BEFORE),
+            response("before-activation", first, first, time=BEFORE),
+            counter(first, first, time=BEFORE),
+            end(time=BEFORE),
+        ],
+    )
+    candidate = source(registration)
+    state = codex.CodexState(ledger)
+    prior = None
+    if split != "same-batch":
+        batch, result = read(codex, candidate, state)
+        assert result.revisions == ()
+        prior = commit(ledger, batch, result)
+        state = (
+            codex.CodexState(Ledger.open(ledger.root, PROJECT))
+            if split == "restart"
+            else codex.advance_codex_state(state, batch, result)
+        )
+    later = UUID(int=0x201)
+    display = usage(16, 4) if aligned else usage(24, 6)
+    wholly_eligible = usage(25, 5) if aligned else usage(33, 7)
+    write(
+        path,
+        [
+            *begin(checkout, later),
+            response("first-after-activation", usage(16, 4), first, turn=later),
+            counter(display, first),
+            counter(wholly_eligible, first),
+            end(later),
+        ],
+        append=True,
+    )
+    batch, result = read(codex, candidate, state, prior)
+    expected = [(10, Availability.PARTIAL)]
+    if aligned:
+        expected.insert(0, (10, Availability.COMPLETE))
+    else:
+        assert (9, DiagnosticCode.COVERAGE_GAP) in codes(result)
+    assert [
+        (record.tokens.total_tokens, record.availability)
+        for record in observations(result)
+    ] == expected
+    commit(ledger, batch, result, prior)
+
+
+def test_delayed_display_increment_without_eligible_response_is_not_allocated(project):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    first = usage(8, 2)
+    later = UUID(int=0x202)
+    write(
+        path,
+        [
+            startup(checkout, BEFORE),
+            *begin(checkout, time=BEFORE),
+            response("only-pre-cutoff-response", first, first, time=BEFORE),
+            counter(first, first, time=BEFORE),
+            end(time=BEFORE),
+            *begin(checkout, later),
+            counter(usage(16, 4), first),
+            end(later),
+        ],
+    )
+    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    assert result.revisions == ()
+    assert (8, DiagnosticCode.COVERAGE_GAP) in codes(result)

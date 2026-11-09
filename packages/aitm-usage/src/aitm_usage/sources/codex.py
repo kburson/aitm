@@ -168,6 +168,7 @@ class CodexState:
     _context: _Context = field(default_factory=_Context, repr=False)
     _seen_requests: frozenset[SourceRef] = field(default=frozenset(), repr=False)
     _have_history: bool = field(default=False, repr=False)
+    _exact_only: bool = field(default=False, repr=False)
     _thread_counts: TokenCounts | None = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
@@ -437,6 +438,9 @@ class _Walk:
         self.prior = batch.provider_checkpoint
         self.checkpoint = self.prior
         self.epoch = None if self.prior is None else self.prior.epoch_ref
+        # A fresh process can trust the cumulative value without knowing
+        # whether the entire span since that value was project-eligible.
+        self.exact_only = state._exact_only if matching else self.epoch is not None
         self.ordinal = (
             None if self.prior is None or self.epoch is None else self.prior.ordinal
         )
@@ -1027,9 +1031,11 @@ class _Walk:
             context.tainted = True
             return
         before = self.baseline
+        eligible = self.eligible(frame)
         if before is None or not _coherent(before):
             self.finish_counter()
             self.baseline = total
+            self.exact_only = not eligible
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
         if before.total_tokens == total.total_tokens:
@@ -1051,6 +1057,7 @@ class _Walk:
             self.finish_counter()
             if compacted:
                 self.baseline = total
+                self.exact_only = not eligible
                 self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             else:
                 self.gap(frame, DiagnosticCode.COUNTER_REGRESSION)
@@ -1072,17 +1079,18 @@ class _Walk:
             )
         )
         self.finish_counter(retain_output=preceding)
-        tainted = context.tainted
+        tainted, exact_only = context.tainted, self.exact_only
         coherent = _coherent(difference)
         if compacted or (coherent and not conflict):
             context.tainted = False
+            self.exact_only = not eligible
         self.baseline = total
         turn = context.turn
         if turn is not None:
             context.turn = replace(turn, seen_counter=True)
         if response is None and not conflict:
             self.thread_counts = None
-        if not self.record_usage or not self.eligible(frame) or conflict:
+        if not self.record_usage or not eligible or conflict:
             return
         safe = (
             response.eligible
@@ -1127,6 +1135,11 @@ class _Walk:
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
         complete = agrees and not ambiguous
+        if exact_only and (not complete or response is None):
+            # A first positive snapshot can separate the numeric baselines.
+            # Only the actual reconciled response can qualify that delta.
+            self.gap(frame, DiagnosticCode.COVERAGE_GAP)
+            return
         if not complete:
             self.gap(frame, DiagnosticCode.UNRECONCILED_USAGE)
         if len(reasoning) > 1:
@@ -1361,5 +1374,6 @@ def advance_codex_state(
         _context=walk.context,
         _seen_requests=frozenset(walk.seen_requests),
         _have_history=walk.have_history,
+        _exact_only=walk.exact_only,
         _thread_counts=walk.thread_counts,
     )
