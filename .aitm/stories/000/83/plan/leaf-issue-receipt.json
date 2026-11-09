@@ -1,0 +1,193 @@
+{
+  "schema": "aitm.usage-leaf-issue-receipt/v0",
+  "parent": 83,
+  "plan_publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300",
+  "plan_sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5",
+  "observed_at": "2026-11-09T14:43:23+00:00",
+  "first_core_leaf": 3,
+  "first_core_leaf_blocked_by": 83,
+  "rows": {
+    "U01": {
+      "number": 84,
+      "id": 6288244070,
+      "url": "https://github.com/kburson/aitm/issues/84",
+      "created_at": "2026-11-09T14:42:16Z",
+      "title": "[Usage U01] Package and private durable ledger",
+      "hours": 4.0,
+      "predecessors": [],
+      "state": "open",
+      "body_sha256": "452fbcb08dc71ffa14774aa9d940d30dcf6db0164651ad1139b905f7d5eb0569",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9pw"
+    },
+    "U02": {
+      "number": 85,
+      "id": 6288244226,
+      "url": "https://github.com/kburson/aitm/issues/85",
+      "created_at": "2026-11-09T14:42:16Z",
+      "title": "[Usage U02] Scope inbox and provider-session binding",
+      "hours": 3.5,
+      "predecessors": [
+        84
+      ],
+      "state": "open",
+      "body_sha256": "7f231ce96581f4d7bdd3fc9980f02dbef3cad3e1966ecdce291958ab9d7aacad",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9sM"
+    },
+    "U13": {
+      "number": 86,
+      "id": 6288244373,
+      "url": "https://github.com/kburson/aitm/issues/86",
+      "created_at": "2026-11-09T14:42:17Z",
+      "title": "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups",
+      "hours": 2.5,
+      "predecessors": [
+        85
+      ],
+      "state": "open",
+      "body_sha256": "fec71295938f7668cee86b6bffe5353aa160db0785afb489308c8cc5b6ea7313",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9r4"
+    },
+    "U03": {
+      "number": 87,
+      "id": 6288244539,
+      "url": "https://github.com/kburson/aitm/issues/87",
+      "created_at": "2026-11-09T14:42:17Z",
+      "title": "[Usage U03] Eligible source cursor and activation boundary",
+      "hours": 3.5,
+      "predecessors": [
+        85
+      ],
+      "state": "open",
+      "body_sha256": "3ae51fe08f6064cf68ea1705ed95e006aad7a6140b3486bd96b461b1c817e76b",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9sw"
+    },
+    "U04": {
+      "number": 88,
+      "id": 6288244703,
+      "url": "https://github.com/kburson/aitm/issues/88",
+      "created_at": "2026-11-09T14:42:18Z",
+      "title": "[Usage U04] Codex cumulative usage adapter",
+      "hours": 4.0,
+      "predecessors": [
+        87
+      ],
+      "state": "open",
+      "body_sha256": "accf40acd1a4be2ee896452886d047fe3072a25b7be819565f490892d00e97ff",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9tQ"
+    },
+    "U05": {
+      "number": 89,
+      "id": 6288244956,
+      "url": "https://github.com/kburson/aitm/issues/89",
+      "created_at": "2026-11-09T14:42:19Z",
+      "title": "[Usage U05] Claude Code request usage adapter",
+      "hours": 3.5,
+      "predecessors": [
+        87
+      ],
+      "state": "open",
+      "body_sha256": "53186aaea9b1d611341654a0cf0daea0d0a21f4aa51eee9358545b7cc68282b1",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9vY"
+    },
+    "U06": {
+      "number": 90,
+      "id": 6288245142,
+      "url": "https://github.com/kburson/aitm/issues/90",
+      "created_at": "2026-11-09T14:42:19Z",
+      "title": "[Usage U06] Pricing and quota availability",
+      "hours": 3.0,
+      "predecessors": [
+        88,
+        89
+      ],
+      "state": "open",
+      "body_sha256": "d9bbe8d41aaa00c70ea7564abfbbeaf9d28b7635a4e86b49802a206b8c944b8e",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9v8"
+    },
+    "U07": {
+      "number": 91,
+      "id": 6288245327,
+      "url": "https://github.com/kburson/aitm/issues/91",
+      "created_at": "2026-11-09T14:42:20Z",
+      "title": "[Usage U07] As-of export and C44 compatibility proof",
+      "hours": 3.5,
+      "predecessors": [
+        86,
+        90
+      ],
+      "state": "open",
+      "body_sha256": "e18c99059cb11207826a40d07a30c3650fe723fb75f7af5e3655d328b6582bf3",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9w0"
+    },
+    "U08": {
+      "number": 92,
+      "id": 6288245550,
+      "url": "https://github.com/kburson/aitm/issues/92",
+      "created_at": "2026-11-09T14:42:21Z",
+      "title": "[Usage U08] Collector service, live commands and status",
+      "hours": 3.5,
+      "predecessors": [
+        91
+      ],
+      "state": "open",
+      "body_sha256": "22748b6d3c9fe63484998c9dad7a921a1f5f24dfc2e6233fb73914950317a305",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9xs"
+    },
+    "U12": {
+      "number": 93,
+      "id": 6288245776,
+      "url": "https://github.com/kburson/aitm/issues/93",
+      "created_at": "2026-11-09T14:42:21Z",
+      "title": "[Usage U12] Integrated restart, enrollment and privacy proof",
+      "hours": 4.0,
+      "predecessors": [
+        92
+      ],
+      "state": "open",
+      "body_sha256": "efde3f82af55ef84506a4e63b4f6e88ab02e0eb24aa821bae402dce79ea7949c",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN9zw"
+    },
+    "U09": {
+      "number": 94,
+      "id": 6288245951,
+      "url": "https://github.com/kburson/aitm/issues/94",
+      "created_at": "2026-11-09T14:42:22Z",
+      "title": "[Usage U09] LaunchAgent install, upgrade and restore",
+      "hours": 4.0,
+      "predecessors": [
+        93
+      ],
+      "state": "open",
+      "body_sha256": "c83f6ed4d9568d28a3983bf7e3fb84598960837736998255d8eccc5d9a6e21cb",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN91w"
+    },
+    "U10": {
+      "number": 95,
+      "id": 6288246155,
+      "url": "https://github.com/kburson/aitm/issues/95",
+      "created_at": "2026-11-09T14:42:23Z",
+      "title": "[Usage U10] Qualification validator and on-host runbook",
+      "hours": 3.5,
+      "predecessors": [
+        94
+      ],
+      "state": "open",
+      "body_sha256": "51c5d62f770d5289ef9b2a2a591242ae37d36d93a1364dfe053cf0bac2f09c38",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN92E"
+    },
+    "U11": {
+      "number": 96,
+      "id": 6288246368,
+      "url": "https://github.com/kburson/aitm/issues/96",
+      "created_at": "2026-11-09T14:42:23Z",
+      "title": "[Usage U11] Project Mac activation and dogfood proof",
+      "hours": 3.5,
+      "predecessors": [
+        95
+      ],
+      "state": "open",
+      "body_sha256": "190c46ba4800e5fefc1e8e963b286c883a41c16e6c519f3e7c44558a63f9df30",
+      "item_id": "PVTI_lAHOABCEY84Bq1hZzhHN92s"
+    }
+  }
+}

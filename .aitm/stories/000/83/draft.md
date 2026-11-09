@@ -33,3 +33,6 @@ Use a Mac-local service that can start ahead of the first authorized Core delive
 Dogfood one planning session that hydrates an epic with at least two children and then refines and plans them individually in the same worktree. Verify direct epic usage, distinct child scopes, and an inclusive rollup with each observation counted once. Exercise overlapping review participants and authorized development and housekeeping activity, including the binding when Develop creates the story worktree. Show that the ledger preserves an ambiguous observation for later assignment and restarts or replays without duplicating usage. Verify automatic startup and catch-up, then produce a sanitized export that can later map into C44 with the same source identities. Preserve feature rollups by counting each unique descendant and the feature's own work once.
 
 The first delivery is collection, storage and verification. The backlog viewer, GitHub presentation, forecast calibration and policy for reporting shared overhead can be decided after we have recorded data. This is a P1 proposal for bootstrap adoption alongside Core's existing plan.
+
+
+The [reviewed lifetime design](design/usage-capture-design.md) and [delivery plan](plan/usage-capture-implementation-plan.md) supersede this brainstorming record. The collector is qualified early and remains in service throughout the project.

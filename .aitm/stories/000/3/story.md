@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/3"
 parent: 2
 children: []
 blocking: [4, 5, 11, 64]
-blocked-by: []
+blocked-by: [83]
 created: "2026-11-09T07:59:36Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-09T14:43:23+00:00"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -36,7 +36,7 @@ As a developer delivering aitm-core, I want the bounded C01 capability and proof
 
 This is the 3.5 implementation agent-hour, P1/S leaf from the [accepted parent plan](../2/plan/core-implementation-plan.md#c01-package-foundation-and-command-result-contract), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
 
-**Blocked by:** none.
+**Project sequencing prerequisite** [#83 continuous agent usage capture](../83/story.md). The installed collector and on-host activation receipt must be available before Develop. The accepted Core plan excerpt below retains its original internal dependency scope.
 
 **Blocking:** [C02 / #4](../4/story.md), [C03 / #5](../5/story.md), [C06 / #11](../11/story.md), [C63 / #64](../64/story.md).
 
