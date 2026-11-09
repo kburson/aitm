@@ -1,0 +1,45 @@
+diff --git a/.aitm/stories/000/83/plan/usage-capture-replan.md b/.aitm/stories/000/83/plan/usage-capture-replan.md
+new file mode 100644
+index 0000000..7a0a0a1
+--- /dev/null
++++ b/.aitm/stories/000/83/plan/usage-capture-replan.md
+@@ -0,0 +1,39 @@
++# Usage capture replan after U01 source review
++
++This amendment revises the [accepted implementation plan](usage-capture-implementation-plan.md) at raw SHA-256 `07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5`. It preserves the lifetime design, issue IDs, dependency order and delivery gates. During review the amendment is a candidate. After SAR, SPR and XPR acceptance it controls only the changes listed here.
++
++## Hold and cause
++
++The first implementation candidate for U01 / #84 is preserved at `be02ad0562669552c810643efb874f5cd3d41881` on `codex/aitm-usage-u01`. The integration branch remains at `4e896e049370df58fe870dc80790401056218b97`. The candidate passed 26 tests and a fresh wheel smoke. The implementer recorded 12 minutes and 15 seconds from pickup to local verification. That is an observed interval, not a measure of model engagement or the full leaf.
++
++Independent source review and author reproduction exposed two gaps in the plan. U01's test list relied on POSIX modes and nominal schema and checkpoint checks, which left ACL inheritance, lock replacement, stale writes, structural schema mismatch and raw scalar values untested. The planned leaf ownership assumed a shared typed ledger without naming the changes that let downstream leaves persist their own records. U02, U13, U06 and U08 need explicit ownership of those changes. The prior 46-hour estimate omitted this work in those leaves. Implementation and dependent pickup paused for replanning. Keep the original branch and evidence.
++
++## U01 / #84 repair and admission
++
++Keep the original four-hour cap and file ownership. Forecast up to two additional agent-hours for focused regressions, repair and exact-head review. This uses the remaining U01 budget. Record actual work and review separately. Stop before continuing if the remaining work threatens the cap or needs a scope or dependency change.
++
++- Verify a second process is refused even after a lock pathname is replaced. Hold a stable lease on the protected project root as well as the existing lock file, or use a verified equivalent. Validate root and lock identity throughout writes and refuse unsafe ancestor replacement. Validate relevant macOS extended ACLs before private bytes can be created or accepted, including inherited permissions. Prove refusal on the real Mac host. Readers and backup keep their lease-free snapshot contract.
++- Reject a stale expected checkpoint whenever the batch adds history, including the case where its desired checkpoint equals the current checkpoint. Prove rollback, true retry and continuation with the correct prior. Require the actual supported SQLite schema and constraints before writing. Prove a same-column reconstruction without primary key or STRICT is refused.
++- Admit only approved normalized metadata. Unsupported provider labels are represented as Unknown and may use a project pseudonym for correlation. Do not retain provider-supplied free text. Verify every persisted source reference belongs to the current project and key context before ledger writes. Expose the same check to later inbox writers. Keep raw identifiers transient. Preserve historical view semantics and add project identity to every LedgerView, even a view at sequence zero.
++- Keep a closed typed record union and explicit codec. U01 supplies its initial types and storage mechanics. Later leaves extend that union under the file ownership below. Every new command and record is verified for strict field shape, scalar values, project identity, replay and private durable state before its leaf passes review. Avoid a runtime plugin registry or opaque payload fields.
++
++Retain failing regressions for each reproduced failure, their passing counterparts, the complete affected suite and a reviewed exact source head. Update #84's leaf plan and JIT for the preserved worktree and reviewed candidate. The repair does not authorize consuming feature logic in U01.
++
++## Revised leaf ownership and estimate
++
++The following estimates include the additional shared types and codec review. All other estimates and predecessors stay as recorded in the baseline plan. The revised aggregate is **48 implementation agent-hours** across 13 leaves. Each leaf stays within four hours. This aggregate is agent effort, not an elapsed delivery forecast.
++
++| Leaf | Prior hours | Revised hours | Additional ownership and proof |
++| --- | ---: | ---: | --- |
++| U02 / #85 | 3.5 | 4 | Own the typed development binding, scope correction and shared inbox command identity, digest and disposition. Put durable envelopes in types.py. Wire exact admission and replay in ledger.py only where needed to make consumption and disposition atomic. Prove a repeated command returns its original disposition and conflicting bytes do not overwrite it. |
++| U13 / #86 | 2.5 | 3 | Extend types.py with typed draft alias and ancestry records and register their codecs. Use U02's inbox and the existing revision store. Prove sequence-specific rollup, corrections and cycle refusal after restart. |
++| U06 / #90 | 3 | 3.5 | Extend types.py with AccountObservation and independent price and spend records. Interpret the shared QuotaEvidence envelope from U01 and register the accounting codecs. Verify write and recovery without raw account handles. |
++| U08 / #92 | 3.5 | 4 | Extend types.py with typed registration and source anchor state and add the anchor command to the U02 command path. Keep approved raw roots in private configuration and store only pseudonymous anchor records and configuration identity in the ledger. Prove restart and acknowledgment of an added anchor without resetting the activation boundary. |
++
++U01 owns the shared QuotaEvidence type and the typed field on AdapterResult, since U04 and U05 run before U06. The quota evidence envelope carries provider, pseudonymous account and bucket, UTC observation time, optional UTC reset time and window length, bounded numeric percentage in fixed-point units and its observed precision, and a closed source classification. U04 and U05 populate it only from supported structured evidence. It never carries a task-level burn claim. Keep unsupported or absent evidence explicit in diagnostics or accounting availability.
++
++Shared types and ledger edits follow the published pickup order. Each leaf's JIT must pin the integrated predecessor and name the exact changes it owns. U02 owns markers and bindings, U13 owns rollups, and U10 documents the controlled Claude launcher already specified in the baseline. Use #83-only real qualification for U11 under the owner's instruction to leave Epic #2 unstarted. C44 remains a later consumer of the same collector and ledger.
++
++## Resume gate
++
++Resume only after this amendment passes SAR, SPR and XPR and the adjusted estimates, issue references and #84 pickup artifacts are recorded. Resume in the preserved #84 worktree on the pinned candidate. Record integration only after the repaired exact source is accepted. Keep the #83 activation gate in force for Core C01 and do not start Epic #2.
