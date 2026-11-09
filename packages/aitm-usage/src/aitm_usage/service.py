@@ -18,9 +18,11 @@ from .ledger import ConflictError, Ledger, LedgerError, _pin_directory
 from .pricing import RateCard, load_rate_card
 from .rollup import _prices
 from .scopes import (
+    INBOX_NAME,
     MAX_COMMAND_BYTES,
     BoundaryEvidence,
     _private_child,
+    _publication,
     _publish,
     _read_private,
     drain_inbox,
@@ -598,6 +600,22 @@ def _read_status(root: Path) -> _Status | None:
     return None
 
 
+def _abandoned_publications(root: Path) -> int:
+    with (
+        _pin_directory(root) as project,
+        _private_child(project, INBOX_NAME, create=False) as inbox,
+    ):
+        if inbox is None:
+            return 0
+        # Active publishers hold this mutex until their temporary name is gone.
+        # Count abandoned names without opening or disclosing their contents.
+        with _publication(inbox):
+            return sum(
+                re.fullmatch(r"\.publishing-[0-9a-f]{32}", name) is not None
+                for name in os.listdir(inbox.fd)
+            )
+
+
 def _observed_proof(
     ledger: Ledger, checkpoint: SourceCheckpoint, through: datetime
 ) -> SourceRef:
@@ -929,7 +947,7 @@ class _Collector:
             len(previous.keys() - groups.keys()),
             held,
             deferred,
-            inbox.invalid_publications,
+            inbox.invalid_publications + _abandoned_publications(writer.root),
             inbox.relationship_halted,
         )
         status = _Status(
