@@ -1,6 +1,6 @@
 # #83 agent usage evidence
 
-Evidence observed through November 09, 2026 10:12:30 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
+Evidence observed through November 09, 2026 10:27:16 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
 
 | Work scope and participant | Observed model / effort | Observed tokens | API-equivalent USD | Unpriced records | Coverage gaps |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -8,7 +8,7 @@ Evidence observed through November 09, 2026 10:12:30 CST. Measured model-token u
 | Design SPR | gpt-6.1-sol / high | 611,312 | $0.2069 | 0 | 0 |
 | Design XPR | claude-opus-5-5 / high | 1,132,258 | $1.0917 | 0 | 0 |
 | Design and plan coordinator | gpt-6.1-sol / high | 32,789,051 | $7.7862 | 0 | 0 |
-| Implementation and delivery coordinator | gpt-6.1-sol / high | 23,198,019 | $2.9444 | 0 | 0 |
+| Implementation and delivery coordinator | gpt-6.1-sol / high | 31,121,217 | $3.9673 | 0 | 0 |
 | Mixed #73 and #83 coordinator work | gpt-6.1-sol / high | 4,092,966 | $0.5920 | 0 | 0 |
 | Plan SPR | gpt-6.1-sol / high | 1,197,965 | $0.3542 | 0 | 0 |
 | Plan XPR | claude-opus-5-5 / high | 1,873,902 | $1.8174 | 0 | 0 |
@@ -20,10 +20,13 @@ Evidence observed through November 09, 2026 10:12:30 CST. Measured model-token u
 | U01 pickup review | gpt-6.1-sol / high | 597,208 | $0.1186 | 0 | 0 |
 | U01 source review | gpt-6.1-sol / high | 3,738,517 | $0.7955 | 0 | 0 |
 | U02 implementation | gpt-6.1-sol / high | 9,746,915 | $1.9942 | 0 | 0 |
-| U02 pickup review | gpt-6.1-sol / high | 1,364,923 | $0.2418 | 0 | 0 |
+| U02 pickup review | gpt-6.1-sol / high | 1,183,551 | $0.2169 | 0 | 0 |
 | U02 source review | gpt-6.1-sol / high | 2,331,650 | $0.5824 | 0 | 0 |
+| U13 implementation | gpt-6.1-sol / high | 3,090,956 | $0.7513 | 0 | 0 |
+| U13 pickup review | gpt-6.1-sol / high | 1,189,657 | $0.2055 | 0 | 0 |
+| U13 source review | gpt-6.1-sol / high | 1,202,763 | $0.3325 | 0 | 0 |
 
-**Attributed #83 observed subtotal** 119,216,699 tokens and $28.8592 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
+**Attributed #83 observed subtotal** 132,441,901 tokens and $31.1465 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
 
 The coordinator is scoped by observed cutoff, so any ambiguous boundary remains approximate. Codex repeated cumulative counters are deduplicated and reconciled to last-request values. Claude streamed usage is grouped by request. Prompt text, private handles, raw traces and personal account details stay local. Work after the observation cutoff and provider usage absent from the retained sources remain outside these figures.
 

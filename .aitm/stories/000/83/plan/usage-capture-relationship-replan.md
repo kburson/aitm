@@ -1,0 +1,25 @@
+# Usage capture relationship admission amendment
+
+This scoped amendment to the [baseline plan](usage-capture-implementation-plan.md) and [48.5-hour amendment](usage-capture-replan.md) addresses the first U13 / #86 source review. The preceding amendment stays pinned at SHA-256 `7df41b26c4b4f9ce786807832ba544862560eac1e297a22c497fb31791f5c239`. This text takes effect after SAR, SPR and XPR acceptance. The lifetime design, existing issue IDs, dependency order and #83-only activation gate continue.
+
+## Hold and forecast
+
+U13 remains on `codex/aitm-usage-u13` at `544844a190dc86a92d3db565e73b383125651da5`. Integration remains at accepted U02 head `67e888d720e67cb99e6e019fa1f0b6dc7510f40e`. The candidate passed 112 tests. Independent review and disposable real-ledger probes established two omitted contracts. Generic `Ledger.apply` accepted an unreceipted relationship and changed attribution. The relationship queue sorted by opaque command IDs, which reversed a confirmed sequence of submissions and caused a valid graduation to fail. Both defects require edits to shared paths that the prior amendment assigned elsewhere. Implementation pauses for this ownership review.
+
+The first observed implementation interval was about nine minutes. Forecast up to 45 additional agent-minutes for the scoped regressions, repair and exact-head review. Keep U13 within its accepted **three implementation agent-hours**, the epic at **48.5 hours across thirteen leaves** and every leaf within four hours. Record actual work and stop again for a forecast breach or further unassigned scope.
+
+## U13 repair ownership
+
+Extend U13's approved file list to include two narrow write-admission checks in `ledger.py` and the relationship-publication adaptations in the shared inbox path in `scopes.py`. U13 still owns its typed envelopes in `types.py`, CLI, relationship projection and tests. Preserve provider-scoped admission, private root and source proof behavior, existing unrelated batch and command paths, and the unreleased schema version. This scope does not transfer ownership of U08 anchor registration or U06 accounting.
+
+1. Treat draft alias and parent effects as inbox-only records. Reject direct `Ledger.apply` of either type before durable writes, including same-project and foreign-project payloads. In `commit_command`, accept these effect types only for the matching typed command, project and command ID. Require the proposed alias exactly and the proposed parent with only the child normalization validated by the relationship dispatcher. Keep graph, canonical cycle and conflict validation in U13. Commit effects and the current disposition atomically.
+2. Preserve publication order between relationship commands that wait in the inbox together. Allocate an order under the existing pinned, private inbox publication lock and persist it atomically with each queued relationship command. Use a closed transport shape and preserve canonical command bytes, digest and opaque ID independently of transport order. An exact pending replay retains its publication order. A retry after final acknowledgment uses the durable receipt. Refuse malformed or ambiguous ordered publication safely. A process restart or partial drain preserves the relative order of all remaining commands. An implementation can allocate within the outstanding queue if it proves correct reset after draining. Leave U02 provider command order and source-proven boundary attestation unchanged.
+
+## Required regression proof
+
+- Through public batch and guarded command APIs, refuse unreceipted alias and parent writes, foreign project values, mismatched command identity/type and mismatched parent or alias payload. Prove the invalid writes leave the prior sequence and rollup unchanged. Keep legitimate typed provider and diagnostic batches and ordinary relationship commands working.
+- Use the actual installed CLI while the collector holds its writer lease. Queue a parent repair then a graduation before a single drain, with command IDs deliberately ordered in reverse. Confirm both apply in publication order. Also queue two parent updates and prove the later one is current while earlier fixed views remain intact. Prove restart or interruption with outstanding items preserves order, exact replay is idempotent, and a conflicting replay preserves accepted state. Retain the earlier project identity, alias/cycle, pricing and scope regressions.
+
+## Resume gate
+
+Resume on the preserved #86 worktree only after this amendment passes SAR, SPR and XPR and the #86 repair plan and JIT pin the exact accepted amendment, candidate and unchanged predecessor. Require independent exact-head source review before integration. No other leaf begins implementation during this hold. Epic #2 stays unstarted and Core C01 remains blocked on qualified #83 activation.

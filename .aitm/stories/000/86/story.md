@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 86
 title: "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups"
 kind: "story"
-state: "develop"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
 blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T16:13:46+00:00"
+updated: "2026-11-09T16:27:16+00:00"
 last-branch: "codex/aitm-usage-u13"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 # [Usage U13] Draft aliases, ancestry and direct/inclusive rollups
 
-[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Planning
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -43,3 +43,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 ## Current pickup
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+
+[Relationship admission amendment under review](../83/plan/usage-capture-relationship-replan.md). Source candidate `544844a190dc86a92d3db565e73b383125651da5` is preserved in the #86 worktree.
