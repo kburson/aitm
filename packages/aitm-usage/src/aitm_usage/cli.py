@@ -2,13 +2,23 @@ import argparse
 import json
 import os
 import sqlite3
+import subprocess
 import sys
 from dataclasses import asdict
 from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from .backup import backup
 from .export import export_as_of
+from .install import (
+    InstallError,
+    LaunchControl,
+    install_wheel,
+    prune_version,
+    restore_for_agent,
+    stop_agent,
+)
 from .ledger import (
     STORE_NAME,
     ConflictError,
@@ -252,6 +262,61 @@ def _status_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _lifecycle_command(args: argparse.Namespace) -> int:
+    action = args.lifecycle_action
+    try:
+        ledger = open_project(args.project)
+        if action == "backup":
+            payload = {"status": "backed-up", **backup(ledger, args.output).as_dict()}
+        else:
+            launchctl = LaunchControl()
+            if action in {"install", "upgrade"}:
+                receipt = install_wheel(
+                    ledger,
+                    args.wheel,
+                    args.interpreter,
+                    launchctl,
+                    action=action,
+                    expected_sha256=args.wheel_sha256,
+                    dry_run=args.dry_run,
+                )
+            elif action == "restore":
+                receipt = restore_for_agent(ledger, args.backup, launchctl)
+            elif action == "prune":
+                receipt = prune_version(
+                    ledger,
+                    args.runtime_version,
+                    args.wheel_sha256,
+                    args.backup,
+                    launchctl,
+                    dry_run=args.dry_run,
+                )
+            else:
+                receipt = stop_agent(
+                    ledger,
+                    launchctl,
+                    uninstall=action == "uninstall",
+                    dry_run=args.dry_run,
+                )
+            payload = receipt.as_dict()
+            if action == "restore":
+                payload["status"] = "restored"
+    except WriterActive:
+        return _collector_failure(args, "writer-active")
+    except InstallError as error:
+        return _collector_failure(args, error.status or f"{action}-failed")
+    except (
+        LedgerError,
+        OSError,
+        ValueError,
+        sqlite3.Error,
+        subprocess.SubprocessError,
+    ):
+        return _collector_failure(args, f"{action}-failed")
+    _print_result(payload, as_json=args.json)
+    return 0
+
+
 def _rollup_command(args: argparse.Namespace) -> int:
     try:
         ledger = open_project(args.project)
@@ -339,6 +404,24 @@ def main() -> int:
     collect.set_defaults(handler=_collect_command, continuous=False)
     service = groups.add_parser("service").add_subparsers(required=True)
     service.add_parser("run").set_defaults(handler=_collect_command, continuous=True)
+    for action in ("install", "upgrade", "stop", "uninstall", "prune"):
+        lifecycle = service.add_parser(action)
+        lifecycle.add_argument("--dry-run", action="store_true")
+        lifecycle.add_argument("--json", action="store_true")
+        if action in {"install", "upgrade"}:
+            lifecycle.add_argument("--wheel", type=Path, required=True)
+            lifecycle.add_argument("--interpreter", type=Path, required=True)
+            lifecycle.add_argument("--wheel-sha256")
+        elif action == "prune":
+            lifecycle.add_argument("--version", dest="runtime_version", required=True)
+            lifecycle.add_argument("--wheel-sha256", required=True)
+            lifecycle.add_argument("--backup", type=Path, required=True)
+        lifecycle.set_defaults(handler=_lifecycle_command, lifecycle_action=action)
+    for action, option in (("backup", "--output"), ("restore", "--backup")):
+        recovery = groups.add_parser(action)
+        recovery.add_argument(option, type=Path, required=True)
+        recovery.add_argument("--json", action="store_true")
+        recovery.set_defaults(handler=_lifecycle_command, lifecycle_action=action)
     status = groups.add_parser("status")
     status.add_argument("--json", action="store_true")
     status.set_defaults(handler=_status_command)
