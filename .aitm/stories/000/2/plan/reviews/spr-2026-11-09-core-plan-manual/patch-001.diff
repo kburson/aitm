@@ -1,0 +1,566 @@
+diff --git a/.aitm/stories/000/2/plan/core-implementation-plan.md b/.aitm/stories/000/2/plan/core-implementation-plan.md
+index 8675d71..d68b6e0 100644
+--- a/.aitm/stories/000/2/plan/core-implementation-plan.md
++++ b/.aitm/stories/000/2/plan/core-implementation-plan.md
+@@ -4,7 +4,7 @@ story: 2
+ role: plan
+ title: aitm-core implementation plan
+ created: 2026-11-09T06:44:00Z
+-updated: 2026-11-09T07:07:12Z
++updated: 2026-11-09T07:22:55Z
+ last-branch: planning
+ status: review candidate (acceptance is in review records)
+ design: ../design/core-design.md
+@@ -36,7 +36,7 @@ parent-plan: ../../1/plan/master-plan.md
+ 
+ ## Estimate and scope baseline
+ 
+-[Initial Refine record](../refinement.md): **180 implementation agent-hours, XL epic, P1**. Bottom-up Plan estimate: **194.5 h over 62 leaves**, all 2.5–4 h, including local verification and source-review engagement. P1 reflects the foundational dependency, not emergency work; XL is this epic's aggregation label, not a universal size-policy change. Each leaf is a small deliverable, provisionally S (≤4 h). No calendar duration is promised and no implementation clock has started.
++[Initial Refine record](../refinement.md): **180 implementation agent-hours, XL epic, P1**. Bottom-up Plan estimate: **199 h over 63 leaves**, all 2.5–4 h, including local verification and source-review engagement. P1 reflects the foundational dependency, not emergency work; XL is this epic's aggregation label, not a universal size-policy change. Each leaf is a small deliverable, provisionally S (≤4 h). No calendar duration is promised and no implementation clock has started.
+ 
+ These are estimates, not proven throughput. Concurrency/recovery/platform/migration uncertainty is high. At JIT, split or redesign a leaf before Develop if the verified baseline, dependencies or proof burden makes four hours implausible. Do not consume its expansion allowance as planned overflow or relax acceptance to fit the estimate. Changes to leaf scope/dependencies invalidate the relevant accepted decomposition and need applicable review. Record Plan/JIT revisions separately; never overwrite the original Refine estimate.
+ 
+@@ -63,7 +63,7 @@ Each owning leaf also implements its named thin CLI module and `--json` adapter;
+ 
+ ## Execution and evidence contract for every leaf
+ 
+-Before Develop, create its design/plan/JIT records as required by the explicitly applicable policy. The accepted epic plan is input to those records, not an invented leaf acceptance. Bootstrap issue/story creation records intent and dependencies, not runtime readiness. All leaf issues are children of #2 (itself a child of #1); they are **not expansions**. Stable plan keys C01…C62 are mapped to actual issue IDs only after decomposition acceptance, in a separate ledger so issue creation does not mutate this reviewed file.
++Before Develop, create its design/plan/JIT records as required by the explicitly applicable policy. The accepted epic plan is input to those records, not an invented leaf acceptance. Bootstrap issue/story creation records intent and dependencies, not runtime readiness. All leaf issues are children of #2 (itself a child of #1); they are **not expansions**. Stable plan keys C01…C63 are mapped to actual issue IDs only after decomposition acceptance, in a separate ledger so issue creation does not mutate this reviewed file.
+ 
+ Each leaf executes this cycle with its concrete proof and interface below:
+ 
+@@ -87,12 +87,12 @@ Acceptance evidence per leaf is its concrete proof below plus the common command
+ 
+ ## Ordered leaf backlog
+ 
+-Dependencies below are required delivered interfaces/evidence, not mere issue closure. Independent means all listed predecessors are satisfied and touched shared exports/CLI registry are serialized. The table order is a valid topological execution order, not a demand to run everything serially. Keys are stable identities, not ordinal positions: added split leaves C54–C62 appear at their prerequisite position.
++Dependencies below are required delivered interfaces/evidence and mandatory shared-file integration predecessors, not mere issue closure. Independent means all listed predecessors are satisfied and touched shared exports/CLI registry are serialized. The table order is a valid topological execution order, not a demand to run everything serially. Keys are stable identities, not ordinal positions: added split leaves C54–C62 appear at their prerequisite position.
+ 
+ 
+ ### Production composition ownership
+ 
+-`services.py` owns the real dependency graph, not a test-only container. C01 declares mandatory typed ports; C06 wires the validator/ref gate into every Git backend mutation and planning validate; C07 wires committed-policy resolution; C08 wires refresh/preflight. C09 wires default bounded publication in CommandService.execute for all ordinary mutators. C31 wires AttemptPreflight before ordinary sync/mutation, every CAS retry and effective completion; C32/C38 call it from their later execution/activation paths. C42 builds Close outcome in its single signoff transaction and C44 only consumes/reports it. C14 inserts WriteAuthorizer at the transaction ingress, so CLI/extension/direct API operations share enforcement. C11 declares the init hook/doctor/provider-step seam; C12 wires it and exercises real init. C17 calls the pending-action port after sync/publication and reports unavailable until C43 installs the durable runner and verifies real sync/actions retry. C35 wires the platform-neutral LaneAdapter selector to managed execution and doctor/init; C36/C37 implement its platform factories. Each wiring leaf declares services/shared call-site paths and tests the normal entry point; absent required wiring cannot report ready or successful enforcement. These edits serialize by listed prerequisites; no parallel worker owns the same shared file simultaneously.
++`services.py` owns the real dependency graph, not a test-only container. C01 declares mandatory typed ports; C06 wires the validator/ref gate into every Git backend mutation and planning validate; C07 wires committed-policy resolution; C08 wires refresh/preflight. C09 wires default bounded publication in CommandService.execute for all ordinary mutators. C31 wires AttemptPreflight before ordinary sync/mutation, every CAS retry and effective completion; C32/C38 call it from their later execution/activation paths. C42 builds Close outcome in its single signoff transaction and C44 only consumes/reports it. C28 composes separately recorded authored sync after trip preflight and repins before normal transitions; C42 evidence reconcile calls C38 late activation. C10 installs independently verified forward-repair validation; C41 uses the common exact-target gate around delivery CAS. C63 discovers installed entry points and mounts committed-enabled CLI/provider/init contributions. C14 inserts WriteAuthorizer at the transaction ingress, so CLI/extension/direct API operations share enforcement. C11 declares the init hook/doctor/provider-step seam; C12 wires it and exercises real init. C17 calls the pending-action port after sync/publication and reports unavailable until C43 installs the durable runner and verifies real sync/actions retry. C35 wires the platform-neutral LaneAdapter selector to managed execution and doctor/init; C36/C37 implement its platform factories. Each wiring leaf declares services/shared call-site paths and tests the normal entry point; absent required wiring cannot report ready or successful enforcement. All detected touched-path overlaps receive explicit earlier-writer edges in Depends on (including C08/C14, C31/C43 and C45/C61 ownership); no parallel worker owns the same shared file simultaneously.
+ 
+ ### CLI coverage map
+ 
+@@ -111,7 +111,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ | bind --implementation/--deliverable/--evidence/--recover; unbind | C16 purpose/capability core cli/bind.py, C45 deliverable use, C61 recovery authority; C17 unbind | unavailable authority refuses; stale holder cannot sync/unbind replacement |
+ | sync --push/--reconcile; actions retry | C17 sync adapter, C09 reconcile, C43 runner; cli/sync.py + actions.py | sync retries same pending key and cannot replay stale board state |
+ | attempt reconcile; estimate; jit | C27 owning operations; cli/plan.py | reconcile provisional attempt after accepted plan/bind without new budget |
+-| promote --to; demote --to --reason | C28 transitions; cli/lifecycle.py | enforce refuses missing proof, advisory records it; illegal edge always refuses |
++| promote --to; demote --to --reason | C28 pre-sync/fresh-snapshot transitions; cli/lifecycle.py + dispatch.py | enforce refuses missing proof, advisory records it; illegal edge always refuses |
+ | abandon; supersede --replacement; duplicate --of | C29 disposition; cli/dispositions.py | reason/replacement and cycles enforced, retained historical state |
+ | design accept --review; plan accept --review | C26 persisted accept_document; cli/design.py + plan.py | import alone is not acceptance; accepted current digest appends one fact |
+ | review open/turn --record --response/complete/import --story --doc | C25 live sink, C26 final CAS import; cli/review_turns.py + review_import.py | provisional turn then final import yields one normalized fact |
+@@ -119,7 +119,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ | review pass/changes --evidence | C38 source-record/activation; cli/review_source.py | early pass retained, genuine later activation stops clock |
+ | deliverable add/validate | C45 bound delivery/check operations; cli/deliverables.py | changed spike bytes invalidate review/archive proof |
+ | deliver | C39 observation/C40 transform/C41 admitted mutation; cli/deliver.py | checked-out target can be observed after authorized ordinary merge, never raw-mutated |
+-| signoff --retro --confidence; evidence reconcile | C42 closing/reconstruction; cli/evidence.py | one atomic closing operation, no bare pass flag or prior-signoff cycle |
++| signoff --retro --confidence; evidence reconcile | C42 closing/reconstruction plus C38 late activation; cli/evidence.py | one atomic closing operation, no bare pass flag or prior-signoff cycle |
+ | reopen --for evidence --reason | C61 recovery authority; cli/evidence.py + bind.py | new evidence-only generation, no source edit/expansion/new target mutation |
+ | expand; trip decide --decision --analysis --rationale --expansion; pivot | C30/C31; cli/expand.py + trips.py | reservation pause, typed decision and human-only pivot limitation |
+ | migrate v0 --dry-run / --prepare --expected-tip / --apply --expected-tip | C46 inventory/dry-run, C47 declaration, C48 apply; cli/migrate.py | no-mutation dry-run, exact declared apply, one result after competing clone |
+@@ -135,23 +135,23 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ | C56 | Evidence, action and provenance reducers with composition | 3 | C02, C54, C55 |
+ | C04 | Typed operations and MemoryBackend semantics | 3.5 | C02, C54, C55, C56 |
+ | C05 | Git snapshot reads and atomic operation commits | 4 | C04 |
+-| C06 | Planning history validation and worktree exclusion | 3.5 | C05 |
++| C06 | Planning history validation and worktree exclusion | 3.5 | C05, C01 |
+ | C07 | Committed configuration and routing anchors | 3 | C03, C06 |
+ | C08 | Candidate fetch and shared-history continuity | 3.5 | C06, C07 |
+ | C13 | Extension and provider registration contracts | 3 | C02, C07 |
+-| C14 | Constrained extension writes and retained unknown data | 3 | C04, C13 |
++| C14 | Constrained extension writes and retained unknown data | 3 | C04, C13, C08 |
+ | C15 | Deterministic views and structured descriptions | 2.5 | C02, C03, C04 |
+-| C09 | Publication replay and conflict recovery | 4 | C04, C08, C15 |
+-| C10 | Forward repair from maximal valid prefix | 3.5 | C08, C09 |
+-| C11 | Crash-resumable init and reconfiguration | 3.5 | C07, C09 |
++| C09 | Publication replay and conflict recovery | 4 | C04, C08, C15, C14 |
++| C10 | Forward repair from maximal valid prefix | 4 | C08, C09, C06 |
++| C11 | Crash-resumable init and reconfiguration | 3.5 | C07, C09, C10 |
+ | C12 | Hook chaining and readiness diagnostics | 3 | C06, C11 |
+ | C16 | Authoring and implementation bindings | 3.5 | C06, C07, C15 |
+-| C17 | Allowlisted sync and authored conflict resolution | 3 | C09, C14, C16 |
++| C17 | Allowlisted sync and authored conflict resolution | 3 | C09, C14, C16, C12 |
+ | C18 | Snapshot index and read-only queries | 3.5 | C02, C08 |
+ | C19 | Ideas, drafts and atomic discard | 2.5 | C09, C15 |
+ | C20 | Semantic identity reservations and uncertain dispatch | 3.5 | C09, C13, C19 |
+ | C22 | Graduation and atomic relationships | 3 | C15, C20 |
+-| C21 | Shared local number allocation | 3.5 | C22 |
++| C21 | Shared local number allocation | 3.5 | C22, C17 |
+ | C23 | Activity eligibility and implementation clock fold | 3.5 | C02, C13 |
+ | C24 | Portable review schemas and patch reconstruction | 3 | C02, C03, C56 |
+ | C33 | Private immutable input capture | 3 | C07, C16 |
+@@ -161,33 +161,34 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ | C25 | Live review capsules and qualified turn timing | 3 | C09, C23, C58 |
+ | C26 | CAS review import and exact-content acceptance | 3.5 | C14, C17, C25, C58 |
+ | C27 | Attempts, JIT coverage and estimates | 3 | C16, C23, C26 |
+-| C28 | State transitions and atomic guard outcomes | 3.5 | C15, C22, C26, C27 |
++| C28 | State transitions and atomic guard outcomes | 3.5 | C15, C22, C26, C27, C17, C21, C09 |
+ | C29 | Kind-specific guards and terminal dispositions | 3 | C28 |
+ | C30 | Expansion reservation and resolution | 3.5 | C20, C21, C22, C23, C28 |
+-| C31 | Trip ordering, replan decisions and human pivots | 3.5 | C23, C27, C28, C30 |
++| C31 | Trip ordering, replan decisions and human pivots | 3.5 | C23, C27, C28, C30, C14, C17 |
+ | C32 | Single-use execution admission and cancellation | 3.5 | C09, C16, C31 |
+-| C35 | Captured-export test execution and receipts | 3 | C12, C32, C34 |
++| C35 | Captured-export test execution and receipts | 3 | C12, C32, C34, C31 |
+ | C36 | macOS contained-lane probe and profile | 3.5 | C35 |
+ | C37 | Linux contained-lane probe and profile | 3.5 | C35 |
+ | C38 | Source review evidence and effective pass activation | 3 | C29, C35 |
+ | C39 | Positive delivery observation and archival proof | 3.5 | C38 |
+ | C40 | Reviewed squash and rebase transformation plans | 3 | C39 |
+-| C41 | Admitted target mutation and exact-result recovery | 3 | C32, C40 |
+-| C42 | Atomic sign-off and retained evidence reconstruction | 3 | C29, C38, C39 |
+-| C43 | Durable resident-action queue and replay | 3 | C09, C13, C17, C28 |
++| C41 | Admitted target mutation and exact-result recovery | 3.5 | C32, C40, C06, C39 |
++| C42 | Atomic sign-off and retained evidence reconstruction | 3.5 | C29, C38, C39 |
++| C43 | Durable resident-action queue and replay | 3 | C09, C13, C17, C28, C35, C31 |
+ | C44 | Estimate lineage, usage and learning outcomes | 2.5 | C23, C27, C42 |
+-| C45 | Spike deliverable binding and validation walk | 3 | C29, C33, C35, C38, C39, C42 |
++| C45 | Spike deliverable binding and validation walk | 3 | C29, C33, C35, C38, C39, C42, C16 |
+ | C46 | Legacy inventory and deterministic v0 adapters | 3 | C03, C06, C25, C58 |
+ | C47 | Stable legacy adoption preparation | 3 | C07, C11, C46 |
+-| C48 | Atomic migration apply and accepted-snapshot binding | 3.5 | C09, C17, C26, C47 |
++| C48 | Atomic migration apply and accepted-snapshot binding | 3.5 | C09, C17, C26, C47, C10 |
+ | C51 | Real review/migration and second-clone qualification | 3 | C48, C18 |
+-| C61 | Scoped evidence-only recovery and real rerun | 3 | C16, C27, C32, C35, C38, C42 |
++| C61 | Scoped evidence-only recovery and real rerun | 3 | C16, C27, C32, C35, C38, C42, C45 |
+ | C50 | Shared-store concurrency and recovery qualification | 3 | C09, C10, C17, C21, C30, C31, C32, C41, C43, C35, C38, C42, C61 |
+ | C62 | Epic aggregation and scope-resolution checkpoint | 2.5 | C22, C29, C38, C42 |
+-| C49 | Core-only executable lifecycle qualification | 3.5 | C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48 |
++| C63 | Installed extension discovery and command/init composition | 3 | C12, C13, C14, C43, C01 |
++| C49 | Core-only executable lifecycle qualification | 3.5 | C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63 |
+ | C52 | Entrypoint performance and unit-isolation budgets | 3 | C18, C49, C50, C51 |
+-| C59 | Cross-platform wheel and CI qualification | 3 | C36, C37, C49, C50, C51, C52 |
+-| C53 | Release workflow, tutorials and candidate handoff | 3.5 | C59 |
++| C59 | Cross-platform wheel and CI qualification | 3 | C36, C37, C49, C50, C51, C52, C63 |
++| C53 | Release workflow, tutorials and candidate handoff | 3.5 | C59, C01 |
+ | C60 | Publish and qualify the exact released core | 2.5 | C53 |
+ 
+ ### C01: Package foundation and command result contract
+@@ -280,7 +281,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Touched files:** src/aitm_core/models/operations.py; src/aitm_core/store/backend.py; src/aitm_core/store/memory_backend.py; packages/aitm-core/tests/unit/test_c04.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `Backend.read(snapshot: Snapshot, paths: Sequence[str]) -> Blobs; transact(op: Operation, expected: Snapshot) -> OperationResult; RelatedWriteSet(read_set, writes, events); WriteAuthorizer(owner, change) and PendingActionRunner(snapshot) ports`. Domain request/result records live with this producer and reference the shared typed contracts above.
++**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `Backend.read(snapshot: Snapshot, paths: Sequence[str]) -> Blobs; transact(op: Operation, expected: Snapshot) -> OperationResult; RelatedWriteSet(read_set, writes, events); FinalizationIntent(kind, version, related_preconditions, payload); WriteAuthorizer(owner, change) and PendingActionRunner(snapshot) ports`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+ - [ ] **Test first:** test_operation_cas: refusal records guards without transition; identical operation retry returns prior result, changed payload errors; stale read-set re-evaluates or conflicts, related-story update is atomic. Memory and later Git backends run same behavioral cases.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+@@ -304,13 +305,15 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C06: Planning history validation and worktree exclusion
+ 
+-**Estimate:** 3.5 h · **Depends on:** C05 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C05, C01 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C01. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/store/validation.py; src/aitm_core/store/gate.py; src/aitm_core/services.py; src/aitm_core/cli/planning.py; packages/aitm-core/tests/integration/test_c06.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `validate_history(anchor: StoreAnchor, tip: str) -> ValidationReport; ref_gate(repo) -> ContextManager[Gate]`. Domain request/result records live with this producer and reference the shared typed contracts above.
++**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `validate_history(anchor: StoreAnchor, tip: str) -> ValidationReport; ref_gate(repo, target_ref: RefIdentity, purpose: RefMutationKind) -> ContextManager[Gate]`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_store_gate: empty-root/single-parent/data-path constraints; reject symlink/submodule/traversal/code/outside-path and code ancestry. Distinct review refs permitted. Serialize supported operations; inject external checkout between pre/post checks, retain both refs/index/unsynced bytes and fence publication. Wire ValidationGate into services.backend and planning validate; real planning validate and a normal GitBackend transaction must reject outside-path writes. No caller can omit the gate.
++- [ ] **Test first:** test_store_gate: empty-root/single-parent/data-path constraints; reject symlink/submodule/traversal/code/outside-path and code ancestry. Distinct review refs permitted. Serialize supported operations; inject external checkout between pre/post checks, retain both refs/index/unsynced bytes and fence publication. Wire ValidationGate into services.backend and planning validate; real planning validate and a normal GitBackend transaction must reject outside-path writes. No caller can omit the gate. Declare ForwardRepairVerifier as a mandatory typed validation seam for diagnosed repaired history; until C10 is installed, such history stays fenced. ref_gate(repo, target_ref, purpose) shares one clone lock but checks the exact target: planning validation is distinct from delivery content validation.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c06.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -350,9 +353,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Touched files:** src/aitm_core/ext/api.py; src/aitm_core/ext/registry.py; src/aitm_core/providers/backlog.py; src/aitm_core/providers/githost.py; packages/aitm-core/tests/unit/test_c13.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `load_extensions(policy) -> Registry; register_activity(contract: ActivityProducerRegistration) -> ProducerRef; LocalGraduationAuthority.graduate(intent, related: RelatedWriteSet) -> GraduationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
++**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `load_extensions(policy) -> Registry; register_activity(contract: ActivityProducerRegistration) -> ProducerRef; LocalGraduationAuthority.graduate(intent, finalization: FinalizationIntent) -> GraduationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_registration: dependency/version/order rules, cycles, duplicate namespace/IDs and unsupported measurement contracts refuse; installed-but-disabled stays disabled. BacklogProvider/GitHostProvider typed capabilities include observation, identity, publication, protection and pending unsupported results. Distinguish local atomic-graduation authority from externally issued IdentityResult pending finalization.
++- [ ] **Test first:** test_registration: dependency/version/order rules, cycles, duplicate namespace/IDs and unsupported measurement contracts refuse; installed-but-disabled stays disabled. BacklogProvider/GitHostProvider typed capabilities include observation, identity, publication, protection and pending unsupported results. Distinguish local atomic-graduation authority from externally issued IdentityResult pending finalization. Define InitStepRegistration and the Extension init_steps contribution plus lazy CLI/provider factories. These are schema/registry contracts; C63 owns installed entry-point discovery and production mounting/init routing, not a hidden unit-test registry.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/unit/test_c13.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -360,7 +363,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C14: Constrained extension writes and retained unknown data
+ 
+-**Estimate:** 3 h · **Depends on:** C04, C13 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C04, C13, C08 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C08. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/ext/ownership.py; src/aitm_core/ext/adapters.py; src/aitm_core/services.py; src/aitm_core/store/backend.py; packages/aitm-core/tests/unit/test_c14.py.
+ 
+@@ -388,7 +393,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C09: Publication replay and conflict recovery
+ 
+-**Estimate:** 4 h · **Depends on:** C04, C08, C15 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 4 h · **Depends on:** C04, C08, C15, C14 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C14. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/services.py; src/aitm_core/cli/dispatch.py; src/aitm_core/store/publication.py; src/aitm_core/store/reconcile.py; packages/aitm-core/tests/integration/test_c09.py.
+ 
+@@ -402,13 +409,15 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C10: Forward repair from maximal valid prefix
+ 
+-**Estimate:** 3.5 h · **Depends on:** C08, C09 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 4 h · **Depends on:** C08, C09, C06 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C06. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+-**Touched files:** src/aitm_core/store/repair.py; src/aitm_core/cli/planning.py; packages/aitm-core/tests/integration/test_c10.py.
++**Touched files:** src/aitm_core/store/validation.py; src/aitm_core/services.py; src/aitm_core/store/repair.py; src/aitm_core/cli/planning.py; packages/aitm-core/tests/integration/test_c10.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `plan_repair(anchor, bad_tip) -> RepairPlan; apply_repair(plan, expected_tip) -> OperationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_maximal_prefix: fetch P→valid unseen V→bad B; repair extends B restoring V payload, rejects older P, retains invalid tail and unpublished recovery refs. Fresh clone reproduces prefix/proof. Shared code ancestry remains fenced.
++- [ ] **Test first:** test_maximal_prefix: fetch P→valid unseen V→bad B; repair extends B restoring V payload, rejects older P, retains invalid tail and unpublished recovery refs. Fresh clone reproduces prefix/proof. Shared code ancestry remains fenced. Install the ForwardRepairVerifier seam in the normal history validator: independently recompute the trusted maximal valid prefix and exact restored payload/repair receipt, allowing only that proved restoration after the retained diagnosed invalid span. Run real planning repair, then planning validate in a fresh clone; reject forged receipt, older non-maximal restoration or unprovable/code-shared ancestry. No receipt nominates its own anchor.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c10.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -416,7 +425,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C11: Crash-resumable init and reconfiguration
+ 
+-**Estimate:** 3.5 h · **Depends on:** C07, C09 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C07, C09, C10 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C10. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/setup/init.py; src/aitm_core/setup/journal.py; src/aitm_core/cli/setup.py; src/aitm_core/services.py; packages/aitm-core/tests/integration/test_c11.py.
+ 
+@@ -458,7 +469,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C17: Allowlisted sync and authored conflict resolution
+ 
+-**Estimate:** 3 h · **Depends on:** C09, C14, C16 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C09, C14, C16, C12 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C12. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/store/sync.py; src/aitm_core/cli/sync.py; src/aitm_core/services.py; packages/aitm-core/tests/integration/test_c17.py.
+ 
+@@ -518,9 +531,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Touched files:** src/aitm_core/graduation.py; src/aitm_core/relationships.py; src/aitm_core/cli/stories.py; packages/aitm-core/tests/integration/test_c22.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `build_graduation(intent, draft: DraftSnapshot, candidate: CandidateIdentity, related: RelatedWriteSet) -> Operation; finalize_external_identity(reservation, expected_draft) -> OperationResult; link(change) -> OperationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
++**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `build_graduation(intent, draft: DraftSnapshot, candidate: CandidateIdentity, finalization: FinalizationIntent) -> Operation; finalize_external_identity(reservation, expected_draft, finalization: FinalizationIntent) -> OperationResult; link(change) -> OperationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_graduate_links: exact draft moves with original facts/attachments, numbered story initialization and parent reciprocal links commit together. Concurrent draft edit conflicts; parent/dependency/replacement cycles and self-links refuse. Resume returns same issued identity. Supply the pure construction seam (number, exact draft move, initialized story, reciprocal relations and initial projection identity) before C21 local authority. External issuance may remain retained pending finalization; the local path may not expose such a partial permanent ID. RelatedWriteSet is the C04 typed read/precondition/write/event set; ordinary graduation supplies empty related changes. The constructor combines it atomically with child construction, validating ownership and relationship consistency; C30 supplies the expansion-specific facts.
++- [ ] **Test first:** test_graduate_links: exact draft moves with original facts/attachments, numbered story initialization and parent reciprocal links commit together. Concurrent draft edit conflicts; parent/dependency/replacement cycles and self-links refuse. Resume returns same issued identity. Supply the pure construction seam (number, exact draft move, initialized story, reciprocal relations and initial projection identity) before C21 local authority. External issuance may remain retained pending finalization; the local path may not expose such a partial permanent ID. FinalizationIntent is durable typed semantic input, not pre-rendered writes or a serialized callback. Core dispatches its registered kind/version through materialize_finalization(intent, chosen_child, pinned_snapshot) -> RelatedWriteSet after choosing the candidate. Ordinary graduation yields empty related changes; C30 supplies the expansion finalizer. The external finalizer first obtains the actual reconciled issuer identity, then materializes and atomically commits the same related facts after rechecking current origin reservation; a fenced origin retains issued identity pending scope reconciliation, never attaches it automatically.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c22.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -528,17 +541,19 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C21: Shared local number allocation
+ 
+-**Estimate:** 3.5 h · **Depends on:** C22 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C22, C17 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C17. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/providers/local.py; src/aitm_core/services.py; src/aitm_core/cli/stories.py; packages/aitm-core/tests/integration/test_c21.py.
+ 
+-**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `graduate_local(intent: GraduationIntent, related: RelatedWriteSet) -> GraduationResult; project_latest(publication, key) -> ActionResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
++**Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `graduate_local(intent: GraduationIntent, finalization: FinalizationIntent) -> GraduationResult; project_latest(publication, key) -> ActionResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_allocator_two_clones: real graduate invokes C22 build_graduation inside one candidate operation; inject failure after number proposal/before construction and assert no permanent ID, moved draft, usable numbered story or partial relationship/action exists. Local CAS atomically commits all surfaces; shared mode exposes ID only after verified publication. Two drafts race for one number, loser rebuilds complete transaction under same semantic intent; lost ACK observes result. Same draft exposes one ID; offline candidates stay unissued. Forward the supplied related preconditions/facts to C22 construction inside the same allocation CAS; they must be re-evaluated on candidate reallocation. No caller may expose a proposed number before the complete operation is authoritative.
++- [ ] **Test first:** test_allocator_two_clones: real graduate invokes C22 build_graduation inside one candidate operation; inject failure after number proposal/before construction and assert no permanent ID, moved draft, usable numbered story or partial relationship/action exists. Local CAS atomically commits all surfaces; shared mode exposes ID only after verified publication. Two drafts race for one number, loser rebuilds complete transaction under same semantic intent; lost ACK observes result. Same draft exposes one ID; offline candidates stay unissued. Pass FinalizationIntent to C22 construction after choosing each candidate. Every losing-number retry re-runs materialize_finalization with the newly chosen child ID and fresh snapshot; never reuse a RelatedWriteSet containing the old candidate. No caller may expose a proposed number before the complete operation is authoritative.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c21.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+-**Risk/boundary:** C21 implements the C13 LocalGraduationAuthority.graduate(intent, related) method by delegating to graduate_local, and wires it into the existing graduate adapter. Allocation is internal candidate construction, never a separately exposed durable local ID; externally issued pending identities retain their distinct C20/C22 semantics.
++**Risk/boundary:** C21 implements the C13 LocalGraduationAuthority.graduate(intent, finalization) method by delegating to graduate_local, and wires it into the existing graduate adapter. Allocation is internal candidate construction, never a separately exposed durable local ID; externally issued pending identities retain their distinct C20/C22 semantics.
+ 
+ ### C23: Activity eligibility and implementation clock fold
+ 
+@@ -668,13 +683,15 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C28: State transitions and atomic guard outcomes
+ 
+-**Estimate:** 3.5 h · **Depends on:** C15, C22, C26, C27 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C15, C22, C26, C27, C17, C21, C09 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+-**Touched files:** src/aitm_core/machine/states.py; src/aitm_core/machine/transitions.py; src/aitm_core/machine/guards.py; src/aitm_core/cli/lifecycle.py; packages/aitm-core/tests/unit/test_c28.py.
++**Mandatory shared-file predecessors:** C21, C09. These are included in Depends on and must be carried into the leaf issue graph.
++
++**Touched files:** src/aitm_core/services.py; src/aitm_core/cli/dispatch.py; src/aitm_core/machine/states.py; src/aitm_core/machine/transitions.py; src/aitm_core/machine/guards.py; src/aitm_core/cli/lifecycle.py; packages/aitm-core/tests/unit/test_c28.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `transition(request: TransitionRequest) -> OperationResult; explain(snapshot, story) -> TransitionExplanation`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_transition_matrix: eight-state edges and entry/exit slots evaluated core then stable extensions on one pinned read-set. Enforce refusal records no transition; advisory advances with failed guards; illegal edge/integrity never waived. CAS race re-evaluates all related predicates. Real advisory promote to Develop with absent plan and implementation-unbound creates one provisional attempt/clock and failed guards. Later accepted plan, bind --implementation and attempt reconcile preserve attempt ID, cumulative coverage and consumed allowance.
++- [ ] **Test first:** test_transition_matrix: eight-state edges and entry/exit slots evaluated core then stable extensions on one pinned read-set. Enforce refusal records no transition; advisory advances with failed guards; illegal edge/integrity never waived. CAS race re-evaluates all related predicates. Real advisory promote to Develop with absent plan and implementation-unbound creates one provisional attempt/clock and failed guards. Later accepted plan, bind --implementation and attempt reconcile preserve attempt ID, cumulative coverage and consumed allowance. Own the normal state-command pipeline: C31 preflight first, then C17 sync of eligible bound authored inputs as a separate saved/reported operation, then pin a fresh planning/policy/read-set before transition evaluation. Authored-sync has its own operation category so it does not recursively request pre-sync. A sync conflict retains both versions and prevents the normal transition; successful sync is not rolled back by a later guard refusal.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/unit/test_c28.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -702,7 +719,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `reserve_expansion(origin, intent) -> OperationResult; resolve_expansion(origin, proof) -> OperationResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_expansion_gap: reservation atomically consumes allowance, blocks/pauses origin before identity call; delayed/lost response and finalization never expose unblocked gap. Cancellation needs non-issuance/fencing proof, child delivery/disposition resolution updates all related facts. Local expansion uses C21 graduate_local with C22 construction: after the earlier allowance/pause reservation, derive RelatedWriteSet from the exact live origin attempt/reservation, replace reservation block with child block, and append expansion/clock facts in the same child-number/story CAS. Real expand in local-only and shared stores tests construction failure, competing clone and lost ACK: no permanent number/usable child before authority, one child per intent and no unblocked interval. External uncertain issuance remains the distinct C20 protocol.
++- [ ] **Test first:** test_expansion_gap: reservation atomically consumes allowance, blocks/pauses origin before identity call; delayed/lost response and finalization never expose unblocked gap. Cancellation needs non-issuance/fencing proof, child delivery/disposition resolution updates all related facts. Local expansion uses C21 graduate_local with C22 construction: after the earlier allowance/pause reservation, materialize the durable FinalizationIntent into RelatedWriteSet using the exact live origin attempt/reservation and the actual chosen child, replace reservation block with child block, and append expansion/clock facts in the same child-number/story CAS. Real expand in local-only and shared stores tests construction failure, competing clone and lost ACK: no permanent number/usable child before authority, one child per intent and no unblocked interval. External uncertain issuance remains the distinct C20 protocol. Own build_expansion_related(finalization, chosen_child, snapshot) and register the core expansion finalizer with C22. Both local candidate retries and external lost-response finalization call it after identity selection. Assert origin block, expansion events, reciprocal child facts and projection identity all name the winning child ID; no duplicate finalization or attachment to a fenced origin and no unblocked interval.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c30.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -710,7 +727,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C31: Trip ordering, replan decisions and human pivots
+ 
+-**Estimate:** 3.5 h · **Depends on:** C23, C27, C28, C30 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C23, C27, C28, C30, C14, C17 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C14, C17. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/services.py; src/aitm_core/store/backend.py; src/aitm_core/store/sync.py; src/aitm_core/machine/transitions.py; src/aitm_core/rules/trips.py; src/aitm_core/pivots.py; src/aitm_core/cli/trips.py; packages/aitm-core/tests/integration/test_c31.py.
+ 
+@@ -738,7 +757,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C35: Captured-export test execution and receipts
+ 
+-**Estimate:** 3 h · **Depends on:** C12, C32, C34 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C12, C32, C34, C31 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C31. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/verification/run.py; src/aitm_core/verification/receipts.py; src/aitm_core/cli/test.py; src/aitm_core/verification/lanes.py; src/aitm_core/services.py; src/aitm_core/setup/doctor.py; packages/aitm-core/tests/integration/test_c35.py.
+ 
+@@ -822,13 +843,15 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C41: Admitted target mutation and exact-result recovery
+ 
+-**Estimate:** 3 h · **Depends on:** C32, C40 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C32, C40, C06, C39 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C06, C39. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+-**Touched files:** src/aitm_core/delivery/mutate.py; src/aitm_core/delivery/reconcile.py; src/aitm_core/cli/deliver.py; packages/aitm-core/tests/integration/test_c41.py.
++**Touched files:** src/aitm_core/store/gate.py; src/aitm_core/delivery/mutate.py; src/aitm_core/delivery/reconcile.py; src/aitm_core/cli/deliver.py; packages/aitm-core/tests/integration/test_c41.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `execute_delivery(intent: DeliveryIntent, admission) -> DeliveryResult; reconcile_delivery(intent) -> DeliveryResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_delivery_once: durable intent/admission precede expected-head CAS on non-checked-out target; checked-out target refuses. Crash after CAS recovers exact result through retained intent/history despite later target advance; invalidation/cancellation cannot authorize second mutation.
++- [ ] **Test first:** test_delivery_once: durable intent/admission precede expected-head CAS on non-checked-out target; checked-out target refuses. Crash after CAS recovers exact result through retained intent/history despite later target advance; invalidation/cancellation cannot authorize second mutation. Use C06 ref_gate with DELIVERY_TARGET around exact target-head CAS, inventory immediately before/after, and preserve target refs/index/unsynced bytes on detected out-of-band checkout. Fence further mutation/publication eligibility and require explicit reconciliation without reset; an already-landed result stays retained historical evidence. Real Git fixture injects external checkout across CAS as well as serializes supported operations; a pre-existing checked-out target alone is not sufficient proof.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c41.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -836,13 +859,13 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C42: Atomic sign-off and retained evidence reconstruction
+ 
+-**Estimate:** 3 h · **Depends on:** C29, C38, C39 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C29, C38, C39 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+-**Touched files:** src/aitm_core/outcomes.py; src/aitm_core/signoff.py; src/aitm_core/evidence.py; src/aitm_core/cli/evidence.py; packages/aitm-core/tests/integration/test_c42.py.
++**Touched files:** src/aitm_core/reviews/activation.py; src/aitm_core/outcomes.py; src/aitm_core/signoff.py; src/aitm_core/evidence.py; src/aitm_core/cli/evidence.py; packages/aitm-core/tests/integration/test_c42.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `build_close_outcome(snapshot, retro) -> Outcome; signoff(retro: RetroInput) -> OperationResult; reconcile_evidence(request) -> EvidenceResult`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_signoff_atomic: current review/delivery/applicable prior lifecycle proof and proposed retro close in one transaction, never require prior signoff; missing earlier conditions yield Done/unverified without satisfying delivered dependency. Reconstruct derived receipts only from retained authoritative proof; preserve already stopped clock. Missing actual proof returns typed rerun requirement for C61, not a fabricated pass. C42 owns construction of the complete typed Close outcome from C56 schema, current estimate/attempt/source/coverage/retro facts. Real signoff commits outcome, retrospective, session end, Done and related-story resolution with one operation ID/CAS; refusal or crash before CAS leaves none, retry after CAS returns the single whole close. No later callback appends the missing outcome.
++- [ ] **Test first:** test_signoff_atomic: current review/delivery/applicable prior lifecycle proof and proposed retro close in one transaction, never require prior signoff; missing earlier conditions yield Done/unverified without satisfying delivered dependency. Reconstruct derived receipts only from retained authoritative proof; preserve already stopped clock. Missing actual proof returns typed rerun requirement for C61, not a fabricated pass. C42 owns construction of the complete typed Close outcome from C56 schema, current estimate/attempt/source/coverage/retro facts. Real signoff commits outcome, retrospective, session end, Done and related-story resolution with one operation ID/CAS; refusal or crash before CAS leaves none, retry after CAS returns the single whole close. No later callback appends the missing outcome. Wire evidence reconcile to C38 reconcile_review after retaining/reconstructing applicable proof and running current preflight. It may activate a single retained early verdict only in Review with current prerequisites, recording the genuine later clock stop without a second verdict. A missing real test reports the managed rerun route and never activates prematurely.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c42.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -850,7 +873,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C43: Durable resident-action queue and replay
+ 
+-**Estimate:** 3 h · **Depends on:** C09, C13, C17, C28 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C09, C13, C17, C28, C35, C31 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C35, C31. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/machine/actions.py; src/aitm_core/cli/actions.py; src/aitm_core/services.py; src/aitm_core/store/sync.py; src/aitm_core/cli/sync.py; packages/aitm-core/tests/integration/test_c43.py.
+ 
+@@ -878,7 +903,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C45: Spike deliverable binding and validation walk
+ 
+-**Estimate:** 3 h · **Depends on:** C29, C33, C35, C38, C39, C42 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C29, C33, C35, C38, C39, C42, C16 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C16. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/deliverables.py; src/aitm_core/cli/deliverables.py; src/aitm_core/cli/bind.py; packages/aitm-core/tests/integration/test_c45.py.
+ 
+@@ -920,7 +947,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C48: Atomic migration apply and accepted-snapshot binding
+ 
+-**Estimate:** 3.5 h · **Depends on:** C09, C17, C26, C47 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C09, C17, C26, C47, C10 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C10. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/migration/apply.py; src/aitm_core/migration/bindings.py; src/aitm_core/store/validation.py; src/aitm_core/cli/migrate.py; packages/aitm-core/tests/integration/test_c48.py.
+ 
+@@ -948,7 +977,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C61: Scoped evidence-only recovery and real rerun
+ 
+-**Estimate:** 3 h · **Depends on:** C16, C27, C32, C35, C38, C42 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C16, C27, C32, C35, C38, C42, C45 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C45. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** src/aitm_core/recovery.py; src/aitm_core/cli/evidence.py; src/aitm_core/cli/bind.py; packages/aitm-core/tests/integration/test_c61.py.
+ 
+@@ -968,7 +999,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `run_shared_matrix(disposable_remotes) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_eight_by_fifty: 8 disjoint stories ×50 syncs retain all work; same-story/related-policy/authored conflicts explicit. Fault injection covers stop/admit, publication ACK, allocator, stale action, target mutation and maximal-valid-prefix repair in two real clones. Actual two-clone CLI scenarios race pending expansion against test/promote/signoff, and published enforce stop against offline test launch (no subprocess marker created). Lost identity response resolved without child then full event rebuild reproduces pause/resume; early verdict/later activation rebuild reproduces genuine clock stop. Local-only admitted core-run delivery succeeds with publication not applicable, while checked-out/invalidated paths refuse. test_trip_before_sync_and_pass drives the installed CLI with a contract-conforming qualifying overrun before ordinary sync, at a CAS retry and at managed completion; no authored import, second launch or effective pass overtakes the stop. Retained workspace/results remain available for analysis.
++- [ ] **Test first:** test_eight_by_fifty: 8 disjoint stories ×50 syncs retain all work; same-story/related-policy/authored conflicts explicit. Fault injection covers stop/admit, publication ACK, allocator, stale action, target mutation and maximal-valid-prefix repair in two real clones. Actual two-clone CLI scenarios race pending expansion against test/promote/signoff, and published enforce stop against offline test launch (no subprocess marker created). Lost identity response resolved without child then full event rebuild reproduces pause/resume; early verdict/later activation rebuild reproduces genuine clock stop. Local-only admitted core-run delivery succeeds with publication not applicable, while checked-out/invalidated paths refuse. test_trip_before_sync_and_pass drives the installed CLI with a contract-conforming qualifying overrun before ordinary sync, at a CAS retry and at managed completion; no authored import, second launch or effective pass overtakes the stop. Retained workspace/results remain available for analysis. The late-review rebuild scenario invokes installed evidence reconcile, then discards private caches and folds only retained events to reproduce the genuine activation boundary.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_shared_store.py packages/aitm-core/tests/integration/test_execution_races.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -988,15 +1019,31 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Risk/boundary:** Use one pinned related-story snapshot and CAS read-set; scope resolution is retained evidence, not blanket acceptance of abandoned work.
+ 
++### C63: Installed extension discovery and command/init composition
++
++**Estimate:** 3 h · **Depends on:** C12, C13, C14, C43, C01 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C43, C01. These are included in Depends on and must be carried into the leaf issue graph.
++
++**Touched files:** src/aitm_core/ext/discovery.py; src/aitm_core/services.py; src/aitm_core/cli/app.py; src/aitm_core/setup/init.py; tests/fixtures/extension-package/; packages/aitm-core/tests/integration/test_c63.py.
++
++**Consumes:** C13 registration/factory/init-step contracts, C12 setup composition and C14 constrained ingress. **Produces:** `discover_installed(policy: PolicySnapshot) -> Registry; mount_extension_command(registry, route) -> CommandHandler; run_provider_init(registry, context) -> InitStepResults`. Domain request/result records live with this producer and reference the shared typed contracts above.
++
++- [ ] **Test first:** test_installed_extension: build/install a disposable package exposing aitm.extensions with a command, guard/action, typed owner/provider and safe fake init step. Ordinary installed aitm and init discover it through importlib.metadata, select only committed enabled versions/order, mount the route and invoke its init contribution. Disabled policy never invokes it; missing required provider/owner is reported unavailable, not applied. Registry/ownership errors remain enforced through real ingress. Warm reads keep unused factories lazy.
++- [ ] **Implement:** wire pinned registry into services, CLI dispatch and init contributions at the named call sites; no hosted endpoint or foreign package config changes.
++- [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_c63.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
++
++**Risk/boundary:** this leaf proves generic installed integration with a fixture package, not GitHub or harness functionality. Existing hooks/config remain preserved and plugin code is trusted in-process, not sandboxed. Budget reuses C13/C14 logic and C12 init ports; no second registry implementation.
++
+ ### C49: Core-only executable lifecycle qualification
+ 
+-**Estimate:** 3.5 h · **Depends on:** C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C12, C18, C19, C22, C26, C27, C31, C35, C38, C39, C42, C43, C44, C45, C61, C62, C21, C10, C41, C48, C63 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+ **Touched files:** tests/integration/test_core_walk.py; tests/fixtures/reviews/; docs/learn/core-cli-walk.md; packages/aitm-core/tests/integration/test_core_walk.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `run_core_walk(fixture_policy, local_repository) -> QualificationReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_complete_cli_walk: real init/config commit/rerun, idea/draft/graduation, imported genuine design/plan reviews, estimates/JIT, story-tagged change, test, independent source review, observed authorized merge and retro => delivered Done. Negative missing/stale tests and advisory recovery retain failures. No SDK or GitHub needed. All steps invoke installed aitm commands, never direct helper substitutions; collect test_cli_surface for every mapped route/option and test_provisional_attempt plus test_evidence_only_rerun with exact identity/clock/capability assertions. No new feature implementation is hidden here. test_cli_surface checks installed registration/options/JSON contracts for the entire map; positive operational proof is collected by the owning C49/C50/C51/C59 scenarios, with their union required for Gate C/D. The nominal walk invokes local graduate from C21. Real promote without --push observes default publication attempt and a distinct retryable pending result after simulated loss.
++- [ ] **Test first:** test_complete_cli_walk: real init/config commit/rerun, idea/draft/graduation, imported genuine design/plan reviews, estimates/JIT, story-tagged change, test, independent source review, observed authorized merge and retro => delivered Done. Negative missing/stale tests and advisory recovery retain failures. No SDK or GitHub needed. All steps invoke installed aitm commands, never direct helper substitutions; collect test_cli_surface for every mapped route/option and test_provisional_attempt plus test_evidence_only_rerun with exact identity/clock/capability assertions. No new feature implementation is hidden here. test_cli_surface checks installed registration/options/JSON contracts for the entire map; positive operational proof is collected by the owning C49/C50/C51/C59 scenarios, with their union required for Gate C/D. The nominal walk invokes local graduate from C21. Real promote without --push observes default publication attempt and a distinct retryable pending result after simulated loss. test_authored_sync_and_late_activation uses installed promote on an edited bound accepted plan: saved sync has a distinct operation ID, transition repins and refuses stale acceptance rather than using old guards. Concurrent authored-base conflict preserves both versions and no transition. Submit one source pass early, enter Review with it still ineffective, then evidence reconcile activates it once at the later observed time with no duplicate verdict.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/integration/test_core_walk.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -1018,13 +1065,13 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C59: Cross-platform wheel and CI qualification
+ 
+-**Estimate:** 3 h · **Depends on:** C36, C37, C49, C50, C51, C52 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3 h · **Depends on:** C36, C37, C49, C50, C51, C52, C63 · **Parent:** #2 · **Priority/size:** P1/S.
+ 
+-**Touched files:** tests/packaging/test_wheel.py; .github/workflows/core-ci.yml; packages/aitm-core/tests/packaging/test_wheel.py.
++**Touched files:** tests/packaging/installed_runner.py; tests/packaging/test_wheel.py; .github/workflows/core-ci.yml; packages/aitm-core/tests/packaging/test_wheel.py.
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `qualify_wheel(candidate_hash, platform) -> PackageReport`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_installed_matrix: build candidate wheel, verify hash, install in clean macOS/Linux environments and run actual CLI smoke, selected contained readiness/execution or explicit capability denial plus captured-export lane. CI collects all exact C49–C52 suites and platform tests and archives reports. User runtime needs no Node.
++- [ ] **Test first:** test_installed_matrix: build candidate wheel, verify hash, install in clean macOS/Linux environments and run actual CLI smoke, selected contained readiness/execution or explicit capability denial plus captured-export lane. CI collects all exact C49–C52 suites and platform tests and archives reports. User runtime needs no Node. Provide run_installed_suites(artifact, suite_manifest, platform): copy the reviewed test/fixture harness outside the source workspace, install only the target wheel and test dependencies in a fresh venv, clear PYTHONPATH/editable paths, and assert aitm executable plus aitm_core.__file__/distribution RECORD resolve to the installed artifact. This reusable runner executes the actual C5 suite manifest for candidate now and released wheel in C60; source checkout imports invalidate results.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Verify and retain:** run `uv run --package aitm-core pytest packages/aitm-core/tests/packaging/test_wheel.py -q` to PASS plus affected contract suites and Ruff; complete source review/delivery evidence under the common cycle.
+ 
+@@ -1032,7 +1079,9 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ ### C53: Release workflow, tutorials and candidate handoff
+ 
+-**Estimate:** 3.5 h · **Depends on:** C59 · **Parent:** #2 · **Priority/size:** P1/S.
++**Estimate:** 3.5 h · **Depends on:** C59, C01 · **Parent:** #2 · **Priority/size:** P1/S.
++
++**Mandatory shared-file predecessors:** C01. These are included in Depends on and must be carried into the leaf issue graph.
+ 
+ **Touched files:** docs/learn/core-overview.md; docs/release/core-m1.md; packages/aitm-core/pyproject.toml; .github/workflows/core-release.yml; tests/packaging/test_release_workflow.py; packages/aitm-core/tests/packaging/test_release_workflow.py.
+ 
+@@ -1052,7 +1101,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ **Consumes:** delivered contracts from the listed dependencies (or no core prerequisite for C01). **Produces:** `qualify_published(version, delivered_source, expected_hash) -> ReleaseEvidence`. Domain request/result records live with this producer and reference the shared typed contracts above.
+ 
+-- [ ] **Test first:** test_release_checker_fixtures: checker rejects mismatched version/hash/source, missing/uncertain artifact and unsupported evidence using fixtures, and cannot dispatch a publication. Post-publication test_published_release only observes and installs an already-published immutable artifact in clean macOS/Linux consumers, then reruns applicable lifecycle/migration smoke. It records release observations/tutorial provenance; mismatch or unavailable proof keeps C5 pending.
++- [ ] **Test first:** test_release_checker_fixtures: checker rejects mismatched version/hash/source, missing/uncertain artifact and unsupported evidence using fixtures, and cannot dispatch a publication. Post-publication test_published_release only observes and installs an already-published immutable artifact in clean macOS/Linux consumers, then reruns applicable lifecycle/migration smoke. It records release observations/tutorial provenance; mismatch or unavailable proof keeps C5 pending. Post-release uses C59 installed runner with exact released hash/version and copies reviewed fixtures, never imports source checkout code. Required C5 manifest: test_core_walk.py, test_shared_store.py, test_execution_races.py, test_c10.py repair/fresh validation, test_v0_cutover.py, test_review_import.py, test_c63.py generic installed extension, test_budgets.py and unit isolation/full unit suite, plus OS-specific test_c36.py/test_c37.py and installed-wheel smoke. Run local-only, two-clone, migration/import, repair and budgets on the released artifact with named macOS/Linux and warm-laptop hardware/capability lanes. Missing supported hardware/capability or skipped required proof keeps C5 pending; candidate reports cannot replace these released results.
+ - [ ] **Implement:** the named contract and its owned adapter within the stated paths; preserve every global constraint and failure distinction.
+ - [ ] **Checker fixture verification:** run the checker failure/success fixture suite to PASS before any live publication action; this suite cannot dispatch a workflow.
+ - [ ] **Authorized release operation (outside pytest):** after C53 source delivery and explicit release-task authority, use a once-per-release key (version, delivered source, expected artifact identity), observe whether it already exists, then dispatch the tested publication workflow only if unissued. A lost result is reconciled by querying that exact workflow/version/artifact and provenance before any retry. An existing conflicting release is a blocker; never overwrite or republish it.
+@@ -1065,7 +1114,7 @@ Commands inherit global `--json` and pinned context/freshness behavior. Examples
+ 
+ After C01, C02 envelope work and C03 canonicalization are independent. C54/C55 domain reducers follow; C56 serializes their composition. After that foundation, contract-ready store C05–C12, registry/ownership C13–C14 and rendering/index C15/C18 can branch when their exact prerequisites permit. C22 supplies pure graduation construction before C21 atomically allocates/finalizes; the numbering and story update are never separate authority results. C24→C57→C58 splits reconstruction, topology and native mapping, then feeds live/import work C25/C26. C33 capture can proceed beside workflow after C07/C16. C36 and C37 are independent OS adapters after C35, with actual separate platform lanes.
+ 
+-C43 follows C17 and C28 to wire real sync/action retry, and can proceed beside delivery. C46/C47 migration preparation can proceed after its review/policy dependencies while later workflow work completes. C49/C50/C51 qualify separate matrices after their exact dependencies; C49 includes local graduation and registration owners, C51 includes the index, and positive operational proof is distributed by the scenario map rather than inferred from help output; C52 measures, C59 packages/CI, C53 delivers release preparation, and C60 separately publishes/qualifies the released artifact. C61 handles evidence-only recovery after C42 signoff; C62 handles epic aggregation separately from C45 spike validation. Table order is a valid serialized fallback.
++C43 follows C17 and C28 to wire real sync/action retry, and can proceed beside delivery. C46/C47 migration preparation can proceed after its review/policy dependencies while later workflow work completes. C49/C50/C51 qualify separate matrices after their exact dependencies; C49 includes local graduation and registration owners, C51 includes the index, and positive operational proof is distributed by the scenario map rather than inferred from help output; C63 completes installed extension composition; C52 measures, C59 packages/CI and supplies the isolated artifact runner, C53 delivers release preparation, and C60 separately publishes/qualifies the released artifact. C61 handles evidence-only recovery after C42 signoff; C62 handles epic aggregation separately from C45 spike validation. The complete Depends on graph includes mandatory shared-file predecessors, not merely a serial fallback; those edges are copied to the leaf ledger and native issue dependencies.
+ 
+ Shared services, reducer exports and CLI modules have explicit serial owners. If interfaces change, update dependent JIT/branch coverage and rerun the contract suite before proceeding. A passed issue with an undelivered interface is not an eligible predecessor.
+ 
+@@ -1084,13 +1133,13 @@ Shared services, reducer exports and CLI modules have explicit serial owners. If
+ | Engagement, planning/review time, usage/triads | C23/C25/C44; C49/C51 |
+ | Captured/contained lanes, preparation and actual receipts | C33–C37; C49/C52 on macOS and Linux |
+ | Source review, delivery transformation/sign-off/recovery | C38–C42/C45/C61; C49/C50 |
+-| Actions, disabled extensions and unavailable capabilities | C13/C14/C43; C49/C50 |
++| Actions, disabled extensions and unavailable capabilities | C13/C14/C43/C63; C49/C50/C59 |
+ | Real v0 migration, backfill and accepted snapshots | C46–C48; C51 |
+ | Complete CLI walk, performance and released-package behavior | C49–C53/C59/C60 |
+ 
+ Gate A (after C14 and needed contract leaves): freeze versioned operation/provider/canonicalization contracts and pin fixtures; no production readiness claim. Gate B (after C32 plus prerequisites): store/workflow/admission failure semantics established; verification/delivery still pending. Gate C (C49–C51): complete accepted-design nominal and failure matrix with actual artifacts and reconstructable evidence. Gate D (C52/C59 candidate proof, C53 source delivery, then C60 released proof; master C5): packaged macOS/Linux capability, budgets, installed smoke, release version/hash and learning artifacts. Any unresolved required test/finding or unsupported required capability keeps the relevant gate pending.
+ 
+-C60 release evidence must include the full acceptance matrix, package source/review/delivery revision, built/released hashes, tested platforms and declared assurance. Consumer fixtures pin a released core version; a local wheel smoke proves the candidate only until the actual release artifact is verified. C53 tests the candidate workflow/artifact before its source commit/review/delivery; C60 then uses that delivered workflow under later explicit release-task authority and verifies the resulting released artifact. C60's own harness/evidence commit is not a prerequisite part of that target package. C5 remains pending until exact released hash/version checks on both platforms and delivered tutorial/rationale are recorded. Later release authority is distinct from this planning assignment. Extension API 1.0/repo split and full-install meta-package remain later master-plan scope.
++C60 release evidence must include the full acceptance matrix, package source/review/delivery revision, built/released hashes, tested platforms and declared assurance. Consumer fixtures pin a released core version; a local wheel smoke proves the candidate only until the actual release artifact is verified. C53 tests the candidate workflow/artifact before its source commit/review/delivery; C60 then uses that delivered workflow under later explicit release-task authority and verifies the resulting released artifact. C60's own harness/evidence commit is not a prerequisite part of that target package. C5 remains pending until exact released hash/version checks on both platforms and delivered tutorial/rationale are recorded, including the complete C5 installed-artifact manifest from C60 (local-only, two-clone, repair, migration/import, performance and platform capability evidence). Later release authority is distinct from this planning assignment. Extension API 1.0/repo split and full-install meta-package remain later master-plan scope.
+ 
+ ## Migration and production handoff
+ 
+@@ -1116,6 +1165,7 @@ The commands in C49–C53/C59/C60 select the actual listed suite files, not empt
+ | Scenario | Collected suite/test and prerequisite owner |
+ | --- | --- |
+ | Nominal local-only source lifecycle; complete CLI route coverage | tests/integration/test_core_walk.py::test_complete_cli_walk and ::test_cli_surface (C49) |
++| Eligible authored sync is separate, transition repins, conflict retained; early verdict activates later through evidence reconcile | test_core_walk.py::test_authored_sync_and_late_activation (C17/C28/C38/C42, C49) |
+ | Advisory absent-plan/unbound Develop; later acceptance/bind/reconcile same attempt | test_core_walk.py::test_provisional_attempt (C27/C28 producers, C49 qualification) |
+ | Unverified Done real missing-test rerun; new limited generation, old one fenced, genuine later clock interval | test_core_walk.py::test_evidence_only_rerun (C61/C42/C38, C49) |
+ | 8 stories ×50 syncs; related-story/policy/authored publication conflicts | tests/integration/test_shared_store.py::test_eight_by_fifty and ::test_conflicting_inputs (C50) |
+@@ -1125,8 +1175,40 @@ The commands in C49–C53/C59/C60 select the actual listed suite files, not empt
+ | Local-only core-run target delivery succeeds with publication N/A; checked-out/invalidated target refuses; post-CAS crash observes one result | test_execution_races.py::test_local_delivery_admission and ::test_delivery_crash_reconcile (C39–C41, C50) |
+ | No-mutation dry-run; forged declaration/receipt/legacy extension rejected; second clone adoption identity and index parity | tests/integration/test_v0_cutover.py::test_dry_run_read_only, ::test_receipt_forgery, ::test_two_clone_cutover (C46–C48, C51) |
+ | Real portable/native bytes, historical levels and qualified timing live/backfill normalize without duplicate acceptance | tests/integration/test_review_import.py::test_actual_review_records (C24–C26/C57/C58, C51) |
++| Forward repair validates through the normal fresh-clone path; managed target mutation detects external checkout interference | tests/integration/test_c10.py and test_execution_races.py::test_delivery_checkout_race (C06/C10/C41, C50) |
++| Installed extension command/provider/init under committed enabled/disabled policy | tests/integration/test_c63.py (C63; C49/C59 collection) |
+ | Actual selected contained executor and readiness on each OS, plus denied capability and explicit captured-export policy | tests/platform/test_c36.py and test_c37.py; installed-wheel matrix in tests/packaging/test_wheel.py (C36/C37/C59) |
+ | Full entrypoint budgets and entire pure unit suite isolation | tests/performance/test_budgets.py and tests/unit/test_isolation.py; also run pytest packages/aitm-core/tests/unit -q (C52) |
+ | Candidate release procedure before source delivery; exact published artifact after authorized publication | tests/packaging/test_release_workflow.py (C53), then read-only tests/packaging/test_published_release.py with the observed release manifest (C60; publication is a separate authorized operation) |
+ 
+-CI runs the full unit and integration directories, OS-specific platform suite and candidate packaging suites, plus the named performance fixture job where hardware is available. The post-release suite is explicitly marked/separate and invoked only after the publication operation completes; it observes/installs that exact release and cannot dispatch publication; it is not a pre-delivery assertion or a silently skipped C5 proof. Platform-unavailable jobs retain diagnostics and require a supported host for a positive contained claim. Qualification reports enumerate collected tests and any exclusions; an uncollected or skipped required scenario keeps its gate pending.
++CI runs the full unit and integration directories, OS-specific platform suite and candidate packaging suites, plus the named performance fixture job where hardware is available. The C60 job reruns the named full C5 suites against the exact installed released wheel through C59's isolated runner, with executable/module/RECORD path checks. Candidate/source reports alone cannot pass C5. The post-release suite is explicitly marked/separate and invoked only after the publication operation completes; it observes/installs that exact release and cannot dispatch publication; it is not a pre-delivery assertion or a silently skipped C5 proof. Platform-unavailable jobs retain diagnostics and require a supported host for a positive contained claim. Qualification reports enumerate collected tests and any exclusions; an uncollected or skipped required scenario keeps its gate pending.
++
++
++## Mandatory shared-file integration additions
++
++Functional dependencies remain; these additional predecessor edges serialize actual overlapping allowlists. They are already included in each row/leaf Depends on. Any JIT path change must rerun this overlap check and coordinate a new mandatory integration edge before parallel work. Disjoint ready leaves remain eligible for parallel execution.
++
++| Shared path | Previous writer | Next writer |
++| --- | --- | --- |
++| `packages/aitm-core/src/aitm_core/services.py` | C01 | C06 |
++| `packages/aitm-core/src/aitm_core/services.py` | C08 | C14 |
++| `packages/aitm-core/src/aitm_core/services.py` | C14 | C09 |
++| `packages/aitm-core/src/aitm_core/store/validation.py` | C06 | C10 |
++| `packages/aitm-core/src/aitm_core/services.py` | C10 | C11 |
++| `packages/aitm-core/src/aitm_core/services.py` | C12 | C17 |
++| `packages/aitm-core/src/aitm_core/services.py` | C17 | C21 |
++| `packages/aitm-core/src/aitm_core/services.py` | C21 | C28 |
++| `packages/aitm-core/src/aitm_core/cli/dispatch.py` | C09 | C28 |
++| `packages/aitm-core/src/aitm_core/store/backend.py` | C14 | C31 |
++| `packages/aitm-core/src/aitm_core/store/sync.py` | C17 | C31 |
++| `packages/aitm-core/src/aitm_core/services.py` | C31 | C35 |
++| `packages/aitm-core/src/aitm_core/store/gate.py` | C06 | C41 |
++| `packages/aitm-core/src/aitm_core/cli/deliver.py` | C39 | C41 |
++| `packages/aitm-core/src/aitm_core/services.py` | C35 | C43 |
++| `packages/aitm-core/src/aitm_core/store/sync.py` | C31 | C43 |
++| `packages/aitm-core/src/aitm_core/cli/bind.py` | C16 | C45 |
++| `packages/aitm-core/src/aitm_core/store/validation.py` | C10 | C48 |
++| `packages/aitm-core/src/aitm_core/cli/bind.py` | C45 | C61 |
++| `packages/aitm-core/src/aitm_core/services.py` | C43 | C63 |
++| `packages/aitm-core/src/aitm_core/cli/app.py` | C01 | C63 |
++| `packages/aitm-core/pyproject.toml` | C01 | C53 |
