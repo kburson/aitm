@@ -2,13 +2,14 @@ import importlib
 import json
 import os
 import select
+import shutil
 import sqlite3
 import stat
 import subprocess
 import sys
 from contextlib import closing, contextmanager
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from importlib.util import find_spec
 from pathlib import Path
 from uuid import UUID
@@ -20,6 +21,24 @@ OTHER_PROJECT = UUID("31b124f7-10b8-421d-9c76-74555f86435d")
 NOW = datetime(2026, 11, 9, 14, 0, tzinfo=UTC)
 CANARY = "/private/transcripts/raw-provider-handle-canary"
 ROOT_PREFIX = "Library/Application Support/aitm-usage"
+REAL_HOME = Path.home()
+
+
+@pytest.fixture(autouse=True)
+def isolated_control_home(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    home.mkdir(mode=0o700)
+    monkeypatch.setenv("HOME", str(home))
+    if find_spec("aitm_usage") is not None:
+        from aitm_usage import ledger as ledger_module
+
+        monkeypatch.setattr(
+            ledger_module, "_control_root", lambda: control_directory(), raising=False
+        )
+
+
+def control_directory():
+    return Path.home() / "Library" / "Application Support" / "aitm-usage-control"
 
 
 @pytest.fixture
@@ -79,7 +98,7 @@ def sample_batch(ledger, types):
         ordinal=1,
         baseline=tokens,
         request_prefix=(prefix,),
-        client_version="0.99.0",
+        client_version=types.ClientVersion.CODEX_0_167_0_ALPHA_3_2,
         format_version=1,
     )
     return types.LedgerBatch((revision,), types.SourceCheckpoint(cursor, provider))
@@ -92,7 +111,7 @@ def tamper(path):
         yield conn
 
 
-def test_atomic_cursor_and_revisions(tmp_path):
+def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
     assert find_spec("aitm_usage") is not None, (
         "The standalone durable ledger is absent"
     )
@@ -102,20 +121,23 @@ def test_atomic_cursor_and_revisions(tmp_path):
     ledger = Ledger.initialize(tmp_path / "project", PROJECT)
     batch = sample_batch(ledger, types)
 
-    with tamper(ledger.database_path) as conn:
-        conn.execute(
-            """CREATE TRIGGER rollback_probe BEFORE INSERT ON checkpoints
-               BEGIN SELECT RAISE(ABORT, 'checkpoint fault'); END"""
-        )
-    with pytest.raises(sqlite3.IntegrityError, match="checkpoint fault"):
-        ledger.apply(batch)
+    def fail_checkpoint(conn, sequence, proposed, *args, **kwargs):
+        assert conn.execute(
+            "SELECT revision FROM revisions WHERE sequence = ?", (sequence,)
+        ).fetchall() == [(1,)]
+        raise sqlite3.IntegrityError("checkpoint fault")
+
+    from aitm_usage import ledger as ledger_module
+
+    with monkeypatch.context() as inject:
+        inject.setattr(ledger_module, "_append_checkpoint", fail_checkpoint)
+        with pytest.raises(sqlite3.IntegrityError, match="checkpoint fault"):
+            ledger.apply(batch)
     reopened = type(ledger).open(ledger.root, PROJECT)
     assert reopened.as_of().sequence == 0
     assert reopened.as_of().revisions == ()
     assert reopened.as_of().checkpoints == ()
 
-    with tamper(ledger.database_path) as conn:
-        conn.execute("DROP TRIGGER rollback_probe")
     assert reopened.apply(batch) == 1
     assert reopened.apply(batch) == 1
     assert reopened.as_of(1).revisions == batch.revisions
@@ -174,7 +196,9 @@ def test_writer_refusal_read_snapshot_and_release_on_process_exit(state):
             """import sys
 from pathlib import Path
 from uuid import UUID
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
+ledger_module._control_root = lambda: Path(sys.argv[3])
 ledger = Ledger.open(Path(sys.argv[1]), UUID(sys.argv[2]))
 with ledger.writer():
     print("writer ready", flush=True)
@@ -182,6 +206,7 @@ with ledger.writer():
 """,
             str(ledger.root),
             str(PROJECT),
+            str(control_directory()),
         ],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -415,6 +440,7 @@ def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(state):
         project_id=PROJECT,
         role=types.ReviewRole.XPR,
     )
+    ledger.validate_marker(marker)
     data = types.encode_marker(marker)
     assert types.decode_marker(data) == marker
     assert CANARY.encode() not in data
@@ -447,3 +473,367 @@ def test_installed_console_entry_uses_package_and_project_prefix(tmp_path):
     assert result.stdout.startswith("aitm-usage ")
     cli = importlib.import_module("aitm_usage.cli")
     assert cli.default_project_root(PROJECT) == Path.home() / ROOT_PREFIX / str(PROJECT)
+
+
+def test_stale_expected_checkpoint_cannot_append_new_revision(state):
+    from aitm_usage.ledger import ConflictError
+
+    ledger, types = state
+    batch = sample_batch(ledger, types)
+    assert ledger.apply(batch) == 1
+    novel = replace(batch.revisions[0], revision=2)
+    before = durable_data(ledger)
+    with pytest.raises(ConflictError):
+        ledger.apply(replace(batch, revisions=(novel,)))
+    assert ledger.as_of().revisions == batch.revisions
+    assert durable_data(ledger) == before
+    assert ledger.apply(batch) == 1
+    assert (
+        ledger.apply(
+            replace(batch, revisions=(novel,), prior_checkpoint=batch.checkpoint)
+        )
+        == 2
+    )
+
+
+def test_schema_with_same_columns_without_constraints_is_refused(state):
+    from aitm_usage.ledger import Ledger, LedgerError
+
+    ledger, types = state
+    with tamper(ledger.database_path) as conn:
+        conn.execute("ALTER TABLE revisions RENAME TO revisions_original")
+        conn.execute("CREATE TABLE revisions AS SELECT * FROM revisions_original")
+        conn.execute("DROP TABLE revisions_original")
+    before = durable_data(ledger)
+    with pytest.raises(LedgerError):
+        Ledger.open(ledger.root, PROJECT)
+    with pytest.raises(LedgerError):
+        ledger.apply(types.LedgerBatch())
+    assert durable_data(ledger) == before
+
+
+def drift_path(ledger, kind, *, clone_ancestor=False):
+    if kind == "lock":
+        ledger.lock_path.rename(ledger.root / "old.lock")
+        ledger.lock_path.touch(mode=0o600)
+    elif kind == "root":
+        previous = ledger.root.with_name("previous-root")
+        ledger.root.rename(previous)
+        shutil.copytree(previous, ledger.root)
+    else:
+        parent = ledger.root.parent
+        previous = parent.with_name("previous-ancestor")
+        parent.rename(previous)
+        parent.mkdir(mode=0o700)
+        original = previous / ledger.root.name
+        if clone_ancestor:
+            shutil.copytree(original, ledger.root)
+        else:
+            original.rename(ledger.root)
+
+
+@pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
+def test_uuid_guard_refuses_second_process_after_state_path_drift(
+    tmp_path, modules, kind
+):
+    ledger_module, _ = modules
+    ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
+    with ledger.writer():
+        drift_path(ledger, kind, clone_ancestor=True)
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                """import sys
+from pathlib import Path
+from uuid import UUID
+from aitm_usage import ledger as ledger_module
+from aitm_usage.ledger import Ledger, WriterActive
+ledger_module._control_root = lambda: Path(sys.argv[3])
+ledger = Ledger.open(Path(sys.argv[1]), UUID(sys.argv[2]))
+try:
+    with ledger.writer():
+        print("second writer admitted")
+except WriterActive:
+    print("writer-active")
+""",
+                str(ledger.root),
+                str(PROJECT),
+                str(control_directory()),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.stdout.strip() == "writer-active"
+
+
+@pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
+def test_held_writer_refuses_changed_state_paths_before_write(tmp_path, modules, kind):
+    ledger_module, types = modules
+    ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
+    batch = sample_batch(ledger, types)
+    with ledger.writer() as writer:
+        drift_path(ledger, kind)
+        before = durable_data(ledger)
+        with pytest.raises(ledger_module.LedgerError):
+            writer.apply(batch)
+        assert durable_data(ledger) == before
+
+
+def test_existing_state_refuses_missing_control_guard(state):
+    from aitm_usage.ledger import LedgerError, project_guard
+
+    ledger, _ = state
+    with project_guard(ledger.root, PROJECT) as guard:
+        path = guard.path
+        assert not path.is_relative_to(ledger.root)
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
+        assert path.stat().st_uid == os.geteuid()
+    path.unlink()
+    with pytest.raises(LedgerError):
+        type(ledger).open(ledger.root, PROJECT)
+    with pytest.raises(LedgerError):
+        type(ledger).initialize(ledger.root, PROJECT)
+    assert not path.exists()
+
+
+@pytest.mark.parametrize("destination", ["project", "guard"])
+def test_inherited_macos_grant_refused_before_private_creation(
+    tmp_path, modules, destination
+):
+    ledger_module, _ = modules
+    parent = tmp_path / "grant" if destination == "project" else Path.home() / "Library"
+    parent.mkdir(mode=0o700)
+    subprocess.run(
+        [
+            "chmod",
+            "+a",
+            "everyone allow read,search,file_inherit,directory_inherit",
+            parent,
+        ],
+        check=True,
+        capture_output=True,
+    )
+    root = (parent if destination == "project" else tmp_path) / "project"
+    with pytest.raises(ledger_module.LedgerError):
+        ledger_module.Ledger.initialize(root, PROJECT)
+    assert not root.exists()
+    assert list(parent.iterdir()) == []
+
+
+def test_real_mac_default_ancestry_allows_standard_deny_delete():
+    from aitm_usage.ledger import validate_private_path
+
+    base = REAL_HOME / "Library" / "Application Support"
+    validate_private_path(
+        base / "aitm-usage-u01-ancestry-probe", directory=True, allow_missing=True
+    )
+
+
+def test_private_path_rejects_mismatched_owner(state, monkeypatch):
+    from aitm_usage.ledger import LedgerError, validate_private_path
+
+    ledger, _ = state
+    actual = ledger.key_path.stat().st_uid
+    monkeypatch.setattr(os, "geteuid", lambda: actual + 1)
+    with pytest.raises(LedgerError):
+        validate_private_path(ledger.key_path)
+
+
+@pytest.mark.parametrize("label", ["model", "client_version", "checkpoint_version"])
+def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
+    state, label
+):
+    ledger, types = state
+    batch = sample_batch(ledger, types)
+    canary = "sk-PRIVATE-CANARY" if label == "model" else "0.99.0-sk-PRIVATE-CANARY"
+    if label == "checkpoint_version":
+        checkpoint = batch.checkpoint
+        batch = replace(
+            batch,
+            checkpoint=replace(
+                checkpoint, provider=replace(checkpoint.provider, client_version=canary)
+            ),
+        )
+    else:
+        revision = batch.revisions[0]
+        batch = replace(
+            batch,
+            revisions=(
+                replace(revision, record=replace(revision.record, **{label: canary})),
+            ),
+        )
+    assert ledger.apply(batch) == 1
+    view = type(ledger).open(ledger.root, PROJECT).as_of()
+    result = (
+        view.checkpoints[0].provider.client_version
+        if label == "checkpoint_version"
+        else getattr(view.revisions[0].record, label)
+    )
+    assert result == "unknown"
+    assert all(
+        canary.encode() not in payload for payload in durable_data(ledger).values()
+    )
+
+
+@pytest.mark.parametrize("kind", ["foreign-project", "foreign-key", "fabricated"])
+def test_authenticated_refusal_for_nested_pseudonyms(state, tmp_path, kind):
+    from aitm_usage.ledger import LedgerError
+
+    ledger, types = state
+    batch = sample_batch(ledger, types)
+    genuine = batch.checkpoint.cursor.anchor_ref
+    if kind == "fabricated":
+        prefix, digest, *proof = genuine.value.split(":")
+        changed = ("0" if digest[0] != "0" else "1") + digest[1:]
+        invalid = types.SourceRef(":".join((prefix, changed, *proof)))
+    else:
+        other_id = OTHER_PROJECT if kind == "foreign-project" else PROJECT
+        other = type(ledger).initialize(tmp_path / "other", other_id)
+        invalid = other.pseudonymize("validation-anchor", CANARY)
+    batch = replace(
+        batch,
+        checkpoint=replace(
+            batch.checkpoint,
+            cursor=replace(batch.checkpoint.cursor, anchor_ref=invalid),
+        ),
+    )
+    before = durable_data(ledger)
+    with pytest.raises(LedgerError):
+        ledger.apply(batch)
+    assert durable_data(ledger) == before
+    assert ledger.as_of().sequence == 0
+
+
+def test_genuine_pseudonyms_and_project_identity_survive_reopen(state):
+    ledger, types = state
+    assert ledger.as_of(0).project_id == PROJECT
+    batch = sample_batch(ledger, types)
+    assert ledger.apply(batch) == 1
+    reopened = type(ledger).open(ledger.root, PROJECT)
+    assert reopened.as_of(1).project_id == PROJECT
+    assert reopened.as_of(1).checkpoints == (batch.checkpoint,)
+    reopened.validate_source_ref(batch.checkpoint.cursor.anchor_ref)
+
+
+def quota_sample(ledger, types):
+    return types.QuotaEvidence(
+        provider=types.Provider.CODEX,
+        account_ref=ledger.pseudonymize("codex-account", CANARY),
+        bucket=types.QuotaBucket.SEVEN_DAY,
+        observed_at=NOW,
+        reset_at=NOW + timedelta(days=1),
+        window_seconds=7 * 24 * 60 * 60,
+        percent_milli=6050,
+        precision=2,
+        source=types.QuotaSource.CODEX_INLINE,
+    )
+
+
+def test_quota_envelope_roundtrips_only_account_window_evidence(state):
+    ledger, types = state
+    quota = quota_sample(ledger, types)
+    result = types.AdapterResult(quota=(quota,))
+    assert result.quota == (quota,)
+    ledger.validate_quota(quota)
+    encoded = types._encode(quota, types.QuotaEvidence)
+    assert CANARY not in encoded
+    assert types._decode(encoded, types.QuotaEvidence) == quota
+    extra = json.loads(encoded)
+    extra["task_burn"] = 17
+    with pytest.raises(ValueError):
+        types._decode(json.dumps(extra), types.QuotaEvidence)
+    extra.pop("task_burn")
+    extra["observed_at"] = NOW.astimezone(timezone(timedelta(hours=3))).isoformat()
+    with pytest.raises(ValueError):
+        types._decode(json.dumps(extra), types.QuotaEvidence)
+    extra["observed_at"] = NOW.isoformat()
+    extra["account_ref"] = CANARY
+    with pytest.raises(ValueError):
+        types._decode(json.dumps(extra), types.QuotaEvidence)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"percent_milli": 100_001},
+        {"percent_milli": -1},
+        {"precision": 4},
+        {"precision": 1},
+        {"observed_at": NOW.replace(tzinfo=None)},
+        {"reset_at": NOW.astimezone(timezone(timedelta(hours=3)))},
+        {"window_seconds": 0},
+        {"bucket": "private-bucket-canary"},
+        {"source": "tool_arguments"},
+    ],
+)
+def test_quota_rejects_out_of_contract_scalar_values(state, change):
+    ledger, types = state
+    quota = quota_sample(ledger, types)
+    with pytest.raises(ValueError):
+        replace(quota, **change)
+
+
+def test_quota_rejects_foreign_account_reference(state, tmp_path):
+    from aitm_usage.ledger import LedgerError
+
+    ledger, types = state
+    quota = quota_sample(ledger, types)
+    other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+    foreign = replace(quota, account_ref=other.pseudonymize("codex-account", CANARY))
+    with pytest.raises(LedgerError):
+        ledger.validate_quota(foreign)
+
+
+def test_extended_grant_on_private_key_refused_before_read(state):
+    from aitm_usage.ledger import LedgerError
+
+    ledger, types = state
+    subprocess.run(
+        ["chmod", "+a", "everyone allow read", ledger.key_path],
+        check=True,
+        capture_output=True,
+    )
+    before = durable_data(ledger)
+    with pytest.raises(LedgerError):
+        type(ledger).open(ledger.root, PROJECT)
+    with pytest.raises(LedgerError):
+        ledger.apply(types.LedgerBatch())
+    assert durable_data(ledger) == before
+
+
+def test_control_location_cannot_be_inside_project_state(tmp_path, modules):
+    ledger_module, _ = modules
+    root = control_directory().parent
+    with pytest.raises(ledger_module.LedgerError):
+        ledger_module.Ledger.initialize(root, PROJECT)
+    assert not root.exists()
+
+
+def test_distinct_project_can_write_while_first_uuid_guard_held(state, tmp_path):
+    ledger, types = state
+    with ledger.writer():
+        other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+        assert other.apply(sample_batch(other, types)) == 1
+
+
+def test_control_location_rejects_case_alias_of_project_state(modules):
+    ledger_module, _ = modules
+    root = control_directory().with_name("AITM-USAGE-CONTROL")
+    with pytest.raises(ledger_module.LedgerError):
+        ledger_module.Ledger.initialize(root, PROJECT)
+    assert not root.exists()
+
+
+def test_source_proof_also_requires_exact_wire_shape(state):
+    from aitm_usage.ledger import LedgerError
+
+    ledger, types = state
+    genuine = ledger.pseudonymize("request", CANARY)
+    _, digest, tag = genuine.value.split(":")
+    invalid = object.__new__(types.SourceRef)
+    object.__setattr__(invalid, "value", f"private-shape-canary:{digest}:{tag}")
+    with pytest.raises(LedgerError):
+        ledger.validate_source_ref(invalid)

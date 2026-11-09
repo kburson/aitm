@@ -2,8 +2,9 @@
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, fields, is_dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from functools import cache
 from pathlib import Path
@@ -84,6 +85,31 @@ class Effort(StrEnum):
     ULTRA = "ultra"
 
 
+class ModelLabel(StrEnum):
+    UNKNOWN = "unknown"
+    GPT_6_ASTRA = "gpt-6-astra"
+    GPT_6_1_SOL = "gpt-6.1-sol"
+    CLAUDE_OPUS_5_5 = "claude-opus-5-5"
+
+
+class ClientVersion(StrEnum):
+    UNKNOWN = "unknown"
+    CODEX_0_167_0_ALPHA_3_2 = "0.167.0-alpha.3.2"
+    CLAUDE_2_1_318 = "2.1.318"
+
+
+class QuotaBucket(StrEnum):
+    FIVE_HOUR = "five-hour"
+    SEVEN_DAY = "seven-day"
+
+
+class QuotaSource(StrEnum):
+    CODEX_INLINE = "codex-inline"
+    CODEX_ACCOUNT = "codex-account"
+    CLAUDE_RATE_LIMIT_EVENT = "claude-rate-limit-event"
+    CLAUDE_USAGE = "claude-usage"
+
+
 class ProcessingTier(StrEnum):
     STANDARD = "standard"
     PRIORITY = "priority"
@@ -103,11 +129,18 @@ def _positive(value: int) -> None:
         raise ValueError("Expected a positive count")
 
 
-def _client_version(value: str) -> None:
-    if type(value) is not str or not re.fullmatch(
-        r"v?\d+\.\d+(?:\.\d+)?(?:[-+][a-zA-Z0-9.-]{1,32})?", value
-    ):
-        raise ValueError("Expected a client version")
+def normalize_model(raw: str | None) -> ModelLabel:
+    try:
+        return ModelLabel(raw)
+    except ValueError:
+        return ModelLabel.UNKNOWN
+
+
+def normalize_client_version(raw: str | None) -> ClientVersion:
+    try:
+        return ClientVersion(raw)
+    except ValueError:
+        return ClientVersion.UNKNOWN
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,7 +151,7 @@ class SourceRef:
 
     def __post_init__(self) -> None:
         if type(self.value) is not str or not re.fullmatch(
-            r"hmac-sha256:[a-f0-9]{64}", self.value
+            r"hmac-sha256:[a-f0-9]{64}:[a-f0-9]{64}", self.value
         ):
             raise ValueError("Expected a project-keyed reference")
 
@@ -168,25 +201,23 @@ class TokenCounts:
 class UsageObservation:
     boundary: SourceBoundary
     observed_at: datetime
-    client_version: str
+    client_version: ClientVersion
     format_version: int
     tokens: TokenCounts
     availability: Availability
     request_ref: SourceRef | None = None
     message_ref: SourceRef | None = None
-    model: str | None = None
+    model: ModelLabel = ModelLabel.UNKNOWN
     effort: Effort | None = None
     processing_tier: ProcessingTier | None = None
     context_tokens: int | None = None
 
     def __post_init__(self) -> None:
-        _client_version(self.client_version)
+        object.__setattr__(
+            self, "client_version", normalize_client_version(self.client_version)
+        )
+        object.__setattr__(self, "model", normalize_model(self.model))
         _positive(self.format_version)
-        if self.model is not None and (
-            type(self.model) is not str
-            or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}", self.model)
-        ):
-            raise ValueError("Expected a model identifier")
         if self.context_tokens is not None:
             _nonnegative(self.context_tokens)
 
@@ -243,6 +274,12 @@ class Diagnostic:
 
 
 Record = UsageObservation | ScopeMarker | Diagnostic
+_RECORD_TYPES = {
+    "usage": UsageObservation,
+    "scope-marker": ScopeMarker,
+    "diagnostic": Diagnostic,
+}
+_RECORD_TAGS = {model: tag for tag, model in _RECORD_TYPES.items()}
 
 
 @dataclass(frozen=True, slots=True)
@@ -287,15 +324,16 @@ class ProviderCheckpoint:
     baseline: TokenCounts | None = None
     request_prefix: tuple[RequestPrefix, ...] = ()
     version: int = 1
-    client_version: str | None = None
+    client_version: ClientVersion = ClientVersion.UNKNOWN
     format_version: int | None = None
 
     def __post_init__(self) -> None:
         if type(self.version) is not int or self.version != 1:
             raise ValueError("Unsupported provider checkpoint version")
         _nonnegative(self.ordinal)
-        if self.client_version is not None:
-            _client_version(self.client_version)
+        object.__setattr__(
+            self, "client_version", normalize_client_version(self.client_version)
+        )
         if self.format_version is not None:
             _positive(self.format_version)
 
@@ -307,11 +345,58 @@ class SourceCheckpoint:
 
 
 @dataclass(frozen=True, slots=True)
+class QuotaEvidence:
+    """A structured account-window reading. Percentage units are 0.001 points."""
+
+    provider: Provider
+    account_ref: SourceRef
+    bucket: QuotaBucket
+    observed_at: datetime
+    percent_milli: int
+    precision: int
+    source: QuotaSource
+    reset_at: datetime | None = None
+    window_seconds: int | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.provider) is not Provider
+            or type(self.account_ref) is not SourceRef
+            or type(self.bucket) is not QuotaBucket
+            or type(self.source) is not QuotaSource
+        ):
+            raise ValueError(
+                "Invalid quota evidence classification or account reference"
+            )
+        codex_sources = (QuotaSource.CODEX_INLINE, QuotaSource.CODEX_ACCOUNT)
+        if (self.provider is Provider.CODEX) != (self.source in codex_sources):
+            raise ValueError("Quota source does not match provider")
+        if (
+            type(self.percent_milli) is not int
+            or not 0 <= self.percent_milli <= 100_000
+            or type(self.precision) is not int
+            or not 0 <= self.precision <= 3
+            or self.percent_milli % 10 ** (3 - self.precision)
+        ):
+            raise ValueError("Invalid fixed-point quota percentage or precision")
+        for moment in (self.observed_at, self.reset_at):
+            if moment is not None and (
+                type(moment) is not datetime or moment.utcoffset() != timedelta(0)
+            ):
+                raise ValueError("Quota times must be UTC")
+        if self.observed_at is None:
+            raise ValueError("Quota observation time is required")
+        if self.window_seconds is not None:
+            _positive(self.window_seconds)
+
+
+@dataclass(frozen=True, slots=True)
 class AdapterResult:
     revisions: tuple[Revision, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
     boundaries: tuple[SourceBoundary, ...] = ()
     provider_checkpoint: ProviderCheckpoint | None = None
+    quota: tuple[QuotaEvidence, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -323,6 +408,7 @@ class LedgerBatch:
 
 @dataclass(frozen=True, slots=True)
 class LedgerView:
+    project_id: UUID
     sequence: int
     revisions: tuple[Revision, ...]
     checkpoints: tuple[SourceCheckpoint, ...]
@@ -339,51 +425,72 @@ def _fields(model: type) -> dict[str, type]:
     return {field.name: hints[field.name] for field in fields(model)}
 
 
-def _wire(value: object, expected: type, *, decode: bool) -> object:
+def _wire(
+    value: object,
+    expected: type,
+    *,
+    decode: bool,
+    validate_ref: Callable[[SourceRef], None] | None = None,
+) -> object:
     """Convert only the exact fields and scalar types declared in a wire model."""
+
+    def convert(item: object, kind: type) -> object:
+        return _wire(item, kind, decode=decode, validate_ref=validate_ref)
+
     origin = get_origin(expected)
-    if origin is UnionType:
+    if expected is Record:
+        if decode and type(value) is dict and value.keys() == {"kind", "record"}:
+            tag = value["kind"]
+            if type(tag) is str and tag in _RECORD_TYPES:
+                return convert(value["record"], _RECORD_TYPES[tag])
+        if not decode and type(value) in _RECORD_TAGS:
+            return {
+                "kind": _RECORD_TAGS[type(value)],
+                "record": convert(value, type(value)),
+            }
+    elif origin is UnionType:
         for choice in get_args(expected):
             try:
-                return _wire(value, choice, decode=decode)
+                return convert(value, choice)
             except (TypeError, ValueError):
                 continue
     elif origin is tuple:
         if type(value) is (list if decode else tuple):
             item_type, _ = get_args(expected)
-            items = (_wire(item, item_type, decode=decode) for item in value)
+            items = (convert(item, item_type) for item in value)
             return tuple(items) if decode else list(items)
     elif expected in (str, int, bool, type(None)):
         if type(value) is expected:
             return value
-    elif expected in (datetime, UUID, SourceRef) or issubclass(expected, StrEnum):
+    elif expected is SourceRef:
+        reference = SourceRef(value) if decode and type(value) is str else value
+        if type(reference) is SourceRef:
+            if validate_ref is not None:
+                validate_ref(reference)
+            return reference if decode else reference.value
+    elif expected in (datetime, UUID) or issubclass(expected, StrEnum):
         if decode and type(value) is str:
             if expected is datetime:
                 moment = datetime.fromisoformat(value)
                 if moment.utcoffset() is not None:
-                    return moment.astimezone(UTC)
+                    return moment
             else:
                 return expected(value)
         elif not decode and type(value) is expected:
-            if expected is datetime:
+            if isinstance(value, datetime):
                 if value.utcoffset() is not None:
                     return value.astimezone(UTC).isoformat()
-            elif expected is SourceRef:
-                return value.value
             else:
                 return str(value)
     elif is_dataclass(expected):
         schema = _fields(expected)
         if decode and type(value) is dict and value.keys() == schema.keys():
             return expected(
-                **{
-                    name: _wire(value[name], kind, decode=True)
-                    for name, kind in schema.items()
-                }
+                **{name: convert(value[name], kind) for name, kind in schema.items()}
             )
         if not decode and type(value) is expected:
             return {
-                name: _wire(getattr(value, name), kind, decode=False)
+                name: convert(getattr(value, name), kind)
                 for name, kind in schema.items()
             }
     raise ValueError("Value does not match the allowlisted usage fields")
@@ -396,22 +503,34 @@ def _unique_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
     return result
 
 
-def _encode(value: object, model: type) -> str:
+def _encode(
+    value: object,
+    model: type,
+    *,
+    validate_ref: Callable[[SourceRef], None] | None = None,
+) -> str:
     return json.dumps(
-        _wire(value, model, decode=False), sort_keys=True, separators=(",", ":")
+        _wire(value, model, decode=False, validate_ref=validate_ref),
+        sort_keys=True,
+        separators=(",", ":"),
     )
 
 
-def _decode[T](data: str | bytes, model: type[T]) -> T:
+def _decode[T](
+    data: str | bytes,
+    model: type[T],
+    *,
+    validate_ref: Callable[[SourceRef], None] | None = None,
+) -> T:
     try:
         payload = json.loads(data, object_pairs_hook=_unique_fields)
-        return cast(T, _wire(payload, model, decode=True))
+        return cast(T, _wire(payload, model, decode=True, validate_ref=validate_ref))
     except (TypeError, ValueError):
         raise ValueError("Invalid allowlisted usage envelope") from None
 
 
 def encode_marker(marker: ScopeMarker) -> bytes:
-    """Validate the entire marker before the inbox owner publishes it."""
+    """Encode the closed marker shape. Authenticate it with the project ledger before use."""
     return _encode(marker, ScopeMarker).encode("utf-8")
 
 

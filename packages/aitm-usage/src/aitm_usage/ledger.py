@@ -1,16 +1,22 @@
 """A private, project-bound SQLite history and per-source ingest checkpoints."""
 
+import ctypes
+import errno
 import fcntl
 import hashlib
 import hmac
 import os
+import pwd
 import re
 import secrets
 import sqlite3
 import stat
+import sys
+import unicodedata
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
@@ -18,6 +24,7 @@ from uuid import UUID
 from .types import (
     LedgerBatch,
     LedgerView,
+    QuotaEvidence,
     Revision,
     ScopeMarker,
     SourceCheckpoint,
@@ -34,6 +41,12 @@ DATABASE_NAME = "usage.sqlite3"
 KEY_NAME = "pseudonym.key"
 LOCK_NAME = "writer.lock"
 KEY_SIZE = 32
+ACL_TYPE_EXTENDED = 0x100
+_ACL_EMPTY = b"!#acl 1\n"
+# The default macOS home ancestry carries this non-inheriting delete protection.
+_ACL_DENY_DELETE = (
+    _ACL_EMPTY + b"group:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n"
+)
 
 _SCHEMA = """
 CREATE TABLE identity (
@@ -93,55 +106,261 @@ def _private(info: os.stat_result, *, directory: bool = False) -> None:
         raise LedgerError("Unsafe private ledger path")
 
 
-def _check_path(path: Path, *, directory: bool = False) -> None:
+@cache
+def _mac_acl() -> ctypes.CDLL:
+    if sys.platform != "darwin":
+        raise LedgerError("Private ACL validation requires macOS")
     try:
-        _private(path.lstat(), directory=directory)
-    except OSError as error:
-        raise LedgerError("Private ledger path is unavailable") from error
+        lib = ctypes.CDLL(None, use_errno=True)
+        lib.acl_get_link_np.argtypes = [ctypes.c_char_p, ctypes.c_int]
+        lib.acl_get_link_np.restype = ctypes.c_void_p
+        lib.acl_get_fd_np.argtypes = [ctypes.c_int, ctypes.c_int]
+        lib.acl_get_fd_np.restype = ctypes.c_void_p
+        lib.acl_to_text.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_ssize_t)]
+        lib.acl_to_text.restype = ctypes.c_void_p
+        lib.acl_free.argtypes = [ctypes.c_void_p]
+        lib.acl_free.restype = ctypes.c_int
+    except (AttributeError, OSError):
+        raise LedgerError("Private ACL validation is unavailable") from None
+    return lib
+
+
+def _check_acl(target: Path | int, *, ancestor: bool = False) -> None:
+    lib = _mac_acl()
+    ctypes.set_errno(0)
+    if isinstance(target, Path):
+        acl = lib.acl_get_link_np(os.fsencode(target), ACL_TYPE_EXTENDED)
+    else:
+        acl = lib.acl_get_fd_np(target, ACL_TYPE_EXTENDED)
+    if not acl:
+        if ctypes.get_errno() == errno.ENOENT:
+            return
+        raise LedgerError("Unable to validate private ACL")
+    try:
+        text = lib.acl_to_text(acl, None)
+        if not text:
+            raise LedgerError("Unable to classify private ACL")
+        try:
+            value = ctypes.string_at(text)
+        finally:
+            lib.acl_free(text)
+    finally:
+        lib.acl_free(acl)
+    if value != _ACL_EMPTY and not (ancestor and value == _ACL_DENY_DELETE):
+        raise LedgerError("Unsafe private ACL")
 
 
 def _project_path(root: Path) -> Path:
     root = root.absolute()
-    if root.resolve() != root:
-        raise LedgerError("Project state path must be canonical")
+    if ".." in root.parts:
+        raise LedgerError("Private ledger path must be canonical")
     return root
 
 
-def _sync_directory(path: Path) -> None:
-    fd = os.open(path, os.O_DIRECTORY | os.O_NOFOLLOW)
+def _path_id(info: os.stat_result) -> tuple[int, int]:
+    return info.st_dev, info.st_ino
+
+
+def _path_exists(path: Path) -> bool:
     try:
-        os.fsync(fd)
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    except OSError:
+        raise LedgerError("Private ledger path is unavailable") from None
+    return True
+
+
+def _check_path(path: Path, *, directory: bool = False) -> os.stat_result:
+    try:
+        info = path.lstat()
+        _private(info, directory=directory)
+        _check_acl(path)
+        if not os.path.samestat(info, path.lstat()):
+            raise LedgerError("Private ledger path changed")
+    except OSError:
+        raise LedgerError("Private ledger path is unavailable") from None
+    return info
+
+
+def _validated_path(
+    path: Path, *, directory: bool, allow_missing: bool = False
+) -> tuple[tuple[int, int], ...]:
+    path = _project_path(path)
+    identities = []
+    for ancestor in reversed(path.parents):
+        try:
+            info = ancestor.lstat()
+            # Root-owned sticky directories protect each trusted owner's child.
+            sticky_system = info.st_uid == 0 and info.st_mode & stat.S_ISVTX
+            if (
+                not stat.S_ISDIR(info.st_mode)
+                or info.st_uid not in (0, os.geteuid())
+                or (info.st_mode & 0o022 and not sticky_system)
+            ):
+                raise LedgerError("Unsafe private ledger ancestry")
+            _check_acl(ancestor, ancestor=True)
+            if not os.path.samestat(info, ancestor.lstat()):
+                raise LedgerError("Private ledger ancestor changed")
+        except FileNotFoundError:
+            if allow_missing:
+                return tuple(identities)
+            raise LedgerError("Private ledger ancestry is unavailable") from None
+        except OSError:
+            raise LedgerError("Private ledger ancestry is unavailable") from None
+        identities.append(_path_id(info))
+    if not allow_missing or _path_exists(path):
+        identities.append(_path_id(_check_path(path, directory=directory)))
+    return tuple(identities)
+
+
+def validate_private_path(
+    path: Path, *, directory: bool = False, allow_missing: bool = False
+) -> None:
+    """Validate trusted ancestry and any existing destination before private I/O."""
+    _validated_path(path, directory=directory, allow_missing=allow_missing)
+
+
+def _ensure_private_directory(path: Path) -> None:
+    validate_private_path(path, directory=True, allow_missing=True)
+    if not _path_exists(path.parent):
+        _ensure_private_directory(path.parent)
+    try:
+        path.mkdir(mode=0o700)
+    except FileExistsError:
+        validate_private_path(path, directory=True)
+    except OSError:
+        raise LedgerError("Unable to create private ledger directory") from None
+    else:
+        validate_private_path(path, directory=True)
+        _sync_directory(path.parent)
+
+
+def _sync_directory(path: Path) -> None:
+    try:
+        fd = os.open(path, os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError:
+        raise LedgerError("Unable to synchronize private ledger directory") from None
+
+
+@dataclass(frozen=True, slots=True)
+class _PinnedPath:
+    path: Path
+    fd: int
+    directory: bool
+    identities: tuple[tuple[int, int], ...]
+
+    def check(self) -> None:
+        try:
+            info = os.fstat(self.fd)
+            _private(info, directory=self.directory)
+            _check_acl(self.fd)
+        except OSError:
+            raise LedgerError("Private ledger descriptor is unavailable") from None
+        if self.identities[-1] != _path_id(info) or self.identities != _validated_path(
+            self.path, directory=self.directory
+        ):
+            raise LedgerError("Pinned private ledger path changed")
+
+
+@contextmanager
+def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+    identities = _validated_path(path, directory=True)
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError:
+        raise LedgerError("Private ledger directory is unavailable") from None
+    try:
+        pin = _PinnedPath(path, fd, True, identities)
+        pin.check()
+        yield pin
     finally:
         os.close(fd)
 
 
 @contextmanager
-def _lease(path: Path, *, create: bool = False) -> Iterator[None]:
+def _lease(path: Path, *, create: bool = False) -> Iterator[_PinnedPath]:
+    validate_private_path(path, allow_missing=create)
     flags = os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK
+    created = False
     try:
         if create:
             try:
                 fd = os.open(path, flags | os.O_CREAT | os.O_EXCL, 0o600)
+                created = True
             except FileExistsError:
                 fd = os.open(path, flags)
         else:
             fd = os.open(path, flags)
-    except OSError as error:
-        raise LedgerError("Writer lease file is unavailable") from error
+    except OSError:
+        raise LedgerError("Writer lease file is unavailable") from None
 
     try:
-        info = os.fstat(fd)
-        _private(info)
+        pin = _PinnedPath(path, fd, False, _validated_path(path, directory=False))
+        pin.check()
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            raise WriterActive("writer-active") from error
-        _check_path(path)
-        if not os.path.samestat(info, path.lstat()):
-            raise LedgerError("Writer lease file changed")
-        yield
+        except BlockingIOError:
+            raise WriterActive("writer-active") from None
+        pin.check()
+        if created:
+            try:
+                os.fsync(fd)
+            except OSError:
+                raise LedgerError("Unable to synchronize writer lease") from None
+            _sync_directory(path.parent)
+        yield pin
     finally:
         os.close(fd)
+
+
+def _control_root() -> Path:
+    # A process-local HOME override must never select a second writer guard.
+    try:
+        home = Path(pwd.getpwuid(os.geteuid()).pw_dir)
+    except KeyError:
+        raise LedgerError(
+            "Unable to resolve private account control location"
+        ) from None
+    return home / "Library" / "Application Support" / "aitm-usage-control"
+
+
+def _guard_path(root: Path, project_id: UUID) -> Path:
+    if type(project_id) is not UUID:
+        raise LedgerError("A project UUID is required")
+    control = _project_path(_control_root())
+    # Case and Unicode aliases can name the same directory on default APFS.
+    control_alias = Path(unicodedata.normalize("NFC", str(control)).casefold())
+    root_alias = Path(unicodedata.normalize("NFC", str(root)).casefold())
+    if control_alias.is_relative_to(root_alias) or root_alias.is_relative_to(
+        control_alias
+    ):
+        raise LedgerError("Writer guard must be outside project state")
+    return control / f"{project_id}.lock"
+
+
+@contextmanager
+def project_guard(
+    root: Path, project_id: UUID, *, initialize: bool = False
+) -> Iterator[_PinnedPath]:
+    """Take the stable UUID guard before creating or replacing project state."""
+    root = _project_path(root)
+    path = _guard_path(root, project_id)
+    validate_private_path(root, directory=True, allow_missing=initialize)
+    # Once local state exists the guard must already exist, even during recovery.
+    create = initialize and not any(
+        _path_exists(root / name) for name in (STORE_NAME, LOCK_NAME)
+    )
+    if create:
+        _ensure_private_directory(path.parent)
+    else:
+        validate_private_path(path.parent, directory=True)
+    with _lease(path, create=create) as guard:
+        yield guard
 
 
 def _key_path(root: Path) -> Path:
@@ -152,13 +371,17 @@ def _database_path(root: Path) -> Path:
     return root / STORE_NAME / DATABASE_NAME
 
 
-def _read_key(root: Path, project_id: UUID) -> bytes:
+def _read_key(root: Path, project_id: UUID, expected: tuple[int, int]) -> bytes:
     try:
         fd = os.open(_key_path(root), os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
-    except OSError as error:
-        raise LedgerError("Private pseudonym key is unavailable") from error
+    except OSError:
+        raise LedgerError("Private pseudonym key is unavailable") from None
     with os.fdopen(fd, "rb") as handle:
-        _private(os.fstat(handle.fileno()))
+        info = os.fstat(handle.fileno())
+        _private(info)
+        _check_acl(fd)
+        if _path_id(info) != expected:
+            raise LedgerError("Private pseudonym key changed")
         payload = handle.read(16 + KEY_SIZE + 1)
     if len(payload) != 16 + KEY_SIZE or payload[:16] != project_id.bytes:
         raise LedgerError("Pseudonym key project identity mismatch")
@@ -169,15 +392,38 @@ def _identity(project_id: UUID, key: bytes) -> LedgerIdentity:
     return LedgerIdentity(project_id, "sha256:" + hashlib.sha256(key).hexdigest())
 
 
+def _state_files(root: Path) -> tuple[tuple[int, int], ...]:
+    database = _database_path(root)
+    files = (
+        database,
+        database.with_name(database.name + "-wal"),
+        database.with_name(database.name + "-shm"),
+        _key_path(root),
+    )
+    return tuple(_path_id(_check_path(path)) for path in files)
+
+
 def _validate_storage(root: Path, project_id: UUID) -> bytes:
-    _project_path(root)
-    _check_path(root, directory=True)
+    guard = _guard_path(root, project_id)
+    validate_private_path(guard.parent, directory=True)
+    _check_path(guard)
+    validate_private_path(root, directory=True)
     _check_path(root / LOCK_NAME)
     _check_path(root / STORE_NAME, directory=True)
-    database = _database_path(root)
-    for suffix in ("", "-wal", "-shm"):
-        _check_path(database.with_name(database.name + suffix))
-    return _read_key(root, project_id)
+    return _read_key(root, project_id, _state_files(root)[-1])
+
+
+@dataclass(frozen=True, slots=True)
+class _WritePaths:
+    root: Path
+    pinned: tuple[_PinnedPath, ...]
+    files: tuple[tuple[int, int], ...]
+
+    def check(self) -> None:
+        for pin in self.pinned:
+            pin.check()
+        if self.files != _state_files(self.root):
+            raise LedgerError("Pinned private ledger files changed")
 
 
 @contextmanager
@@ -189,10 +435,28 @@ def _connection(database: Path, *, write: bool) -> Iterator[sqlite3.Connection]:
         sqlite3.connect(f"{database.as_uri()}?mode={mode}", uri=True, timeout=1)
     ) as conn:
         conn.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, True)
+        conn.setconfig(sqlite3.SQLITE_DBCONFIG_TRUSTED_SCHEMA, False)
         if write:
             conn.execute("PRAGMA foreign_keys=ON")
             conn.execute("PRAGMA synchronous=FULL")
         yield conn
+
+
+def _schema_objects(
+    conn: sqlite3.Connection,
+) -> tuple[tuple[str, str, str, str | None], ...]:
+    return tuple(
+        conn.execute(
+            "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+        )
+    )
+
+
+@cache
+def _supported_schema() -> tuple[tuple[str, str, str, str | None], ...]:
+    with closing(sqlite3.connect(":memory:")) as conn:
+        conn.executescript(_SCHEMA)
+        return _schema_objects(conn)
 
 
 def _validate_identity(conn: sqlite3.Connection, identity: LedgerIdentity) -> None:
@@ -202,20 +466,11 @@ def _validate_identity(conn: sqlite3.Connection, identity: LedgerIdentity) -> No
         raise LedgerError("Unrecognized ledger application")
     if conn.execute("PRAGMA journal_mode").fetchone() != ("wal",):
         raise LedgerError("Ledger requires WAL")
-    try:
-        row = conn.execute(
-            "SELECT project_id, key_id FROM identity WHERE singleton = 1"
-        ).fetchone()
-        conn.execute(
-            """SELECT commits.sequence, revisions.key, revisions.revision, revisions.sequence,
-                      revisions.payload, checkpoints.source_ref, checkpoints.sequence,
-                      checkpoints.payload
-               FROM commits CROSS JOIN revisions CROSS JOIN checkpoints LIMIT 0"""
-        )
-    except sqlite3.OperationalError as error:
-        if error.sqlite_errorcode != sqlite3.SQLITE_ERROR:
-            raise
-        raise LedgerError("Invalid ledger table schema") from error
+    if _schema_objects(conn) != _supported_schema():
+        raise LedgerError("Invalid ledger table schema")
+    row = conn.execute(
+        "SELECT project_id, key_id FROM identity WHERE singleton = 1"
+    ).fetchone()
     if row != (str(identity.project_id), identity.key_id):
         raise LedgerError("Ledger project or key identity mismatch")
 
@@ -232,16 +487,19 @@ def _read_snapshot(
         yield conn, identity, key
 
 
-def _create_store(root: Path, project_id: UUID) -> None:
+def _create_store(root: Path, project_id: UUID, pins: tuple[_PinnedPath, ...]) -> None:
     # Publish the initialized key, database and WAL sidecars in one rename.
     # A crash before that rename leaves no partial canonical ledger.
     with TemporaryDirectory(prefix=".initializing-", dir=root) as name:
         staging = Path(name)
+        _check_path(staging, directory=True)
         key = secrets.token_bytes(KEY_SIZE)
         key_file = staging / KEY_NAME
         key_fd = os.open(key_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(key_fd, "wb") as handle:
             os.fchmod(handle.fileno(), 0o600)
+            _private(os.fstat(handle.fileno()))
+            _check_acl(handle.fileno())
             handle.write(project_id.bytes + key)
             handle.flush()
             os.fsync(handle.fileno())
@@ -265,6 +523,8 @@ def _create_store(root: Path, project_id: UUID) -> None:
         for suffix in ("", "-wal", "-shm"):
             _check_path(database.with_name(database.name + suffix))
         _sync_directory(staging)
+        for pin in pins:
+            pin.check()
         staging.rename(root / STORE_NAME)
         _sync_directory(root)
 
@@ -337,7 +597,11 @@ def _append_revisions(
 
 
 def _append_checkpoint(
-    conn: sqlite3.Connection, sequence: int, batch: LedgerBatch
+    conn: sqlite3.Connection,
+    sequence: int,
+    batch: LedgerBatch,
+    *,
+    revisions_changed: bool,
 ) -> bool:
     checkpoint = batch.checkpoint
     prior = batch.prior_checkpoint
@@ -352,12 +616,14 @@ def _append_checkpoint(
         (source_ref,),
     ).fetchone()
     payload = _encode(checkpoint, SourceCheckpoint)
-    if stored is not None and stored[0] == payload:
-        return False
     current_payload = None if stored is None else stored[0]
     prior_payload = None if prior is None else _encode(prior, SourceCheckpoint)
-    if current_payload != prior_payload:
+    if current_payload != prior_payload and (
+        revisions_changed or current_payload != payload
+    ):
         raise ConflictError("Source checkpoint has changed")
+    if current_payload == payload:
+        return False
     if prior is not None:
         if checkpoint.provider.provider is not prior.provider.provider:
             raise ConflictError("Source checkpoint changes provider")
@@ -379,6 +645,7 @@ class Ledger:
     identity: LedgerIdentity
     _key: bytes = field(repr=False, compare=False)
     _writer: sqlite3.Connection | None = field(default=None, repr=False, compare=False)
+    _write_paths: _WritePaths | None = field(default=None, repr=False, compare=False)
 
     @property
     def database_path(self) -> Path:
@@ -395,13 +662,21 @@ class Ledger:
     @classmethod
     def initialize(cls, root: Path, project_id: UUID) -> "Ledger":
         root = _project_path(root)
-        root.mkdir(mode=0o700, parents=True, exist_ok=True)
-        _check_path(root, directory=True)
-        store = root / STORE_NAME
-        with _lease(root / LOCK_NAME, create=not store.exists(follow_symlinks=False)):
-            if not store.exists(follow_symlinks=False):
-                _create_store(root, project_id)
-            return cls.open(root, project_id)
+        with project_guard(root, project_id, initialize=True) as guard:
+            _ensure_private_directory(root)
+            store = root / STORE_NAME
+            with (
+                _pin_directory(root) as project,
+                _lease(root / LOCK_NAME, create=not _path_exists(store)) as local,
+            ):
+                if not _path_exists(store):
+                    try:
+                        _create_store(root, project_id, (guard, project, local))
+                    except OSError:
+                        raise LedgerError(
+                            "Unable to initialize private ledger"
+                        ) from None
+                return cls.open(root, project_id)
 
     @classmethod
     def open(cls, root: Path, project_id: UUID) -> "Ledger":
@@ -411,13 +686,55 @@ class Ledger:
 
     def pseudonymize(self, namespace: str, raw_reference: str) -> SourceRef:
         """Derive a stable private reference with a domain specific to its use."""
-        if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", namespace) or not raw_reference:
+        if (
+            type(namespace) is not str
+            or not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", namespace)
+            or type(raw_reference) is not str
+            or not raw_reference
+        ):
             raise ValueError("A reference namespace and identifier are required")
-        message = b"aitm-usage/source-ref/v1\0" + namespace.encode("ascii") + b"\0"
-        digest = hmac.digest(
-            self._key, message + raw_reference.encode("utf-8"), "sha256"
+        message = (
+            b"aitm-usage/source-ref/v1\0"
+            + self.identity.project_id.bytes
+            + namespace.encode("ascii")
+            + b"\0"
         )
-        return SourceRef("hmac-sha256:" + digest.hex())
+        try:
+            raw_bytes = raw_reference.encode("utf-8")
+        except UnicodeEncodeError:
+            raise ValueError("Invalid source reference encoding") from None
+        digest = hmac.digest(self._key, message + raw_bytes, "sha256")
+        return SourceRef(
+            f"hmac-sha256:{digest.hex()}:{self._reference_tag(digest).hex()}"
+        )
+
+    def _reference_tag(self, digest: bytes) -> bytes:
+        message = (
+            b"aitm-usage/source-proof/v1\0" + self.identity.project_id.bytes + digest
+        )
+        return hmac.digest(self._key, message, "sha256")
+
+    def validate_source_ref(self, reference: SourceRef) -> None:
+        """Reject pseudonyms without a valid proof for this project and key."""
+        if type(reference) is not SourceRef:
+            raise LedgerError("Source reference authentication failed")
+        try:
+            value = SourceRef(reference.value).value
+        except (AttributeError, ValueError):
+            raise LedgerError("Source reference authentication failed") from None
+        _, digest, tag = value.split(":")
+        if not hmac.compare_digest(
+            self._reference_tag(bytes.fromhex(digest)).hex(), tag
+        ):
+            raise LedgerError("Source reference authentication failed")
+
+    def validate_marker(self, marker: ScopeMarker) -> None:
+        _encode(marker, ScopeMarker, validate_ref=self.validate_source_ref)
+        if marker.project_id != self.identity.project_id:
+            raise LedgerError("Scope marker project identity mismatch")
+
+    def validate_quota(self, evidence: QuotaEvidence) -> None:
+        _encode(evidence, QuotaEvidence, validate_ref=self.validate_source_ref)
 
     @contextmanager
     def reader(self) -> Iterator[sqlite3.Connection]:
@@ -430,17 +747,24 @@ class Ledger:
     @contextmanager
     def writer(self) -> Iterator["Ledger"]:
         """Hold the stable process lease across one or more batch writes."""
-        _project_path(self.root)
-        _check_path(self.root, directory=True)
-        with _lease(self.lock_path):
+        with (
+            project_guard(self.root, self.identity.project_id) as guard,
+            _lease(self.lock_path) as local,
+            _pin_directory(self.root) as project,
+            _pin_directory(self.root / STORE_NAME) as store,
+        ):
+            paths = _WritePaths(
+                self.root, (guard, local, project, store), _state_files(self.root)
+            )
             with self.reader():
                 pass
+            paths.check()
             with _connection(self.database_path, write=True) as conn:
-                yield Ledger(self.root, self.identity, self._key, conn)
+                yield Ledger(self.root, self.identity, self._key, conn, paths)
 
     def apply(self, batch: LedgerBatch) -> int:
         # Reject malformed envelopes before the writer opens a transaction.
-        _encode(batch, LedgerBatch)
+        _encode(batch, LedgerBatch, validate_ref=self.validate_source_ref)
         for revision in batch.revisions:
             if (
                 isinstance(revision.record, ScopeMarker)
@@ -454,19 +778,24 @@ class Ledger:
 
     def _apply(self, batch: LedgerBatch) -> int:
         conn = self._writer
-        assert conn is not None
-        key = _validate_storage(self.root, self.identity.project_id)
+        paths = self._write_paths
+        assert conn is not None and paths is not None
+        paths.check()
+        key = _read_key(self.root, self.identity.project_id, paths.files[-1])
         if not hmac.compare_digest(key, self._key):
             raise LedgerError("Ledger identity changed")
-        _validate_identity(conn, self.identity)
         with conn:
             conn.execute("BEGIN IMMEDIATE")
+            _validate_identity(conn, self.identity)
             head = _head(conn)
             sequence = head + 1
             conn.execute("INSERT INTO commits VALUES (?)", (sequence,))
             revisions_changed = _append_revisions(conn, sequence, batch.revisions)
-            checkpoint_changed = _append_checkpoint(conn, sequence, batch)
+            checkpoint_changed = _append_checkpoint(
+                conn, sequence, batch, revisions_changed=revisions_changed
+            )
             if revisions_changed or checkpoint_changed:
+                paths.check()
                 return sequence
             conn.rollback()
             return head
@@ -493,7 +822,16 @@ class Ledger:
                 (sequence,),
             )
             return LedgerView(
+                self.identity.project_id,
                 sequence,
-                tuple(_decode(row[0], Revision) for row in revisions),
-                tuple(_decode(row[0], SourceCheckpoint) for row in checkpoints),
+                tuple(
+                    _decode(row[0], Revision, validate_ref=self.validate_source_ref)
+                    for row in revisions
+                ),
+                tuple(
+                    _decode(
+                        row[0], SourceCheckpoint, validate_ref=self.validate_source_ref
+                    )
+                    for row in checkpoints
+                ),
             )
