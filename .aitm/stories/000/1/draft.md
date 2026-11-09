@@ -47,7 +47,7 @@ The full conversation is in [`attachments/transcript.md`](attachments/transcript
 - **[user]** Each recorded story may absorb exactly one expansion: one defect or one discovered story. Each parallel story has its own allowance.
 - **[agreed]** The spawned item has no allowance of its own; the chain is at most one level deep. If it expands, the parent story has tripped.
 - **[user]** A trip means the JIT deep-dive planning failed. Work stops; the story returns to planning to find out what went wrong and get an executable plan.
-- **[user]** On a trip the system should decide between scrap-and-restart and refactor-and-improve, and learn from the outcome. **[call]** Initially the agent recommends with evidence and the human approves.
+- **[user]** On a trip the system should decide between scrap-and-restart and refactor-and-improve, and learn from the outcome. ~~**[call]** Initially the agent recommends with evidence and the human approves.~~ *Superseded 2026-11-08: the agent decides; see "Builder-check answers".*
 - **[user]** Leaf stories are no larger than 4 agent-hours. Human-effort estimates are not valuable; plan agent engagement.
 - **[agreed]** Bookkeeping is never the agent's job: the tool records receipts, timing and events as side effects of commands it runs. A missing record is rebuilt from git and events, never a close blocker.
 - **[agreed]** The tool must never be the reason a story can't close.
@@ -67,10 +67,10 @@ The full conversation is in [`attachments/transcript.md`](attachments/transcript
 
 ## Human role
 
-- **[user]** One sign-off, after delivery (Review → Done). Designs and plans are archival; the user relies on agent peer review rather than reading them.
+- **[user]** One sign-off, after delivery (Review → Done). Designs and plans are archival; the user relies on agent peer review rather than reading them. *Refined 2026-11-08: that sign-off is the agent's, not the human's; see "Builder-check answers".*
 - **[user]** The user watches through the story viewer (progress, time, costs, bumps) and intervenes when the direction looks wrong; pivots happen there.
 - **[agreed]** Pivots are recorded events. A scope-changing pivot returns the story to Plan but is recorded as a human pivot, not charged to the agent's planning.
-- **[user]** On Review entry the agent writes a retrospective (design/plan/implementation alignment, what went well, what should have been planned better, lessons, confidence vote) attached to the story. Conversations about the story are user-initiated in any harness, using the viewer and sign-off docs as context. **[agreed]** `aitm review` produces the retro itself. **[call]** The confidence vote is advisory.
+- **[user]** On Review entry the agent writes a retrospective (design/plan/implementation alignment, what went well, what should have been planned better, lessons, confidence vote) attached to the story. Conversations about the story are user-initiated in any harness, using the viewer and sign-off docs as context. **[agreed]** `aitm review` produces the retro itself. **[call]** The confidence vote is advisory. *Refined 2026-11-08: the retro is written on leaving Review (after the PR review passes), by `aitm signoff`.*
 
 ## Specialized agents
 
@@ -134,3 +134,14 @@ The full conversation is in [`attachments/transcript.md`](attachments/transcript
 6. Story viewer.
 7. Planning and estimation rubric.
 8. History import from ai-task-manager (~2,165 issues).
+
+## Builder-check answers (2026-11-08)
+
+A reviewer read the core design as its builder would and raised eight questions. Five were settled as builder's calls (marked in the core design). The owner answered the other three:
+
+- **[user]** The 4-hour limit covers implementation only: it starts when the story leaves Plan and enters Develop, and ends when the story passes PR review. There are no time limits on planning.
+- **[user]** When a story finds a defect or creates a story for discovered work, the original story is blocked and its timer paused. The new defect or story starts a fresh clock with a 4-hour limit. Further work it finds is absorbed inside it up to its limit; otherwise all work stops and the story goes back to planning to work out what went wrong and either fix it or abandon and re-plan.
+- **[user]** "Yes" to a fresh expansion allowance and a fresh clock after a trip is decided and a new plan accepted. **[call]** Read as also agreeing to the proposed cap: after a second trip the story returns to Backlog for redesign or a split. To confirm.
+- **[user]** A trip is: the 4-hour limit exceeded, or the one expansion slot used and the story still not complete. It requires an immediate stop on all work and a demotion to Plan, where the progress and decisions from plan through develop are examined and a resolution reached: refactor, or abandon and re-plan. **[call]** The agent decides and records an analysis; no human approval.
+- **[user]** Agent sign-off happens only on exiting Review into Done, and requires no user interaction: it is the agent's full retrospective on its own work. The owner may later ask about the retro to dig into ideas, but that is never required. A required human step becomes a bottleneck: stories stack up waiting, and fatigue turns sign-off into a rubber stamp.
+- **[agreed]** Consequence: there is no required human gate. The only human-only command is `pivot`, so an agent can't relabel a planning failure as a change of direction.

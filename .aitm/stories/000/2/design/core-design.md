@@ -4,7 +4,7 @@ story: 2
 role: design
 title: aitm-core design
 created: 2026-11-08T20:05:00Z
-updated: 2026-11-08T20:05:00Z
+updated: 2026-11-08T21:30:00Z
 last-branch: planning
 status: draft (awaiting review)
 parent-design: ../../1/design/architecture.md
@@ -92,8 +92,10 @@ branch = "planning"
 mode = "advisory"            # or "enforce"
 
 [limits]
-leaf_agent_hours = 4
-expansions_per_story = 1
+leaf_agent_hours = 4          # implementation clock per attempt, develop entry → review passed
+expansions_per_story = 1      # per attempt; an expansion story has none
+max_trips = 2                 # after this many trips the story returns to backlog
+idle_gap_minutes = 15         # longest activity gap counted as engaged time
 
 [providers]
 backlog = "local"            # "github" once aitm-github is installed
@@ -131,13 +133,20 @@ As in [`.aitm/README.md`](../../../../README.md), with one change from the hand-
 
 | File | Writer |
 | --- | --- |
-| `events.jsonl` | core (and extensions, through the core's append API, with namespaced types) |
+| `events.jsonl` | core's append API only (extensions append through it with namespaced types); see the event-log exception below |
 | `story.md`, every frontmatter block | core, regenerated from events and `description.md` |
 | `description.md` body, `draft.md` body, idea bodies | the agent or human working the story |
 | `design/`, `plan/` documents | the agent writing them (later, `aitm-agents`) |
 | `design/reviews/`, `plan/reviews/` | the review tool (later, `aitm-peer-review`) |
 | `retro/` | the agent, through `aitm review` |
 | Extension files | the extension that declared the path |
+
+**The event-log exception** *(builder's call)*. `events.jsonl` is the one file with several writers: an agent's session, a human recording a pivot from another checkout, a trip recorded on an origin story by its expansion's process, extensions, other clones. It is safe because it is append-only and every line has a unique ULID:
+
+- Events are never materialized into a worktree for editing. `append_event` writes straight to `planning` through the backend.
+- On a compare-and-swap retry the backend re-reads the current blob and appends its new lines to it; it never replaces the file.
+- On push replay and on fetch, `events.jsonl` is merged as the union of lines by event `id`, sorted by ULID. Every other file is replayed whole, because it has a single writer.
+- Before running guards for a transition, the core fetches `origin/planning` when a git host provider is configured; if the fetch fails it proceeds on local data and records the fact in the guard events.
 
 Frontmatter in markdown files is owned by the core and regenerated on every sync; the body is owned by the file's writer. The core reads frontmatter only from files it wrote, as YAML between `---` delimiters, never by pattern-matching text. JSON and JSONL files carry no frontmatter; their metadata appears in `story.md`'s `files` map.
 
@@ -171,14 +180,18 @@ Core event types:
 | `core.estimate.set` | `aitm estimate` | phase (refine, plan, jit), agent_hours, size, priority |
 | `core.doc.accepted` | `aitm design accept`, `aitm plan accept` | role, path, planning SHA, review refs |
 | `core.jit.recorded` | `aitm jit` | plan path, trunk SHA, outcome (accepted or revised) |
-| `core.expansion.recorded` | `aitm expand` | kind (defect or story), child id, reason |
-| `core.trip.recorded` | rules engine | cause (second-expansion, nested-expansion, time-limit), detail |
-| `core.trip.decided` | `aitm trip decide` | decision (scrap or refactor), rationale, by |
+| `core.expansion.recorded` | `aitm expand` | kind (defect or story), child id, reason, attempt |
+| `core.expansion.resolved` | rules engine, when the expansion story reaches done | child id, disposition |
+| `core.trip.recorded` | rules engine | cause (second-expansion, nested-expansion, time-limit), on (the story whose limit was hit), attempt, engaged hours |
+| `core.trip.decided` | `aitm trip decide` | decision (scrap or refactor), rationale, analysis path, expansion disposition, attempt |
 | `core.pivot.recorded` | `aitm pivot` | by, reason, scope_change |
 | `core.test.receipt` | `aitm test` | command, exit code, head SHA, duration, summary |
-| `core.retro.added` | `aitm review` | path |
-| `core.signoff.recorded` | `aitm signoff` | by, verdict, note |
+| `core.review.recorded` | `aitm review pass\|changes` (later, `aitm-peer-review` and `aitm-github`) | verdict, head SHA, reviewer refs |
+| `core.signoff.recorded` | `aitm signoff` | retro path, confidence vote, verdict (delivered or not), by (always the agent) |
 | `core.link.changed` | `aitm link` | parent, blocking, blocked_by |
+| `core.description.set` | `aitm describe` | title, as, want, so_that, scope, content hash |
+| `core.deliverable.added` | `aitm deliver` (spikes) | path |
+| `core.activity.recorded` | any command touching the story; later the harness extension | source |
 
 **Folding.** `events.fold(events) -> StoryState` is a pure function producing current state, state history, estimates, expansions, trips, accepted docs, sessions and engaged time. Everything else (frontmatter, `story.md`, index rows, guards) reads `StoryState`, never raw text.
 
@@ -264,7 +277,7 @@ class Action(Protocol):
 
 1. Sync the bound story folder, if any.
 2. Check the edge is allowed.
-3. Run the current state's exit guards, then the target's entry guards, in registration order: core guards first, then extensions in load order. Record a `core.guard.evaluated` event for every guard.
+3. On a forward edge, run the current state's exit guards, then the target's entry guards, in registration order: core guards first, then extensions in load order. On a backward edge, an abandon, or a trip-forced move, skip the current state's exit guards and run only the target's entry guards; these moves require a reason instead *(builder's call)*. Record a `core.guard.evaluated` event for every guard.
 4. In enforce mode, any failure refuses: nothing else is written. In advisory mode, failures are reported and the transition continues.
 5. Append `core.state.changed`, regenerate `story.md`, commit to `planning`. **This commit is the transition.**
 6. Run the target's resident actions. Each records `core.action.completed` or `core.action.failed`. A failed action is retried by the next `aitm sync`; it never undoes the transition.
@@ -286,23 +299,65 @@ Because the transition is committed before any projection runs, a crash or netwo
 | plan | exit | `jit-current` | a `core.jit.recorded` event exists against the current trunk tip |
 | develop | entry | `not-tripped` | no undecided trip |
 | develop | exit | `story-commits` | the story branch has at least one commit whose subject carries `[#<id>]` |
+| develop | exit | `expansion-resolved` | the current attempt's expansion, if any, has reached done |
 | test | exit | `test-passing` | a passing `core.test.receipt` for the current branch head |
-| review | exit | `retro-present` | a `core.retro.added` event |
-| review | exit | `signed-off` | a `core.signoff.recorded` with verdict `accept` |
+| review | exit | `review-passed` | a `core.review.recorded` with verdict `pass` for the current branch head |
+| review | exit | `signed-off` | a `core.signoff.recorded` by the agent, with its retrospective |
 | any forward | entry | `children-consistent` | an epic cannot pass a state its open children have not reached; an epic cannot reach done with open children |
 
-`description.md` frontmatter fields (title, has-user-story, has-scope) are written by `aitm describe`, which the agent runs after editing. That keeps the guard on structured data.
+**`aitm describe`** *(builder's call)* takes the story's content as structured input: `--title`, `--as`, `--want`, `--so-that`, and `--scope-file`. It records a `core.description.set` event (fields plus a content hash) and renders `description.md` from it. Writing the description is real authoring work, not evidence, so supplying it is the agent's job; the guard checks the event, never the prose. Later edits go through `describe` again.
+
+**Guard sets by kind** *(builder's call)*:
+
+| Kind | Differences from a story |
+| --- | --- |
+| story, defect | as above |
+| spike | `story-commits` and `test-passing` are replaced by `deliverable-present` (a document under `attachments/` recorded by `aitm deliver`); `review-passed` is recorded against the deliverable's planning SHA instead of a branch head |
+| epic | `leaf-size`, `jit-current`, `story-commits`, `test-passing`, `review-passed` and the implementation clock do not apply. An epic enters develop when its plan is accepted (its plan creates the children) and stays there while children run. It may leave develop only when every child has reached review or done, and leave review only when every child is done. `signed-off` applies; the epic's retrospective covers its children. |
+
+**Branches and trunk** *(builder's call)*:
+
+- The core does not create worktrees. `aitm bind` records the current checkout's worktree path and branch. On entering develop without a branch, `aitm bind` creates `story/<id>-<slug>` from the trunk tip; after a **scrap** decision the next attempt uses `story/<id>-<slug>-a<n>`.
+- `[store] trunk = "origin/trunk"` in `.aitm.toml` names the trunk ref; it is fetched before `jit` and before the plan → develop transition.
+- `jit-current` passes when the trunk SHA recorded by `aitm jit` is an ancestor of the current trunk tip **and** no commit since then touched a path listed in the plan's declared touched paths (when the plan declares them). Unrelated merges by parallel stories do not make the JIT stale.
+- `story-commits` and `test-passing` read the branch recorded by the latest session and its head in the local repo; `test-passing` requires the receipt's head SHA to equal that head.
+
+**Actors** *(builder's call)*. The actor is resolved in order: an explicit `--as-human` on commands that allow it (requires an interactive TTY and a typed confirmation), else `agent` when any known harness session variable is set (`CLAUDE_CODE_SESSION_ID`, `CODEX_SESSION_ID`, `GROK_SESSION_ID`, `AI_TASK_MANAGER_SESSION_ID` and the like, list in config), else `human` when stdin is a TTY, else `tool`. There is no required human gate, so the actor matters for attribution, not for permission, with one exception: `aitm pivot` is human-only, because an agent recording a pivot would hide a planning failure that should have been a trip. The core cannot fully stop an agent posing as a human on a single-user machine; the harness extension backs this up by denying agent tool calls to `pivot`.
+
+**Review and sign-off.** Review holds the PR review: reviewers (agent peer review, CI, later the provider's PR approvals) record verdicts with `aitm review pass|changes`. Once a review passes for the current head, the agent runs `aitm signoff --retro <path> --confidence <1-5>`, which records its retrospective on its own work (design, plan and implementation alignment, what went well, what should have been planned better, lessons, advisory confidence vote) and moves the story to done. Sign-off never waits for a human. The owner may later discuss the retro with an agent (`aitm discuss <id>`); that is never required, because a required human gate stacks work up and turns sign-off into a rubber stamp.
 
 **Core resident actions:** on entering any state, `project-to-backlog` calls the configured backlog provider's `project(story_state)` (a no-op for the local provider). On entering done, `close-sessions` ends any open session.
 
 ## Expansion and trip rules
 
-- `aitm expand <id> --kind defect|story --title "…" --reason "…"` creates a new story (graduating immediately through the backlog provider) with `expanded_from: <id>`, and records `core.expansion.recorded` on the origin story.
-- A story may have at most `expansions_per_story` expansions. A request for one more records `core.trip.recorded` (cause `second-expansion`) on that story. A story with `expanded_from` set has no allowance: any expansion it requests trips its origin story (cause `nested-expansion`).
-- `rules.timing` computes engaged agent-hours from session intervals (and, once the harness extension exists, its activity events). When a leaf story's engaged hours exceed `leaf_agent_hours`, the next command touching it records a trip (cause `time-limit`) on the story, or on its origin if it is an expansion.
-- In enforce mode, a trip refuses the expansion and moves the tripped story to plan. In advisory mode the trip is recorded and reported, and nothing moves.
-- `aitm trip decide <id> --decision scrap|refactor --rationale "…"` records the decision. For **scrap**, the current story branch is left untouched and recorded as an abandoned attempt; the next Develop entry starts a new branch. For **refactor**, the branch is kept.
-- `aitm pivot <id> --reason "…" [--scope-change]` records a human pivot. With `--scope-change` it moves the story to plan; it never counts as a trip.
+**The implementation clock.** Only implementation is time-limited; planning (Backlog, Refine, Ready for Plan, Plan) never is.
+
+- A story's clock runs from the moment it leaves plan and enters develop until a review passes in review (`review-passed`). Writing the retrospective after that is not counted.
+- `rules.timing` computes engaged agent-hours on the running clock as the sum of gaps between consecutive activity events, counting no gap longer than 15 minutes (configurable) *(builder's call)*. A session left open overnight adds nothing while idle. Until the harness extension exists, the activity events are the commands themselves.
+- Each entry into develop after an accepted plan starts a new **attempt**. Each attempt has a fresh clock of `leaf_agent_hours` and a fresh expansion allowance. Totals across attempts are kept for learning.
+- The clock pauses while the story is blocked by its own expansion, and resumes when the expansion reaches done.
+
+**Expansion.**
+
+- `aitm expand <id> --kind defect|story --title "…" --reason "…"` creates a new story (graduating immediately through the backlog provider) with `expanded_from: <id>`, records `core.expansion.recorded` on the origin, sets the origin `blocked_by` the new story, and pauses the origin's clock.
+- The expansion story starts with its own clock and its own `leaf_agent_hours` limit, and **no** expansion allowance. Work it discovers is absorbed inside it as long as it stays within its limit.
+- When the expansion reaches done, `core.expansion.resolved` is recorded on the origin, the block clears and the origin's clock resumes.
+
+**Trips.** A trip means the plan failed. It is recorded on the origin story, whichever story hit the limit:
+
+| Cause | When |
+| --- | --- |
+| `time-limit` | the story's engaged hours in this attempt exceed `leaf_agent_hours`, or its expansion's engaged hours exceed the expansion's own limit |
+| `second-expansion` | the story has used its expansion allowance in this attempt and asks for another |
+| `nested-expansion` | the story's expansion asks for an expansion |
+
+- Hours are checked by the next command that touches a story with a running clock. Expansion limits are checked by `aitm expand` itself.
+- In enforce mode a trip stops all work at once: the request that tripped it is refused; open sessions on the origin and its expansion are ended; the origin moves to plan; the expansion, if open, moves to plan with reason `origin-tripped`. In advisory mode the trip is recorded and reported, and nothing moves.
+- In plan, the agent examines the attempt (plan, decisions, commits, expansion, time) and writes a trip analysis to `plan/trip-<attempt>.md`. Then `aitm trip decide <id> --decision scrap|refactor --rationale "…" --analysis plan/trip-<n>.md [--expansion continue|fold|abandon]` records the decision. No human approval is required. For **scrap**, the story branch is left untouched and recorded as an abandoned attempt, and the next attempt starts a new branch. For **refactor**, the branch is kept. The expansion disposition says whether the expansion story continues under the new plan, is folded into the origin's new plan (and closed as superseded), or is abandoned.
+- Plan cannot be left until the trip is decided and a new plan is accepted (`trip-decided`, `plan-accepted`). The next develop entry starts a fresh attempt.
+- After a story's **second** trip, `trip decide` refuses `refactor` and `scrap` and the story returns to backlog for redesign or a split *(owner's "yes" read as agreeing to the cap; confirm)*.
+
+**Pivots.** `aitm pivot <id> --reason "…" [--scope-change]` records a human pivot. With `--scope-change` it moves the story to plan and closes the current attempt without a trip; it never counts against planning.
 
 ## Providers
 
@@ -358,7 +413,7 @@ Every command supports `--json` (stable output schema) and exits non-zero only o
 | drafts | `draft new`, `draft open`, `draft discard`, `draft list` |
 | stories | `graduate`, `describe`, `show`, `list`, `search`, `explain`, `link` |
 | work | `bind`, `unbind`, `sync [--push]` |
-| lifecycle | `promote [--to]`, `demote --to --reason`, `abandon --reason`, `estimate`, `design accept`, `plan accept`, `jit`, `test`, `review`, `signoff` |
+| lifecycle | `promote [--to]`, `demote --to --reason`, `abandon --reason`, `estimate`, `design accept`, `plan accept`, `jit`, `test`, `review pass\|changes`, `signoff`, `deliver` |
 | rules | `expand`, `trip decide`, `pivot` |
 
 `aitm explain <id>` prints the story's state, the next forward state, which guards would pass or fail and why, and the exact command to run next. It is the agent's primary "what now?" tool.
@@ -382,7 +437,9 @@ The core is done when, in a temporary repo with only `aitm-core` installed:
 2. An idea and a draft can be created, the draft graduated through the local provider, and the story walked backlog → done with every core guard passing, using only CLI commands.
 3. The same walk in enforce mode is refused at each guard when its condition is missing, with an `explain` output that names the missing condition and the command that fixes it.
 4. Advisory mode records each failing guard as an event and continues.
-5. A second expansion, a nested expansion and a time overrun each record the right trip; enforce mode moves the story to plan and blocks Develop until `trip decide` and a new `plan accept`.
+5. A second expansion, a nested expansion, a time overrun on a story and a time overrun on its expansion each record the right trip on the origin; enforce mode ends the sessions, moves the origin (and an open expansion) to plan, and blocks develop until `trip decide` and a new `plan accept`. A third attempt is refused and sent to backlog.
+5a. Engaged time counts only from develop entry to the first passing review, excludes planning, pauses while the story waits on its expansion, and restarts at zero for each attempt and for each expansion story.
+5b. A story walks from review to done with no human command; `signoff` records the agent's retrospective.
 6. Eight concurrent processes binding eight different stories and syncing 50 times each produce a linear `planning` history with no lost writes.
 7. Deleting the index and running any command rebuilds it with identical query results.
 8. A sample extension registers an event type, a guard and a command; a second extension claiming the same event type is refused at load.

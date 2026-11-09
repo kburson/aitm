@@ -4,7 +4,7 @@ story: 1
 role: design
 title: aitm architecture
 created: 2026-11-08T19:40:00Z
-updated: 2026-11-08T19:40:00Z
+updated: 2026-11-08T21:30:00Z
 last-branch: planning
 status: draft (awaiting review)
 sources:
@@ -45,6 +45,7 @@ The rewrite exists because ai-task-manager made the GitHub issue body its databa
 - Two parts of the tool writing the same fact, or a reader deciding what data is by its shape.
 - The tool's own defects forming chains that block product work.
 - Extended WIP: stories that never finish while new ones start.
+- A required human gate in the routine flow: work stacks up behind it and sign-off decays into a rubber stamp.
 
 ## System overview
 
@@ -97,9 +98,9 @@ Defined in the core design. In outline:
 | Refine | Design → agent-hour estimate, size, priority | Estimated; leaf ≤ 4 h or split |
 | Ready for Plan | Queue | Not blocked |
 | Plan | Implementation plan written and peer-reviewed; estimates revised; JIT deep-dive at pickup | Plan accepted; JIT recorded against current trunk |
-| Develop | Implementation | Story commits present |
+| Develop | Implementation (implementation clock starts) | Story commits present; expansion, if any, done |
 | Test | Tool-run verification | Passing receipt for current head |
-| Review | Agent sign-off with retrospective | Retro present; human sign-off |
+| Review | PR review (clock stops when it passes); agent sign-off with retrospective | Review passed for current head; agent sign-off recorded |
 | Done | Disposition: delivered, abandoned, superseded, duplicate | — |
 
 Backward moves: trip or human pivot → Plan; rework → Develop; design rework → Backlog. Abandoning moves to Done with a disposition and reason; the record stays in place.
@@ -109,10 +110,11 @@ Each state is `{ entry guards, resident actions, exit guards }`. Guards are fast
 ## Workflow rules
 
 - Parallel stories are allowed, one agent and one worktree each, chosen as independent at planning time.
-- Each story may absorb one expansion: a defect or a discovered story. The expansion has no allowance of its own.
-- A second expansion, an expansion that expands, or a leaf exceeding the time limit trips the originating story back to Plan. Plan cannot be left until the trip is decided (scrap-and-restart or refactor-and-improve, with rationale) and a new plan is accepted.
+- Only implementation is time-limited. Each attempt at a story gets 4 engaged agent-hours, counted from entering Develop until the PR review passes. Planning has no time limit.
+- Each attempt may absorb one expansion: a defect or a discovered story. The origin is blocked and its clock paused while the expansion runs. The expansion gets its own fresh 4-hour clock and no expansion allowance; work it discovers is absorbed inside it within that limit.
+- A trip is a planning failure: the story or its expansion exceeds its time limit, the story needs a second expansion, or the expansion needs one. All work on both stops and the origin returns to Plan. There the agent analyses the attempt and decides refactor or scrap-and-re-plan, with rationale, without human approval; a new plan must be accepted before Develop. The next attempt gets a fresh clock and allowance. After a second trip the story returns to Backlog to be redesigned or split.
 - Human pivots are recorded separately from trips so planning isn't blamed for a change of direction.
-- The only required human gate is sign-off after delivery.
+- There is no required human gate. Sign-off is the agent's retrospective on its own work, recorded on leaving Review. The owner may discuss any retro later; making that a gate would stack work up and turn sign-off into a rubber stamp.
 
 ## Enforcement modes
 
@@ -161,7 +163,7 @@ Python 3.13, uv, Pydantic v2, Typer, httpx, pytest, Ruff, scikit-learn (rubric o
 
 ## Human role
 
-The owner watches through the viewer (progress, time, cost, bumps), intervenes when direction looks wrong, and signs off after delivery. Designs and plans are archival and reviewed by agents. On entering Review the agent writes a retrospective (alignment, what went well, planning misses, lessons, advisory confidence vote); the owner can start a conversation about any story in any harness with `aitm discuss <id>`.
+The owner watches through the viewer (progress, time, cost, bumps) and intervenes with a pivot when direction looks wrong. Nothing waits on the owner. Designs and plans are archival and reviewed by agents. When the PR review passes, the agent signs off with a retrospective on its own work (alignment of design, plan and implementation, what went well, planning misses, lessons, advisory confidence vote) and the story moves to Done. The owner can start a conversation about any story or retro in any harness with `aitm discuss <id>`; it is never required.
 
 ## Learning
 
