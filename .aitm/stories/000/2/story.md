@@ -10,15 +10,17 @@ children: []
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:20Z
-updated: 2026-11-08T23:00:00Z
+updated: 2026-11-09T06:37:02Z
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
-estimate: { agent-hours: null, size: null }
+estimate: { agent-hours: 180, size: XL }
+priority: P1
+original-estimate: { agent-hours: 180, size: XL, priority: P1, source: refinement.md }
 origin: .aitm/drafts/2026-11/20261108-1310-core
 files:
   draft: draft.md
   events: events.jsonl
-  design: []
+  design: [design/core-design.md]
   plan: []
   attachments: []
 expansions: []
@@ -57,3 +59,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 ```
 
 </details>
+
+## Refinement
+
+Initial Refine estimate: **180 implementation agent-hours**, **XL epic**, **P1**. [Rationale and provenance](refinement.md). Plan decomposition and review are being prepared under the scoped owner assignment; historical Backlog state is retained until supported reconciliation. No implementation is authorized.
