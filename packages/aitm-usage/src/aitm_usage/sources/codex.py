@@ -21,6 +21,7 @@ from ..types import (
     Effort,
     Eligibility,
     ModelLabel,
+    ProcessingTier,
     Provider,
     ProviderCheckpoint,
     QuotaBucket,
@@ -50,7 +51,6 @@ _NONUSAGE_EVENTS = {
     "exec_command_end",
     "item_completed",
     "item_started",
-    "thread_settings_applied",
     "user_message",
     "warning",
 }
@@ -86,6 +86,7 @@ class _Turn:
     post_cutoff: bool
     model: ModelLabel = ModelLabel.UNKNOWN
     effort: Effort | None = None
+    processing_tier: ProcessingTier | None = None
     seen_context: bool = False
     seen_counter: bool = False
 
@@ -112,6 +113,7 @@ class _Response:
     thread_counts: TokenCounts
     model: ModelLabel
     effort: Effort | None
+    processing_tier: ProcessingTier | None
     eligible: bool
 
 
@@ -608,9 +610,36 @@ class _Walk:
             turn,
             model=model,
             effort=effort,
+            processing_tier=None,
             seen_context=True,
             segment_ref=frame.segment_ref,
         )
+
+    def settings(self, frame: SourceFrame, payload: dict) -> None:
+        turn = self.context.turn
+        if turn is None:
+            return
+        settings = _object(payload.get("thread_settings"))
+        tier = None
+        if (
+            turn.seen_context
+            and turn.segment_ref == frame.segment_ref
+            and _session(self.ledger, payload.get("thread_id")) == frame.session_ref
+            and settings.get("model_provider_id") == "openai"
+            and turn.model is not ModelLabel.UNKNOWN
+            and settings.get("model") == turn.model.value
+        ):
+            configured = settings.get("service_tier")
+            # The effective configuration supports a comparison basis. It
+            # does not attest the served tier or actual billing.
+            if configured == "default":
+                tier = ProcessingTier.STANDARD
+            elif type(configured) is str:
+                try:
+                    tier = ProcessingTier(configured)
+                except ValueError:
+                    pass
+        self.context.turn = replace(turn, processing_tier=tier)
 
     def turn_end(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
         context = self.context
@@ -750,6 +779,7 @@ class _Walk:
             thread_counts,
             turn.model if same_turn else ModelLabel.UNKNOWN,
             turn.effort if same_turn else None,
+            turn.processing_tier if same_turn else None,
             same_turn and (turn.post_cutoff or serial) and self.eligible(frame),
         )
         context.receipt = None
@@ -893,7 +923,7 @@ class _Walk:
         complete: bool,
     ) -> None:
         request_ref = None
-        model, effort = ModelLabel.UNKNOWN, None
+        model, effort, tier = ModelLabel.UNKNOWN, None, None
         if not complete:
             stream = self.ledger.pseudonymize(
                 "codex-unallocated-stream", frame.stream_ref.value
@@ -913,14 +943,18 @@ class _Walk:
         else:
             if response is not None:
                 request_ref, boundary = response.request_ref, response.boundary
-                model, effort = response.model, response.effort
+                model, effort, tier = (
+                    response.model,
+                    response.effort,
+                    response.processing_tier,
+                )
             else:
                 request_ref = self.ledger.pseudonymize(
                     "codex-counter-request", f"{self.epoch.value}:{frame.ordinal}"
                 )
                 boundary = self.boundary(frame, BoundaryKind.REQUEST, request_ref)
                 if turn is not None:
-                    model, effort = turn.model, turn.effort
+                    model, effort, tier = turn.model, turn.effort, turn.processing_tier
             key = self.ledger.pseudonymize(
                 "codex-usage", f"{self.epoch.value}:{boundary.ordinal}"
             )
@@ -940,6 +974,7 @@ class _Walk:
                     request_ref=request_ref,
                     model=model,
                     effort=effort,
+                    processing_tier=tier,
                     context_tokens=counts.input_tokens if complete else None,
                 ),
             )
@@ -974,6 +1009,8 @@ class _Walk:
             self.response(frame, payload, commit)
         elif kind == "event_msg" and item == "token_count":
             self.counter(frame, payload, commit)
+        elif kind == "event_msg" and item == "thread_settings_applied":
+            self.settings(frame, payload)
         elif kind == "event_msg" and item == "task_started":
             self.turn_start(frame, payload, commit)
         elif kind == "event_msg" and item == "task_complete":

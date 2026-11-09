@@ -26,6 +26,7 @@ from aitm_usage.types import (
     ItemKind,
     LedgerBatch,
     ModelLabel,
+    ProcessingTier,
     Provider,
     QuotaBucket,
     QuotaSource,
@@ -1121,3 +1122,63 @@ def test_progress_without_a_response_cannot_skip_duplicate_detection_after_resta
     _, result = read(codex, candidate, state, prior)
     assert result.revisions == ()
     assert (8, DiagnosticCode.IDENTITY_CONFLICT) in codes(result)
+
+
+@pytest.mark.parametrize("split", ["new-context", "restart", "unknown-tier"])
+def test_configured_processing_tier_is_bound_to_current_context(project, split):
+    codex = adapter()
+    ledger, registration, path, checkout, _ = project
+    amount = usage(8, 2)
+    settings = {
+        "thread_id": str(SESSION),
+        "thread_settings": {
+            "model_provider_id": "openai",
+            "model": "gpt-6-astra",
+            "service_tier": "default",
+        },
+    }
+    write(
+        path,
+        [
+            startup(checkout),
+            *begin(checkout),
+            event("thread_settings_applied", **settings),
+            response("standard-config", amount, amount),
+            counter(amount, amount),
+        ],
+    )
+    candidate = source(registration)
+    state = codex.CodexState(ledger)
+    if split == "restart":
+        write(path, [end()], append=True)
+    batch, first = read(codex, candidate, state)
+    (record,) = observations(first)
+    assert record.processing_tier is ProcessingTier.STANDARD
+    prior = commit(ledger, batch, first)
+    later = TURN
+    if split == "restart":
+        state = codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        later = UUID(int=0x164)
+        context = begin(checkout, later)
+    else:
+        state = codex.advance_codex_state(state, batch, first)
+        if split == "new-context":
+            context = [begin(checkout, model="gpt-6.1-sol", effort="high")[1]]
+        else:
+            settings["thread_settings"]["service_tier"] = "experimental"
+            context = [event("thread_settings_applied", **settings)]
+    total = usage(16, 4)
+    write(
+        path,
+        [
+            *context,
+            response("next-config", total, amount, turn=later),
+            counter(total, amount),
+            end(later),
+        ],
+        append=True,
+    )
+    _, second = read(codex, candidate, state, prior)
+    (record,) = observations(second)
+    assert record.tokens.total_tokens == 10
+    assert record.processing_tier is None
