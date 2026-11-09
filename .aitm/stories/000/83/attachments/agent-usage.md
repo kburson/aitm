@@ -1,6 +1,6 @@
 # #83 agent usage evidence
 
-Evidence observed through November 09, 2026 17:17:20 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
+Evidence observed through November 09, 2026 17:18:42 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
 
 | Work scope and participant | Observed model / effort | Observed tokens | API-equivalent USD | Unpriced records | Coverage gaps |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -13,7 +13,7 @@ Evidence observed through November 09, 2026 17:17:20 CST. Measured model-token u
 | Design and plan coordinator | gpt-6.1-sol / high | 32,789,051 | $7.7862 | 0 | 0 |
 | Desktop marker amendment SPR and pickup | gpt-6.1-sol / high | 2,361,422 | $0.3039 | 0 | 0 |
 | Desktop marker amendment XPR | claude-opus-5-5 / high | 1,685,760 | $1.3896 | 0 | 0 |
-| Implementation and delivery coordinator | gpt-6.1-sol / high | 335,838,163 | $62.6934 | 0 | 0 |
+| Implementation and delivery coordinator | gpt-6.1-sol / high | 337,517,853 | $62.9086 | 0 | 0 |
 | Launch health amendment SPR | gpt-6.1-sol / high | 1,544,193 | $0.2612 | 0 | 0 |
 | Launch health amendment XPR | claude-opus-5-5 / high | 1,788,376 | $1.4299 | 0 | 0 |
 | Mixed #73 and #83 coordinator work | gpt-6.1-sol / high | 4,092,966 | $0.5920 | 0 | 0 |
@@ -83,12 +83,12 @@ Evidence observed through November 09, 2026 17:17:20 CST. Measured model-token u
 | U13 pickup review | gpt-6.1-sol / high | 1,189,657 | $0.2055 | 0 | 0 |
 | U13 source review | gpt-6.1-sol / high | 2,621,623 | $0.6105 | 0 | 0 |
 
-**Attributed #83 observed subtotal** 726,276,430 tokens and $154.5714 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
+**Attributed #83 observed subtotal** 727,956,120 tokens and $154.7866 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
 
 | Provider | Observed tokens | API-equivalent USD | Billed spend | Task-attributable subscription debit |
 | --- | ---: | ---: | --- | --- |
 | Anthropic Claude Code | 12,071,434 | $11.6478 | Unknown | Unknown |
-| OpenAI Codex | 714,204,996 | $142.9236 | Unknown | Unknown |
+| OpenAI Codex | 715,884,686 | $143.1388 | Unknown | Unknown |
 
 **Evidence unavailable** U11 Claude interactive trust check.
 
