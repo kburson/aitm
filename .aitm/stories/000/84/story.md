@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 84
 title: "[Usage U01] Package and private durable ledger"
 kind: "story"
-state: "develop"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/84"
 parent: 83
 children: []
 blocking: [85]
 blocked-by: []
 created: "2026-11-09T14:42:16Z"
-updated: "2026-11-09T14:46:26+00:00"
+updated: "2026-11-09T15:05:15+00:00"
 last-branch: "codex/aitm-usage-u01"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 # [Usage U01] Package and private durable ledger
 
-[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Develop
+[GitHub issue](https://github.com/kburson/aitm/issues/84) · [Parent #83](../83/story.md) · Planning
 
 **Required predecessors** None.
 
@@ -38,4 +38,4 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U01", "path":
 
 ## Current pickup
 
-[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
+[Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This was the manual Develop admission. Source candidate `be02ad0562669552c810643efb874f5cd3d41881` is preserved on its dedicated branch. [Planning amendment under review](../83/plan/usage-capture-replan.md). The source review requires changes before integration.
