@@ -40,6 +40,31 @@ _SUPPORTED_CLIENTS = {
     Provider.CLAUDE: ClientVersion.CLAUDE_2_1_318,
 }
 _CLAUDE_SESSION_ROWS = {"user", "assistant", "system", "result", "rate_limit_event"}
+_CLAUDE_QUEUE_FIELDS = {
+    "type": str,
+    "operation": str,
+    "timestamp": str,
+    "sessionId": str,
+}
+_CLAUDE_STARTUP_ATTACHMENT_FIELDS = {
+    "type": str,
+    "attachment": dict,
+    "cwd": str,
+    "entrypoint": str,
+    "gitBranch": str,
+    "isSidechain": bool,
+    "sessionId": str,
+    "timestamp": str,
+    "userType": str,
+    "uuid": str,
+    "version": str,
+}
+_CLAUDE_STARTUP_HOOK_FIELDS = {
+    "type": str,
+    "hookEvent": str,
+    "hookName": str,
+    "toolUseID": str,
+}
 _CLAUDE_BOOKKEEPING = {
     "api-request-blob": ("hash", str),
     "atis-latch": ("atis", str),
@@ -470,6 +495,7 @@ class _Origin:
     issue: DiagnosticCode | None = None
     startup_ordinal: int = field(default=0, compare=False)
     startup_digest: str = field(default="", compare=False)
+    startup_excluded: tuple[int, ...] = ()
 
 
 def _origin_from(row: _Row, ordinal: int, ledger: Ledger) -> _Origin | None:
@@ -503,10 +529,140 @@ def _origin_from(row: _Row, ordinal: int, ledger: Ledger) -> _Origin | None:
     return _Origin(provider, session, client, 1)
 
 
+def _closed_fields(row: _Row, fields: dict[str, type]) -> bool:
+    return row.keys() == fields.keys() and all(
+        type(row[key]) is expected for key, expected in fields.items()
+    )
+
+
+def _native_uuid(value: object) -> UUID | None:
+    if type(value) is str:
+        try:
+            return UUID(value)
+        except ValueError:
+            pass
+    return None
+
+
+def _claude_startup_root(row: _Row) -> bool:
+    return (
+        row.get("entrypoint") == "sdk-cli"
+        and row.get("userType") == "external"
+        and row.get("isSidechain") is False
+        and row.get("parent_tool_use_id") is None
+    )
+
+
+def _claude_startup_attachment(
+    row: _Row, client: ClientVersion, parent: UUID | None
+) -> UUID | None:
+    if parent is None:
+        top = _CLAUDE_STARTUP_ATTACHMENT_FIELDS | {"parentUuid": type(None)}
+        nested = _CLAUDE_STARTUP_HOOK_FIELDS | {
+            "command": str,
+            "content": str,
+            "stdout": str,
+            "stderr": str,
+            "durationMs": int,
+            "exitCode": int,
+        }
+        kind = "hook_success"
+    else:
+        top = _CLAUDE_STARTUP_ATTACHMENT_FIELDS | {
+            "parentUuid": str,
+            "rendered": list,
+            "renderedRole": str,
+        }
+        nested = _CLAUDE_STARTUP_HOOK_FIELDS | {"content": list}
+        kind = "hook_additional_context"
+    if (
+        not _closed_fields(row, top)
+        or row["type"] != "attachment"
+        or not _claude_startup_root(row)
+        or row["version"] != client.value
+        or _native_uuid(row["parentUuid"]) != parent
+    ):
+        return None
+    hook = row["attachment"]
+    if (
+        not _closed_fields(hook, nested)
+        or hook["type"] != kind
+        or hook["hookEvent"] != "SessionStart"
+    ):
+        return None
+    return _native_uuid(row["uuid"])
+
+
+def _claude_startup_ordinals(
+    preceding: list[tuple[int, _Row | None]],
+    user: _Row,
+    origin: _Origin,
+    ledger: Ledger,
+) -> tuple[int, ...]:
+    if (
+        origin.provider is not Provider.CLAUDE
+        or origin.issue is not None
+        or len(preceding) < 4
+        or user["type"] != "user"
+        or type(user.get("sessionId")) is not str
+        or not _claude_startup_root(user)
+        or _moment(user) is None
+    ):
+        return ()
+    user_id = _native_uuid(user.get("uuid"))
+    message = user.get("message")
+    if (
+        user_id is None
+        or type(message) is not dict
+        or message.get("role") != "user"
+        or type(message.get("content")) not in (str, list)
+    ):
+        return ()
+
+    timed = []
+    for ordinal, row in preceding:
+        if row is None or _claude_session(row, ledger) != origin.session_ref:
+            return ()
+        if row["type"] in _CLAUDE_UNTIMED:
+            try:
+                _claude_sideband_content(row, ledger)
+            except ValueError:
+                return ()
+            continue
+        if _moment(row) is None:
+            return ()
+        timed.append((ordinal, row))
+    if len(timed) != 4:
+        return ()
+
+    enqueue, dequeue, success, additional = (row for _, row in timed)
+    if (
+        not _closed_fields(enqueue, _CLAUDE_QUEUE_FIELDS | {"content": str})
+        or enqueue["type"] != "queue-operation"
+        or enqueue["operation"] != "enqueue"
+        or not _closed_fields(dequeue, _CLAUDE_QUEUE_FIELDS)
+        or dequeue["type"] != "queue-operation"
+        or dequeue["operation"] != "dequeue"
+    ):
+        return ()
+    success_id = _claude_startup_attachment(success, origin.client, None)
+    if success_id is None:
+        return ()
+    additional_id = _claude_startup_attachment(additional, origin.client, success_id)
+    if (
+        additional_id is None
+        or len({user_id, success_id, additional_id}) != 3
+        or _native_uuid(user.get("parentUuid")) != additional_id
+    ):
+        return ()
+    return tuple(ordinal for ordinal, _ in timed)
+
+
 def _origin(stream: BinaryIO, size: int, ledger: Ledger) -> _Origin | None:
     """Look for startup identity without following arbitrary transcript fields."""
     found_complete = False
     digest = hashlib.sha256()
+    preceding = []
     # Claude can place bookkeeping rows ahead of the first session-bearing row.
     limit = min(size, _MAX_ROW_BYTES)
     for ordinal in range(64):
@@ -523,8 +679,14 @@ def _origin(stream: BinaryIO, size: int, ledger: Ledger) -> _Origin | None:
             and (origin := _origin_from(row, ordinal, ledger)) is not None
         ):
             return replace(
-                origin, startup_ordinal=ordinal, startup_digest=digest.hexdigest()
+                origin,
+                startup_ordinal=ordinal,
+                startup_digest=digest.hexdigest(),
+                startup_excluded=_claude_startup_ordinals(
+                    preceding, row, origin, ledger
+                ),
             )
+        preceding.append((ordinal, row))
     if found_complete or size > limit:
         return _Origin(None, None, issue=DiagnosticCode.UNSUPPORTED_FORMAT)
     return None
@@ -932,11 +1094,13 @@ def _read(
     pending: dict[SourceRef, int] = {}
     end = 0
     prefix = hashlib.sha256().hexdigest()
-    prior_verified = False
+    prior_verified = origin_verified = False
     for ordinal, start, before, prefix, row in _lines(stream, snapshot.stat.st_size):
         end = stream.tell()
-        if ordinal == origin.startup_ordinal and prefix != origin.startup_digest:
-            raise _ChangedSource
+        if ordinal == origin.startup_ordinal:
+            if prefix != origin.startup_digest:
+                raise _ChangedSource
+            origin_verified = True
         if start >= prior and not prior_verified:
             _verify_prior(source, origin, checkpoint, start, before)
             prior_verified = True
@@ -947,6 +1111,10 @@ def _read(
             if row is not None
             else (DiagnosticCode.MALFORMED_USAGE, False, None)
         )
+        if ordinal in origin.startup_excluded:
+            if selection is not None or issue is not None or moment is None:
+                raise _SourceIssue(issue or DiagnosticCode.BOUNDARY_UNVERIFIED)
+            continue
         if (
             row is not None
             and origin.provider is Provider.CLAUDE
@@ -1051,6 +1219,8 @@ def _read(
             )
             if start >= prior:
                 records.append(_CompleteRow(start, before, last_timed, proof_gap))
+    if origin.startup_excluded and not origin_verified:
+        raise _ChangedSource
     if not prior_verified:
         _verify_prior(source, origin, checkpoint, end, prefix)
     if any(

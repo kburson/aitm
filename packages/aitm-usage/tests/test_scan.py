@@ -1,5 +1,6 @@
 import importlib
 import json
+import shlex
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -7,7 +8,17 @@ from uuid import UUID
 import pytest
 
 from aitm_usage.ledger import Ledger
-from aitm_usage.scopes import drain_inbox, enqueue_command, session_reference
+from aitm_usage.scopes import (
+    drain_inbox,
+    enqueue_command,
+    resolve_scope,
+    session_reference,
+)
+from aitm_usage.service import collect_once, register_project, remember_claude_session
+from aitm_usage.sources.claude import (
+    claude_receipt_reference,
+    claude_request_boundary_reference,
+)
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
@@ -1411,3 +1422,415 @@ def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(pro
     assert terminal.timed_ordinal == 2
     assert result.commit_sideband == ()
     assert result.cursor.offset == path.stat().st_size
+
+
+def _native_startup_rows(cwd):
+    success, additional, user = (str(UUID(int=n)) for n in (201, 202, 203))
+    queue = {
+        "type": "queue-operation",
+        "timestamp": AFTER.isoformat(),
+        "sessionId": str(SESSION),
+    }
+    native = {
+        "timestamp": AFTER.isoformat(),
+        "sessionId": str(SESSION),
+        "version": "2.1.318",
+        "cwd": str(cwd),
+        "entrypoint": "sdk-cli",
+        "gitBranch": "private-branch",
+        "userType": "external",
+        "isSidechain": False,
+    }
+    hook = {
+        "hookEvent": "SessionStart",
+        "hookName": "fixture-hook",
+        "toolUseID": "tool-fixture",
+    }
+    return [
+        {**queue, "operation": "enqueue", "content": "private-queued-input"},
+        {**queue, "operation": "dequeue"},
+        {
+            **native,
+            "type": "attachment",
+            "uuid": success,
+            "parentUuid": None,
+            "attachment": {
+                **hook,
+                "type": "hook_success",
+                "command": "private-hook",
+                "content": "private-context",
+                "stdout": "",
+                "stderr": "",
+                "durationMs": 1,
+                "exitCode": 0,
+            },
+        },
+        {
+            **native,
+            "type": "attachment",
+            "uuid": additional,
+            "parentUuid": success,
+            "rendered": [],
+            "renderedRole": "user",
+            "attachment": {**hook, "type": "hook_additional_context", "content": []},
+        },
+        {
+            **native,
+            "type": "user",
+            "uuid": user,
+            "parentUuid": additional,
+            "message": {"role": "user", "content": "private-prompt"},
+        },
+    ]
+
+
+def _startup_bytes(rows):
+    return b"".join(
+        row if isinstance(row, bytes) else json.dumps(row).encode() + b"\n"
+        for row in rows
+    )
+
+
+def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(project):
+    scanner = _scanner()
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "startup.jsonl"
+    rows = _native_startup_rows(checkout)
+    rows.insert(0, _claude_line("session-owner", accountUuid=str(UUID(int=205))))
+    rows.insert(3, _claude_line("atis-latch", atis="private-latch"))
+    rows.append(
+        {
+            **rows[-2],
+            "parentUuid": rows[-1]["uuid"],
+            "uuid": str(UUID(int=206)),
+        }
+    )
+    payload = _startup_bytes(rows)
+    path.write_bytes(payload)
+    (candidate,) = scanner.discover(registration)
+    batch = scanner.scan(candidate, None, CUTOFF)
+    assert [frame.ordinal for frame in batch.frames] == [6, 7]
+    assert batch.frames == batch.commit_frames
+    assert all(frame.eligibility is Eligibility.ELIGIBLE for frame in batch.frames)
+    assert [frame.row["type"] for frame in batch.frames] == ["user", "attachment"]
+    assert batch.frames[-1].row["attachment"]["type"] == "hook_additional_context"
+    assert batch.observed_through == AFTER
+    assert _codes(batch) == set()
+    prior = _checkpoint(batch)
+    store.apply(LedgerBatch(checkpoint=prior))
+
+    path.unlink()
+    archive = root / "archived.jsonl"
+    continuation = _claude_timed("assistant", checkout, request="continuation")
+    archive.write_bytes(payload + continuation)
+    reopened = Ledger.open(store.root, PROJECT)
+    (durable,) = reopened.as_of().checkpoints
+    (archived,) = scanner.discover(registration)
+    replay = scanner.scan(archived, durable, CUTOFF)
+    assert [frame.ordinal for frame in replay.commit_frames] == [8]
+    assert replay.cursor.source_ref == durable.cursor.source_ref
+    assert replay.cursor.offset == len(payload + continuation)
+
+    archive.write_bytes(
+        payload.replace(b"private-queued-input", b"changed-queued-input") + continuation
+    )
+    changed = scanner.scan(archived, durable, CUTOFF)
+    assert changed.commit_frames == ()
+    assert _codes(changed) == {DiagnosticCode.OVERLAP_UNVERIFIED}
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "unknown",
+        "malformed",
+        "untimed-drift",
+        "foreign",
+        "usage",
+        "wrong-event",
+        "sidechain",
+        "wrong-route",
+        "success-parent",
+        "additional-parent",
+        "success-top-key",
+        "success-hook-key",
+        "additional-top-key",
+        "additional-hook-key",
+        "duplicate",
+        "reordered",
+        "missing-enqueue",
+        "missing-dequeue",
+        "missing-context",
+        "wrong-user-parent",
+        "invalid-time",
+        "invalid-hook-id",
+        "repeated-id",
+        "invalid-user",
+        "wrong-version",
+        "eof",
+    ],
+)
+def test_claude_startup_prefix_requires_the_entire_proven_native_chain(project, change):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "startup.jsonl"
+    rows = _native_startup_rows(checkout)
+    enqueue, dequeue, success, context, user = rows
+    if change == "unknown":
+        rows.insert(1, {**dequeue, "type": "unknown-startup"})
+    elif change == "malformed":
+        rows.insert(1, b'{"type": "broken"\n')
+    elif change == "untimed-drift":
+        rows.insert(1, _claude_line("tools-used", tools=[{"label": "private"}]))
+    elif change == "foreign":
+        enqueue["sessionId"] = str(UUID(int=404))
+    elif change == "usage":
+        enqueue["usage"] = {"output_tokens": 999}
+    elif change == "wrong-event":
+        context["attachment"]["hookEvent"] = "UserPromptSubmit"
+    elif change == "sidechain":
+        success["isSidechain"] = True
+    elif change == "wrong-route":
+        success["entrypoint"] = "unverified-route"
+    elif change == "success-parent":
+        success["parentUuid"] = str(UUID(int=404))
+    elif change == "additional-parent":
+        context["parentUuid"] = str(UUID(int=404))
+    elif change == "success-top-key":
+        success["extra"] = "private"
+    elif change == "success-hook-key":
+        success["attachment"]["extra"] = "private"
+    elif change == "additional-top-key":
+        context["extra"] = "private"
+    elif change == "additional-hook-key":
+        context["attachment"]["extra"] = "private"
+    elif change == "duplicate":
+        rows.insert(1, enqueue.copy())
+    elif change == "reordered":
+        rows[0:2] = [dequeue, enqueue]
+    elif change == "missing-enqueue":
+        rows.remove(enqueue)
+    elif change == "missing-dequeue":
+        rows.remove(dequeue)
+    elif change == "missing-context":
+        rows.remove(context)
+    elif change == "wrong-user-parent":
+        user["parentUuid"] = success["uuid"]
+    elif change == "invalid-time":
+        success["timestamp"] = "private"
+    elif change == "invalid-hook-id":
+        context["uuid"] = "private"
+    elif change == "repeated-id":
+        user["uuid"] = success["uuid"]
+    elif change == "invalid-user":
+        user["message"]["role"] = "assistant"
+    elif change == "wrong-version":
+        context["version"] = "1.0"
+    else:
+        assert change == "eof"
+        rows.pop()
+
+    path.write_bytes(_startup_bytes(rows))
+    (candidate,) = scanner.discover(registration)
+    batch = scanner.scan(candidate, None, CUTOFF)
+    assert batch.commit_frames == ()
+    assert batch.observed_through is None
+    if batch.cursor is not None:
+        assert batch.cursor.offset == 0
+        assert batch.frames and batch.frames[0].boundary_only
+    if change == "foreign":
+        assert _codes(batch) == {DiagnosticCode.IDENTITY_CONFLICT}
+    if change == "eof":
+        assert _codes(batch) == {DiagnosticCode.UNSUPPORTED_FORMAT}
+    if change in {"malformed", "untimed-drift", "invalid-time"}:
+        assert (
+            DiagnosticCode.MALFORMED_USAGE in _codes(batch) or batch.cursor.offset == 0
+        )
+
+
+def _native_startup_tool_turn(checkout, state, command_id):
+    call, result, attachment, target = (str(UUID(int=n)) for n in (207, 208, 209, 210))
+    receipt = json.dumps({"command_id": str(command_id), "status": "queued"})
+    argv = [
+        "aitm-usage",
+        "--project",
+        str(state),
+        "scope",
+        "mark",
+        "--marker",
+        str(state / "fixture-marker.json"),
+        "--session-id",
+        str(SESSION),
+        "--json",
+    ]
+    common = {
+        "cwd": str(checkout),
+        "version": "2.1.318",
+        "isSidechain": False,
+        "timestamp": AFTER.isoformat(),
+        "sessionId": str(SESSION),
+    }
+    usage = {
+        "input_tokens": 2,
+        "output_tokens": 4,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+    }
+
+    def assistant(ident, request, **fields):
+        return {
+            **common,
+            "type": "assistant",
+            "uuid": ident,
+            "requestId": request,
+            "message": {
+                "type": "message",
+                "id": f"message-{request}",
+                "model": "claude-opus-5-5",
+                "role": "assistant",
+                "usage": usage,
+                "stop_reason": "end_turn",
+                "content": [],
+                **fields,
+            },
+        }
+
+    first = assistant(
+        call,
+        "bash-request",
+        stop_reason="tool_use",
+        content=[
+            {
+                "type": "tool_use",
+                "id": "fixture-tool",
+                "name": "Bash",
+                "input": {"command": shlex.join(argv)},
+            }
+        ],
+    )
+    return [
+        first,
+        {
+            **common,
+            "type": "user",
+            "uuid": result,
+            "parentUuid": call,
+            "sourceToolAssistantUUID": call,
+            "message": {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": "fixture-tool",
+                        "content": receipt,
+                    },
+                ],
+            },
+            "toolUseResult": {"stdout": receipt, "stderr": "", "interrupted": False},
+        },
+        {
+            **common,
+            "type": "attachment",
+            "uuid": attachment,
+            "parentUuid": result,
+            "attachment": {"type": "output_style", "style": "fixture"},
+        },
+        {**common, "type": "api-request", "id": "native-client-request"},
+        {
+            **assistant(target, "measured-request"),
+            "parentUuid": attachment,
+            "requestRef": "native-client-request",
+        },
+    ]
+
+
+@pytest.mark.parametrize("marker_first", [True, False])
+def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
+    project, marker_first
+):
+    registration, store = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    outside = root.parent / "review-private"
+    unrelated = root.parent / "unrelated-private"
+    outside.mkdir()
+    unrelated.mkdir()
+    config = root.parent / "registration-input.json"
+    config.write_text(
+        json.dumps(
+            {
+                "project_id": str(PROJECT),
+                "source_roots": [str(root)],
+                "checkout_anchors": [str(checkout)],
+                "cutoff": CUTOFF.isoformat(),
+            }
+        )
+    )
+    registration = register_project(store.root, config)
+    session = session_reference(store, Provider.CLAUDE, str(SESSION))
+    command_id = UUID(int=211)
+    marker = ScopeMarker(
+        command_id,
+        Provider.CLAUDE,
+        session,
+        1,
+        BoundaryKind.REQUEST,
+        claude_request_boundary_reference(store, session, command_id),
+        BEFORE,
+        ItemKey(ItemKind.ISSUE, 87),
+        WorkPhase.SOURCE_REVIEW,
+        store.pseudonymize("participant", "reviewer"),
+        PROJECT,
+        ReviewRole.REVIEWER,
+        claude_receipt_reference(store, session, command_id),
+    )
+    remember_claude_session(store, session)
+    command = InboxCommand(command_id, PROJECT, marker)
+    path = root / "startup.jsonl"
+    rows = _native_startup_rows(outside)
+    # The hooks claim the project checkout, while the first real user is outside it.
+    rows[2]["cwd"] = rows[3]["cwd"] = str(checkout)
+    path.write_bytes(
+        _startup_bytes(
+            rows + _native_startup_tool_turn(outside, store.root, command_id)
+        )
+        + _claude_timed("assistant", unrelated, request="unrelated")
+    )
+    if not marker_first:
+        report = collect_once(registration, store)
+        assert report.held_sources == 1
+        before = store.as_of()
+        assert before.checkpoints[0].cursor.offset == len(_startup_bytes(rows[:4]))
+        assert not any(
+            isinstance(revision.record, UsageObservation) for revision in before.current
+        )
+        store = Ledger.open(store.root, PROJECT)
+    enqueue_command(store.root, command)
+    accepted = collect_once(registration, store)
+    assert accepted.deferred_sources == 1
+    assert store.command_receipt(command).disposition is MarkerDisposition.ACCEPTED
+    assert not any(
+        isinstance(revision.record, UsageObservation)
+        for revision in store.as_of().current
+    )
+
+    reopened = Ledger.open(store.root, PROJECT)
+    report = collect_once(registration, reopened)
+    assert report.held_sources == 1
+    view = reopened.as_of()
+    (usage,) = (
+        revision.record
+        for revision in view.current
+        if isinstance(revision.record, UsageObservation)
+    )
+    assert usage.boundary.ordinal == 9
+    assert usage.boundary.receipt_ref == marker.receipt_ref
+    assert usage.tokens.output_tokens == 4
+    assert resolve_scope(usage, view).scope.marker == marker
+    assert view.checkpoints[0].cursor.offset < path.stat().st_size
+    again = collect_once(registration, Ledger.open(store.root, PROJECT))
+    assert again.sequence == view.sequence
