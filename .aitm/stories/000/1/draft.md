@@ -66,6 +66,9 @@ The full conversation is in [`attachments/transcript.md`](attachments/transcript
 - **[user]** ai-peer-review needs a refactor so each review session writes to a caller-chosen location. **[call]** SAR = single-agent review, SPR = same-provider peer review, XPR = cross-provider review.
 - **[user] (2026-11-08)** SAR confirmed: a model and effort level from the current provider run a multi-phase review, iterating review/revise until nothing is left to revise. No broker or cross-provider conduit (SPR doesn't need them either). SAR exists so all review collateral has one format: reviewer and author responses follow the same format and frontmatter rules, and every revision gets a diff file.
 - **[user] (2026-11-08)** The ai-peer-review refactor records a patch file of the file under review for every author turn that revises it. Patches are numbered by turn and committed with the review record, so every revision from the base can be rebuilt and compared with the notes, and the record survives squash merges. Details and open items are in the peer-review draft.
+- **[user] (2026-11-08)** The review levels apply to spec and plan files, and can also apply to the JIT deep-dive, provided it lives as a file in the story folder and the issue only links to it. Drafts need no review. Review depth for the master design and master plan was left to investigation; the recommendation is in the peer-review draft.
+- **[user] (2026-11-08)** With per-turn patches, a review record is the final FUR plus patches 000…N, a portable collection; nothing needs pre-committing. Until the refactor ships, reviews run on a temporary branch off the planning branch, and the final collateral is copied into planning safely. Each later level refreshes from planning first, so an interrupted cycle loses nothing.
+- **[agreed]** The review → revise loop that runs until the reviewer is exhausted is called an **iterative review**.
 
 ## Human role
 
