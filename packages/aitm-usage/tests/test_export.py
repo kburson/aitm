@@ -523,36 +523,106 @@ def test_refuses_unsafe_or_different_destination(project, tmp_path, kind):
         assert (destination / "unrelated").read_text() == CANARY
 
 
+@pytest.mark.parametrize("identical", [False, True])
 def test_competing_destination_keeps_complete_atomic_visibility(
-    project, tmp_path, monkeypatch
+    project, tmp_path, monkeypatch, identical
 ):
     export_as_of = _export()
     from aitm_usage import export
 
     destination = tmp_path / "destination"
+    parent = tmp_path.stat()
+    real_rename = export._rename_exclusive()
+    real_fsync = os.fsync
+    parent_syncs = []
+
+    def race(src_fd, source, dst_fd, target, flags):
+        assert not destination.exists()
+        staged = os.open(
+            source, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=src_fd
+        )
+        try:
+            names = set(os.listdir(staged))
+            assert names == {"manifest.json", "usage.jsonl"}
+            assert stat.S_IMODE(os.fstat(staged).st_mode) == 0o700
+            assert {
+                stat.S_IMODE(os.stat(name, dir_fd=staged).st_mode) for name in names
+            } == {0o600}
+            destination.mkdir(mode=0o700)
+            if identical:
+                for name in names:
+                    with os.fdopen(
+                        os.open(name, os.O_RDONLY, dir_fd=staged), "rb"
+                    ) as original:
+                        copy = destination / name
+                        copy.write_bytes(original.read())
+                        copy.chmod(0o600)
+            else:
+                (destination / "competitor").write_text(CANARY)
+        finally:
+            os.close(staged)
+        return real_rename(src_fd, source, dst_fd, target, flags)
+
+    def fsync(fd):
+        if os.path.samestat(os.fstat(fd), parent):
+            parent_syncs.append(fd)
+        real_fsync(fd)
+
+    monkeypatch.setattr(export, "_rename_exclusive", lambda: race)
+    monkeypatch.setattr(os, "fsync", fsync)
+    view = project.as_of()
+    card = load_rate_card()
+    if identical:
+        receipt = export_as_of(view, card, destination)
+        assert receipt.sha256 == sha256(_snapshot(destination)[1]).hexdigest()
+        assert len(parent_syncs) == 1
+    else:
+        with pytest.raises(export.ExportError):
+            export_as_of(view, card, destination)
+        assert (destination / "competitor").read_text() == CANARY
+        assert {path.name for path in destination.iterdir()} == {"competitor"}
+        assert parent_syncs == []
+    assert not list(tmp_path.glob(".export-*"))
+
+
+def test_replacing_outer_stage_during_rename_cannot_publish_substitute(
+    project, tmp_path, monkeypatch
+):
+    export_as_of = _export()
+    from aitm_usage import export
+
+    view = project.as_of()
+    card = load_rate_card()
+    reference = tmp_path / "reference"
+    receipt = export_as_of(view, card, reference)
+    destination = tmp_path / "destination"
+    displaced = tmp_path / "displaced-stage"
     real_rename = export._rename_exclusive()
 
     def race(src_fd, source, dst_fd, target, flags):
-        staged = tmp_path / os.fsdecode(source)
-        assert not destination.exists()
-        assert {file.name for file in staged.iterdir()} == {
-            "manifest.json",
-            "usage.jsonl",
-        }
-        assert stat.S_IMODE(staged.stat().st_mode) == 0o700
-        assert {stat.S_IMODE(file.stat().st_mode) for file in staged.iterdir()} == {
-            0o600
-        }
-        destination.mkdir(mode=0o700)
-        (destination / "competitor").write_text(CANARY)
+        (outer,) = tmp_path.glob(".export-*")
+        outer.rename(displaced)
+        outer.mkdir(mode=0o700)
+        (outer / "competitor").write_text(CANARY)
         return real_rename(src_fd, source, dst_fd, target, flags)
 
     monkeypatch.setattr(export, "_rename_exclusive", lambda: race)
-    with pytest.raises(export.ExportError):
-        export_as_of(project.as_of(), load_rate_card(), destination)
-    assert (destination / "competitor").read_text() == CANARY
-    assert {path.name for path in destination.iterdir()} == {"competitor"}
-    assert not list(tmp_path.glob(".export-*"))
+    try:
+        result = export_as_of(view, card, destination)
+    except export.ExportError:
+        # Even a fail-closed publisher must not expose the replacement.
+        assert not destination.exists() or {
+            path.name for path in destination.iterdir()
+        } == {
+            "manifest.json",
+            "usage.jsonl",
+        }
+        raise
+    assert result == receipt
+    assert _snapshot(destination) == _snapshot(reference)
+    assert list(displaced.iterdir()) == []
+    (replacement,) = tmp_path.glob(".export-*")
+    assert (replacement / "competitor").read_text() == CANARY
 
 
 @pytest.mark.parametrize(
@@ -635,3 +705,134 @@ def test_receiver_rejects_non_string_datetime_and_draft_uuid(project, tmp_path, 
             receiver.import_snapshot(invalid)
         assert receiver.watermark is None
         assert receiver.accepted == {}
+
+
+def test_exact_replay_resyncs_parent_after_interrupted_publication(
+    project, tmp_path, monkeypatch
+):
+    export_as_of = _export()
+    from aitm_usage.export import ExportError
+
+    view = project.as_of()
+    card = load_rate_card()
+    destination = tmp_path / "destination"
+    parent = tmp_path.stat()
+    real_fsync = os.fsync
+    parent_syncs = []
+
+    def fsync(fd):
+        if os.path.samestat(os.fstat(fd), parent):
+            parent_syncs.append(fd)
+            if len(parent_syncs) <= 2:
+                raise OSError(5, "simulated parent sync failure")
+        real_fsync(fd)
+
+    monkeypatch.setattr(os, "fsync", fsync)
+    with pytest.raises(ExportError):
+        export_as_of(view, card, destination)
+    complete = _snapshot(destination)
+    # An exact retry must repeat the failed durability step before success.
+    with pytest.raises(ExportError):
+        export_as_of(view, card, destination)
+    receipt = export_as_of(view, card, destination)
+    assert len(parent_syncs) == 3
+    assert _snapshot(destination) == complete
+    assert receipt.sha256 == sha256(complete[1]).hexdigest()
+    assert not list(tmp_path.glob(".export-*"))
+
+
+@pytest.mark.parametrize(
+    "kind", ["accepted-observation", "pending-observation", "scope", "price"]
+)
+def test_receiver_rejects_component_conflict_under_changed_provenance(
+    project, tmp_path, kind
+):
+    export_as_of = _export()
+    from fixtures.receiver import Receiver, ReceiverConflict
+
+    first, second, marker = _seed(project)
+    before = project.as_of()
+    card = load_rate_card()
+    original = tmp_path / "original"
+    export_as_of(before, card, original)
+    _correct(project, marker)
+    after = project.as_of()
+    # New scope provenance accompanies the price contradiction. New rate
+    # provenance accompanies the unchanged observation and scope revisions.
+    selected = card if kind == "price" else replace(card, version="2026-11-10")
+    candidate = tmp_path / "candidate"
+    export_as_of(after, selected, candidate)
+
+    def contradict(rows):
+        key = _public(
+            second.key if kind in {"pending-observation", "scope"} else first.key
+        )
+        row = next(item for item in rows if item["source"] == key)
+        if kind == "scope":
+            row["scope"]["item"]["id"] = 123
+        elif kind == "price":
+            row["price"]["usd"] = "0.5"
+        else:
+            row["tokens"]["input_tokens"] = 501
+
+    altered = _changed_snapshot(candidate, tmp_path / "altered", mutate_row=contradict)
+    with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
+        assert receiver.import_snapshot(original) == "imported"
+        accepted = receiver.accepted
+        with pytest.raises(ReceiverConflict):
+            receiver.import_snapshot(altered)
+        assert receiver.watermark == before.sequence
+        assert receiver.accepted == accepted
+        assert receiver.pending == {_public(second.key)}
+        assert receiver.reconciliation == {}
+        assert receiver.import_snapshot(candidate) == "imported"
+
+
+def test_receiver_checks_reconciled_observation_after_reopen(project, tmp_path):
+    export_as_of = _export()
+    from fixtures.receiver import Receiver, ReceiverConflict
+
+    first, _, _ = _seed(project)
+    card = load_rate_card()
+    original = tmp_path / "original"
+    export_as_of(project.as_of(), card, original)
+    newer = replace(
+        first,
+        revision=2,
+        record=replace(first.record, client_version=ClientVersion.UNKNOWN),
+    )
+    project.apply(LedgerBatch((newer,)))
+    view = project.as_of()
+    revision = tmp_path / "revision"
+    export_as_of(view, card, revision)
+    database = tmp_path / "receiver.sqlite"
+    with Receiver(database, PROJECT) as receiver:
+        receiver.import_snapshot(original)
+        receiver.import_snapshot(revision)
+        accepted = receiver.accepted
+        assert receiver.reconciliation == {_public(first.key): 1}
+
+    new_card = replace(card, version="2026-11-10")
+    repriced = tmp_path / "repriced"
+    export_as_of(view, new_card, repriced)
+
+    def contradict(rows):
+        row = next(item for item in rows if item["source"] == _public(first.key))
+        row["tokens"]["input_tokens"] = 501
+
+    # A later cutoff and a new card do not erase the remembered revision.
+    altered = _changed_snapshot(
+        repriced,
+        tmp_path / "altered",
+        mutate_row=contradict,
+        mutate_manifest=lambda manifest: manifest.update(cutoff=view.sequence + 1),
+    )
+    with Receiver(database, PROJECT) as receiver:
+        with pytest.raises(
+            ReceiverConflict, match=r"source provenance \(observation\)"
+        ):
+            receiver.import_snapshot(altered)
+        assert receiver.watermark == view.sequence
+        assert receiver.accepted == accepted
+        assert receiver.reconciliation == {_public(first.key): 1}
+        assert receiver.import_snapshot(repriced) == "imported"

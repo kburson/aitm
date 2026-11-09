@@ -5,6 +5,8 @@ import errno
 import json
 import os
 from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC
 from hashlib import sha256
@@ -227,12 +229,81 @@ def _write_snapshot(directory: _PinnedPath, files: dict[str, bytes]) -> None:
 
 
 def _check_replay(
-    destination: Path, ancestry: tuple[tuple[int, int], ...], files: dict[str, bytes]
+    parent_fd: int,
+    destination: Path,
+    ancestry: tuple[tuple[int, int], ...],
+    files: dict[str, bytes],
 ) -> None:
     with _pin_directory(destination) as existing:
         if existing.identities[:-1] != ancestry:
             raise ExportError("Export destination ancestry changed")
         _check_snapshot(existing, files)
+        # A prior publisher may have linked the complete snapshot but failed
+        # to durably commit the destination directory entry.
+        os.fsync(parent_fd)
+        existing.check()
+
+
+@contextmanager
+def _new_private_child(
+    parent_fd: int, path: Path, ancestry: tuple[tuple[int, int], ...]
+) -> Iterator[_PinnedPath]:
+    os.mkdir(path.name, mode=0o700, dir_fd=parent_fd)
+    identity = _path_id(os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False))
+    try:
+        with _pin_directory(path) as child:
+            if child.identities != (*ancestry, identity):
+                raise ExportError("Export staging directory changed")
+            yield child
+    finally:
+        try:
+            info = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+            if _path_id(info) == identity:
+                os.rmdir(path.name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
+
+
+def _publish_staged(
+    container: _PinnedPath,
+    parent_fd: int,
+    destination: Path,
+    ancestry: tuple[tuple[int, int], ...],
+    files: dict[str, bytes],
+) -> None:
+    source = container.path / "snapshot"
+    with _new_private_child(container.fd, source, container.identities) as staged:
+        published = False
+        try:
+            _write_snapshot(staged, files)
+            # A replacement of the outer staging name cannot substitute the
+            # completed source entry in this pinned, private directory.
+            if _rename_exclusive()(
+                container.fd,
+                os.fsencode(source.name),
+                parent_fd,
+                os.fsencode(destination.name),
+                _RENAME_EXCL,
+            ):
+                if ctypes.get_errno() != errno.EEXIST:
+                    raise ExportError("Unable to publish export snapshot")
+                _check_replay(parent_fd, destination, ancestry, files)
+            else:
+                published = True
+                os.fsync(container.fd)
+                os.fsync(parent_fd)
+                if _validated_path(destination, directory=True) != (
+                    *ancestry,
+                    staged.identities[-1],
+                ):
+                    raise ExportError("Export destination changed during publication")
+        finally:
+            if not published:
+                for name in files:
+                    try:
+                        os.unlink(name, dir_fd=staged.fd)
+                    except FileNotFoundError:
+                        pass
 
 
 def _publish(destination: Path, files: dict[str, bytes]) -> None:
@@ -254,55 +325,11 @@ def _publish(destination: Path, files: dict[str, bytes]) -> None:
         except FileNotFoundError:
             pass
         else:
-            _check_replay(destination, ancestry, files)
+            _check_replay(parent_fd, destination, ancestry, files)
             return
 
-        os.mkdir(stage.name, mode=0o700, dir_fd=parent_fd)
-        staged_id = _path_id(
-            os.stat(stage.name, dir_fd=parent_fd, follow_symlinks=False)
-        )
-        published = False
-        try:
-            with _pin_directory(stage) as staged:
-                if staged.identities != (*ancestry, staged_id):
-                    raise ExportError("Export staging directory changed")
-                try:
-                    _write_snapshot(staged, files)
-                    if _rename_exclusive()(
-                        parent_fd,
-                        os.fsencode(stage.name),
-                        parent_fd,
-                        os.fsencode(destination.name),
-                        _RENAME_EXCL,
-                    ):
-                        if ctypes.get_errno() != errno.EEXIST:
-                            raise ExportError("Unable to publish export snapshot")
-                        _check_replay(destination, ancestry, files)
-                    else:
-                        published = True
-                        os.fsync(parent_fd)
-                        if (
-                            _validated_path(destination, directory=True)
-                            != staged.identities
-                        ):
-                            raise ExportError(
-                                "Export destination changed during publication"
-                            )
-                finally:
-                    if not published:
-                        for name in files:
-                            try:
-                                os.unlink(name, dir_fd=staged.fd)
-                            except FileNotFoundError:
-                                pass
-        finally:
-            if not published:
-                try:
-                    info = os.stat(stage.name, dir_fd=parent_fd, follow_symlinks=False)
-                    if _path_id(info) == staged_id:
-                        os.rmdir(stage.name, dir_fd=parent_fd)
-                except FileNotFoundError:
-                    pass
+        with _new_private_child(parent_fd, stage, ancestry) as container:
+            _publish_staged(container, parent_fd, destination, ancestry, files)
     finally:
         os.close(parent_fd)
 

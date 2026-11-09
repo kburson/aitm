@@ -3,6 +3,7 @@
 import json
 import re
 import sqlite3
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -208,16 +209,6 @@ def _load_snapshot(
     return manifest, rows
 
 
-def _provenance(row: dict) -> bytes:
-    return _canonical(
-        [
-            row["observation_revision"],
-            None if row["scope"] is None else row["scope"]["revision"],
-            row["price"]["rate_basis"],
-        ]
-    )
-
-
 def _compatible(row) -> bool:
     return (
         row["availability"] == Availability.COMPLETE
@@ -241,9 +232,9 @@ class Receiver:
                 cutoff INTEGER NOT NULL, basis TEXT NOT NULL, digest TEXT NOT NULL,
                 projection_digest TEXT NOT NULL, PRIMARY KEY(cutoff, basis)
             );
-            CREATE TABLE IF NOT EXISTS facts(
-                source TEXT NOT NULL, provenance BLOB NOT NULL, digest TEXT NOT NULL,
-                PRIMARY KEY(source, provenance)
+            CREATE TABLE IF NOT EXISTS component(
+                kind TEXT NOT NULL, identity BLOB NOT NULL, payload BLOB NOT NULL,
+                PRIMARY KEY(kind, identity)
             );
             CREATE TABLE IF NOT EXISTS accepted(
                 source TEXT PRIMARY KEY, digest TEXT NOT NULL, payload BLOB NOT NULL
@@ -292,6 +283,49 @@ class Receiver:
             )
         )
 
+    @contextmanager
+    def _transaction(self):
+        if self._db.in_transaction:
+            yield
+            return
+        with self._db:
+            self._db.execute("BEGIN IMMEDIATE")
+            yield
+
+    def _remember(self, kind: str, identity: object, value: object) -> None:
+        key = _canonical(identity)
+        payload = _canonical(value)
+        stored = self._db.execute(
+            "SELECT payload FROM component WHERE kind = ? AND identity = ?", (kind, key)
+        ).fetchone()
+        if stored is None:
+            self._db.execute(
+                "INSERT INTO component VALUES(?, ?, ?)", (kind, key, payload)
+            )
+        elif stored[0] != payload:
+            raise ReceiverConflict(
+                f"Different payload with the same source provenance ({kind})"
+            )
+
+    def _remember_components(self, row: dict) -> None:
+        source = row["source"]
+        revision = row["observation_revision"]
+        scope = row["scope"]
+        price = row["price"]
+        self._remember("source", source, row["provider"])
+        self._remember(
+            "observation",
+            [source, revision],
+            {
+                key: value
+                for key, value in row.items()
+                if key not in ("scope", "scope_availability", "price")
+            },
+        )
+        if scope is not None:
+            self._remember("scope", scope["revision"], scope)
+        self._remember("price", [source, revision, price["rate_basis"]], price)
+
     def ingest_usage(self, source: str, payload: bytes) -> str:
         """The modeled C44 seam accepts one exact compatible payload per key."""
         row = _decode(payload)
@@ -300,56 +334,43 @@ class Receiver:
         if source != row["source"] or not _compatible(row):
             raise ValueError("Incompatible immutable usage payload")
         digest = sha256(payload).hexdigest()
-        result = self._db.execute(
-            "INSERT OR IGNORE INTO accepted VALUES(?, ?, ?)", (source, digest, payload)
-        )
-        if result.rowcount == 1:
-            return "accepted"
-        original = self._db.execute(
-            "SELECT payload FROM accepted WHERE source = ?", (source,)
-        ).fetchone()[0]
-        if original != payload:
-            raise ReceiverConflict("Different payload for an accepted source")
-        return "duplicate"
+        with self._transaction():
+            self._remember_components(row)
+            result = self._db.execute(
+                "INSERT OR IGNORE INTO accepted VALUES(?, ?, ?)",
+                (source, digest, payload),
+            )
+            if result.rowcount == 1:
+                return "accepted"
+            original = self._db.execute(
+                "SELECT payload FROM accepted WHERE source = ?", (source,)
+            ).fetchone()[0]
+            if original != payload:
+                raise ReceiverConflict("Different payload for an accepted source")
+            return "duplicate"
 
     def _consider(self, row: dict, payload: bytes) -> None:
         source = row["source"]
         digest = sha256(payload).hexdigest()
-        provenance = _provenance(row)
-        fact = self._db.execute(
-            "SELECT digest FROM facts WHERE source = ? AND provenance = ?",
-            (source, provenance),
-        ).fetchone()
-        if fact is not None and fact[0] != digest:
-            raise ReceiverConflict("Different payload with the same source provenance")
-        self._db.execute(
-            "INSERT OR IGNORE INTO facts VALUES(?, ?, ?)", (source, provenance, digest)
-        )
         accepted = self._db.execute(
-            "SELECT digest, payload FROM accepted WHERE source = ?", (source,)
+            "SELECT digest FROM accepted WHERE source = ?", (source,)
         ).fetchone()
-        if accepted is not None:
-            if (
-                _provenance(_decode(accepted[1])) == provenance
-                and accepted[0] != digest
-            ):
-                raise ReceiverConflict(
-                    "Different payload with the same accepted provenance"
+        if accepted is None and _compatible(row):
+            self.ingest_usage(source, payload)
+        else:
+            self._remember_components(row)
+            if accepted is None:
+                self._db.execute(
+                    """INSERT INTO pending VALUES(?, ?, ?)
+                       ON CONFLICT(source) DO UPDATE SET digest=excluded.digest, payload=excluded.payload""",
+                    (source, digest, payload),
                 )
+                return
             if accepted[0] != digest:
                 self._db.execute(
                     "INSERT OR IGNORE INTO reconciliation VALUES(?, ?, ?)",
                     (source, digest, payload),
                 )
-        elif _compatible(row):
-            self.ingest_usage(source, payload)
-        else:
-            self._db.execute(
-                """INSERT INTO pending VALUES(?, ?, ?)
-                   ON CONFLICT(source) DO UPDATE SET digest=excluded.digest, payload=excluded.payload""",
-                (source, digest, payload),
-            )
-            return
         self._db.execute("DELETE FROM pending WHERE source = ?", (source,))
 
     def import_snapshot(
@@ -370,8 +391,7 @@ class Receiver:
             for row, _ in rows
         ]
         projection_digest = sha256(_canonical(projection)).hexdigest()
-        with self._db:
-            self._db.execute("BEGIN IMMEDIATE")
+        with self._transaction():
             watermark = self.watermark
             if watermark is not None and cutoff < watermark:
                 return "stale"
