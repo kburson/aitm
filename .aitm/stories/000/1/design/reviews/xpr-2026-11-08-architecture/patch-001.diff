@@ -1,0 +1,77 @@
+diff --git a/.aitm/stories/000/1/design/architecture.md b/.aitm/stories/000/1/design/architecture.md
+index 5334566..74dfc23 100644
+--- a/.aitm/stories/000/1/design/architecture.md
++++ b/.aitm/stories/000/1/design/architecture.md
+@@ -4,8 +4,8 @@ story: 1
+ role: design
+ title: aitm architecture
+ created: 2026-11-08T19:40:00Z
+-updated: 2026-11-09T02:53:18Z
+-last-branch: review/1-architecture-sar
++updated: 2026-11-09T03:59:30Z
++last-branch: review/1-architecture-xpr
+ status: draft (awaiting review)
+ sources:
+   - ../draft.md
+@@ -82,6 +82,8 @@ The core never calls a model, through a lab SDK or any other transport. The harn
+ 
+ When `aitm init` installs aitm into a host repo, it detects the default branch and suggests `planning` as the planning branch name; the user can choose another name, but it must differ from the default branch. The choice is stored in `.aitm.toml` on the default branch. The planning branch is an orphan whose root commit has an empty tree, so it shares no files or history with the default branch. `init` protects it through the git host's API, or prints step-by-step instructions where the API can't (no admin rights, plan limits, no API).
+ 
++Workflow policy comes from the configured default branch's committed `.aitm.toml`, read locally from its fetched ref, rather than a story worktree's editable copy. Story-branch changes to enforcement mode, limits, enabled extensions or test commands take effect only after delivery to the default branch. Each transition records the effective policy revision and settings needed to explain its guards. The core design owns bootstrap before the first config lands, ref selection and freshness/offline behavior; these must not silently substitute an agent-edited policy for the authoritative one.
++
+ The planning branch must never receive implementation code. Six layers guard it, detailed in the core design ("Guarding the planning branch"):
+ 1. Unrelated history: GitHub can't open a PR between it and trunk.
+ 2. A host ruleset requiring linear history.
+@@ -101,7 +103,7 @@ Defined in the core design. In outline:
+ - **Ideas → drafts → stories.** Ideas are single files; drafts are folders; a draft graduates to a story when the backlog provider assigns an issue number, and its folder moves to `.aitm/stories/<id // 100, 3 digits>/<id>/`.
+ - **Events govern workflow state.** Each story has an append-only `events.jsonl` of typed, namespaced events. Current state, recorded timing, expansions and trips are computed from it.
+ - **Authored content survives regeneration.** Design, plan, draft and retrospective bodies and portable review collateral are authored records. `story.md`, machine-owned frontmatter and `<details>` JSON blocks are generated views; generated views are never parsed back as workflow authority. Metadata ownership does not authorize overwriting an author's body.
+-- **One owning writer per persisted surface.** The core append API owns event files; agents, extensions and other producers submit events through it. Authored files have one assigned writer, and extensions own declared paths. The core must define cross-process and cross-clone ordering, serialization, and conflict detection without losing events or silently overwriting authored content. Its current multiple-writer/event-union builder call is not an exception to this agreed ownership contract; the later core review must reconcile its concurrency semantics with it.
++- **One owning writer per persisted surface.** The core append API owns event files; agents, extensions and other producers submit events through it. Authored files have one assigned writer, and extensions own declared paths. The core must define cross-process and cross-clone ordering, serialization, and conflict detection without losing events or silently overwriting authored content. The core design's current multiple-writer/event-union proposal is not accepted as an exception; the later core review must show it satisfies single-owner ordering through the append API or replace it.
+ - **The SQLite index is a cache**, rebuilt from `planning` whenever it is missing or stale.
+ 
+ ## Lifecycle
+@@ -125,14 +127,18 @@ Each state is `{ entry guards, resident actions, exit guards }`. Guards are fast
+ 
+ JIT freshness means the plan still applies to current code, not necessarily that trunk's SHA is unchanged. The core proposes checking intervening changes against declared touched paths; its exact freshness contract remains part of core review. On the delivered path, core records authoritative delivery evidence supplied through the relevant provider or deliverable mechanism before sign-off completes Done. Passing review alone is not delivery. Provider mechanics and merge strategy belong to section design; delivery does not extend the agreed clock beyond passing PR review.
+ 
++The delivered version is the reviewed source head or deliverable that the delivery mechanism verifies as landed at the declared target. Evidence must bind that reviewed source to its delivery result, including the target commit where applicable; source and target SHAs need not match after squash or rebase. An issue's closed state alone is not delivery proof. Core must also provide verifiable delivery evidence for core-only and offline operation, including local delivery targets; an unverifiable remote target remains pending rather than being reported delivered. The core and provider designs choose the mechanism and checks that prevent unreviewed changes from being attributed to the reviewed version.
++
+ ## Review contract
+ 
+ An iterative review repeats review and revision until the reviewer has no required changes. SAR uses a chosen model and effort from the current provider; SPR uses a distinct reviewer session in that provider; XPR uses another provider. All levels use common reviewer/author response formats and retain a numbered patch for every author revision in the story's design or plan review folder. The final file, patches and manifest form a self-contained portable record: acceptance and reconstruction cannot depend on retaining intermediate review commits or pre-committing the FUR. Caller-chosen output keeps the record with the story.
+ 
+-Acceptance names the reviewed content version and its review record. A later change to design or plan bytes needs renewed acceptance; a historical accepted event cannot approve different content. The review-depth matrix for master, section, leaf and JIT files remains a recommendation pending confirmation. JIT can be reviewed when stored as a story-local file; issues link to it rather than carrying its content. Drafts need no review.
++Acceptance names the reviewed authored-content version and its review record. Core and peer-review designs must define one versioned canonical digest covering the authored body and semantically authored header fields, excluding only schema-defined generated metadata. Regenerating machine-owned metadata never invalidates that acceptance; any change to authored content requires renewed acceptance. This preserves the owner's required frontmatter in story data files. Exact full-file digests and patches remain in review records for byte-for-byte reconstruction, separately from the canonical acceptance digest. A historical acceptance cannot approve different authored content. The review-depth matrix for master, section, leaf and JIT files remains a recommendation pending confirmation. JIT can be reviewed when stored as a story-local file; issues link to it rather than carrying its content. Drafts need no review.
+ 
+ Until the M4 refactor ships, follow the [interim procedure](../../../../drafts/2026-11/20261108-1310-peer-review/draft.md#interim-review-procedure-until-the-ai-peer-review-refactor-ships): review on a temporary branch/worktree from planning, then import only the final FUR and collateral into planning with a fast-forward commit. The current base-from-empty `patch-000` representation is a recorded builder call used by that procedure, not a new owner policy. The future record-only interface must preserve the owner's no-precommit contract.
+ 
++The planning checkout is only the pre-M1 import route. M1 must provide import of the revised FUR and review folder through the core's compare-and-swap plumbing writer, restricted to that story's paths, before retiring the checkout. The M1-to-M4 interim procedure uses that writer instead of recreating or committing in a planning checkout. A temporary review branch derived from planning is a different ref, not the configured planning branch checked out; git, harness and core guards must permit this review workflow while continuing to protect the planning ref. Current hand-built review records bind exact full-file bytes, so their accepted snapshots remain unchanged. M1 migration must preserve those snapshots and establish their authored-content binding under the shared canonicalization contract before generated metadata is rewritten; it must not label an arbitrary later file accepted.
++
+ ## Workflow rules
+ 
+ - Parallel stories are allowed, one agent and one worktree each, chosen as independent at planning time.
+@@ -158,7 +164,7 @@ The aitm repo itself runs advisory until the core has been stable in enforcing c
+ 
+ Two interfaces, kept apart because one service can fill one role without the other:
+ 
+-- **Git host provider:** push and fetch `planning` and story branches, PRs, CI status, branch rulesets, file and commit URLs.
++- **Git host provider:** push and fetch `planning` and story branches, PRs, CI status, verified delivery/merge status mapping a reviewed source head to its target result, branch rulesets, file and commit URLs.
+ - **Backlog provider:** issues, parent/child and dependency links, board projection, and backlog-specific initialization.
+ 
+ Core `init` owns generic configuration, store creation and hook installation, then invokes provider-specific setup and protection capabilities. GitHub implements the remote steps; installing only core must still support local setup.
+@@ -200,7 +206,7 @@ Python 3.13, uv, Pydantic v2, Typer, httpx, pytest, Ruff, scikit-learn (rubric o
+ 
+ The owner watches through the viewer (progress, time, cost, bumps) and intervenes with a pivot when direction looks wrong. No routine transition waits on the owner. Designs and plans are archival and reviewed by agents. After passing PR review and recording delivery, the agent signs off with a retrospective on its own work (alignment of design, plan and implementation, what went well, planning misses, lessons, advisory confidence vote) and the story moves to Done. The owner can start a conversation about any story or retro in any harness with `aitm discuss <id>`; it is never required.
+ 
+-The viewer is a prebuilt static site: locally it reads the index; a GitHub Pages build reads generated JSON from planning. It shows progress, flow history, time, costs, bumps, design/plan summaries and retros, with a Discuss action giving a harness command. The viewer design must distinguish a hosted snapshot's freshness from the current local record.
++The viewer is a prebuilt static site: locally it reads the index; a GitHub Pages build reads generated JSON from planning. It shows progress, flow history, time, costs, bumps, design/plan summaries and retros, with a Discuss action giving a harness command. The viewer design must distinguish a hosted snapshot's freshness from the current local record. Its build has the same workflow-ref constraint described for the planning audit: a workflow only on trunk cannot assume it runs on a planning push. A scheduled, dispatched or other suitable trigger is acceptable for the viewer with disclosed snapshot freshness; the viewer/GitHub designs select it. That flexibility does not weaken the separate every-push audit requirement or allow workflow code on planning.
+ 
+ ## Learning
+ 
+@@ -217,4 +223,4 @@ The planning and estimation rubric learns from recorded Refine/Plan/Close estima
+ - The full-install distribution name (`aitm` is already taken); the CLI name remains `aitm`.
+ - Whether the peer-review patch refactor is built in the existing JS repo or the Python rewrite at M4, and confirmation of review depth by document, including whether core design review follows this architecture review.
+ 
+-The later core review must reconcile its current calls and omissions with this architecture's single-owner persistence, version-bound acceptance, delivery-before-Done and evidence-recovery contracts. This architecture review does not accept or revise the context-only core design or master plan.
++The later core review must reconcile its current calls and omissions with this architecture's single-owner persistence, canonical authored-content acceptance and metadata migration, M1 review import, authoritative configuration, delivery-before-Done (including merge-strategy mappings and core-only evidence), and evidence-recovery contracts. Its proposed root `README.md` allowance also needs reconciliation with the planning data-only policy; no new exception is approved here. This architecture review does not accept or revise the context-only core design or master plan.
