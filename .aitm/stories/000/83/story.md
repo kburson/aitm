@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 83
 title: "[Epic] Continuous agent usage capture"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/83"
 parent: null
 children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T16:27:16+00:00"
+updated: "2026-11-09T16:36:15+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -38,4 +38,4 @@ Qualify the installed collector and record its live activation before [Core C01 
 
 Implementation resumed with #84 on the [accepted planning amendment](plan/usage-capture-replan.md). The original pickup and pause remain in the event history. [Agent usage evidence](attachments/agent-usage.md). Each leaf's own design, plan, JIT and execution follow applicable authority.
 
-Implementation is paused for the [relationship admission amendment](plan/usage-capture-relationship-replan.md) after #86 source review.
+Implementation resumed with #86 after the [relationship admission amendment](plan/usage-capture-relationship-replan.md) passed review. The 48.5-hour epic estimate stays in force.

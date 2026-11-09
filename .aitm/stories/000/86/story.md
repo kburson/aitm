@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 86
 title: "[Usage U13] Draft aliases, ancestry and direct/inclusive rollups"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/86"
 parent: 83
 children: []
 blocking: [90, 91]
 blocked-by: [85]
 created: "2026-11-09T14:42:17Z"
-updated: "2026-11-09T16:27:16+00:00"
+updated: "2026-11-09T16:36:15+00:00"
 last-branch: "codex/aitm-usage-u13"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/recovery-plan.md", "plan/recovery-jit.md", "plan/recovery-pickup-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "266835e43f20043047ae4394ffdb2aa6eb88c119d7a5b71676f37eed1650e2bc"}
@@ -23,7 +23,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 # [Usage U13] Draft aliases, ancestry and direct/inclusive rollups
 
-[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Planning
+[GitHub issue](https://github.com/kburson/aitm/issues/86) · [Parent #83](../83/story.md) · Develop
 
 **Required predecessors** [#85](../85/story.md)
 
@@ -44,4 +44,8 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U13", "path":
 
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
-[Relationship admission amendment under review](../83/plan/usage-capture-relationship-replan.md). Source candidate `544844a190dc86a92d3db565e73b383125651da5` is preserved in the #86 worktree.
+[Accepted relationship admission amendment](../83/plan/usage-capture-relationship-replan.md). Source candidate `544844a190dc86a92d3db565e73b383125651da5` is preserved in the #86 worktree.
+
+## Repair pickup
+
+[Plan](plan/recovery-plan.md) · [JIT](plan/recovery-jit.md) · [Independent acceptance](plan/recovery-pickup-review.md). Resume in the preserved source worktree.
