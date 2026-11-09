@@ -25,3 +25,16 @@ The source release is available on trunk. [#96 live project-Mac qualification](.
 | Reviewed and delivered tree | `15a22e275e20407bb6234bc5650b38e2b6737514` |
 
 The repaired tree passed 501 locked tests, Ruff, lock and diff checks, independent specification and quality review, and a read-only replay of the original native boundary evidence. The replay matched the exact pending command, native output and following request. [#96](../../96/story.md) still requires fresh installed qualification on the repaired release.
+
+## Claude startup scanner repair
+
+[Protected trunk PR #99](https://github.com/kburson/aitm/pull/99) merged at 2026-11-09T23:00:50Z.
+
+| Evidence | Exact value |
+| --- | --- |
+| Previous protected release | `e65c86ba4c7d19e7844a5d23a3aa33446a885f4c` |
+| Independently reviewed repair head | `239a863c97bd7de3af66934f41fffcdacab985fe` |
+| Protected trunk merge | `f80f22645e2008c4cac9dc6e4003640bba976b5f` |
+| Reviewed and delivered tree | `418b1d6e681f65a0377472f4392be87076b6bad4` |
+
+Exact independent source review, 530 locked tests and static verification passed. The isolated repaired-wheel diagnostic admitted one intended measured request from unchanged native input in both replay orders, with zero outside-scope observations. The 13 retained native startup chains matched. [#96](../../96/story.md) requires fresh installed qualification before activation closes.

@@ -10,7 +10,7 @@ children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T22:48:38+00:00"
+updated: "2026-11-09T23:02:12+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
@@ -54,4 +54,4 @@ The exact [Desktop marker carrier amendment](plan/usage-capture-desktop-marker-r
 
 [Claude startup prefix amendment under review](plan/usage-capture-claude-startup-replan.md). The live qualification paused after both Codex order cases passed and the Claude scanner held the target behind timed startup bookkeeping.
 
-The exact [Claude startup prefix amendment](plan/usage-capture-claude-startup-replan.md) passed SAR, independent SPR and native XPR. #87 resumes on protected trunk. #96 stays in Planning until the scanner fix is independently accepted, delivered and repinned.
+The exact [Claude startup prefix amendment](plan/usage-capture-claude-startup-replan.md) passed SAR, independent SPR and native XPR. The #87 scanner fix was independently accepted and delivered on protected trunk. [#96 resumed](../96/plan/claude-startup-recovery-jit.md) on that exact release.
