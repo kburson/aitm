@@ -329,17 +329,33 @@ def _control_root() -> Path:
     return home / "Library" / "Application Support" / "aitm-usage-control"
 
 
+def _physical_ancestry(
+    path: Path,
+) -> tuple[tuple[tuple[int, int], tuple[str, ...]], ...]:
+    # Each existing directory anchors the remaining path, including a missing tail.
+    components = tuple(
+        unicodedata.normalize("NFC", part).casefold() for part in path.parts
+    )
+    return tuple(
+        (identity, components[depth:])
+        for depth, identity in enumerate(
+            _validated_path(path, directory=True, allow_missing=True), start=1
+        )
+    )
+
+
 def _guard_path(root: Path, project_id: UUID) -> Path:
     if type(project_id) is not UUID:
         raise LedgerError("A project UUID is required")
     control = _project_path(_control_root())
-    # Case and Unicode aliases can name the same directory on default APFS.
-    control_alias = Path(unicodedata.normalize("NFC", str(control)).casefold())
-    root_alias = Path(unicodedata.normalize("NFC", str(root)).casefold())
-    if control_alias.is_relative_to(root_alias) or root_alias.is_relative_to(
-        control_alias
-    ):
-        raise LedgerError("Writer guard must be outside project state")
+    project_ancestry = _physical_ancestry(root)
+    # APFS firmlinks can share a physical ancestor without sharing its path spelling.
+    for control_identity, control_tail in _physical_ancestry(control):
+        for project_identity, project_tail in project_ancestry:
+            if control_identity == project_identity:
+                length = min(len(control_tail), len(project_tail))
+                if control_tail[:length] == project_tail[:length]:
+                    raise LedgerError("Writer guard must be outside project state")
     return control / f"{project_id}.lock"
 
 

@@ -532,19 +532,12 @@ def drift_path(ledger, kind, *, clone_ancestor=False):
             original.rename(ledger.root)
 
 
-@pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
-def test_uuid_guard_refuses_second_process_after_state_path_drift(
-    tmp_path, modules, kind
-):
-    ledger_module, _ = modules
-    ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
-    with ledger.writer():
-        drift_path(ledger, kind, clone_ancestor=True)
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                """import sys
+def try_writer_in_other_process(root):
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """import sys
 from pathlib import Path
 from uuid import UUID
 from aitm_usage import ledger as ledger_module
@@ -557,16 +550,27 @@ try:
 except WriterActive:
     print("writer-active")
 """,
-                str(ledger.root),
-                str(PROJECT),
-                str(control_directory()),
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-        assert result.stdout.strip() == "writer-active"
+            str(root),
+            str(PROJECT),
+            str(control_directory()),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    return result.stdout.strip()
+
+
+@pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
+def test_uuid_guard_refuses_second_process_after_state_path_drift(
+    tmp_path, modules, kind
+):
+    ledger_module, _ = modules
+    ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
+    with ledger.writer():
+        drift_path(ledger, kind, clone_ancestor=True)
+        assert try_writer_in_other_process(ledger.root) == "writer-active"
 
 
 @pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
@@ -837,3 +841,53 @@ def test_source_proof_also_requires_exact_wire_shape(state):
     object.__setattr__(invalid, "value", f"private-shape-canary:{digest}:{tag}")
     with pytest.raises(LedgerError):
         ledger.validate_source_ref(invalid)
+
+
+def data_volume_alias(path):
+    return Path("/System/Volumes/Data") / path.relative_to("/")
+
+
+@pytest.mark.parametrize("existing", [False, True], ids=["missing", "existing"])
+@pytest.mark.parametrize(
+    "relation", ["equal", "control-inside-state", "state-inside-control"]
+)
+def test_apfs_firmlink_overlap_refused_before_private_creation(
+    modules, existing, relation
+):
+    ledger_module, _ = modules
+    control = control_directory()
+    physical_project = {
+        "equal": control,
+        "control-inside-state": control.parent,
+        "state-inside-control": control / "project",
+    }[relation]
+    project = data_volume_alias(physical_project)
+    assert Path.home().samefile(data_volume_alias(Path.home()))
+    assert project.resolve() != physical_project.resolve()
+    if existing:
+        for path in sorted(
+            {control, physical_project}, key=lambda item: len(item.parts)
+        ):
+            path.mkdir(mode=0o700, parents=True, exist_ok=True)
+        assert project.samefile(physical_project)
+
+    with pytest.raises(
+        ledger_module.LedgerError, match="Writer guard must be outside project state"
+    ):
+        ledger_module.Ledger.initialize(project, PROJECT)
+
+    assert project.exists() == control.exists() == existing
+    assert not list(Path.home().rglob("*.lock"))
+    assert not list(Path.home().rglob("pseudonym.key"))
+    assert not list(Path.home().rglob("usage.sqlite3"))
+
+
+def test_distinct_apfs_alias_cannot_admit_a_second_writer(tmp_path, modules):
+    ledger_module, _ = modules
+    root = tmp_path / "project"
+    ledger = ledger_module.Ledger.initialize(root, PROJECT)
+    alias = data_volume_alias(root)
+    assert alias.samefile(root)
+    assert ledger_module.Ledger.open(alias, PROJECT).identity == ledger.identity
+    with ledger.writer():
+        assert try_writer_in_other_process(alias) == "writer-active"
