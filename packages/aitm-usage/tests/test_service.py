@@ -67,9 +67,13 @@ def test_service_commands_and_coverage(project):
         assert "writer-active" in json.dumps(refused)
         before = command("status", "--json")
         assert before["heartbeat"] is None
+        assert before["producer_mode"] is None
+        assert before["producer_pid"] is None
     command("collect-once", "--json")
     status = command("status", "--json")
     assert status["heartbeat"] is not None
+    assert status["producer_mode"] == "one-shot"
+    assert status["producer_pid"] == os.getpid()
     assert not status["read_gap"]
     assert set(status["coverage"]) == {"codex", "claude"}
     assert status["coverage"]["codex"]["quota"] == "unknown"
@@ -494,6 +498,9 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
     def between_polls(interval):
         nonlocal polls
         assert interval == 15
+        status = command("status", "--json")
+        assert status["producer_mode"] == "service"
+        assert status["producer_pid"] == os.getpid()
         polls += 1
         assert (
             command("collect-once", "--json", expected=1)["status"] == "writer-active"
@@ -1137,3 +1144,107 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     assert not queued.exists()
     assert command("status", "--json")["registration_gap"] is False
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
+
+
+def test_one_shot_status_uses_collecting_subprocess_pid(project):
+    import subprocess
+
+    root, sources, checkout, config, command = project
+    _fixtures(sources, checkout)
+    command("register", "--config", str(config), "--json")
+    runner = FIXTURES / "service" / "run_cli.py"
+    console = Path(sys.executable).with_name("aitm-usage")
+    with subprocess.Popen(
+        [
+            sys.executable,
+            str(runner),
+            str(root.parent / "control"),
+            str(console),
+            "-",
+            "-",
+            "-",
+            "--project",
+            str(root),
+            "collect-once",
+            "--json",
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ) as process:
+        output, error = process.communicate(timeout=15)
+        assert process.returncode == 0, error
+        assert json.loads(output)["sequence"] > 0
+        child_pid = process.pid
+    status = command("status", "--json")
+    assert status["producer_mode"] == "one-shot"
+    assert status["producer_pid"] == child_pid
+    assert status["producer_pid"] != os.getpid()
+
+
+def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
+    root, sources, checkout, config, command = project
+    _fixtures(sources, checkout)
+    command("register", "--config", str(config), "--json")
+    command("collect-once", "--json")
+    before = command("status", "--json")
+    path = root / "status.json"
+    payload = json.loads(path.read_text())
+    payload.pop("producer_mode", None)
+    payload.pop("producer_pid", None)
+    path.write_text(json.dumps(payload, separators=(",", ":"), sort_keys=True))
+
+    legacy = command("status", "--json")
+    assert legacy["producer_mode"] is None
+    assert legacy["producer_pid"] is None
+    for key in (
+        "heartbeat",
+        "collector_version",
+        "collector_interpreter_version",
+        "sequence",
+        "status_sequence",
+        "read_gap",
+        "registration_gap",
+    ):
+        assert legacy[key] == before[key]
+    for previous, current in zip(before["sources"], legacy["sources"], strict=True):
+        assert current["source_ref"] == previous["source_ref"]
+        assert current["offset"] == previous["offset"]
+        assert current["observed_through"] == previous["observed_through"]
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        {"producer_mode": "service"},
+        {"producer_pid": 123},
+        {"producer_mode": "service", "producer_pid": 0},
+        {"producer_mode": "service", "producer_pid": True},
+        {"producer_mode": "service", "producer_pid": "123"},
+        {"producer_mode": "unexpected-private-mode", "producer_pid": 123},
+    ],
+)
+def test_status_refuses_malformed_or_half_producer_witness(project, invalid):
+    root, sources, checkout, config, command = project
+    _fixtures(sources, checkout)
+    command("register", "--config", str(config), "--json")
+    command("collect-once", "--json")
+    before = command("status", "--json")
+    path = root / "status.json"
+    payload = json.loads(path.read_text())
+    payload.pop("producer_mode", None)
+    payload.pop("producer_pid", None)
+    path.write_text(
+        json.dumps({**payload, **invalid}, separators=(",", ":"), sort_keys=True)
+    )
+
+    status = command("status", "--json")
+    assert status["producer_mode"] is None
+    assert status["producer_pid"] is None
+    assert status["heartbeat"] is None
+    assert status["read_gap"] is False
+    assert status["registration_gap"] is False
+    assert [entry["offset"] for entry in status["sources"]] == [
+        entry["offset"] for entry in before["sources"]
+    ]
+    assert all(entry["observed_through"] is None for entry in status["sources"])
+    assert "unexpected-private-mode" not in json.dumps(status)

@@ -9,6 +9,7 @@ import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from enum import StrEnum
 from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID
@@ -566,8 +567,13 @@ class _Observed:
     through: datetime
 
 
+class _ProducerMode(StrEnum):
+    SERVICE = "service"
+    ONE_SHOT = "one-shot"
+
+
 @dataclass(frozen=True, slots=True)
-class _Status:
+class _LegacyStatus:
     project_id: UUID
     configuration_ref: SourceRef
     heartbeat: datetime
@@ -584,17 +590,34 @@ class _Status:
                 raise ValueError("Invalid collector runtime version")
 
 
-def _read_status(root: Path) -> _Status | None:
+@dataclass(frozen=True, slots=True)
+class _Status(_LegacyStatus):
+    producer_mode: _ProducerMode
+    producer_pid: int
+
+    def __post_init__(self) -> None:
+        _LegacyStatus.__post_init__(self)
+        if type(self.producer_pid) is not int or not 0 < self.producer_pid < 2**31:
+            raise ValueError("Invalid collector producer PID")
+
+
+def _read_status(root: Path) -> _LegacyStatus | None:
     try:
         with _pin_directory(root) as directory:
             raw = _read_private(directory, STATUS_NAME)
-        if raw is not None:
-            status = _decode(raw.decode("utf-8"), _Status)
-            if (
-                len(status.observed) <= _STATUS_SOURCE_LIMIT
-                and _encode(status, _Status).encode() == raw
-            ):
-                return status
+        if raw is None:
+            return None
+        try:
+            status = _decode(raw, _Status)
+        except ValueError:
+            # Accept only the exact old shape. A half or malformed witness
+            # cannot be interpreted as an older valid publication.
+            status = _decode(raw, _LegacyStatus)
+        if (
+            len(status.observed) <= _STATUS_SOURCE_LIMIT
+            and _encode(status, type(status)).encode() == raw
+        ):
+            return status
     except (OSError, ValueError, LedgerError):
         pass
     return None
@@ -681,9 +704,10 @@ def _candidate(
 
 
 class _Collector:
-    def __init__(self, writer: Ledger, rates: RateCard):
+    def __init__(self, writer: Ledger, rates: RateCard, mode: _ProducerMode):
         self.writer = writer
         self.rates = rates
+        self.mode = mode
         self.states: dict[
             SourceRef, tuple[SourceCheckpoint, CodexState | ClaudeState]
         ] = {}
@@ -958,6 +982,8 @@ class _Collector:
             platform.python_version(),
             report,
             retained[:_STATUS_SOURCE_LIMIT],
+            self.mode,
+            os.getpid(),
         )
         with _pin_directory(writer.root) as directory:
             writer.require_writer()
@@ -973,7 +999,8 @@ class _Collector:
 def collect_once(registration: Registration, ledger: Ledger) -> CollectionReport:
     """Run one guarded scan, coherent inbox drain, and eligible source commit."""
     with ledger.writer() as writer:
-        return _Collector(writer, load_rate_card()).poll(registration)
+        collector = _Collector(writer, load_rate_card(), _ProducerMode.ONE_SHOT)
+        return collector.poll(registration)
 
 
 def run_service(registration: Registration, interval_seconds: int = 15) -> int:
@@ -983,7 +1010,7 @@ def run_service(registration: Registration, interval_seconds: int = 15) -> int:
     ledger = Ledger.open(registration.state_root, registration.project_id)
     try:
         with ledger.writer() as writer:
-            collector = _Collector(writer, load_rate_card())
+            collector = _Collector(writer, load_rate_card(), _ProducerMode.SERVICE)
             while True:
                 collector.poll(registration)
                 time.sleep(interval_seconds)
@@ -1099,10 +1126,13 @@ def status_report(root: Path, ledger: Ledger | None) -> dict:
                 }
             )
     last_poll = status.report if confirmed else None
+    producer = status if isinstance(status, _Status) else None
     return {
         "version": version("aitm-usage"),
         "interpreter_version": platform.python_version(),
         "heartbeat": None if status is None else status.heartbeat.isoformat(),
+        "producer_mode": None if producer is None else producer.producer_mode.value,
+        "producer_pid": None if producer is None else producer.producer_pid,
         "collector_version": None if status is None else status.collector_version,
         "collector_interpreter_version": None
         if status is None
