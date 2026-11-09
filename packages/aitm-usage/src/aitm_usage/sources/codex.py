@@ -973,16 +973,16 @@ class _Walk:
     def rate_limits(self, frame: SourceFrame, raw: object) -> None:
         if raw is None or not self.record_usage or not self.eligible(frame):
             return
-        limits = _object(raw)
+        if type(raw) is not dict or raw.get("limit_id", "codex") != "codex":
+            self.gap(frame, DiagnosticCode.COVERAGE_GAP)
+            return
         signals = tuple(
-            limits[key]
-            for key in ("primary", "secondary")
-            if limits.get(key) is not None
+            raw[key] for key in ("primary", "secondary") if raw.get(key) is not None
         )
         if not signals:
             return
         account = self.state.account_ref
-        if account is None or limits.get("limit_id") != "codex":
+        if account is None or "limit_id" not in raw:
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
             return
         windows: dict[QuotaBucket, QuotaEvidence] = {}

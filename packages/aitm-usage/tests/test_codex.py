@@ -858,18 +858,33 @@ def test_turn_receipt_requires_the_next_verified_start_in_the_same_segment(proje
 
 
 @pytest.mark.parametrize(
-    "case", ["missing-account", "malformed", "absent", "credits-only"]
+    "case",
+    [
+        "missing-account",
+        "malformed",
+        "malformed-envelope",
+        "foreign-id",
+        "absent",
+        "credits-only",
+    ],
 )
-def test_unavailable_inline_quota_reports_only_observed_window_gaps(project, case):
+def test_inline_quota_reports_invalid_or_unverifiable_retained_evidence(project, case):
     codex = adapter()
     ledger, registration, path, checkout, _ = project
     rows = [json.loads(line) for line in FIXTURE.read_text().splitlines()]
     rows[0]["payload"]["cwd"] = rows[2]["payload"]["cwd"] = str(checkout)
     counter_payload = rows[4]["payload"]
-    account = None
+    account = (
+        None
+        if case == "missing-account"
+        else ledger.pseudonymize("codex-account", "configured")
+    )
     if case == "malformed":
         counter_payload["rate_limits"]["primary"]["resets_at"] = 0
-        account = ledger.pseudonymize("codex-account", "configured")
+    elif case == "malformed-envelope":
+        counter_payload["rate_limits"] = "malformed-quota-secret"
+    elif case == "foreign-id":
+        counter_payload["rate_limits"] = {"limit_id": "foreign-quota-secret"}
     elif case == "absent":
         del counter_payload["rate_limits"]
     elif case == "credits-only":
@@ -894,7 +909,7 @@ def test_unavailable_inline_quota_reports_only_observed_window_gaps(project, cas
     assert record.availability is Availability.COMPLETE
     assert record.processing_tier is ProcessingTier.STANDARD
     assert result.quota == ()
-    if case in ("missing-account", "malformed"):
+    if case not in ("absent", "credits-only"):
         (gap,) = result.diagnostics
         assert (gap.code, gap.ordinal, gap.provider, gap.source_ref) == (
             DiagnosticCode.COVERAGE_GAP,
@@ -902,7 +917,12 @@ def test_unavailable_inline_quota_reports_only_observed_window_gaps(project, cas
             Provider.CODEX,
             candidate.stream_ref,
         )
-        assert "credits-secret" not in repr(gap)
+        for canary in (
+            "credits-secret",
+            "malformed-quota-secret",
+            "foreign-quota-secret",
+        ):
+            assert canary not in repr(gap)
     else:
         assert result.diagnostics == ()
 
