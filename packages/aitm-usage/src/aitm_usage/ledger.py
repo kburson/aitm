@@ -22,11 +22,19 @@ from tempfile import TemporaryDirectory
 from uuid import UUID
 
 from .types import (
+    CommandDigest,
+    CommandReceipt,
+    DevelopmentBinding,
+    InboxCommand,
     LedgerBatch,
     LedgerView,
+    MarkerDisposition,
     QuotaEvidence,
     Revision,
+    ScopeCorrection,
+    ScopeEnrollment,
     ScopeMarker,
+    SourceBoundary,
     SourceCheckpoint,
     SourceRef,
     UsageObservation,
@@ -612,6 +620,29 @@ def _append_revisions(
     return inserted
 
 
+def _current_command(
+    conn: sqlite3.Connection,
+    key: SourceRef,
+    command: InboxCommand,
+    digest: CommandDigest,
+) -> tuple[int, CommandReceipt] | None:
+    row = conn.execute(
+        "SELECT revision, payload FROM revisions WHERE key = ? ORDER BY revision DESC LIMIT 1",
+        (key.value,),
+    ).fetchone()
+    if row is None:
+        return None
+    revision = _decode(row[1], Revision)
+    receipt = revision.record
+    if (
+        not isinstance(receipt, CommandReceipt)
+        or receipt.digest != digest
+        or receipt.command != command
+    ):
+        raise ConflictError("Inbox command ID has conflicting bytes")
+    return row[0], receipt
+
+
 def _append_checkpoint(
     conn: sqlite3.Connection,
     sequence: int,
@@ -749,6 +780,90 @@ class Ledger:
         if marker.project_id != self.identity.project_id:
             raise LedgerError("Scope marker project identity mismatch")
 
+    def validate_boundary(self, boundary: SourceBoundary) -> None:
+        _encode(boundary, SourceBoundary, validate_ref=self.validate_source_ref)
+
+    def validate_command(self, command: InboxCommand) -> CommandDigest:
+        if command.project_id != self.identity.project_id:
+            raise LedgerError("Inbox command project identity mismatch")
+        canonical = _encode(
+            command, InboxCommand, validate_ref=self.validate_source_ref
+        ).encode("utf-8")
+        payload = command.payload
+        if isinstance(payload, ScopeCorrection):
+            marker = payload.replacement
+        elif isinstance(payload, DevelopmentBinding):
+            marker = payload.marker
+        else:
+            marker = payload
+        if isinstance(marker, ScopeMarker) and marker.receipt_ref is not None:
+            expected = self.pseudonymize("scope-receipt", str(marker.marker_id))
+            if expected != marker.receipt_ref:
+                raise LedgerError("Scope receipt does not match command identity")
+        return CommandDigest("sha256:" + hashlib.sha256(canonical).hexdigest())
+
+    def command_receipt(self, command: InboxCommand) -> CommandReceipt | None:
+        """Read the current receipt without acquiring the writer lease."""
+        digest = self.validate_command(command)
+        key = self.pseudonymize("inbox-command", str(command.command_id))
+        with self.reader() as conn:
+            previous = _current_command(conn, key, command, digest)
+        return None if previous is None else previous[1]
+
+    def require_writer(self) -> None:
+        if self._writer is None or self._write_paths is None:
+            raise LedgerError("Inbox consumption requires the project writer")
+        self._write_paths.check()
+
+    def commit_command(
+        self,
+        receipt: CommandReceipt,
+        effects: tuple[Revision, ...],
+        *,
+        expected_sequence: int,
+    ) -> CommandReceipt:
+        """Atomically append command effects and the pending or final receipt."""
+        self.require_writer()
+        command = receipt.command
+        if self.validate_command(command) != receipt.digest:
+            raise ValueError("Inbox command digest mismatch")
+        if bool(effects) != (receipt.disposition is MarkerDisposition.ACCEPTED):
+            raise ValueError("Only accepted commands write effects")
+        for effect in effects:
+            record = effect.record
+            if isinstance(record, CommandReceipt):
+                raise ValueError("An inbox receipt cannot be a command effect")
+            marker = record.marker if isinstance(record, ScopeEnrollment) else record
+            if isinstance(marker, ScopeMarker):
+                self.validate_marker(marker)
+        _encode(receipt, CommandReceipt, validate_ref=self.validate_source_ref)
+        _encode(
+            LedgerBatch(effects), LedgerBatch, validate_ref=self.validate_source_ref
+        )
+
+        key = self.pseudonymize("inbox-command", str(command.command_id))
+        with self._write_transaction() as conn:
+            previous = _current_command(conn, key, command, receipt.digest)
+            if previous is not None:
+                number, current = previous
+                if (
+                    current.disposition is not MarkerDisposition.PENDING
+                    or receipt.disposition is MarkerDisposition.PENDING
+                ):
+                    return current
+            else:
+                number = 0
+            head = _head(conn)
+            if head != expected_sequence:
+                raise ConflictError("Ledger changed during inbox evaluation")
+            sequence = head + 1
+            conn.execute("INSERT INTO commits VALUES (?)", (sequence,))
+            _append_revisions(
+                conn, sequence, (*effects, Revision(key, number + 1, receipt))
+            )
+            self.require_writer()
+        return receipt
+
     def validate_quota(self, evidence: QuotaEvidence) -> None:
         _encode(evidence, QuotaEvidence, validate_ref=self.validate_source_ref)
 
@@ -782,9 +897,12 @@ class Ledger:
         # Reject malformed envelopes before the writer opens a transaction.
         _encode(batch, LedgerBatch, validate_ref=self.validate_source_ref)
         for revision in batch.revisions:
+            record = revision.record
+            if isinstance(record, (CommandReceipt, ScopeEnrollment)):
+                raise LedgerError("Inbox records require atomic command admission")
             if (
-                isinstance(revision.record, ScopeMarker)
-                and revision.record.project_id != self.identity.project_id
+                isinstance(record, ScopeMarker)
+                and record.project_id != self.identity.project_id
             ):
                 raise LedgerError("Scope marker project identity mismatch")
         if self._writer is not None:
@@ -792,7 +910,8 @@ class Ledger:
         with self.writer() as writer:
             return writer._apply(batch)
 
-    def _apply(self, batch: LedgerBatch) -> int:
+    @contextmanager
+    def _write_transaction(self) -> Iterator[sqlite3.Connection]:
         conn = self._writer
         paths = self._write_paths
         assert conn is not None and paths is not None
@@ -803,6 +922,10 @@ class Ledger:
         with conn:
             conn.execute("BEGIN IMMEDIATE")
             _validate_identity(conn, self.identity)
+            yield conn
+
+    def _apply(self, batch: LedgerBatch) -> int:
+        with self._write_transaction() as conn:
             head = _head(conn)
             sequence = head + 1
             conn.execute("INSERT INTO commits VALUES (?)", (sequence,))
@@ -811,7 +934,7 @@ class Ledger:
                 conn, sequence, batch, revisions_changed=revisions_changed
             )
             if revisions_changed or checkpoint_changed:
-                paths.check()
+                self.require_writer()
                 return sequence
             conn.rollback()
             return head

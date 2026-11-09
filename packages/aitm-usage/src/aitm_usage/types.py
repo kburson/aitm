@@ -261,6 +261,135 @@ class ScopeMarker:
 
 
 @dataclass(frozen=True, slots=True)
+class DevelopmentBinding:
+    """A verified owner marker and its claimed checkout and generation."""
+
+    marker: ScopeMarker
+    anchor_ref: SourceRef
+    generation: int
+
+    def __post_init__(self) -> None:
+        _positive(self.generation)
+        if (
+            self.marker.item.kind is ItemKind.PROJECT
+            or self.marker.phase is not WorkPhase.DEVELOPMENT
+            or self.marker.role not in (None, ReviewRole.AUTHOR)
+            or self.marker.attempt_ref is None
+            or self.marker.review_ref is not None
+        ):
+            raise ValueError("Invalid development owner scope")
+
+
+@dataclass(frozen=True, slots=True)
+class ScopeCorrection:
+    correction_id: UUID
+    project_id: UUID
+    replacement: ScopeMarker
+    evidence_ref: SourceRef
+
+    def __post_init__(self) -> None:
+        if self.replacement.project_id != self.project_id:
+            raise ValueError("Scope correction project mismatch")
+        if self.correction_id == self.replacement.marker_id:
+            raise ValueError("Scope correction requires its own command ID")
+
+
+InboxPayload = ScopeMarker | DevelopmentBinding | ScopeCorrection
+_COMMAND_TYPES = {
+    "scope-mark": ScopeMarker,
+    "development-bind": DevelopmentBinding,
+    "scope-correct": ScopeCorrection,
+}
+MarkerId = UUID
+
+
+@dataclass(frozen=True, slots=True)
+class InboxCommand:
+    command_id: UUID
+    project_id: UUID
+    payload: InboxPayload
+
+    def __post_init__(self) -> None:
+        payload = self.payload
+        if type(payload) not in _COMMAND_TYPES.values():
+            raise ValueError("Unsupported inbox command")
+        if isinstance(payload, DevelopmentBinding):
+            payload = payload.marker
+        payload_id = (
+            payload.correction_id
+            if isinstance(payload, ScopeCorrection)
+            else payload.marker_id
+        )
+        if self.command_id != payload_id or self.project_id != payload.project_id:
+            raise ValueError("Inbox command identity mismatch")
+
+
+@dataclass(frozen=True, slots=True)
+class CommandDigest:
+    value: str
+
+    def __post_init__(self) -> None:
+        if type(self.value) is not str or not re.fullmatch(
+            r"sha256:[a-f0-9]{64}", self.value
+        ):
+            raise ValueError("Invalid inbox command digest")
+
+
+class MarkerDisposition(StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    CONFLICT = "conflict"
+
+
+@dataclass(frozen=True, slots=True)
+class CommandAcknowledgment:
+    command_id: UUID
+    digest: CommandDigest
+    disposition: MarkerDisposition
+
+
+@dataclass(frozen=True, slots=True)
+class CommandReceipt:
+    command: InboxCommand
+    digest: CommandDigest
+    disposition: MarkerDisposition
+    boundary: SourceBoundary | None = None
+    anchor_ref: SourceRef | None = None
+
+    @property
+    def acknowledgment(self) -> CommandAcknowledgment:
+        return CommandAcknowledgment(
+            self.command.command_id, self.digest, self.disposition
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ScopeEnrollment:
+    """The effective scope and its source-attested starting boundary."""
+
+    marker: ScopeMarker
+    boundary: SourceBoundary
+    anchor_ref: SourceRef | None = None
+    generation: int | None = None
+
+    def __post_init__(self) -> None:
+        marker, boundary = self.marker, self.boundary
+        if (
+            marker.provider is not boundary.provider
+            or marker.session_ref != boundary.session_ref
+            or marker.boundary_kind is not boundary.kind
+            or marker.boundary_ref != boundary.boundary_ref
+            or marker.receipt_ref is None
+            or marker.receipt_ref != boundary.receipt_ref
+        ):
+            raise ValueError("Scope enrollment requires matching source proof")
+        if self.generation is not None:
+            if self.anchor_ref is None:
+                raise ValueError("Development enrollment requires a checkout anchor")
+            DevelopmentBinding(marker, self.anchor_ref, self.generation)
+
+
+@dataclass(frozen=True, slots=True)
 class Diagnostic:
     code: DiagnosticCode
     observed_at: datetime
@@ -273,13 +402,26 @@ class Diagnostic:
             _nonnegative(self.ordinal)
 
 
-Record = UsageObservation | ScopeMarker | Diagnostic
+Record = UsageObservation | ScopeMarker | Diagnostic | ScopeEnrollment | CommandReceipt
 _RECORD_TYPES = {
     "usage": UsageObservation,
     "scope-marker": ScopeMarker,
     "diagnostic": Diagnostic,
+    "scope-enrollment": ScopeEnrollment,
+    "command-receipt": CommandReceipt,
 }
-_RECORD_TAGS = {model: tag for tag, model in _RECORD_TYPES.items()}
+_TAGGED_CODECS = {
+    Record: (
+        "record",
+        _RECORD_TYPES,
+        {model: tag for tag, model in _RECORD_TYPES.items()},
+    ),
+    InboxPayload: (
+        "command",
+        _COMMAND_TYPES,
+        {model: tag for tag, model in _COMMAND_TYPES.items()},
+    ),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -438,15 +580,16 @@ def _wire(
         return _wire(item, kind, decode=decode, validate_ref=validate_ref)
 
     origin = get_origin(expected)
-    if expected is Record:
-        if decode and type(value) is dict and value.keys() == {"kind", "record"}:
+    if expected in _TAGGED_CODECS:
+        field_name, types, tags = _TAGGED_CODECS[expected]
+        if decode and type(value) is dict and value.keys() == {"kind", field_name}:
             tag = value["kind"]
-            if type(tag) is str and tag in _RECORD_TYPES:
-                return convert(value["record"], _RECORD_TYPES[tag])
-        if not decode and type(value) in _RECORD_TAGS:
+            if type(tag) is str and tag in types:
+                return convert(value[field_name], types[tag])
+        if not decode and type(value) in tags:
             return {
-                "kind": _RECORD_TAGS[type(value)],
-                "record": convert(value, type(value)),
+                "kind": tags[type(value)],
+                field_name: convert(value, type(value)),
             }
     elif origin is UnionType:
         for choice in get_args(expected):
@@ -525,7 +668,7 @@ def _decode[T](
     try:
         payload = json.loads(data, object_pairs_hook=_unique_fields)
         return cast(T, _wire(payload, model, decode=True, validate_ref=validate_ref))
-    except (TypeError, ValueError):
+    except (RecursionError, TypeError, ValueError):
         raise ValueError("Invalid allowlisted usage envelope") from None
 
 
@@ -536,3 +679,27 @@ def encode_marker(marker: ScopeMarker) -> bytes:
 
 def decode_marker(data: bytes) -> ScopeMarker:
     return _decode(data, ScopeMarker)
+
+
+def encode_binding(binding: DevelopmentBinding) -> bytes:
+    return _encode(binding, DevelopmentBinding).encode("utf-8")
+
+
+def decode_binding(data: bytes) -> DevelopmentBinding:
+    return _decode(data, DevelopmentBinding)
+
+
+def encode_correction(correction: ScopeCorrection) -> bytes:
+    return _encode(correction, ScopeCorrection).encode("utf-8")
+
+
+def decode_correction(data: bytes) -> ScopeCorrection:
+    return _decode(data, ScopeCorrection)
+
+
+def encode_command(command: InboxCommand) -> bytes:
+    return _encode(command, InboxCommand).encode("utf-8")
+
+
+def decode_command(data: bytes) -> InboxCommand:
+    return _decode(data, InboxCommand)
