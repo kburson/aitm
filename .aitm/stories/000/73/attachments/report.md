@@ -65,6 +65,22 @@ The serial runs isolated the probes from each other. The live author and measure
 
 The standalone Claude model calls also emitted a session-associated `rate_limit_event` after each response. In this version the payload exposed account window utilization and reset timestamps. It reported five-hour utilization of **67%** in the serial probe and **68%** in the concurrent probe, with **20%** weekly both times. The surrounding `/usage` displays read **68% / 21%** for the same reset windows. The display later moved to **69% / 21%** before the short Codex repeat, between Claude probe calls. The spike could not distinguish update lag from differences in how the two surfaces report utilization. Both events reported `isUsingOverage: false`. The overage reset field provided neither a monthly included-use reading nor a billing receipt. [Codex App Server rate limits](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt) · [Claude Code stream event and local command reference](https://code.claude.com/docs/en/agent-sdk/typescript#sdkratelimitevent) · [Claude Code status-line rate limits](https://code.claude.com/docs/en/statusline#rate-limit-usage)
 
+### Codex-only rerun after the author went idle
+
+On November 9, 2026, the Codex app reported the XPR author's turn complete at 7:57:33 a.m. CST. The collector waited for the author and measurement logs to be quiet for at least 35 seconds and took two agreeing baseline reads. It then ran the same 100-line Codex-only task through the subscription path, requesting GPT-6 Astra at low effort. The probe recorded **19,078 tokens**, including 17,874 input tokens (12,160 cached) and 1,204 output tokens.
+
+| Observation | Time (CST) | Codex seven-day reading |
+| --- | --- | ---: |
+| Baseline 1 | 7:58:43 a.m. | 7% |
+| Baseline 2 | 7:58:52 a.m. | 7% |
+| About 2 seconds after turn completion | 7:59:21 a.m. | 7% |
+| About 15 seconds after turn completion | 7:59:34 a.m. | 7% |
+| About 51 seconds after turn completion | 8:00:10 a.m. | 7% |
+
+All five readings reported the same reset. The author remained idle through the immediate check, and the monitored local Codex logs showed no other positive usage increments during that bracket. The author's new turn began at 7:59:28 a.m. and produced two increments during the delayed observation bracket. Other devices and unmonitored sessions were outside the observation.
+
+**The locally quiet bracket showed zero percentage-point movement at the available precision.** It yielded no usable per-agent quota delta. The delayed readings were also flat, with concurrent activity by that point. The result leaves the probe's actual share of the weekly allowance unknown.
+
 ### What the spike establishes
 
 AITM can tie observed model usage to individual agents, even during XPR overlap. The subscription APIs and CLI surfaces tested return **account-window observations**. A session-associated event tells us where the observation was seen. It does not identify how much that session contributed to the account window. Flat readings leave a small probe's burn unresolved. Changes during concurrent same-provider work are shared account movements. Cross-provider overlap can be reported as two separate observations, one per provider and reset window. Actual billed spend remained unverified.
