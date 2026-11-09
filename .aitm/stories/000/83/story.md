@@ -10,12 +10,12 @@ children: [84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96]
 blocking: [3]
 blocked-by: []
 created: "2026-11-09T13:53:47Z"
-updated: "2026-11-09T20:52:23+00:00"
+updated: "2026-11-09T22:08:23+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 48.5, "size": "L"}
 priority: "P1"
 origin: "Owner brainstorming and lifetime usage planning, 2026-11-09"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/usage-capture-design.md"], "plan": ["plan/usage-capture-implementation-plan.md", "plan/leaf-stories.md", "plan/usage-capture-replan.md", "plan/usage-capture-relationship-replan.md", "plan/usage-capture-accounting-integration-supplement.md", "plan/usage-capture-accounting-integration-supplement-review.md", "plan/usage-capture-launch-health-replan.md"], "attachments": ["attachments/agent-usage.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/usage-capture-design.md"], "plan": ["plan/usage-capture-implementation-plan.md", "plan/leaf-stories.md", "plan/usage-capture-replan.md", "plan/usage-capture-relationship-replan.md", "plan/usage-capture-accounting-integration-supplement.md", "plan/usage-capture-accounting-integration-supplement-review.md", "plan/usage-capture-launch-health-replan.md"], "attachments": ["attachments/agent-usage.md", "attachments/source-delivery.md"]}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,5 @@ Implementation resumed with #86 after the [relationship admission amendment](pla
 [Launch health producer amendment under review](plan/usage-capture-launch-health-replan.md). The #94 source candidate is preserved pending exact process-attribution proof.
 
 Implementation resumed on the accepted [launch health producer amendment](plan/usage-capture-launch-health-replan.md). #94 remains in Planning until the U08 producer witness and U12 exact rerun pass.
+
+[Exact protected-trunk source delivery](attachments/source-delivery.md) is recorded. [#96](../96/story.md) verifies live installation and provider evidence before #83 closes.
