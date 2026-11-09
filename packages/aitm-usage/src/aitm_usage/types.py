@@ -4,7 +4,8 @@ import json
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, fields, is_dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from enum import StrEnum
 from functools import cache
 from pathlib import Path
@@ -434,6 +435,149 @@ class Diagnostic:
             _nonnegative(self.ordinal)
 
 
+@dataclass(frozen=True, slots=True)
+class QuotaEvidence:
+    """A structured account-window reading. Percentage units are 0.001 points."""
+
+    provider: Provider
+    account_ref: SourceRef
+    bucket: QuotaBucket
+    observed_at: datetime
+    percent_milli: int
+    precision: int
+    source: QuotaSource
+    reset_at: datetime | None = None
+    window_seconds: int | None = None
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.provider) is not Provider
+            or type(self.account_ref) is not SourceRef
+            or type(self.bucket) is not QuotaBucket
+            or type(self.source) is not QuotaSource
+        ):
+            raise ValueError(
+                "Invalid quota evidence classification or account reference"
+            )
+        codex_sources = (QuotaSource.CODEX_INLINE, QuotaSource.CODEX_ACCOUNT)
+        if (self.provider is Provider.CODEX) != (self.source in codex_sources):
+            raise ValueError("Quota source does not match provider")
+        if (
+            type(self.percent_milli) is not int
+            or not 0 <= self.percent_milli <= 100_000
+            or type(self.precision) is not int
+            or not 0 <= self.precision <= 3
+            or self.percent_milli % 10 ** (3 - self.precision)
+        ):
+            raise ValueError("Invalid fixed-point quota percentage or precision")
+        for moment in (self.observed_at, self.reset_at):
+            if moment is not None and (
+                type(moment) is not datetime or moment.utcoffset() != timedelta(0)
+            ):
+                raise ValueError("Quota times must be UTC")
+        if self.observed_at is None:
+            raise ValueError("Quota observation time is required")
+        if self.window_seconds is not None:
+            _positive(self.window_seconds)
+
+
+class Currency(StrEnum):
+    USD = "USD"
+
+
+def _rate_version(version: str) -> None:
+    if type(version) is not str or not re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}", version
+    ):
+        raise ValueError("Expected a rate card version date")
+    date.fromisoformat(version)
+
+
+@dataclass(frozen=True, slots=True)
+class RateBasis:
+    version: str
+    sha256: str
+    currency: Currency
+
+    def __post_init__(self) -> None:
+        _rate_version(self.version)
+        if type(self.sha256) is not str or not re.fullmatch(
+            r"[a-f0-9]{64}", self.sha256
+        ):
+            raise ValueError("Expected a SHA-256 rate card digest")
+        if type(self.currency) is not Currency:
+            raise ValueError("Unsupported rate card currency")
+
+    @property
+    def identifier(self) -> str:
+        return f"standard-api-{self.currency.value}:{self.version}:sha256:{self.sha256}"
+
+
+@dataclass(frozen=True, slots=True)
+class PriceResult:
+    basis: RateBasis
+    availability: Availability
+    usd: Decimal | None
+
+    def __post_init__(self) -> None:
+        if type(self.basis) is not RateBasis:
+            raise ValueError("Expected a versioned rate basis")
+        expected = Availability.UNKNOWN if self.usd is None else Availability.COMPLETE
+        if self.availability is not expected:
+            raise ValueError("Price and availability disagree")
+        if self.usd is not None:
+            _decimal_text(self.usd)
+
+    @property
+    def currency(self) -> Currency:
+        return self.basis.currency
+
+
+@dataclass(frozen=True, slots=True)
+class PriceObservation:
+    observation_key: SourceRef
+    observation_revision: int
+    result: PriceResult
+
+    def __post_init__(self) -> None:
+        _positive(self.observation_revision)
+
+    @property
+    def rate_basis(self) -> str:
+        return self.result.basis.identifier
+
+    @property
+    def usd(self) -> Decimal | None:
+        return self.result.usd
+
+    @property
+    def availability(self) -> Availability:
+        return self.result.availability
+
+    @property
+    def currency(self) -> Currency:
+        return self.result.currency
+
+
+@dataclass(frozen=True, slots=True)
+class AccountObservation(QuotaEvidence):
+    @property
+    def task_burn_availability(self) -> Availability:
+        return Availability.UNKNOWN
+
+
+@dataclass(frozen=True, slots=True)
+class SpendObservation:
+    observation_key: SourceRef
+    observation_revision: int
+    availability: Availability = Availability.UNKNOWN
+
+    def __post_init__(self) -> None:
+        _positive(self.observation_revision)
+        if self.availability is not Availability.UNKNOWN:
+            raise ValueError("Actual billed spend is unavailable in this schema")
+
+
 Record = (
     UsageObservation
     | ScopeMarker
@@ -442,6 +586,9 @@ Record = (
     | CommandReceipt
     | DraftAlias
     | ItemParent
+    | PriceObservation
+    | AccountObservation
+    | SpendObservation
 )
 _RECORD_TYPES = {
     "usage": UsageObservation,
@@ -451,6 +598,9 @@ _RECORD_TYPES = {
     "command-receipt": CommandReceipt,
     "draft-alias": DraftAlias,
     "item-parent": ItemParent,
+    "api-equivalent-price": PriceObservation,
+    "account-observation": AccountObservation,
+    "actual-spend": SpendObservation,
 }
 _TAGGED_CODECS = {
     Record: (
@@ -474,6 +624,10 @@ class Revision:
 
     def __post_init__(self) -> None:
         _positive(self.revision)
+        if self.revision != 1 and isinstance(
+            self.record, (PriceObservation, AccountObservation, SpendObservation)
+        ):
+            raise ValueError("Accounting records are immutable at their own keys")
 
 
 @dataclass(frozen=True, slots=True)
@@ -529,52 +683,6 @@ class SourceCheckpoint:
 
 
 @dataclass(frozen=True, slots=True)
-class QuotaEvidence:
-    """A structured account-window reading. Percentage units are 0.001 points."""
-
-    provider: Provider
-    account_ref: SourceRef
-    bucket: QuotaBucket
-    observed_at: datetime
-    percent_milli: int
-    precision: int
-    source: QuotaSource
-    reset_at: datetime | None = None
-    window_seconds: int | None = None
-
-    def __post_init__(self) -> None:
-        if (
-            type(self.provider) is not Provider
-            or type(self.account_ref) is not SourceRef
-            or type(self.bucket) is not QuotaBucket
-            or type(self.source) is not QuotaSource
-        ):
-            raise ValueError(
-                "Invalid quota evidence classification or account reference"
-            )
-        codex_sources = (QuotaSource.CODEX_INLINE, QuotaSource.CODEX_ACCOUNT)
-        if (self.provider is Provider.CODEX) != (self.source in codex_sources):
-            raise ValueError("Quota source does not match provider")
-        if (
-            type(self.percent_milli) is not int
-            or not 0 <= self.percent_milli <= 100_000
-            or type(self.precision) is not int
-            or not 0 <= self.precision <= 3
-            or self.percent_milli % 10 ** (3 - self.precision)
-        ):
-            raise ValueError("Invalid fixed-point quota percentage or precision")
-        for moment in (self.observed_at, self.reset_at):
-            if moment is not None and (
-                type(moment) is not datetime or moment.utcoffset() != timedelta(0)
-            ):
-                raise ValueError("Quota times must be UTC")
-        if self.observed_at is None:
-            raise ValueError("Quota observation time is required")
-        if self.window_seconds is not None:
-            _positive(self.window_seconds)
-
-
-@dataclass(frozen=True, slots=True)
 class AdapterResult:
     revisions: tuple[Revision, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
@@ -607,6 +715,26 @@ class LedgerView:
 def _fields(model: type) -> dict[str, type]:
     hints = get_type_hints(model)
     return {field.name: hints[field.name] for field in fields(model)}
+
+
+# USD values use a bounded, canonical decimal string on the wire. Thirteen
+# fractional places cover per-million rates at six places and a 1.5x multiplier.
+_DECIMAL_TEXT = re.compile(r"(?:0|[1-9][0-9]{0,23})(?:\.[0-9]{0,12}[1-9])?")
+
+
+def _decimal_text(value: Decimal) -> str:
+    if (
+        type(value) is not Decimal
+        or not value.is_finite()
+        or value.is_signed()
+        or value.adjusted() > 23
+        or value.as_tuple().exponent < -13
+    ):
+        raise ValueError("Expected a bounded nonnegative decimal")
+    if not value:
+        return "0"
+    text = format(value, "f")
+    return text.rstrip("0").rstrip(".") if "." in text else text
 
 
 def _wire(
@@ -647,6 +775,11 @@ def _wire(
     elif expected in (str, int, bool, type(None)):
         if type(value) is expected:
             return value
+    elif expected is Decimal:
+        if decode and type(value) is str and _DECIMAL_TEXT.fullmatch(value):
+            return Decimal(value)
+        if not decode:
+            return _decimal_text(value)
     elif expected is SourceRef:
         reference = SourceRef(value) if decode and type(value) is str else value
         if type(reference) is SourceRef:
