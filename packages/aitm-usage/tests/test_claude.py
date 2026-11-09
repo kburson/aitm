@@ -39,6 +39,8 @@ from aitm_usage.types import (
 PROJECT = UUID(int=0x200)
 SESSION = UUID(int=0x201)
 COMMAND = UUID(int=0x202)
+ACCOUNT = UUID(int=0x300)
+OTHER_ACCOUNT = UUID(int=0x301)
 CUTOFF = datetime(2026, 11, 9, 16, tzinfo=UTC)
 BEFORE = CUTOFF - timedelta(seconds=1)
 AFTER = CUTOFF + timedelta(seconds=10)
@@ -160,6 +162,28 @@ def cost(**models):
         "startTime": 1794240000000,
         "totalCostUSD": 42,
     }
+
+
+def owner(account=ACCOUNT):
+    return {
+        "type": "session-owner",
+        "sessionId": str(SESSION),
+        "accountUuid": str(account),
+    }
+
+
+def rate_event(checkout):
+    reset = int((AFTER + timedelta(hours=1)).timestamp())
+    return row(
+        "rate_limit_event",
+        checkout,
+        rate_limit_info={
+            "status": "allowed",
+            "rateLimitType": "seven_day",
+            "resetsAt": reset,
+            "utilization": 0.2,
+        },
+    )
 
 
 def write(path, rows, *, append=False):
@@ -407,12 +431,13 @@ def test_unadmitted_lookahead_cannot_change_checkpoint_or_usage(project):
 def test_structured_quota_requires_authenticated_account(project, account):
     claude = adapter()
     ledger, registration, path, checkout, _ = project
-    ref = ledger.pseudonymize("claude-account", "private-account") if account else None
+    ref = ledger.pseudonymize("claude-account", str(ACCOUNT)) if account else None
     reset = int((AFTER + timedelta(hours=1)).timestamp())
     write(
         path,
         [
             user(checkout),
+            owner(),
             row(
                 "rate_limit_event",
                 checkout,
@@ -675,7 +700,7 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     assert projection.unattributed.observation_count == (0 if case == "outside" else 1)
 
 
-@pytest.mark.parametrize("child", [True, False])
+@pytest.mark.parametrize("child", ["matching", "absent", "other-tool", "unlinked"])
 def test_nested_agent_report_does_not_double_count_or_inherit_scope(project, child):
     claude = adapter()
     ledger, registration, path, checkout, _ = project
@@ -698,15 +723,19 @@ def test_nested_agent_report_does_not_double_count_or_inherit_scope(project, chi
             ],
         ),
     ]
-    if child:
+    if child != "absent":
         rows.append(
             request(
                 checkout,
                 req="req-child",
                 msg="msg-child",
-                counts=usage(8),
+                counts=usage(6 if child == "other-tool" else 8),
                 isSidechain=True,
-                parent_tool_use_id=call_id,
+                parent_tool_use_id={
+                    "matching": call_id,
+                    "other-tool": "toolu-other-child",
+                    "unlinked": None,
+                }[child],
             )
         )
     rows.append(
@@ -737,24 +766,28 @@ def test_nested_agent_report_does_not_double_count_or_inherit_scope(project, chi
     )
     write(path, rows)
     batch, result = read(claude, source(registration), claude.ClaudeState(ledger))
-    assert sorted(r.record.tokens.output_tokens for r in result.revisions) == [4, 8]
-    if not child:
+    outputs = [4, 6, 8] if child == "other-tool" else [4, 8]
+    assert sorted(r.record.tokens.output_tokens for r in result.revisions) == outputs
+    if child != "matching":
         assert DiagnosticCode.OVERLAP_UNVERIFIED in diagnostics(result)
     commit(ledger, batch, result)
     projection = rollup(ItemKey(ItemKind.DRAFT, UUID(int=0x203)), ledger.as_of())
     assert projection.inclusive.observation_count == 0
-    assert projection.unattributed.observation_count == 2
+    assert projection.unattributed.observation_count == len(outputs)
     assert all(b.ordinal != len(rows) - 1 for b in result.boundaries)
-    if not child:
+    if child in ("absent", "other-tool"):
         aggregate = result.revisions[-1].record
         assert aggregate.boundary.stream_ref != batch.cursor.source_ref
         assert aggregate.request_ref is None
         assert aggregate.availability is Availability.PARTIAL
 
 
-def test_a_later_verified_child_removes_overlapping_report_quantities(project):
+@pytest.mark.parametrize("excluded", [False, True])
+def test_a_later_verified_child_removes_overlapping_report_quantities(
+    project, excluded
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, registration, path, checkout, outside = project
     call_id = "toolu-agent-late-child"
     parent, completed = str(UUID(int=0x230)), str(UUID(int=0x231))
     write(
@@ -802,7 +835,7 @@ def test_a_later_verified_child_removes_overlapping_report_quantities(project):
         path,
         [
             request(
-                checkout,
+                outside if excluded else checkout,
                 req="child-late",
                 msg="child-late-msg",
                 counts=usage(8),
@@ -812,11 +845,26 @@ def test_a_later_verified_child_removes_overlapping_report_quantities(project):
         ],
         append=True,
     )
+    ledger = Ledger.open(ledger.root, PROJECT)
+    if excluded:
+        held = scan(candidate, prior, CUTOFF)
+        assert held.commit_frames == ()
+        candidate = candidate.with_exclusion(held.frames[0])
     batch, result = read(claude, candidate, claude.ClaudeState(ledger), prior)
+    if excluded:
+        assert len(result.revisions) == 1
+        child_prefix = next(
+            entry
+            for entry in result.provider_checkpoint.request_prefix
+            if entry.ordinal == 3
+        )
+        assert child_prefix.tokens == TokenCounts()
     commit(ledger, batch, result, prior)
     item = ItemKey(ItemKind.DRAFT, UUID(int=0x232))
     assert rollup(item, ledger.as_of(1)).unattributed.tokens["output_tokens"] == 12
-    assert rollup(item, ledger.as_of()).unattributed.tokens["output_tokens"] == 12
+    assert rollup(item, ledger.as_of()).unattributed.tokens["output_tokens"] == (
+        4 if excluded else 12
+    )
     assert any(
         revision.revision == 2 and revision.record.tokens == TokenCounts()
         for revision in result.revisions
@@ -911,6 +959,7 @@ def test_missing_terminal_stays_visible_when_quota_is_present(project):
         [
             user(checkout),
             request(checkout),
+            owner(),
             row(
                 "rate_limit_event",
                 checkout,
@@ -923,7 +972,7 @@ def test_missing_terminal_stays_visible_when_quota_is_present(project):
             ),
         ],
     )
-    account = ledger.pseudonymize("claude-account", "private")
+    account = ledger.pseudonymize("claude-account", str(ACCOUNT))
     _, result = read(
         claude, source(registration), claude.ClaudeState(ledger, account_ref=account)
     )
@@ -1078,3 +1127,92 @@ def test_unknown_model_labels_do_not_merge_conflicting_revisions(project):
     assert DiagnosticCode.IDENTITY_CONFLICT in diagnostics(result)
     commit(ledger, batch, result)
     assert b"unknown-model-one" not in ledger.database_path.read_bytes()
+
+
+@pytest.mark.parametrize("reopen", [False, True])
+@pytest.mark.parametrize("old_owner", [None, ACCOUNT, OTHER_ACCOUNT])
+def test_quota_requires_owner_in_current_committed_prefix(project, reopen, old_owner):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    account = ledger.pseudonymize("claude-account", str(ACCOUNT))
+    state = claude.ClaudeState(ledger, account_ref=account)
+    write(
+        path, [user(checkout), *([owner(old_owner)] if old_owner is not None else [])]
+    )
+    candidate = source(registration)
+    first, result = read(claude, candidate, state)
+    prior = commit(ledger, first, result)
+    if reopen:
+        ledger = Ledger.open(ledger.root, PROJECT)
+        state = claude.ClaudeState(ledger, account_ref=account)
+    else:
+        state = claude.advance_claude_state(state, first, result)
+    write(path, [rate_event(checkout)], append=True)
+    batch, result = read(claude, candidate, state, prior)
+    assert batch.commit_sideband == ()
+    assert result.quota == ()
+    assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
+
+
+def test_later_owner_conflict_invalidates_earlier_quota_in_same_prefix(project):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    account = ledger.pseudonymize("claude-account", str(ACCOUNT))
+    write(path, [user(checkout), owner(), rate_event(checkout), owner(OTHER_ACCOUNT)])
+    batch, result = read(
+        claude, source(registration), claude.ClaudeState(ledger, account_ref=account)
+    )
+    assert len(batch.commit_sideband) == 2
+    assert result.quota == ()
+    assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
+
+
+@pytest.mark.parametrize("bad_value", [-1, True, None, "0"])
+def test_terminal_cannot_convert_an_explicit_invalid_ttl_to_zero(project, bad_value):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    counters = model_counts(write5=0, write1=0)
+    counters["cacheCreationEphemeral5mInputTokens"] = bad_value
+    del counters["cacheCreationEphemeral1hInputTokens"]
+    write(
+        path,
+        [
+            user(checkout),
+            request(checkout, counts=usage(write5=0, write1=0)),
+            row(
+                "result",
+                checkout,
+                subtype="success",
+                is_error=False,
+                modelUsage={MODEL: counters},
+            ),
+        ],
+    )
+    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    (revision,) = result.revisions
+    assert revision.record.availability is Availability.PARTIAL
+    assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
+
+
+def test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total(project):
+    claude = adapter()
+    ledger, registration, path, checkout, _ = project
+    counters = model_counts(write5=0, write1=0)
+    del counters["cacheCreationEphemeral5mInputTokens"]
+    del counters["cacheCreationEphemeral1hInputTokens"]
+    write(
+        path,
+        [
+            user(checkout),
+            request(checkout, counts=usage(write5=0, write1=0)),
+            row(
+                "result",
+                checkout,
+                subtype="success",
+                is_error=False,
+                modelUsage={MODEL: counters},
+            ),
+        ],
+    )
+    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    assert result.revisions[-1].record.availability is Availability.COMPLETE

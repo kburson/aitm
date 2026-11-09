@@ -61,6 +61,7 @@ class _Tool:
     request_ref: SourceRef
     eligible: bool
     saw_child: bool = False
+    uncertain_child: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,8 +87,8 @@ class ClaudeState:
     """One stream's private read context.
 
     Set reserved_session_id only for the UUID reserved and verified by the
-    controlled launcher. account_ref is an independently verified pseudonym
-    for the account in use. A session identifier supplies neither proof.
+    controlled launcher. Quota requires an independently verified account_ref
+    and a matching native owner in the current committed prefix.
     An explicitly supplied prior_view pins the ledger read for this batch.
     """
 
@@ -275,17 +276,20 @@ def _monotonic(before: TokenCounts, after: TokenCounts) -> bool:
 
 
 def _cost_counts(raw: dict) -> TokenCounts | None:
-    uncached, cached, write_total, write5, write1, output = (
-        _number(raw.get(key))
-        for key in (
-            "inputTokens",
-            "cacheReadInputTokens",
-            "cacheCreationInputTokens",
-            "cacheCreationEphemeral5mInputTokens",
-            "cacheCreationEphemeral1hInputTokens",
-            "outputTokens",
-        )
+    keys = (
+        "inputTokens",
+        "cacheReadInputTokens",
+        "cacheCreationInputTokens",
+        "cacheCreationEphemeral5mInputTokens",
+        "cacheCreationEphemeral1hInputTokens",
+        "outputTokens",
     )
+    values = tuple(_number(raw.get(key)) for key in keys)
+    if any(
+        key in raw and value is None for key, value in zip(keys, values, strict=True)
+    ):
+        return None
+    uncached, cached, write_total, write5, write1, output = values
     if write_total == 0 and write5 is None and write1 is None:
         write5 = write1 = 0
     if write_total is None or _sum(write5, write1) != write_total:
@@ -383,6 +387,10 @@ def _nested(frame: SourceFrame) -> bool:
     )
 
 
+def _parent_tool(ledger: Ledger, frame: SourceFrame) -> SourceRef | None:
+    return _pseudonym(ledger, frame, "tool", frame.row.get("parent_tool_use_id"))
+
+
 def _eligible(frame: SourceFrame, eligibility: Eligibility) -> bool:
     return (
         eligibility is Eligibility.ELIGIBLE
@@ -478,6 +486,7 @@ class _RouteWalk:
         self.boundaries: dict[int, SourceBoundary] = {}
         self.reports: dict[int, tuple[_Tool, TokenCounts]] = {}
         self.child_results: set[int] = set()
+        self.overlap_gaps: set[int] = set()
 
     def assistant(self, frame: SourceFrame) -> None:
         message = _message(frame)
@@ -499,13 +508,17 @@ class _RouteWalk:
             self.seen[req] = msg
             self.messages.add(msg)
         if _nested(frame):
-            self.route = replace(
-                self.route,
-                receipt=None,
-                tool=replace(tool, saw_child=True)
-                if tool is not None and tool.kind == "agent"
-                else None,
-            )
+            if tool is not None and tool.kind == "agent":
+                parent = _parent_tool(self.ledger, frame)
+                if not valid or parent is None:
+                    tool = replace(tool, uncertain_child=True)
+                elif parent == tool.tool_ref:
+                    tool = replace(tool, saw_child=True)
+                if not valid or parent != tool.tool_ref:
+                    self.overlap_gaps.add(frame.ordinal)
+            else:
+                tool = None
+            self.route = replace(self.route, receipt=None, tool=tool)
             return
         if not valid:
             self.route = _Route(frame.segment_ref)
@@ -628,7 +641,11 @@ class _RouteWalk:
         ):
             if tool.saw_child:
                 self.child_results.add(frame.ordinal)
-            elif tool.eligible and _eligible(frame, self.eligibility):
+            elif (
+                not tool.uncertain_child
+                and tool.eligible
+                and _eligible(frame, self.eligibility)
+            ):
                 counts = _usage(_object(details.get("usage")))
                 if counts is not None:
                     self.reports[frame.ordinal] = (tool, counts)
@@ -798,6 +815,13 @@ class _UsageWalk:
         self.diagnostics = list(batch.diagnostics)
         self.quota: list[QuotaEvidence] = []
         self.account = state.account_ref
+        if any(
+            event.kind is SidebandKind.SESSION_OWNER
+            and event.content.get("account_ref") != self.account
+            for event in batch.commit_sideband
+        ):
+            self.account = None
+        self.owner_segments: set[SourceRef] = set()
         self.latest: SourceFrame | None = None
         self.changed: set[SourceRef] = set()
         self.quota_checked = False
@@ -922,12 +946,19 @@ class _UsageWalk:
             origin.message_ref != client_ref
             or frame.ordinal not in self.routes.boundaries
         )
+        tool = _parent_tool(self.ledger, frame)
         if (
             prior is not None
             and prior.tokens == _EMPTY
             or prior is None
             and (excluded_origin or not _eligible(frame, self.eligibility))
         ):
+            if (
+                counts is not None
+                and tool is not None
+                and _key(self.ledger, self.stream, req) not in self.current
+            ):
+                self.withdraw_overlapping_report(frame, tool)
             self.exclude(frame, req, msg, prior, counts, model, stopped)
             if excluded_origin and _eligible(frame, self.eligibility):
                 self.gap(frame, DiagnosticCode.COVERAGE_GAP)
@@ -1019,12 +1050,8 @@ class _UsageWalk:
         if previous is None or record != previous.record:
             self.publish(key, record, previous)
             self.changed.add(key)
-        if _nested(frame):
-            tool = _pseudonym(
-                self.ledger, frame, "tool", frame.row.get("parent_tool_use_id")
-            )
-            if tool is not None:
-                self.withdraw_overlapping_report(frame, tool)
+        if tool is not None:
+            self.withdraw_overlapping_report(frame, tool)
 
     def withdraw_overlapping_report(self, frame: SourceFrame, tool: SourceRef) -> None:
         key = _report_key(self.ledger, self.stream, tool)
@@ -1044,7 +1071,7 @@ class _UsageWalk:
                     replace(record, tokens=_EMPTY, availability=Availability.UNKNOWN),
                     prior,
                 )
-                self.gap(frame, DiagnosticCode.OVERLAP_UNVERIFIED)
+                self.gap(record, DiagnosticCode.OVERLAP_UNVERIFIED)
 
     def report(self, frame: SourceFrame, tool: _Tool, counts: TokenCounts) -> None:
         parent = self.prefix.get(tool.request_ref)
@@ -1134,11 +1161,11 @@ class _UsageWalk:
     def sideband(self, event: SidebandFrame) -> None:
         if self.eligibility is not Eligibility.ELIGIBLE:
             return
-        if event.kind is SidebandKind.SESSION_OWNER:
-            if event.content.get("account_ref") != self.account:
-                self.account = None
-            return
         assert event.timed_ordinal is not None and event.segment_ref is not None
+        if event.kind is SidebandKind.SESSION_OWNER:
+            if self.account is not None:
+                self.owner_segments.add(event.segment_ref)
+            return
         location = self.latest
         if location is None or location.ordinal != event.timed_ordinal:
             location = None
@@ -1162,6 +1189,10 @@ class _UsageWalk:
             self.latest = frame
         kind = frame.row["type"]
         if kind == "assistant":
+            if frame.ordinal in self.routes.overlap_gaps and _eligible(
+                frame, self.eligibility
+            ):
+                self.gap(frame, DiagnosticCode.OVERLAP_UNVERIFIED)
             self.assistant(frame)
         elif kind == "user":
             if (
@@ -1208,7 +1239,10 @@ class _UsageWalk:
                     self.gap(frame, DiagnosticCode.COVERAGE_GAP)
         elif kind == "rate_limit_event":
             if _eligible(frame, self.eligibility):
-                quota = _quota(frame, self.account)
+                account = (
+                    self.account if frame.segment_ref in self.owner_segments else None
+                )
+                quota = _quota(frame, account)
                 self.quota.extend(quota)
                 self.quota_checked = True
                 if not quota:
