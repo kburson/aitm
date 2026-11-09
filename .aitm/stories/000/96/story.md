@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [95]
 created: "2026-11-09T14:42:23Z"
-updated: "2026-11-09T22:13:01+00:00"
+updated: "2026-11-09T22:13:56+00:00"
 last-branch: "codex/aitm-usage-u11"
 estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/design.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md"], "attachments": ["attachments/desktop-marker-diagnostic.md"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path": ".aitm/stories/000/83/plan/usage-capture-implementation-plan.md", "publication": "6ee371590ff3ce0cb5a108bdd1e89cfb17bc2300", "raw-sha256": "07919dde4475310b7fe277791206f611ce5cd615eeaed491d3a619e61142daf5", "section-sha256": "b5ed262c26a3ce66312ea851a5e1b8161dff72e5074df7b8180cc7785fe58d2e"}
@@ -45,3 +45,5 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 83, "key": "U11", "path":
 [Design](design/design.md) · [Plan](plan/implementation-plan.md) · [JIT](plan/jit.md) · [Scoped review](plan/pickup-review.md). This is a manual Develop admission for the dedicated worktree at the pinned base.
 
 [Codex Desktop carrier amendment under review](../83/plan/usage-capture-desktop-marker-replan.md). Live qualification paused at the exact released source. Protected source delivery remains recorded.
+
+[Live isolated Desktop marker diagnostic](attachments/desktop-marker-diagnostic.md).
