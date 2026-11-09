@@ -164,4 +164,4 @@ A reviewer read the core design as its builder would and raised eight questions.
   5. Core checks: a worktree check on every command; fetch validation that stops writes even in advisory mode; `aitm planning repair` as a fast-forward fix.
   6. A GitHub Action that audits every push.
 - **[agreed]** Server-side path restriction is impossible: GitHub's file-path push rules apply repo-wide, not per branch.
-- **[open]** Add `required_linear_history` to the live "aitm: protect planning" ruleset (26821812). Not yet applied.
+- **[user]** Add `required_linear_history` to the live "aitm: protect planning" ruleset (26821812). Done 2026-11-08; active rules on `planning`: deletion, non_fast_forward, required_linear_history.
