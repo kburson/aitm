@@ -1,0 +1,73 @@
+diff --git a/.aitm/stories/000/2/design/core-design.md b/.aitm/stories/000/2/design/core-design.md
+index 1416b67..40f1e9f 100644
+--- a/.aitm/stories/000/2/design/core-design.md
++++ b/.aitm/stories/000/2/design/core-design.md
+@@ -4,7 +4,7 @@ story: 2
+ role: design
+ title: aitm-core design
+ created: 2026-11-08T20:05:00Z
+-updated: 2026-11-08T21:30:00Z
++updated: 2026-11-09T04:25:31Z
+ last-branch: planning
+ status: draft (awaiting review)
+ parent-design: ../../1/design/architecture.md
+@@ -198,6 +198,7 @@ Every event is one JSON line:
+ - `type` is `<namespace>.<noun>.<verb>`. The core owns `core.*`; each extension owns its own namespace.
+ - `actor.kind` is `agent`, `human` or `tool`.
+ - Each event type has a Pydantic model for `data`; unknown types from uninstalled extensions are kept and shown, never dropped.
++- `ts` is when the thing happened. An event written later from a record of something that already happened is **backfilled**: it carries `"backfill": {"recorded_at": …, "by": <actor>, "source": <repo-relative path of the record it was read from>}` beside `data`, and its `actor` is whoever did the original work. No event may be backfilled without a source record that a reader can open. Folding orders events by `ts`, then `id`, so a backfilled event lands where it happened, not where it was appended.
+ 
+ Core event types:
+ 
+@@ -219,7 +220,9 @@ Core event types:
+ | `core.trip.decided` | `aitm trip decide` | decision (scrap or refactor), rationale, analysis path, expansion disposition, attempt |
+ | `core.pivot.recorded` | `aitm pivot` | by, reason, scope_change |
+ | `core.test.receipt` | `aitm test` | command, exit code, head SHA, duration, summary |
+-| `core.review.recorded` | `aitm review pass\|changes` (later, `aitm-peer-review` and `aitm-github`) | verdict, head SHA, reviewer refs |
++| `core.review.recorded` | `aitm review pass\|changes` (later, `aitm-peer-review` and `aitm-github`) | pull-request review of code: verdict, head SHA, reviewer refs |
++| `core.doc-review.submitted` | `aitm review turn` (later, `aitm-peer-review` as each response lands) | one turn of a document review: level (sar, spr or xpr), doc path, round, role (reviewer or author), agent (host, provider, model id, effort, session id and its kind), started_at, submitted_at, start basis, input digest (reviewer) or output digest and patch (author), response path, finding ids raised or answered, decision (reviewer only) |
++| `core.doc-review.completed` | `aitm review complete` (later, `aitm-peer-review` at finalization) | level, doc path, rounds, outcome (exhausted or round-cap), base and final digests, started_at, ended_at, manifest path |
+ | `core.signoff.recorded` | `aitm signoff` | retro path, confidence vote, verdict (delivered or not), by (always the agent) |
+ | `core.link.changed` | `aitm link` | parent, blocking, blocked_by |
+ | `core.description.set` | `aitm describe` | title, as, want, so_that, scope, content hash |
+@@ -370,6 +373,14 @@ Because the transition is committed before any projection runs, a crash or netwo
+ - Each entry into develop after an accepted plan starts a new **attempt**. Each attempt has a fresh clock of `leaf_agent_hours` and a fresh expansion allowance. Totals across attempts are kept for learning.
+ - The clock pauses while the story is blocked by its own expansion, and resumes when the expansion reaches done.
+ 
++**Planning time.** Planning has no limit, but its time is recorded, because estimation calibration and usage reporting need the whole Refine → Plan → Close picture, not just implementation.
++
++- `rules.timing` reports planning agent-hours per story by state, using the same gap rule over the same activity events as the implementation clock. Planning time never feeds a guard or a trip.
++- Document review time is counted from `core.doc-review.submitted` events: each turn contributes `submitted_at − started_at`, reported by level (sar, spr, xpr), role and model. Turn spans and other activity in the same window are merged, so time is never counted twice.
++- Each turn's `start_basis` says how its start was known: `recorded` (the participant wrote its own start), `claim` (the review tool's claim timestamp for that turn) or `prior-submit` (the previous turn's submission; used when nothing better exists). ai-peer-review 0.4.x writes a participant's registration time into every response's `started_at`, so for its records the start comes from the manifest's claim times, falling back to the previous turn's submission. Reported totals say how many turns rest on each basis.
++- Turn spans cover writing a response, not setup, reading the inputs before the claim, or publication. The level's `started_at`/`ended_at` give the outer bound.
++- `aitm review import <folder>` backfills a level's `core.doc-review.submitted` and `core.doc-review.completed` events from a portable review record (its responses and manifest, plus native records when present). It refuses a folder whose finding ids or digests don't reconcile, and is idempotent: a turn already recorded is skipped.
++
+ **Expansion.**
+ 
+ - `aitm expand <id> --kind defect|story --title "…" --reason "…"` creates a new story (graduating immediately through the backlog provider) with `expanded_from: <id>`, records `core.expansion.recorded` on the origin, sets the origin `blocked_by` the new story, and pauses the origin's clock.
+@@ -449,7 +460,7 @@ Every command supports `--json` (stable output schema) and exits non-zero only o
+ | drafts | `draft new`, `draft open`, `draft discard`, `draft list` |
+ | stories | `graduate`, `describe`, `show`, `list`, `search`, `explain`, `link` |
+ | work | `bind`, `unbind`, `sync [--push]` |
+-| lifecycle | `promote [--to]`, `demote --to --reason`, `abandon --reason`, `estimate`, `design accept`, `plan accept`, `jit`, `test`, `review pass\|changes`, `signoff`, `deliver` |
++| lifecycle | `promote [--to]`, `demote --to --reason`, `abandon --reason`, `estimate`, `design accept`, `plan accept`, `jit`, `test`, `review pass\|changes`, `review turn`, `review complete`, `review import <folder>`, `signoff`, `deliver` |
+ | rules | `expand`, `trip decide`, `pivot` |
+ 
+ `aitm explain <id>` prints the story's state, the next forward state, which guards would pass or fail and why, and the exact command to run next. It is the agent's primary "what now?" tool.
+@@ -463,7 +474,7 @@ Every command supports `--json` (stable output schema) and exits non-zero only o
+ 
+ ## Migration from the hand-built `v0` files
+ 
+-The first release ships `aitm migrate v0`, which reads `.aitm/stories/*/*/story.md` frontmatter and `events.jsonl` written by hand on 2026-11-08, converts `v0` events to `v1` (adding ULIDs and milliseconds), splits the prose out of `story.md` into `description.md`, regenerates `story.md`, and moves any shared discarded log to per-entry files.
++The first release ships `aitm migrate v0`, which reads `.aitm/stories/*/*/story.md` frontmatter and `events.jsonl` written by hand on 2026-11-08, converts `v0` events to `v1` (adding ULIDs and milliseconds), splits the prose out of `story.md` into `description.md`, regenerates `story.md`, and moves any shared discarded log to per-entry files. It keeps backfilled `v0` events (the SAR, SPR and XPR rounds of #1's architecture, backfilled on 2026-11-09) with their `backfill` blocks, and checks each one's source record still exists.
+ 
+ ## Acceptance
+ 
+@@ -476,6 +487,7 @@ The core is done when, in a temporary repo with only `aitm-core` installed:
+ 5. A second expansion, a nested expansion, a time overrun on a story and a time overrun on its expansion each record the right trip on the origin; enforce mode ends the sessions, moves the origin (and an open expansion) to plan, and blocks develop until `trip decide` and a new `plan accept`. A third attempt is refused and sent to backlog.
+ 5a. Engaged time counts only from develop entry to the first passing review, excludes planning, pauses while the story waits on its expansion, and restarts at zero for each attempt and for each expansion story.
+ 5b. A story walks from review to done with no human command; `signoff` records the agent's retrospective.
++5c. A two-round document review recorded with `aitm review turn` and `aitm review complete` produces planning time by level, role and model, with no double counting where turns overlap and with each turn's start basis reported. The same totals result from backfilling the same review from its portable record.
+ 6. Eight concurrent processes binding eight different stories and syncing 50 times each produce a linear `planning` history with no lost writes.
+ 7. Deleting the index and running any command rebuilds it with identical query results.
+ 8. A sample extension registers an event type, a guard and a command; a second extension claiming the same event type is refused at load.
