@@ -1,6 +1,6 @@
 # #83 agent usage evidence
 
-Evidence observed through November 09, 2026 16:19:55 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
+Evidence observed through November 09, 2026 16:27:06 CST. Measured model-token usage and API-equivalent standard text estimates are separate from invoiced spend and subscription limits. Actual spend and attributable quota burn are Unknown.
 
 | Work scope and participant | Observed model / effort | Observed tokens | API-equivalent USD | Unpriced records | Coverage gaps |
 | --- | --- | ---: | ---: | ---: | ---: |
@@ -9,8 +9,9 @@ Evidence observed through November 09, 2026 16:19:55 CST. Measured model-token u
 | Design SPR | gpt-6.1-sol / high | 611,312 | $0.2069 | 0 | 0 |
 | Design XPR | claude-opus-5-5 / high | 1,132,258 | $1.0917 | 0 | 0 |
 | Design and plan coordinator | gpt-6.1-sol / high | 32,789,051 | $7.7862 | 0 | 0 |
+| Desktop marker amendment SPR and pickup | gpt-6.1-sol / high | 2,361,422 | $0.3039 | 0 | 0 |
 | Desktop marker amendment XPR | claude-opus-5-5 / high | 1,685,760 | $1.3896 | 0 | 0 |
-| Implementation and delivery coordinator | gpt-6.1-sol / high | 301,040,199 | $57.2271 | 0 | 0 |
+| Implementation and delivery coordinator | gpt-6.1-sol / high | 308,605,875 | $58.8729 | 0 | 0 |
 | Launch health amendment SPR | gpt-6.1-sol / high | 1,544,193 | $0.2612 | 0 | 0 |
 | Launch health amendment XPR | claude-opus-5-5 / high | 1,788,376 | $1.4299 | 0 | 0 |
 | Mixed #73 and #83 coordinator work | gpt-6.1-sol / high | 4,092,966 | $0.5920 | 0 | 0 |
@@ -33,8 +34,9 @@ Evidence observed through November 09, 2026 16:19:55 CST. Measured model-token u
 | U03 implementation | gpt-6.1-sol / high | 17,635,058 | $3.1282 | 0 | 0 |
 | U03 pickup review | gpt-6.1-sol / high | 1,225,550 | $0.1931 | 0 | 0 |
 | U03 source review | gpt-6.1-sol / high | 4,468,258 | $0.9209 | 0 | 0 |
+| U04 Desktop marker release review | gpt-6-astra / high | 590,849 | $0.7891 | 0 | 0 |
 | U04 accounting supplement source review | gpt-6.1-sol / high | 1,255,019 | $0.1916 | 0 | 0 |
-| U04 implementation | gpt-6.1-sol / high | 26,965,961 | $4.7062 | 0 | 0 |
+| U04 implementation | gpt-6.1-sol / high | 34,397,659 | $7.4460 | 0 | 0 |
 | U04 pickup review | gpt-6.1-sol / high | 2,739,300 | $0.6307 | 0 | 0 |
 | U04 source review | gpt-6.1-sol / high | 3,212,328 | $0.7528 | 0 | 0 |
 | U05 accounting supplement source review | gpt-6.1-sol / high | 559,588 | $0.0999 | 0 | 0 |
@@ -60,7 +62,7 @@ Evidence observed through November 09, 2026 16:19:55 CST. Measured model-token u
 | U10 pickup review | gpt-6.1-sol / high | 1,923,146 | $0.3714 | 0 | 0 |
 | U10 source review | gpt-6.1-sol / high | 4,549,787 | $0.8587 | 0 | 0 |
 | U11 activation implementation | gpt-6.1-sol / high | 2,097,798 | $0.5064 | 0 | 0 |
-| U11 pickup review | gpt-6.1-sol / high | 4,752,678 | $0.6587 | 0 | 0 |
+| U11 pickup review | gpt-6.1-sol / high | 2,391,256 | $0.3548 | 0 | 0 |
 | U11 whole-branch release review | gpt-6-astra / high | 1,385,262 | $2.5156 | 0 | 0 |
 | U12 implementation | gpt-6.1-sol / high | 5,391,112 | $1.0658 | 0 | 0 |
 | U12 pickup review | gpt-6.1-sol / high | 2,990,418 | $0.7394 | 0 | 0 |
@@ -70,7 +72,7 @@ Evidence observed through November 09, 2026 16:19:55 CST. Measured model-token u
 | U13 pickup review | gpt-6.1-sol / high | 1,189,657 | $0.2055 | 0 | 0 |
 | U13 source review | gpt-6.1-sol / high | 2,621,623 | $0.6105 | 0 | 0 |
 
-**Attributed #83 observed subtotal** 639,648,387 tokens and $135.9711 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
+**Attributed #83 observed subtotal** 655,236,610 tokens and $141.1458 API-equivalent. The earlier mixed #73/#83 scope is kept separate. Rows with unpriced records report their priced subtotal. Effort is observed context and standard API pricing uses the model and token categories.
 
 The coordinator is scoped by observed cutoff, so any ambiguous boundary remains approximate. Codex repeated cumulative counters are deduplicated and reconciled to last-request values. Claude streamed usage is grouped by request. Prompt text, private handles, raw traces and personal account details stay local. Work after the observation cutoff and provider usage absent from the retained sources remain outside these figures.
 
