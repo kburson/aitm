@@ -1,0 +1,31 @@
+---
+schema: "aitm.story/v0"
+id: 101
+title: "[Spike] Validate Grok Build CLI usage and scope evidence"
+kind: "spike"
+state: "backlog"
+issue: "https://github.com/kburson/aitm/issues/101"
+parent: null
+children: []
+blocking: [100]
+blocked-by: []
+created: "2026-11-10T00:36:15Z"
+updated: "2026-11-10T00:37:46Z"
+last-branch: "planning"
+estimate: {"agent-hours": null, "size": null}
+priority: null
+origin: ".aitm/stories/001/100/story.md"
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+expansions: []
+trips: []
+---
+
+# [Spike] Validate Grok Build CLI usage and scope evidence
+
+[GitHub issue #101](https://github.com/kburson/aitm/issues/101)
+
+Research prerequisite for [#100](../100/story.md). The retained deliverable is a sanitized evidence report with exact environment and provider builds, demonstrated capabilities, explicit gaps and design or plan implications.
+
+Verify native Grok Build CLI usage identity, token fields, pricing provenance, lifecycle evidence and scope boundaries with a small synthetic workload on a pinned client. Check replay, park and resume where supported.
+
+The two spikes can run concurrently. The report is the deliverable and any probe code is disposable.
