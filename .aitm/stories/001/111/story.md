@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 111
 title: "[M01] Host path security"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/111"
 parent: 100
 children: []
 blocking: [112]
 blocked-by: []
 created: "2026-11-10T13:57:48Z"
-updated: "2026-11-10T14:26:01+00:00"
+updated: "2026-11-10T14:28:25+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null
@@ -41,3 +41,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Run the named file to show red. Implement the checked OS boundary and run green with `test_ledger.py`. Exercise real ACL enforcement on the qualified Linux volume. Commit only M01 paths.
 
 [Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent review](plan/jit-review.md).
+
+[Delivered verification and signed retrospective](plan/delivery-checklist.md).

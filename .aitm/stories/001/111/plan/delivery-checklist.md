@@ -7,3 +7,5 @@ Focused tests passed 86 cases and the full local package passed 547. Ruff and wh
 The canonical [hosted run](https://github.com/kburson/aitm/actions/runs/42833278554) is the next check.
 
 The local coverage run passed 548 tests including the CLI subprocess check and measured 6,336/6,956 raw product lines. The exact hosted attempt passed all six jobs. GitHub reported tested merge `be723e6499f724aeeec24c9dc38af09181498db7` with the expected tree and ordered parents. [Passing attempt](https://github.com/kburson/aitm/actions/runs/42833278554/attempts/1)
+
+The [independent exact source review](post-ci-source-review.md) passed. The delivered verifier checked the signed hosted evidence on the reviewed tree. GitHub merged the exact tree at `c0371cc2363c1e95892fdcad75aa20181abeba20` with ordered base and head parents. The [implementer sign-off](../retro/2026-11-10-host-path-security.md) was the last gate. GitHub recorded Completed closure at `2026-11-10T14:28:21Z` and the Project item was read back as Done. [Issue #111](https://github.com/kburson/aitm/issues/111)
