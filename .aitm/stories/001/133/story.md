@@ -45,3 +45,10 @@ Design accepted at raw digest `sha256:2558bcbdbcc4ed8871078428dd11ddd0381a21627d
 [Native Claude XPR](design/reviews/xpr-2026-11-10-tia-design/review-manifest.md).
 
 The story is in Backlog. This assignment ends at design acceptance.
+
+## Later product enhancement
+
+After base optimizer proof, develop independent distribution and optional
+AITM-Core runtime configuration as a separate enhancement.
+[Proposed design](design/independent-deployment-enhancement.md) ·
+[Proposed plan](plan/independent-deployment-enhancement.md).

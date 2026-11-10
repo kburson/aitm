@@ -65,3 +65,10 @@ The reviewed M04 pickup split unavailable Linux carriers into [#134 M04-LC](../1
 [Board reconciliation receipt](plan/project-metadata-receipt.json). Rank follows the board's increment of ten in accepted leaf order, with the Linux carrier prerequisites before #129. The epic is sized Feature. Size and Estimate on each leaf follow its recorded JIT, and Start date follows its first recorded Development entry in America/Chicago. Carry those three fields into the Project pickup readback for each subsequent leaf. Pending leaf estimates and starts stay blank until those gates. An aggregate epic estimate remains open.
 
 The reviewed M05 pickup recorded [#137 M05-LG](../137/story.md) for the unavailable Linux Grok carrier. It follows #115 and blocks #129. [Split and board readback](../115/plan/linux-carrier-split.json).
+
+## Later product enhancement
+
+After base monitor proof, develop independent distribution and optional
+AITM-Core runtime configuration as a separate enhancement.
+[Proposed design](design/independent-deployment-enhancement.md) ·
+[Proposed plan](plan/independent-deployment-enhancement.md).
