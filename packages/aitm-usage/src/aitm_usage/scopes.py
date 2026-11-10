@@ -1,17 +1,15 @@
 """Private command publication and source-ordered scope projection."""
 
-import ctypes
-import errno
 import fcntl
 import os
 import secrets
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
-from functools import cache
 from pathlib import Path
 from uuid import UUID
 
+from .host_fs import HostFilesystemError, publish_noreplace
 from .ledger import (
     ConflictError,
     Ledger,
@@ -53,7 +51,6 @@ from .types import (
 INBOX_NAME = "inbox"
 ACKS_NAME = "acks"
 MAX_COMMAND_BYTES = 64 * 1024
-_RENAME_EXCL = 0x00000004  # macOS renameatx_np(2)
 _REVIEW_ROLES = (ReviewRole.REVIEWER, ReviewRole.SAR, ReviewRole.SPR, ReviewRole.XPR)
 
 
@@ -197,23 +194,6 @@ def _publication(inbox: _PinnedPath) -> Iterator[None]:
         fcntl.flock(inbox.fd, fcntl.LOCK_UN)
 
 
-@cache
-def _rename_exclusive():
-    try:
-        rename = ctypes.CDLL(None, use_errno=True).renameatx_np
-    except (AttributeError, OSError):
-        raise LedgerError("Exclusive inbox publication is unavailable") from None
-    rename.argtypes = [
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_uint,
-    ]
-    rename.restype = ctypes.c_int
-    return rename
-
-
 def _read_private(directory: _PinnedPath, name: str) -> bytes | None:
     try:
         fd = os.open(
@@ -259,16 +239,12 @@ def _publish(
             os.replace(
                 temporary, name, src_dir_fd=directory.fd, dst_dir_fd=directory.fd
             )
-        elif _rename_exclusive()(
-            directory.fd,
-            os.fsencode(temporary),
-            directory.fd,
-            os.fsencode(name),
-            _RENAME_EXCL,
-        ):
-            if ctypes.get_errno() == errno.EEXIST:
-                return False
-            raise LedgerError("Unable to publish private inbox file")
+        else:
+            try:
+                if not publish_noreplace(directory.fd, temporary, directory.fd, name):
+                    return False
+            except HostFilesystemError:
+                raise LedgerError("Unable to publish private inbox file") from None
         os.fsync(directory.fd)
         directory.check()
         return True
