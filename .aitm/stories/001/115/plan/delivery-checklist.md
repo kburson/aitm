@@ -35,3 +35,9 @@ The replacement [file check](https://github.com/kburson/aitm/actions/runs/428607
 ### Attempt 2 Review checkpoint
 
 A complete retry of the same head preserved attempt 1 and passed all six hosted jobs in [run 42860755483 attempt 2](https://github.com/kburson/aitm/actions/runs/42860755483/attempts/2). The earlier Go toolchain failure cleared without a workflow or source change. Independent source review and authenticated exact-tree verification follow.
+
+### Authenticated verifier hold and fresh run
+
+The signed verifier held [run 42860755483 attempt 2](https://github.com/kburson/aitm/actions/runs/42860755483/attempts/2) for `selected attempt identity or outcome disagrees`. GitHub's run record reported `created_at=2026-11-10T17:02:22Z`, and its attempt endpoint reported `created_at=2026-11-10T17:12:06Z`. The remaining exact IDs and successful job outcomes were retained. This retry does not have merge authority.
+
+Returned to Test. Reopened [PR #179](https://github.com/kburson/aitm/pull/179) on the identical head, base and reviewed candidate tree to trigger a fresh canonical PR run. The action follows the existing `reopened` trigger. The delivery verifier and workflow are unchanged. Independent source review has yet to launch.
