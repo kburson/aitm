@@ -21,3 +21,9 @@ The next checkpoint uses the live trunk parent for the story PR and exact hosted
 [PR #180](https://github.com/kburson/aitm/pull/180) targets trunk base `37a22922f072e39c35434ae645a1c20692b8da01` at head `91dd5852caa9519c7cee7e300ef1cb661e24b02d`, tree `4971d96e969c882fbb16c7183bb6ae9b6cfb4b87`. The final source patch on the earlier base and the rebased patch have the same stable patch ID. The direct disable regression prevents a previously unadmitted stream from acquiring a capture epoch.
 
 Fresh local validation on the exact rebased tree passed 671 locked product and CLI tests and 182 helper tests. Product coverage was 7,844/8,615 lines and helper coverage 778/821. Ruff and whitespace passed. GitHub confirmed the exact PR parent and candidate. Hosted validation is pending.
+
+### Review checkpoint
+
+[Run 42872458320 attempt 1](https://github.com/kburson/aitm/actions/runs/42872458320/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `ed3f55ce1100a79d867a0fff8a48133ce1227652` with the declared ordered base and head and reviewed tree `4971d96e969c882fbb16c7183bb6ae9b6cfb4b87`. Artifact `13790103040` had archive SHA-256 `be3a37f56c8766513c4cf197b76734ade7bf7909f3386e01e8cd923ac212de6d` and subject SHA-256 `95fd65288674abbfe5b1bcdd21d8fc8d8a3e7fe07db9fcffed3a36d343c055b1`.
+
+Authenticated raw replay kept all 629 baseline tests and added 22 monitor-control, 8 legacy compatibility and 11 registry cases, plus the fixed candidate-only CLI evidence test. Raw product and helper coverage matched the local exact tree. Independent source review is pending.
