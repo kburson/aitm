@@ -23,3 +23,13 @@ The frozen gate passed 877 product and CLI tests, 182 helper tests, Ruff, whites
 Authenticated raw replay retained 866 baseline package identities and passed all 877 candidate tests and both coverage floors. The locked local baseline of 867 includes the extra fixed CLI control test. Independent exact source review is pending.
 
 The [independent exact source review](post-ci-source-review.md) passed the receipt selection, interpreter check order, quoted argument preservation and installed upgrade evidence. The raw hosted baseline counts 866 package tests. The locked local baseline adds the fixed CLI evidence test for 867, and the candidate adds ten launcher cases for a total of 877. Native GitHub review is absent. The independent verdict is off-platform. The isolated shell proof is Darwin, with separate Linux gates intact.
+
+### Verified delivery and sign-off
+
+[PR #198](https://github.com/kburson/aitm/pull/198) merged into trunk at `2026-11-10T22:41:13Z` as `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2`. Fetched trunk contains that merge with ordered parents `49865245d175ce6c52913738f2c9a42c0abea632` and `915a9a8ddb4a3d2ef82d490ee699dc7ba84471db`, exact tree `978272c4242736049ee6531b8afd9c8d3b329b9f`, candidate ancestry and zero source diff. Branch rules permitted an ordinary merge with zero required native reviews. All six checks passed on the exact candidate and the independent verdict is recorded off-platform.
+
+The [original implementer sign-off](../retro/2026-11-10-194-launcher-implementer-retrospective.md) passed the last required gate at `2026-11-10T22:42:11Z`.
+
+### Done
+
+GitHub read back [#194](https://github.com/kburson/aitm/issues/194) Closed (Completed) at `2026-11-10T22:42:14Z`. [Project 24](https://github.com/users/kburson/projects/24) read back Done, rank 217, S, 1.75 agent-hours and November 10 start. #118 may enter its own pickup with all three M07 prerequisites closed.
