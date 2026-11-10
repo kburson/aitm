@@ -196,8 +196,12 @@ class ControlInbox:
                     receipt = registry.command_status(command_id)
                     if receipt is None and queued is not None:
                         command = _decode_publication(name, queued).command
+                        digest = command.payload_digest
                         receipt = ControlReceipt(
-                            command_id, ControlStatus.QUEUED, command.payload_digest
+                            command_id,
+                            ControlStatus.QUEUED,
+                            digest,
+                            registry.pending_capture_status(command_id, digest),
                         )
                 root.check()
                 return receipt
@@ -252,11 +256,17 @@ def _uuid(value: str) -> UUID:
         raise argparse.ArgumentTypeError("expected a UUID") from None
 
 
-def _print_status(args: argparse.Namespace, command_id: UUID, status: str) -> None:
+def _print_status(
+    args: argparse.Namespace, command_id: UUID, status: str, reason: str | None = None
+) -> None:
     if args.json:
-        print(json.dumps({"command_id": str(command_id), "status": status}))
+        result = {"command_id": str(command_id), "status": status}
+        if reason is not None:
+            result["reason"] = reason
+        print(json.dumps(result))
     else:
-        print(f"{command_id} {status}")
+        suffix = "" if reason is None else f" {reason}"
+        print(f"{command_id} {status}{suffix}")
 
 
 def _enqueue_command(args: argparse.Namespace) -> int:
@@ -292,7 +302,8 @@ def _command_status(args: argparse.Namespace) -> int:
     if receipt is None:
         _print_status(args, args.command_id, "unavailable")
         return 1
-    _print_status(args, args.command_id, receipt.status.value)
+    reason = receipt.reason if receipt.status is ControlStatus.QUEUED else None
+    _print_status(args, args.command_id, receipt.status.value, reason)
     return 0
 
 

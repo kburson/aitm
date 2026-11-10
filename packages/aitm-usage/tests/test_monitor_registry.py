@@ -88,7 +88,7 @@ class _DesktopLog:
                 stream.write(json.dumps(row).replace(str(SESSION), str(self.session)))
                 stream.write("\n")
 
-    def append(self, turns=1):
+    def append(self, turns=1, *, complete=True):
         for _ in range(turns):
             self.turns += 1
             turn = UUID(int=0x200 + self.turns)
@@ -111,7 +111,7 @@ class _DesktopLog:
                         turn=turn,
                     ),
                     counter(self.total, delta, time=time),
-                    end(turn, time=time),
+                    *([end(turn, time=time)] if complete else []),
                 ],
                 mode="a",
             )
@@ -348,87 +348,298 @@ def test_lease_free_snapshot_read_survives_atomic_replacement(tmp_path, monkeypa
         assert registry.view() == next_view
 
 
-def test_source_wide_change_waits_for_native_stream_boundaries_across_restart(
-    tmp_path, monkeypatch, source
-):
-    from aitm_usage.monitor_control import ControlInbox
+def _physical_ordinal(log):
+    return log.path.read_bytes().count(b"\n")
 
-    module, reader, root, first_log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
-    inbox = ControlInbox(registry.root)
-    enable = module.CaptureChange(PROJECT_A, SOURCE, True)
-    disable = replace(enable, enabled=False)
-    command = module.ControlCommand(UUID(int=300), disable)
-    first = _locate(reader, root)
-    second_log, second = _second_log(first_log, reader, root, first)
-    streams = frozenset({first.stream_ref, second.stream_ref})
 
-    def locate(change, known_streams):
-        assert change == disable
-        assert known_streams == streams
-        return tuple(reader.discover(root))
+class _QueuedDisable:
+    def __init__(self, tmp_path, monkeypatch, source):
+        from aitm_usage.monitor_control import ControlInbox
 
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        _approve(writer, module, root)
-        start = _advance(writer, enable, first_log, reader, root, first.stream_ref)
-        writer.set_permission(enable, start)
-        second_start = _advance(
-            writer, enable, second_log, reader, root, second.stream_ref
+        self.module, self.reader, self.root, self.log = _native_fixture(
+            tmp_path, monkeypatch, source
         )
-        writer.enroll_stream(PROJECT_A, SOURCE, second_start)
-        admitted_epochs = writer.view().epochs
-        first_log.append(2)
-        second_log.append(2)
-        assert inbox.enqueue(command).status is module.ControlStatus.QUEUED
-        assert writer.apply_pending(inbox, writer.lease, None) == ()
-        assert writer.apply_pending(inbox, writer.lease, locate) == ()
+        self.registry = self.module.Registry(tmp_path / "monitor")
+        self.inbox = ControlInbox(self.registry.root)
+        self.enable = self.module.CaptureChange(PROJECT_A, SOURCE, True)
+        self.disable = replace(self.enable, enabled=False)
+        self.command = self.module.ControlCommand(UUID(int=300), self.disable)
+        self.stream = _locate(self.reader, self.root).stream_ref
+        with self.registry.writer() as writer:
+            writer.register_project(_request(self.module, tmp_path))
+            _approve(writer, self.module, self.root)
+            self.start = _advance(writer, self.enable, self.log, self.reader, self.root)
+            writer.set_permission(self.enable, self.start)
+        self.streams = {self.stream}
 
-    registry = module.Registry(registry.root)
-    first_log.append(2)
-    first_fresh, first_later = _boundaries(
-        reader, _locate(reader, root, first.stream_ref)
-    )[-2:]
-    with registry.writer() as writer:
-        assert writer.apply_pending(inbox, writer.lease, locate) == ()
-    assert inbox.status(command.command_id).status is module.ControlStatus.QUEUED
-    assert registry.source_read_allowed(PROJECT_A, SOURCE)
-    assert registry.view().epochs == admitted_epochs
+    def enroll_second(self):
+        first = _locate(self.reader, self.root, self.stream)
+        log, second = _second_log(self.log, self.reader, self.root, first)
+        with self.registry.writer() as writer:
+            proof = _advance(
+                writer, self.enable, log, self.reader, self.root, second.stream_ref
+            )
+            writer.enroll_stream(PROJECT_A, SOURCE, proof)
+        self.streams.add(second.stream_ref)
+        return log, proof
 
+    def locate(self, change, known):
+        assert change == self.disable
+        assert known == frozenset(self.streams)
+        return tuple(self.reader.discover(self.root))
+
+    def submit(self):
+        return self.inbox.enqueue(self.command)
+
+    def poll(self, locate=None, *, progress=()):
+        registry = self.module.Registry(self.registry.root)
+        with registry.writer() as writer:
+            return writer.apply_pending(
+                self.inbox,
+                writer.lease,
+                self.locate if locate is None else locate,
+                progress=progress,
+            )
+
+    def status(self):
+        return self.inbox.status(self.command.command_id).status
+
+    def decide(self, stream, start, end):
+        return self.registry.span_disposition(PROJECT_A, SOURCE, stream, start, end)
+
+
+@pytest.fixture
+def queued_disable(tmp_path, monkeypatch, source):
+    return _QueuedDisable(tmp_path, monkeypatch, source)
+
+
+@pytest.mark.parametrize("quiet", ["idle", "removed", "removed-after-arm"])
+def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
+    queued_disable, quiet
+):
+    scenario = queued_disable
+    second_log, second_start = scenario.enroll_second()
+    second_prefix = _physical_ordinal(second_log)
+    scenario.log.append(2)
+    first_history_end = _physical_ordinal(scenario.log)
+    with scenario.log.path.open("ab") as stream:
+        stream.write(b"malformed physical row\n")
+    first_fence = _physical_ordinal(scenario.log)
+    first_bytes = scenario.log.path.stat().st_size
     second_log.append(2)
-    second_fresh, second_later = _boundaries(
-        reader, _locate(reader, root, second.stream_ref)
-    )[-2:]
-    with registry.writer() as writer:
-        (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
-    assert receipt.status is module.ControlStatus.APPLIED
-    assert inbox.status(command.command_id) == receipt
-    assert not registry.source_read_allowed(PROJECT_A, SOURCE)
+    second_fence = _physical_ordinal(second_log)
+    if quiet == "removed":
+        second_log.path.unlink()
+
+    status = scenario.module.ControlStatus
+    assert scenario.submit().status is status.QUEUED
+    assert scenario.poll() == ()
+    assert scenario.status() is status.QUEUED
+    assert scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+
+    # The first arm survives writer restart and additional rows on only one stream.
+    scenario.log.append(2)
+    if quiet == "removed-after-arm":
+        second_log.path.unlink()
+    bound = scenario.registry.capture_read_limit(PROJECT_A, SOURCE, scenario.stream)
+    assert (bound.ordinal, bound.cursor.offset) == (first_fence, first_bytes)
+    second_limit = second_prefix if quiet == "removed" else second_fence
+    assert (
+        scenario.registry.capture_read_limit(
+            PROJECT_A, SOURCE, second_start.stream_ref
+        ).ordinal
+        == second_limit
+    )
+    (receipt,) = scenario.poll()
+    assert receipt.status is status.APPLIED
+    assert scenario.status() is status.APPLIED
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert (
+        scenario.registry.capture_read_limit(PROJECT_A, SOURCE, scenario.stream).ordinal
+        == 0
+    )
     fences = {
-        epoch.stream_ref: epoch.boundary_ref
-        for epoch in registry.view().epochs
+        epoch.stream_ref: epoch.ordinal
+        for epoch in scenario.registry.view().epochs
         if not epoch.enabled
     }
-    assert fences == {
-        first.stream_ref: first_fresh.boundary_ref,
-        second.stream_ref: second_fresh.boundary_ref,
+    assert fences[scenario.stream] == first_fence
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, first_history_end)
+        is Eligibility.ELIGIBLE
+    )
+    assert (
+        scenario.decide(scenario.stream, first_fence, first_fence + 1)
+        is Eligibility.EXCLUDED
+    )
+
+    second_stream = second_start.stream_ref
+    end = second_prefix if quiet == "removed" else second_fence
+    assert (
+        scenario.decide(second_stream, second_start.ordinal, end)
+        is Eligibility.ELIGIBLE
+    )
+    if quiet != "idle":
+        assert scenario.decide(second_stream, end, end + 1) is Eligibility.UNKNOWN
+    else:
+        assert fences[second_stream] == second_fence
+        assert scenario.decide(second_stream, end, end + 1) is Eligibility.EXCLUDED
+
+
+def test_returning_original_stream_needs_prospective_enrollment(
+    queued_disable, tmp_path
+):
+    scenario = queued_disable
+    log, start = scenario.enroll_second()
+    stream = start.stream_ref
+    prefix = _physical_ordinal(log)
+    log.append(2)
+    stored = tmp_path / "temporarily-offline.jsonl"
+    log.path.rename(stored)
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+
+    stored.rename(log.path)
+    assert _locate(scenario.reader, scenario.root, stream).stream_ref == stream
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    repeated_disable = scenario.module.ControlCommand(UUID(int=199), scenario.disable)
+    scenario.inbox.enqueue(repeated_disable)
+    assert scenario.poll() == ()
+    (repeat,) = scenario.poll()
+    assert repeat.status is scenario.module.ControlStatus.APPLIED
+
+    scenario.log.append()
+    reenable = scenario.module.ControlCommand(UUID(int=200), scenario.enable)
+    assert (
+        scenario.inbox.enqueue(reenable).status is scenario.module.ControlStatus.QUEUED
+    )
+
+    def locate_enable(change, known):
+        assert change == scenario.enable
+        assert known == frozenset(scenario.streams)
+        return (_locate(scenario.reader, scenario.root, scenario.stream),)
+
+    assert scenario.poll(locate_enable) == ()
+    (receipt,) = scenario.poll(locate_enable)
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert scenario.registry.capture_read_limit(PROJECT_A, SOURCE, stream).ordinal == 0
+    assert scenario.decide(stream, prefix, prefix + 1) is Eligibility.UNKNOWN
+
+    with scenario.registry.writer() as writer:
+        fresh = _advance(
+            writer, scenario.enable, log, scenario.reader, scenario.root, stream
+        )
+        writer.enroll_stream(PROJECT_A, SOURCE, fresh)
+    assert scenario.decide(stream, start.ordinal, prefix) is Eligibility.ELIGIBLE
+    assert scenario.decide(stream, prefix, fresh.ordinal) is Eligibility.UNKNOWN
+    assert (
+        scenario.decide(stream, fresh.ordinal, fresh.ordinal + 1)
+        is Eligibility.ELIGIBLE
+    )
+
+
+@pytest.mark.parametrize("locators", ["omitted", "duplicate"])
+def test_ambiguous_current_locator_keeps_existing_stream_queued(
+    queued_disable, locators
+):
+    scenario = queued_disable
+    second_log, _ = scenario.enroll_second()
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+    admitted = scenario.registry.view().epochs
+
+    def incomplete(change, known):
+        candidates = scenario.locate(change, known)
+        return candidates[:1] if locators == "omitted" else (*candidates, candidates[0])
+
+    assert second_log.path.is_file()
+    assert scenario.poll(incomplete) == ()
+    assert scenario.status() is scenario.module.ControlStatus.QUEUED
+    assert scenario.registry.view().epochs == admitted
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+
+
+def test_pending_disable_prevents_new_enrollment_and_ignores_unrelated_locator(
+    queued_disable,
+):
+    scenario = queued_disable
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+    new_log, second = _second_log(
+        scenario.log,
+        scenario.reader,
+        scenario.root,
+        _locate(scenario.reader, scenario.root, scenario.stream),
+    )
+    assert (
+        scenario.registry.capture_read_limit(
+            PROJECT_A, SOURCE, second.stream_ref
+        ).ordinal
+        == 0
+    )
+    with scenario.registry.writer() as writer:
+        proof = _advance(
+            writer,
+            scenario.enable,
+            new_log,
+            scenario.reader,
+            scenario.root,
+            second.stream_ref,
+        )
+        with pytest.raises(ConflictError):
+            writer.enroll_stream(PROJECT_A, SOURCE, proof)
+
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert {epoch.stream_ref for epoch in scenario.registry.view().epochs} == {
+        scenario.stream
     }
-    for stream, began, stopped, later in (
-        (first.stream_ref, start, first_fresh, first_later),
-        (second.stream_ref, second_start, second_fresh, second_later),
-    ):
-        assert (
-            registry.span_disposition(
-                PROJECT_A, SOURCE, stream, began.ordinal, stopped.ordinal
-            )
-            is Eligibility.ELIGIBLE
-        )
-        assert (
-            registry.span_disposition(
-                PROJECT_A, SOURCE, stream, stopped.ordinal, later.ordinal
-            )
-            is Eligibility.EXCLUDED
-        )
+    assert scenario.decide(second.stream_ref, proof.ordinal, proof.ordinal + 1) is (
+        Eligibility.EXCLUDED
+    )
+
+
+@pytest.mark.parametrize("tail", ["open-turn", "partial", "completed-after-arm"])
+def test_unfinished_codex_tail_fences_without_new_native_completion(
+    queued_disable, tail
+):
+    scenario = queued_disable
+    first_held = _physical_ordinal(scenario.log)
+    if tail == "open-turn":
+        scenario.log.append(complete=False)
+        expected = _physical_ordinal(scenario.log)
+    else:
+        with scenario.log.path.open("ab") as stream:
+            stream.write(b'{"type":"private-test"')
+        expected = first_held + 1
+
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+    if tail == "completed-after-arm":
+        with scenario.log.path.open("ab") as stream:
+            stream.write(b"}\n")
+        scenario.log.append()
+
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    (epoch,) = (epoch for epoch in scenario.registry.view().epochs if not epoch.enabled)
+    assert epoch.ordinal == expected
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, first_held)
+        is Eligibility.ELIGIBLE
+    )
+    assert scenario.decide(scenario.stream, first_held, expected) is Eligibility.UNKNOWN
+    assert (
+        scenario.decide(scenario.stream, first_held - 1, expected + 1)
+        is Eligibility.UNKNOWN
+    )
+    assert (
+        scenario.decide(scenario.stream, expected, expected + 1) is Eligibility.EXCLUDED
+    )
 
 
 def test_replay_syncs_existing_registry_receipt_before_retiring_queue(
@@ -625,3 +836,385 @@ def test_rearming_a_capture_change_invalidates_earlier_native_proof(
         fresh = writer.verify_boundary(change, _locate(reader, root), current)
         assert fresh.ordinal > old_proof.ordinal
         assert writer.set_permission(change, fresh).enabled
+
+
+@pytest.mark.parametrize(
+    "interruption", ["root-replacement", "platform", "native-version", "truncated"]
+)
+def test_disable_commits_with_last_verified_prefix_when_source_changes(
+    queued_disable, monkeypatch, interruption
+):
+    scenario = queued_disable
+    prefix = _physical_ordinal(scenario.log)
+    scenario.log.append(2)
+    original = scenario.log.path.read_bytes()
+    locator = _locate(scenario.reader, scenario.root)
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+
+    def locate(_change, known):
+        assert known == frozenset({scenario.stream})
+        return (locator,)
+
+    with monkeypatch.context() as patch:
+        if interruption == "root-replacement":
+            path = scenario.root.path
+            moved = path.with_name("original-approved-root")
+            path.rename(moved)
+            path.mkdir()
+            scenario.log.path.write_bytes(original)
+
+            def unexpected_discovery(*args):
+                pytest.fail("The replacement root was read")
+
+            patch.setattr(type(scenario.reader), "discover", unexpected_discovery)
+        elif interruption == "platform":
+            patch.setattr(scenario.module.platform, "machine", lambda: "unsupported")
+        elif interruption == "native-version":
+            changed = original.replace(b"0.167.0-alpha.3.2", b"0.167.0-alpha.3.9", 1)
+            assert changed != original
+            scenario.log.path.write_bytes(changed)
+        else:
+            scenario.log.path.write_bytes(b"")
+
+        applied = scenario.poll(locate)
+        if not applied:
+            applied = scenario.poll(locate)
+        (receipt,) = applied
+        assert receipt.status is scenario.module.ControlStatus.APPLIED
+        assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+
+    if interruption == "root-replacement":
+        scenario.log.path.unlink()
+        path.rmdir()
+        moved.rename(path)
+    if interruption in {"truncated", "native-version"}:
+        scenario.log.path.write_bytes(original)
+
+    assert scenario.status() is scenario.module.ControlStatus.APPLIED
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, prefix)
+        is Eligibility.ELIGIBLE
+    )
+    assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
+
+
+def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable):
+    scenario = queued_disable
+    prefix = _physical_ordinal(scenario.log)
+    scenario.log.append(2)
+    before = scenario.log.path.read_bytes()
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+
+    # Preserve inode, size, native startup, and session while changing bytes
+    # covered by the persisted physical arm.
+    after = before.replace(b"response-4", b"modified-4", 1)
+    assert after != before and len(after) == len(before)
+    scenario.log.path.write_bytes(after)
+    (receipt,) = scenario.poll()
+
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, prefix)
+        is Eligibility.ELIGIBLE
+    )
+    assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
+
+
+@pytest.mark.parametrize("unfinished", ["quiet", "streamed", "tool"])
+def test_queued_claude_disable_uses_the_physical_tail(
+    tmp_path, monkeypatch, source, unfinished
+):
+    from test_claude import request as claude_request
+    from test_claude import user as claude_user
+    from test_claude import write as write_claude
+
+    from aitm_usage.monitor_control import ControlInbox
+
+    module = _module()
+    _, reader, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    registry = module.Registry(tmp_path / "monitor")
+    inbox = ControlInbox(registry.root)
+    path = directory / "claude.jsonl"
+    rows, _ = _restart_rows("streamed", checkout)
+    write_claude(path, rows[:1])
+    enable = module.CaptureChange(PROJECT_A, SOURCE, True)
+    disable = replace(enable, enabled=False)
+    command = module.ControlCommand(UUID(int=330), disable)
+
+    def append_request(turn, *, stop, content=()):
+        prompt = str(UUID(int=500 + 2 * turn))
+        reply = str(UUID(int=501 + 2 * turn))
+        time = AFTER + timedelta(seconds=10 + turn)
+        write_claude(
+            path,
+            [
+                claude_user(checkout, time=time, uuid=prompt, isSidechain=False),
+                claude_request(
+                    checkout,
+                    time=time,
+                    uuid=reply,
+                    parentUuid=prompt,
+                    req=f"test-request-{turn}",
+                    msg=f"test-message-{turn}",
+                    stop=stop,
+                    content=content,
+                    isSidechain=False,
+                ),
+            ],
+            append=True,
+        )
+
+    def locate(change, known):
+        assert change == disable
+        assert known == frozenset({start.stream_ref})
+        return tuple(reader.discover(root))
+
+    with registry.writer() as writer:
+        root = replace(root, evidence=writer.source_evidence())
+        writer.register_project(_request(module, tmp_path))
+        writer.approve_source(
+            module.SourceApprovalRequest(
+                SOURCE,
+                "claude",
+                "claude-code-macos",
+                "Darwin",
+                "arm64",
+                "2.1.318",
+                1,
+                str(root.path),
+            )
+        )
+        frontier = writer.capture_frontier(enable, _locate(reader, root))
+        write_claude(path, rows[1:], append=True)
+        start = writer.verify_boundary(enable, _locate(reader, root), frontier)
+        writer.set_permission(enable, start)
+        append_request(2, stop="end_turn")
+        admitted_end = path.read_bytes().count(b"\n")
+        if unfinished == "streamed":
+            append_request(3, stop=None)
+        if unfinished == "tool":
+            append_request(
+                3,
+                stop="tool_use",
+                content=[
+                    {
+                        "type": "tool_use",
+                        "id": "agent-open",
+                        "name": "Agent",
+                        "input": {},
+                    }
+                ],
+            )
+        expected = path.read_bytes().count(b"\n")
+        assert inbox.enqueue(command).status is module.ControlStatus.QUEUED
+        assert writer.apply_pending(inbox, writer.lease, locate) == ()
+
+    with registry.writer() as writer:
+        (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+    assert receipt.status is module.ControlStatus.APPLIED
+    assert registry.view().epochs[-1].ordinal == expected
+    assert (
+        registry.span_disposition(
+            PROJECT_A, SOURCE, start.stream_ref, start.ordinal, admitted_end
+        )
+        is Eligibility.ELIGIBLE
+    )
+    assert (
+        registry.span_disposition(
+            PROJECT_A, SOURCE, start.stream_ref, expected, expected + 1
+        )
+        is Eligibility.EXCLUDED
+    )
+    if unfinished != "quiet":
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, admitted_end + 1, expected
+            )
+            is Eligibility.UNKNOWN
+        )
+
+
+def test_reappearing_stream_invalidates_an_earlier_absence(queued_disable, tmp_path):
+    scenario = queued_disable
+    log, start = scenario.enroll_second()
+    prefix = _physical_ordinal(log)
+    log.append()
+    returned_fence = _physical_ordinal(log)
+    stored = tmp_path / "briefly-offline.jsonl"
+    log.path.rename(stored)
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+
+    stored.rename(log.path)
+    assert scenario.poll() == ()
+    assert scenario.status() is scenario.module.ControlStatus.QUEUED
+    assert (
+        scenario.registry.capture_read_limit(
+            PROJECT_A, SOURCE, start.stream_ref
+        ).ordinal
+        == returned_fence
+    )
+
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert (
+        scenario.decide(start.stream_ref, start.ordinal, prefix) is Eligibility.ELIGIBLE
+    )
+    assert (
+        scenario.decide(start.stream_ref, prefix, returned_fence) is Eligibility.UNKNOWN
+    )
+    assert (
+        scenario.decide(start.stream_ref, returned_fence, returned_fence + 1)
+        is Eligibility.EXCLUDED
+    )
+
+
+def test_native_parser_valueerror_keeps_disable_queued_with_prior_read_bound(
+    queued_disable, monkeypatch
+):
+    scenario = queued_disable
+    prefix = _physical_ordinal(scenario.log)
+    scenario.log.append()
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+
+    def failed_parse(*args, **kwargs):
+        raise ValueError("native parse is temporarily unavailable")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(type(scenario.reader), "_capture_gap_start", failed_parse)
+        assert scenario.poll() == ()
+    assert scenario.status() is scenario.module.ControlStatus.QUEUED
+    assert (
+        scenario.registry.capture_read_limit(PROJECT_A, SOURCE, scenario.stream).ordinal
+        == prefix
+    )
+
+    scenario.log.append()
+    late_fence = _physical_ordinal(scenario.log)
+    assert scenario.poll() == ()
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert scenario.decide(scenario.stream, prefix, late_fence) is Eligibility.UNKNOWN
+    assert (
+        scenario.decide(scenario.stream, late_fence, late_fence + 1)
+        is Eligibility.EXCLUDED
+    )
+
+
+def test_later_enable_obeys_durable_submission_order(queued_disable):
+    scenario = queued_disable
+    disable_fence = _physical_ordinal(scenario.log)
+    reenable = scenario.module.ControlCommand(UUID(int=200), scenario.enable)
+    status = scenario.module.ControlStatus
+    assert scenario.submit().status is status.QUEUED
+    assert scenario.inbox.enqueue(reenable).status is status.QUEUED
+
+    def locate(change, known):
+        assert change in (scenario.disable, scenario.enable)
+        assert known == frozenset({scenario.stream})
+        return tuple(scenario.reader.discover(scenario.root))
+
+    assert scenario.poll(locate) == ()
+    scenario.log.append()
+    enable_fence = _physical_ordinal(scenario.log)
+    (first,) = scenario.poll(locate)
+    assert (first.command_id, first.status) == (
+        scenario.command.command_id,
+        status.APPLIED,
+    )
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert scenario.inbox.status(reenable.command_id).status is status.QUEUED
+
+    applied = scenario.poll(locate)
+    if not applied:
+        applied = scenario.poll(locate)
+    (second,) = applied
+    assert (second.command_id, second.status) == (reenable.command_id, status.APPLIED)
+    assert scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert (
+        scenario.decide(scenario.stream, disable_fence, enable_fence)
+        is Eligibility.EXCLUDED
+    )
+    assert (
+        scenario.decide(scenario.stream, enable_fence, enable_fence + 1)
+        is Eligibility.ELIGIBLE
+    )
+
+
+def test_persisted_collection_progress_survives_a_later_truncation(queued_disable):
+    scenario = queued_disable
+    scenario.log.append()
+    retained = scenario.log.path.read_bytes()
+    scenario.log.append(2)
+    locator = _locate(scenario.reader, scenario.root, scenario.stream)
+    checkpoint = scenario.reader.read_delta(locator, None).cursor.checkpoint
+    with scenario.registry.writer() as writer:
+        progress = writer.capture_progress(scenario.enable, locator, checkpoint)
+    assert progress.ordinal == _physical_ordinal(scenario.log)
+    scenario.log.path.write_bytes(retained)
+
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    forged = replace(progress, ordinal=progress.ordinal + 1)
+    assert scenario.poll(progress=(forged,)) == ()
+    assert scenario.status() is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll(progress=(progress,)) == ()
+    bound = scenario.registry.capture_read_limit(PROJECT_A, SOURCE, scenario.stream)
+    assert (bound.ordinal, bound.cursor) == (progress.ordinal, progress.cursor)
+
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, progress.ordinal)
+        is Eligibility.ELIGIBLE
+    )
+    assert (
+        scenario.decide(scenario.stream, progress.ordinal, progress.ordinal + 1)
+        is Eligibility.UNKNOWN
+    )
+
+
+def test_capture_disable_detects_an_in_place_native_session_replacement(queued_disable):
+    scenario = queued_disable
+    prefix = _physical_ordinal(scenario.log)
+    original = scenario.log.path.read_bytes()
+    rewritten = original.replace(str(SESSION).encode(), str(UUID(int=999)).encode())
+    assert len(rewritten) == len(original) and rewritten != original
+    scenario.log.path.write_bytes(rewritten)
+    assert _locate(scenario.reader, scenario.root).stream_ref != scenario.stream
+
+    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
+    assert scenario.poll() == ()
+    (receipt,) = scenario.poll()
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert (
+        scenario.decide(scenario.stream, scenario.start.ordinal, prefix)
+        is Eligibility.ELIGIBLE
+    )
+    assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
+
+
+def test_disable_future_enrollment_while_approved_root_is_unavailable(
+    queued_disable, tmp_path
+):
+    scenario = queued_disable
+    other = _request(scenario.module, tmp_path, PROJECT_B)
+    enable = replace(scenario.enable, project_id=PROJECT_B)
+    disable = replace(enable, enabled=False)
+    scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=401), other))
+    scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=402), enable))
+    with scenario.registry.writer() as writer:
+        assert len(writer.apply_pending(scenario.inbox, writer.lease, None)) == 2
+    assert scenario.registry.source_read_allowed(PROJECT_B, SOURCE)
+    displaced = tmp_path / "temporarily-unavailable"
+    scenario.root.path.rename(displaced)
+    scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=403), disable))
+    with scenario.registry.writer() as writer:
+        (receipt,) = writer.apply_pending(scenario.inbox, writer.lease, None)
+    assert receipt.status is scenario.module.ControlStatus.APPLIED
+    displaced.rename(scenario.root.path)
+    assert not scenario.registry.source_read_allowed(PROJECT_B, SOURCE)

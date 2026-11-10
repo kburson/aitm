@@ -22,11 +22,19 @@ from ..types import (
     Provider,
     SourceBoundary,
     SourceCheckpoint,
+    SourceCursor,
     SourceRef,
     UsageObservation,
 )
-from .claude import ClaudeState, read_claude, retains_streamed_prefix
-from .codex import CodexState, read_codex
+from .claude import (
+    _EMPTY,
+    ClaudeState,
+    _first_unretained_request,
+    _read_claude,
+    read_claude,
+    retains_streamed_prefix,
+)
+from .codex import CodexState, _read_codex, read_codex
 from .scan import CandidateSource, SourceEvidence, _discover_sources, _Snapshot, scan
 
 
@@ -128,6 +136,52 @@ class ProviderAdapter:
     def discover(self, root: SourceRoot) -> Iterator[SourceLocator]:
         for candidate in _discover_sources(root, root.evidence):
             yield SourceLocator(replace(candidate, _monitor=True))
+
+    def _capture_gap_start(
+        self,
+        locator: SourceLocator,
+        prior: SourceCheckpoint,
+        *,
+        first_unverified: int,
+        limit: SourceCursor,
+    ) -> int | None:
+        """Return the first native ordinal still unsettled at a capture fence."""
+        source = locator._source
+        if not isinstance(source, CandidateSource):
+            raise ValueError("Expected a capture-qualified native locator")
+        # A registry fence has native evidence only. Claude's incremental walk
+        # requires prior revisions, so rebuild them transiently from this exact prefix.
+        cursor = prior if source.provider is Provider.CODEX else None
+        batch = scan(source, cursor, source._registration.cutoff, _capture_limit=limit)
+        if batch.cursor is None:
+            raise ValueError(
+                "Native capture scan could not authenticate its fixed prefix"
+            )
+        held = [frame.ordinal for frame in batch.frames[len(batch.commit_frames) :]]
+        if source.provider is Provider.CODEX:
+            _, unsettled = _read_codex(
+                batch,
+                CodexState(source._ledger, neutral_markers=True),
+                Eligibility.ELIGIBLE,
+            )
+            if unsettled is not None:
+                held.append(unsettled)
+        else:
+            state = ClaudeState(source._ledger, neutral_markers=True)
+            _, observed, unsettled = _read_claude(batch, state, Eligibility.ELIGIBLE)
+            if observed is None:
+                held.append(first_unverified)
+            else:
+                unretained = _first_unretained_request(batch, state, observed)
+                held.extend(
+                    item for item in (unsettled, unretained) if item is not None
+                )
+                held.extend(
+                    item.ordinal
+                    for item in observed.request_prefix
+                    if not item.complete and item.tokens != _EMPTY
+                )
+        return min(held, default=None)
 
     def read_delta(
         self, locator: SourceLocator, cursor: StreamCursor | None

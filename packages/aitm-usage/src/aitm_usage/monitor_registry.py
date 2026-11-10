@@ -10,7 +10,7 @@ from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Never
 from uuid import UUID
 
 from .ledger import (
@@ -30,12 +30,21 @@ from .ledger import (
 )
 from .scopes import _publish, _read_private
 from .sources.adapter import ProviderAdapter, SourceLocator, StreamCursor
-from .sources.scan import CandidateSource, _probe
+from .sources.scan import (
+    CandidateSource,
+    _capture_locator_presence,
+    _capture_position,
+    _CaptureDiscontinuity,
+    _CapturePosition,
+    _probe,
+)
 from .types import (
     Eligibility,
     LedgerView,
+    Provider,
     SourceBoundary,
     SourceCheckpoint,
+    SourceCursor,
     SourceRef,
     _decode,
     _encode,
@@ -61,6 +70,15 @@ class ProjectAdopted(LedgerError):
 
 class BoundaryUnavailable(LedgerError):
     """The writer must wait for an authenticated native capture frontier."""
+
+
+class _LocatorLoss(StrEnum):
+    ABSENT = "absent"
+    CHANGED = "changed"
+
+
+class _CaptureSourceLost(ConflictError):
+    """Authenticated source discontinuity, distinct from a temporary read hold."""
 
 
 def default_monitor_root() -> Path:
@@ -194,6 +212,25 @@ class CaptureFrontier:
 
 
 @dataclass(frozen=True, slots=True)
+class CaptureReadBound:
+    """An exclusive native ordinal and the exact authorized byte prefix."""
+
+    ordinal: int
+    cursor: SourceCursor | None
+
+
+@dataclass(frozen=True, slots=True)
+class CaptureProgress:
+    """A persistable writer-authenticated observation frontier for one edge."""
+
+    project_id: UUID
+    source_id: UUID
+    cursor: SourceCursor
+    ordinal: int
+    proof: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
 class CaptureEpoch:
     project_id: UUID
     source_id: UUID
@@ -204,10 +241,19 @@ class CaptureEpoch:
     enabled: bool
     frontier: CaptureFrontier
     observed: CaptureFrontier
+    position: SourceCursor | None = None
+    gap_start: int | None = None
+    gap_open: bool = False
 
     def __post_init__(self) -> None:
         _nonnegative(self.ordinal)
         _positive(self.generation)
+        if self.gap_start is not None:
+            _nonnegative(self.gap_start)
+            if self.gap_start > self.ordinal:
+                raise ValueError("Capture gap starts after its fence")
+        if self.gap_open and (self.enabled or self.gap_start is None):
+            raise ValueError("An unresolved capture gap must withhold admission")
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,11 +267,29 @@ class VerifiedBoundary:
 
 
 @dataclass(frozen=True, slots=True)
+class _CaptureArm:
+    position: SourceCursor
+    ordinal: int
+    gap_start: int | None
+
+    @property
+    def stream_ref(self) -> SourceRef:
+        return self.position.source_ref
+
+
+@dataclass(frozen=True, slots=True)
+class _StableTailFence:
+    arm: _CaptureArm
+    boundary_ref: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
 class _PendingCapture:
     command_id: UUID
     digest: str
     change: CaptureChange
-    frontiers: tuple[CaptureFrontier, ...]
+    arms: tuple[_CaptureArm, ...]
+    progress: tuple[CaptureProgress, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,8 +385,12 @@ def _check_capture_root(directory: _PhysicalDirectory) -> None:
         raise BoundaryUnavailable(
             "Approved source is temporarily unavailable"
         ) from None
+    except ValueError:
+        raise _CaptureSourceLost(
+            "Approved source installation is no longer a directory"
+        ) from None
     if current != directory:
-        raise ConflictError("Approved source installation identity changed")
+        raise _CaptureSourceLost("Approved source installation identity changed")
 
 
 def _pinned(directory: _PhysicalDirectory) -> bool:
@@ -469,6 +537,8 @@ class Registry:
             or len({item.command_id for item in state.receipts}) != len(state.receipts)
             or len({item.command_id for item in state.pending_capture})
             != len(state.pending_capture)
+            or len({_edge(item.change) for item in state.pending_capture})
+            != len(state.pending_capture)
             or any(item.status is ControlStatus.QUEUED for item in state.receipts)
         ):
             raise LedgerError("Duplicate private monitor registry identity")
@@ -486,6 +556,14 @@ class Registry:
 
     def command_status(self, command_id: UUID) -> ControlReceipt | None:
         return _command_outcome(self.view(_confirm_publication=True), command_id)
+
+    def pending_capture_status(self, command_id: UUID, digest: str) -> str | None:
+        if any(
+            item.command_id == command_id and item.digest == digest
+            for item in self.view().pending_capture
+        ):
+            return "proof-unavailable"
+        return None
 
     def source_evidence(self) -> _ServiceEvidence:
         """Read or explicitly initialize the coordinator's source-only key."""
@@ -602,15 +680,9 @@ class Registry:
         self._save(view)
         return approved
 
-    def _native_delta(
-        self,
-        view: RegistryView,
-        change: CaptureChange,
-        locator: SourceLocator,
-        prior: CaptureFrontier | None,
-        *,
-        arm: bool = False,
-    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+    def _capture_candidate(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> tuple[ApprovedSource, SourceLocator]:
         source = _source(view, change.source_id)
         _check_capture_root(source.directory)
         candidate = locator._source
@@ -619,10 +691,6 @@ class Registry:
             type(candidate) is not CandidateSource
             or candidate._registration.path.resolve() != Path(source.directory.path)
             or not candidate._path.is_relative_to(candidate._registration.path)
-            or (platform.system(), platform.machine())
-            != (approval.platform, approval.architecture)
-            or candidate._native_surface is None
-            or candidate._native_surface.value != approval.surface
         ):
             raise LedgerError("Source is outside the approved installation")
         evidence = candidate._ledger
@@ -635,21 +703,58 @@ class Registry:
         if not hmac.compare_digest(pinned.key, evidence.key):
             raise LedgerError("Capture source key changed")
         evidence.validate_source_ref(locator.stream_ref)
+        matches = [
+            item
+            for item in ProviderAdapter().discover(candidate._registration)
+            if item.stream_ref == locator.stream_ref
+        ]
+        if len(matches) != 1 or matches[0]._source._path != candidate._path:
+            raise BoundaryUnavailable("Expected the unique current native stream")
+        current = matches[0]
+        native = current._source
+        root_index = len(Path(source.directory.path).parts) - 1
+        if native._identity[root_index][:2] != source.directory.identity:
+            raise _CaptureSourceLost(
+                "Native source discovery changed its approved root"
+            )
+        if (
+            (platform.system(), platform.machine())
+            != (approval.platform, approval.architecture)
+            or native._native_surface is None
+            or native._native_surface.value != approval.surface
+            or str(native.provider) != approval.provider
+        ):
+            raise _CaptureSourceLost("Native capture source tuple changed")
+        return source, current
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current = self._capture_candidate(view, change, locator)
+        approval = source.approval
+        candidate = current._source
         reader = ProviderAdapter()
         try:
-            matches = [
-                item
-                for item in reader.discover(candidate._registration)
-                if item.stream_ref == locator.stream_ref
-            ]
-            if len(matches) != 1 or matches[0]._source._path != candidate._path:
-                raise BoundaryUnavailable("Expected the unique current native stream")
-            current = matches[0]
             before = _probe(candidate._path)
-            batch = reader.read_delta(
-                current, None if prior is None else StreamCursor(prior.checkpoint)
-            )
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
             after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
         except OSError:
             raise BoundaryUnavailable(
                 "Native capture source is temporarily unavailable"
@@ -666,7 +771,9 @@ class Registry:
             or checkpoint.provider.client_version.value != approval.client_version
             or checkpoint.provider.format_version != approval.format_version
         ):
-            raise LedgerError("Native capture version differs from approved source")
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
         if prior is not None:
             earlier = prior.checkpoint.cursor
             later = checkpoint.cursor
@@ -691,8 +798,19 @@ class Registry:
             and item.usage.format_version == approval.format_version
             and item.usage.boundary.stream_ref == locator.stream_ref
         )
-        # Claude can revise a request whose original row was already consumed.
-        latest = [checkpoint.provider.ordinal, *(item.ordinal for item in boundaries)]
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+            raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+        # Use the absolute physical ordinal even when the adapter ignores a row.
+        latest = [
+            max(0, physical.next_ordinal - 1),
+            *(item.ordinal for item in boundaries),
+        ]
         if prior is not None:
             latest.append(prior.last_ordinal)
         return CaptureFrontier(checkpoint, max(latest)), boundaries
@@ -720,6 +838,20 @@ class Registry:
             None if previous is None else previous.observed,
             arm=True,
         )
+        if previous is not None and previous.position is not None:
+            _, current = self._capture_candidate(view, change, locator)
+            try:
+                _capture_position(
+                    current._source, previous.position, fixed=previous.position
+                )
+            except _CaptureDiscontinuity:
+                raise ConflictError(
+                    "Native capture position no longer authenticates"
+                ) from None
+            except OSError:
+                raise BoundaryUnavailable(
+                    "Native capture position is unavailable"
+                ) from None
         return frontier
 
     def capture_frontier(
@@ -806,7 +938,7 @@ class Registry:
             if (
                 proof.ordinal <= previous.ordinal
                 or proof.frontier.checkpoint.cursor.offset
-                < previous.observed.checkpoint.cursor.offset
+                < (previous.position or previous.observed.checkpoint.cursor).offset
             ):
                 raise ConflictError("Stale or conflicting capture boundary")
         epoch = CaptureEpoch(
@@ -865,11 +997,11 @@ class Registry:
         self._require_direct_proof(view, change, boundary)
         if change not in view.permissions:
             raise ConflictError("Capture is disabled for this source")
-        if any(
-            _edge(epoch) == _edge(change)
-            and epoch.stream_ref == boundary.stream_ref
-            and epoch.boundary_ref != boundary.boundary_ref
-            for epoch in view.epochs
+        previous = self._latest_epoch(view, change, boundary.stream_ref)
+        if (
+            previous is not None
+            and not previous.gap_open
+            and (previous.boundary_ref != boundary.boundary_ref)
         ):
             raise ConflictError("Native stream is already enrolled")
         next_view, epoch = self._epoch(view, change, boundary)
@@ -879,11 +1011,145 @@ class Registry:
         return epoch
 
     def source_read_allowed(self, project_id: UUID, source_id: UUID) -> bool:
+        """Check edge permission and physical root before applying stream bounds."""
         view = self.view()
         edge = project_id, source_id
         if not any(_edge(item) == edge and item.enabled for item in view.permissions):
             return False
         return _pinned(_source(view, source_id).directory)
+
+    def capture_read_limit(
+        self, project_id: UUID, source_id: UUID, stream_ref: SourceRef
+    ) -> CaptureReadBound | None:
+        """Return the enforced prefix during disable, or None for an admitted stream."""
+        view = self.view()
+        change = CaptureChange(project_id, source_id, True)
+        if change not in view.permissions or not _pinned(
+            _source(view, source_id).directory
+        ):
+            return CaptureReadBound(0, None)
+        previous = self._latest_epoch(view, change, stream_ref)
+        if previous is None or previous.gap_open:
+            return CaptureReadBound(0, None)
+        pending = next(
+            (
+                item
+                for item in view.pending_capture
+                if _edge(item.change) == _edge(change) and not item.change.enabled
+            ),
+            None,
+        )
+        if pending is None:
+            return None
+        for arm in pending.arms:
+            if arm.stream_ref == stream_ref:
+                return CaptureReadBound(arm.ordinal, arm.position)
+        progress = next(
+            (item for item in pending.progress if item.cursor.source_ref == stream_ref),
+            None,
+        )
+        return self._capture_base(previous, progress)
+
+    def _progress_proof(
+        self, change: CaptureChange, cursor: SourceCursor, ordinal: int
+    ) -> SourceRef:
+        return self.source_evidence().pseudonymize(
+            "capture-progress",
+            f"{change.project_id}:{change.source_id}:{cursor.source_ref.value}:"
+            f"{cursor.locator_ref.value}:{cursor.incarnation_ref.value}:"
+            f"{cursor.offset}:{cursor.anchor_ref.value}:{ordinal}",
+        )
+
+    def capture_progress(
+        self, change: CaptureChange, locator: SourceLocator, cursor: SourceCheckpoint
+    ) -> CaptureProgress:
+        """Authenticate a native collection cursor for the coordinator to persist."""
+        self.lease
+        if type(cursor) is not SourceCheckpoint:
+            raise LedgerError("Expected a verified native collection checkpoint")
+        view = self.view()
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+        if (
+            not change.enabled
+            or change not in view.permissions
+            or previous is None
+            or previous.gap_open
+        ):
+            raise ConflictError("Native progress requires an admitted stream")
+        approved, current = self._capture_candidate(view, change, locator)
+        base = self._capture_base(previous, None)
+        snapshot = _capture_position(current._source, base.cursor, fixed=cursor.cursor)
+        self._verify_capture_tuple(approved, snapshot)
+        if (
+            cursor.provider.provider != snapshot.provider
+            or cursor.provider.client_version != snapshot.client_version
+            or cursor.provider.format_version != snapshot.format_version
+        ):
+            raise LedgerError(
+                "Collection checkpoint differs from the native source tuple"
+            )
+        bound = self.capture_read_limit(
+            change.project_id, change.source_id, locator.stream_ref
+        )
+        if (
+            snapshot.partial_ordinal is not None
+            or snapshot.next_ordinal < base.ordinal
+            or (
+                bound is not None
+                and (
+                    bound.cursor is None or snapshot.cursor.offset > bound.cursor.offset
+                )
+            )
+        ):
+            raise ConflictError("Native progress is outside the authorized read bound")
+        return CaptureProgress(
+            change.project_id,
+            change.source_id,
+            snapshot.cursor,
+            snapshot.next_ordinal,
+            self._progress_proof(change, snapshot.cursor, snapshot.next_ordinal),
+        )
+
+    def _capture_base(
+        self,
+        previous: CaptureEpoch,
+        progress: CaptureProgress | None,
+    ) -> CaptureReadBound:
+        cursor = previous.position or previous.observed.checkpoint.cursor
+        ordinal = self._verified_end(previous)
+        if progress is not None and progress.cursor.offset > cursor.offset:
+            return CaptureReadBound(progress.ordinal, progress.cursor)
+        return CaptureReadBound(ordinal, cursor)
+
+    def _accept_progress(
+        self,
+        change: CaptureChange,
+        previous: CaptureEpoch,
+        progress: CaptureProgress,
+    ) -> None:
+        cursor = previous.position or previous.observed.checkpoint.cursor
+        if (
+            type(progress.ordinal) is not int
+            or progress.ordinal < 0
+            or progress.cursor.source_ref != previous.stream_ref
+            or progress.cursor.locator_ref != cursor.locator_ref
+            or progress.cursor.incarnation_ref != cursor.incarnation_ref
+            or progress.proof
+            != self._progress_proof(change, progress.cursor, progress.ordinal)
+            or (
+                progress.cursor.offset > cursor.offset
+                and progress.ordinal < self._verified_end(previous)
+            )
+        ):
+            raise BoundaryUnavailable(
+                "Persisted native progress could not be authenticated"
+            )
+
+    @staticmethod
+    def _verified_end(epoch: CaptureEpoch) -> int:
+        return (
+            epoch.observed.last_ordinal + 1 if epoch.position is None else epoch.ordinal
+        )
 
     def span_disposition(
         self,
@@ -897,12 +1163,24 @@ class Registry:
         _nonnegative(end)
         if end <= start:
             raise ValueError("Capture span must be nonempty")
+        epochs = [
+            epoch
+            for epoch in self.view().epochs
+            if _edge(epoch) == (project_id, source_id)
+            and epoch.stream_ref == stream_ref
+        ]
         enabled = False
-        for epoch in self.view().epochs:
-            if (
-                _edge(epoch) != (project_id, source_id)
-                or epoch.stream_ref != stream_ref
-                or epoch.ordinal >= end
+        for index, epoch in enumerate(epochs):
+            later = epochs[index + 1] if index + 1 < len(epochs) else None
+            if epoch.gap_start is not None and end > epoch.gap_start:
+                if not epoch.gap_open:
+                    gap_end = epoch.ordinal
+                else:
+                    gap_end = None if later is None else later.ordinal
+                if gap_end is None or (gap_end > epoch.gap_start and start < gap_end):
+                    return Eligibility.UNKNOWN
+            if epoch.ordinal >= end or (
+                later is not None and later.ordinal == epoch.ordinal
             ):
                 continue
             if epoch.ordinal <= start:
@@ -911,11 +1189,379 @@ class Registry:
                 return Eligibility.UNKNOWN
         return Eligibility.ELIGIBLE if enabled else Eligibility.EXCLUDED
 
+    def _make_arm(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        previous: CaptureEpoch,
+        base: CaptureReadBound,
+        *,
+        later: bool,
+        saved: _CaptureArm | None = None,
+    ) -> _CaptureArm:
+        source, current = self._capture_candidate(view, change, locator)
+        try:
+            position = _capture_position(
+                current._source,
+                base.cursor,
+                fixed=None if saved is None else saved.position,
+            )
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        _check_capture_root(source.directory)
+        self._verify_capture_tuple(source, position)
+        if saved is not None:
+            if (
+                position.cursor != saved.position
+                or position.next_ordinal != saved.ordinal
+            ):
+                raise _CaptureSourceLost("Armed native capture position changed")
+            return saved
+        if position.next_ordinal < base.ordinal:
+            raise _CaptureSourceLost("Native capture position moved backwards")
+        earliest = base.ordinal
+        gap_start = ProviderAdapter()._capture_gap_start(
+            current,
+            previous.observed.checkpoint,
+            first_unverified=earliest,
+            limit=position.cursor,
+        )
+        _check_capture_root(source.directory)
+        gaps = [
+            ordinal
+            for ordinal in (
+                gap_start,
+                position.partial_ordinal,
+                earliest if later else None,
+            )
+            if ordinal is not None and ordinal < position.next_ordinal
+        ]
+        return _CaptureArm(
+            position.cursor, position.next_ordinal, min(gaps, default=None)
+        )
+
+    @staticmethod
+    def _verify_capture_tuple(
+        source: ApprovedSource, position: _CapturePosition
+    ) -> None:
+        approval = source.approval
+        if (
+            position.provider.value != approval.provider
+            or position.native_surface is None
+            or position.native_surface.value != approval.surface
+            or position.client_version.value != approval.client_version
+            or position.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost("Native capture tuple differs from approval")
+
+    def _locator_lost(
+        self,
+        approved: ApprovedSource,
+        prior: SourceCursor,
+    ) -> _LocatorLoss | None:
+        _check_capture_root(approved.directory)
+        presence = _capture_locator_presence(
+            Path(approved.directory.path),
+            self.source_evidence(),
+            prior.locator_ref,
+            prior.incarnation_ref,
+            root_identity=approved.directory.identity,
+            prior=prior,
+        )
+        _check_capture_root(approved.directory)
+        if not presence.same_incarnation:
+            return _LocatorLoss.CHANGED if presence.at_locator else _LocatorLoss.ABSENT
+        if presence.prefix_changed or (
+            presence.locator_is_original
+            and presence.locator_size is not None
+            and (presence.locator_size == 0 or presence.locator_size < prior.offset)
+        ):
+            return _LocatorLoss.CHANGED
+        return None
+
+    def _stable_fence(self, arm: _CaptureArm) -> _StableTailFence:
+        proof = self.source_evidence().pseudonymize(
+            "capture-tail-fence",
+            f"{arm.stream_ref.value}:{arm.position.anchor_ref.value}:{arm.ordinal}",
+        )
+        return _StableTailFence(arm, proof)
+
+    def _append_tail_epoch(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        previous: CaptureEpoch,
+        fence: _StableTailFence,
+    ) -> RegistryView:
+        arm = fence.arm
+        epoch = CaptureEpoch(
+            change.project_id,
+            change.source_id,
+            arm.stream_ref,
+            arm.ordinal,
+            fence.boundary_ref,
+            previous.generation + 1,
+            change.enabled,
+            previous.observed,
+            previous.observed,
+            arm.position,
+            arm.gap_start,
+        )
+        return replace(view, epochs=(*view.epochs, epoch))
+
+    def _append_lost_epoch(
+        self,
+        view: RegistryView,
+        previous: CaptureEpoch,
+        base: CaptureReadBound,
+        arm: _CaptureArm | None,
+    ) -> RegistryView:
+        if previous.gap_open:
+            return view
+        position = base.cursor if arm is None else arm.position
+        assert position is not None
+        ordinal = base.ordinal if arm is None else arm.ordinal
+        gap_start = ordinal if arm is None or arm.gap_start is None else arm.gap_start
+        proof = self.source_evidence().pseudonymize(
+            "capture-unavailable-gap",
+            f"{previous.stream_ref.value}:{position.anchor_ref.value}:{ordinal}",
+        )
+        epoch = replace(
+            previous,
+            ordinal=ordinal,
+            boundary_ref=proof,
+            generation=previous.generation + 1,
+            enabled=False,
+            position=position,
+            gap_start=gap_start,
+            gap_open=True,
+        )
+        return replace(view, epochs=(*view.epochs, epoch))
+
+    def _apply_capture(
+        self,
+        view: RegistryView,
+        command: ControlCommand,
+        payload: CaptureChange,
+        locate: _LocateStreams | None,
+        offered: dict[_CaptureKey, CaptureProgress],
+    ) -> RegistryView:
+        _project(view, payload.project_id)
+        source = _source(view, payload.source_id)
+        latest = {
+            epoch.stream_ref: epoch
+            for epoch in view.epochs
+            if _edge(epoch) == _edge(payload)
+        }
+        pending = next(
+            (
+                item
+                for item in view.pending_capture
+                if _edge(item.change) == _edge(payload)
+            ),
+            None,
+        )
+        if pending is not None and (
+            pending.command_id != command.command_id
+            or pending.change != payload
+            or pending.digest != command.payload_digest
+        ):
+            raise BoundaryUnavailable("An earlier ordered capture command is pending")
+        arms = (
+            {} if pending is None else {item.stream_ref: item for item in pending.arms}
+        )
+        if pending is not None and (
+            len(arms) != len(pending.arms) or arms.keys() - latest.keys()
+        ):
+            raise ConflictError("Pending capture frontier changed")
+        progress = (
+            {}
+            if pending is None
+            else {item.cursor.source_ref: item for item in pending.progress}
+        )
+        original_progress = tuple(progress.values())
+        for stream_ref, previous in latest.items():
+            item = offered.get(_capture_key(payload, stream_ref))
+            if item is None:
+                continue
+            try:
+                self._accept_progress(payload, previous, item)
+            except BoundaryUnavailable:
+                if pending is None:
+                    self._hold_capture(
+                        view, command, payload, (), tuple(progress.values())
+                    )
+                raise
+            arm = arms.get(stream_ref)
+            if arm is not None and (
+                item.cursor.offset > arm.position.offset or item.ordinal > arm.ordinal
+            ):
+                raise BoundaryUnavailable(
+                    "Persisted progress exceeds an armed capture fence"
+                )
+            saved = progress.get(stream_ref)
+            if saved is None or item.cursor.offset > saved.cursor.offset:
+                progress[stream_ref] = item
+        pinned_progress = tuple(progress.values())
+        bases = {
+            stream_ref: self._capture_base(previous, progress.get(stream_ref))
+            for stream_ref, previous in latest.items()
+        }
+        if not latest and not payload.enabled:
+            return _permission(view, payload)
+        try:
+            _check_capture_root(source.directory)
+            approval = source.approval
+            if (platform.system(), platform.machine()) != (
+                approval.platform,
+                approval.architecture,
+            ):
+                raise _CaptureSourceLost("Native capture platform changed")
+        except (ConflictError, ValueError):
+            if payload.enabled:
+                raise
+            for previous in latest.values():
+                view = self._append_lost_epoch(
+                    view, previous, bases[previous.stream_ref], None
+                )
+            return _permission(view, payload)
+        except BoundaryUnavailable:
+            if latest and (pending is None or original_progress != pinned_progress):
+                self._hold_capture(
+                    view, command, payload, tuple(arms.values()), pinned_progress
+                )
+            raise
+
+        if not latest or all(epoch.gap_open for epoch in latest.values()):
+            return _permission(view, payload)
+        original_arms = tuple(arms.values())
+        known = frozenset(latest)
+        if locate is None:
+            if pending is None or original_progress != pinned_progress:
+                self._hold_capture(
+                    view, command, payload, original_arms, pinned_progress
+                )
+            raise BoundaryUnavailable("Waiting for native capture streams")
+        try:
+            locators = tuple(locate(payload, known))
+        except (OSError, LedgerError, ValueError):
+            if pending is None or original_progress != pinned_progress:
+                self._hold_capture(
+                    view, command, payload, original_arms, pinned_progress
+                )
+            raise BoundaryUnavailable(
+                "Native capture streams are temporarily unavailable"
+            ) from None
+
+        by_stream: dict[SourceRef, list[SourceLocator]] = {}
+        for locator in locators:
+            if type(locator) is not SourceLocator:
+                raise ConflictError("Invalid capture stream locator")
+            if locator.stream_ref in known:
+                by_stream.setdefault(locator.stream_ref, []).append(locator)
+
+        held = False
+        lost: list[tuple[CaptureEpoch, _CaptureArm | None]] = []
+        verified: list[tuple[CaptureEpoch, _StableTailFence]] = []
+        for stream_ref, previous in latest.items():
+            if previous.gap_open:
+                # Only a fresh direct native enrollment closes an unresolved gap.
+                continue
+            base = bases[stream_ref]
+            assert base.cursor is not None
+            supplied = by_stream.get(stream_ref, ())
+            arm = arms.get(stream_ref)
+            try:
+                if len(supplied) > 1:
+                    raise BoundaryUnavailable("Native capture candidates are ambiguous")
+                if not supplied:
+                    loss = self._locator_lost(source, base.cursor)
+                    if loss is None:
+                        raise BoundaryUnavailable(
+                            "Native capture locator is unavailable"
+                        )
+                    lost.append(
+                        (previous, arm if loss is _LocatorLoss.ABSENT else None)
+                    )
+                    continue
+                current = self._make_arm(
+                    view,
+                    payload,
+                    supplied[0],
+                    previous,
+                    base,
+                    later=pending is not None,
+                    saved=arm,
+                )
+                if arm is None:
+                    arms[stream_ref] = current
+                else:
+                    verified.append((previous, self._stable_fence(current)))
+            except _CaptureSourceLost:
+                if payload.enabled:
+                    raise
+                lost.append((previous, None))
+            except BoundaryUnavailable:
+                # A stale authentic locator can disappear from ordinary discovery
+                # after truncation. Only the strict pinned metadata walk proves loss.
+                loss = None
+                if len(supplied) == 1:
+                    try:
+                        loss = self._locator_lost(source, base.cursor)
+                    except (LedgerError, OSError, ValueError):
+                        pass
+                if loss is None:
+                    held = True
+                else:
+                    lost.append(
+                        (previous, arm if loss is _LocatorLoss.ABSENT else None)
+                    )
+            except (LedgerError, OSError, ValueError):
+                held = True
+
+        if (
+            pending is None
+            or original_arms != tuple(arms.values())
+            or original_progress != pinned_progress
+        ):
+            self._hold_capture(
+                view, command, payload, tuple(arms.values()), pinned_progress
+            )
+        if held:
+            raise BoundaryUnavailable("Waiting for verified native capture positions")
+        for previous, arm in lost:
+            view = self._append_lost_epoch(
+                view, previous, bases[previous.stream_ref], arm
+            )
+        for previous, fence in verified:
+            view = self._append_tail_epoch(view, payload, previous, fence)
+        return _permission(view, payload)
+
+    def _hold_capture(
+        self,
+        view: RegistryView,
+        command: ControlCommand,
+        change: CaptureChange,
+        arms: tuple[_CaptureArm, ...],
+        progress: tuple[CaptureProgress, ...],
+    ) -> Never:
+        remaining = tuple(
+            item for item in view.pending_capture if _edge(item.change) != _edge(change)
+        )
+        pending = _PendingCapture(
+            command.command_id, command.payload_digest, change, arms, progress
+        )
+        raise _CaptureArmed(replace(view, pending_capture=(*remaining, pending)))
+
     def _apply(
         self,
         view: RegistryView,
         command: ControlCommand,
         locate: _LocateStreams | None,
+        progress: dict[_CaptureKey, CaptureProgress],
     ) -> RegistryView:
         payload = command.payload
         if isinstance(payload, ProjectRegistrationRequest):
@@ -933,70 +1579,26 @@ class Registry:
                 existing.default_driver,
             )
             return self._register(view, request)[0]
-        _project(view, payload.project_id)
-        _check_capture_root(_source(view, payload.source_id).directory)
-        known = frozenset(
-            epoch.stream_ref for epoch in view.epochs if _edge(epoch) == _edge(payload)
-        )
-        if not known:
-            return _permission(view, payload)
-        if locate is None:
-            raise BoundaryUnavailable("Waiting for native capture streams")
-        try:
-            locators = tuple(locate(payload, known))
-        except OSError:
-            raise BoundaryUnavailable(
-                "Native capture streams are temporarily unavailable"
-            ) from None
-        if any(type(locator) is not SourceLocator for locator in locators):
-            raise ConflictError("Invalid capture stream locator")
-        by_stream = {locator.stream_ref: locator for locator in locators}
-        if len(by_stream) != len(locators) or by_stream.keys() - known:
-            raise ConflictError("Conflicting capture stream locator")
-        if known - by_stream.keys():
-            raise BoundaryUnavailable("Waiting for all native capture streams")
-
-        pending = next(
-            (
-                item
-                for item in view.pending_capture
-                if item.command_id == command.command_id
-            ),
-            None,
-        )
-        if pending is None:
-            frontiers = tuple(
-                self._capture_frontier(view, payload, locator) for locator in locators
-            )
-            armed = _PendingCapture(
-                command.command_id, command.payload_digest, payload, frontiers
-            )
-            raise _CaptureArmed(
-                replace(view, pending_capture=(*view.pending_capture, armed))
-            )
-        if (
-            pending.digest != command.payload_digest
-            or pending.change != payload
-            or {item.stream_ref for item in pending.frontiers} != known
-            or len(pending.frontiers) != len(known)
-        ):
-            raise ConflictError("Pending capture command or frontier changed")
-        proofs = tuple(
-            self._verify_next(view, payload, by_stream[frontier.stream_ref], frontier)
-            for frontier in pending.frontiers
-        )
-        for proof in proofs:
-            view, _ = self._epoch(view, payload, proof)
-        return _permission(view, payload)
+        return self._apply_capture(view, command, payload, locate, progress)
 
     def apply_pending(
         self,
         inbox: "ControlInbox",
         writer_lease: _PinnedPath,
         locate: _LocateStreams | None,
+        *,
+        progress: Iterable[CaptureProgress] = (),
     ) -> tuple[ControlReceipt, ...]:
         if writer_lease is not self.lease or inbox.root != self.root:
             raise LedgerError("Monitor command requires the matching coordinator lease")
+        positions: dict[_CaptureKey, CaptureProgress] = {}
+        for item in progress:
+            if type(item) is not CaptureProgress:
+                raise ConflictError("Invalid persisted capture progress")
+            key = item.project_id, item.source_id, item.cursor.source_ref
+            if key in positions:
+                raise ConflictError("Duplicate persisted capture progress")
+            positions[key] = item
         applied: list[ControlReceipt] = []
         held_edges: set[tuple[UUID, UUID]] = set()
         with inbox.publication() as locked:
@@ -1015,7 +1617,7 @@ class Registry:
                 if isinstance(payload, CaptureChange) and _edge(payload) in held_edges:
                     continue
                 try:
-                    next_view = self._apply(view, command, locate)
+                    next_view = self._apply(view, command, locate, positions)
                 except _CaptureArmed as armed:
                     assert isinstance(payload, CaptureChange)
                     self._save(armed.view)

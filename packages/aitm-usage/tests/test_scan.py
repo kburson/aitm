@@ -1834,3 +1834,194 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
     assert view.checkpoints[0].cursor.offset < path.stat().st_size
     again = collect_once(registration, Ledger.open(store.root, PROJECT))
     assert again.sequence == view.sequence
+
+
+def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
+    project, monkeypatch
+):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "live.jsonl"
+    complete = _header(checkout, originator="Codex Desktop", source="vscode") + _usage(
+        11
+    )
+    path.write_bytes(complete)
+    (source,) = scanner.discover(registration)
+    checkpoint = _checkpoint(scanner.scan(source, None, CUTOFF))
+    assert checkpoint.cursor.offset == len(complete)
+
+    monkeypatch.setattr(scanner, "_MAX_ROW_BYTES", 1024)
+    complete += b"malformed\n" + b"x" * 1600 + b"\n"
+    torn = b'{"unfinished":'
+    path.write_bytes(complete + torn)
+    armed = scanner._capture_position(source, checkpoint.cursor)
+
+    assert armed.cursor.offset == len(complete + torn)
+    assert armed.next_ordinal == 5
+    assert armed.partial_ordinal == 4
+    assert armed.provider is Provider.CODEX
+    assert armed.native_surface is scanner.NativeSurface.CODEX_DESKTOP_MACOS
+    assert armed.client_version is ClientVersion.CODEX_0_167_0_ALPHA_3_2
+    assert armed.format_version == 1
+
+    with path.open("ab") as stream:
+        stream.write(b" true}\n" + _usage(17))
+    assert (
+        scanner._capture_position(source, checkpoint.cursor, fixed=armed.cursor)
+        == armed
+    )
+    bounded = scanner.scan(source, checkpoint, CUTOFF, _capture_limit=armed.cursor)
+    ordinary = scanner.scan(source, checkpoint, CUTOFF)
+    assert bounded.cursor.offset == len(complete)
+    assert bounded.frames == ()
+    assert [frame.ordinal for frame in ordinary.frames] == [5]
+
+
+def test_capture_position_authenticates_zero_origin_and_rejects_truncation(project):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    path = root / "live.jsonl"
+    unanchored = root.parent / "unanchored"
+    unanchored.mkdir()
+    path.write_bytes(_header(unanchored) + _usage(11))
+    (source,) = scanner.discover(registration)
+    held = scanner.scan(source, None, CUTOFF)
+    assert held.cursor.offset == 0
+
+    zero = scanner._capture_position(source, held.cursor, fixed=held.cursor)
+    assert zero.cursor == held.cursor
+    assert zero.next_ordinal == 0
+    assert zero.partial_ordinal is None
+
+    path.write_bytes(b"")
+    with pytest.raises(scanner._CaptureDiscontinuity):
+        scanner._capture_position(source, held.cursor)
+    with pytest.raises(ValueError):
+        scanner._capture_position(source, None)
+
+
+def test_capture_position_rejects_rewritten_saved_bytes(project):
+    scanner = _scanner()
+    registration, _ = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "live.jsonl"
+    header = _header(checkout)
+    path.write_bytes(header + _usage(11))
+    (source,) = scanner.discover(registration)
+    armed = scanner._capture_position(source, None)
+
+    path.write_bytes(header + _usage(18) + _usage(23))
+    with pytest.raises(scanner._CaptureDiscontinuity):
+        scanner._capture_position(source, None, fixed=armed.cursor)
+    assert (
+        scanner.scan(source, None, CUTOFF, _capture_limit=armed.cursor).cursor is None
+    )
+
+
+def test_capture_locator_presence_finds_moved_inode_and_replacement_type(project):
+    scanner = _scanner()
+    registration, evidence = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "live.jsonl"
+    path.write_bytes(_header(checkout))
+    (source,) = scanner.discover(registration)
+    original_size = path.stat().st_size
+
+    def presence():
+        return scanner._capture_locator_presence(
+            root, evidence, source.locator_ref, source.incarnation_ref
+        )
+
+    initial = presence()
+    assert initial.at_locator and initial.same_incarnation
+    assert initial.locator_size == original_size
+    assert initial.locator_is_original
+    archive = root / "private-archive"
+    archive.mkdir()
+    archived = archive / "moved.data"
+    path.rename(archived)
+    moved = presence()
+    assert not moved.at_locator and moved.same_incarnation
+    assert moved.locator_size is None
+    path.mkdir()
+    replaced = presence()
+    assert replaced.at_locator and replaced.same_incarnation
+    assert replaced.locator_size is None
+    path.rmdir()
+    path.write_bytes(b"replacement")
+    replaced_file = presence()
+    assert replaced_file.at_locator and replaced_file.same_incarnation
+    assert replaced_file.locator_size == len(b"replacement")
+    assert not replaced_file.locator_is_original
+    archived.unlink()
+    assert presence().at_locator and not presence().same_incarnation
+    path.unlink()
+    absent = presence()
+    assert not absent.at_locator and not absent.same_incarnation
+
+
+def test_capture_locator_presence_rechecks_earlier_directory_after_rename(
+    project, monkeypatch
+):
+    from contextlib import contextmanager
+
+    scanner = _scanner()
+    registration, evidence = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "live.jsonl"
+    path.write_bytes(_header(checkout))
+    (source,) = scanner.discover(registration)
+    path.unlink()
+    earlier = root / "first"
+    later = root / "second"
+    earlier.mkdir()
+    later.mkdir()
+    original = earlier / "nested"
+    original.mkdir()
+    displaced = earlier / "displaced"
+    scandir = scanner.os.scandir
+    later_inode = later.stat().st_ino
+    raced = False
+
+    @contextmanager
+    def move_earlier_after_walk(fd):
+        nonlocal raced
+        with scandir(fd) as entries:
+            yield entries
+        if scanner.os.fstat(fd).st_ino == later_inode:
+            original.rename(displaced)
+            displaced.rename(original)
+            raced = True
+
+    monkeypatch.setattr(scanner.os, "scandir", move_earlier_after_walk)
+    with pytest.raises(OSError):
+        scanner._capture_locator_presence(
+            root, evidence, source.locator_ref, source.incarnation_ref
+        )
+    assert raced
+
+
+def test_capture_locator_presence_fails_closed_on_unreadable_directory(project):
+    scanner = _scanner()
+    registration, evidence = project
+    (root,) = registration.source_roots
+    (checkout,) = registration.checkout_anchors
+    path = root / "live.jsonl"
+    path.write_bytes(_header(checkout))
+    (source,) = scanner.discover(registration)
+    path.unlink()
+    unreadable = root / "unreadable"
+    unreadable.mkdir(mode=0o000)
+    try:
+        with pytest.raises(PermissionError):
+            scanner._capture_locator_presence(
+                root, evidence, source.locator_ref, source.incarnation_ref
+            )
+    finally:
+        unreadable.chmod(0o700)
