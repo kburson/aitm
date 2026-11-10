@@ -369,6 +369,10 @@ def test_new_stream_enrolls_only_while_source_permission_is_enabled(
         another = writer.verify_boundary(SOURCE, second, boundary.boundary_ref)
         with pytest.raises(ConflictError, match="disabled"):
             writer.enroll_stream(PROJECT_A, SOURCE, another)
+        with pytest.raises(ConflictError, match="unadmitted"):
+            writer.set_permission(
+                module.CaptureChange(PROJECT_A, SOURCE, False), another
+            )
         writer.set_permission(module.CaptureChange(PROJECT_A, SOURCE, True), start)
         assert (
             registry.span_disposition(

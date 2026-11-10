@@ -652,6 +652,8 @@ class Registry:
         streams = {
             epoch.stream_ref for epoch in view.epochs if _edge(epoch) == _edge(change)
         }
+        if not change.enabled and boundary.stream_ref not in streams:
+            raise ConflictError("Cannot disable an unadmitted native stream")
         if streams - {boundary.stream_ref}:
             raise ConflictError("Capture change requires all native streams")
         view, epoch = self._epoch(view, change, boundary)
