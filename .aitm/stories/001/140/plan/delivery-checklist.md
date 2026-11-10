@@ -98,3 +98,32 @@ owner disposition remain bound to their original head, base and tree.
 - Focused collection and execution are separate from the hosted #103
   test list and helper denominator.
 - Hosted validation and independent review apply to this exact candidate.
+
+## Refreshed candidate after the #185 trunk advance
+
+The earlier reviews remain evidence for their original bases. The same
+PR received a normal merge of verified trunk `41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55` into the story
+branch. Refreshed head is `b1f30f81fb7d604e79ddac0a2bde161d85dcbded`, exact tree `47fa209c89e99e041f716d856c9ae59b3360c97e`. Compared to
+the refreshed base, only the two original snapshot files are added,
+and both are byte-identical to the initial reviewed source.
+
+The refreshed local focused result was `38 passed in 24.28s`.
+The complete combined local suite returned
+`1017 passed in 118.08s (0:01:58)`. Ruff and source whitespace passed.
+All six required jobs passed on the [exact refreshed attempt](https://github.com/kburson/aitm/actions/runs/42903649811/attempts/1).
+Signed CI and raw replay matched. [Hosted receipt](hosted-test-b1f30f81fb7d.json).
+The [independent refresh review](source-review-attempt-3.md) accepted the exact
+refreshed candidate.
+
+[Owner disposition](owner-disposition-b1f30f81fb7d.json) and the [trusted verifier](verifier-pass-b1f30f81fb7d.json) bind the exact refreshed tree. The independent review is effective on that candidate.
+
+### Delegated base-only decision
+
+The owner delegated routine decisions supported by evidence. This
+refresh carries the prior disposition forward because both reviewed
+story blobs and the shared CI controls are byte-identical, and every
+other changed path came from the verified #185 trunk merge. Fresh local
+tests, signed hosted validation and independent review bind the exact
+combined tree. The disposition records the before and after identities
+and comparison. A conflict, changed story scope, changed CI control or
+failed evidence would hold the merge for investigation.

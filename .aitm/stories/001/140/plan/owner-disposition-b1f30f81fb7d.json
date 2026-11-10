@@ -1,0 +1,57 @@
+{
+  "authority": "Owner delegated routine data-based base refresh decisions in the sequential merge conversation",
+  "base": "41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55",
+  "decision_by": "Codex coordinator",
+  "disposition": "approved",
+  "head": "b1f30f81fb7d604e79ddac0a2bde161d85dcbded",
+  "inherited_from_pr": 185,
+  "inherited_trunk_paths": [
+    "packages/aitm-usage/src/aitm_usage/monitor_registry.py",
+    "packages/aitm-usage/src/aitm_usage/monitor_scope.py",
+    "packages/aitm-usage/src/aitm_usage/sources/adapter.py",
+    "packages/aitm-usage/src/aitm_usage/sources/codex.py",
+    "packages/aitm-usage/src/aitm_usage/sources/grok.py",
+    "packages/aitm-usage/src/aitm_usage/sources/scan.py",
+    "packages/aitm-usage/tests/test_grok.py",
+    "packages/aitm-usage/tests/test_monitor_adapters.py",
+    "packages/aitm-usage/tests/test_monitor_scope.py"
+  ],
+  "pr": 184,
+  "previous_approved": {
+    "base": "0175e77c398dc97c59db166fa64e2e9a673b4b40",
+    "disposition": "approved",
+    "head": "62c248b9ab534f55565d7c1ec636bfe5b460b0dd",
+    "owner_reply": "Approve the refreshed exact tree",
+    "pr": 184,
+    "repository": "kburson/aitm",
+    "scope": "Existing #103 exact-tree gate for refreshed PR #184",
+    "source": "Owner reply in sequential merge conversation",
+    "story": 140,
+    "tested_tree": "4296f0b010776d754c39cdc9605e01e2b76e6805"
+  },
+  "repository": "kburson/aitm",
+  "required_fresh_evidence": {
+    "focused_tests": 38,
+    "hosted_run": "https://github.com/kburson/aitm/actions/runs/42903649811/attempts/1",
+    "independent_source_review": "plan/source-review-attempt-3.md",
+    "local_full_tests": 1017,
+    "trunk_base_push": "https://github.com/kburson/aitm/actions/runs/42903309686/attempts/1"
+  },
+  "scope": "Carry prior #103 owner disposition to this base-only refresh after exact validation and independent review",
+  "story": 140,
+  "tested_tree": "47fa209c89e99e041f716d856c9ae59b3360c97e",
+  "unchanged_ci_control_blobs": {
+    ".github/workflows/ci.yml": "96424d880798d78e1eae93fba4d748d4fe985792",
+    "packages/aitm-usage/pyproject.toml": "8768e767deb75abaa0616da83e84de5d3df84508",
+    "packages/aitm-usage/uv.lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "tools/ci/file_checks.py": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+    "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "tools/ci/pytest_evidence.py": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12",
+    "tools/ci/verify_pr.py": "2f5796f589d8ed8ab32d6251969f47ee81ad3942"
+  },
+  "unchanged_story_blobs": {
+    "tools/ci/tests/test_tia_snapshot.py": "88949c5c55a877be4f0d3ce3de426ba73aabc2a0",
+    "tools/ci/tia/snapshot.py": "0486316a9ecfcf0dbcd8100e2b1d26bd50134bce"
+  }
+}
