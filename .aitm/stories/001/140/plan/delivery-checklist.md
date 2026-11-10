@@ -150,3 +150,7 @@ delivery verdict. Its acceptance was the last required story gate.
 The final verifier first [held on a GitHub read failure](premerge-transient-hold.json).
 A fresh authenticated read and retry passed on the same head, base and
 tree before merge. [Story decision comment](https://github.com/kburson/aitm/issues/140#issuecomment-6779689115).
+
+## Done
+
+[Issue #140](https://github.com/kburson/aitm/issues/140) closed as Completed at `2026-11-10T21:31:45Z`. Project 24 read back Done. [Closure receipt](closure-receipt.json).
