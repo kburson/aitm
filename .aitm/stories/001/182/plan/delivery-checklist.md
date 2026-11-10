@@ -47,3 +47,13 @@ The refreshed frozen local gate passed 867 product and CLI tests, 182 helper tes
 The [independent exact re-review](post-ci-source-review.md) passed on the signed head and tree. It verified exact original legacy receipts across both adoption branches and refusal at the typed producer. The first hold stays available as historical evidence. No native GitHub review was submitted. The independent verdict is off-platform.
 
 Carry forward the reviewed boundary. M16 freezes legacy ingestion and reconciles the pending manifest under the established locks. M11 checks native proof and existing exact legacy outcomes before applying an adopted request, durably publishes its own outcome and only then retires the envelope.
+
+### Verified delivery and sign-offs
+
+[PR #195](https://github.com/kburson/aitm/pull/195) merged into trunk at `2026-11-10T22:15:41Z` as `49865245d175ce6c52913738f2c9a42c0abea632`. The fetched merge has ordered parents `a495d60a87ac4ca764f019dc266e579f13f1787e` and `7f77a50fe3320ee706474aff93e8d30fde374c9c`, exact tree `9737a9685e928c57e922cc8a68343ae195b9bacf`, candidate ancestry and zero source diff. Native rules permitted an ordinary merge with zero required native reviews. All six checks passed and the independent verdict is recorded off-platform.
+
+[Coordinator sign-off](../retro/2026-11-10-182-coordinator-retrospective.md) · [Original legacy implementer](../retro/2026-11-10-182-legacy-implementer-retrospective.md) · [Original native implementer](../retro/2026-11-10-182-native-implementer-retrospective.md). The last required gate passed with the legacy implementer's original sign-off at `2026-11-10T22:17:31Z`.
+
+### Done
+
+GitHub read back [#182](https://github.com/kburson/aitm/issues/182) Closed (Completed) at `2026-11-10T22:18:10Z`. [Project 24](https://github.com/users/kburson/projects/24) read back Done, rank 215, M, 3.75 agent-hours and November 10 start. #194 may enter its own pickup. #118 remains gated by #194.
