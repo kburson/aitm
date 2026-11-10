@@ -277,7 +277,9 @@ class MonitorRateCard:
 def load_monitor_rate_card(version: str = _MONITOR_DEFAULT_VERSION) -> MonitorRateCard:
     """Load a monitor-only card from the installed package."""
     _rate_version(version)
-    data = files("aitm_usage").joinpath("rates", f"monitor-{version}.json").read_bytes()
+    data = (
+        files("aitm_usage").joinpath("rates", "monitor", f"{version}.json").read_bytes()
+    )
     card = MonitorRateCard.from_json(data)
     if card.version != version:
         raise ValueError("Monitor rate card version does not match its resource")
