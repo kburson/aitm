@@ -31,3 +31,5 @@ The first overlapping product run had five Codex-reader failures that returned e
 | [file-checks](https://github.com/kburson/aitm/actions/runs/42837579428/job/129903790454) | Success |
 | [collect-evidence](https://github.com/kburson/aitm/actions/runs/42837579428/job/129905743545) | Success |
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42837579428/job/129905841601) | Success |
+
+The [independent off-platform review](post-ci-source-review.md) passed for the exact six-file source diff and both changed test files. The review record resolves the 17-test inventory difference, records the expected red run and scopes the native Linux proof. No native GitHub review was submitted or required by the current trunk rules.
