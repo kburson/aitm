@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 118
 title: "[M08] Service journal and claim order"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/118"
 parent: 100
 children: []
 blocking: [119, 199]
 blocked-by: [117, 182, 194]
 created: "2026-11-10T13:58:00Z"
-updated: "2026-11-10T22:59:44+00:00"
+updated: "2026-11-10T23:19:34+00:00"
 last-branch: "codex/aitm-118-routing-journal"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
