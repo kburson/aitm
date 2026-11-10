@@ -101,3 +101,7 @@ The [independent exact follow-up](post-ci-source-review.md) passed both moved-lo
 [PR #180](https://github.com/kburson/aitm/pull/180) merged by merge commit into trunk at `d769b3169724eeb9ef4b4aee47d3ab4c4489072d` at `2026-11-10T19:59:34Z`. The fetched target matched the exact reviewed tree `57e46ef74951a44b21533816171aa3057502178e` and ordered parents `37a22922f072e39c35434ae645a1c20692b8da01` and `950e0262dba4e2db1b4fe573c898d4b65d7e8ce5`. Candidate ancestry and zero source diff were verified. Native rules allowed merge with zero required native approvals, and the independent review was recorded off-platform.
 
 [Integrator retrospective and sign-off](../retro/2026-11-10-monitor-registry.md). Original [inbox and regression](../retro/2026-11-10-monitor-inbox.md) and [legacy and scanner](../retro/2026-11-10-legacy-and-scanner.md) authors signed their lanes. The last required gate was the original implementer sign-off recorded at `2026-11-10T20:07:01Z` in the [signed monitor-inbox record](../retro/2026-11-10-monitor-inbox.md).
+
+### Done
+
+GitHub closed [#116](https://github.com/kburson/aitm/issues/116) as Completed at `2026-11-10T20:08:19Z`. Project 24 read back Done, rank 200, size M, estimate 4.0 and start November 10. The independently verified delivery and original signed records satisfy the story gates. [#117](https://github.com/kburson/aitm/issues/117) may now enter its own pickup gate.
