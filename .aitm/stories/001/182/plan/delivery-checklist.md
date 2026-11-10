@@ -33,3 +33,9 @@ Authenticated raw replay retained 747 baseline package identities and passed all
 The [first independent exact source review](source-review-attempt-1.md) held the passing tree because a command with a durable legacy receipt could enter the adopted monitor queue on retry. Preserve the signed result and return to Develop. The repair must return the original read-only legacy receipt and prevent a new queue acknowledgement even when compatible monitor admission exists.
 
 The trusted hosted base inventory counts 747 package tests, while the locked local baseline adds the fixed CLI evidence test for 748. The signed tested SHA is the synthetic PR merge on the exact recorded head and base. The carrier author verified that neutral Claude readers never receive a reserved session ID, and that the scanner requires explicit matching native sessions. The existing neutral receipt behavior is preserved by this check.
+
+### Adoption receipt replay Test checkpoint
+
+The original legacy implementer reproduced 18 failures on the exact first reviewed source. The adopted route now returns the original durable legacy receipt across observed adoption and the race with a collector committing before the fence. The lower-level producer also rejects re-publication even when the compatible reader witness is valid. Existing changed-byte conflicts and independent relationship UUIDs retain their behavior.
+
+The refreshed frozen local gate passed 867 product and CLI tests, 182 helper tests, Ruff, whitespace and raw coverage of 9,638/10,538 product and 778/821 helper lines. [PR #195](https://github.com/kburson/aitm/pull/195) read back head `7f77a50fe3320ee706474aff93e8d30fde374c9c`, tree `9737a9685e928c57e922cc8a68343ae195b9bacf` and trunk `a495d60a87ac4ca764f019dc266e579f13f1787e`. [Hosted run 42911743453](https://github.com/kburson/aitm/actions/runs/42911743453) is pending.

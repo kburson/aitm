@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 182
 title: "[M07b] Scope command admission and legacy compatibility"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/182"
 parent: 100
 children: []
 blocking: [118, 194]
 blocked-by: [117]
 created: "2026-11-10T20:23:14Z"
-updated: "2026-11-10T22:02:00+00:00"
+updated: "2026-11-10T22:09:01+00:00"
 last-branch: "codex/aitm-182-scope-command-admission"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
