@@ -29,3 +29,11 @@ The [signed hosted run](https://github.com/kburson/aitm/actions/runs/42899470371
 ### Independent exact source hold
 
 The [first independent exact source review](source-review-attempt-1.md) held the passing tree. The original handoff could be reauthorized and applied after an independent proof disposition had released the affected span to its prior owner. Preserve the signed run and return to Develop for a regression against an append-only source and a narrow terminal-outcome repair. The local baseline of 714 included the explicit CLI control test. The trusted hosted base inventory counts 713 package tests and applies the fixed CLI test to the candidate. The frozen local helper run independently counted 182 tests.
+
+### Terminal retry repair Test checkpoint
+
+The append-only Codex regression reproduced an `APPLIED` retry after a resolved hold. The repaired candidate rejects the original handoff, saves no new event, preserves the durable resolved receipt and retains the prior owner across writer reopen. Existing held and gap dispositions retain their held outcome.
+
+Trunk advanced to `0175e77c398dc97c59db166fa64e2e9a673b4b40` through unrelated CI tooling files during local validation. Those files do not overlap #117. The repaired package source and tests match the prior local repair byte for byte, and the target and candidate match on workflow, tools, lock and package configuration. The refreshed local gate passed 748 product and CLI tests and 182 helper tests with 9,096/9,981 product and 778/821 helper lines covered. Ruff and whitespace passed.
+
+[PR #185](https://github.com/kburson/aitm/pull/185) read back exact head `1b47aa275370482e7b822ce80883549f15158d82` and literal trunk `0175e77c398dc97c59db166fa64e2e9a673b4b40`, tree `200b4b337bd1e0f784aba4adff7689d80158858f`. [Hosted run 42902029986](https://github.com/kburson/aitm/actions/runs/42902029986) is pending.
