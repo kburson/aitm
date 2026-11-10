@@ -33,3 +33,11 @@ Final local verification passed 238 focused provider tests, 589 locked product a
 ### Attempt 1 review hold
 
 [Independent source review](source-review-attempt-1.md) held head `ee74b3f084798cf80404cba3877ba34e6aa55dcd` for split-and-restart proof of a new turn after a saved Desktop cursor and Claude's streamed, nested and linked-receipt paths. The trusted-base inventory contains 570 tests and the candidate contains all 570 plus 18 new bridge cases and the existing candidate-only CLI test. The raw gate replay reproduced the hosted result. Attempt 1 remains evidence for its original head.
+
+### Attempt 2 Test checkpoint
+
+The replacement [PR #136](https://github.com/kburson/aitm/pull/136) head is `805c9e16da0b112cdb8e15543e9c2408c1041978`, tree `5ca29c2890eefadd8fc8000aff442144335c4cae`, targeting unchanged trunk `dc037364ba617b97244c93670d12358d0b5cbba7`. Fresh hosted validation is pending.
+
+Four split-equivalence scenarios exercise every row boundary for two complete Desktop turns, Claude streamed accounting and final corroboration, a nested Agent with a child tool result, and a Claude linked receipt. Each durable cursor round-trips through the wire form, and every split reproduces the single-read latest observations and receipt proofs. The cases exposed and now cover two repairs. A sidechain tool result cannot consume a pending outer Agent link. A Claude revision can retain its original verified checkout by rederiving the keyed anchor from its verified earlier native row. The scanner configuration also keeps the approved source root distinct from project state. Replayed boundaries retain stable native identities for later consumers.
+
+Local verification passed 242 focused tests, 593 locked product and CLI tests and 182 CI helper tests. Raw line coverage was 6,623/7,245 product and 778/821 helpers. Ruff and whitespace passed. [Project metadata readback](../../100/plan/project-metadata-receipt.json).

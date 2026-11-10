@@ -59,3 +59,7 @@ Full-Auto paused at the owner’s direction after [#111](../111/story.md) closed
 Full-Auto resumed November 10, 2026. [#112 M02](../112/story.md) and [#113 M03](../113/story.md) delivered to trunk with exact signed CI, independent source review and implementing-agent sign-off. Both issues were read back as closed and Done. M02's ext4 proof records the observed [Python 3.13.18 baseline pricing import incompatibility](../112/attachments/ext4-publication-proof.md) for later Linux runtime selection.
 
 The reviewed M04 pickup split unavailable Linux carriers into [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md). Each follows #114 and blocks #129. The original accepted plan is preserved. [Split receipt](../114/plan/linux-carrier-split.json).
+
+## GitHub Project metadata
+
+[Board reconciliation receipt](plan/project-metadata-receipt.json). Rank follows the board's increment of ten in accepted leaf order, with the Linux carrier prerequisites before #129. The epic is sized Feature. Size and Estimate on each leaf follow its recorded JIT, and Start date follows its first recorded Development entry in America/Chicago. Carry those three fields into the Project pickup readback for each subsequent leaf. Pending leaf estimates and starts stay blank until those gates. An aggregate epic estimate remains open.

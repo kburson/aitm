@@ -1,0 +1,166 @@
+{
+  "schema": "aitm.epic-project-metadata/v1",
+  "project": 24,
+  "epic": 100,
+  "verified_at": "2026-11-10T16:14:22+00:00",
+  "rank_basis": "Next board ranks in steps of ten; original leaf order with Linux carrier prerequisites immediately before M19",
+  "size_basis": "Feature for the epic; recorded JIT size for each estimated leaf",
+  "estimate_basis": "Recorded leaf JIT agent-hours",
+  "start_basis": "First recorded Development entry in America/Chicago",
+  "items": [
+    {
+      "issue": 100,
+      "rank": 140,
+      "size": "Feature",
+      "estimate": null,
+      "start": "2026-11-10"
+    },
+    {
+      "issue": 111,
+      "rank": 150,
+      "size": "S",
+      "estimate": 2.5,
+      "start": "2026-11-10"
+    },
+    {
+      "issue": 112,
+      "rank": 160,
+      "size": "S",
+      "estimate": 2.5,
+      "start": "2026-11-10"
+    },
+    {
+      "issue": 113,
+      "rank": 170,
+      "size": "M",
+      "estimate": 3.75,
+      "start": "2026-11-10"
+    },
+    {
+      "issue": 114,
+      "rank": 180,
+      "size": "M",
+      "estimate": 3.75,
+      "start": "2026-11-10"
+    },
+    {
+      "issue": 115,
+      "rank": 190,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 116,
+      "rank": 200,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 117,
+      "rank": 210,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 118,
+      "rank": 220,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 119,
+      "rank": 230,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 120,
+      "rank": 240,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 121,
+      "rank": 250,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 122,
+      "rank": 260,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 123,
+      "rank": 270,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 124,
+      "rank": 280,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 125,
+      "rank": 290,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 126,
+      "rank": 300,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 127,
+      "rank": 310,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 128,
+      "rank": 320,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 134,
+      "rank": 330,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 135,
+      "rank": 340,
+      "size": null,
+      "estimate": null,
+      "start": null
+    },
+    {
+      "issue": 129,
+      "rank": 350,
+      "size": null,
+      "estimate": null,
+      "start": null
+    }
+  ]
+}
