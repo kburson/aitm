@@ -17,3 +17,11 @@ The owner's stop is before merge.
 - Focused collection and execution are separate from the hosted #103
   test list and helper denominator.
 - Hosted validation and independent review apply to this exact candidate.
+
+### Independent source review
+
+The [intermediate hosted review](hosted-task-review.md) identified four
+refusal gaps. The [whole-branch SPR](source-review-attempt-1.md)
+confirmed the regressions and fixes on the exact candidate and
+accepted the source without actionable findings. The source verdict
+and authenticated hosted checks are separate.

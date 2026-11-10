@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 138
 title: "[#133 T01] Pin the serial baseline"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/138"
 parent: 133
 children: []
 blocking: [139]
 blocked-by: []
 created: "2026-11-10T16:50:57Z"
-updated: "2026-11-10T20:24:34Z"
+updated: "2026-11-10T20:47:09Z"
 last-branch: "codex/aitm-138-serial-baseline"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/pin-serial-baseline-design.md"], "plan": ["plan/2026-11-10-138-pin-serial-baseline.md", "plan/2026-11-10-138-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/pin-serial-baseline-design.md"], "plan": ["plan/2026-11-10-138-pin-serial-baseline.md", "plan/2026-11-10-138-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md", "plan/delivery-checklist.md"], "attachments": ["attachments/serial-baseline.md"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T01", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "116458afe27d4ab862a97146e04d72bbf6be8f13dc63b491adb1569f3aa8361e"}
