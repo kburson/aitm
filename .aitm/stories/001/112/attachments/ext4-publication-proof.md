@@ -1,0 +1,11 @@
+# #112 atomic filesystem proof on Linux arm64 ext4
+
+Recorded November 10, 2026 for candidate head `b04b01162a967ee1eed5cc557d4f2398a5fe44a1`, tree `29d903cebbe75e9a1f963682be77b9c219bdeafd`. Only source archived from that exact tree was mounted read-only. Tests ran as UID 65534 with network disabled, all capabilities dropped and no provider credentials or transcripts mounted. Test volumes were disposable local ext4 on aarch64 Linux `7.0.12-linuxkit` and were removed after execution.
+
+1. The standalone JIT probe separately exercised `RENAME_EXCHANGE` on real ext4 and checked inode exchange and parent sync. The candidate's actual `host_fs` operations then passed on the [#102 image](../../102/attachments/report.md), digest `sha256:a5a7017efc5969e00ae2b91c8eb0631049a569652aa4ffc4501769049ae45c72` with CPython 3.13.18. The proof checked successful file publication, no-replace directory collision with both inodes preserved, real cross-parent exchange, both parent fsync calls and refusal without changing either inode.
+2. The full caller harness also passed on a separate Debian bookworm image at digest `sha256:b685a4fa58bb19d1814d78a1ec0f0208f351452724f78b20212c984d6e124a34` with CPython 3.13.9, the exact Python version pinned by hosted CI. It exercised private inbox publication and collision, no-replace with two nonempty directories, the actual restore swap caller with real fsync on both parents after the inode exchange, refused exchange and exact export replay.
+3. The original #102 CPython 3.13.18 image failed to import the candidate's pricing module transitively through the backup caller. Untouched delivered base `c0371cc2363c1e95892fdcad75aa20181abeba20` reproduced it. In that runtime, slotted dataclass processing expects `__code__` on a cached property getter of `RateCard`. Carry the interpreter compatibility observation into runtime selection and qualification.
+
+This evidence qualifies the atomic filesystem behavior exercised here. Native provider, systemd and release qualification remain part of #129.
+
+Proof output digests for the original image and full caller harness are `99643a683a2855db0b85b7d61587df4a9bf265e223b1162eade48b44624f38a3` and `a592858d957be2296ff047e55a4ee3017d52e0707a32ea60f3493fb4819241a8`.
