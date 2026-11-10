@@ -53,3 +53,7 @@ All six jobs passed in [run 42864395331 attempt 1](https://github.com/kburson/ai
 [Run 42867102377 attempt 1](https://github.com/kburson/aitm/actions/runs/42867102377/attempts/1) passed all six jobs. The delivered verifier authenticated the exact live tested merge `dede6b2de8d143f479d86524e401adff1e8a95d7` with ordered base/head parents and reviewed tree `a22dccc417716be8ba1704b36acae87fe9bfc420`. The authenticated artifact is `13788132152`, with archive SHA-256 `79d9cb1da5d4e2715cfb9b974fc40b623a72b6294d3231439a85f5030607e588` and subject SHA-256 `1142b1dd5f071dbc3d2118f94c6cbc8b2f7439c006d0b9bea5623e6b0784f1bd`.
 
 Raw evidence replay retained all 592 baseline tests and added 31 native Grok and 5 Grok pricing cases plus the existing candidate-only CLI case. Raw coverage passed at 7,141/7,818 product and 778/821 helper lines. The independent source verdict is pending.
+
+### Independent source review hold
+
+The [first independent source review](source-review-attempt-1.md) held the exact passing candidate for a keyed snapshot dispute that stalled unrelated verified native turns. Return to Develop and retain both the passing signed CI and the independent hold. Reissue the source only after the regression shows unaffected turns advance while the affected key stays disputed. The candidate-only CLI test is included by the fixed hosted candidate command. The trusted-base inventory collects the package tests.
