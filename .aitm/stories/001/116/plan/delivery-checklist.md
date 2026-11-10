@@ -39,3 +39,9 @@ The [first independent source review](source-review-attempt-1.md) held the exact
 The writer persists one authenticated native checkpoint per known stream before applying a source-wide change. It uses the earliest qualified native boundary strictly after that checkpoint. Native or locator unavailability leaves the command queued. Restart reuses the same frontiers, and a stream with proof cannot cause partial application while another stream waits. An exact queued command clears its saved frontiers only with the terminal receipt and state change. Direct proofs are bound to the matching armed change and writer instance.
 
 The old head reproduced both failures. The focused repair passed 116 registry, control, legacy and scan tests, including a two-stream restart and physical root substitution. The locked local gate passed 676 product and CLI tests and 182 helper tests, covering 7,952/8,734 product lines and 778/821 helper lines. Ruff and whitespace checks passed.
+
+### Capture frontier repair Review checkpoint
+
+[Run 42875770798 attempt 1](https://github.com/kburson/aitm/actions/runs/42875770798/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `60817ecbfcb88472533ba0d8e99c4a205aa6d66c`, exact replacement head and tree, and ordered parents on unchanged trunk. Artifact `13790723844` had archive SHA-256 `0ffdf817c6dd0add5c8b005cddad1c617526d44c344886c54073dbcaab850397` and subject SHA-256 `5aae9ec044f05906887f8e8e7ecb677a24cfc187888b7b8c714c26a9662383b8`.
+
+The verifier treats test paths as controls and requires the explicit candidate tree for these accepted test additions. The workflow, verifier, gate policy, package configuration and lock were identical to trunk. With the exact tree input, signed verification passed. Authenticated raw replay retained all 629 baseline identities, validated all 676 candidate tests and matched both local coverage results. The independent exact source re-review is pending.
