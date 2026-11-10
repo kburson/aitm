@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 140
 title: "[#133 T03] Resolve exact Git changes"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/140"
 parent: 133
 children: []
 blocking: [141, 147]
 blocked-by: []
 created: "2026-11-10T16:51:02Z"
-updated: "2026-11-10T21:11:47Z"
+updated: "2026-11-10T21:16:29Z"
 last-branch: "codex/aitm-140-git-snapshot"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"

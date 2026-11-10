@@ -60,3 +60,21 @@ The owner approved the exact tree `e89faf081d000fd8749430edd8ce47328e6703bb` for
 - Focused collection and execution are separate from the hosted #103
   test list and helper denominator.
 - Hosted validation and independent review apply to this exact candidate.
+
+## Refreshed candidate after #183 delivery
+
+The earlier review remains evidence for its original base. The same
+PR received a normal merge of verified trunk `0175e77c398dc97c59db166fa64e2e9a673b4b40` into the story
+branch. Refreshed head is `62c248b9ab534f55565d7c1ec636bfe5b460b0dd`, exact tree `4296f0b010776d754c39cdc9605e01e2b76e6805`. Compared to
+the refreshed base, only the two original snapshot files are added,
+and both are byte-identical to the initial reviewed source.
+
+The refreshed local focused result was `38 passed in 24.46s`.
+The complete combined local suite returned
+`983 passed in 108.57s (0:01:48)`. Ruff and source whitespace passed.
+All six required jobs passed on the [exact refreshed attempt](https://github.com/kburson/aitm/actions/runs/42902200360/attempts/1).
+Signed CI and raw replay matched. [Hosted receipt](hosted-test-62c248b9ab53.json).
+The [independent refresh review](source-review-attempt-2.md) accepted the exact
+refreshed candidate.
+
+[Owner disposition](owner-disposition-62c248b9ab53.json) and the [trusted verifier](verifier-pass-62c248b9ab53.json) bind the exact refreshed tree. The independent review is effective on that candidate.

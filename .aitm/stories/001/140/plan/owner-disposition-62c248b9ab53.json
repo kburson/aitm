@@ -1,0 +1,12 @@
+{
+  "story": 140,
+  "repository": "kburson/aitm",
+  "pr": 184,
+  "base": "0175e77c398dc97c59db166fa64e2e9a673b4b40",
+  "head": "62c248b9ab534f55565d7c1ec636bfe5b460b0dd",
+  "tested_tree": "4296f0b010776d754c39cdc9605e01e2b76e6805",
+  "disposition": "approved",
+  "source": "Owner reply in sequential merge conversation",
+  "owner_reply": "Approve the refreshed exact tree",
+  "scope": "Existing #103 exact-tree gate for refreshed PR #184"
+}
