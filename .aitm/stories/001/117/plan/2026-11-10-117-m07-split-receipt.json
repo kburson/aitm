@@ -1,0 +1,34 @@
+{
+  "schema": "aitm.monitor-leaf-split/v1",
+  "verified_at": "2026-11-10T20:24:22+00:00",
+  "parent": 100,
+  "source_leaf": 117,
+  "dependent": 118,
+  "accepted_plan": {
+    "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4",
+    "sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+    "section_sha256": "f2e8d780402afd62b409a1259957ecb178afd4f29c33aa9725c21256d69b009d"
+  },
+  "pickup_sha256": "7b6343247aae062eb236144993ea62749e216aee06f812db3eb9481429f0176f",
+  "split_sha256": "c6b848d06140e44849ea31ffd0579e7f170c076cf381888a3ae0b25dc23ff987",
+  "new_leaf": {
+    "number": 182,
+    "id": 6315142268,
+    "url": "https://github.com/kburson/aitm/issues/182",
+    "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHnrc0",
+    "parent": 100,
+    "blocked_by": [
+      117
+    ],
+    "blocking": [
+      118
+    ],
+    "status": "Backlog",
+    "rank": 215
+  },
+  "dependent_blocked_by": [
+    117,
+    182
+  ],
+  "original_plan_retained": true
+}

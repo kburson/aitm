@@ -7,7 +7,7 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/117"
 parent: 100
 children: []
-blocking: [118]
+blocking: [118, 182]
 blocked-by: [116]
 created: "2026-11-10T13:57:58Z"
 updated: "2026-11-10T14:00:46Z"
@@ -26,6 +26,8 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M07", "path"
 [GitHub issue #117](https://github.com/kburson/aitm/issues/117) · [Parent #100](../100/story.md) · [Accepted plan leaf M07](../100/plan/multi-project-usage-monitor-implementation-plan.md#m07-authenticated-scope-handoff-and-proof-holds)
 
 **Required predecessors** [M06 #116](../116/story.md).
+
+The [reviewed M07 split](plan/2026-11-10-117-m07-split.md) retains this issue for native routing, handoff and proof holds. [#182 M07b](../182/story.md) owns producer and legacy compatibility. Both gate #118. [Accepted pickup](plan/2026-11-10-117-native-scope-plan.md) · [Independent review](plan/2026-11-10-117-native-scope-pickup-review.md).
 
 Apply the accepted plan’s [legacy command surface after adoption](https://github.com/kburson/aitm/blob/be326aa06bbf0180969ecadb8df74cf4a37a62c4/.aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md#legacy-command-surface-after-adoption).
 

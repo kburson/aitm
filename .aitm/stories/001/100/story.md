@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+children: [111, 112, 113, 114, 115, 116, 117, 182, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -59,6 +59,8 @@ Full-Auto paused at the owner’s direction after [#111](../111/story.md) closed
 Full-Auto resumed November 10, 2026. [#112 M02](../112/story.md) and [#113 M03](../113/story.md) delivered to trunk with exact signed CI, independent source review and implementing-agent sign-off. Both issues were read back as closed and Done. M02's ext4 proof records the observed [Python 3.13.18 baseline pricing import incompatibility](../112/attachments/ext4-publication-proof.md) for later Linux runtime selection.
 
 The reviewed M04 pickup split unavailable Linux carriers into [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md). Each follows #114 and blocks #129. The original accepted plan is preserved. [Split receipt](../114/plan/linux-carrier-split.json).
+
+The reviewed M07 split retains [#117 M07a](../117/story.md) for native routing and holds and assigns [#182 M07b](../182/story.md) the producer, compatibility and installed launcher work. Both gate #118. [Split and native evidence](../117/plan/2026-11-10-117-m07-split.md) · [Board receipt](../117/plan/2026-11-10-117-m07-split-receipt.json).
 
 ## GitHub Project metadata
 
