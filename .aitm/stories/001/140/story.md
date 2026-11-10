@@ -10,12 +10,12 @@ children: []
 blocking: [141, 147]
 blocked-by: []
 created: "2026-11-10T16:51:02Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-10T19:00:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/resolve-exact-git-changes-design.md"], "plan": [], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T03", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "e32dead37553daa9b2dda1850688f4ec780517b4fd028345544e794f4872a101"}
@@ -46,3 +46,11 @@ dependency proof, and implementation authority govern pickup.
   effective local tracked and relevant untracked contents and return
   uncertainty if they change mid-read. V(snapshot) passes with
   missing objects, path escape and non-ASCII path fixtures.
+
+## Accepted leaf design
+
+[Exact design](design/resolve-exact-git-changes-design.md) · `sha256:29b5525d07b63789496f789e5faad07cdd60f8a4c2a257b3e222104db7a26248`.
+
+[SAR](design/reviews/sar-2026-11-10-leaf-design/review-manifest.md) ·
+[Independent SPR](design/reviews/spr-2026-11-10-leaf-design/review-manifest.md) ·
+[Native XPR](design/reviews/xpr-2026-11-10-leaf-design/review-manifest.md).

@@ -1,0 +1,165 @@
+diff --git a/.aitm/stories/001/138/design/pin-serial-baseline-design.md b/.aitm/stories/001/138/design/pin-serial-baseline-design.md
+index 6b88111..15fc0bb 100644
+--- a/.aitm/stories/001/138/design/pin-serial-baseline-design.md
++++ b/.aitm/stories/001/138/design/pin-serial-baseline-design.md
+@@ -25,9 +25,9 @@ governs input verification.
+   `c1c9bc00e7845278b805d4f2828de3663a79c18e`. Use the retained passing
+   [#103 verifier and independent delivery record](../../115/plan/delivery-checklist.md#snapshot-repair-review-checkpoint)
+   from before merge. That receipt and the exact six jobs establish the PR
+-  role. Require the same-attempt base, Python, collector and signed archives
+-  by provider ID and SHA-256. Match base identity and signed inventory/base
+-  digests to the raw records. The signed subject SHA-256 is
++  role. Require all four same-attempt archives listed below. Match base
++  identity and signed inventory/base digests to the raw records. The signed
++  subject SHA-256 is
+   `28d8102a38ca8c130e8c5c5f95eeea8a2d34d648d7fef96367e58c09c68811e2`.
+   Keep the exact trusted PR base outcomes as a separate role within that
+   attempt. A fresh PR reference would require the delivered verifier from
+@@ -39,11 +39,10 @@ governs input verification.
+   Establish the push event, exact trunk commit/tree, canonical workflow
+   and GitHub Actions check suite, and successful `python`, `quality`,
+   `file-checks` and `collect-evidence` jobs for that attempt. Push mode
+-  deliberately skips the PR base and signer jobs. Bind Python archive
+-  `13788584397` to that push, attempt and SHA-256
+-  `aab36e6826ad136601408cbfc6f830513cbd9f8b201986997a8d5c356e8cd631`,
+-  and independently replay the trusted #103 push gate on its raw inputs.
+-  Keep this push proof and the PR proof separate even when their trees match.
++  deliberately skips the PR base and signer jobs. Bind the Python archive
++  below and independently replay the trusted #103 push gate on its raw
++  inputs. Keep the push proof separate from the PR proof even when their
++  trees match.
+ - Each role records repository ID, event/ref, exact commit/tree and
+   applicable base/head, canonical workflow, run/attempt, authenticated
+   job and archive identities, policy, gate, observer, verifier,
+@@ -51,22 +50,68 @@ governs input verification.
+   The observed controls match the parent plan's inspected source. Pin
+   Python 3.13.9, uv 0.10.6, macOS-26 Darwin/APFS, actual image
+   `macos26:20261102.0473.1` and Xcode 26.6 build 17F113 for these
+-  observations. Recheck the available custody and the delivery base at JIT.
++  observations. At JIT reread archive custody and the current delivery base,
++  controls, runner and toolchain. Keep the historical identities frozen.
++
++| Role and archive | Artifact ID | Archive SHA-256 |
++| --- | --- | --- |
++| PR base | `13789881233` | `ef902445d3fa71f9b35f9e2417e69a6f0b841a2bce6e8312b227b87ea593fde2` |
++| PR Python | `13788603444` | `927e1113fc7b02dfafb587c43e71490448c0d24781bc366fbad9dec242415f78` |
++| PR collector | `13788903030` | `70f2df3db8aa241cae9f7f98ef79a70e8acf18563085ae53e57672d16b7293a4` |
++| PR signed | `13790255902` | `3ab42fd5de5735616dc4c500e85ce933159ddd373f576effc9296f1449d8d264` |
++| Push Python | `13788584397` | `aab36e6826ad136601408cbfc6f830513cbd9f8b201986997a8d5c356e8cd631` |
++
++Authenticated GitHub metadata reports the push archive created at
++`2026-11-10T18:08:33Z`, attached to run `42871778928` on the delivered
++commit and named `aitm-ci-python-a1`. Both the attempt-specific job list
++and archive naming bind attempt 1. Use the owning run, attempt, name and
++digest for custody. Numeric ordering carries no custody evidence.
+ 
+ ## Baseline contract
+ 
+ `build_baseline(verified_ci103, timings) -> Baseline` is a deterministic
+-projection of proof supplied by a trusted reader. It checks binding and
+-completeness across each proof envelope and its artifacts before producing
+-a versioned comparison record. Consume the existing verifier and outcome
+-custody. Capture the complete product test inventory and classified outcomes
+-from the #103 observer, including the candidate-only CLI evidence test,
+-and preserve the separate trusted base inventory and outcome comparison.
+-Bind the tracked product source inventory and the exact CI-helper test
+-targets from the workflow and helper source scope from the policy. The
+-helper lane's policy paths and coverage are available. A separate
+-per-node helper outcome inventory is Unknown unless independently
+-retained for that attempt.
++projection of closure-owner-supplied proof. The closure owner uses the
++retained passing `tools/ci/verify_pr.py` result for the historical PR and
++replays `tools/ci/python_gate.py` in push mode using the protected,
++exact historical controls and authenticated push inputs. The projection
++receives those results and proof envelopes. It checks their binding and
++completeness and has no GitHub credentials or network access of its own.
++
++At trust boundaries use canonical JSON envelopes `aitm.tia-ci103-input/v1`
++and `aitm.tia-baseline-timings/v1`, with evidence roles and custody
++identities. Reject duplicate JSON keys before decoding into maps,
++unsupported envelope or receipt schemas, and absolute, aliased or
++escaping source, archive-entry and coverage paths before use. Support
++only the declared #103 shapes for raw embedded receipts.
++
++Emit canonical `aitm.tia-baseline/v1`. Preserve the exact role bindings,
++source and test inventories and their digests, classified product outcomes,
++helper collection provenance, coverage scope and counts, child/wheel/file
++proof, and timing observations with units and boundaries. #139 consumes
++source/test identities, ownership, role and platform bindings, and the
++helper collection provenance for reconciliation. T35 consumes the timing
++roles, boundaries and matching runner/control/cache identities.
++
++Use the #103 observer for product test node IDs and outcomes, including the
++candidate-only CLI evidence test, and retain the distinct trusted PR-base
++inventory and outcome comparison. The historical hosted helper lane ran
++four explicit test targets and recorded coverage and job success. It did
++not record helper node IDs or per-node outcomes. The `python-base` job
++ran product tests only, so it has no helper test obligations.
++
++Pin the helper test node inventory from controlled collection of those
++four exact workflow targets from the shared PR-tested and trunk tree.
++Use its lock, Python 3.13.9 and the exact #103 observer with pytest
++`--collect-only`. Retain the sorted unique IDs, evidence digest, tree,
++command, lock and runner scope as a **local advisory collection**, separate
++from hosted results. Refinement reproduced 182 unique IDs with no
++deselections, sorted compact JSON-array SHA-256
++`69cef362f4c87ba65846443eda6a2c8ae3dca3431f76905dcefc459c1e7200a4`.
++#139 reconciles helper ownership and obligations against this exact-tree
++collection and keeps its advisory classification. It cannot use it as a
++hosted `CollectionProof` or infer historical per-node outcomes. A missing
++or discrepant required helper collection blocks #138 acceptance and #139
++pickup pending reassessment.
+ 
+ Keep raw line and available branch coverage evidence for both scopes,
+ including coverage digests and covered/executable counts, the two normally
+@@ -102,6 +147,9 @@ lock and runner scope and keep unlike observations labeled separately.
+ 
+ The `test` bucket includes the serial package and helper work and
+ intervening coverage/tool setup. The lane total also includes wheel smoke.
++Python start after event uses attempt-specific job start minus run creation.
++Neither attempt observed the comparable cold profile. Reassess at JIT if
++an additional cold experiment is required within the leaf budget.
+ Record queue, setup, test execution, collector duration or latency, total
+ feedback, and hosted runner consumption separately using their observed
+ boundaries. Sum non-skipped job durations for runner consumption and keep
+@@ -124,10 +172,20 @@ qualification windows.
+   own pinned source bases. #138 gets its own source branch and worktree at
+   pickup. #140 owns `tools/ci/tia/snapshot.py` and
+   `tools/ci/tests/test_tia_snapshot.py`. Neither leaf needs the other's
+-  source or proof. Shared workflow, verifier and policy changes are
+-  outside T01. #103's verifier classifies additions under `tools/ci/`
+-  as gate-defining paths, so record the required exact-tree disposition
+-  and independent review for T01's own PR through the existing procedure.
++  source or proof. Use the implicit `tia` namespace without an initializer.
++  Put the physical checkout's `tools/ci` on `PYTHONPATH` for the focused
++  run and import `tia.baseline`. Neither leaf owns a common package file.
++- Shared workflow, verifier and policy changes are outside T01. The raw
++  CI coverage collector scans `tools/ci`, but the #103 gate sums only the
++  explicit `policy["helpers"]` files through `python_gate._line_totals`.
++  The four pinned helpers exclude `tools/ci/tia/**`, so the new uncollected
++  module does not increase the current gate denominator. Confirm this at
++  JIT and the exact head. Keep the unchanged #103 floor and attach separate
++  focused evidence for the new code. A drifted scope or failed required
++  floor blocks delivery and returns to planning or the existing policy
++  authority for disposition. #103's verifier still classifies additions
++  under `tools/ci/` as gate-defining paths. Obtain the required exact-tree
++  owner disposition and independent review through the existing procedure.
+ - Acceptance requires an exact historical pair with both proof roles,
+   raw replay matching the verified scopes, complete attempt custody and a
+   sanitized report that can be reconciled to its inputs. Each cold/warm
+@@ -142,10 +200,11 @@ qualification windows.
+ - Start implementation verification with a failing
+   `test_baseline_rejects_mixed_attempts`. Then pass the positive exact-pair
+   and refusal cases with `V(baseline)`, using
+-  `uv run --project packages/aitm-usage --locked pytest -q tools/ci/tests/test_tia_baseline.py`.
+-  Record the focused run separately. The current #103 job does not
+-  collect the new leaf test by default. Complete exact-head #103
+-  validation and normal delivery for #138.
++  `PYTHONPATH="$PWD/tools/ci" uv run --project packages/aitm-usage --locked python -m pytest -q tools/ci/tests/test_tia_baseline.py`
++  from the physical checkout root. Retain exact-head command, tree,
++  runtime, collected node IDs and red/green results in the story's
++  delivery evidence. The current #103 job does not collect the new leaf
++  test by default. Complete exact-head #103 validation separately.
+ - Keep **2.5h / S / P1**. The authenticated readback and available raw
+   archive custody keep the work to one small projection, focused tests,
+   and one report. Budget 0.5h for custody and exact identity readback,

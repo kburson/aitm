@@ -10,12 +10,12 @@ children: []
 blocking: [139]
 blocked-by: []
 created: "2026-11-10T16:50:57Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-10T19:00:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/pin-serial-baseline-design.md"], "plan": [], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T01", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "116458afe27d4ab862a97146e04d72bbf6be8f13dc63b491adb1569f3aa8361e"}
@@ -48,3 +48,11 @@ sanitized baseline report. **Interface**
 - [ ] Make `test_baseline_rejects_mixed_attempts` fail first, then
   verify with V(baseline). A base/shard from another attempt cannot
   qualify; both timing samples retain actual measurements or Unknown.
+
+## Accepted leaf design
+
+[Exact design](design/pin-serial-baseline-design.md) · `sha256:d080652606e1e177c4c79c5a9c17a98cdaf5ef8d38ce641f4b55ff89ac0efa0b`.
+
+[SAR](design/reviews/sar-2026-11-10-leaf-design/review-manifest.md) ·
+[Independent SPR](design/reviews/spr-2026-11-10-leaf-design/review-manifest.md) ·
+[Native XPR](design/reviews/xpr-2026-11-10-leaf-design/review-manifest.md).

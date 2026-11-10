@@ -1,0 +1,82 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "round": 1,
+  "artifact_path": ".aitm/stories/001/138/design/pin-serial-baseline-design.md",
+  "artifact_commit": "f7928d15ace3a4949ce67c42da37ea7371e05892",
+  "artifact_digest": "sha256:afc748d5a3f07ecd92be59c5866af3fc919548d79f338380b750790be8dfeeb2",
+  "physical_lines": 157,
+  "round_start_bound": "2026-11-10T18:48:09.604Z",
+  "round_end": "2026-11-10T18:50:59.611Z",
+  "reviewer_fingerprint": "sha256:2fb694d9ad80b4467c1bb5056516a998d517503f3ff8035c80ede39b6324374b",
+  "observed_response_models": [
+    "claude-opus-5-5"
+  ],
+  "reads": [
+    {
+      "requested_at": "2026-11-10T18:48:19.258Z",
+      "offset": 1,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:48:19.267Z",
+      "returned_start": 1,
+      "returned_count": 40,
+      "reported_total_lines": 158,
+      "displayed_first": 1,
+      "displayed_last": 40,
+      "verified_lines": 40,
+      "mismatched_lines": [],
+      "error": false
+    },
+    {
+      "requested_at": "2026-11-10T18:48:20.313Z",
+      "offset": 41,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:48:20.324Z",
+      "returned_start": 41,
+      "returned_count": 40,
+      "reported_total_lines": 158,
+      "displayed_first": 41,
+      "displayed_last": 80,
+      "verified_lines": 40,
+      "mismatched_lines": [],
+      "error": false
+    },
+    {
+      "requested_at": "2026-11-10T18:48:21.125Z",
+      "offset": 81,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:48:21.140Z",
+      "returned_start": 81,
+      "returned_count": 40,
+      "reported_total_lines": 158,
+      "displayed_first": 81,
+      "displayed_last": 120,
+      "verified_lines": 40,
+      "mismatched_lines": [],
+      "error": false
+    },
+    {
+      "requested_at": "2026-11-10T18:48:22.002Z",
+      "offset": 121,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:48:22.010Z",
+      "returned_start": 121,
+      "returned_count": 38,
+      "reported_total_lines": 158,
+      "displayed_first": 121,
+      "displayed_last": 158,
+      "verified_lines": 37,
+      "mismatched_lines": [],
+      "error": false
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_source_evidence": [
+    {
+      "source": "retained private provider transcript prefix through submitted_at",
+      "prefix_sha256": "cd85deb289297b852822e563d84a5779b3c40103581ab73671a9edfb56116938",
+      "prefix_bytes": 670228
+    }
+  ],
+  "assurance": "Observed numbered Read tool-result lines matched byte-for-byte as UTF-8 text to every line of the native input Git blob within this round. This proves retrieval coverage, not attention or independent execution attestation. Trailing newline has no additional authored line; provider totalLines may count its empty split element."
+}

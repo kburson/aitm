@@ -1,0 +1,54 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "round": 1,
+  "artifact_path": ".aitm/stories/001/140/design/resolve-exact-git-changes-design.md",
+  "artifact_commit": "9308cffd586c003c5ce8112ab3c91d1088999db8",
+  "artifact_digest": "sha256:f20d48b0ad669f29378901b275ad8b22f1e0f364503c19460e37da41367fe029",
+  "physical_lines": 57,
+  "round_start_bound": "2026-11-10T18:55:56.402Z",
+  "round_end": "2026-11-10T18:58:06.532Z",
+  "reviewer_fingerprint": "sha256:c8254d8e818025ffb23e08bc62f632a5bcbb5293376cd944530280a09f8db56e",
+  "observed_response_models": [
+    "claude-opus-5-5"
+  ],
+  "reads": [
+    {
+      "requested_at": "2026-11-10T18:56:00.076Z",
+      "offset": 1,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:56:00.087Z",
+      "returned_start": 1,
+      "returned_count": 40,
+      "reported_total_lines": 58,
+      "displayed_first": 1,
+      "displayed_last": 40,
+      "verified_lines": 40,
+      "mismatched_lines": [],
+      "error": false
+    },
+    {
+      "requested_at": "2026-11-10T18:56:02.164Z",
+      "offset": 41,
+      "limit": 40,
+      "returned_at": "2026-11-10T18:56:02.176Z",
+      "returned_start": 41,
+      "returned_count": 18,
+      "reported_total_lines": 58,
+      "displayed_first": 41,
+      "displayed_last": 58,
+      "verified_lines": 17,
+      "mismatched_lines": [],
+      "error": false
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_source_evidence": [
+    {
+      "source": "retained private provider transcript prefix through submitted_at",
+      "prefix_sha256": "07cb879bd555321e35e0bb0e5c488c1547153ce87ded39fc52d452aff0c888fb",
+      "prefix_bytes": 585121
+    }
+  ],
+  "assurance": "Observed numbered Read tool-result lines matched byte-for-byte as UTF-8 text to every line of the native input Git blob within this round. This proves retrieval coverage, not attention or independent execution attestation. Trailing newline has no additional authored line; provider totalLines may count its empty split element."
+}
