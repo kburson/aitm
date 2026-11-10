@@ -81,3 +81,5 @@ Authenticated raw replay preserved all 592 baseline identities and added 32 nati
 [Signed implementing-agent retrospective](../retro/2026-11-10-grok-adapter.md) · [Original delegated pricing retrospective](../retro/2026-11-10-grok-pricing.md).
 
 The last required gate was the implementing-agent sign-off at `2026-11-10T18:07:32Z`.
+
+GitHub readback confirmed Completed closure at `2026-11-10T18:07:35Z` and Project 24 status Done. #137 may enter its own preparation when authenticated Linux carrier evidence is available. [Issue #115](https://github.com/kburson/aitm/issues/115).

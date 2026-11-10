@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 115
 title: "[M05] Grok evidence adapter"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/115"
 parent: 100
 children: []
 blocking: [120, 121, 137]
 blocked-by: [114]
 created: "2026-11-10T13:57:54Z"
-updated: "2026-11-10T18:04:19+00:00"
+updated: "2026-11-10T18:07:37+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
