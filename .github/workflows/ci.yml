@@ -186,7 +186,8 @@ jobs:
           printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
           COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
             --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
-            tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py tools/ci/tests/test_verify_pr.py
+            tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py \
+            tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py
           cache=cold
           if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
           jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
@@ -250,9 +251,42 @@ jobs:
           "$ruff" format --check --config packages/aitm-usage/pyproject.toml tools/ci
           go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
+  file-checks:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    outputs:
+      checkout: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: source
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.22.2'
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: false
+      - name: Check tracked Markdown, YAML and JSON
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          npm ci --prefix tools/ci/file-lint --ignore-scripts --no-audit --no-fund
+          uv sync --project tools/ci/file-lint --locked --python "$PYTHON_VERSION"
+          uv run --project packages/aitm-usage --locked --no-dev --python "$PYTHON_VERSION" \
+            python tools/ci/file_checks.py --root . \
+              --markdownlint tools/ci/file-lint/node_modules/.bin/markdownlint-cli2 \
+              --yamllint tools/ci/file-lint/.venv/bin/yamllint
+
   collect-evidence:
     if: always() && !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
-    needs: [python-base, python, quality]
+    needs: [python-base, python, quality, file-checks]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -281,6 +315,7 @@ jobs:
           python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json --needs "$RUNNER_TEMP/aitm-needs.json"
           jq -e --arg merge "$GITHUB_SHA" --arg base "$BASE" --arg mode "$mode" '
             .python.outputs.checkout==$merge and .quality.outputs.checkout==$merge and
+            ."file-checks".outputs.checkout==$merge and
             ($mode=="push" or ."python-base".outputs.checkout==$base)
           ' "$RUNNER_TEMP/aitm-needs.json" >/dev/null
           check_artifact() {

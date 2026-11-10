@@ -1,5 +1,6 @@
 import copy
 import json
+from pathlib import Path
 
 import pytest
 from python_gate import check_jobs, evaluate, main
@@ -304,3 +305,22 @@ def test_missing_or_malformed_documents_have_blocked_dispositions(inputs):
     assert "invalid pytest evidence" in result["failures"]
     assert "product: malformed line counts" in result["failures"]
     assert "invalid child coverage evidence" in result["failures"]
+
+
+@pytest.mark.parametrize("mode", ["pr", "push"])
+@pytest.mark.parametrize("unavailable", ["missing", "skipped"])
+def test_shipped_policy_requires_file_checks_when_other_lanes_pass(mode, unavailable):
+    policy_path = Path(__file__).resolve().parents[1] / "policy.json"
+    policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    lanes = {"python": {"result": "success"}, "quality": {"result": "success"}}
+    if mode == "pr":
+        lanes["python-base"] = {"result": "success"}
+    if unavailable == "skipped":
+        lanes["file-checks"] = {"result": "skipped"}
+
+    held = check_jobs(policy, lanes, mode)
+    assert held["passed"] is False
+    assert held["failures"] == [f"required job file-checks: {unavailable}"]
+
+    lanes["file-checks"] = {"result": "success"}
+    assert check_jobs(policy, lanes, mode)["passed"] is True
