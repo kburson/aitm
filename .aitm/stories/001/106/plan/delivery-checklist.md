@@ -5,3 +5,5 @@ The [source PR](https://github.com/kburson/aitm/pull/110) targets the delivered 
 The local suite passed 531 product and 182 helper tests with 6,285/6,910 and 778/821 raw lines. One earlier local run failed an unchanged crash-recovery case. Two isolated passes and a full serial pass followed. Pinned local tool probes rejected invalid YAML and Actions syntax, an invalid Markdown heading, and Markdown override and YAML file-wide suppression. Malformed JSON and declared schemas are exercised by the helper tests. Maintained fixture Markdown and JSON stay in scope. No fixture exclusions were needed.
 
 The first ordinary PR attempt retains only the existing root README heading finding. GitHub's file lane reproduced MD022 and reported TypeScript not applicable. [Native failure probe](https://github.com/kburson/aitm/actions/runs/42828814252)
+
+The native probe passed Python, Python base and quality. The file lane failed on the existing Markdown heading. The collector refused that failure and the signer skipped. The exact source returns to Develop for the one-line correction. [Completed negative attempt](https://github.com/kburson/aitm/actions/runs/42828814252/attempts/1)
