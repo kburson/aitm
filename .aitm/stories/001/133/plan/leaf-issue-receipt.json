@@ -1,0 +1,1269 @@
+{
+  "parent": 133,
+  "accepted_plan_commit": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84",
+  "accepted_plan_sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7",
+  "verified_at": "2026-11-10T16:56:26Z",
+  "parent_board": {
+    "number": 133,
+    "project_item": "PVTI_lAHOABCEY84Bq1hZzhHjBtA",
+    "status": "Planning",
+    "estimate": 146.5,
+    "size": "XL",
+    "priority": "P2"
+  },
+  "leaf_count": 41,
+  "dependency_count": 64,
+  "leaves": [
+    {
+      "key": "T01",
+      "name": "Pin the serial baseline",
+      "hours": 2.5,
+      "priority": "P1",
+      "deps": [],
+      "section_sha256": "116458afe27d4ab862a97146e04d72bbf6be8f13dc63b491adb1569f3aa8361e",
+      "line": 172,
+      "kind": "story",
+      "size": "S",
+      "id": 6311536656,
+      "node_id": "I_kwDOVnNyI88AAAABeDJoEA",
+      "number": 138,
+      "title": "[#133 T01] Pin the serial baseline",
+      "html_url": "https://github.com/kburson/aitm/issues/138",
+      "state": "open",
+      "created_at": "2026-11-10T16:50:57Z",
+      "parent": 133,
+      "blocked_by": [],
+      "blocking": [
+        139
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcZM",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T02",
+      "name": "Classify the pytest inventory",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T01"
+      ],
+      "section_sha256": "ade97a158a01113fdd6c0651f09b46de587adb902a86e0d8908c371e4c5edd54",
+      "line": 187,
+      "kind": "story",
+      "size": "M",
+      "id": 6311537287,
+      "node_id": "I_kwDOVnNyI88AAAABeDJqhw",
+      "number": 139,
+      "title": "[#133 T02] Classify the pytest inventory",
+      "html_url": "https://github.com/kburson/aitm/issues/139",
+      "state": "open",
+      "created_at": "2026-11-10T16:50:59Z",
+      "parent": 133,
+      "blocked_by": [
+        138
+      ],
+      "blocking": [
+        141,
+        142,
+        144,
+        147,
+        148
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkccg",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T03",
+      "name": "Resolve exact Git changes",
+      "hours": 3.0,
+      "priority": "P1",
+      "deps": [],
+      "section_sha256": "e32dead37553daa9b2dda1850688f4ec780517b4fd028345544e794f4872a101",
+      "line": 204,
+      "kind": "story",
+      "size": "M",
+      "id": 6311537942,
+      "node_id": "I_kwDOVnNyI88AAAABeDJtFg",
+      "number": 140,
+      "title": "[#133 T03] Resolve exact Git changes",
+      "html_url": "https://github.com/kburson/aitm/issues/140",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:02Z",
+      "parent": 133,
+      "blocked_by": [],
+      "blocking": [
+        141,
+        147
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcGQ",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T04",
+      "name": "Derive Python and package edges",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T02",
+        "T03"
+      ],
+      "section_sha256": "8834c6ab0466869c48e118e34b3064ff1ef86a362aaecc5e4db66a6f6c0b6165",
+      "line": 217,
+      "kind": "story",
+      "size": "M",
+      "id": 6311538670,
+      "node_id": "I_kwDOVnNyI88AAAABeDJv7g",
+      "number": 141,
+      "title": "[#133 T04] Derive Python and package edges",
+      "html_url": "https://github.com/kburson/aitm/issues/141",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:04Z",
+      "parent": 133,
+      "blocked_by": [
+        139,
+        140
+      ],
+      "blocking": [
+        142
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcHI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T05",
+      "name": "Select and explain test impact",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T02",
+        "T04"
+      ],
+      "section_sha256": "d27a66d5f7cd624d32983cd6a733b14cfba0d53f4adf85b566bdb34d06ade416",
+      "line": 231,
+      "kind": "story",
+      "size": "M",
+      "id": 6311539412,
+      "node_id": "I_kwDOVnNyI88AAAABeDJy1A",
+      "number": 142,
+      "title": "[#133 T05] Select and explain test impact",
+      "html_url": "https://github.com/kburson/aitm/issues/142",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:07Z",
+      "parent": 133,
+      "blocked_by": [
+        139,
+        141
+      ],
+      "blocking": [
+        143,
+        151,
+        163
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcKg",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T06",
+      "name": "Deliver local advisory feedback",
+      "hours": 3.0,
+      "priority": "P2",
+      "deps": [
+        "T05"
+      ],
+      "section_sha256": "fc2eef29fc3410c7e4a56949ba44c28dc76ef94ee4fc87557d71bd44ca2bdbcb",
+      "line": 256,
+      "kind": "story",
+      "size": "M",
+      "id": 6311540090,
+      "node_id": "I_kwDOVnNyI88AAAABeDJ1eg",
+      "number": 143,
+      "title": "[#133 T06] Deliver local advisory feedback",
+      "html_url": "https://github.com/kburson/aitm/issues/143",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:10Z",
+      "parent": 133,
+      "blocked_by": [
+        142
+      ],
+      "blocking": [
+        172
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcwo",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T07",
+      "name": "Qualify trusted pytest observation",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T02"
+      ],
+      "section_sha256": "638dc7c738badde978b3799404e9210cef3c1a5798f1f0591fd6274ef0dee1ad",
+      "line": 268,
+      "kind": "spike",
+      "size": "M",
+      "id": 6311540685,
+      "node_id": "I_kwDOVnNyI88AAAABeDJ3zQ",
+      "number": 144,
+      "title": "[#133 T07] Qualify trusted pytest observation",
+      "html_url": "https://github.com/kburson/aitm/issues/144",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:12Z",
+      "parent": 133,
+      "blocked_by": [
+        139
+      ],
+      "blocking": [
+        145,
+        146
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcwU",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T08",
+      "name": "Implement qualified complete collection",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T07"
+      ],
+      "section_sha256": "d70d4c13f5b61e3affb2df4501b17e9bb51aa310b55ada6d1bbee78bcfe22707",
+      "line": 291,
+      "kind": "story",
+      "size": "M",
+      "id": 6311541544,
+      "node_id": "I_kwDOVnNyI88AAAABeDJ7KA",
+      "number": 145,
+      "title": "[#133 T08] Implement qualified complete collection",
+      "html_url": "https://github.com/kburson/aitm/issues/145",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:15Z",
+      "parent": 133,
+      "blocked_by": [
+        144
+      ],
+      "blocking": [
+        146,
+        148
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcTA",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T09",
+      "name": "Implement qualified execution observation",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T07",
+        "T08"
+      ],
+      "section_sha256": "96f92716c462213744f98c10b0db9cc163f768fe3bd4bbe4bf9f56644378389d",
+      "line": 305,
+      "kind": "story",
+      "size": "M",
+      "id": 6311542178,
+      "node_id": "I_kwDOVnNyI88AAAABeDJ9og",
+      "number": 146,
+      "title": "[#133 T09] Implement qualified execution observation",
+      "html_url": "https://github.com/kburson/aitm/issues/146",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:17Z",
+      "parent": 133,
+      "blocked_by": [
+        144,
+        145
+      ],
+      "blocking": [
+        149,
+        168
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcWk",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T10",
+      "name": "Bind gate changes and inventory dispositions",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T02",
+        "T03"
+      ],
+      "section_sha256": "49891b6867d122424f43f5b34fd4337a2cb5dc93c6325696b48d4f868f5ec76d",
+      "line": 320,
+      "kind": "story",
+      "size": "M",
+      "id": 6311542891,
+      "node_id": "I_kwDOVnNyI88AAAABeDKAaw",
+      "number": 147,
+      "title": "[#133 T10] Bind gate changes and inventory dispositions",
+      "html_url": "https://github.com/kburson/aitm/issues/147",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:19Z",
+      "parent": 133,
+      "blocked_by": [
+        139,
+        140
+      ],
+      "blocking": [
+        149
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcrI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T11",
+      "name": "Assign isolated test shards",
+      "hours": 3.0,
+      "priority": "P2",
+      "deps": [
+        "T02",
+        "T08"
+      ],
+      "section_sha256": "a63010c5e5b2d73b9b5ef11e15a214424c179c411dab425172f63cb11f4fe1db",
+      "line": 336,
+      "kind": "story",
+      "size": "M",
+      "id": 6311543591,
+      "node_id": "I_kwDOVnNyI88AAAABeDKDJw",
+      "number": 148,
+      "title": "[#133 T11] Assign isolated test shards",
+      "html_url": "https://github.com/kburson/aitm/issues/148",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:21Z",
+      "parent": 133,
+      "blocked_by": [
+        139,
+        145
+      ],
+      "blocking": [
+        149
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkc6M",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T12",
+      "name": "Verify shard receipts and inventories",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T09",
+        "T10",
+        "T11"
+      ],
+      "section_sha256": "8dfe6540f8ce14d5a83d22dbd8b275e90fe31f9ad159f3ebf4bab7022d69e6de",
+      "line": 350,
+      "kind": "story",
+      "size": "M",
+      "id": 6311544418,
+      "node_id": "I_kwDOVnNyI88AAAABeDKGYg",
+      "number": 149,
+      "title": "[#133 T12] Verify shard receipts and inventories",
+      "html_url": "https://github.com/kburson/aitm/issues/149",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:24Z",
+      "parent": 133,
+      "blocked_by": [
+        146,
+        147,
+        148
+      ],
+      "blocking": [
+        150
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkcds",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T13",
+      "name": "Combine coverage and timing",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T12"
+      ],
+      "section_sha256": "7724b7f2c6a045eb859429666e4c497af510c1b4a95e25ee376d6e223565ab38",
+      "line": 366,
+      "kind": "story",
+      "size": "M",
+      "id": 6311545146,
+      "node_id": "I_kwDOVnNyI88AAAABeDKJOg",
+      "number": 150,
+      "title": "[#133 T13] Combine coverage and timing",
+      "html_url": "https://github.com/kburson/aitm/issues/150",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:26Z",
+      "parent": 133,
+      "blocked_by": [
+        149
+      ],
+      "blocking": [
+        151,
+        152
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkchU",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T14",
+      "name": "Run the full and TIA shadow workflow",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T05",
+        "T13"
+      ],
+      "section_sha256": "dafad92695a04e2c25e319329c1dbc3e876353d915ea6997c3cb7faf1a4bbbea",
+      "line": 380,
+      "kind": "story",
+      "size": "M",
+      "id": 6311545969,
+      "node_id": "I_kwDOVnNyI88AAAABeDKMcQ",
+      "number": 151,
+      "title": "[#133 T14] Run the full and TIA shadow workflow",
+      "html_url": "https://github.com/kburson/aitm/issues/151",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:29Z",
+      "parent": 133,
+      "blocked_by": [
+        142,
+        150
+      ],
+      "blocking": [
+        171
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdAM",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T15",
+      "name": "Schedule full trunk validation and ingest evidence",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T13"
+      ],
+      "section_sha256": "aff13a45e1be82f0ad543478da1006c60c3b4fda82cd8f8a3a75d5fb57f588ef",
+      "line": 396,
+      "kind": "story",
+      "size": "M",
+      "id": 6311546768,
+      "node_id": "I_kwDOVnNyI88AAAABeDKPkA",
+      "number": 152,
+      "title": "[#133 T15] Schedule full trunk validation and ingest evidence",
+      "html_url": "https://github.com/kburson/aitm/issues/152",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:31Z",
+      "parent": 133,
+      "blocked_by": [
+        150
+      ],
+      "blocking": [
+        153,
+        160
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdG8",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T16",
+      "name": "Define the line incident reducer",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T15"
+      ],
+      "section_sha256": "3a25746972c4921aea0b67a6cc6d974e725384a03118bc96ce348795476820f0",
+      "line": 413,
+      "kind": "story",
+      "size": "M",
+      "id": 6311547373,
+      "node_id": "I_kwDOVnNyI88AAAABeDKR7Q",
+      "number": 153,
+      "title": "[#133 T16] Define the line incident reducer",
+      "html_url": "https://github.com/kburson/aitm/issues/153",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:33Z",
+      "parent": 133,
+      "blocked_by": [
+        152
+      ],
+      "blocking": [
+        154
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkc5c",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T17",
+      "name": "Persist authority and merge intents",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T16"
+      ],
+      "section_sha256": "a8c790842f8a8853a738ceef84a98f04671bc79ac390aceb6642a1a9004dc033",
+      "line": 432,
+      "kind": "story",
+      "size": "M",
+      "id": 6311548127,
+      "node_id": "I_kwDOVnNyI88AAAABeDKU3w",
+      "number": 154,
+      "title": "[#133 T17] Persist authority and merge intents",
+      "html_url": "https://github.com/kburson/aitm/issues/154",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:36Z",
+      "parent": 133,
+      "blocked_by": [
+        153
+      ],
+      "blocking": [
+        155,
+        164
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdEI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T18",
+      "name": "Fence authority restore with independent continuity",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T17"
+      ],
+      "section_sha256": "1b16ee640fb366cab5f98f21bb66a4e25c4ae0fefdfc10b34b27d7a360ae5234",
+      "line": 450,
+      "kind": "story",
+      "size": "M",
+      "id": 6311548820,
+      "node_id": "I_kwDOVnNyI88AAAABeDKXlA",
+      "number": 155,
+      "title": "[#133 T18] Fence authority restore with independent continuity",
+      "html_url": "https://github.com/kburson/aitm/issues/155",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:38Z",
+      "parent": 133,
+      "blocked_by": [
+        154
+      ],
+      "blocking": [
+        156
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkc8k",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T19",
+      "name": "Connect trusted scheduled evidence and freshness",
+      "hours": 3.0,
+      "priority": "P1",
+      "deps": [
+        "T18"
+      ],
+      "section_sha256": "e8615ca7504525400a0d1cb784eeaaf9fc84ea4948d8bcbc08a4ff47e87cfbd3",
+      "line": 469,
+      "kind": "story",
+      "size": "M",
+      "id": 6311549528,
+      "node_id": "I_kwDOVnNyI88AAAABeDKaWA",
+      "number": 156,
+      "title": "[#133 T19] Connect trusted scheduled evidence and freshness",
+      "html_url": "https://github.com/kburson/aitm/issues/156",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:40Z",
+      "parent": 133,
+      "blocked_by": [
+        155
+      ],
+      "blocking": [
+        157
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdQ0",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T20",
+      "name": "Authenticate workspace and incident authority",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T19"
+      ],
+      "section_sha256": "692d9d89dad4a4cbfec1f08d7941c4db151352567604742b319bdbecb6199fec",
+      "line": 485,
+      "kind": "story",
+      "size": "M",
+      "id": 6311550164,
+      "node_id": "I_kwDOVnNyI88AAAABeDKc1A",
+      "number": 157,
+      "title": "[#133 T20] Authenticate workspace and incident authority",
+      "html_url": "https://github.com/kburson/aitm/issues/157",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:42Z",
+      "parent": 133,
+      "blocked_by": [
+        156
+      ],
+      "blocking": [
+        159,
+        160,
+        165
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkc1s",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T21",
+      "name": "Qualify the GitHub merge fence",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [],
+      "section_sha256": "4c57ac72e211b052a8b7ffee538b492427775b5dc3f365a1640c80f72ac54742",
+      "line": 507,
+      "kind": "spike",
+      "size": "M",
+      "id": 6311550960,
+      "node_id": "I_kwDOVnNyI88AAAABeDKf8A",
+      "number": 158,
+      "title": "[#133 T21] Qualify the GitHub merge fence",
+      "html_url": "https://github.com/kburson/aitm/issues/158",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:45Z",
+      "parent": 133,
+      "blocked_by": [],
+      "blocking": [
+        159
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdXA",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T22",
+      "name": "Implement conditional merge and reconciliation",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T20",
+        "T21"
+      ],
+      "section_sha256": "886d87ceb40b0e6bd88f83fd8488493067d70132132b057f8fe0c80bd4f17266",
+      "line": 528,
+      "kind": "story",
+      "size": "M",
+      "id": 6311551791,
+      "node_id": "I_kwDOVnNyI88AAAABeDKjLw",
+      "number": 159,
+      "title": "[#133 T22] Implement conditional merge and reconciliation",
+      "html_url": "https://github.com/kburson/aitm/issues/159",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:48Z",
+      "parent": 133,
+      "blocked_by": [
+        157,
+        158
+      ],
+      "blocking": [
+        161
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkc6w",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T23",
+      "name": "Qualify full repair outside broken base controls",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T15",
+        "T20"
+      ],
+      "section_sha256": "a165a3b8b60e70b85b8f4e97f195a344286aa2054d37957335ca69d271b6a90b",
+      "line": 550,
+      "kind": "spike",
+      "size": "M",
+      "id": 6311552569,
+      "node_id": "I_kwDOVnNyI88AAAABeDKmOQ",
+      "number": 160,
+      "title": "[#133 T23] Qualify full repair outside broken base controls",
+      "html_url": "https://github.com/kburson/aitm/issues/160",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:50Z",
+      "parent": 133,
+      "blocked_by": [
+        152,
+        157
+      ],
+      "blocking": [
+        161
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdF8",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T24",
+      "name": "Validate repair on a broken base",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T22",
+        "T23"
+      ],
+      "section_sha256": "4e6ac4d604c166701f8976490c9399e46a7df8e52991ee9876895f30eb0705ec",
+      "line": 566,
+      "kind": "story",
+      "size": "M",
+      "id": 6311553284,
+      "node_id": "I_kwDOVnNyI88AAAABeDKpBA",
+      "number": 161,
+      "title": "[#133 T24] Validate repair on a broken base",
+      "html_url": "https://github.com/kburson/aitm/issues/161",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:52Z",
+      "parent": 133,
+      "blocked_by": [
+        159,
+        160
+      ],
+      "blocking": [
+        162
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdI4",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T25",
+      "name": "Bind repair delivery to current trunk",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T24"
+      ],
+      "section_sha256": "ccd39e2cfbd67bd67a495118d7d55141a97375071186fd5eebf115e634d73c37",
+      "line": 582,
+      "kind": "story",
+      "size": "M",
+      "id": 6311553963,
+      "node_id": "I_kwDOVnNyI88AAAABeDKrqw",
+      "number": 162,
+      "title": "[#133 T25] Bind repair delivery to current trunk",
+      "html_url": "https://github.com/kburson/aitm/issues/162",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:54Z",
+      "parent": 133,
+      "blocked_by": [
+        161
+      ],
+      "blocking": [
+        163,
+        169,
+        173,
+        174
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdYI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T26",
+      "name": "Bind incident probes to the repaired revision",
+      "hours": 3.0,
+      "priority": "P1",
+      "deps": [
+        "T05",
+        "T25"
+      ],
+      "section_sha256": "47d57a6a572301ec2cddca000bc95f0b5e6a43b2e3fcedcc0e22177116a6bd48",
+      "line": 596,
+      "kind": "story",
+      "size": "M",
+      "id": 6311554619,
+      "node_id": "I_kwDOVnNyI88AAAABeDKuOw",
+      "number": 163,
+      "title": "[#133 T26] Bind incident probes to the repaired revision",
+      "html_url": "https://github.com/kburson/aitm/issues/163",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:57Z",
+      "parent": 133,
+      "blocked_by": [
+        142,
+        162
+      ],
+      "blocking": [
+        168
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdJM",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T27",
+      "name": "Enroll workspaces and issue bounded decisions",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T17"
+      ],
+      "section_sha256": "5bf284000da3eb69e67d8a5ff57ef8ab1e7bd74db505a89b6404ff65b890cd20",
+      "line": 611,
+      "kind": "story",
+      "size": "M",
+      "id": 6311555446,
+      "node_id": "I_kwDOVnNyI88AAAABeDKxdg",
+      "number": 164,
+      "title": "[#133 T27] Enroll workspaces and issue bounded decisions",
+      "html_url": "https://github.com/kburson/aitm/issues/164",
+      "state": "open",
+      "created_at": "2026-11-10T16:51:59Z",
+      "parent": 133,
+      "blocked_by": [
+        154
+      ],
+      "blocking": [
+        165
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdHM",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T28",
+      "name": "Qualify native workspace controls",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T20",
+        "T27"
+      ],
+      "section_sha256": "2191bf4dce9293de8c0943387b9a4ac6758f9b07a720d64dd1edb00b8a95f5b3",
+      "line": 629,
+      "kind": "spike",
+      "size": "M",
+      "id": 6311556272,
+      "node_id": "I_kwDOVnNyI88AAAABeDK0sA",
+      "number": 165,
+      "title": "[#133 T28] Qualify native workspace controls",
+      "html_url": "https://github.com/kburson/aitm/issues/165",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:01Z",
+      "parent": 133,
+      "blocked_by": [
+        157,
+        164
+      ],
+      "blocking": [
+        166,
+        168
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdNo",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T29",
+      "name": "Bridge governed Codex operations",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T28"
+      ],
+      "section_sha256": "e252b7e63bbc892308fe00ec2d3d34277ec287a25ed69b075b70e152ca26e460",
+      "line": 647,
+      "kind": "story",
+      "size": "M",
+      "id": 6311557022,
+      "node_id": "I_kwDOVnNyI88AAAABeDK3ng",
+      "number": 166,
+      "title": "[#133 T29] Bridge governed Codex operations",
+      "html_url": "https://github.com/kburson/aitm/issues/166",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:04Z",
+      "parent": 133,
+      "blocked_by": [
+        165
+      ],
+      "blocking": [
+        167
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdtc",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T30",
+      "name": "Bridge governed Claude operations",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T29"
+      ],
+      "section_sha256": "bd6d0c4224a93b202a145a3607a32712ed3ff68756d39b7a08eeb196e5efe091",
+      "line": 661,
+      "kind": "story",
+      "size": "M",
+      "id": 6311557782,
+      "node_id": "I_kwDOVnNyI88AAAABeDK6lg",
+      "number": 167,
+      "title": "[#133 T30] Bridge governed Claude operations",
+      "html_url": "https://github.com/kburson/aitm/issues/167",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:06Z",
+      "parent": 133,
+      "blocked_by": [
+        166
+      ],
+      "blocking": [
+        169
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdmI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T31",
+      "name": "Produce trusted workspace update observations",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T09",
+        "T26",
+        "T28"
+      ],
+      "section_sha256": "8f0e3e29e4a70f952c6fef824ff571feff453491ce4314a877dbc6be25c7974f",
+      "line": 675,
+      "kind": "story",
+      "size": "M",
+      "id": 6311558589,
+      "node_id": "I_kwDOVnNyI88AAAABeDK9vQ",
+      "number": 168,
+      "title": "[#133 T31] Produce trusted workspace update observations",
+      "html_url": "https://github.com/kburson/aitm/issues/168",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:09Z",
+      "parent": 133,
+      "blocked_by": [
+        146,
+        163,
+        165
+      ],
+      "blocking": [
+        169
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdx8",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T32",
+      "name": "Verify workspace updates and release barrier",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T25",
+        "T30",
+        "T31"
+      ],
+      "section_sha256": "4f46eb4c52f9d0bf96cc0f80268b2335df4759fa0e1c7b422c4dbc83eaf152c5",
+      "line": 691,
+      "kind": "story",
+      "size": "M",
+      "id": 6311559192,
+      "node_id": "I_kwDOVnNyI88AAAABeDLAGA",
+      "number": 169,
+      "title": "[#133 T32] Verify workspace updates and release barrier",
+      "html_url": "https://github.com/kburson/aitm/issues/169",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:11Z",
+      "parent": 133,
+      "blocked_by": [
+        162,
+        167,
+        168
+      ],
+      "blocking": [
+        170
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdV8",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T33",
+      "name": "Enforce current workspace proof on live admission",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T32"
+      ],
+      "section_sha256": "8b582f47ca459a1cb23e86b8163015ddbe686c25def194239d87a7a74f6a0967",
+      "line": 713,
+      "kind": "story",
+      "size": "M",
+      "id": 6311559991,
+      "node_id": "I_kwDOVnNyI88AAAABeDLDNw",
+      "number": 170,
+      "title": "[#133 T33] Enforce current workspace proof on live admission",
+      "html_url": "https://github.com/kburson/aitm/issues/170",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:13Z",
+      "parent": 133,
+      "blocked_by": [
+        169
+      ],
+      "blocking": [
+        173,
+        174,
+        176
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkd6g",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T34",
+      "name": "Implement selected-mode gate in shadow",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T14"
+      ],
+      "section_sha256": "039955f5690c9227a889b4a8c1d72b00fce43ce4c81b23417236bc4a39034373",
+      "line": 729,
+      "kind": "story",
+      "size": "M",
+      "id": 6311560697,
+      "node_id": "I_kwDOVnNyI88AAAABeDLF-Q",
+      "number": 171,
+      "title": "[#133 T34] Implement selected-mode gate in shadow",
+      "html_url": "https://github.com/kburson/aitm/issues/171",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:16Z",
+      "parent": 133,
+      "blocked_by": [
+        151
+      ],
+      "blocking": [
+        172,
+        173,
+        174
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdao",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T35",
+      "name": "Measure selection and sharding qualification",
+      "hours": 3.0,
+      "priority": "P2",
+      "deps": [
+        "T06",
+        "T34"
+      ],
+      "section_sha256": "9e320f703f2a576c7bc82615bdb7aca2015b3b1f3c5fbb82c3b9d56449dd51de",
+      "line": 747,
+      "kind": "story",
+      "size": "M",
+      "id": 6311561386,
+      "node_id": "I_kwDOVnNyI88AAAABeDLIqg",
+      "number": 172,
+      "title": "[#133 T35] Measure selection and sharding qualification",
+      "html_url": "https://github.com/kburson/aitm/issues/172",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:18Z",
+      "parent": 133,
+      "blocked_by": [
+        143,
+        171
+      ],
+      "blocking": [
+        178
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdeI",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T36",
+      "name": "Rehearse PR isolation and escaped-defect fencing",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T25",
+        "T33",
+        "T34"
+      ],
+      "section_sha256": "4a0e152aaef5e9553b767d686216175a03ec69f5ae3f8838ab2f5b2aa9f51ec4",
+      "line": 763,
+      "kind": "story",
+      "size": "M",
+      "id": 6311562131,
+      "node_id": "I_kwDOVnNyI88AAAABeDLLkw",
+      "number": 173,
+      "title": "[#133 T36] Rehearse PR isolation and escaped-defect fencing",
+      "html_url": "https://github.com/kburson/aitm/issues/173",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:21Z",
+      "parent": 133,
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "blocking": [
+        175
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdg0",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T37",
+      "name": "Rehearse merge-only holds",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T25",
+        "T33",
+        "T34"
+      ],
+      "section_sha256": "d2a1cd75cb8cbaf16746b4b8ef06424c4b78a3dfa0c5ac1611d6dbefac7e4f98",
+      "line": 775,
+      "kind": "story",
+      "size": "M",
+      "id": 6311562816,
+      "node_id": "I_kwDOVnNyI88AAAABeDLOQA",
+      "number": 174,
+      "title": "[#133 T37] Rehearse merge-only holds",
+      "html_url": "https://github.com/kburson/aitm/issues/174",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:23Z",
+      "parent": 133,
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "blocking": [
+        177
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdlE",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T38",
+      "name": "Rehearse conditional repair and fresh trunk proof",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T36"
+      ],
+      "section_sha256": "53860aaedd7dc0632a74478e0cf7d2fae85da7403bc4a87bcafcca4b24d0e80c",
+      "line": 789,
+      "kind": "story",
+      "size": "M",
+      "id": 6311563613,
+      "node_id": "I_kwDOVnNyI88AAAABeDLRXQ",
+      "number": 175,
+      "title": "[#133 T38] Rehearse conditional repair and fresh trunk proof",
+      "html_url": "https://github.com/kburson/aitm/issues/175",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:26Z",
+      "parent": 133,
+      "blocked_by": [
+        173
+      ],
+      "blocking": [
+        176,
+        177
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdoY",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T39",
+      "name": "Rehearse workspace pause and restart",
+      "hours": 4.0,
+      "priority": "P1",
+      "deps": [
+        "T33",
+        "T38"
+      ],
+      "section_sha256": "d0108142ad713a0db0ced3d16f89554d0a667190a7657176c2572844d08f679a",
+      "line": 803,
+      "kind": "story",
+      "size": "M",
+      "id": 6311564646,
+      "node_id": "I_kwDOVnNyI88AAAABeDLVZg",
+      "number": 176,
+      "title": "[#133 T39] Rehearse workspace pause and restart",
+      "html_url": "https://github.com/kburson/aitm/issues/176",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:29Z",
+      "parent": 133,
+      "blocked_by": [
+        170,
+        175
+      ],
+      "blocking": [
+        178
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdt8",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T40",
+      "name": "Rehearse exact repair of a merge-only hold",
+      "hours": 3.5,
+      "priority": "P1",
+      "deps": [
+        "T37",
+        "T38"
+      ],
+      "section_sha256": "f3586714427173b99adc84bc133ddde415af8d51ce1af0325ca652c760639a5b",
+      "line": 823,
+      "kind": "story",
+      "size": "M",
+      "id": 6311565674,
+      "node_id": "I_kwDOVnNyI88AAAABeDLZag",
+      "number": 177,
+      "title": "[#133 T40] Rehearse exact repair of a merge-only hold",
+      "html_url": "https://github.com/kburson/aitm/issues/177",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:32Z",
+      "parent": 133,
+      "blocked_by": [
+        174,
+        175
+      ],
+      "blocking": [
+        178
+      ],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkdz0",
+      "project_status": "Backlog"
+    },
+    {
+      "key": "T41",
+      "name": "Rehearse rollback with a live stop",
+      "hours": 3.0,
+      "priority": "P1",
+      "deps": [
+        "T35",
+        "T39",
+        "T40"
+      ],
+      "section_sha256": "2b7b05fcda546242f59dd6e5399a90a9a8886e63f532cab761551fef6a756df3",
+      "line": 837,
+      "kind": "story",
+      "size": "M",
+      "id": 6311566542,
+      "node_id": "I_kwDOVnNyI88AAAABeDLczg",
+      "number": 178,
+      "title": "[#133 T41] Rehearse rollback with a live stop",
+      "html_url": "https://github.com/kburson/aitm/issues/178",
+      "state": "open",
+      "created_at": "2026-11-10T16:52:35Z",
+      "parent": 133,
+      "blocked_by": [
+        172,
+        176,
+        177
+      ],
+      "blocking": [],
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHkd3E",
+      "project_status": "Backlog"
+    }
+  ]
+}
