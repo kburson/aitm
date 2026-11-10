@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 181
 title: "Measure story engagement and owner waits across the workflow"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/181"
 parent: null
 children: [186, 187, 188, 189, 190, 191, 192, 193]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-10T21:03:15Z"
+updated: "2026-11-10T21:58:03Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"

@@ -1,0 +1,27 @@
+# #186 design, plan and JIT
+
+The accepted [#181 design](https://github.com/kburson/aitm/blob/b99085f44c8c1f0a5acf5b1fbae02e834f4416fa/.aitm/stories/001/181/design/story-timing-dashboard-design.md) and [A01 plan](https://github.com/kburson/aitm/blob/fd5b22ff0c33c582dd9a0926435d071f09ac6156/.aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md#L57) govern the leaf. Plan digest `147cbee5740f725c9c65df9c09034912220d179475dc1c707e0844316a6c1c80`.
+
+## Design
+
+Own `tools/story_dashboard/evidence.py`, `tools/story_dashboard/capture.md`, and `tools/story_dashboard/tests/test_evidence.py`. This leaf supplies the read-only input contract to A02–A05. The operator can verify a prospective receipt and event before manually publishing them together. The tool never edits Git objects, files or the board.
+
+`read_tree(repo: Path, commit: str, as_of: datetime) -> PlanningTree` validates a full lowercase SHA-1 commit object and aware UTC cutoff at or after the commit time. Read only bounded regular blobs from the exact tree. Disable Git replacement objects and caller Git-directory overrides. Discover canonical story directories by positive numeric ID and bucket. Parse the supported existing v0 frontmatter forms and eligible append-only events for story identity, state, parent, and estimate scope. Prefer timestamped state and relationship evidence where present. Carry historical header facts with explicit provenance. Unknown scope stays Unknown. Keep missing/cyclic ancestry and invalid inputs as scoped gaps. Exclude dependency edges from ancestry. Provide stories, normalized events, parent edges, estimates and gaps to both projectors.
+
+`validate_receipt(raw: bytes, registration: Registration) -> Receipt` parses strict UTF-8 JSON with unique keys, checks SHA-256, canonical relative path and batch/story identity, binds subject and project scope, and checks explicit UTC boundary facts. Require regular Git blobs, with a 2 MiB per-blob limit before content read. V1 receipt and event pairs use the parent plan's timing and usage schemas. The filename is `<batch>-<story>.json`; batch and opaque refs use safe bounded identifiers. Verify evidence reference shape and known coverage; unknown dimensions use null. Usage validation checks receipt shape and the verification fields when supplied. A04 owns semantic Cost admission, including comparison with verified exports. The digest in `verification.sanitized_data_sha256` covers compact sorted UTF-8 JSON of the direct `usage` object without a trailing newline. A01 does not compute time totals or prices.
+
+Only registered inputs affect the tree. Identical registrations replay once, conflicting digests at a stable path hold the path, and missing or mismatched blobs yield gaps. Prospective validation uses the same admission rules and compares with registered identities. A future-dated observation or event is excluded with a reason, not treated as zero. The sole legacy exception is the existing #181 registration at its accepted JSON path and digest. Keep its bytes separate for A02 and preserve missing typed dimensions. Other historical-backfill claims remain held.
+
+## Plan
+
+1. Add red unittest Git fixtures for strict pinning, old and new estimate scope, ancestry and cycles, receipt admission, conflict/replay, the exact legacy seed, and CLI prospective validation. Verify the focused suite is red before implementation.
+2. Implement the typed records, validators, Git reader and CLI. Validate the real planning commit and expose its registered v0 seed. Run focused tests and apply existing repository lint to the new files.
+3. Write the capture checklist with a complete sanitized v1 timing receipt and event pair, exact digest/pin, prospective validation, atomic manual publication and reconciliation. Verify the guide through a disposable Git fixture. Keep live pilot and board projection with A06.
+
+## JIT
+
+Owner-authorized #186 delivery. No predecessor. Estimated 3.75 implementation agent-hours, including verification and independent source review, below the 4-hour cap. Target `trunk`; pin `a495d60a87ac4ca764f019dc266e579f13f1787e` at pickup and recheck the live base before push and merge. Use isolated branch `codex/aitm-186-planning-evidence`. Implementer and closure owner are this Codex session. Obtain an independent reviewer for the exact source after its applicable checks.
+
+Scope overlap check found no intersection with #100's monitor worktrees/PR #195 or #133's planning and implementation worktrees. Source changes are confined to the three paths above. Planning updates are confined to #186's record and the first-child #181 start checkpoint. Publish using an expected-head commit and recheck only the intended story bytes if concurrent planning activity advances the branch.
+
+Run `python3.13 -m unittest discover -s tools/story_dashboard/tests -p 'test_evidence.py' -v`, the real planning read and the guide example. Existing same-repository CI runs the trusted base, Python, quality, file checks, evidence collection and signed `aitm-ci` gate. Retain focused candidate execution separately from the existing collector/helper coverage and verify hosted evidence with the delivered trunk verifier. On a changed CI candidate, verify the fresh exact head and base. Merge an eligible exact candidate through the normal PR path, verify landed content, and publish retrospective, sign-off and closure evidence.
