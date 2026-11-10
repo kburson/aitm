@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 139
 title: "[#133 T02] Classify the pytest inventory"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/139"
 parent: 133
 children: []
 blocking: [141, 142, 144, 147, 148]
 blocked-by: [138]
 created: "2026-11-10T16:50:59Z"
-updated: "2026-11-10T22:00:10Z"
-last-branch: "planning"
+updated: "2026-11-10T22:01:33Z"
+last-branch: "codex/aitm-139-inventory"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
@@ -69,3 +69,7 @@ The GitHub Project is in Planning.
 
 Before Develop, recheck the reviewed inputs and bind an isolated source
 worktree to the authorized attempt.
+
+## Attempt 1
+
+Authorized implementation on `codex/aitm-139-inventory` from trunk `a495d60a87ac4ca764f019dc266e579f13f1787e`. Worktree `aitm-139-dev`, implementer `codex-collaboration:/root/impl139`, closure owner Codex coordinator. Proceed through Test, independent source review, required gate disposition, verified delivery and Close.
