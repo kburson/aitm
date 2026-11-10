@@ -45,3 +45,13 @@ Trunk advanced to `0175e77c398dc97c59db166fa64e2e9a673b4b40` through unrelated C
 The [independent exact re-review](post-ci-source-review.md) passed the terminal retry repair on the signed tree. It confirmed that the original handoff can no longer change the event stream or the prior attribution and that its durable receipt remains resolved. The first hold remains available as historical evidence. The native review is absent. The independent review is off-platform.
 
 The hosted baseline counts 713 product package identities. The locked local baseline adds the fixed CLI evidence test for a count of 714. The candidate includes that CLI test and the 34 M07a tests. The [hosted Python job](https://github.com/kburson/aitm/actions/runs/42902029986/job/130130198002) separately reported 748 product and CLI tests and 182 helper tests. The two unrelated trunk files are `tools/ci/tia/baseline.py` and `tools/ci/tests/test_tia_baseline.py`, and both match the target byte for byte.
+
+### Verified delivery and sign-offs
+
+[PR #185](https://github.com/kburson/aitm/pull/185) merged into trunk at `2026-11-10T21:15:46Z` as `41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55`. The fetched merge has ordered parents `0175e77c398dc97c59db166fa64e2e9a673b4b40` and `1b47aa275370482e7b822ce80883549f15158d82`, exact tree `200b4b337bd1e0f784aba4adff7689d80158858f`, candidate ancestry and zero source diff. Branch rules permitted an ordinary merge commit with zero required native reviews. All six checks passed on the exact candidate and the independent verdict is recorded off-platform.
+
+[Coordinator sign-off](../retro/2026-11-10-117-coordinator-retrospective.md) · [Original carrier implementer](../retro/2026-11-10-117-carrier-implementer-retrospective.md) · [Original regression implementer](../retro/2026-11-10-117-test-implementer-retrospective.md). The last required gate passed with the regression implementer's original sign-off at `2026-11-10T21:17:11Z`.
+
+### Done
+
+GitHub read back [#117](https://github.com/kburson/aitm/issues/117) Closed (Completed) at `2026-11-10T21:17:39Z`. [Project 24](https://github.com/users/kburson/projects/24) read back Done, rank 210, M, 3.5 agent-hours and November 10 start. #182 may enter its own pickup. #118 remains blocked by #182.
