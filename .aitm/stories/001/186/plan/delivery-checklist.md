@@ -47,6 +47,12 @@ GitHub tested `9531b8d713502b3eda259f38fe55043bf1288b29` with ordered base `4986
 
 Revision 5 is head `837370a2af4f76617ce87a001ee3d3ad221dc31a` on base `49865245d175ce6c52913738f2c9a42c0abea632` and tree `07f6e63c9c76be5988e430f2a6b926620fa2a9b2`. Four new regressions reproduced the independent findings before the fix. All eleven dashboard cases, Ruff, tracked file checks, capture example and real planning seed read passed on the corrected source. New registrations require the v0 manual-bootstrap event envelope; prospective retry agrees with pinned readback; each observation respects its own recording time; malformed headers produce scoped gaps. Review fixes remain inside the same three paths.
 
-- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42916448837), delivered verifier and independent source review.
+- [x] [Revision 5 hosted run](https://github.com/kburson/aitm/actions/runs/42916448837/attempts/1) passed on its superseded base.
 
 [PR #198](https://github.com/kburson/aitm/pull/198) advanced trunk from `49865245d175ce6c52913738f2c9a42c0abea632` to `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2` while revision 5 was in Test. Its changes are confined to monitor paths. [Revision 5 CI](https://github.com/kburson/aitm/actions/runs/42916448837/attempts/1) belongs to the superseded base. Refresh the isolated branch without altering the corrected #186 files. The separate #133 PR #197 has no intersecting path.
+
+## Current base verification
+
+Revision 6: head `775a0ddd9d3ddeef676496d7fb1a9896d8bd3bd9`, base `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2`, tree `6107d353b1b5d40b1f5e050acbef53f57cae6e3b`. GitHub matches all pins. The corrected #186 files are byte-identical to revision 5 and remain the only three paths in the diff from current trunk. Eleven dashboard tests, lint and format, repository file checks, disposable capture and readback and exact planning seed verification passed again.
+
+- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42917014794), delivered verifier and independent source review.
