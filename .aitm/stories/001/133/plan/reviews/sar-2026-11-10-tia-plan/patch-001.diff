@@ -1,0 +1,278 @@
+diff --git a/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md b/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
+index f47d025..b8606ad 100644
+--- a/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
++++ b/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
+@@ -26,7 +26,7 @@ SHA-256 `2558bcbdbcc4ed8871078428dd11ddd0381a21627d4dfb744fd13cb5832ce928`.
+ 
+ **Source baseline** Trunk `dc037364ba617b97244c93670d12358d0b5cbba7`
+ was inspected for refinement. [#103 CI contract](../../103/design/github-ci-quality-gates-design.md)
+-and [manual delivery checklist](../../../manual-delivery-checklist.md)
++and [manual delivery checklist](../../../../manual-delivery-checklist.md)
+ apply. Recheck the real source, protected target and runner evidence
+ at JIT.
+ 
+@@ -76,12 +76,12 @@ at JIT.
+   new tree. T03/T05/T10 preserve former consumers and inventory
+   dispositions across the two snapshots.
+ - A passing repair against a broken base needs a qualified independent
+-  runner and correctly attributed inventory. T18/T19 rehearse the
++  runner and correctly attributed inventory. T19/T20 rehearse the
+   exception without weakening the candidate.
+-- A request can time out after GitHub receives it. T16/T17 retain
++- A request can time out after GitHub receives it. T17/T18 retain
+   pending intent, fence additional writes and reconcile host state.
+ - A disconnected worker and a conflict can make an ancestral repair
+-  ineffective. T20–T22/T25 fence admission, prove the effective state
++  ineffective. T21–T23/T27 fence admission, prove the effective state
+   and keep an outstanding roster member at the restart barrier.
+ 
+ ## Interfaces, sequencing and verification
+@@ -132,10 +132,12 @@ Keep leaves in Backlog until their own pickup gates apply.
+ 
+ **Owns** `tools/ci/tia/baseline.py`, `test_tia_baseline.py`, and the
+ sanitized baseline report. **Interface**
+-`build_baseline(full_proof, timings) -> Baseline`.
++`build_baseline(verified_ci103, timings) -> Baseline`.
+ 
+ - [ ] Pin a green exact #103 trunk and PR candidate, package/CI helper
+-  inventories, coverage and child evidence, lock and toolchain. Retain
++  inventories, coverage and child evidence, lock and toolchain. Use
++  existing #103 verification and outcome custody. This comparison
++  baseline cannot authorize the future gate. Retain
+   cold and warm runs, with time and runner scope recorded separately.
+ - [ ] Make `test_baseline_rejects_mixed_attempts` fail first, then
+   verify with V(baseline). A base/shard from another attempt cannot
+@@ -169,7 +171,7 @@ sanitized baseline report. **Interface**
+   uncertainty if they change mid-read. V(snapshot) passes with
+   missing objects, path escape and non-ASCII path fixtures.
+ 
+-### T04. Derive Python and package edges — 3.5h, P1, T03
++### T04. Derive Python and package edges — 3.5h, P1, T02/T03
+ 
+ **Owns** `tools/ci/tia/python_graph.py`, `test_tia_python_graph.py`.
+ **Interface** `build_graph(snapshot, provider_policy) -> Graph` with
+@@ -340,10 +342,32 @@ qualified T07 execution adapter. **Interface**
+ - [ ] Use one protected SQLite store on the trusted host and durable
+   compare-and-swap updates. Deduplicate authenticated event IDs.
+   Persist pending host mutation and its exact authorization before
+-  dispatch, with no ordinary retry during uncertain state.
++  dispatch, with no ordinary retry during uncertain state. Missing,
++  restored or inconsistent authority state cannot initialize Healthy
++  without verified reconciliation of pending mutations and evidence.
+   V(authority_store) passes without discarding locks or evidence.
+ 
+-### T16. Qualify the GitHub merge fence — 3.5h, P1, no predecessor
++### T16. Connect the trusted authority boundary — 3.5h, P1, T15
++
++**Owns** `tools/ci/tia/authority_io.py`, `test_tia_authority_io.py`,
++and disposable host transport configuration.
++**Interface** `handle(actor, request, store) -> Decision` and
++`refresh_host_evidence(expected, provider, now) -> HealthEvent`.
++
++- [ ] `test_candidate_cannot_ingest_health_or_request_repair` and
++  `test_missing_freshness_and_replayed_request_fail_closed` exercise
++  impersonation, role separation, stale version and unavailable state.
++- [ ] Read scheduled evidence from the hosting API with a scoped
++  read-only trusted identity. Run the independent freshness check
++  on the authority host. For workspace requests qualify a restricted
++  authenticated command endpoint, initially SSH forced-command on
++  the disposable host, with workspace identity and generation bound
++  to credentials and operation allowlists. Hold on unavailable or
++  unqualified transport. V(authority_io) and an authenticated
++  cross-clone request pass. Separate the merge identity from the
++  endpoint and candidate runners.
++
++### T17. Qualify the GitHub merge fence — 3.5h, P1, no predecessor
+ 
+ **Owns** spike report and disposable repository rules evidence.
+ **Interface** receipt for one qualified GitHub merge method or refusal.
+@@ -355,10 +379,10 @@ qualified T07 execution adapter. **Interface**
+ - [ ] Exercise direct push, web/API, other automation, queue,
+   head/base movement at mutation, and ambiguous response. A read
+   then unrestricted write or a cached status is insufficient.
+-  If the host cannot enforce the boundary, hold T17 and its
++  If the host cannot enforce the boundary, hold T18 and its
+   descendants. Do not change AITM's production protection.
+ 
+-### T17. Implement conditional merge and reconciliation — 4h, P1, T15/T16
++### T18. Implement conditional merge and reconciliation — 4h, P1, T16/T17
+ 
+ **Owns** `tools/ci/tia/merge.py`, `test_tia_merge.py`.
+ **Interface** `authorize_merge(request, incident, full_or_pr_proof) -> Intent`
+@@ -367,12 +391,12 @@ and `reconcile(intent, provider_readback) -> MergeResult`.
+ - [ ] `test_head_or_base_moved_at_mutation_refuses`,
+   `test_stop_fences_old_green_and_queue`, and
+   `test_timeout_reconciles_without_duplicate_merge` assert exactness.
+-- [ ] Apply only T16's qualified method. Validate review, protection,
++- [ ] Apply only T17's qualified method. Validate review, protection,
+   base/head, tree, incident version and actor separation. Hold on
+   drift or unexpected tree. V(merge) and the disposable host
+   replay pass before any use as authority.
+ 
+-### T18. Validate repair on a broken base — 4h, P1, T17/T13
++### T19. Validate repair on a broken base — 4h, P1, T18/T13
+ 
+ **Owns** `tools/ci/tia/repair.py`, `.github/workflows/tia-repair.yml`,
+ `test_tia_repair.py`.
+@@ -387,7 +411,7 @@ and `reconcile(intent, provider_readback) -> MergeResult`.
+   disposition for gate changes. V(repair) and the isolated broken
+   lock/setup case pass.
+ 
+-### T19. Bind repair delivery to current trunk — 3.5h, P1, T18
++### T20. Bind repair delivery to current trunk — 3.5h, P1, T19
+ 
+ **Owns** `tools/ci/tia/recovery.py`, `test_tia_recovery.py`.
+ **Interface** `accept_recovery(incident, delivered, full_proof, live) -> Decision`.
+@@ -401,7 +425,7 @@ and `reconcile(intent, provider_readback) -> MergeResult`.
+   interruption requires diagnosis plus fresh full pass. Failing
+   tests still enter workspace delivery. V(recovery) passes.
+ 
+-### T20. Enroll workspaces and issue bounded decisions — 4h, P1, T15
++### T21. Enroll workspaces and issue bounded decisions — 4h, P1, T15
+ 
+ **Owns** `tools/ci/tia/workspaces.py`, `test_tia_workspaces.py`.
+ **Interface** `enroll(identity, generation) -> Workspace` and
+@@ -417,7 +441,7 @@ and `reconcile(intent, provider_readback) -> MergeResult`.
+   where supported. V(workspaces) passes. Unavailable authority
+   refuses fresh ordinary mutations.
+ 
+-### T21. Bridge governed harness boundaries — 4h, P1, T20
++### T22. Bridge governed harness boundaries — 4h, P1, T16/T21
+ 
+ **Owns** `tools/ci/tia/harness.py`, `test_tia_harness.py`, and isolated
+ Codex and Claude qualification fixtures.
+@@ -435,7 +459,7 @@ Codex and Claude qualification fixtures.
+   cutover pending an approved split or design resolution.
+   V(harness) proves logic; native evidence is separate.
+ 
+-### T22. Verify workspace updates and release barrier — 4h, P1, T19/T21
++### T23. Verify workspace updates and release barrier — 4h, P1, T20/T22
+ 
+ **Owns** `tools/ci/tia/restart.py`, `test_tia_restart.py`.
+ **Interface** `acknowledge(incident, effective_snapshot, fix_proof) -> WorkspaceReceipt`
+@@ -451,9 +475,10 @@ and `release(incident, current_receipts) -> Decision`.
+   user changes and never clear the roster by enrollment withdrawal.
+   V(restart) passes.
+ 
+-### T23. Implement selected-mode gate in shadow — 4h, P1, T12
++### T24. Implement selected-mode gate in shadow — 4h, P1, T12
+ 
+-**Owns** `tools/ci/tia/selected_gate.py`, `test_tia_selected_gate.py`.
++**Owns** `tools/ci/tia/selected_gate.py`, `test_tia_selected_gate.py`,
++and the selected-only advisory job in `.github/workflows/tia-shadow.yml`.
+ **Interface** `evaluate_selected(plan, candidate, exact_base) -> GateReport`.
+ 
+ - [ ] `test_full_exact_base_and_changed_line_floor` checks 89.5%
+@@ -463,9 +488,12 @@ and `release(incident, current_receipts) -> Decision`.
+   comparison with full exact-base evidence; keep mandated helpers,
+   child/wheel/file checks. A measured deficit fails, unverifiable
+   scope chooses full if trustworthy, and a failed test blocks.
+-  V(selected_gate) passes without becoming required PR authority.
++  Run an actual selected and a forced-fallback candidate in the
++  read-only hosted shadow, with compatible trusted exact-base proof.
++  V(selected_gate) and the hosted receipts pass without publishing
++  required PR authority.
+ 
+-### T24. Measure selection and sharding qualification — 3h, P2, T06/T23
++### T25. Measure selection and sharding qualification — 3h, P2, T06/T24
+ 
+ **Owns** `tools/ci/tia/qualification.py`, `test_tia_qualification.py`,
+ and a sanitized timing and selector report.
+@@ -477,42 +505,59 @@ and a sanitized timing and selector report.
+   and full fallback on representative fixture candidates.
+ - [ ] Collect a proposed minimum 20 comparable runs per window,
+   reporting cold/warm separately, base lane cost, missed-impact
+-  evidence, and total feedback versus serial. Propose cutover only
++  evidence, and total feedback versus serial. Compare equivalent
++  full/sharded and selected executions on the same candidate with
++  matched capabilities and cache profile. Record any co-run
++  contention separately. Propose cutover only
+   after two consecutive windows miss the full target at p95 despite
+   reasonable sharding and TIA improves feedback without losing
+   required proof. Otherwise keep full PR authority. V(qualification)
+   and the pinned shadow reports pass.
+ 
+-### T25. Rehearse Stop the Line end to end — 4h, P1, T22/T24
+-
+-**Owns** disposable hosted rehearsal fixtures and the qualification
+-receipt and operator runbook under `tools/ci/tia/`.
+-**Interface** one authenticated trace binding every scenario to
+-run/attempt, host decisions, and workspace receipts.
+-
+-- [ ] Prove isolated PR failure leaves other PRs eligible. Prove
+-  verified escaped failure holds all ordinary updates and code
+-  work, including already-green, queued, disconnected and older-base
+-  cases. Exercise merge-only coverage, inventory and evidence holds.
+-- [ ] Rehearse exact full-passing combined repair, conditional host
+-  mutation, current full trunk pass, and a disconnected final roster
+-  member updating effective state before release. Rehearse delayed
+-  failure, stale proof, spoofed evidence and pending merge readback
+-  with the earlier component fixtures. If the controlled run cannot
+-  complete within the bounded leaf, preserve its results and split
+-  remaining rehearsal before pickup. Do not change live protection,
+-  schedule or authority mode.
++### T26. Rehearse hosted holds and exact repair — 4h, P1, T20/T24
++
++**Owns** disposable hosted failure and repair fixtures and the
++bound host trace under `tools/ci/tia/`.
++**Interface** authenticated incident, authority and current-trunk proof
++for the workspace rehearsal.
++
++- [ ] Prove isolated PR failure leaves other PRs eligible. Rehearse
++  verified escaped failure, a second verified cause, and merge-only
++  coverage, inventory and evidence holds. Refuse already-green,
++  queued and alternate update routes. Replay the component race
++  fixtures and reconcile an ambiguous merge.
++- [ ] Rehearse broken-base full validation, the exact full-passing
++  combined repair and conditional host mutation. Require a full
++  current-trunk proof before emitting the workspace-update phase.
++  Retain each failure and control result in the hosted trace.
++
++### T27. Rehearse workspace pause and restart — 4h, P1, T23/T25/T26
++
++**Owns** two-clone rehearsal fixtures, the restart qualification
++receipt, and the operator runbook under `tools/ci/tia/`.
++**Interface** an authenticated trace joining the T26 incident and
++trunk proof to every workspace acknowledgment and release.
++
++- [ ] Exercise real enrolled native sessions, including an earlier
++  base and an active workspace disconnected before notification.
++  Preserve locks and changes and refuse an invalid conflict result,
++  stale generation, withdrawal, and an older incident receipt.
++- [ ] Verify the disconnected workspace can return with the fix
++  effective and provide the final acknowledgment before reopening.
++  Retain the positive release trace. Record the combined qualification
++  and rollback evidence, without changing live protection, schedule
++  or authority mode.
+ 
+ ## Coverage and delivery boundary
+ 
+ | Accepted design area | Owning leaves |
+ | --- | --- |
+-| §§2–3 exact candidates, graph witness, conservative fallback | T02–T06, T23 |
+-| §4 trusted observation, shards, test inventory and coverage | T01–T02, T07–T12, T23 |
+-| §5 timing, staged adoption, shadow, delayed schedule and rollback | T11–T13, T23–T25 |
+-| §6 isolated failures, negative evidence, merge, repair and health | T13–T19, T25 |
+-| §6 workspace pause and verified all-workspace restart | T20–T22, T25 |
+-| §7 acceptance, real-host and failure-injection proofs | The owning leaf assertions plus T24–T25 |
++| §§2–3 exact candidates, graph witness, conservative fallback | T02–T06, T24 |
++| §4 trusted observation, shards, test inventory and coverage | T01–T02, T07–T12, T24 |
++| §5 timing, staged adoption, shadow, delayed schedule and rollback | T11–T13, T24–T27 |
++| §6 isolated failures, negative evidence, merge, repair and health | T13–T20, T26 |
++| §6 workspace pause and verified all-workspace restart | T16, T21–T23, T27 |
++| §7 acceptance, real-host and failure-injection proofs | The owning leaf assertions plus T25–T27 |
+ 
+ At JIT verify the direct dependency result, exact accepted leaf inputs,
+ four-hour estimate, supported route and the current base. A completed
+@@ -523,8 +568,8 @@ Stop and replan a blocked capability rather than relabel it as available.
+ 
+ Acceptance of this plan binds its exact bytes. It does not open Develop,
+ approve disposable-host mutations, install credentials or enroll agents.
+-A later cutover proposal must present verified T07/T16 capability,
+-full versus sharded parity, the T24 timing and coverage tradeoff, the
+-T25 trace, explicit changed-outcome/coverage policy, and a rollback to
++A later cutover proposal must present verified T07/T17 capability,
++full versus sharded parity, the T25 timing and coverage tradeoff, the
++T26 and T27 traces, explicit changed-outcome/coverage policy, and a rollback to
+ full PR validation that preserves any live incident. If owner approval
+ or authority qualification is absent, keep the existing full PR gate.
