@@ -59,3 +59,19 @@ binds 877 product and CLI plus 182 helper obligations to the
 current base. The [base push](https://github.com/kburson/aitm/actions/runs/42916832495/attempts/1)
 passed. Fresh [PR CI](https://github.com/kburson/aitm/actions/runs/42917875102)
 is in progress. Independent review is scoped to the replacement.
+
+### Current exact-source verdict and delivery hold
+
+All six jobs passed on the [exact hosted attempt](https://github.com/kburson/aitm/actions/runs/42917875102/attempts/1).
+[Signed artifact and raw replay](hosted-ci-receipt-36f700e330c0.json)
+verified 877 candidate outcomes, 876 base outcomes, and both coverage
+floors. The [independent source SPR](source-review-attempt-2.md) accepted
+the exact corrected head and resolved all three prior findings.
+
+The trusted #103 verifier [returned a hold](verifier-hold-36f700e330c0.json).
+Its gate-control comparison includes the three additive files under
+`tools/ci`. The existing workflow, verifier, policy, helper coverage
+denominator and runner inputs are unchanged. #103's first owner
+disposition for this change is pending on exact tested tree
+`13f338628918c14f41b56f0c1ef52649b126fc41`. No prior disposition applies to the new #139 files.
+The source verdict is retained while the Project remains in Test.

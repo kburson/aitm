@@ -1,0 +1,68 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_inventory.py": "fbe0e5e91472c15e36eb15ddf2e5c156902c8f7d",
+    "tools/ci/tia/inventory.py": "2f542dcdb9e6518c637d445fce673377d3dd34af",
+    "tools/ci/tia/suites.json": "a00888bb1515f4effbdb3700f2ac378d70928bb8"
+  },
+  "artifact": {
+    "archive_digest": "sha256:018876d6d8aca39be53d83bae9f2ceca3852d2d29630a49b55d4b2acd05dd26d",
+    "id": 13811255288,
+    "subject_digest": "7e7f56386706a7ddf43228f5d0ef6a246c9232dff832d3f4b47919b7f1f26fa4"
+  },
+  "attempt": 1,
+  "base": "c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2",
+  "boundary": "source review and exact-tree disposition recorded separately",
+  "controls": {
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "96424d880798d78e1eae93fba4d748d4fe985792"
+  },
+  "coverage": {
+    "helpers": {
+      "covered_lines": 778,
+      "num_statements": 821
+    },
+    "product": {
+      "covered_lines": 9649,
+      "num_statements": 10549
+    }
+  },
+  "head": "36f700e330c07dc8750dfcfa9fe8841c49e35877",
+  "jobs": {
+    "aitm-ci": 130187285239,
+    "collect-evidence": 130187166866,
+    "file-checks": 130184872019,
+    "python": 130184872620,
+    "python-base": 130184872840,
+    "quality": 130184872612
+  },
+  "pr": 197,
+  "raw_replay": {
+    "baseline_tests": 876,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 9649,
+        "num_statements": 10549
+      }
+    },
+    "failures": [],
+    "passed": true,
+    "tests": 877
+  },
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/42917875102/attempts/1",
+  "run_id": 42917875102,
+  "status": "authenticated-hosted-checks-and-raw-replay-pass",
+  "story": 139,
+  "suite": 116231870078,
+  "tested": "f237b347b2bb0c019d3367f36d22468714cc71d4",
+  "tree": "13f338628918c14f41b56f0c1ef52649b126fc41",
+  "workflow_id": 412848571
+}
