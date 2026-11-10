@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 186
 title: "[#181 A01] Admit and register planning evidence"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/186"
 parent: 181
 children: []
 blocking: [187, 189]
 blocked-by: []
 created: "2026-11-10T21:02:13Z"
-updated: "2026-11-10T22:39:38Z"
+updated: "2026-11-10T22:42:17Z"
 last-branch: "codex/aitm-186-planning-evidence"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
