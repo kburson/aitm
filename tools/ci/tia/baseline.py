@@ -773,7 +773,10 @@ def _helper_collection(collection, binding):
     runner = _map(collection.get("runner"), "helper: missing local runner provenance")
     command = collection.get("command")
     _require(_text(command), "helper: missing collection command")
-    argv = shlex.split(command)
+    try:
+        argv = shlex.split(command)
+    except ValueError as error:
+        raise ValueError("helper: malformed collection command") from error
     _require(
         set(targets) == _TARGETS
         and {_node_source(node) for node in nodes} == _TARGETS

@@ -660,6 +660,12 @@ def test_baseline_rejects_unqualified_helper_collection(proof, field, replacemen
         project(proof)
 
 
+def test_baseline_categorizes_malformed_helper_command(proof):
+    proof[0]["roles"]["helper_collection"]["command"] = '"'
+    with pytest.raises(ValueError, match=r"^helper:"):
+        project(proof)
+
+
 def test_baseline_distinguishes_unknown_and_observed_timing(proof):
     timings = json.loads(project(proof))["timings"]
     cold, warm = (timings["pr_candidate"][profile] for profile in ("cold", "warm"))
