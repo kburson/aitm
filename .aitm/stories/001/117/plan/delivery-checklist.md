@@ -37,3 +37,7 @@ The append-only Codex regression reproduced an `APPLIED` retry after a resolved 
 Trunk advanced to `0175e77c398dc97c59db166fa64e2e9a673b4b40` through unrelated CI tooling files during local validation. Those files do not overlap #117. The repaired package source and tests match the prior local repair byte for byte, and the target and candidate match on workflow, tools, lock and package configuration. The refreshed local gate passed 748 product and CLI tests and 182 helper tests with 9,096/9,981 product and 778/821 helper lines covered. Ruff and whitespace passed.
 
 [PR #185](https://github.com/kburson/aitm/pull/185) read back exact head `1b47aa275370482e7b822ce80883549f15158d82` and literal trunk `0175e77c398dc97c59db166fa64e2e9a673b4b40`, tree `200b4b337bd1e0f784aba4adff7689d80158858f`. [Hosted run 42902029986](https://github.com/kburson/aitm/actions/runs/42902029986) is pending.
+
+### Terminal retry repair Review checkpoint
+
+[All six hosted jobs](https://github.com/kburson/aitm/actions/runs/42902029986/attempts/1) passed on the revised head. The [signed receipt](terminal-retry-hosted-ci-receipt.json) verified tested merge `e4d975536748d60cb745085b47a55906c82f81d7`, artifact `13803671599` and subject SHA-256 `7afdc1a9e4d13828774ac41ea28f83bcc123fe91b1c42f3731fb2323e4bbceb0`. The trusted replay preserved 713 baseline identities and passed 748 candidate tests with both raw coverage floors. The first review's hold, signed receipt and exact identities remain separate. Independent exact re-review is pending.
