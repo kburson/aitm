@@ -36,3 +36,26 @@ Independent source inspection reproduced malformed pytest parameter
 wrappers, invalid hosted Git refs, and transposed child labels
 being admitted. The story returns to Develop for scoped corrections.
 This head retains its successful tests and its source review hold.
+
+### Corrected candidate on the #194 base
+
+[Independent findings](source-review-attempt-1.md) ·
+[GitHub inline findings](https://github.com/kburson/aitm/pull/197#pullrequestreview-5850624988) ·
+[Implementer corrections](implementer-correction-handoff.md).
+
+The corrected branch was fast-forwarded on [PR #197](https://github.com/kburson/aitm/pull/197).
+Exact base `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2`, head
+`36f700e330c07dc8750dfcfa9fe8841c49e35877`, tested source tree
+`13f338628918c14f41b56f0c1ef52649b126fc41`. The correction adds
+fail-closed validation for malformed pytest parameter wrappers,
+malformed hosted refs, and swapped child process mappings. The
+three owned file blobs survived the base refresh byte-for-byte.
+
+[Exact local validation](local-validation-36f700e330c0.json) passed
+47 focused, 87 neighboring, and 1,193 full tests. The #194 merge
+added ten test IDs within the existing install rule, with no
+removals or changes to #103 controls. [Reconciliation](inventory-reconciliation-36f700e330c0.json)
+binds 877 product and CLI plus 182 helper obligations to the
+current base. The [base push](https://github.com/kburson/aitm/actions/runs/42916832495/attempts/1)
+passed. Fresh [PR CI](https://github.com/kburson/aitm/actions/runs/42917875102)
+is in progress. Independent review is scoped to the replacement.

@@ -1,0 +1,89 @@
+{
+  "actionlint": {
+    "exit": 0,
+    "log_sha256": "0a870bd4b9da75116b47dc32fd6358dec2e371d64b617826d9682cf2f6f3c2e1",
+    "version": "1.7.12"
+  },
+  "attempt": 1,
+  "base": "c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2",
+  "exact_head_clean_before_and_after": true,
+  "exact_head_full": {
+    "exit": 0,
+    "failed": 0,
+    "log_sha256": "f2cbbaff91edb0b359dc5a3326adc39476b27f307bbd3c27e8c2b680914868a4",
+    "passed": 1193,
+    "seconds": 133.84
+  },
+  "file_checks": {
+    "exit": 0,
+    "log_sha256": "da584936ad7e90fcc5251892c6248fbb38a8801ff16ae679b7423702a3d97f15",
+    "node": "24.22.2"
+  },
+  "focused_correction_red": {
+    "exit": 1,
+    "failed": 16,
+    "log_sha256": "880720a4fde1575cf2e0c3e92ac840af96cc9a7818f4aaa41c63f20160a19f79",
+    "passed": 31
+  },
+  "focused_green": {
+    "exit": 0,
+    "log_sha256": "8a29806ba1fff9012489f78a6864a14171f2b413dd067f438ad9f0f85102438f",
+    "passed": 47
+  },
+  "frozen_correction": {
+    "base": "49865245d175ce6c52913738f2c9a42c0abea632",
+    "head": "ffed933cc343700e65a83bbebcaa344071c05308",
+    "staged_full": {
+      "failed": 0,
+      "log_sha256": "2c183fd17624212652bed316273834d03cf846a07a708922b3064b3632d98def",
+      "passed": 1183,
+      "seconds": 115.09
+    },
+    "staged_test_tree_equals_committed_tree": true,
+    "tree": "d1c8cc8a02a959c9fd310fd854ead10f5daf6028"
+  },
+  "full_local_advisory_inventory_sha256": "014424d5c140c939f6ef19c9cd4c7b5a05cc25c979050aefe3ed77526f8f73f9",
+  "full_local_advisory_obligations": 1059,
+  "git_ref_crosscheck": {
+    "git": "2.42.1",
+    "log_sha256": "bdffe717e0fe1eca649f00e5d7e5a85027c02828af7484d3f0ec2137b64a5e2c",
+    "matched": 402
+  },
+  "head": "36f700e330c07dc8750dfcfa9fe8841c49e35877",
+  "implementer": "codex-collaboration:/root/impl139",
+  "latest_live_target_readback": "c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2",
+  "neighboring": {
+    "exit": 0,
+    "log_sha256": "13c914e3a8f9dce506f12efbabffa5701f8ae5a7b490302cb73e4d0e59626210",
+    "passed": 87,
+    "seconds": 22.9
+  },
+  "owned_paths": [
+    "tools/ci/tests/test_tia_inventory.py",
+    "tools/ci/tia/inventory.py",
+    "tools/ci/tia/suites.json"
+  ],
+  "owned_source_sha256": {
+    "tools/ci/tests/test_tia_inventory.py": "a10cd777fd4c1f13166bca35b6bf007d4ebad583e4bccf0f290f1131cf82eaa7",
+    "tools/ci/tia/inventory.py": "eb099a4ec68336933769d42ccd2242dac345c01f412b5e1da72f71f131c93314",
+    "tools/ci/tia/suites.json": "ed199576474d90ca06e07c248de04504fe9070e74b54cbcc20a9b65b5f772720"
+  },
+  "owned_sources_byte_identical_after_target_refresh": true,
+  "parents": [
+    "ffed933cc343700e65a83bbebcaa344071c05308",
+    "c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2"
+  ],
+  "prior_target_local_validation_sha256": "8f88e434c0a4a37220dc0528598b3f5277234370fd096d60c436923a9c1197a2",
+  "python": "3.13.9",
+  "reviewed_head": "6687ba0262df6eb99e76c66509bf32262017d5b5",
+  "ruff_product_and_ci": {
+    "exit": 0,
+    "log_sha256": "0c4a349ffc8f74ee8cff53f86b032f8e80c2890739107bb55ad65d171d28855d"
+  },
+  "sanitized_reconciliation_sha256": "528a6880c45194f68b564b7a7c6980030d5fffa3b5a1b0485828ec1dd05539f9",
+  "status": "exact_local_validation_pass",
+  "story": 139,
+  "target": "trunk",
+  "tree": "13f338628918c14f41b56f0c1ef52649b126fc41",
+  "uv": "0.10.6"
+}
