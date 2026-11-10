@@ -1,0 +1,3 @@
+# Task-scoped #103 repository CI design XPR
+
+Use the sealed invitation and exact installed peer-review join and submit commands. Edit only the authorized pending response. Read the current design through EOF in contiguous fresh Read ranges of at most 20 lines. State actual line ranges, completeness and truncation in your response. Review gate integrity, CI bootstrap, exact candidate binding, hosted macOS versus Linux, coverage at 90% per product package, behavioral tests, and preserving the full inventory as tests are parallelized. Review the standalone scope and protection of unrelated work. On later rounds, freshly read the complete current file and the preceding author dispositions. No Git or implementation.
