@@ -27,7 +27,15 @@ def digest(payload):
 
 
 def event(story, kind, data, ts=EARLIER):
-    return {"v": 0, "type": kind, "ts": ts, "story": story, "data": data}
+    return {
+        "v": 0,
+        "type": kind,
+        "ts": ts,
+        "story": story,
+        "actor": {"kind": "agent", "harness": "codex", "on-behalf-of": "operator-1"},
+        "provenance": {"route": "manual-bootstrap", "runtime_transition": False},
+        "data": data,
+    }
 
 
 def timing(batch="batch-1", subject=186):
@@ -430,6 +438,93 @@ class PlanningFixture(unittest.TestCase):
                 new_pin, "--receipt", receipt_path, "--registration", event_path
             ).returncode,
             2,
+        )
+
+    def test_unsupported_envelopes_cannot_register_receipts(self):
+        self.story(186)
+        valid = self.register("valid", raw(timing("valid")))
+        invalid = [
+            self.register("version", raw(timing("version"))) | {"v": 99},
+            self.register("route", raw(timing("route")))
+            | {"provenance": {"route": "other", "runtime_transition": False}},
+            self.register("runtime", raw(timing("runtime")))
+            | {"provenance": {"route": "manual-bootstrap", "runtime_transition": True}},
+            self.register("actor", raw(timing("actor"))) | {"actor": None},
+        ]
+        self.append(186, valid, *invalid)
+        pin = self.commit()
+        tree = evidence.read_tree(self.repo, pin, AS_OF)
+        self.assertEqual([receipt.batch for receipt in tree.receipts], ["valid"])
+        self.assertEqual([gap.code for gap in tree.gaps], ["invalid-registration"] * 4)
+        for row in invalid:
+            with self.subTest(path=row["data"]["path"]):
+                journal = self.repo / "prospective.json"
+                journal.write_bytes(raw(row))
+                result = self.cli(
+                    pin,
+                    "--receipt",
+                    self.root(186) / row["data"]["path"],
+                    "--registration",
+                    journal,
+                )
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertIn("manual-bootstrap", result.stderr)
+
+    def test_prospective_replay_cannot_revive_a_held_registration(self):
+        self.story(186)
+        row = self.register("batch-1", raw(timing()))
+        self.append(186, row | {"ts": "2026-11-10T19:59:30Z"})
+        pin = self.commit()
+        tree = evidence.read_tree(self.repo, pin, AS_OF)
+        self.assertFalse(tree.receipts)
+        self.assertEqual([gap.code for gap in tree.gaps], ["invalid-receipt"])
+        event_path = self.repo / "prospective.json"
+        event_path.write_bytes(raw(row))
+        result = self.cli(
+            pin,
+            "--receipt",
+            self.root(186) / row["data"]["path"],
+            "--registration",
+            event_path,
+        )
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("reconcile", result.stderr)
+        self.append(186, row)
+        readback = evidence.read_tree(self.repo, self.commit(), AS_OF)
+        self.assertFalse(readback.receipts)
+        self.assertEqual([gap.code for gap in readback.gaps], ["invalid-receipt"])
+
+    def test_observation_must_not_occur_after_its_own_recording(self):
+        self.story(186)
+        payload = timing()
+        payload["observations"][0]["recorded_at_utc"] = "2026-11-10T19:57:00Z"
+        self.append(186, self.register("batch-1", raw(payload)))
+        tree = evidence.read_tree(self.repo, self.commit(), AS_OF)
+        self.assertFalse(tree.receipts)
+        self.assertEqual([gap.code for gap in tree.gaps], ["invalid-receipt"])
+
+    def test_excessively_nested_header_values_are_scoped_gaps(self):
+        malformed = "[" * 10000 + "null" + "]" * 10000
+        for story, field in ((181, "updated"), (186, "parent"), (187, "state")):
+            self.story(story)
+            path = self.root(story) / "story.md"
+            path.write_text(
+                "\n".join(
+                    f"{field}: {malformed}" if line.startswith(field + ":") else line
+                    for line in path.read_text().splitlines()
+                )
+                + "\n"
+            )
+        self.story(188)
+        tree = evidence.read_tree(self.repo, self.commit(), AS_OF)
+        self.assertIn(188, tree.stories)
+        self.assertEqual(
+            [(gap.story, gap.code) for gap in tree.gaps],
+            [
+                (181, "ineligible-header"),
+                (186, "invalid-ancestry"),
+                (187, "invalid-state"),
+            ],
         )
 
     def test_future_receipt_evidence_held(self):

@@ -97,6 +97,8 @@ class Event:
     source: str
     recorded_at: datetime
     actor: dict[str, Any] | None
+    version: int | None
+    provenance: dict[str, Any] | None
 
 
 @dataclass(frozen=True)
@@ -251,6 +253,11 @@ def _timing(row, recorded):
         "expected millisecond occurrence precision",
     )
     _check(start is None or end is None or start < end, "reversed or empty interval")
+    if "recorded_at_utc" in row:
+        _check(
+            all(bound is None or bound <= row_time for bound in (start, end)),
+            "observation occurs after its recording",
+        )
     if start is None or end is None:
         boundary = row["kind"] in {
             "owner-request",
@@ -357,6 +364,16 @@ def _registration(event):
     obj = event.data
     _check(
         event.kind == "core.evidence.recorded", "expected a core evidence registration"
+    )
+    actor_kind = (event.actor or {}).get("kind")
+    provenance = event.provenance or {}
+    _check(
+        event.version == 0
+        and provenance.get("route") == "manual-bootstrap"
+        and provenance.get("runtime_transition") is False
+        and isinstance(actor_kind, str)
+        and actor_kind in {"human", "agent", "tool"},
+        "expected a v0 manual-bootstrap registration with a known actor kind",
     )
     _fields(obj, ("kind", "path", "sha256", "scope"))
     kind = obj["kind"]
@@ -636,6 +653,8 @@ def _event(row, story, source):
         source,
         recorded,
         row["actor"] if isinstance(row.get("actor"), dict) else None,
+        row["v"] if type(row.get("v")) is int else None,
+        row["provenance"] if isinstance(row.get("provenance"), dict) else None,
     )
 
 
@@ -736,7 +755,7 @@ def _facts(git, blobs, as_of, gaps):
                 "updated" not in header
                 or _stamp(_header_value(header, "updated")) <= as_of
             )
-        except ValueError:
+        except (ValueError, RecursionError):
             header_eligible = False
         if not header_eligible:
             gaps.append(Gap(story, "ineligible-header", path))
@@ -745,7 +764,7 @@ def _facts(git, blobs, as_of, gaps):
                 parent = _header_value(header, "parent")
                 _check(parent is None or _number(parent), "invalid parent")
                 own_parents[story] = (parent, False)
-            except ValueError:
+            except (ValueError, RecursionError):
                 gaps.append(Gap(story, "invalid-ancestry", path))
         if header_eligible and "children" in header:
             try:
@@ -767,7 +786,7 @@ def _facts(git, blobs, as_of, gaps):
                     isinstance(state, str) and state in STATES, "invalid story state"
                 )
                 state_source = path
-            except ValueError:
+            except (ValueError, RecursionError):
                 gaps.append(Gap(story, "invalid-state", path))
                 state = None
             if "estimate" in header:
@@ -1020,15 +1039,21 @@ def _prospective(repo, tree, raw, event_bytes):
         all(item.identity == claim.identity for item in prior),
         "registration conflicts with the pinned path",
     )
+    if prior:
+        _check(
+            any(
+                item.story == claim.story
+                and item.path == claim.path
+                and item.identity == claim.identity
+                for item in tree.registrations
+            ),
+            "pinned registration is held; reconcile before retrying",
+        )
     path = _root(claim.story) + claim.path
     if path in tree._blobs:
         _check(
             _Git(repo).read(tree._blobs[path]) == raw,
             "receipt would rewrite a pinned path",
-        )
-    elif prior:
-        raise ValueError(
-            "pinned registration has missing bytes; reconcile before retrying"
         )
     return validate_receipt(raw, claim, as_of=tree.as_of)
 
