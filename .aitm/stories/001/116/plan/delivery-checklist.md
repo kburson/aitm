@@ -81,3 +81,9 @@ An original inode at another verified path proves discontinuity at the enrolled 
 Claude keeps abandoned provisional requests out of a later completed native suffix. Current in-flight tool and provisional request proofs still create gaps from the verified base. A queued enable adds no retrospective gap to the disabled interval, and a span crossing its actual fence remains Unknown.
 
 Both findings reproduced on the prior exact source. The frozen replacement passed 326 focused tests, 714 locked product and CLI tests and 182 helper tests. Raw coverage was 8,404/9,229 product and 778/821 helper lines. Ruff and whitespace passed. The exact local gate reran after the final delayed-enable assertions were saved.
+
+### Hosted runner abandonment and exact source reissue
+
+[Run 42886608928 attempt 1](https://github.com/kburson/aitm/actions/runs/42886608928/attempts/1) failed on head `7a0503f24d3eb2ffa7d70e7bacfae470c8fce0e8`. Quality and File Checks passed. GitHub cancelled both required macOS Python jobs after neither was acquired by a hosted runner. The job records name no runner or steps, and their annotations identify hosted macOS arm64 capacity constraints. The collector failed on both abandoned requirements and `aitm-ci` was skipped. There is no signed passing receipt for that run.
+
+A source-empty commit on the same PR produced head `950e0262dba4e2db1b4fe573c898d4b65d7e8ce5`. GitHub confirmed the unchanged trunk base and the new head. The candidate tree remains `57e46ef74951a44b21533816171aa3057502178e`, with zero source diff and the same frozen local evidence. A normal synchronize event produced [fresh run 42889263878](https://github.com/kburson/aitm/actions/runs/42889263878). The issue remains in Test pending all required jobs and signed verification.
