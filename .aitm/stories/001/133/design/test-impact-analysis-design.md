@@ -173,6 +173,20 @@ parallelism is required. [GitHub Actions job matrices](https://docs.github.com/e
 An independently trusted collector verifies every expected shard
 artifact by identity and digest. Check repository, source tree, tested
 candidate, policy, platform scope, assignment, run and attempt.
+Separate the trusted execution controller and its evidence channel from
+candidate Python. The controller owns runner invocation, expected IDs,
+receipt creation, and authentication. Collection and result observations
+used by the gate must be tied to actual runner activity through a
+qualified boundary that candidate code cannot rewrite. An upload from
+the expected job or a matching digest alone cannot make a
+candidate-writable report authoritative. Verify the observation
+boundary for both positive and negative evidence, including candidate
+code that executes during collection. If selection cannot establish
+trusted evidence, use full mode only if it can establish that evidence.
+Otherwise block the gate. This proof concerns test execution and
+report integrity. Independent source review still evaluates whether
+tests meaningfully exercise product behavior.
+
 The union of outcomes must equal the planned test IDs, with every
 expected outcome classified and every ID accounted for once per
 required scope. Reject extra, missing, duplicate, cancelled, stale,
@@ -213,7 +227,11 @@ policy decision at cutover. Use full mode when the selected result
 cannot establish its required coverage scope, when the denominator
 cannot be trusted, or when full coverage is independently required.
 A measured coverage deficit fails the selected gate. Report full and
-selected coverage scopes explicitly. [Coverage aggregation](https://coverage.readthedocs.io/en/latest/commands/cmd_combine.html) · [Subprocess coverage](https://coverage.readthedocs.io/en/latest/subprocess.html)
+selected coverage scopes explicitly. A verified zero denominator may
+be reported as inapplicable only if the package change added, modified,
+or removed no executable lines. If a deletion removes executable
+logic and leaves a zero candidate denominator, use full mode.
+[Coverage aggregation](https://coverage.readthedocs.io/en/latest/commands/cmd_combine.html) · [Subprocess coverage](https://coverage.readthedocs.io/en/latest/subprocess.html)
 
 The plan records source and policy identity, changed paths and their
 dispositions, full inventory digest, mode, exact selected IDs and
@@ -313,6 +331,13 @@ eligible PR, state version, recorded merge and trunk recovery proof,
 workspace roster, acknowledgments, and timestamps. State changes are
 durable and ordered. Duplicate or out-of-order events are idempotent.
 Late passes for another revision or incident cannot clear the stop.
+Retain each distinct verified unresolved failure in the active stop.
+New failure evidence advances the incident version and invalidates
+outstanding repair authorization, recovery proof, or restart
+acknowledgments for an earlier version. Reconcile all retained
+failures against the eventual repair set and current trunk. A
+second failure during workspace updates returns the stop to repair
+or failure disposition without reopening ordinary work.
 A verified infrastructure-only failure may recover without a source
 PR after an authorized operator records the diagnosis and resolution
 and a new full run passes on current trunk. This exception cannot
@@ -339,7 +364,15 @@ the stop and use the ordinary incident repair path.
 Authorize ordinary merges at the actual merge boundary. Serialize the
 recording of a trusted stop, merge eligibility, repair admission, and
 restart through one authority. A cached green PR or pre-stop queue
-entry has no authority to merge after a stop is recorded. A merge
+entry has no authority to merge after a stop is recorded. The final
+host mutation for ordinary and repair merges must be conditional on the
+admitted PR head and target base and produce the exact approved merge
+tree. Use a host-enforced precondition or an equivalent fenced update
+path that prevents intervening head or base movement from changing
+what lands. Disable any merge method that cannot guarantee this.
+Compare provider readback with the approved tree and reconcile an
+unexpected result under a merge hold. An unexpected tree cannot count
+as the authorized repair. A merge
 already committed before detection is part of the shared baseline
 that recovery must account for. During a stop, defer ordinary delivery
 validation against stopped trunk. Candidate jobs and their credentials
@@ -362,6 +395,11 @@ enforcement cannot be qualified. [GitHub ruleset options](https://docs.github.co
 Capture the roster of enrolled governed workspaces for the repository
 when the stop is recorded. Use the shared incident decision at pickup,
 resume, and governed execution boundaries. Notify running sessions.
+An unavailable or expired decision blocks new ordinary governed
+operations. An admitted operation has bounded authority and must
+recheck at a defined safe boundary before continuing ordinary work.
+When authority expires or cannot be refreshed, stop at the first safe
+point. A cached Healthy decision cannot extend that authority.
 At the first safe interruption point, agents preserve working trees,
 locks, pending operations, and evidence. Allow read-only diagnosis,
 incident repair and its review and validation, and the later workspace
@@ -372,10 +410,15 @@ Unmanaged processes cannot acknowledge a governed update.
 After trunk recovery, each workspace fetches and integrates the fixed
 upstream through its normal workflow. Preserve local changes and
 resolve conflicts without discarding work. Record evidence that the
-workspace's updated base contains the fix, that the update was made
-for this incident, and that its pickup and applicable validation are
-fresh. Use the roster and these acknowledgments as a restart barrier.
-A disconnected workspace or unresolved update holds the barrier.
+workspace's updated base contains the fix and that the incident's fix
+proof still holds on the effective integrated branch and relevant
+working changes. Validate conflict resolutions or local changes that
+could undo the fix. Bind the update to this incident and refresh its
+pickup and applicable validation. Use the stop roster and these
+acknowledgments as a restart barrier. Disconnect, relabeling, or
+enrollment withdrawal cannot satisfy or remove an outstanding roster
+obligation. A disconnected workspace or unresolved update holds the
+barrier.
 A missed notification is handled at the next governed boundary.
 A new or reopened workspace can enter ordinary work only after its
 base contains the fix. Bind each acknowledgment to the incident,
@@ -394,12 +437,12 @@ of a workspace update.
 | --- | --- |
 | Selection | A direct import, a multi-hop witness, a cross-package path, a fixture or subprocess declaration, a changed test, and a positively classified non-test change. Verify the reported path and exact selected ID for each case. |
 | Unknown impact | Renames or deletions across snapshots, missing Git inputs, changed CI controls, and selector failure. Show fallback when a resolved test path coexists with an unresolved runtime dependency that can reach the changed input. Block when full evidence cannot be established. |
-| Shard correctness | Serial and parallel runs on the same candidate. Show separate runners, complete disjoint assignments, matching outcomes and coverage, and refusal of missing, duplicated, stale, mismatched, or unexpectedly skipped outcomes. |
+| Shard correctness | Serial and parallel runs on the same candidate. Show separate runners, complete disjoint assignments, matching outcomes and coverage, and refusal of missing, duplicated, stale, mismatched, or unexpectedly skipped outcomes. Reject a well-formed but candidate-forged inventory or outcome. |
 | Timing | Cold and warm timing, queue, setup, test and evidence timings for the three budgets, runner cost, and observed savings for selected feedback. |
 | PR isolation | A failing isolated PR cannot merge. An independent PR can validate and merge and its agent can continue work. |
-| Escaped defect | Inject a scheduled trunk failure missed by PR validation. Prove an already-green PR, a queued PR, and direct or alternate update paths are blocked. Show active agents on both affected and earlier bases pause. |
-| Repair and restart | Reject TIA-only and stale full repair proofs. Allow the exact full-passing repair through normal review. Prove a failed, stale, incomplete, or wrong-revision recovery does not reopen the line. Prove repaired trunk passing allows workspace updates and a disconnected workspace holds restart until its fix receipt is verified. |
-| Failure of controls | Exercise duplicate and out-of-order events, a repair merge with ambiguous acknowledgment, an already-landed repair for a failing older revision, protection drift, stale health, and infrastructure-only recovery. Prove a verified test failure still triggers the stop if another shard is missing, and a changed workspace generation invalidates an earlier acknowledgment. |
+| Escaped defect | Inject a scheduled trunk failure missed by PR validation. Prove an already-green PR, a queued PR, and direct or alternate update paths are blocked. Show active agents on affected and earlier bases pause. Disconnect an already running agent before notification and show that it cannot admit new ordinary work. |
+| Repair and restart | Reject TIA-only and stale full repair proofs. Allow the exact full-passing repair through normal review. Exercise head and base movement at the final host mutation and refuse unapproved trees. Prove repaired trunk passing allows workspace updates. Reject a receipt when conflict resolution reintroduces the defect or when an outstanding disconnected workspace is withdrawn from enrollment. |
+| Failure of controls | Exercise duplicate and out-of-order events, a second verified failure during workspace updates, a repair merge with ambiguous acknowledgment, an already-landed repair for an older revision, protection drift, stale health, and infrastructure-only recovery. Prove no release for stale or incomplete recovery, a missing shard cannot hide a verified test failure, and a changed workspace generation invalidates its acknowledgment. |
 
 ## 8. Decisions reserved for the implementation plan
 
