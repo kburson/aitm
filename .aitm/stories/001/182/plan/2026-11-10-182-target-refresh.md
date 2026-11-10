@@ -1,0 +1,3 @@
+# #182 target refresh
+
+The independently accepted M07b pickup at SHA-256 `f30d0b70b0a31a5b4d839c7a29750c0dd31260dd946758923d73ad1c7c4d231d` used literal trunk `41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55`, the delivered M07a merge. While the pickup was being reviewed, unrelated PR #184 advanced literal trunk to `a495d60a87ac4ca764f019dc266e579f13f1787e`. The new revision descends from the accepted base and differs only by `tools/ci/tia/snapshot.py` and `tools/ci/tests/test_tia_snapshot.py`. Product, existing validation inputs and workflow are byte-identical. Keep the approved pickup bytes and scope intact. This addendum rebinds the physical Develop branch to the new target only after the fresh locked baseline and independent target refresh both pass.

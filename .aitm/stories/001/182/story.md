@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 182
 title: "[M07b] Scope command admission and legacy compatibility"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/182"
 parent: 100
 children: []
 blocking: [118, 194]
 blocked-by: [117]
 created: "2026-11-10T20:23:14Z"
-updated: "2026-11-10T21:29:08+00:00"
-last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+updated: "2026-11-10T21:31:09+00:00"
+last-branch: "codex/aitm-182-scope-command-admission"
+estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-10-182-scope-command-admission-plan.md", "plan/2026-11-10-182-m07c-launcher-split.md"], "attachments": []}
