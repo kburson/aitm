@@ -25,3 +25,22 @@ refusal gaps. The [whole-branch SPR](source-review-attempt-1.md)
 confirmed the regressions and fixes on the exact candidate and
 accepted the source without actionable findings. The source verdict
 and authenticated hosted checks are separate.
+
+## Authenticated hosted Test
+
+All six required jobs passed on the [exact attempt](https://github.com/kburson/aitm/actions/runs/42897870711/attempts/1).
+The signed verifier components and independent raw replay agree on the
+tested merge `01b54fa474830dbd70915a4556f359b0b21f4a35`, ordered base/head, and exact tree
+`e89faf081d000fd8749430edd8ce47328e6703bb`. The hosted result retained 713
+trusted base outcomes and verified 714 product
+and CLI outcomes. Product line coverage was 8404/9229
+and helper coverage was 778/821,
+both above the 90% floor. [Exact evidence](hosted-test-6397dd9a5ff7.json).
+
+GitHub's rules were unchanged. The verifier classifies the two new
+files under `tools/ci/` as gate-defining. The workflow, policy,
+trusted verifier, lock and required test list and helper coverage
+denominator are unchanged. The existing #103 owner disposition
+applies separately to these exact additions.
+
+The owner’s exact-tree disposition is pending. The [trusted verifier hold](verifier-hold-6397dd9a5ff7.json) leaves the story in Test while the independent source verdict is retained. The PR remains open and unmerged.

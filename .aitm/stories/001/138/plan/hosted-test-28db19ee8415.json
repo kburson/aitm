@@ -1,0 +1,67 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_baseline.py": "2702365d126bb0edacc544c64d8fc0bd900dd466",
+    "tools/ci/tia/baseline.py": "db87d9e24fd9a52d04ce2b1807d590fc2caecd0f"
+  },
+  "artifact": {
+    "archive_digest": "sha256:b05b6809777fe4988c72e40e69b4d9dfb40564c75db429bd1bd549079bbe4d5a",
+    "id": 13800914086,
+    "subject_digest": "a2a2f464c3ec9858a6084cc7f9411f491fd9cb98f5c8e2aab69a702706957d79"
+  },
+  "attempt": 1,
+  "base": "d769b3169724eeb9ef4b4aee47d3ab4c4489072d",
+  "boundary": "source review and exact-tree disposition recorded separately",
+  "controls": {
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "96424d880798d78e1eae93fba4d748d4fe985792"
+  },
+  "coverage": {
+    "helpers": {
+      "covered_lines": 778,
+      "num_statements": 821
+    },
+    "product": {
+      "covered_lines": 8404,
+      "num_statements": 9229
+    }
+  },
+  "head": "28db19ee841567bdab9f0c4624fb30ed18a7047e",
+  "jobs": {
+    "aitm-ci": 130119134866,
+    "collect-evidence": 130119039368,
+    "file-checks": 130117106679,
+    "python": 130117106641,
+    "python-base": 130117106122,
+    "quality": 130117106773
+  },
+  "pr": 183,
+  "raw_replay": {
+    "baseline_tests": 713,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 8404,
+        "num_statements": 9229
+      }
+    },
+    "failures": [],
+    "passed": true,
+    "tests": 714
+  },
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/42898241656/attempts/1",
+  "run_id": 42898241656,
+  "status": "authenticated-hosted-checks-and-raw-replay-pass",
+  "story": 138,
+  "suite": 116179480074,
+  "tested": "c7efd9d46034905ea08a0ff0cabeb697b13f58f7",
+  "tree": "cbda78ce605593be91611a02c06d51edd7ff9c87",
+  "workflow_id": 412848571
+}

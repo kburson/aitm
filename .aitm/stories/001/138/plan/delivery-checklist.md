@@ -37,3 +37,24 @@ stable error-category gap for malformed helper command quoting. The
 resolution at `28db19ee841567bdab9f0c4624fb30ed18a7047e`. No unresolved source
 findings remain. The [sanitized historical report](../attachments/serial-baseline.md)
 reconciles the same canonical baseline bytes across the correction.
+
+## Authenticated hosted Test
+
+All six required jobs passed on the [exact attempt](https://github.com/kburson/aitm/actions/runs/42898241656/attempts/1).
+The signed verifier components and independent raw replay agree on the
+tested merge `c7efd9d46034905ea08a0ff0cabeb697b13f58f7`, ordered base/head, and exact tree
+`cbda78ce605593be91611a02c06d51edd7ff9c87`. The hosted result retained 713
+trusted base outcomes and verified 714 product
+and CLI outcomes. Product line coverage was 8404/9229
+and helper coverage was 778/821,
+both above the 90% floor. [Exact evidence](hosted-test-28db19ee8415.json).
+
+GitHub's rules were unchanged. The verifier classifies the two new
+files under `tools/ci/` as gate-defining. The workflow, policy,
+trusted verifier, lock and required test list and helper coverage
+denominator are unchanged. The existing #103 owner disposition
+applies separately to these exact additions.
+
+The [superseded hosted run](https://github.com/kburson/aitm/actions/runs/42897701333) was cancelled after the correction push. Its results carry no authority for the replacement.
+
+The owner’s exact-tree disposition is pending. The [trusted verifier hold](verifier-hold-28db19ee8415.json) leaves the story in Test while the independent source verdict is retained. The PR remains open and unmerged.
