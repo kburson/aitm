@@ -21,7 +21,7 @@ from .monitor_registry import (
     _read_state,
     _source,
 )
-from .monitor_types import GrokCheckpoint, NativeSurface
+from .monitor_types import GrokCheckpoint, GrokDiagnostic, NativeSurface
 from .scopes import _publish
 from .sources.adapter import (
     AdapterBatch,
@@ -58,6 +58,7 @@ from .sources.scan import (
 )
 from .types import (
     DevelopmentBinding,
+    Diagnostic,
     Eligibility,
     InboxCommand,
     ItemKey,
@@ -255,6 +256,7 @@ class VerifiedScopeBatch:
     surface: NativeSurface
     observations: tuple[NativeObservation, ...]
     boundaries: tuple[NativeBoundary, ...]
+    diagnostics: tuple[Diagnostic | GrokDiagnostic, ...]
     cursor: StreamCursor | None
     _proofs: tuple[_ObservationProof, ...] = field(repr=False)
     _admitted: frozenset[UUID] = field(repr=False)
@@ -865,6 +867,7 @@ class ScopeState:
             surface,
             batch.observations,
             batch.boundaries,
+            batch.diagnostics,
             batch.cursor,
             tuple(proofs),
             admitted,
@@ -1425,13 +1428,15 @@ class ScopeState:
         self._authorized.pop(command.command_id, None)
         return hold
 
-    def view(self, *batches: VerifiedScopeBatch) -> ScopeView:
-        state = self._snapshot()
+    def view(
+        self, *batches: VerifiedScopeBatch, _confirm_publication: bool = False
+    ) -> ScopeView:
+        state = self._snapshot(confirm=_confirm_publication)
         registry = None
         if batches:
             for batch in batches:
                 self._recheck_batch(batch)
-            registry = self.registry.view()
+            registry = self.registry.view(_confirm_publication=_confirm_publication)
         view = ScopeView(
             state.events,
             state.holds,

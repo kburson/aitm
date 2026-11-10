@@ -503,7 +503,11 @@ class Registry:
     def writer(self) -> Iterator["Registry"]:
         _ensure_private_directory(self.root)
         with _lease(self.root / _COORDINATOR_FILE, create=True) as lease:
-            yield Registry(self.root, lease)
+            writer = Registry(self.root, lease)
+            try:
+                yield writer
+            finally:
+                writer._writer = None
 
     @property
     def lease(self) -> _PinnedPath:
