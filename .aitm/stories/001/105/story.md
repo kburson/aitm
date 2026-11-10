@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 105
 title: "[CI2] Verify canonical PR evidence"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/105"
 parent: 103
 children: []
 blocking: [106]
 blocked-by: [104]
 created: "2026-11-10T02:57:05Z"
-updated: "2026-11-10T13:13:39+00:00"
+updated: "2026-11-10T13:29:52+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
