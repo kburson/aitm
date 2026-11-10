@@ -1,0 +1,32 @@
+diff --git a/.aitm/stories/001/140/plan/2026-11-10-140-jit.md b/.aitm/stories/001/140/plan/2026-11-10-140-jit.md
+index a1e18cc..b5c6285 100644
+--- a/.aitm/stories/001/140/plan/2026-11-10-140-jit.md
++++ b/.aitm/stories/001/140/plan/2026-11-10-140-jit.md
+@@ -1,6 +1,6 @@
+ # #140 JIT pickup · Resolve exact Git changes
+ 
+-Companion Plan raw SHA-256 `0fec62f26a3689aae0486b57146e8b6c4cf2c419363ddd73c4486ffa6480e1a5`.
++Companion Plan raw SHA-256 `ff4bcab51fa2fcbeccda377c63582f387c87e975b60e3b99c7bd7fffe46ca924`.
+ 
+ **Intended implementation attempt** 1. **Estimate** 3 implementation agent-hours, size M, P1. **Planning boundary** Stop in Planning after exact plan and JIT review and publication. Future implementation requires separate authority.
+ 
+@@ -11,7 +11,7 @@ Companion Plan raw SHA-256 `0fec62f26a3689aae0486b57146e8b6c4cf2c419363ddd73c448
+ | Story and dependencies | [#140](../story.md) has no inbound blocker. [#133](../../133/story.md) is in Dev. #141 and #147 depend on #140. #138 can proceed independently. |
+ | Accepted design | [Own design](../design/resolve-exact-git-changes-design.md), raw SHA-256 `29b5525d07b63789496f789e5faad07cdd60f8a4c2a257b3e222104db7a26248`, bound by its [final XPR record](../design/reviews/xpr-2026-11-10-leaf-design/review-manifest.md). |
+ | Parent provenance | [#133 T03 at publication](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L204), publication `dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84`, parent raw SHA-256 `ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7`, T03 section SHA-256 `e32dead37553daa9b2dda1850688f4ec780517b4fd028345544e794f4872a101`. |
+-| Leaf plan | [Own implementation plan](2026-11-10-140-resolve-exact-git-changes.md), raw SHA-256 `0fec62f26a3689aae0486b57146e8b6c4cf2c419363ddd73c4486ffa6480e1a5`. Plan and JIT review/publishing evidence establishes acceptance separately. Rebind this digest if review changes the plan. |
++| Leaf plan | [Own implementation plan](2026-11-10-140-resolve-exact-git-changes.md), raw SHA-256 `ff4bcab51fa2fcbeccda377c63582f387c87e975b60e3b99c7bd7fffe46ca924`. Plan and JIT review/publishing evidence establishes acceptance separately. Rebind this digest if review changes the plan. |
+ | Source and branch intent | `kburson/aitm`, literal target `trunk`, inspected `origin/trunk` commit `d769b3169724eeb9ef4b4aee47d3ab4c4489072d`, tree `57e46ef74951a44b21533816171aa3057502178e`. At authorized pickup, reserve an isolated worktree on `codex/aitm-140-git-snapshot`. This is branch intent. |
+ | Write set | Create only `tools/ci/tia/snapshot.py` and `tools/ci/tests/test_tia_snapshot.py`. The tree currently has no `tools/ci/tia/` namespace files. Use an implicit namespace and `PYTHONPATH="$PWD/tools/ci"`. |
+ | Source references | Read-only `.github/workflows/ci.yml` for checkout and provider binding, `tools/ci/verify_pr.py` for live target, ordered parents, exact tree, run/attempt and gate controls, and `tools/ci/file_checks.py` for the existing raw NUL enumeration precedent. |
+@@ -28,8 +28,8 @@ Recheck issue relationships, exact accepted artifacts and live trunk before auth
+ 
+ | Requirement | Intended proof |
+ | --- | --- |
+-| Hosted binding and endpoint read | Focused red/green pytest covers actual base-to-tested merge tree, ordered parents, tested tree and exact run/attempt/ref linkage. It covers hosted full with an explicit baseline, original object reads despite replacement refs, missing objects, unsupported objects, failed commands and partial output. |
+-| Byte identity and local consistency | Focused red/green covers NUL/raw path ordering, reversible serialization, aliases/escape, APFS decomposition, committed/staged/effective worktree layers, former names and content, ignored/untracked membership, clean/cancelled comparisons and drift. Typed uncertainty supplies no usable pair. |
++| Hosted binding and endpoint read | Focused red/green pytest covers actual base-to-tested merge tree, ordered parents, tested tree and exact run/attempt/ref linkage. It checks the canonical repository, mode, role, endpoint and baseline bindings and digest changes under a different valid attempt. It covers hosted full with an explicit baseline, original object reads despite replacement refs, missing objects, unsupported objects, failed commands and partial output. |
++| Byte identity and local consistency | Focused red/green covers NUL/raw path ordering, reversible serialization, aliases/escape, APFS decomposition, committed/staged/effective worktree layers, former names and content, ignored/untracked membership, clean/cancelled comparisons and drift. Local output binds the effective endpoint and baseline independently, including an alternate same-tree baseline. Unreadable ignore rules or declared ignored paths yield typed uncertainty and no pair despite stable Git membership. Verified absence is retained separately. |
+ | New resolver source and tests | `PYTHONPATH="$PWD/tools/ci" uv run --project packages/aitm-usage --locked python -m pytest -q tools/ci/tests/test_tia_snapshot.py` from the physical source checkout root. The same focused invocation with `--collect-only` supplies node IDs. Retain executable/runtime/profile, red behavior assertion, green outcome, exact tree and exact base/head. Ruff check and format the two paths with the locked package config. |
+ | Existing #103 product scope | The canonical workflow runs the locked `aitm-usage` tests and `test_cli_evidence.py`, checks required product inventory and outcomes, subprocess evidence, installed-wheel smoke, file checks, and an unrounded 90% product line floor. PRs add the exact-base comparison and authenticated evidence join. |
+ | Existing #103 CI-helper scope | The four policy helpers are `tools/ci/python_gate.py`, `tools/ci/pytest_evidence.py`, `tools/ci/verify_pr.py`, and `tools/ci/file_checks.py`. The hosted workflow collects the matching four helper test files, and only those four helper source paths count toward the unrounded 90% helper line floor. The new focused file is outside the hosted test list and the new resolver is outside the gated denominator. Numeric resolver coverage is unmeasured by this gate. |

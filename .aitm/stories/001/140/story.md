@@ -10,12 +10,12 @@ children: []
 blocking: [141, 147]
 blocked-by: []
 created: "2026-11-10T16:51:02Z"
-updated: "2026-11-10T20:10:44Z"
+updated: "2026-11-10T20:20:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/resolve-exact-git-changes-design.md"], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/resolve-exact-git-changes-design.md"], "plan": ["plan/2026-11-10-140-resolve-exact-git-changes.md", "plan/2026-11-10-140-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T03", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "e32dead37553daa9b2dda1850688f4ec780517b4fd028345544e794f4872a101"}
@@ -70,3 +70,14 @@ existing shared CI workflow and gate policy as read-only inputs.
 Both leaves can be planned and implemented concurrently after their
 own plan, JIT, and implementation authority. If another merge advances
 trunk, requalify the affected PR's exact base/head and required review.
+
+## Accepted Plan and JIT
+
+[Implementation plan](plan/2026-11-10-140-resolve-exact-git-changes.md) · [JIT pickup](plan/2026-11-10-140-jit.md) ·
+[Scoped independent SPR](plan/reviews/spr-2026-11-10-jit/review-manifest.md).
+
+Planning is complete for intended attempt 1 on trunk `d769b3169724eeb9ef4b4aee47d3ab4c4489072d`.
+The reviewed JIT pins the exact code baseline and delivery coverage.
+The estimate remains **3 implementation agent-hours**, size M, P1.
+The story remains in Planning. Before Develop, recheck applicability
+and reserve the declared source worktree under separate authorization.

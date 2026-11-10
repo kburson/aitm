@@ -1,0 +1,26 @@
+diff --git a/.aitm/stories/001/138/plan/2026-11-10-138-jit.md b/.aitm/stories/001/138/plan/2026-11-10-138-jit.md
+index 1bc4683..e3fbb76 100644
+--- a/.aitm/stories/001/138/plan/2026-11-10-138-jit.md
++++ b/.aitm/stories/001/138/plan/2026-11-10-138-jit.md
+@@ -1,6 +1,6 @@
+ # #138 serial baseline · Attempt 1 pickup
+ 
+-Companion Plan raw SHA-256 `869d24d514a2b1b6d32e91166baace48d1dc78e7a2fe992c79a316c03e1c5612`.
++Companion Plan raw SHA-256 `84ef06f0fac42f0311c77329f8ae1d3b8c8ff11816eeb47750127f36ea4c4215`.
+ 
+ **Planning checkpoint** · 2.5 implementation agent-hours · S · P1.
+ Target `trunk`. Intended isolated source branch
+@@ -221,8 +221,11 @@ qualification recipe.
+   applicable planning and owner decision.
+ - Confirm the owned files stay disjoint from #140 and remain within
+   the four-hour leaf limit. The present 2.5h estimate assumes the
+-  verified historical inputs and existing delivery route. Hosted
+-  queue and review wait are separate.
++  verified historical inputs and existing delivery route. At two active
++  implementation agent-hours, require a complete synthetic pair to
++  project and the unchanged mixed-attempt regression to pass on the
++  public function. Reassess remaining proof and report work against
++  the cap. Hosted queue and review wait are separate.
+ - Remain at Planning. Owner authority to begin Develop, a clean
+   isolated source worktree and named implementation/closure roles
+   are pickup prerequisites.

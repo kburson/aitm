@@ -1,0 +1,64 @@
+diff --git a/.aitm/stories/001/138/plan/2026-11-10-138-pin-serial-baseline.md b/.aitm/stories/001/138/plan/2026-11-10-138-pin-serial-baseline.md
+index 20956ef..c174dde 100644
+--- a/.aitm/stories/001/138/plan/2026-11-10-138-pin-serial-baseline.md
++++ b/.aitm/stories/001/138/plan/2026-11-10-138-pin-serial-baseline.md
+@@ -97,17 +97,23 @@ actual delivery report uses the frozen historical pair.
+ 
+ ### 1. Start with the attempt-binding regression
+ 
+-- [ ] Add `test_baseline_rejects_mixed_attempts` first. Use a test-local
+-  callable stub returning canonical output before the module exists,
+-  so the first failure is the behavior assertion
+-  `with pytest.raises(ValueError, match="attempt")`, rather than
+-  collection failing on import. Remove the stub when wiring the real
+-  entry point. Parameterize one change at a time to the required base
+-  archive, Python archive/member custody or timing slot. Each carries
+-  the same tree but an owning attempt of 2 against attempt 1.
+-- [ ] From the physical source root, run the named case and retain
+-  `DID NOT RAISE` as the expected red result. No historical network read
+-  is needed in the pytest fixture.
++- [ ] In `tools/ci/tests/test_tia_baseline.py` write
++  `test_baseline_rejects_mixed_attempts` against the public function
++  imported as `from tia.baseline import build_baseline`. Start from
++  one complete synthetic pair using the #103 receipt shapes below.
++  Parameterize one change at a time to the required base archive,
++  Python archive/member custody or timing slot. Each carries the
++  same tree but an owning attempt of 2 against attempt 1. Assert
++  `with pytest.raises(ValueError, match="attempt")` around the call.
++- [ ] In the owned `tools/ci/tia/baseline.py` module add a minimal,
++  importable `build_baseline` scaffold with the declared signature.
++  Return canonical baseline-schema bytes without attempt validation
++  so the unchanged public call reaches the missing-refusal assertion.
++  Implement the real projection in this same function after red.
++- [ ] Run the named case from the physical source root. Retain its
++  nonzero exit and `DID NOT RAISE` behavior failure at the public
++  call. Use the same test, parameterized fixture and public call in
++  green. The fixture is offline.
+ 
+   ```sh
+   cd "$(pwd -P)"
+@@ -118,10 +124,9 @@ actual delivery report uses the frozen historical pair.
+ 
+ ### 2. Project complete, bound proof
+ 
+-- [ ] Add test cases with a minimal complete, synthetic proof assembled
+-  in the test file. Give each role a separate identity and use the
+-  existing raw receipt shapes. Assertions for the supported and refused
+-  cases are fixed below. Verify behavior through the public function.
++- [ ] Extend the same complete synthetic proof fixture with the tests
++  below. Give each role a separate identity. Verify behavior through
++  the public function.
+ 
+   | Test | Required assertion |
+   | --- | --- |
+@@ -161,6 +166,10 @@ actual delivery report uses the frozen historical pair.
+   total non-skipped hosted job seconds distinct. Retain each available
+   measured boundary and mark the finer timing/billing fields Unknown
+   where unobserved. Cold and warm are separate per role.
++- [ ] At two active implementation agent-hours, require the positive
++  complete synthetic pair and the unchanged mixed-attempt regression
++  to pass on the public function. Reassess if the remaining focused
++  proof and report cannot fit the four-hour cap.
+ - [ ] Run all focused tests from the physical checkout, followed by
+   Ruff for both owned files using the locked package config. Retain
+   tree/head, runtime, collected node IDs and the first red and final
