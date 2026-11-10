@@ -5,7 +5,8 @@ Attempt 1. Implementer and closure owner: Codex, acting for the owner. No predec
 - [x] [Exact design, plan and JIT](jit.md) and [independent acceptance](jit-review.md).
 - [x] [PR #196](https://github.com/kburson/aitm/pull/196) opened against base `a495d60a87ac4ca764f019dc266e579f13f1787e`. GitHub readback matches clean head `1e51b9895714fb302608a6e9680bd37589ce9355` and local tree `79a6d0f472d15421b09089eadf9fd13047044197`. The three-path diff is confined to `tools/story_dashboard/`.
 - [x] Exact candidate: 7 dashboard unittest cases on CPython 3.13.9, Ruff and file checks passed. The guide example passed prospective validation, atomic publication and replay in a disposable Git fixture. Planning read `caab6f754f877c8c1b3d135e0acee0a48d775640` at `2026-11-10T22:02:49Z` retained 178 stories, 2,123 eligible events and the exact #181 seed. Two older draft events have no story ID and are held with explicit gaps. The unchanged package baseline passed 747 tests.
-- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42914804492), delivered verifier and independent source review.
+- [x] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42914804492/attempts/1) and [delivered verifier](hosted-verification.json) passed.
+- [ ] Independent exact source review.
 - [ ] Normal merge, verified landing, retrospective, sign-off and issue/Project closure.
 
 ## Author correction during Test
@@ -33,3 +34,7 @@ All six hosted jobs passed on attempt 2, including the signature job, but the de
 ## Fresh PR event
 
 Revision 4 is head `0814a81bc93a829c8130a2a9152120b29907deeb` on the same base `49865245d175ce6c52913738f2c9a42c0abea632` and identical tree `23856755bd01534855842ecee675964c1eece94c`. The empty commit triggers its own [canonical hosted run](https://github.com/kburson/aitm/actions/runs/42914804492) with a fresh first attempt. The PR and local readbacks agree. All seven dashboard tests, Ruff and the guide round trip passed again on revision 4.
+
+## Exact hosted candidate
+
+GitHub tested `9531b8d713502b3eda259f38fe55043bf1288b29` with ordered base `49865245d175ce6c52913738f2c9a42c0abea632` and head `0814a81bc93a829c8130a2a9152120b29907deeb`. Its tree `23856755bd01534855842ecee675964c1eece94c` matches the focused candidate. Verified job records: aitm-ci, collect-evidence, file-checks, python, python-base, quality. The delivered verifier checked the signed subject and current candidate with no CI control changes.
