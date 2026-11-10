@@ -73,3 +73,11 @@ Local focused validation passed 299 cases. The locked exact tree passed 630 prod
 Authenticated raw replay preserved all 592 baseline identities and added 32 native Grok and 5 Grok pricing tests plus the fixed candidate-only CLI evidence test. Product and helper raw coverage matched the local replacement. Independent re-review of the exact repair is pending.
 
 [Independent exact snapshot repair re-review](post-ci-source-review.md) passed. The [first source hold](source-review-attempt-1.md) remains bound to its earlier head. The supplemental serialized-cursor replay passed on the same replacement tree.
+
+### Delivery and sign-off
+
+[PR #179](https://github.com/kburson/aitm/pull/179) merged by merge commit into trunk at `37a22922f072e39c35434ae645a1c20692b8da01` at `2026-11-10T18:06:24Z`. The fetched target had the exact reviewed tree `c1c9bc00e7845278b805d4f2828de3663a79c18e` and ordered parents `9b12927da1a368f254537277f7fdc7139f90cc44` and `ddf87559f352a1f62f947b683e512d68348a1ecc`. Head ancestry and zero source diff were verified.
+
+[Signed implementing-agent retrospective](../retro/2026-11-10-grok-adapter.md) · [Original delegated pricing retrospective](../retro/2026-11-10-grok-pricing.md).
+
+The last required gate was the implementing-agent sign-off at `2026-11-10T18:07:32Z`.
