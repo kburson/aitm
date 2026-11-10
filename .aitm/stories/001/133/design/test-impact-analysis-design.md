@@ -78,7 +78,8 @@ consumers and the candidate graph for current consumers. A surviving
 test affected by either graph must run. A deleted test cannot run.
 Record it and require the same inventory disposition as any other
 removed test. If the removed input's consumers or inventory change
-cannot be resolved, fall back or block when the evidence is unfit.
+cannot be resolved, use full mode if it can establish trustworthy
+evidence. Otherwise block.
 
 For each snapshot, derive repository-local import and package ownership
 edges from supported Python source and workspace inputs. Include
@@ -298,11 +299,18 @@ change shared trunk health.
 A failing test in a qualifying scheduled full run on shared trunk is
 an escaped defect. Stop ordinary trunk merges and ordinary agent code
 work across the repository's governed workspaces. A branch based on
-an earlier revision participates in the pause and update. An
-infrastructure interruption or overdue full result blocks ordinary
-trunk merges while evidence is restored. Use the workspace-wide stop
-when a failing test is observed. If test failure and infrastructure
-failure coexist, the failing-test incident takes precedence.
+an earlier revision participates in the pause and update.
+
+Classify every unsuccessful scheduled full gate. An authenticated
+non-test gate failure, such as a coverage deficit, a new skip or xfail,
+an undisposed inventory change, or a failed wheel smoke, opens a
+merge hold for a shared gate regression. Missing or untrusted outcomes,
+runner or tooling interruption, and overdue results open an evidence
+hold. Both holds block ordinary trunk merges and allow ordinary
+governed code work under a fresh authority decision. The trusted
+authority records the reason and appoints an accountable incident
+owner to diagnose and resolve it. A verified failing test takes
+precedence over either hold and requires the workspace-wide stop.
 
 Ingest and classify authenticated negative evidence even when a
 shard, another job, or final aggregation fails. A verifiable failing
@@ -317,9 +325,11 @@ establish an infrastructure-only diagnosis.
 | --- | --- |
 | Healthy | Admit ordinary work under the current PR policy. Record the latest verified full trunk result. |
 | Trusted scheduled evidence reports a failing test | Open a durable incident for the failed trunk SHA and run attempt. Block ordinary trunk merges and pause ordinary governed code work. |
+| A verified non-test gate failure, or incomplete or unavailable evidence | Open a merge hold with a recorded classification and incident owner. Keep ordinary governed code work eligible under fresh authority. |
 | Authorized repair candidate passes the full suite | Permit only the exact authorized repair to merge, after normal review and other gates. Keep the line stopped. |
 | Repair merges | Trigger a full run immediately on the resulting trunk SHA. Record the merge, repaired revision, and incident binding. |
-| Full recovery run passes on current repaired trunk | Record trunk as recovered. Start workspace updates while ordinary merges and code work stay stopped. |
+| Full recovery run passes on current repaired trunk | For a failing-test incident, start workspace updates while ordinary merges and code work stay stopped. For a merge-only hold, release it once all recorded causes are resolved. |
+| Verified external or scheduling cause is resolved and current trunk passes a fresh full run | Release the evidence hold after recording the diagnosis and recovery. A recorded failing test still requires its repair and workspace proof. |
 | All governed workspaces verify the fix | Reopen ordinary merges and code work. Require refreshed PR evidence for the applicable base. |
 | Recovery fails or evidence is missing | Keep the incident open. Continue diagnosis and repair or CI recovery. |
 
@@ -335,7 +345,7 @@ Retain each distinct verified unresolved failure in the active stop.
 New failure evidence advances the incident version and invalidates
 outstanding repair authorization, recovery proof, or restart
 acknowledgments for an earlier version. Reconcile all retained
-failures against the eventual repair set and current trunk. A
+failures against the single proposed repair and current trunk. A
 second failure during workspace updates returns the stop to repair
 or failure disposition without reopening ordinary work.
 A verified infrastructure-only failure may recover without a source
@@ -343,8 +353,13 @@ PR after an authorized operator records the diagnosis and resolution
 and a new full run passes on current trunk. This exception cannot
 clear an incident with a recorded failing test.
 
-Bind one active repair candidate to the incident at a time. Its scope
-is the failure and its cause. Require the full suite on its exact
+The trusted authority can bind one active repair candidate to either
+type of incident or hold. For a merge-only hold, the incident owner
+must substantiate a trunk-source or control cause that needs a source
+repair. Scope the candidate to all unresolved failures or hold causes
+in the current incident version. Multiple changes may be assembled in
+that candidate, but no partial repair can merge on a failing suite.
+Require the full suite on its exact
 proposed merge against current trunk. Recheck the candidate, base,
 controls, review, and active repair authority at merge. A head or base
 change invalidates the old proof. A repair merge is one allowed
@@ -352,6 +367,21 @@ operation, with provider readback before retrying an ambiguous merge
 response. A passing repair PR is insufficient to reopen the line.
 Retain the stop if the resulting trunk revision fails, its proof is
 incomplete, or it differs from the recovery run's pinned revision.
+
+Repair validation must accommodate a base that is expected to fail
+or whose test controls cannot run. Bind the exact broken base and
+repair candidate and retain the broken-base observations available.
+Use an independently qualified full candidate validation route with
+trusted controls that can run even when the broken base's workflow,
+lock, or setup cannot. Permit only the incident-accounted base failures
+or missing base results. When the base cannot supply complete
+inventory, use the last trusted full inventory plus intervening
+reviewed dispositions to verify candidate completeness, and label
+that reference with its actual revision. Keep the candidate's full
+test, coverage, capability, and other applicable gate requirements.
+Gate-defining repairs also require independent disposition. If the
+candidate or its required inventory cannot be verified, keep the
+hold. Qualify this recovery route before activating the new gate.
 
 If the failed scheduled revision is older than live trunk, still
 record the stop. The proposed recovery rule permits the incident owner
@@ -441,7 +471,8 @@ of a workspace update.
 | Timing | Cold and warm timing, queue, setup, test and evidence timings for the three budgets, runner cost, and observed savings for selected feedback. |
 | PR isolation | A failing isolated PR cannot merge. An independent PR can validate and merge and its agent can continue work. |
 | Escaped defect | Inject a scheduled trunk failure missed by PR validation. Prove an already-green PR, a queued PR, and direct or alternate update paths are blocked. Show active agents on affected and earlier bases pause. Disconnect an already running agent before notification and show that it cannot admit new ordinary work. |
-| Repair and restart | Reject TIA-only and stale full repair proofs. Allow the exact full-passing repair through normal review. Exercise head and base movement at the final host mutation and refuse unapproved trees. Prove repaired trunk passing allows workspace updates. Reject a receipt when conflict resolution reintroduces the defect or when an outstanding disconnected workspace is withdrawn from enrollment. |
+| Repair and restart | Reject TIA-only, partial repair in a two-failure incident, and stale full repair proofs. Allow the exact full-passing repair through normal review. Exercise head and base movement at the final host mutation and refuse unapproved trees. Show a disconnected workspace holds restart, then record reopening after its verified update is the final acknowledgment. Reject a receipt when conflict resolution reintroduces the defect or when an outstanding disconnected workspace is withdrawn from enrollment. |
+| Merge-only holds | After a passing selected PR, detect a full coverage-floor miss and an undisposed skip in an unselected test. Block ordinary merges and allow governed code work. Break the scheduled setup on trunk so it emits no test outcomes, then exercise the authorized exact full-passing repair with independent gate-change disposition and full recovery on current trunk. |
 | Failure of controls | Exercise duplicate and out-of-order events, a second verified failure during workspace updates, a repair merge with ambiguous acknowledgment, an already-landed repair for an older revision, protection drift, stale health, and infrastructure-only recovery. Prove no release for stale or incomplete recovery, a missing shard cannot hide a verified test failure, and a changed workspace generation invalidates its acknowledgment. |
 
 ## 8. Decisions reserved for the implementation plan
