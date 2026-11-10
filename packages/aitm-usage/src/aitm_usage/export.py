@@ -1,7 +1,5 @@
 """Deterministic, allowlisted snapshots for the future C44 usage adapter."""
 
-import ctypes
-import errno
 import json
 import os
 from collections import Counter
@@ -14,6 +12,7 @@ from pathlib import Path
 from secrets import token_hex
 from uuid import UUID
 
+from .host_fs import HostFilesystemError, publish_noreplace
 from .ledger import (
     LedgerError,
     _check_acl,
@@ -25,7 +24,7 @@ from .ledger import (
     _validated_path,
 )
 from .pricing import RateCard, price
-from .scopes import _RENAME_EXCL, _rename_exclusive, resolve_scope
+from .scopes import resolve_scope
 from .types import (
     Availability,
     Diagnostic,
@@ -278,18 +277,15 @@ def _publish_staged(
             _write_snapshot(staged, files)
             # A replacement of the outer staging name cannot substitute the
             # completed source entry in this pinned, private directory.
-            if _rename_exclusive()(
-                container.fd,
-                os.fsencode(source.name),
-                parent_fd,
-                os.fsencode(destination.name),
-                _RENAME_EXCL,
-            ):
-                if ctypes.get_errno() != errno.EEXIST:
-                    raise ExportError("Unable to publish export snapshot")
+            try:
+                published = publish_noreplace(
+                    container.fd, source.name, parent_fd, destination.name
+                )
+            except HostFilesystemError:
+                raise ExportError("Unable to publish export snapshot") from None
+            if not published:
                 _check_replay(parent_fd, destination, ancestry, files)
             else:
-                published = True
                 os.fsync(container.fd)
                 os.fsync(parent_fd)
                 if _validated_path(destination, directory=True) != (

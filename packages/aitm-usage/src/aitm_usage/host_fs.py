@@ -1,4 +1,4 @@
-"""Host filesystem checks for private state and writer guards."""
+"""Host filesystem operations for private state and writer guards."""
 
 import ctypes
 import errno
@@ -18,7 +18,7 @@ _ACL_DENY_DELETE = (
 
 
 class HostFilesystemError(RuntimeError):
-    """The host could not establish safe private filesystem access."""
+    """The host could not safely access or publish private filesystem state."""
 
 
 @cache
@@ -113,3 +113,53 @@ def account_control_root(uid: int) -> Path:
     if not home.is_absolute():
         raise HostFilesystemError("Unable to resolve private account control location")
     return home / suffix / "aitm-usage-control"
+
+
+@cache
+def _native_rename(symbol: str):
+    try:
+        rename = getattr(ctypes.CDLL(None, use_errno=True), symbol)
+    except (AttributeError, OSError):
+        raise HostFilesystemError("Atomic filesystem rename is unavailable") from None
+    rename.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    rename.restype = ctypes.c_int
+    return rename
+
+
+def _rename_entries(
+    src_dir: int, src: str, dst_dir: int, dst: str, *, exchange: bool
+) -> bool:
+    for name in (src, dst):
+        if name in ("", ".", "..") or "/" in name or "\0" in name:
+            raise HostFilesystemError("Atomic filesystem rename requires entry names")
+    if sys.platform == "darwin":
+        rename = _native_rename("renameatx_np")
+        flags = 0x2 if exchange else 0x4  # RENAME_SWAP / RENAME_EXCL
+    elif sys.platform == "linux":
+        rename = _native_rename("renameat2")
+        flags = 0x2 if exchange else 0x1  # RENAME_EXCHANGE / RENAME_NOREPLACE
+    else:
+        raise HostFilesystemError("Atomic filesystem rename is unavailable")
+    source, destination = os.fsencode(src), os.fsencode(dst)
+    ctypes.set_errno(0)
+    if rename(src_dir, source, dst_dir, destination, flags) == 0:
+        return True
+    if not exchange and ctypes.get_errno() == errno.EEXIST:
+        return False
+    raise HostFilesystemError("Unable to rename private entries atomically")
+
+
+def publish_noreplace(src_dir: int, src: str, dst_dir: int, dst: str) -> bool:
+    """Move an entry atomically, returning False only for an existing destination."""
+    return _rename_entries(src_dir, src, dst_dir, dst, exchange=False)
+
+
+def exchange_entries(src_dir: int, src: str, dst_dir: int, dst: str) -> None:
+    """Swap two entries atomically or raise. Callers sync the affected parents."""
+    _rename_entries(src_dir, src, dst_dir, dst, exchange=True)

@@ -532,11 +532,11 @@ def test_competing_destination_keeps_complete_atomic_visibility(
 
     destination = tmp_path / "destination"
     parent = tmp_path.stat()
-    real_rename = export._rename_exclusive()
+    real_publish = export.publish_noreplace
     real_fsync = os.fsync
     parent_syncs = []
 
-    def race(src_fd, source, dst_fd, target, flags):
+    def race(src_fd, source, dst_fd, target):
         assert not destination.exists()
         staged = os.open(
             source, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=src_fd
@@ -561,14 +561,14 @@ def test_competing_destination_keeps_complete_atomic_visibility(
                 (destination / "competitor").write_text(CANARY)
         finally:
             os.close(staged)
-        return real_rename(src_fd, source, dst_fd, target, flags)
+        return real_publish(src_fd, source, dst_fd, target)
 
     def fsync(fd):
         if os.path.samestat(os.fstat(fd), parent):
             parent_syncs.append(fd)
         real_fsync(fd)
 
-    monkeypatch.setattr(export, "_rename_exclusive", lambda: race)
+    monkeypatch.setattr(export, "publish_noreplace", race)
     monkeypatch.setattr(os, "fsync", fsync)
     view = project.as_of()
     card = load_rate_card()
@@ -597,16 +597,16 @@ def test_replacing_outer_stage_during_rename_cannot_publish_substitute(
     receipt = export_as_of(view, card, reference)
     destination = tmp_path / "destination"
     displaced = tmp_path / "displaced-stage"
-    real_rename = export._rename_exclusive()
+    real_publish = export.publish_noreplace
 
-    def race(src_fd, source, dst_fd, target, flags):
+    def race(src_fd, source, dst_fd, target):
         (outer,) = tmp_path.glob(".export-*")
         outer.rename(displaced)
         outer.mkdir(mode=0o700)
         (outer / "competitor").write_text(CANARY)
-        return real_rename(src_fd, source, dst_fd, target, flags)
+        return real_publish(src_fd, source, dst_fd, target)
 
-    monkeypatch.setattr(export, "_rename_exclusive", lambda: race)
+    monkeypatch.setattr(export, "publish_noreplace", race)
     try:
         result = export_as_of(view, card, destination)
     except export.ExportError:

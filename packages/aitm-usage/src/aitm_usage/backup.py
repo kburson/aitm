@@ -11,6 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
 
+from .host_fs import HostFilesystemError, exchange_entries, publish_noreplace
 from .ledger import (
     DATABASE_NAME,
     KEY_NAME,
@@ -47,7 +48,6 @@ from .scopes import (
     _publish,
     _read_private,
     _read_publications,
-    _rename_exclusive,
 )
 from .service import (
     ANCHORS_NAME,
@@ -74,8 +74,6 @@ from .types import (
 _MANIFEST = "manifest.json"
 _KEY = f"{STORE_NAME}/{KEY_NAME}"
 _DATABASE = f"{STORE_NAME}/{DATABASE_NAME}"
-_RENAME_SWAP = 0x00000002
-_RENAME_EXCL = 0x00000004
 
 
 class BackupError(LedgerError):
@@ -380,13 +378,13 @@ def backup(ledger: Ledger, destination: Path) -> BackupReceipt:
                 _require_outside(live_store, destination, missing=True)
                 if staging.identities[-2] != _path_id(os.fstat(parent)):
                     raise BackupError("Backup destination parent changed")
-                if _rename_exclusive()(
-                    staging.fd,
-                    b"snapshot",
-                    parent,
-                    os.fsencode(destination.name),
-                    _RENAME_EXCL,
-                ):
+                try:
+                    published = publish_noreplace(
+                        staging.fd, "snapshot", parent, destination.name
+                    )
+                except HostFilesystemError:
+                    raise BackupError("Unable to publish private backup") from None
+                if not published:
                     raise BackupError("Unable to publish private backup")
                 os.fsync(staging.fd)
                 os.fsync(parent)
@@ -569,8 +567,10 @@ def _validate_queue(
 
 
 def _swap_store(project: _PinnedPath, staged: _PinnedPath) -> None:
-    if _rename_exclusive()(staged.fd, b"state", project.fd, b"state", _RENAME_SWAP):
-        raise BackupError("Unable to atomically replace the private store")
+    try:
+        exchange_entries(staged.fd, STORE_NAME, project.fd, STORE_NAME)
+    except HostFilesystemError:
+        raise BackupError("Unable to atomically replace the private store") from None
     os.fsync(staged.fd)
     os.fsync(project.fd)
 
