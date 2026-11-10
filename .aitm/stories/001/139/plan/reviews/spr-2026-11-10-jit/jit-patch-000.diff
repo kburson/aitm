@@ -1,0 +1,50 @@
+diff --git a/.aitm/stories/001/139/plan/2026-11-10-139-jit.md b/.aitm/stories/001/139/plan/2026-11-10-139-jit.md
+new file mode 100644
+index 0000000..b1eb380
+--- /dev/null
++++ b/.aitm/stories/001/139/plan/2026-11-10-139-jit.md
+@@ -0,0 +1,44 @@
++# #139 JIT pickup for attempt 1
++
++[Story](../story.md) · [Own design](../design/2026-11-10-139-classify-pytest-inventory-design.md) · [Own plan](2026-11-10-139-classify-pytest-inventory.md) · [Accepted #133 T02](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L187)
++
++## Pickup checks
++
++- [#138 closure](../../138/plan/closure-receipt.json) records GitHub Completed and Project 24 Done. Authenticated Project readback agreed. Its verified [delivery](../../138/plan/delivery-receipt.json) merge `0175e77c398dc97c59db166fa64e2e9a673b4b40` is an ancestor of the source base. #139 was Open and Backlog at initial inspection. Record the actual accepted planning state and recheck the dependency and Project status before pickup.
++- Source is live `origin/trunk` at `a495d60a87ac4ca764f019dc266e579f13f1787e`, tree `47fa209c89e99e041f716d856c9ae59b3360c97e`. All three owned paths are absent. At authorized pickup, reserve a dedicated clean source worktree on proposed `codex/aitm-139-inventory` and verify its physical path, branch and tracked/untracked status. A trunk advance requires an updated exact source readback and rechecking the policy, observed IDs and adjacent interfaces.
++- Own `tools/ci/tia/inventory.py`, `tools/ci/tia/suites.json` and `tools/ci/tests/test_tia_inventory.py`. Delivered sibling interfaces live in `tools/ci/tia/baseline.py` (blob `db87d9e24fd9a52d04ce2b1807d590fc2caecd0f`) and `snapshot.py` (blob `0486316a9ecfcf0dbcd8100e2b1d26bd50134bce`). #158 is independent and has no source file overlap.
++- Estimate **3.5 implementation agent-hours**, size M, P1. Own design, plan and JIT acceptance and separate implementation authority remain pickup conditions. Reserve and record the implementer, worktree and authority only at authorized pickup.
++
++## Exact evidence
++
++| Source | Scope and check |
++| --- | --- |
++| [#138 sanitized baseline](../../138/attachments/serial-baseline.md) | Canonical private `aitm.tia-baseline/v1` SHA-256 `f085f922a6fffadf98900a514b6129aa7bc9315ecd1029cf9a219213fce47731`, verified in the retained custody. Compare `roles.*.test_inventory.nodes`, bound role, receipt digest and outcomes, and `helper_collection`. Historical PR base 592 product IDs, historical PR candidate 630 product/CLI IDs, historical push the same 630 IDs with its own receipt, and 182 advisory helper IDs. |
++| [#140 delivered current trunk push](https://github.com/kburson/aitm/actions/runs/42905013340/attempts/1) · [Delivery receipt](../../140/plan/delivery-receipt.json) | Authenticated workflow 412848571, suite 116197729916, archive 13805565772. Re-read archive SHA-256 `c6b1537a60bd15ec836815eb36b300ffe778041cbaee49201b5da17f114a0dd4`. Its raw `pytest.json` digest is `28dd15c7e029abebabde06f1c05c130784ae9f5af43fe0c6e933f5c855370fea`. Exact sorted compact UTF-8 node array digest `585b3f141cc7ac7c972aa2cfe8d9a1e4e5014c8e5def014f6cc8e76c29349304`. 748 unique IDs, zero deselections and zero skip/xfail reports. Both required child labels are present. |
++| Current versus historical | Exact ID set difference is +118 and zero removals. Additions are `test_monitor_registry.py` 48, `test_monitor_scope.py` 30, `test_monitor_control.py` 22, `test_monitor_legacy.py` 8, `test_scan.py` 6, `test_monitor_adapters.py` 3 and `test_grok.py` 1. The four explicit #103 helper test modules and their controls are byte-identical across the compared trees. Exact current helper collect-only verification is pickup work. |
++
++Historical comparison is exact to its own tree. The current push establishes the present #103 source and delivery lane. Neither substitutes for a fresh exact-head #139 PR proof or a T07/T08 qualified collection. Obtain the private canonical baseline from retained #138 custody and verify its digest before replay. If unavailable or mismatched, hold the reconciliation. Publish the safe hashes and disposition, with private paths and artifacts remaining in custody.
++
++## Delivery checks
++
++The current and historical tested/push trees share these control blobs.
++
++| Control | Git blob |
++| --- | --- |
++| `.github/workflows/ci.yml` | `96424d880798d78e1eae93fba4d748d4fe985792` |
++| `tools/ci/policy.json` | `176b5cc1143a9109228026c5c87f68ade487be69` |
++| `tools/ci/pytest_evidence.py` | `839b73cdcc1e44f45af78bcebdbf53e9adfeee67` |
++| `tools/ci/python_gate.py` | `2a92c066422387de839560f9bdde8609c606bd12` |
++| `tools/ci/verify_pr.py` | `2f5796f589d8ed8ab32d6251969f47ee81ad3942` |
++| `tools/ci/file_checks.py` | `e2d654ef8ac1ffb9ef4cfc505652832dc7313452` |
++| `packages/aitm-usage/pyproject.toml` | `8768e767deb75abaa0616da83e84de5d3df84508` |
++| `packages/aitm-usage/uv.lock` | `dcd6d66d140d4efe412193beb5bd2332db3d3e0e` |
++
++Use the locked Python 3.13.9 and uv 0.10.6 setup. The verified runner was macos-26, Darwin/APFS, image `macos26:20261102.0473.1`, Xcode 26.6 build 17F113. Current push replay recorded 9,096/9,981 product and 778/821 helper lines. The four pinned helper coverage targets remain the denominator and the four explicit hosted helper test paths remain the lane targets. Record separate focused V(inventory) red/green and full local evidence.
++
++Run current #103 exact PR checks `python-base`, `python`, `quality`, `file-checks`, `collect-evidence` and `aitm-ci` from one attempt bound to current base/head and tested merge tree. Reuse [trusted-target instructions](https://github.com/kburson/aitm/blob/a495d60a87ac4ca764f019dc266e579f13f1787e/docs/ci.md#verify-a-pull-request-from-the-target) and the [manual delivery checklist](../../../../manual-delivery-checklist.md). New files under `tools/ci/` require the existing exact-tree disposition even with existing workflow and verifier bytes preserved. This JIT grants no such disposition.
++
++## Exact leaf inputs
++
++- Design SHA-256 `1ab37e91852683887ea152c0623aea1f7c5d9c6d084819e6c06736380d02c2a9`
++- Plan SHA-256 `393e941668da357d471062cd0290bd6f2d1b50a91c387dd573b4b130b0aed663`

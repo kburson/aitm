@@ -1,0 +1,124 @@
+diff --git a/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md b/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md
+new file mode 100644
+index 0000000..c08fcb7
+--- /dev/null
++++ b/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md
+@@ -0,0 +1,118 @@
++# #158 · Qualify the GitHub merge fence
++
++This spike determines whether GitHub can enforce one merge path with
++the exact tree and Stop the Line ordering required by T21. The result
++is a reproducible capability receipt for one permitted merge method or
++a refusal that identifies the blocking condition. The spike carries
++3.5 implementation agent-hours, P1, and has no story predecessor.
++[#158 story](../story.md) · [Accepted #133 design §6](https://github.com/kburson/aitm/blob/2ff1b49ed3a3f91c8164d6c7b0e1dbe4c15cd3f9/.aitm/stories/001/133/design/test-impact-analysis-design.md#L394) · [Accepted T21](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L507)
++
++## Isolation and authority
++
++Use an owner-authorized disposable GitHub repository with synthetic
++commits, an isolated target branch and separate fixture PRs. Pin the
++repository ID, owner type, visibility, plan and applicable rule
++capabilities. The owner provides or expressly authorizes the fixture,
++its rules administrator, a repository-scoped dedicated trusted merge
++actor, a separate reviewer and trusted check publisher, and ordinary
++writer and automation test identities. An administrator may configure
++the fixture. Their ability to edit protection is an administrative
++trust boundary and is distinct from their ordinary merge rights.
++Test any admin role that could merge without editing policy. The
++merge identity must have no rule administration and its credentials
++must be inaccessible to candidates and ordinary workflows. Keep the
++sandbox and evidence within its authorized scope. Production AITM
++protection, workflow, gate and source are outside the write set.
++
++The selected hypothesis is a GitHub App installation dedicated to the
++trusted merge driver, a target update restriction with the App as its
++sole PR-only exception, and a separate active ruleset with no bypass
++for required PR reviews, trusted-source checks and strict up-to-date
++checks. Protect against target deletion and force updates. Permit
++only a merge commit and disable auto-merge and merge queue on the
++candidate configuration. Start with the synchronous GitHub REST PR
++merge carrying `sha=H` and `merge_method=merge`. The selected rule
++combination, credential custody and host enforcement are hypotheses
++to measure. PR-only bypass must neither admit a direct ref update nor
++bypass the separate review and check requirements. Exclude generic
++write access to the trusted credential and automatic retries from
++the driver. [GitHub ruleset configuration](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository) · [Available rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets) · [GitHub PR merge API](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request)
++
++GitHub documents an expected PR head for REST and GraphQL merge, and
++the REST request contract exposes neither an expected base OID nor a
++stop version. Strict checks can strengthen the route but must be shown
++to bind the exact base and tested tree at mutation. Exclusive writer
++serialization is a possible equivalent base fence only if every
++target writer and outstanding provider operation is accounted for.
++The asynchronous endpoint can create deferred work and expose its
++status. A pending UUID, expiring lookup and queue receipt supply no
++stop barrier. Treat these APIs as alternate routes to block or
++account for. An atomic generic ref update is a distinct path that
++would need its own proof of the conditional PR merge and retained
++review/check contract. This spike probes the selected PR route and
++does not widen the design if it fails.
++[GraphQL merge input](https://docs.github.com/en/graphql/reference/pulls#mergepullrequestinput) · [Async merge results](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#get-the-result-of-an-asynchronous-merge) · [GraphQL ref updates](https://docs.github.com/en/graphql/reference/git#updaterefs)
++
++## Evidence required at mutation
++
++For each reservation pin repository ID, full target ref, PR identity,
++base OID `B`, head OID `H`, selected method, protection snapshot,
++trusted check and review receipts, tested merge tree `T` and ordered
++authority version. Before marking the case green, verify that the
++fixture tested merge commit has exactly the ordered parents `B,H`.
++Use the host-generated test merge when available. On success verify
++the PR merge event or provider response and target ref identify the
++landed commit, its ordered parents are `B,H` and its tree OID equals
++`T`. Commit metadata may change the commit OID. A local calculation,
++green status alone, preflight check, or post-landing comparison alone
++cannot enforce the mutation precondition. The host control must
++prevent a stale or different tree from landing.
++
++Require host ordering proof for the effective stop and the target
++mutation. A stop observed between reservation and dispatch cancels
++the stale reservation before any merge request leaves the driver.
++Once a merge may have reached GitHub, record the stop and retain the
++pending intent durably, freeze all further merge mutations including
++repair and retries, and read back. The only resolved outcomes are an
++exact host commit demonstrably before the stop, which enters the
++incident baseline, or authoritative terminal evidence that the
++request cannot commit. A stop followed by a successful ordinary
++update falsifies the candidate. Keep unresolved state held when
++ordering or terminality is unknown. Request acceptance, transport
++timeout, elapsed time, an open PR, an unchanged branch, a local epoch,
++or unrelated clocks cannot decide the order. A late-arriving response
++can confirm a commit already proven before the stop. It cannot move
++the stop boundary retroactively. A rule edit, token revocation or
++status change can serve as a boundary only with host evidence that
++covers already in-flight requests.
++
++## Receipt and dependency disposition
++
++Retain a sanitized spike report and disposable rule evidence in
++`attachments/github-merge-fence-spike.md` and
++`attachments/github-merge-fence-rules.json` in the #158 story when
++authorized. The receipt records the exact configuration, provider
++contract, actor capabilities, request and event identifiers, tested
++and landed Git object identities, before/after provider readback,
++ordering evidence, and one disposition for every planned case.
++
++- **Qualified.** One named method satisfies exclusivity, review and
++  checks, exact head/base/tree at mutation, and stop ordering. Give
++  #159 the tested configuration, supported ordering and readback
++  contract, plus drift and hold conditions.
++- **Refused.** Authorized provider evidence shows an allowed bypass,
++  stale/wrong tree or post-stop commit, or establishes that a necessary
++  guarantee cannot be demonstrated within the tested host route.
++  Record the failing control and explicitly mark any remaining cases
++  unrun. This can satisfy the spike's evidence deliverable through
++  its own review and closure, while #159 and descendants stay held.
++  An unresolved live intent stays fenced and owned for reconciliation.
++- **Pickup held.** Missing sandbox authority, identity, access or
++  accepted leaf planning prevents execution. Record which grant or
++  capability is missing. This is separate from a demonstrated host
++  refusal. No qualification, successor release or completion claim
++  follows from setup being unavailable.
++
++#159 also requires #157's authority interface and its own review,
++planning and implementation authorization. A qualified receipt
++supplies only the #158 capability. Full PR validation stays in force.

@@ -1,0 +1,43 @@
+diff --git a/.aitm/stories/001/158/plan/2026-11-10-158-jit.md b/.aitm/stories/001/158/plan/2026-11-10-158-jit.md
+index e13b00b..0dc4a91 100644
+--- a/.aitm/stories/001/158/plan/2026-11-10-158-jit.md
++++ b/.aitm/stories/001/158/plan/2026-11-10-158-jit.md
+@@ -26 +26 @@ pickup.
+-  raw SHA-256 `45e0e365d87a3c5f46154c16d7c26c42277e9d0d1f645b3f2b06ca27435ca8a8`.
++  raw SHA-256 `4f390fc1c0f20c8c08b8be2b6ca90ccbe74d48c46e7a202a215bfb7dfd61b4d9`.
+@@ -28 +28 @@ pickup.
+-  raw SHA-256 `d3d0dbb77b0a4be1a9543add36ae8220270f23c2153af81a83d06fe8e62bde57`.
++  raw SHA-256 `53c09ab58c857d04384eb9ac08e0c206c4b71b502e509b0b48ea96eaabcc5a38`.
+@@ -85,2 +85,20 @@ and driver with no automatic retries or production credentials.
+-The only retained story write set is the evidence pair in the
+-design. This leaf requires no AITM source branch or product patch.
++At this review checkpoint there is no persistent live #158 fixture
++mutation or hosted probe.
++
++## Evidence delivery
++
++- AITM delivery target is the literal branch `planning`. At
++  authorized pickup pin authenticated `origin/planning` and create
++  a clean isolated evidence worktree on
++  `codex/aitm-158-merge-fence-evidence`. Record the exact target
++  base, branch and worktree, executor and closure owner. Keep
++  that worktree separate from the disposable fixture checkout.
++- The evidence pair in the design is the capability payload.
++  Record its candidate commit and both raw file digests when
++  produced. Use the real hosted matrix and preserved rule/actor
++  evidence for Test. Obtain independent review of those exact
++  sanitized bytes. Verify the authorized planning publication
++  by authenticated readback of the target commit and file digests
++  before sign-off and closure. Apply the non-source route in the
++  [manual delivery checklist](../../../../manual-delivery-checklist.md).
++  Product source and its trunk CI are outside this evidence route.
+@@ -103,2 +121,7 @@ apply. Keep the full PR gate in force.
+-- Design SHA-256 `45e0e365d87a3c5f46154c16d7c26c42277e9d0d1f645b3f2b06ca27435ca8a8`
+-- Plan SHA-256 `d3d0dbb77b0a4be1a9543add36ae8220270f23c2153af81a83d06fe8e62bde57`
++- Design SHA-256 `4f390fc1c0f20c8c08b8be2b6ca90ccbe74d48c46e7a202a215bfb7dfd61b4d9`
++- Plan SHA-256 `53c09ab58c857d04384eb9ac08e0c206c4b71b502e509b0b48ea96eaabcc5a38`
++
++## Exact leaf inputs
++
++- Design SHA-256 `4f390fc1c0f20c8c08b8be2b6ca90ccbe74d48c46e7a202a215bfb7dfd61b4d9`
++- Plan SHA-256 `53c09ab58c857d04384eb9ac08e0c206c4b71b502e509b0b48ea96eaabcc5a38`

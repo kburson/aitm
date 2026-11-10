@@ -10,12 +10,12 @@ children: []
 blocking: [141, 142, 144, 147, 148]
 blocked-by: [138]
 created: "2026-11-10T16:50:59Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-10T21:59:42Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-139-classify-pytest-inventory-design.md"], "plan": [], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T02", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "ade97a158a01113fdd6c0651f09b46de587adb902a86e0d8908c371e4c5edd54"}
@@ -50,3 +50,9 @@ that distinction in the inventory identity.
   #103 required tests, optional skips, CLI subprocesses and CI helper
   ownership. V(inventory) passes and the full classified inventory
   reconciles with the serial baseline.
+
+## Accepted leaf design
+
+[Design](design/2026-11-10-139-classify-pytest-inventory-design.md) · [Scoped independent SPR](plan/reviews/spr-2026-11-10-jit/review-manifest.md).
+
+The design adopts the accepted #133 contract for this leaf.

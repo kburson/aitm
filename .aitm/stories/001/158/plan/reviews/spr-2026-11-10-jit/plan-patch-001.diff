@@ -1,0 +1,84 @@
+diff --git a/.aitm/stories/001/158/plan/2026-11-10-158-qualify-github-merge-fence.md b/.aitm/stories/001/158/plan/2026-11-10-158-qualify-github-merge-fence.md
+index 4d78b67..689c9ac 100644
+--- a/.aitm/stories/001/158/plan/2026-11-10-158-qualify-github-merge-fence.md
++++ b/.aitm/stories/001/158/plan/2026-11-10-158-qualify-github-merge-fence.md
+@@ -21,2 +21,4 @@ Read the [JIT note](2026-11-10-158-jit.md) before pickup.
+-- Work only on the approved disposable repository and scoped actors.
+-  Keep production AITM gate, protections and source outside the spike.
++- Make probe mutations only on the approved disposable repository
++  using scoped actors. Keep production AITM gate, protections and
++  source outside the spike. Prepare and deliver the sanitized
++  evidence separately on the AITM planning branch route.
+@@ -106 +108 @@ Read the [JIT note](2026-11-10-158-jit.md) before pickup.
+-| M06 | Attempt auto-merge and queue through applicable web/API routes, including async enqueue and direct async with an ordinary writer. Verify feature disablement, no deferred pending entries and unchanged target. If queue is unavailable for this owner/plan, retain that effective configuration and an actual rejected/unavailable entry route. If any deferred route can be armed under the candidate configuration, queue a fixture before a stop and show host-enforced prevention of a later update, or refuse. A bare 202 is pending, so read it to terminality. |
++| M06 | Attempt auto-merge and queue through applicable web/API routes, including async enqueue and direct async with an ordinary writer. Verify feature disablement, no deferred pending entries and unchanged target. If queue is unavailable for this owner/plan, retain that effective configuration and an actual rejected/unavailable entry route. If any deferred route can be armed under the candidate configuration, arm a fixture before a stop and show host-enforced prevention of a later update, or refuse. Read a 202 to terminality. If the result is enqueued, follow the queue and target to a conclusive outcome because the enqueue result ends only the async API request. |
+@@ -119,9 +121,17 @@ Read the [JIT note](2026-11-10-158-jit.md) before pickup.
+-- [ ] Run M10 and M11. Use a disposable relay or an equivalent
+-  controlled client to prove whether the request was forwarded and
+-  to withhold the response from the driver. A paused request before
+-  forwarding exercises the reservation/dispatch seam only. Include
+-  an actual request sent to the provider with ambiguous response to
+-  exercise in-flight ordering. Use a separate observer path for
+-  readback. Preserve ambiguous outcomes durably across a driver
+-  restart and demonstrate blocked ordinary, repair and retry
+-  attempts while the intent is unresolved.
++- [ ] Run M10 and M11. Place a barrier after the driver's final
++  authority check, immediately before its first outbound merge
++  request bytes can reach GitHub. Observe the send boundary from
++  the disposable relay or an equivalent independent transport
++  observer. If the mechanism serializes the stop and send and
++  excludes this pause, force contention at that boundary and
++  record the actual ordering primitive and transport event.
++- [ ] Use the relay to withhold the response for M11a and a
++  separate observer for provider readback. For M11b, prove causal
++  overlap with a provider operation that could still commit when
++  stop is recorded, or demonstrate a documented, independently
++  verified host invariant that covers that overlap. A local pause
++  before forwarding belongs to M10. Delaying only the response
++  cannot show that the operation was in flight at the stop.
++  Preserve ambiguous outcomes durably across a driver restart and
++  demonstrate blocked ordinary, repair and retry attempts while
++  the intent is unresolved.
+@@ -131 +141 @@ Read the [JIT note](2026-11-10-158-jit.md) before pickup.
+-| M10 | Pause after reservation, record the stop, and release the waiting driver. Show zero outgoing merge requests and unchanged target. The prior green result and intent are superseded. |
++| M10 | After reservation, pause after the last authority check and before the first external merge request bytes. Record stop, release the barrier and show zero outbound requests and unchanged target. If the verified serialization makes that interleaving unreachable, force contention and demonstrate both orderings. Stop first means no send. A possible send first keeps durable intent and goes to M11. |
+@@ -133 +143 @@ Read the [JIT note](2026-11-10-158-jit.md) before pickup.
+-| M11b | Forward an ordinary merge and inject a stop while its outcome is genuinely unknown. Require provider-side exclusion/terminality or causal proof of an exact earlier commit. A provider commit proven after the stop, or a documented/observed route that can do so, refuses the candidate. If the ordering cannot be proved, retain the unresolved intent and refuse qualification. Never release the fence based on a stale or unchanged ref, client timeout, expiry, or absence of acknowledgment. |
++| M11b | Test the actual overlap or verify the host invariant above. Require provider-side exclusion or terminality, or causal proof of an exact earlier commit together with the verified invariant covering unresolved overlap. A response-only delay or a known earlier commit alone belongs to M11a. A provider commit proven after the stop, or a route that can do so, refuses the candidate. If ordering is unproved, retain unresolved intent and refuse qualification. A stale or unchanged ref, timeout, expiry or missing acknowledgment supplies no release evidence. |
+@@ -149,2 +159,3 @@ precise hold or missing guarantee with partial evidence.
+-  event that makes each ordering conclusion causal. Do not infer a
+-  pass from an unavailable probe.
++  event that makes each ordering conclusion causal and the
++  `qualified` or `refused` capability disposition in the report.
++  An unavailable probe cannot supply a pass.
+@@ -157,6 +168,24 @@ precise hold or missing guarantee with partial evidence.
+-- [ ] Issue one `qualified` or `refused` capability receipt with
+-  explicit scope and a successor disposition. If pickup authority
+-  is absent, record a hold and keep the execution checklist pending.
+-  Apply the repository's review and closure rules separately.
+-  Retain the existing full PR gate. Do not start #159 on a refusal,
+-  unknown, owner hold or merely completed administrative status.
++- [ ] Commit the sanitized evidence on
++  `codex/aitm-158-merge-fence-evidence` in an isolated AITM
++  worktree pinned from authenticated `origin/planning`. Record
++  its exact base, evidence commit and raw digest for each file.
++  Validate real matrix evidence against the accepted spike and
++  have an independent agent review that exact report and rules pair.
++  A refused host route can pass this evidence review when the report
++  proves the limitation and retains any unresolved fence.
++- [ ] Publish to `planning` through the authorized planning route
++  and verify the target commit and the exact published file digests
++  by authenticated readback. Recheck evidence and review when
++  the candidate or applicable target changes. Record the route,
++  validation, reviewer, verdict and delivery mapping using the
++  [manual delivery checklist](../../../../manual-delivery-checklist.md).
++  There is no product change or applicable trunk-source CI run
++  for this non-source deliverable.
++- [ ] Record the published capability disposition and successor
++  effect. If pickup authority is absent, record a hold and keep
++  the execution checklist pending.
++  Obtain the implementer's signed retrospective and reconcile issue
++  and Project closure through the normal authorized process. #159
++  stays held on refusal, unknown, owner hold or administrative
++  completion without a qualified receipt. Retain the existing
++  full PR gate.

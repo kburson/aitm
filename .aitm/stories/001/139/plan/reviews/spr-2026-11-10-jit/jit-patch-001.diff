@@ -1,0 +1,41 @@
+diff --git a/.aitm/stories/001/139/plan/2026-11-10-139-jit.md b/.aitm/stories/001/139/plan/2026-11-10-139-jit.md
+index b1eb380..37d9be7 100644
+--- a/.aitm/stories/001/139/plan/2026-11-10-139-jit.md
++++ b/.aitm/stories/001/139/plan/2026-11-10-139-jit.md
+@@ -8 +8 @@
+-- Source is live `origin/trunk` at `a495d60a87ac4ca764f019dc266e579f13f1787e`, tree `47fa209c89e99e041f716d856c9ae59b3360c97e`. All three owned paths are absent. At authorized pickup, reserve a dedicated clean source worktree on proposed `codex/aitm-139-inventory` and verify its physical path, branch and tracked/untracked status. A trunk advance requires an updated exact source readback and rechecking the policy, observed IDs and adjacent interfaces.
++- Source is live `origin/trunk` at `a495d60a87ac4ca764f019dc266e579f13f1787e`, tree `47fa209c89e99e041f716d856c9ae59b3360c97e`. All three owned paths are absent. At authorized pickup, reserve a dedicated clean source worktree on `codex/aitm-139-inventory` and verify its physical path, branch and tracked/untracked status. A trunk advance requires an updated exact source readback and rechecking the policy, observed IDs and adjacent interfaces.
+@@ -18 +18 @@
+-| Current versus historical | Exact ID set difference is +118 and zero removals. Additions are `test_monitor_registry.py` 48, `test_monitor_scope.py` 30, `test_monitor_control.py` 22, `test_monitor_legacy.py` 8, `test_scan.py` 6, `test_monitor_adapters.py` 3 and `test_grok.py` 1. The four explicit #103 helper test modules and their controls are byte-identical across the compared trees. Exact current helper collect-only verification is pickup work. |
++| Current versus historical | Exact ID set difference is +118 and zero removals. Additions are `test_monitor_registry.py` 48, `test_monitor_scope.py` 30, `test_monitor_control.py` 22, `test_monitor_legacy.py` 8, `test_scan.py` 6, `test_monitor_adapters.py` 3 and `test_grok.py` 1. The four explicit #103 helper test modules and their controls are byte-identical across the compared trees. The separate exact current product/CLI and helper collect-only verification is pickup work. |
+@@ -21,0 +22,20 @@ Historical comparison is exact to its own tree. The current push establishes the
++## Full local reconciliation inputs
++
++On the clean pinned source snapshot, after authorized pickup and before product edits, run these separate collect-only observations with the locked setup and an already provisioned private evidence directory. Use the existing observer to capture exact node IDs, zero deselections and no test phase or child records. Record Darwin and APFS using the current workflow capability check against the run scratch filesystem. Verify native ACL support using the install test’s create, list and remove ACL operation in private scratch before claiming that capability. Keep evidence output outside the source checkout.
++
++```sh
++cd "$(pwd -P)"
++export PYTHONPATH="$PWD/tools/ci"
++AITM_CI_PYTEST_EVIDENCE="$evidence_dir/product-cli.json" \
++  uv run --project packages/aitm-usage --locked pytest -p pytest_evidence \
++  --rootdir "$PWD" --collect-only -q packages/aitm-usage/tests \
++  tools/ci/tests/test_cli_evidence.py
++AITM_CI_PYTEST_EVIDENCE="$evidence_dir/ci-helpers.json" \
++  uv run --project packages/aitm-usage --locked pytest -p pytest_evidence \
++  --rootdir "$PWD" --collect-only -q tools/ci/tests/test_python_gate.py \
++  tools/ci/tests/test_pytest_evidence.py tools/ci/tests/test_verify_pr.py \
++  tools/ci/tests/test_file_checks.py
++```
++
++Use the delivered T03 `resolve` with `LocalRequest` pinned to the source base to record the effective `WorktreeEndpoint.worktree_digest` before and after both observations. Require the same digest and clean tracked inputs. Use that digest and both separately digested observations to classify workload `full`. Verify the product/CLI IDs against the 748 current push IDs and helper IDs against the 182 historical advisory IDs. Expect an exact union of 930 local advisory obligations if both sets agree. Retain separate scope bindings and exact sets alongside the local union. Keep archived #103 outcomes and coverage with their original receipts and roles.
++
+@@ -43,2 +63,7 @@ Run current #103 exact PR checks `python-base`, `python`, `quality`, `file-check
+-- Design SHA-256 `1ab37e91852683887ea152c0623aea1f7c5d9c6d084819e6c06736380d02c2a9`
+-- Plan SHA-256 `393e941668da357d471062cd0290bd6f2d1b50a91c387dd573b4b130b0aed663`
++- Design SHA-256 `76614cc2e644bfc49b80a39858f79fef8b1704a197597a89c814f13506b361c9`
++- Plan SHA-256 `d6a39809ae39c0dba96a86560bf50e20a10dbede6f5ff8dbe0e0b362e4d88013`
++
++## Exact leaf inputs
++
++- Design SHA-256 `76614cc2e644bfc49b80a39858f79fef8b1704a197597a89c814f13506b361c9`
++- Plan SHA-256 `d6a39809ae39c0dba96a86560bf50e20a10dbede6f5ff8dbe0e0b362e4d88013`

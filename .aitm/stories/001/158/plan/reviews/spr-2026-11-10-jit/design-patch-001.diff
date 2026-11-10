@@ -1,0 +1,29 @@
+diff --git a/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md b/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md
+index c08fcb7..8199166 100644
+--- a/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md
++++ b/.aitm/stories/001/158/design/2026-11-10-158-qualify-github-merge-fence-design.md
+@@ -72,3 +72,5 @@ Require host ordering proof for the effective stop and the target
+-mutation. A stop observed between reservation and dispatch cancels
+-the stale reservation before any merge request leaves the driver.
+-Once a merge may have reached GitHub, record the stop and retain the
++mutation. The stop must invalidate an unsent request even after
++the final authority check. Probe the last point before the
++request can leave the driver, and establish which event won using
++the actual serialization and transport evidence. Once a merge
++may have reached GitHub, record the stop and retain the
+@@ -85,3 +87,6 @@ can confirm a commit already proven before the stop. It cannot move
+-the stop boundary retroactively. A rule edit, token revocation or
+-status change can serve as a boundary only with host evidence that
+-covers already in-flight requests.
++the stop boundary retroactively. Withholding a response from the driver
++exercises reconciliation. To qualify the overlap, show the provider
++operation could still commit when the stop was recorded, or establish
++a host-enforced invariant covering that case. A rule edit, token
++revocation or status change can serve as a boundary only with host
++evidence that covers already in-flight requests.
+@@ -97,0 +103,5 @@ ordering evidence, and one disposition for every planned case.
++Deliver the exact reviewed report and rules pair to AITM
++`planning` from the isolated evidence branch declared in the JIT.
++The disposable target supplies the real validation. Independently
++review the same evidence bytes and verify their authenticated
++publication and readback before closing the story.
