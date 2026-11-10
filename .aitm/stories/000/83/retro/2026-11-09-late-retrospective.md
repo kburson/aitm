@@ -37,20 +37,22 @@ Confidence is high in the exact protected release and observed qualification win
 
 ## Late child retrospectives
 
-Original dispatch records identified all 13 implementing agents by task name. Their retained work is attributable, but follow-up requests from this chat were rejected for all 13. These reconstructions use the original handoffs and independent records. Each is attributed to its actual author. Private implementation evidence remains local.
+Original dispatch records identified all 13 implementing agents by task name. Direct follow-up requests from this chat were initially rejected, so the follow-up agent wrote the reconstructions from the original handoffs and independent records. Private implementation evidence remains local.
 
-| Story | Original implementer | Late reconstruction |
-| --- | --- | --- |
-| #84 / U01 | `implement_u01` | [Private durable ledger](../../84/retro/2026-11-09-late-retrospective.md) |
-| #85 / U02 | `implement_u02` | [Scope inbox](../../85/retro/2026-11-09-late-retrospective.md) |
-| #86 / U13 | `implement_u13` | [Aliases and rollups](../../86/retro/2026-11-09-late-retrospective.md) |
-| #87 / U03 | `implement_u03` | [Source cursor](../../87/retro/2026-11-09-late-retrospective.md) |
-| #88 / U04 | `implement_u04` | [Codex adapter](../../88/retro/2026-11-09-late-retrospective.md) |
-| #89 / U05 | `implement_u05` | [Claude adapter](../../89/retro/2026-11-09-late-retrospective.md) |
-| #90 / U06 | `implement_u06` | [Pricing and quota](../../90/retro/2026-11-09-late-retrospective.md) |
-| #91 / U07 | `implement_u07` | [As-of export](../../91/retro/2026-11-09-late-retrospective.md) |
-| #92 / U08 | `implement_u08` | [Collector service](../../92/retro/2026-11-09-late-retrospective.md) |
-| #93 / U12 | `implement_u12` | [Restart and privacy proof](../../93/retro/2026-11-09-late-retrospective.md) |
-| #94 / U09 | `implement_u09` | [LaunchAgent and restore](../../94/retro/2026-11-09-late-retrospective.md) |
-| #95 / U10 | `implement_u10` | [Qualification validator](../../95/retro/2026-11-09-late-retrospective.md) |
-| #96 / U11 | `implement_u11` | [Project Mac activation](../../96/retro/2026-11-09-late-retrospective.md) |
+The original #83 chat later reached all 13 agents. Each wrote and signed their own retrospective on November 9, 2026, after historical closure. The signed originals record the authors’ later assessments. The historical closure record shows that sign-off was missing at the time. [Publication of the signed originals](https://github.com/kburson/aitm/commit/7eb8af2d66425e5a61443ddcf80319004abc6cfd).
+
+| Story | Original implementer | Late reconstruction | Signed original |
+| --- | --- | --- | --- |
+| #84 / U01 | `implement_u01` | [Private durable ledger](../../84/retro/2026-11-09-late-retrospective.md) | [Signed #84 retrospective](../../84/retro/2026-11-09-implementer-retrospective.md) |
+| #85 / U02 | `implement_u02` | [Scope inbox](../../85/retro/2026-11-09-late-retrospective.md) | [Signed #85 retrospective](../../85/retro/2026-11-09-implementer-retrospective.md) |
+| #86 / U13 | `implement_u13` | [Aliases and rollups](../../86/retro/2026-11-09-late-retrospective.md) | [Signed #86 retrospective](../../86/retro/2026-11-09-implementer-retrospective.md) |
+| #87 / U03 | `implement_u03` | [Source cursor](../../87/retro/2026-11-09-late-retrospective.md) | [Signed #87 retrospective](../../87/retro/2026-11-09-implementer-retrospective.md) |
+| #88 / U04 | `implement_u04` | [Codex adapter](../../88/retro/2026-11-09-late-retrospective.md) | [Signed #88 retrospective](../../88/retro/2026-11-09-implementer-retrospective.md) |
+| #89 / U05 | `implement_u05` | [Claude adapter](../../89/retro/2026-11-09-late-retrospective.md) | [Signed #89 retrospective](../../89/retro/2026-11-09-implementer-retrospective.md) |
+| #90 / U06 | `implement_u06` | [Pricing and quota](../../90/retro/2026-11-09-late-retrospective.md) | [Signed #90 retrospective](../../90/retro/2026-11-09-implementer-retrospective.md) |
+| #91 / U07 | `implement_u07` | [As-of export](../../91/retro/2026-11-09-late-retrospective.md) | [Signed #91 retrospective](../../91/retro/2026-11-09-implementer-retrospective.md) |
+| #92 / U08 | `implement_u08` | [Collector service](../../92/retro/2026-11-09-late-retrospective.md) | [Signed #92 retrospective](../../92/retro/2026-11-09-implementer-retrospective.md) |
+| #93 / U12 | `implement_u12` | [Restart and privacy proof](../../93/retro/2026-11-09-late-retrospective.md) | [Signed #93 retrospective](../../93/retro/2026-11-09-implementer-retrospective.md) |
+| #94 / U09 | `implement_u09` | [LaunchAgent and restore](../../94/retro/2026-11-09-late-retrospective.md) | [Signed #94 retrospective](../../94/retro/2026-11-09-implementer-retrospective.md) |
+| #95 / U10 | `implement_u10` | [Qualification validator](../../95/retro/2026-11-09-late-retrospective.md) | [Signed #95 retrospective](../../95/retro/2026-11-09-implementer-retrospective.md) |
+| #96 / U11 | `implement_u11` | [Project Mac activation](../../96/retro/2026-11-09-late-retrospective.md) | [Signed #96 retrospective](../../96/retro/2026-11-09-implementer-retrospective.md) |
