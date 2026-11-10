@@ -7,7 +7,7 @@ Implementing agent and closure owner Codex. [Accepted pickup](jit.md) and [two i
 - [x] Verify prerequisites and review pickup.
 - [x] Record local validation and push the exact candidate for Test.
 - [x] Record exact hosted run and independent source review.
-- [ ] Verify delivery, publish signed retrospective and close as Done.
+- [x] Verify delivery, publish signed retrospective and close as Done.
 
 ### Test checkpoint
 
@@ -37,3 +37,5 @@ The delivered verifier passed at `2026-11-10T15:20:16.330766Z` for the exact rev
 [PR #132](https://github.com/kburson/aitm/pull/132) merged by merge commit into trunk at `dc037364ba617b97244c93670d12358d0b5cbba7` at `2026-11-10T15:20:42Z`. The fetched target had exact reviewed tree `3e4d46feb9a8c7890937b089e486824cb308b93d` and ordered parents `338ff3382fd1757ae150fabfe93df98df5338e2a` and `83fe253ed2a979bb23b52f0a3280591d662112a6`. Head ancestry and zero source diff were verified. [Signed retrospective](../retro/2026-11-10-versioned-project-persistence.md).
 
 The last gate was the implementing-agent sign-off at `2026-11-10T15:21:29Z`.
+
+GitHub readback confirmed Completed closure at `2026-11-10T15:21:32Z` and Project status Done. #114 may enter its own leaf preparation. [Issue #113](https://github.com/kburson/aitm/issues/113).

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 113
 title: "[M03] Versioned project persistence"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/113"
 parent: 100
 children: []
 blocking: [114]
 blocked-by: [112]
 created: "2026-11-10T13:57:51Z"
-updated: "2026-11-10T15:17:16+00:00"
+updated: "2026-11-10T15:21:35+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
@@ -41,3 +41,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Run red. Implement versioned dispatch and transactional upgrade. Run green with `test_ledger.py`, `test_export.py` and `test_install.py`. Commit M03.
 
 [Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent reviews](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md).
+
+[Delivered verification and signed retrospective](plan/delivery-checklist.md#delivery-and-sign-off).

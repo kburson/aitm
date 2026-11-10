@@ -55,3 +55,5 @@ The owner authorized source delivery after [#103](../103/story.md) closed. Devel
 The #103 delivery found the installed launcher cleared the Codex chat identity before authenticating a scope marker. The accepted plan already calls for the exact legacy carrier in M07 and the installed invocation in M18. Carry this observed launcher failure into those checks. [Usage observation](../103/attachments/delivery-evidence.md#agent-measurement)
 
 Full-Auto paused at the owner’s direction after [#111](../111/story.md) closed as Done at `2026-11-10T14:28:21Z`.
+
+Full-Auto resumed November 10, 2026. [#112 M02](../112/story.md) and [#113 M03](../113/story.md) delivered to trunk with exact signed CI, independent source review and implementing-agent sign-off. Both issues were read back as closed and Done. M02's ext4 proof records the observed [Python 3.13.18 baseline pricing import incompatibility](../112/attachments/ext4-publication-proof.md) for later Linux runtime selection.
