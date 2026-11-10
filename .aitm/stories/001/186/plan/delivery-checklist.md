@@ -55,6 +55,10 @@ Revision 5 is head `837370a2af4f76617ce87a001ee3d3ad221dc31a` on base `49865245d
 
 Revision 6: head `775a0ddd9d3ddeef676496d7fb1a9896d8bd3bd9`, base `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2`, tree `6107d353b1b5d40b1f5e050acbef53f57cae6e3b`. GitHub matches all pins. The corrected #186 files are byte-identical to revision 5 and remain the only three paths in the diff from current trunk. Eleven dashboard tests, lint and format, repository file checks, disposable capture and readback and exact planning seed verification passed again.
 
-- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42917014794), delivered verifier and independent source review.
+- [x] [Revision 6 hosted run](https://github.com/kburson/aitm/actions/runs/42917014794/attempts/1): the candidate Python, lint and file checks passed; trusted base failed, evidence collection failed and signing was skipped.
 
 [Revision 6 trusted-base job](https://github.com/kburson/aitm/actions/runs/42917014794/job/130181954347) failed in setup for the unchanged monitor test `test_scope_proof_requires_current_physical_identity_before_apply[source-inode]`. The fixture raised `BoundaryUnavailable: Native capture frontier is unavailable`; 875 other tests on the trusted trunk checkout passed. This job did not run the #186 source. Keep the existing monitor and CI scope intact. Request a fresh canonical first attempt with the same #186 tree; a GitHub rerun would repeat the verified attempt identity hold.
+
+Revision 7 is head `fef77fbe94a0b969bb6afcba6081819c5e9321ee` on the same live base and identical tree as revision 6. The isolated monitor setup case passed locally. Eleven exact dashboard tests, lint and format, and the guide round trip passed on the new head.
+
+- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42917830668), delivered verifier and independent source review.
