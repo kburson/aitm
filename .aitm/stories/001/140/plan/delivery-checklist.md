@@ -48,3 +48,15 @@ The owner’s exact-tree disposition is pending. The [trusted verifier hold](ver
 The owner approved the exact tree `e89faf081d000fd8749430edd8ce47328e6703bb` for the existing #103 disposition in the implementation conversation. The [trusted verifier](verifier-pass-6397dd9a5ff7.json) passed for that tree. The independent source review is retained and the story enters In review. The PR remains open and unmerged.
 
 [Exact-tree owner disposition](owner-disposition-6397dd9a5ff7.json).
+
+## Candidate `62c248b9ab53` · Test
+
+[Open PR](https://github.com/kburson/aitm/pull/184) · base `0175e77c398dc97c59db166fa64e2e9a673b4b40` · head `62c248b9ab534f55565d7c1ec636bfe5b460b0dd` · local tree `4296f0b010776d754c39cdc9605e01e2b76e6805`.
+
+- Locked Python 3.13.9 and uv 0.10.6 on the isolated source checkout.
+- Exact-head focused pytest result `38 passed in 24.46s`.
+- Exact-head full local package and CI test result `983 passed in 108.57s (0:01:48)`.
+- Ruff check, Ruff format and source diff whitespace passed.
+- Focused collection and execution are separate from the hosted #103
+  test list and helper denominator.
+- Hosted validation and independent review apply to this exact candidate.
