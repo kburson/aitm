@@ -1,0 +1,84 @@
+diff --git a/.aitm/stories/001/133/design/test-impact-analysis-design.md b/.aitm/stories/001/133/design/test-impact-analysis-design.md
+index 8c24ad2..c0aef76 100644
+--- a/.aitm/stories/001/133/design/test-impact-analysis-design.md
++++ b/.aitm/stories/001/133/design/test-impact-analysis-design.md
+@@ -92,6 +92,16 @@ ambiguous endpoints makes selection uncertain. A name match may help
+ locate a dependency for review. It cannot be the sole basis for
+ excluding other tests.
+ 
++Define the graph provider's supported input classes and resolution
++rules in trusted policy. Account for unresolved edges and incomplete
++input classes, including dependencies outside the changed file's
++own package. A supported edge to one test does not establish that the
++consumer set is complete. If the provider cannot demonstrate that an
++unresolved edge or input class cannot reach a changed input, treat the
++impact as uncertain. Where an unknown scope cannot be bounded, assume
++it can reach any applicable package. A reviewed declaration may
++supply a conservative over-approximation of the consumers.
++
+ Resolve edges from consumer to input and traverse in reverse from each
+ changed file. Deduplicate tests while keeping a deterministic witness
+ path for each changed-file and affected-test pair. Cycles terminate
+@@ -191,8 +201,11 @@ Combine compatible coverage from the same tested source, policy, and
+ attempt, including required child-process evidence. Compare serial and
+ sharded coverage at the line and branch set level on the same candidate
+ during qualification. Preserve #103's unrounded 90% line floor per
+-active product package for every full gate. Keep the wheel smoke and
+-other required checks separate from the test subset. For an eventual
++active product package and the existing CI-helper coverage floor for
++every full gate. Run each mandatory test and collect its required
++subprocess evidence in every applicable mode. Preserve CI-helper
++coverage, installed-wheel smoke, and other required checks under
++their existing policy if the product suite is selected. For an eventual
+ selected PR gate, the proposed replacement for full-package coverage
+ on that candidate is 90% of changed executable lines per affected
+ product package, measured on the candidate. This is a separate gate
+@@ -273,6 +286,15 @@ trunk merges while evidence is restored. Use the workspace-wide stop
+ when a failing test is observed. If test failure and infrastructure
+ failure coexist, the failing-test incident takes precedence.
+ 
++Ingest and classify authenticated negative evidence even when a
++shard, another job, or final aggregation fails. A verifiable failing
++test on the exact scheduled revision triggers the workspace-wide
++stop even if another required result is missing. A failed workflow
++without trustworthy test outcomes triggers an evidence hold on
++ordinary merges. Keep that hold while classifying the result and
++upgrade it if a failing test is verified. Missing evidence cannot
++establish an infrastructure-only diagnosis.
++
+ | State or event | Required action |
+ | --- | --- |
+ | Healthy | Admit ordinary work under the current PR policy. Record the latest verified full trunk result. |
+@@ -356,21 +378,28 @@ fresh. Use the roster and these acknowledgments as a restart barrier.
+ A disconnected workspace or unresolved update holds the barrier.
+ A missed notification is handled at the next governed boundary.
+ A new or reopened workspace can enter ordinary work only after its
+-base contains the fix. Stop or restart state alone never counts as
+-evidence of a workspace update.
++base contains the fix. Bind each acknowledgment to the incident,
++workspace identity and generation, and verified updated base. Fence
++ordinary work and unverified changes to the roster or acknowledged
++base during recovery. Recheck current acknowledgments when releasing
++the barrier. A changed workspace generation invalidates its receipt
++until the current base is verified again. Check eligibility on the
++next governed admission so a rollback after acknowledgment cannot
++use the old proof. Stop or restart state alone never counts as evidence
++of a workspace update.
+ 
+ ## 7. Required acceptance evidence
+ 
+ | Area | Proof to retain |
+ | --- | --- |
+ | Selection | A direct import, a multi-hop witness, a cross-package path, a fixture or subprocess declaration, a changed test, and a positively classified non-test change. Verify the reported path and exact selected ID for each case. |
+-| Unknown impact | Renames or deletions across snapshots, missing Git inputs, unresolved runtime dependencies, changed CI controls, and selector failure. Show exact full fallback or a blocked result when full evidence cannot be established. |
++| Unknown impact | Renames or deletions across snapshots, missing Git inputs, changed CI controls, and selector failure. Show fallback when a resolved test path coexists with an unresolved runtime dependency that can reach the changed input. Block when full evidence cannot be established. |
+ | Shard correctness | Serial and parallel runs on the same candidate. Show separate runners, complete disjoint assignments, matching outcomes and coverage, and refusal of missing, duplicated, stale, mismatched, or unexpectedly skipped outcomes. |
+ | Timing | Cold and warm timing, queue, setup, test and evidence timings for the three budgets, runner cost, and observed savings for selected feedback. |
+ | PR isolation | A failing isolated PR cannot merge. An independent PR can validate and merge and its agent can continue work. |
+ | Escaped defect | Inject a scheduled trunk failure missed by PR validation. Prove an already-green PR, a queued PR, and direct or alternate update paths are blocked. Show active agents on both affected and earlier bases pause. |
+ | Repair and restart | Reject TIA-only and stale full repair proofs. Allow the exact full-passing repair through normal review. Prove a failed, stale, incomplete, or wrong-revision recovery does not reopen the line. Prove repaired trunk passing allows workspace updates and a disconnected workspace holds restart until its fix receipt is verified. |
+-| Failure of controls | Exercise duplicate and out-of-order events, a repair merge with ambiguous acknowledgment, an already-landed repair for a failing older revision, protection drift, stale health, and infrastructure-only recovery. Show no ordinary merge through an active stop and no infrastructure exception for an observed failing test. |
++| Failure of controls | Exercise duplicate and out-of-order events, a repair merge with ambiguous acknowledgment, an already-landed repair for a failing older revision, protection drift, stale health, and infrastructure-only recovery. Prove a verified test failure still triggers the stop if another shard is missing, and a changed workspace generation invalidates an earlier acknowledgment. |
+ 
+ ## 8. Decisions reserved for the implementation plan
+ 
