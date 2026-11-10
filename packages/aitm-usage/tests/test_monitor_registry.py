@@ -923,7 +923,7 @@ def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable):
     assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
 
 
-@pytest.mark.parametrize("unfinished", ["quiet", "streamed", "tool"])
+@pytest.mark.parametrize("unfinished", ["quiet", "streamed", "tool", "abandoned"])
 def test_queued_claude_disable_uses_the_physical_tail(
     tmp_path, monkeypatch, source, unfinished
 ):
@@ -969,7 +969,7 @@ def test_queued_claude_disable_uses_the_physical_tail(
         )
 
     def locate(change, known):
-        assert change == disable
+        assert change in (disable, enable)
         assert known == frozenset({start.stream_ref})
         return tuple(reader.discover(root))
 
@@ -994,8 +994,12 @@ def test_queued_claude_disable_uses_the_physical_tail(
         writer.set_permission(enable, start)
         append_request(2, stop="end_turn")
         admitted_end = path.read_bytes().count(b"\n")
-        if unfinished == "streamed":
+        if unfinished in {"streamed", "abandoned"}:
             append_request(3, stop=None)
+        if unfinished == "abandoned":
+            completed_start = path.read_bytes().count(b"\n")
+            append_request(4, stop="end_turn")
+            append_request(5, stop="end_turn")
         if unfinished == "tool":
             append_request(
                 3,
@@ -1029,10 +1033,58 @@ def test_queued_claude_disable_uses_the_physical_tail(
         )
         is Eligibility.EXCLUDED
     )
-    if unfinished != "quiet":
+    if unfinished in {"streamed", "tool"}:
         assert (
             registry.span_disposition(
                 PROJECT_A, SOURCE, start.stream_ref, admitted_end + 1, expected
+            )
+            is Eligibility.UNKNOWN
+        )
+    if unfinished == "abandoned":
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, completed_start, expected
+            )
+            is Eligibility.ELIGIBLE
+        )
+        append_request(6, stop="end_turn")
+        append_request(7, stop=None)
+        enabled_at = path.read_bytes().count(b"\n")
+        resume = module.ControlCommand(UUID(int=331), enable)
+        assert inbox.enqueue(resume).status is module.ControlStatus.QUEUED
+        with registry.writer() as writer:
+            assert writer.apply_pending(inbox, writer.lease, lambda *_: ()) == ()
+        assert inbox.status(resume.command_id).status is module.ControlStatus.QUEUED
+        with registry.writer() as writer:
+            assert writer.apply_pending(inbox, writer.lease, locate) == ()
+        with registry.writer() as writer:
+            (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+        assert (receipt.command_id, receipt.status) == (
+            resume.command_id,
+            module.ControlStatus.APPLIED,
+        )
+        assert registry.view().epochs[-1].ordinal == enabled_at
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, completed_start, expected
+            )
+            is Eligibility.ELIGIBLE
+        )
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, expected, enabled_at
+            )
+            is Eligibility.EXCLUDED
+        )
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, enabled_at, enabled_at + 1
+            )
+            is Eligibility.ELIGIBLE
+        )
+        assert (
+            registry.span_disposition(
+                PROJECT_A, SOURCE, start.stream_ref, enabled_at - 1, enabled_at + 1
             )
             is Eligibility.UNKNOWN
         )
@@ -1218,3 +1270,80 @@ def test_disable_future_enrollment_while_approved_root_is_unavailable(
     assert receipt.status is scenario.module.ControlStatus.APPLIED
     displaced.rename(scenario.root.path)
     assert not scenario.registry.source_read_allowed(PROJECT_B, SOURCE)
+
+
+@pytest.mark.parametrize("callback", ["supplied", "omitted"])
+@pytest.mark.parametrize("timing", ["before-arm", "after-arm"])
+@pytest.mark.parametrize("reuse_name", [False, True], ids=["vacant", "occupied"])
+def test_moved_enrolled_stream_does_not_stall_disable(
+    queued_disable, callback, timing, reuse_name
+):
+    scenario = queued_disable
+    log, start = scenario.enroll_second()
+    prefix = _physical_ordinal(log)
+    stream = start.stream_ref
+    scenario.log.append(2)
+    log.append(2)
+    healthy_fence = _physical_ordinal(scenario.log)
+    archive = scenario.root.path / "archive"
+    archive.mkdir()
+    old_path = log.path
+    original = old_path.stat()
+
+    def archive_stream():
+        log.path = old_path.rename(archive / old_path.name)
+        assert os.path.samestat(log.path.stat(), original)
+        if reuse_name:
+            replacement = _DesktopLog(old_path, log.checkout, session=UUID(int=1000))
+            assert not os.path.samestat(replacement.path.stat(), original)
+        assert _locate(scenario.reader, scenario.root, stream)._source._path == log.path
+
+    def locate(change, known):
+        assert change in (scenario.disable, scenario.enable)
+        assert known == frozenset(scenario.streams)
+        candidates = tuple(scenario.reader.discover(scenario.root))
+        if callback == "supplied":
+            return candidates
+        return tuple(item for item in candidates if item.stream_ref != stream)
+
+    if timing == "before-arm":
+        archive_stream()
+    status = scenario.module.ControlStatus
+    assert scenario.submit().status is status.QUEUED
+    if timing == "after-arm":
+        assert scenario.poll() == ()
+        archive_stream()
+    else:
+        assert scenario.poll(locate) == ()
+    assert scenario.status() is status.QUEUED
+    (disabled,) = scenario.poll(locate)
+    assert disabled.status is status.APPLIED
+    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert scenario.decide(stream, start.ordinal, prefix) is Eligibility.ELIGIBLE
+    assert scenario.decide(stream, prefix, prefix + 1) is Eligibility.UNKNOWN
+
+    scenario.log.append()
+    enabled_at = _physical_ordinal(scenario.log)
+    resume = scenario.module.ControlCommand(UUID(int=322), scenario.enable)
+    assert scenario.inbox.enqueue(resume).status is status.QUEUED
+    assert scenario.poll(locate) == ()
+    (enabled,) = scenario.poll(locate)
+    assert (enabled.command_id, enabled.status) == (resume.command_id, status.APPLIED)
+    assert scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    assert scenario.registry.capture_read_limit(PROJECT_A, SOURCE, stream).ordinal == 0
+    assert scenario.decide(scenario.stream, healthy_fence, enabled_at) is (
+        Eligibility.EXCLUDED
+    )
+    assert scenario.decide(scenario.stream, enabled_at, enabled_at + 1) is (
+        Eligibility.ELIGIBLE
+    )
+
+    with scenario.registry.writer() as writer, pytest.raises(LedgerError):
+        moved_proof = _advance(
+            writer, scenario.enable, log, scenario.reader, scenario.root, stream
+        )
+        writer.enroll_stream(PROJECT_A, SOURCE, moved_proof)
+    assert scenario.decide(stream, start.ordinal, prefix) is Eligibility.ELIGIBLE
+    assert (
+        scenario.decide(stream, prefix, _physical_ordinal(log)) is Eligibility.UNKNOWN
+    )

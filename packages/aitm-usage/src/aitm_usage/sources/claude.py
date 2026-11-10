@@ -1425,14 +1425,20 @@ def retains_streamed_prefix(
 
 
 def _first_unretained_request(
-    batch: FrameBatch, state: ClaudeState, checkpoint: ProviderCheckpoint
+    batch: FrameBatch,
+    state: ClaudeState,
+    checkpoint: ProviderCheckpoint,
+    *,
+    start: int = 0,
 ) -> int | None:
     retained = {
         item.request_ref: item.message_ref for item in checkpoint.request_prefix
     }
     for frame in batch.commit_frames:
-        if frame.row["type"] != "assistant" or not _eligible(
-            frame, Eligibility.ELIGIBLE
+        if (
+            frame.ordinal < start
+            or frame.row["type"] != "assistant"
+            or not _eligible(frame, Eligibility.ELIGIBLE)
         ):
             continue
         message = _message(frame)

@@ -1222,26 +1222,28 @@ class Registry:
             return saved
         if position.next_ordinal < base.ordinal:
             raise _CaptureSourceLost("Native capture position moved backwards")
-        earliest = base.ordinal
-        gap_start = ProviderAdapter()._capture_gap_start(
-            current,
-            previous.observed.checkpoint,
-            first_unverified=earliest,
-            limit=position.cursor,
-        )
-        _check_capture_root(source.directory)
-        gaps = [
-            ordinal
-            for ordinal in (
-                gap_start,
-                position.partial_ordinal,
-                earliest if later else None,
+        gap_start = None
+        if not change.enabled:
+            earliest = base.ordinal
+            unsettled = ProviderAdapter()._capture_gap_start(
+                current,
+                previous.observed.checkpoint,
+                first_unverified=earliest,
+                limit=position.cursor,
             )
-            if ordinal is not None and ordinal < position.next_ordinal
-        ]
-        return _CaptureArm(
-            position.cursor, position.next_ordinal, min(gaps, default=None)
-        )
+            _check_capture_root(source.directory)
+            gaps = (
+                max(earliest, ordinal)
+                for ordinal in (
+                    unsettled,
+                    position.partial_ordinal,
+                    earliest if later else None,
+                )
+                if ordinal is not None
+                and max(earliest, ordinal) < position.next_ordinal
+            )
+            gap_start = min(gaps, default=None)
+        return _CaptureArm(position.cursor, position.next_ordinal, gap_start)
 
     @staticmethod
     def _verify_capture_tuple(
@@ -1272,11 +1274,12 @@ class Registry:
             prior=prior,
         )
         _check_capture_root(approved.directory)
-        if not presence.same_incarnation:
-            return _LocatorLoss.CHANGED if presence.at_locator else _LocatorLoss.ABSENT
+        if not presence.locator_is_original:
+            if presence.at_locator or presence.same_incarnation:
+                return _LocatorLoss.CHANGED
+            return _LocatorLoss.ABSENT
         if presence.prefix_changed or (
-            presence.locator_is_original
-            and presence.locator_size is not None
+            presence.locator_size is not None
             and (presence.locator_size == 0 or presence.locator_size < prior.offset)
         ):
             return _LocatorLoss.CHANGED
@@ -1504,11 +1507,11 @@ class Registry:
                 if payload.enabled:
                     raise
                 lost.append((previous, None))
-            except BoundaryUnavailable:
-                # A stale authentic locator can disappear from ordinary discovery
-                # after truncation. Only the strict pinned metadata walk proves loss.
+            except (BoundaryUnavailable, OSError):
+                # Ordinary discovery and reads can miss a moved or truncated file.
+                # Only the strict pinned walk proves a change at its original locator.
                 loss = None
-                if len(supplied) == 1:
+                if supplied:
                     try:
                         loss = self._locator_lost(source, base.cursor)
                     except (LedgerError, OSError, ValueError):
@@ -1519,7 +1522,7 @@ class Registry:
                     lost.append(
                         (previous, arm if loss is _LocatorLoss.ABSENT else None)
                     )
-            except (LedgerError, OSError, ValueError):
+            except (LedgerError, ValueError):
                 held = True
 
         if (

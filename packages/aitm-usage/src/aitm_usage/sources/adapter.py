@@ -168,18 +168,40 @@ class ProviderAdapter:
                 held.append(unsettled)
         else:
             state = ClaudeState(source._ledger, neutral_markers=True)
-            _, observed, unsettled = _read_claude(batch, state, Eligibility.ELIGIBLE)
+            result, observed, unsettled = _read_claude(
+                batch, state, Eligibility.ELIGIBLE
+            )
             if observed is None:
                 held.append(first_unverified)
             else:
-                unretained = _first_unretained_request(batch, state, observed)
-                held.extend(
-                    item for item in (unsettled, unretained) if item is not None
+                native_requests = {
+                    item.record.request_ref
+                    for item in result.revisions
+                    if isinstance(item.record, UsageObservation)
+                    and item.record.boundary.stream_ref == source.stream_ref
+                }
+                requests = tuple(
+                    item
+                    for item in observed.request_prefix
+                    if item.request_ref in native_requests and item.tokens != _EMPTY
                 )
+                last_complete = max(
+                    (item.ordinal for item in requests if item.complete),
+                    default=first_unverified - 1,
+                )
+                # A later completed request closes an abandoned provisional suffix.
+                start = max(first_unverified, last_complete + 1)
+                if unsettled is not None and unsettled >= first_unverified:
+                    held.append(unsettled)
+                unretained = _first_unretained_request(
+                    batch, state, observed, start=start
+                )
+                if unretained is not None:
+                    held.append(unretained)
                 held.extend(
                     item.ordinal
-                    for item in observed.request_prefix
-                    if not item.complete and item.tokens != _EMPTY
+                    for item in requests
+                    if not item.complete and item.ordinal >= start
                 )
         return min(held, default=None)
 
