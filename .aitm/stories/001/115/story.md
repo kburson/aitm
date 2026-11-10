@@ -10,12 +10,12 @@ children: []
 blocking: [120, 121]
 blocked-by: [114]
 created: "2026-11-10T13:57:54Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T16:36:16+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/carrier-capture.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M05", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "ec3fe35d7eda1c6ab8b87f266a2dcd28fb97c00d37563551ae3036771983bb06"}
@@ -41,3 +41,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_resume_and_snapshot_replay_count_two_distinct_turns`, `test_hookless_eligible_completion_keeps_native_interval`, `test_fork_excludes_inherited_turns`, `test_late_folded_parent_never_adds_to_child`, and `test_snapshot_conflict_and_cache_categories`. Also add `test_complete_native_only_counts_with_corroboration_gap` and `test_snapshot_only_does_not_charge`. Add `test_grok_rate_classes_do_not_use_claude_defaults`, `test_unknown_grok_rate_and_provider_ticks_remain_separate`, and `test_grok_preserves_legacy_rate_digest_and_fixed_export`. Verify the v1 decoder refuses a Grok provider value. Cover cancellation, concurrent prompts, rewind, later append and copied history as gated fixture cases.
 - [ ] Pin the approved production scope-marker carrier with a controlled native capture before finalizing the Grok contract. #101 is the macOS feasibility baseline. If the Linux carrier is unavailable, assign the remaining implementation to an explicit M05 slice required by M19 and keep that surface disabled. Run red. Implement versioned native decoding and separate rate provenance. Run green with `test_accounting.py`. Commit M05. Later qualification proves actual receipt authority on every advertised host.
+
+[Controlled macOS Grok marker capture](plan/carrier-capture.md). Pickup review and native Linux carrier evidence remain open.
