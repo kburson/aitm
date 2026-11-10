@@ -68,7 +68,7 @@ Revision 7 is head `fef77fbe94a0b969bb6afcba6081819c5e9321ee` on the same live b
 Revision 8 is head `8475b124f921bd0742d04b228c0a44824369b441` with the same tree and base as revision 7. The second isolated monitor fixture passed locally. Eleven exact dashboard tests, Ruff and the guide round trip passed again.
 
 - [x] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42918480605/attempts/1) and [delivered verifier](hosted-verification.json) passed.
-- [ ] Independent exact source review.
+- [x] [Independent exact source review](post-ci-source-review.md) accepted. Off-platform review; native GitHub approval absent.
 
 The optional full local monitor diagnostic on the current base (the monitor tree is identical in #186 and trunk) returned 875 passed and two scanner discovery failures: `test_warm_scanner_frontier_keeps_provisional_first_request_output` and `test_every_native_split_matches_one_read_after_restart[desktop]`. Both failed with no discovered candidate and both passed on immediate focused recheck. These checks are diagnostics for the unchanged monitor, separate from the required dashboard verification and hosted gate.
 
