@@ -6,7 +6,7 @@ Implementing agent and closure owner Codex. [Accepted pickup](jit.md) and [two i
 
 - [x] Verify prerequisites and review pickup.
 - [x] Record local validation and push the exact candidate for Test.
-- [ ] Record exact hosted run and independent source review.
+- [x] Record exact hosted run and independent source review.
 - [ ] Verify delivery, publish signed retrospective and close as Done.
 
 ### Test checkpoint
@@ -29,3 +29,11 @@ Test-first verification produced five expected interface and CLI failures and tw
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42841994451/job/129921367895) | Success |
 
 The [independent off-platform review](post-ci-source-review.md) passed for the exact source and additive test control. No native GitHub review was submitted or required. The authenticated raw inventories retained every baseline test and added seven M03 cases plus the candidate-only CLI case. The delivered gate replay matched the signed result.
+
+### Delivery and sign-off
+
+The delivered verifier passed at `2026-11-10T15:20:16.330766Z` for the exact reviewed tree. It verified all six jobs and the signature on artifact `13776951909`, archive SHA-256 `9bed9f90d228fb2d850794395b5bd4752274fa71b1f04b6bdeaf6e488e07fb6e` and subject SHA-256 `01ca9b360b3bc84233942edf142280fc28cc111ef576497f838cb37b61259c71`.
+
+[PR #132](https://github.com/kburson/aitm/pull/132) merged by merge commit into trunk at `dc037364ba617b97244c93670d12358d0b5cbba7` at `2026-11-10T15:20:42Z`. The fetched target had exact reviewed tree `3e4d46feb9a8c7890937b089e486824cb308b93d` and ordered parents `338ff3382fd1757ae150fabfe93df98df5338e2a` and `83fe253ed2a979bb23b52f0a3280591d662112a6`. Head ancestry and zero source diff were verified. [Signed retrospective](../retro/2026-11-10-versioned-project-persistence.md).
+
+The last gate was the implementing-agent sign-off at `2026-11-10T15:21:29Z`.
