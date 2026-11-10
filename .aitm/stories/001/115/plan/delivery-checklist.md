@@ -17,3 +17,7 @@ An orphan or ambiguous snapshot supplies no evidence for or against an independe
 The first combined local run had one failure in the existing Claude quota checkpoint case. The focused rerun passed that test. A fresh serial run of the staged replacement passed 629 locked product and CLI tests and 182 helpers, with raw coverage 7,141/7,818 and 778/821. The focused suite passed 298. Ruff and whitespace checks passed.
 
 A read-only code preflight found and replayed gaps in keyed snapshot disputes, excluded-turn witnesses, conflicting or backdated markers, changed timestamps at the cutoff and proof limits. The replacement added focused regressions and retained the original red results. The pricing lane was implemented by Codex's delegated pricing agent, with the author sign-off retained for verified delivery.
+
+### Attempt 1 hosted file-check failure
+
+[Run 42860016073 attempt 1](https://github.com/kburson/aitm/actions/runs/42860016073/attempts/1) belongs to head `e33282b61114cc00dbf061ea85928e9944e3ca42`. [File checks](https://github.com/kburson/aitm/actions/runs/42860016073/job/129983308133) failed because the monitor rate resource sat directly in the legacy rate directory and failed its exact legacy envelope check. Return to Develop. The monitor resource moves to the separate `rates/monitor/` namespace. The existing file gate continues to validate legacy rate cards and syntax-check the monitor JSON. The monitor loader and hosted tests validate its separate typed schema. Fresh full validation is required on the replacement.
