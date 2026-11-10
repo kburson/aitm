@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 140
 title: "[#133 T03] Resolve exact Git changes"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/140"
 parent: 133
 children: []
 blocking: [141, 147]
 blocked-by: []
 created: "2026-11-10T16:51:02Z"
-updated: "2026-11-10T20:20:16Z"
-last-branch: "planning"
+updated: "2026-11-10T20:24:34Z"
+last-branch: "codex/aitm-140-git-snapshot"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
@@ -81,3 +81,7 @@ The reviewed JIT pins the exact code baseline and delivery coverage.
 The estimate remains **3 implementation agent-hours**, size M, P1.
 The story remains in Planning. Before Develop, recheck applicability
 and reserve the declared source worktree under separate authorization.
+
+## Attempt 1
+
+Authorized implementation on `codex/aitm-140-git-snapshot` from trunk `d769b3169724eeb9ef4b4aee47d3ab4c4489072d`. Worktree `aitm-140-dev`, implementer `codex-collaboration:/root/impl140`, closure owner Codex coordinator. Stop before merge.
