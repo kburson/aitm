@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 106
 title: "[CI3] Lint repository files and define the TypeScript lane"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/106"
 parent: 103
 children: []
 blocking: []
 blocked-by: [105]
 created: "2026-11-10T02:57:06Z"
-updated: "2026-11-10T13:59:39+00:00"
+updated: "2026-11-10T14:04:05+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
