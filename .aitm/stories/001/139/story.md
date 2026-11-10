@@ -10,7 +10,7 @@ children: []
 blocking: [141, 142, 144, 147, 148]
 blocked-by: [138]
 created: "2026-11-10T16:50:59Z"
-updated: "2026-11-10T22:01:33Z"
+updated: "2026-11-10T22:24:31Z"
 last-branch: "codex/aitm-139-inventory"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -73,3 +73,12 @@ worktree to the authorized attempt.
 ## Attempt 1
 
 Authorized implementation on `codex/aitm-139-inventory` from trunk `a495d60a87ac4ca764f019dc266e579f13f1787e`. Worktree `aitm-139-dev`, implementer `codex-collaboration:/root/impl139`, closure owner Codex coordinator. Proceed through Test, independent source review, required gate disposition, verified delivery and Close.
+
+## Accepted target refresh
+
+[Exact JIT and taxonomy delta](plan/2026-11-10-139-jit-target-refresh.md) · [Independent SPR](plan/reviews/spr-2026-11-10-target-refresh.md).
+
+The #182 merge added 119 test IDs, including two explicit integration
+module rules. Develop attempt 1 refreshes its target to
+`49865245d175ce6c52913738f2c9a42c0abea632`. Its frozen source and validation
+remain separate evidence.
