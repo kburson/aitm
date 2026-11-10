@@ -1,0 +1,21 @@
+# #105 independent post-CI exact source review
+
+Submitted UTC `2026-11-10T13:34:31Z`.
+
+Verdict **PASS** for the exact #105 source and signed native candidate. No required findings. This verdict supports normal expected-head merge after the final live check. Trunk delivery, the trusted verifier's handed-off proof and #105 closure are later evidence gates.
+
+Independent declared-manual Codex Desktop reviewer, OpenAI GPT-6.1 Sol, high. Provider-qualified fingerprint `sha256:a3bb437a4264b6ad468ee66ea2fa72d26913b9712e2db7f6ecbf105ed0bbd287`.
+
+## Exact source and specification
+
+- Same-repository PR #109, head `805e3397264418b7cc35cf828230f19d5635f62e`, live trunk `58fb8ba98c52c1409f85c58d24dd7da86a583c0a`. The authenticated current PR merge field and merge ref matched `fbe283e43c0b3f142f26740bbbad21a1ab5bbd3a`. The raw object has the live base and head in order and tree `a4f30eb2a274d4f7b522c6d46e2b8991c85e80f2`, identical to the frozen local source. PR and target pins were stable across reads. [PR #109](https://github.com/kburson/aitm/pull/109)
+- The scoped exact pre-push source review carries forward to this identical tree. Receipt SHA-256 `439898a3f835af4ddcdd5fe7902704b9575b3b9130a29064a24d62c0d82eac56`. The source adds the read-only trusted-target verifier, meaningful negative and authentic positive fixtures, the exact helper denominator entry and the digest-pinned real GitHub CLI test lane. Trigger and permissions remain as accepted. The signed record's verifier blob `2f5796f589d8ed8ab32d6251969f47ee81ad3942`, workflow `d29f9a67eeef99786f423e86d94dfa790d1736ff` and policy `130fce58e8aa087b551e8542245cbd6b087784d5` independently matched the reviewed tree. I rechecked the baseline trust, active hook control and tracked verifier protections from pre-push. The earlier unchanged service test failure was followed by the local 531-test passing retry and this clean native run.
+
+## Independent hosted readback
+
+- Authenticated read-only GitHub responses matched canonical active workflow `412848571` at `.github/workflows/ci.yml`, newest exact ordinary PR run `42824974182` attempt 1 and GitHub Actions suite `115978280667`. All five required jobs succeeded exactly once, with job IDs matching check runs and starts after the authenticated attempt start. The closure owner's distinct manual receipt `105-exact-pass.json`, SHA-256 `aedc217de814ea2a1363e48b6dfbfb4a21fdf070c0f0c0a8e931778e657e003d`, agrees. [Hosted attempt](https://github.com/kburson/aitm/actions/runs/42824974182/attempts/1)
+- Independently retrieved exact final artifact `13768821631`, checked authenticated run and head association, attempt-qualified name, nonexpiry, size and raw archive digest `49e5946b7e7795666f6d13b89652f3a79112c14b1220738a3da06aabf17e8540`. The ZIP contains precisely the two allowed bounded regular original names. Subject SHA-256 `ed49c76253c27ba81a01420eea701b299b69feee485c32c1bf55d9a1f57edcf7` and bundle SHA-256 `653a0acf3c9f4e0b0b19b221de74adc2b57a1554916c1a3eb55c2f6262d7a106`.
+- Ran independent GitHub CLI 2.97.0 cryptographic verification with the trusted Public Good root SHA-256 `3c2cc7f357dc064ec527fdcd78da6e9245c21a381e1abaa0f2b62b186bcac1a1`. Verified exact subject, GitHub issuer, public repository ID `1450406435`, hosted runner, trigger and ref, configuration and signer workflow and digests, Public Good Rekor timestamp, and exact signed invocation `https://github.com/kburson/aitm/actions/runs/42824974182/attempts/1`.
+- Independently downloaded authenticated raw base and candidate lane archives and verified their raw digests and signed inventory, baseline and policy bindings. Replayed the already-delivered CI1 gate using the reviewed candidate policy and those raw records. It reproduced the signed disposition with 530 base and 531 candidate tests, matching tracked product scope, both observed and covered real child processes, the wheel smoke digest, and Darwin APFS capability. Raw product coverage was 6,285/6,910 and raw helper coverage was 620/662 across the three executables. Both unrounded floors pass. This readback used the already-delivered gate and independent verification, with no reliance on the candidate verifier for its own delivery.
+
+No repository or GitHub mutations were performed.
