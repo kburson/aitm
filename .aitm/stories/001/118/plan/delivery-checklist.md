@@ -12,7 +12,7 @@ Codex owns the isolated branch `codex/aitm-118-routing-journal` and closure. The
 
 The [literal trunk refresh](2026-11-10-118-target-refresh.md) and its [independent review](2026-11-10-118-target-refresh-review.md) retain the exact approved pickup and split bytes. The detached refreshed baseline matched all 877 product and CLI tests, 182 helper tests, and both raw coverage counts.
 
-[PR #200](https://github.com/kburson/aitm/pull/200) read back exact head , tree  and literal trunk . [Hosted run 42922357862](https://github.com/kburson/aitm/actions/runs/42922357862) is pending. Required jobs are file-checks, quality, python-base, python, collect-evidence and aitm-ci.
+[PR #200](https://github.com/kburson/aitm/pull/200) read back exact head `db814e9e8d37e08860e822baed72f917132541a6`, tree `cb6ff8ce8506abc2a4bda4da3ddad93a35c33aad` and literal trunk `679c328204ab797aabdc9a9f93fbf1085d03bb65`. [Hosted run 42922357862](https://github.com/kburson/aitm/actions/runs/42922357862) is pending. Required jobs are file-checks, quality, python-base, python, collect-evidence and aitm-ci.
 
 The locked frozen gate passed 920 product and CLI tests, 182 helper tests, Ruff, whitespace and coverage of 10,101/11,029 product and 778/821 helper lines. It adds 30 physical-store and 13 native-routing regressions over the exact baseline. An intermediate parallel run had four integration failures while the source fixtures were being corrected. The integrated source preflight held four causality checks, including a visible scope rename followed by a failed directory sync. The new native fault fixture reproduced the custody bug and now proves the journal rolls back before a fresh replay can settle the receipt. A second independent preflight passed all four repaired source paths.
 
