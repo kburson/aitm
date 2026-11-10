@@ -1,0 +1,5 @@
+# #181 author plan check
+
+Checked the complete 109-line SPR candidate at raw SHA-256 `e8e051336de6976db1a3cc87f42610cc6614d0946df9ac76d06773b4151e7b93` against the accepted design. Verified A/B gates, the estimate arithmetic, named files and interfaces, the dependency graph, evidence capture and readback, privacy and coverage, and C ownership. The accepted seed has ten rows and stays outside calibration. Checked the current trunk CI inventory so standalone dashboard tests receive explicit local candidate evidence alongside the existing CI gates.
+
+During cross-provider revision, verified the historical seed at planning `17761cc1928fd916cf32a9c078d4a742bfcb32b8`. No actor intervals overlap across stories. The pinned parent graph intersects the measured stories at exactly the six and two children recorded for #100 and #133. A01 adds the explicit immutable legacy registration fixture and receives 0.5 additional estimated hours. The native review record binds any revised bytes to its own acceptance.

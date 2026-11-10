@@ -1,0 +1,115 @@
+diff --git a/.aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md b/.aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md
+new file mode 100644
+index 0000000..7c7d4c6
+--- /dev/null
++++ b/.aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md
+@@ -0,0 +1,109 @@
++# Story timing and local dashboard implementation plan
++
++> For agentic workers, use subagent-driven-development or executing-plans for each authorized leaf. Complete the applicable leaf design, plan and JIT gates before Develop.
++
++**Goal.** Start capturing attributable timing on planning, then open and refresh an offline dashboard from the same evidence.
++
++**Architecture.** Slice A records evidence in the existing planning event store and projects a pinned tree to canonical JSON. Slice B renders that JSON locally. Slice C switches the inputs to the supported Core and monitor interfaces when their contracts qualify.
++
++**Tech stack.** Python 3.13 standard library and Git for the dogfood reader, unittest for focused verification, HTML/CSS and browser-native JavaScript for the standalone file. Keep the dogfood tool under `tools/story_dashboard/` on trunk.
++
++**Spec.** [Accepted #181 design](../design/story-timing-dashboard-design.md), exact SHA-256 `ed54c65d42aad04bde7a4f942894beb6a2280016d5fc2ff0b6411297ce5f46a5`, published at `b99085f44c8c1f0a5acf5b1fbae02e834f4416fa`.
++
++## Refinement and delivery order
++
++Eight P1 implementation leaves total **25.5 agent-hours** for A and B. A totals **19.5 h** and B totals **6.0 h**. Estimates include local verification and source-review engagement and are scoped to the work listed. Recheck each estimate and readiness at leaf pickup. The estimates are implementation effort, distinct from elapsed delivery, provider cost and the historical timing backfill.
++
++| Key | Deliverable | Estimate | Size | Requires |
++| --- | --- | ---: | --- | --- |
++| A01 | Admit and register planning evidence | 3.25 h | M | — |
++| A02 | Resolve timing attribution and the legacy seed | 3.75 h | M | A01 |
++| A03 | Compute workflow timing and epic totals | 3.75 h | M | A02 |
++| A04 | Resolve a pinned usage report | 3.00 h | M | A01 |
++| A05 | Publish a reproducible local snapshot | 3.00 h | M | A03, A04 |
++| A06 | Prove one live manual capture and board readback | 2.75 h | S | A05 |
++| B01 | Render and filter the offline dashboard | 3.75 h | M | A05 |
++| B02 | Qualify and hand off the local dashboard | 2.25 h | S | A06, B01 |
++
++A01 comes first so a recorder has the approved receipt format, validator and capture instructions. A02 and A04 can run independently on separate files after A01. After A05, run A06 and build B01 independently. B02 verifies the dashboard on the resulting planning evidence. A/B have no delivery dependencies on #2, #100, or #133.
++
++Slice C remains in #181's product scope. It gets its own bounded refinement when the owning contracts can be pinned. It contributes no effort or dependency to the A/B estimate. Its readiness evidence is Core C18/C23/C25/C44 and applicable C46 import, monitor M07/M07b/M13/M14 with native timing evidence where claimed, and the supported GitHub and viewer projection. The C acceptance matrix remains in design items 2, 4, 5 and 6. Keep that integration checkpoint open after A/B delivery.
++
++## File ownership and interfaces
++
++| Owner | Trunk paths | Interface |
++| --- | --- | --- |
++| A01 | `tools/story_dashboard/evidence.py`, `tools/story_dashboard/capture.md`, `tools/story_dashboard/tests/test_evidence.py` | `read_tree(repo: Path, commit: str, as_of: datetime) -> PlanningTree`, `validate_receipt(raw: bytes, registration: Registration) -> Receipt`. Owns typed planning input and receipt validation. |
++| A02 | `tools/story_dashboard/attribution.py`, `tools/story_dashboard/tests/test_attribution.py` | `resolve_timing(tree: PlanningTree) -> TimingFacts`. Owns stable observation identity, direct observations, gaps and seed handling. |
++| A03 | `tools/story_dashboard/timing.py`, `tools/story_dashboard/tests/test_timing.py` | `project_timing(tree: PlanningTree, facts: TimingFacts) -> dict[int, StoryTiming]`. Owns timing measures, ancestry and calibration. |
++| A04 | `tools/story_dashboard/usage.py`, `tools/story_dashboard/tests/test_usage.py` | `select_usage(tree: PlanningTree, selector: ReportSelector | None) -> UsageView`. Owns selection, cost and provenance. |
++| A05 | `tools/story_dashboard/snapshot.py`, `tools/story_dashboard/tests/test_snapshot.py` | `build_snapshot(tree: PlanningTree, selector: ReportSelector | None) -> Snapshot`; `python -m tools.story_dashboard.snapshot --repo PATH --commit SHA --as-of UTC --output DIR [--usage-report SELECTOR_JSON]`. |
++| A06 | `tools/story_dashboard/operator.md`; scoped planning receipt, registration and verification evidence under the approved subject and #181 | Manual capture and projection with exact readback. |
++| B01 | `tools/story_dashboard/render.py`, `tools/story_dashboard/dashboard.html`, `tools/story_dashboard/tests/test_render.py` | `render(snapshot: Snapshot) -> str`; `python -m tools.story_dashboard.render --snapshot FILE --output FILE`. |
++| B02 | `tools/story_dashboard/README.md`; scoped #181 verification evidence | A clean-checkout refresh and offline use proof. |
++
++`PlanningTree` pins commit, commit time and as-of, canonical story IDs, validated parent graph with distinct descendants and coverage gaps, timestamped events, estimates with source and scope, verified registrations and scoped input gaps. `TimingFacts` carries deduplicated direct intervals and boundaries plus evidence basis, per-scope coverage and watermarks. `StoryTiming` exposes direct and inclusive Actual, two elapsed scopes and age, owner wait, observed working wall time and calibration eligibility. `UsageView` carries one selector, sorted resolved receipt digests, scoped direct and inclusive priced totals, rate basis, cutoff and independent coverage. `Snapshot` serializes these records once under `aitm.story-dashboard/v1`. Each measure carries integer milliseconds or exact decimal USD string where applicable, coverage, evidence basis and evidence-through UTC or Unknown. Display conversions are explicit. Child and direct epic rows remain drillable.
++
++New registrations use `data.kind`, `data.path`, `data.sha256` and `data.scope.story` on the existing evidence event. A01 pins `aitm.story-timing-receipt/v1` and `aitm.story-usage-receipt/v1` in the capture guide and validation fixtures. Each receipt declares project, subject, batch identity, recorded UTC and source evidence digest or safe reference. Timing observations declare stable observation and actor identities, optional logical turn and attempt, phase, role, kind, coverage, and UTC bounds or explicit missing evidence. Usage receipts declare a report selector, direct story token/price evidence, coverage and optional explicit supersession. Keep per-observation provenance. A verified report or export and an operator's verified registration supply source assurance; a boolean in a receipt alone cannot establish it. A missing or invalid receipt contributes a gap for its known scope.
++
++## Shared delivery gates
++
++- Use the exact accepted parent design and plan for pickup. Each leaf retains an independent source review, applicable CI and clean exact-candidate proof. Close each leaf through the existing manual checklist after delivery evidence and sign-off.
++- Run focused tests with `python3.13 -m unittest discover -s tools/story_dashboard/tests -p 'test_<leaf>.py' -v` and all existing dashboard tests before each source review. Also require the existing repository CI at the candidate head. Its product/helper inventory and 90 percent floors stay with their existing owners. The standalone dashboard suite has its own retained candidate execution evidence. A06/B02 also have operator acceptance evidence.
++- Read planning by Git object ID with fixed UTC as-of. Protect pinned snapshots, authority and privacy. New timing and usage receipts are immutable registered inputs. Keep raw prompts, transcripts, provider handles and tool output private. Write local outputs outside the tracked checkout and avoid board writes from either CLI.
++- Resolve attempt, actor and phase scope separately from display coverage. Partial or Unknown values stay out of calibration. Owner wait and idle are outside Actual. In-turn tool time counts once. Calendar elapsed and agent effort are distinct. Usage is independent.
++- Highest-risk vectors are a moved ref or dirty tree, stray or mismatched registered bytes, duplicate actor attribution across stories, missing timing endpoints and mixed price report provenance. A01–A05 each exercise their owning vector before source review.
++
++## A01. Admit and register planning evidence
++
++- [ ] Test `test_pinned_tree_and_receipt_registration`. Build a small Git fixture containing a valid receipt and matching evidence event, an unregistered file, a path escape, mismatched digest, future-dated event and duplicate JSON key. Move the branch and edit the worktree after pinning. Assert the original tree still supplies only its registered valid bytes, with an attributable gap for invalid inputs. Reject an as-of earlier than the commit and exclude later-recorded facts with coverage reasons.
++- [ ] Run the A01 focused tests red. Implement the reader using Git objects and typed inputs. Use explicit `core.evidence.recorded` kinds `story-timing-receipt` and `story-usage-receipt`, a relative path, SHA-256 and subject scope. Accept only bounded regular file blobs at registered paths under the subject's `attachments/timing/`. Bind path and scope to the subject. Resolve ancestry from the story records and relationship facts in the pinned tree. Ignore dependency edges and retain malformed or cyclic ancestry as a scoped gap. Use that graph in both projectors. Reject ambiguous or malformed records without accepting new workflow authority.
++- [ ] Write the operator checklist with a fixed batch-plus-story path, stable observation ID, evidenced scope/phase/attempt, actor/role, start/end and recording UTC, safe evidence reference and coverage. Show one receipt and event pair. Use `python -m tools.story_dashboard.evidence --repo PATH --commit SHA --as-of UTC --receipt FILE --registration FILE` before publication, with both optional files supplied together. Without them the command validates the registered tree. Publish receipt and registration together. Confirm exact bytes after an uncertain write.
++- [ ] Run green and retain the test output and exact candidate. An operator can prepare and validate sanitized receipts after this leaf.
++
++## A02. Resolve timing attribution and the legacy seed
++
++- [ ] Test `test_stable_observation_and_seed_overlap`. Replaying identical scope and payload counts once. Two scopes or roles for one observation hold both assignments. Two different keys for the same actor concurrently attributed to different child stories hold the overlapping span in both. Nonoverlapping portions remain eligible with partial coverage. Potential legacy overlap without correspondence stays unresolved. The registered #181 v0 seed has ten story rows with typed phase, role and attempt Unknown; unregistered or digest-mismatched copies add nothing.
++- [ ] Run red. Implement `resolve_timing` using stable identity independent of mutable attribution. Resolve one direct assignment per observation. Detect overlapping same-actor contributions across direct stories before the metric fold, including distinct observation keys. Hold each unresolved overlap, retaining unaffected spans and a gap for every implicated scope. Distinguish replay, conflict, unsupported and missing evidence. Treat the v0 receipt at the accepted digest as the only multi-story legacy seed. Take direct intervals from it; its rollup numbers are readback checks.
++- [ ] Run green and retain tests that demonstrate double-count prevention and recovery boundaries. Proven production split/reassignment and migration use the C qualification checkpoint.
++
++## A03. Compute workflow timing and epic totals
++
++- [ ] Test `test_parallel_wait_and_elapsed_scopes`. The accepted fixture gives 2h45m elapsed, 2h15m working wall time and 3.25 agent-hours. Overlap the same actor's turn and tool interval. Overlap two documented owner waits while another actor works. Exercise pending wait watermark, missing response, missing elapsed start and age. An implementation-only estimate mismatched with all-phase Actual and all partial records stay out of calibration. Verify #111 implementation-delivery elapsed is 774,000 ms with all-phase Unknown.
++- [ ] Run red. Implement `project_timing`. Union qualified turn/tool evidence for each actor, subtract evidenced exclusion intervals for that actor, and sum actors. Union owner wait on the calendar and bound pending observations by the positive evidence watermark and as-of. Derive elapsed from the selected boundary pair and use age for supported open intervals. Consume the A01 parent graph and walk distinct descendants once. Treat graph gaps as incomplete coverage. Keep raw integer milliseconds, phase/role evidence and independent watermarks.
++- [ ] Run green and verify exact direct plus descendant totals from the v0 seed. Maintain the distinction between elapsed, Actual, observed work wall time and trip qualification.
++
++## A04. Resolve a pinned usage report
++
++- [ ] Test `test_select_one_registered_usage_report` with two reports for one story at different cutoff and rate identities, one missing story, one partial price and one conflicting candidate. Exercise an operator-verified monitor export identity, then a self-asserted assurance claim, mismatched export digest, mismatched selector and wrong story scope. Only the verified evidence contributes. Assert only the selected report is visible, that an evidenced supersession within it is deterministic, and that an absent or conflicted row is Unknown. Replayed identities and overlapping descendant rows cannot inflate cost.
++- [ ] Run red. Implement `select_usage` over A01's registrations. Select the project, original report/sequence, UTC window and cutoff, rate card and pricing basis together. Require one effective direct receipt per story. Bind Cost admission to a registered, sanitized operator verification receipt that names the original fixed monitor export or pinned report identity, exact source digest, checked scope and selector, rate basis and observed coverage. Check that binding, including the sanitized data digest in the committed evidence. Reject a receipt self-assertion or mismatch as Unknown. Preserve resolved digests and exact decimal subtotals. Compute inclusive totals using the A01 parent graph, which is the same graph used for timing. Mark incomplete price or attribution independently. A manually asserted timing record carries no token amount or rate.
++- [ ] Run green with a sanitized fixture. Verify stable selection and separate cost coverage when timing evidence changes. Keep monitor report/export and C44 import authority with #100 and #2.
++
++## A05. Publish a reproducible local snapshot
++
++- [ ] Test `test_rebuild_seed_snapshot_byte_for_byte` through the real command. Two clean readers with identical Git object, as-of and usage selector emit byte-identical normalized JSON. Compare all ten Actual values with the existing receipt and the #111 elapsed scopes with planning events. Assert estimate scope and basis, progress, coverage, links, direct versus child rollups and timing/usage watermarks. Incomplete or absent cost stays Unknown.
++- [ ] Run red. Implement `build_snapshot` and the documented command. Emit `snapshot.json` and a deterministic `validation.json` in the chosen local directory outside the tracked checkout. Use stable ordering and atomic replacement of each output. Bind the validation report to the snapshot digest so interrupted output cannot masquerade as the matching report. Keep inputs fixed across rerun and fail closed on a bad pin.
++- [ ] Run green and record the source commit, command, output digests and seed parity. Use this as the same input for A06 and B01.
++
++## A06. Prove one live manual capture and board readback
++
++- [ ] Select an approved child and recorder at pickup. Retain one evidenced turn, in-turn tool wait, scoped switch and explicit owner request/response. If an endpoint cannot be verified, record the gap. Verify the declared observation against its safe source reference.
++- [ ] Publish one sanitized receipt and its exact registration in the child's planning record in the same commit. Rebuild from another checkout with that commit pinned and confirm the observed change. Repeat the same batch identity and verify there is one contribution.
++- [ ] As the named operator, reconcile the target GitHub item and existing value before projecting Actual and coverage together from the reviewed snapshot. Set and read back an interim Pending verification coverage label before writing the numeric Actual. Read the numeric result back, then set the final coverage label and verify both fields against the snapshot. If any write is interrupted or its result is uncertain, read both fields and reconcile against the exact intended snapshot before retrying. Test interruption after the interim label and after the numeric write. Hold a stale or conflicting item for reconciliation. Set Cost only with complete coverage from A04’s verified report binding for the exact target scope and selector. Retain the verified export/report identity, coverage and readback. Keep an unsupported Cost field blank where no valid value exists.
++- [ ] Record the reproducible capture and readback instructions in `operator.md`. The evidence links the leaf, planning commit, timing watermarks and board readback without private payloads.
++
++## B01. Render and filter the offline dashboard
++
++- [ ] Test `test_offline_render_and_escaped_evidence` against an A05 snapshot with partial, missing and complete values and hostile story text. Assert valid scoped labels, provenance and direct/child detail. Story text cannot close the data script or inject markup, JS, or a link. A hostile destination in a link field is inert, and a valid story and evidence destination remains usable. The output contains all required assets and no automatic network request.
++- [ ] Run red. Implement the standalone HTML renderer and command. Filter by epic, status and coverage. Show State, Last progress, Estimate with scope, Actual, elapsed or scoped age, Owner wait, Cost, and evidence coverage. Detail shows separate cutoffs, timing basis and phase/role contributions, direct plus descendant totals, and canonical links. Derive story links from the validated repository and numeric issue ID. For supplied evidence URLs, allow only parsed HTTPS URLs for the pinned GitHub repository and approved issue or commit-scoped planning blob paths. Reject other schemes, user information, ports, queries and noncanonical paths, and render their labels as text. Consume A05's totals without computing a second timing or pricing fold in the browser.
++- [ ] Run green and open the fixture file offline. Verify the filters and one drilldown in a browser and retain the observation with the candidate. Preserve a local output path outside the tracked checkout.
++
++## B02. Qualify and hand off the local dashboard
++
++- [ ] From a clean checkout of the delivered tool, pin the historical seed and then the post-A06 planning commit. Run the snapshot and render commands in a private local output folder. Open the file offline. Record the command, pinned inputs, report/receipt digests and browser observation.
++- [ ] Verify the epic, status and coverage filters, a child and epic drilldown, partial historical Actual, scoped elapsed, owner wait, and Unknown Cost. Refresh from the later snapshot and observe the scoped receipt change while the first pinned JSON remains reproducible. Check the HTML and reports for private payload leakage.
++- [ ] Publish the quick start and evidence. The quick start gives exact commands, requirements, the expected local output, how to refresh, and how to inspect coverage. Verify another operator can follow it from the clean checkout.
++
++## Readiness and contract handoff
++
++Before any leaf starts, verify its exact required predecessors are delivered, accepted parent-plan excerpt is current, its own applicable Design/Plan/JIT evidence is accepted, and its work fits the cap. At A06 capture and B02 rollout retain operator and environment evidence. Treat the provisional adapter as a planning receipt reader. #2 owns supported activity, timing and outcome ingestion. #100 owns provider scope, pricing and exports. C must prove compatible pinned views, idempotent legacy migration, native attribution and the hosted projection without changing the A/B evidence or its coverage.
