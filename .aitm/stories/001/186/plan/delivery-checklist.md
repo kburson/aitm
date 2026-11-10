@@ -7,7 +7,7 @@ Attempt 1. Implementer and closure owner: Codex, acting for the owner. No predec
 - [x] Exact candidate: 7 dashboard unittest cases on CPython 3.13.9, Ruff and file checks passed. The guide example passed prospective validation, atomic publication and replay in a disposable Git fixture. Planning read `caab6f754f877c8c1b3d135e0acee0a48d775640` at `2026-11-10T22:02:49Z` retained 178 stories, 2,123 eligible events and the exact #181 seed. Two older draft events have no story ID and are held with explicit gaps. The unchanged package baseline passed 747 tests.
 - [x] [Revision 4 hosted run](https://github.com/kburson/aitm/actions/runs/42914804492/attempts/1) and [revision 4 verifier](hosted-verification-r4.json) passed.
 - [x] [Revision 4 independent source review](source-review-r4.md) requested corrections.
-- [ ] Normal merge, verified landing, retrospective, sign-off and issue/Project closure.
+- [x] Normal merge, verified landing, retrospective, sign-off and issue/Project closure.
 
 ## Author correction during Test
 
@@ -75,3 +75,9 @@ The optional full local monitor diagnostic on the current base (the monitor tree
 ## Exact hosted candidate
 
 GitHub tested `637c061712a0e17653d22653604eb68c5452c308` with ordered base `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2` and head `8475b124f921bd0742d04b228c0a44824369b441`. Its tree `6107d353b1b5d40b1f5e050acbef53f57cae6e3b` matches the focused candidate. Verified job records: aitm-ci, collect-evidence, file-checks, python, python-base, quality. The delivered verifier checked the signed subject and current candidate with no CI control changes.
+
+## Verified landing and closure
+
+[PR #196](https://github.com/kburson/aitm/pull/196) merged at `2026-11-10T23:00:06Z` to [trunk `679c328204ab797aabdc9a9f93fbf1085d03bb65`](https://github.com/kburson/aitm/commit/679c328204ab797aabdc9a9f93fbf1085d03bb65). Its ordered parents are base `c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2` and reviewed head `8475b124f921bd0742d04b228c0a44824369b441`. Its tree `6107d353b1b5d40b1f5e050acbef53f57cae6e3b` matches the independent verdict and signed CI; the merge is reachable from verified remote trunk `679c328204ab797aabdc9a9f93fbf1085d03bb65`.
+
+The implementing agent's [retrospective and sign-off](../retro/2026-11-10-planning-evidence-intake.md) was the last gate, published and verified at `2026-11-10T23:00:10Z`. GitHub closed [#186](https://github.com/kburson/aitm/issues/186) as Completed at `2026-11-10T23:00:20Z`. The AITM-PY item was read back as Done. #187 and #189 now have their A01 prerequisite delivered; their own pickup gates still apply. No live receipt or board metric projection was performed by A01.

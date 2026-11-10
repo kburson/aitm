@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 186
 title: "[#181 A01] Admit and register planning evidence"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/186"
 parent: 181
 children: []
 blocking: [187, 189]
 blocked-by: []
 created: "2026-11-10T21:02:13Z"
-updated: "2026-11-10T22:57:47Z"
-last-branch: "codex/aitm-186-planning-evidence"
+updated: "2026-11-10T23:00:24Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -39,3 +39,9 @@ Required predecessors None. The proposed estimate is 3.75 implementation agent-h
 ## Delivery evidence
 
 [Accepted design, plan and JIT](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+[Source PR #196](https://github.com/kburson/aitm/pull/196) · [Capture guide](https://github.com/kburson/aitm/blob/679c328204ab797aabdc9a9f93fbf1085d03bb65/tools/story_dashboard/capture.md) · [Signed CI](plan/hosted-verification.json) · [Independent source acceptance](plan/post-ci-source-review.md) · [Implementer sign-off](retro/2026-11-10-planning-evidence-intake.md).
+
+The approved source landed on trunk at `679c328204ab797aabdc9a9f93fbf1085d03bb65`. GitHub issue closure and Project Done were verified. #187 and #189 can proceed through their own gates.
