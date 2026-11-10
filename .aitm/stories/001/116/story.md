@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 116
 title: "[M06] Registry and capture epochs"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/116"
 parent: 100
 children: []
 blocking: [117]
 blocked-by: [114]
 created: "2026-11-10T13:57:56Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T17:12:41+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 4.0, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-review.md", "plan/delivery-checklist.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M06", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "5bdd16b045dea84255d5896501f8a057417de612aeb99af5767898eacd2a5e21"}
@@ -39,3 +39,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_two_clones_share_identity_but_nested_foreign_anchor_fails`, `test_disable_reenable_excludes_late_disabled_interval` and `test_revoked_root_is_not_reread_for_prior_revision`. Assert pre-disable admitted work can settle where authorized, a crossing unsplittable span is a gap, and re-enable cannot backfill the disabled interval.
 - [ ] Run red. Implement registration and epoch matching, then run green with `test_scan.py`. Test exact command retries and the distinction between queued and applied status. Commit M06.
+
+[Accepted independent pickup](plan/jit.md) · [Review iterations](plan/jit-review.md).
