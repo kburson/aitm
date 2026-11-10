@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 113
 title: "[M03] Versioned project persistence"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/113"
 parent: 100
 children: []
 blocking: [114]
 blocked-by: [112]
 created: "2026-11-10T13:57:51Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T15:02:35+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-round-1.md", "plan/jit-review.md", "plan/delivery-checklist.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M03", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "df2d7922319a140b5fbe506f594657ef954abe757616d04228476cda55f3432d"}
@@ -39,3 +39,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_schema_upgrade_preserves_legacy_identity_and_export_bytes`, `test_old_binary_refuses_monitor_schema`, and `test_mixed_or_interrupted_upgrade_rolls_back`. Assert the legacy snapshot and key are unchanged and a stale expected sequence refuses migration. Add `test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe`. An old runtime refuses a migrated store without writing. `test_legacy_global_state_and_report_project_uuid_are_separate` covers both invocation forms and their mixed-form refusal.
 - [ ] Run red. Implement versioned dispatch and transactional upgrade. Run green with `test_ledger.py`, `test_export.py` and `test_install.py`. Commit M03.
+
+[Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent reviews](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md).
