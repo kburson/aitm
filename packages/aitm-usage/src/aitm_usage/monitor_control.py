@@ -3,15 +3,18 @@
 import argparse
 import json
 import os
+import sqlite3
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import MISSING, dataclass, field, fields, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID, uuid4
 
 from . import monitor_registry
 from .ledger import (
     ConflictError,
+    Ledger,
     LedgerError,
     _ensure_private_directory,
     _path_exists,
@@ -31,6 +34,24 @@ from .monitor_registry import (
     Registry,
     SourceApprovalRequest,
 )
+from .monitor_scope import Scope
+from .scope_admission import (
+    REQUEST_TYPES,
+    GrantRole,
+    ScopeEnvelope,
+    ScopeRequest,
+    _witness_for_probe,
+    _write_grant,
+    adopted_request,
+    build_grant,
+    check_witness_time,
+    open_grant,
+    pinned_destination,
+    preliminary_grant,
+    require_witness,
+    seal_request,
+    stored_grant,
+)
 from .scopes import (
     INBOX_NAME,
     MAX_COMMAND_BYTES,
@@ -40,11 +61,22 @@ from .scopes import (
     _publish,
     _read_private,
 )
-from .types import _decode, _encode, _positive, _unique_fields
+from .types import (
+    InboxCommand,
+    ItemKey,
+    SourceRef,
+    _decode,
+    _encode,
+    _positive,
+    _unique_fields,
+)
+
+_InboxCommand = ControlCommand | ScopeEnvelope
+_MAX_SCOPE_PENDING = 256
 
 
-def _command_bytes(command: ControlCommand) -> bytes:
-    data = _encode(command, ControlCommand).encode("utf-8")
+def _command_bytes(command: _InboxCommand) -> bytes:
+    data = _encode(command, type(command)).encode("utf-8")
     if len(data) > MAX_COMMAND_BYTES:
         raise ValueError("Monitor command exceeds its size limit")
     return data
@@ -52,7 +84,7 @@ def _command_bytes(command: ControlCommand) -> bytes:
 
 @dataclass(frozen=True, slots=True)
 class _QueuedCommand:
-    command: ControlCommand
+    command: _InboxCommand
     order: int
 
     def __post_init__(self) -> None:
@@ -62,7 +94,7 @@ class _QueuedCommand:
 @dataclass(frozen=True, slots=True)
 class _LockedInbox:
     directory: _PinnedPath
-    captured: dict[UUID, tuple[ControlCommand, bytes]] = field(default_factory=dict)
+    captured: dict[UUID, tuple[_InboxCommand, bytes]] = field(default_factory=dict)
 
 
 def _decode_publication(name: str, data: bytes) -> _QueuedCommand:
@@ -78,7 +110,7 @@ def _decode_publication(name: str, data: bytes) -> _QueuedCommand:
     raise LedgerError("Invalid private monitor publication")
 
 
-def _pending(inbox: _PinnedPath) -> dict[int, tuple[ControlCommand, bytes]]:
+def _pending(inbox: _PinnedPath) -> dict[int, tuple[_InboxCommand, bytes]]:
     pending = {}
     for name in os.listdir(inbox.fd):
         if name.startswith(".") or not name.endswith(".json"):
@@ -119,7 +151,7 @@ class ControlInbox:
             raise LedgerError("Private monitor inbox does not match")
         inbox.check()
 
-    def iter_pending(self, locked: _LockedInbox) -> Iterator[ControlCommand]:
+    def iter_pending(self, locked: _LockedInbox) -> Iterator[_InboxCommand]:
         """Read exact envelopes in submission order under publication()."""
         inbox = locked.directory
         self._check_inbox(inbox)
@@ -128,7 +160,9 @@ class ControlInbox:
             yield command
 
     def discard(self, locked: _LockedInbox, command: ControlCommand) -> None:
-        """Retire only the exact command whose outcome is already durable."""
+        """Retire only an exact M06 control with a durable outcome."""
+        if not isinstance(command, ControlCommand):
+            raise LedgerError("Scope proposal retirement requires its consumer")
         inbox = locked.directory
         self._check_inbox(inbox)
         name = _filename(command.command_id)
@@ -143,40 +177,89 @@ class ControlInbox:
         os.fsync(inbox.fd)
         inbox.check()
 
-    def enqueue(self, command: ControlCommand) -> ControlReceipt:
-        """Publish once, or return the recorded receipt for an exact retry."""
-        data = _command_bytes(command)
+    def _enqueue_locked(
+        self,
+        locked: _LockedInbox,
+        command: _InboxCommand,
+        data: bytes,
+        *,
+        before_scope_commit: Callable[[], None] | None = None,
+    ) -> ControlReceipt:
         digest = command.payload_digest
         name = _filename(command.command_id)
-        # Validate constructors on the decoded side as well as the encoded shape.
+        receipt = Registry(self.root).command_status(command.command_id)
+        if receipt is not None:
+            if receipt.payload_digest != digest:
+                raise ConflictError("Monitor command ID has conflicting bytes")
+            return receipt
+
+        inbox = locked.directory
+        previous = _read_private(inbox, name)
+        if previous is None:
+            pending = _pending(inbox)
+            if (
+                isinstance(command, ScopeEnvelope)
+                and sum(isinstance(item, ScopeEnvelope) for item, _ in pending.values())
+                >= _MAX_SCOPE_PENDING
+            ):
+                raise LedgerError("Scope consumer is unavailable")
+            order = max(pending, default=0) + 1
+            encoded = _encode(_QueuedCommand(command, order), _QueuedCommand).encode()
+            if len(encoded) > MAX_COMMAND_BYTES:
+                raise ValueError("Monitor publication exceeds its size limit")
+            if not _publish(inbox, name, encoded, before_commit=before_scope_commit):
+                previous = _read_private(inbox, name)
+                if previous is None:
+                    raise ConflictError("Private monitor publication changed")
+        if previous is not None:
+            queued = _decode_publication(name, previous)
+            if (
+                type(queued.command) is not type(command)
+                or _command_bytes(queued.command) != data
+            ):
+                raise ConflictError("Monitor command ID has conflicting bytes")
+            # A prior publication may have reached rename before directory sync.
+            os.fsync(inbox.fd)
+        if before_scope_commit is not None:
+            before_scope_commit()
+        return ControlReceipt(command.command_id, ControlStatus.QUEUED, digest)
+
+    def enqueue(self, command: ControlCommand) -> ControlReceipt:
+        """Publish once, or return the recorded receipt for an exact retry."""
+        if type(command) is not ControlCommand:
+            raise ValueError("Invalid monitor control command")
+        data = _command_bytes(command)
         if _decode(data, ControlCommand) != command:
             raise ValueError("Invalid monitor command")
         with self.publication() as locked:
-            receipt = Registry(self.root).command_status(command.command_id)
-            if receipt is not None:
-                if receipt.payload_digest != digest:
-                    raise ConflictError("Monitor command ID has conflicting bytes")
-                return receipt
+            return self._enqueue_locked(locked, command, data)
 
-            inbox = locked.directory
-            previous = _read_private(inbox, name)
-            if previous is None:
-                order = max(_pending(inbox), default=0) + 1
-                publication = _encode(_QueuedCommand(command, order), _QueuedCommand)
-                encoded = publication.encode("utf-8")
-                if len(encoded) > MAX_COMMAND_BYTES:
-                    raise ValueError("Monitor publication exceeds its size limit")
-                if not _publish(inbox, name, encoded):
-                    previous = _read_private(inbox, name)
-                    if previous is None:
-                        raise ConflictError("Private monitor publication changed")
-            if previous is not None:
-                queued = _decode_publication(name, previous)
-                if _command_bytes(queued.command) != data:
-                    raise ConflictError("Monitor command ID has conflicting bytes")
-                # The prior publication may have reached rename before its sync failed.
-                os.fsync(inbox.fd)
-            return ControlReceipt(command.command_id, ControlStatus.QUEUED, digest)
+    def enqueue_scope(self, request: ScopeRequest) -> bool:
+        """Publish a scoped proposal using only pinned, initialized authority."""
+        if not preliminary_grant(self.root, request.grant_id):
+            return False
+        registry = Registry(self.root)
+        with (
+            self.publication() as locked,
+            open_grant(registry, request.grant_id) as (record, recheck_grant, _),
+            pinned_destination(registry, request) as recheck_destination,
+        ):
+            require_witness(registry, record, _scope_now())
+            command = seal_request(record, request)
+            data = _command_bytes(command)
+            if _decode(data, ScopeEnvelope) != command:
+                raise ValueError("Invalid scope envelope")
+
+            def recheck() -> None:
+                recheck_grant()
+                if recheck_destination is not None:
+                    recheck_destination()
+                check_witness_time(record, _scope_now())
+
+            receipt = self._enqueue_locked(
+                locked, command, data, before_scope_commit=recheck
+            )
+            return receipt.status is ControlStatus.QUEUED
 
     def status(self, command_id: UUID) -> ControlReceipt | None:
         """Read status without creating state or taking either writer lock."""
@@ -196,17 +279,153 @@ class ControlInbox:
                     receipt = registry.command_status(command_id)
                     if receipt is None and queued is not None:
                         command = _decode_publication(name, queued).command
-                        digest = command.payload_digest
-                        receipt = ControlReceipt(
-                            command_id,
-                            ControlStatus.QUEUED,
-                            digest,
-                            registry.pending_capture_status(command_id, digest),
-                        )
+                        if isinstance(command, ControlCommand):
+                            digest = command.payload_digest
+                            receipt = ControlReceipt(
+                                command_id,
+                                ControlStatus.QUEUED,
+                                digest,
+                                registry.pending_capture_status(command_id, digest),
+                            )
                 root.check()
                 return receipt
         except OSError:
             raise LedgerError("Private monitor publication is unavailable") from None
+
+
+def _scope_now() -> datetime:
+    return datetime.now(UTC)
+
+
+@dataclass(frozen=True, slots=True)
+class _ScopeReaderProof:
+    probe: ScopeEnvelope
+    revision: int
+
+
+class ScopeInboxReader:
+    """Writer-owned verifier for the typed scope variant of the monitor inbox."""
+
+    def __init__(self, writer: Registry, inbox: ControlInbox) -> None:
+        writer.lease
+        if writer.root != inbox.root:
+            raise LedgerError("Scope reader requires the matching monitor inbox")
+        self._writer = writer
+        self._inbox = inbox
+        self._proofs: dict[UUID, _ScopeReaderProof] = {}
+
+    def register(
+        self,
+        grant_id: UUID,
+        project_id: UUID,
+        actions: tuple[str, ...],
+        *,
+        generation: int = 1,
+        role: GrantRole = GrantRole.OPERATOR,
+        adoption_id: UUID | None = None,
+    ) -> None:
+        self._writer.lease
+        with self._inbox.publication():
+            record = build_grant(
+                self._writer,
+                grant_id,
+                project_id,
+                actions,
+                generation,
+                role,
+                adoption_id,
+            )
+            previous = stored_grant(self._inbox.root, grant_id)
+            if previous is not None and previous.grant.generation >= generation:
+                raise ConflictError("Scope grant generation must advance")
+            _write_grant(self._writer, record, previous)
+            self._proofs.pop(grant_id, None)
+
+    def _invalidate(self, grant_id: UUID, *, revoke: bool) -> None:
+        self._writer.lease
+        with self._inbox.publication():
+            record = stored_grant(self._inbox.root, grant_id)
+            if record is None or record.revoked:
+                raise LedgerError("Scope producer grant is unavailable")
+            _write_grant(
+                self._writer, replace(record, witness=None, revoked=revoke), record
+            )
+            self._proofs.pop(grant_id, None)
+
+    def revoke(self, grant_id: UUID) -> None:
+        self._invalidate(grant_id, revoke=True)
+
+    def withdraw(self, grant_id: UUID) -> None:
+        """Withdraw reader admission without rotating the producer grant."""
+        self._invalidate(grant_id, revoke=False)
+
+    def _verify(self, candidate: ScopeEnvelope) -> ScopeEnvelope:
+        self._writer.lease
+        request = candidate.body.request
+        with (
+            open_grant(self._writer, request.grant_id) as (record, _, _),
+            pinned_destination(self._writer, request),
+        ):
+            if seal_request(record, request) != candidate:
+                raise LedgerError("Scope envelope seal does not match")
+        return candidate
+
+    def probe(self, request: ScopeRequest) -> _ScopeReaderProof:
+        """Verify a canonical sealed probe through the real queue decoder."""
+        self._writer.lease
+        with (
+            self._inbox.publication(),
+            open_grant(self._writer, request.grant_id) as (record, _, revision),
+        ):
+            signed = seal_request(record, request)
+            data = _encode(_QueuedCommand(signed, 1), _QueuedCommand).encode()
+            candidate = _decode_publication(_filename(signed.command_id), data).command
+            if not isinstance(candidate, ScopeEnvelope):
+                raise LedgerError("Scope reader could not decode its protocol")
+            proof = _ScopeReaderProof(self._verify(candidate), revision)
+            self._proofs[request.grant_id] = proof
+            return proof
+
+    def advertise(self, proof: _ScopeReaderProof) -> None:
+        self._writer.lease
+        if type(proof) is not _ScopeReaderProof:
+            raise LedgerError("Scope reader proof is unavailable")
+        grant_id = proof.probe.body.request.grant_id
+        with (
+            self._inbox.publication(),
+            open_grant(self._writer, grant_id) as (record, _, revision),
+        ):
+            if self._proofs.get(grant_id) is not proof or proof.revision != revision:
+                raise LedgerError("Scope reader proof is unavailable")
+            self._verify(proof.probe)
+            witness = _witness_for_probe(
+                self._writer, record, _scope_now(), proof.probe
+            )
+            _write_grant(self._writer, replace(record, witness=witness), record)
+            self._proofs.pop(grant_id)
+
+    def iter_verified(self, locked: _LockedInbox) -> Iterator[ScopeEnvelope]:
+        self._writer.lease
+        for candidate in self._inbox.iter_pending(locked):
+            if isinstance(candidate, ScopeEnvelope):
+                yield self._verify(candidate)
+
+
+def enqueue_adopted_scope(
+    ledger: Ledger,
+    adoption_id: UUID,
+    command: InboxCommand,
+    claude_session: SourceRef | None,
+) -> bool:
+    """Submit exactly the verified legacy command without opening a writer lease."""
+    try:
+        ledger.validate_command(command)
+        request = adopted_request(command, adoption_id, claude_session)
+        return ControlInbox(monitor_registry.default_monitor_root()).enqueue_scope(
+            request
+        )
+    except (LedgerError, OSError, RecursionError, sqlite3.Error, ValueError):
+        return False
 
 
 def _queued_bytes(root: _PinnedPath, name: str) -> bytes | None:
@@ -232,7 +451,7 @@ class _AnchorConfig:
     anchor: str
 
 
-def _owner_config[T](path: Path, model: type[T], **defaults: object) -> T:
+def _owner_document(path: Path) -> dict:
     path = _project_path(path)
     identities = _validated_path(path, directory=False)
     fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
@@ -246,7 +465,34 @@ def _owner_config[T](path: Path, model: type[T], **defaults: object) -> T:
     data = json.loads(raw.decode("utf-8"), object_pairs_hook=_unique_fields)
     if type(data) is not dict:
         raise ValueError("Expected a private configuration object")
-    return _decode(json.dumps({**defaults, **data}), model)
+    return data
+
+
+def _owner_config[T](path: Path, model: type[T], **defaults: object) -> T:
+    return _decode(json.dumps({**defaults, **_owner_document(path)}), model)
+
+
+def _scope_defaults(model: type, document: dict) -> dict:
+    defaults = {
+        item.name: item.default for item in fields(model) if item.default is not MISSING
+    }
+    return {**defaults, **document}
+
+
+def _scope_config(path: Path, model: type) -> ScopeRequest:
+    document = _scope_defaults(model, _owner_document(path))
+    for name in ("scope", "destination"):
+        if type(document.get(name)) is dict:
+            scope = _scope_defaults(Scope, document[name])
+            if type(scope.get("item")) is dict:
+                scope["item"] = _scope_defaults(ItemKey, scope["item"])
+            document[name] = scope
+    request = _decode(json.dumps(document), model)
+    if document.get("command_id") != str(request.command_id) or document.get(
+        "grant_id"
+    ) != str(request.grant_id):
+        raise ValueError("Expected canonical scope request identifiers")
+    return request
 
 
 def _uuid(value: str) -> UUID:
@@ -289,6 +535,22 @@ def _enqueue_command(args: argparse.Namespace) -> int:
         return 1
     _print_status(args, command_id, receipt.status.value)
     return 0
+
+
+def _enqueue_scope(args: argparse.Namespace) -> int:
+    try:
+        request = _scope_config(args.request, args.scope_request)
+    except (OSError, LedgerError, RecursionError, ValueError):
+        print(json.dumps({"status": "unavailable"}) if args.json else "unavailable")
+        return 1
+    try:
+        queued = ControlInbox(monitor_registry.default_monitor_root()).enqueue_scope(
+            request
+        )
+    except (OSError, LedgerError, RecursionError, sqlite3.Error, ValueError):
+        queued = False
+    _print_status(args, request.command_id, "queued" if queued else "unavailable")
+    return 0 if queued else 1
 
 
 def _command_status(args: argparse.Namespace) -> int:
@@ -369,6 +631,12 @@ def configure_monitor_commands(monitor_subparsers: argparse._SubParsersAction) -
                 args.project_id, args.source_id, args.capture_enabled
             ),
         )
+    scope = monitor_subparsers.add_parser("scope").add_subparsers(required=True)
+    for action, request in REQUEST_TYPES.items():
+        proposal = scope.add_parser(action, allow_abbrev=False)
+        proposal.add_argument("--request", type=Path, required=True, metavar="FILE")
+        proposal.add_argument("--json", action="store_true")
+        proposal.set_defaults(handler=_enqueue_scope, scope_request=request)
     command = monitor_subparsers.add_parser("command").add_subparsers(required=True)
     status = command.add_parser("status")
     status.add_argument(

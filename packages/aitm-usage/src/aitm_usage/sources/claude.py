@@ -34,6 +34,7 @@ from ..types import (
     TokenCounts,
     UsageObservation,
 )
+from ._scope_command import is_monitor_scope, queued_monitor_scope_id
 from .scan import FrameBatch, SidebandFrame, SidebandKind, SourceFrame
 
 _PROVIDER = Provider.CLAUDE
@@ -407,14 +408,18 @@ def _eligible(frame: SourceFrame, eligibility: Eligibility) -> bool:
     )
 
 
-def _marker_command(value: object, project_root: Path | None, session_id: UUID) -> bool:
+def _marker_command(
+    value: object, project_root: Path | None, session_id: UUID
+) -> str | None:
     if type(value) is not str or len(value) > 8192:
-        return False
+        return None
     try:
         parts = shlex.split(value)
     except ValueError:
-        return False
-    return (
+        return None
+    if project_root is None and is_monitor_scope(value, parts):
+        return "monitor-scope"
+    if (
         len(parts) == 10
         and parts[:2] == ["aitm-usage", "--project"]
         and (
@@ -427,21 +432,31 @@ def _marker_command(value: object, project_root: Path | None, session_id: UUID) 
         and Path(parts[6]).is_absolute()
         and parts[7:] == ["--session-id", str(session_id), "--json"]
         and value == shlex.join(parts)
-    )
+    ):
+        return "bash"
+    return None
 
 
-def _marker_output(block: dict, details: dict) -> UUID | None:
-    text = block.get("content")
+def _marker_output(block: dict, details: dict, *, monitor_scope: bool) -> UUID | None:
+    text, stdout = block.get("content"), details.get("stdout")
     if (
         type(text) is not str
         or len(text) > 256
-        or type(details.get("stdout")) is not str
-        or len(details["stdout"]) > 256
-        or details["stdout"].strip() != text.strip()
+        or type(stdout) is not str
+        or len(stdout) > 256
+        or stdout.strip() != text.strip()
         or details.get("stderr") != ""
         or details.get("interrupted") is not False
     ):
         return None
+    if monitor_scope:
+        # Claude Code's Bash carrier can omit the final CLI line feed
+        # in both result fields. Normalize only that single byte.
+        if text not in (stdout, stdout.removesuffix("\n")):
+            return None
+        return queued_monitor_scope_id(
+            stdout if stdout.endswith("\n") else stdout + "\n"
+        )
     try:
         result = _object(json.loads(text, object_pairs_hook=_unique_fields))
     except (ValueError, RecursionError):
@@ -586,16 +601,21 @@ class _RouteWalk:
         ):
             arguments = block["input"]
             session = self.session_id
-            if self.neutral_markers and _explicit_session(self.ledger, frame):
-                session = _uuid(frame.row.get("sessionId", frame.row.get("session_id")))
+            if self.neutral_markers:
+                session = (
+                    _uuid(frame.row.get("sessionId", frame.row.get("session_id")))
+                    if _explicit_session(self.ledger, frame)
+                    else None
+                )
             if (
                 block.get("name") == "Bash"
                 and session is not None
                 and (self.neutral_markers or frame.session_ref == self.reserved_ref)
-                and _marker_command(arguments.get("command"), self.marker_root, session)
                 and not arguments.get("run_in_background")
             ):
-                kind = "bash"
+                kind = _marker_command(
+                    arguments.get("command"), self.marker_root, session
+                )
             elif block.get("name") == "Agent" and not any(
                 key in arguments
                 for key in ("resume", "run_in_background", "isolation", "team_name")
@@ -654,8 +674,10 @@ class _RouteWalk:
             or block.get("is_error", False) is not False
         ):
             return
-        if tool.kind == "bash":
-            command = _marker_output(block, details)
+        if tool.kind in ("bash", "monitor-scope"):
+            command = _marker_output(
+                block, details, monitor_scope=tool.kind == "monitor-scope"
+            )
             if command is not None:
                 self.route = replace(
                     self.route,
