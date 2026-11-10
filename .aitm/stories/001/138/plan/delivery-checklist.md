@@ -62,3 +62,24 @@ The owner’s exact-tree disposition is pending. The [trusted verifier hold](ver
 The owner approved the exact tree `cbda78ce605593be91611a02c06d51edd7ff9c87` for the existing #103 disposition in the implementation conversation. The [trusted verifier](verifier-pass-28db19ee8415.json) passed for that tree. The independent source review is retained and the story enters In review. The PR remains open and unmerged.
 
 [Exact-tree owner disposition](owner-disposition-28db19ee8415.json).
+
+## Verified delivery and original sign-off
+
+[PR #183](https://github.com/kburson/aitm/pull/183)
+merged into `trunk` at `0175e77c398dc97c59db166fa64e2e9a673b4b40` using an ordinary merge
+commit. GitHub recorded `2026-11-10T21:04:21Z`. Ordered parents matched
+the authorized base and reviewed head, the delivered tree equaled
+`cbda78ce605593be91611a02c06d51edd7ff9c87`, and the reviewed head had zero source diff to the
+delivered merge. The [final trusted PR verifier](premerge-verified.json)
+passed before merge.
+
+[Exact trunk push](https://github.com/kburson/aitm/actions/runs/42901414283/attempts/1) passed all four applicable hosted
+jobs. The two PR-only jobs skipped as expected. The authenticated
+Python archive replay passed with 714
+product and CLI outcomes and both coverage floors. Exact delivered
+focused test result: `49 passed in 0.13s`. [Delivery receipt](delivery-receipt.json).
+
+The [original implementer sign-off](../retro/2026-11-10-138-implementer-retrospective.md) records the
+delivery verdict. Its acceptance was the last required story gate.
+
+The fresh local premerge run recorded `3 failed, 942 passed in 90.68s (0:01:30)` in existing native-stream tests. All three nodes passed separately on frozen trunk. A complete rerun with an isolated fixture directory passed `945 passed in 90.27s (0:01:30)` on the unchanged candidate. The first result remains retained. No precise cause was established.

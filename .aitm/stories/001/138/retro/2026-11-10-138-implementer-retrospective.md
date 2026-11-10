@@ -1,0 +1,11 @@
+# #138 implementer retrospective and sign-off
+
+**2026-11-10 · Attempt 1 · Pass, high confidence for the pinned historical comparison.** I implemented the offline projection and its tests. I verified the delivered receipt for reviewed head `28db19ee841567bdab9f0c4624fb30ed18a7047e`, tree `cbda78ce605593be91611a02c06d51edd7ff9c87`, and trunk merge `0175e77c398dc97c59db166fa64e2e9a673b4b40`. The delivered push passed its four applicable jobs and replayed 714 product and CLI outcomes. The focused suite passed all 49 cases on the delivered trunk tree. Independent source re-review accepted the replacement. [PR #183](https://github.com/kburson/aitm/pull/183) · [Verified trunk run, attempt 1](https://github.com/kburson/aitm/actions/runs/42901414283/attempts/1)
+
+I started with three public regressions that exposed missing attempt checks for base, Python archive and timing evidence. The finished projection kept all three historical roles separate, reproduced 630 PR candidate, 592 trusted base and 630 trunk outcomes, and preserved 182 helper IDs as local advisory inventory. The protected PR and push replays passed, and two runs produced identical canonical bytes at SHA-256 `f085f922a6fffadf98900a514b6129aa7bc9315ecd1029cf9a219213fce47731`.
+
+I missed one parser edge case in the initial implementation. Malformed shell quoting escaped the stable `helper:` category. Independent review caught it, and I added a public regression that failed before the fix. The corrected parser kept the historical output byte-identical. Early broad runs and one premerge run also exposed intermittent monitor failures in unchanged code. The dedicated fixture runs passed 945 cases on the reviewed source, with the premerge rerun also passing all 945. Preserve the first failures, pin the fixture root, and verify error categories through the same public entry point downstream callers use.
+
+The reviewed candidate's full local run took 99.03 seconds, and the premerge rerun took 90.27 seconds. The historical warm feedback times were 533 seconds for the PR candidate and 141 seconds for the trunk push. Comparable historical cold timing, finer test-only and unit/integration timing, billed cost, and active implementation time are Unknown. The 2.5 implementation agent-hours in the accepted plan was an estimate.
+
+**Signed** `/root/impl138`, original #138 implementer.
