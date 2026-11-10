@@ -53,12 +53,13 @@ def inputs():
         "pr_jobs": ["python-base", "python", "quality"],
         "push_jobs": ["python", "quality"],
     }
-    return {
+    values = {
         "policy": policy,
         "candidate": evidence(
             "tests/test_core.py::test_keeps_state", "tests/test_core.py::test_alias"
         ),
         "product": coverage(["src/aitm_usage/state.py"]),
+        "product_inventory": ["src/aitm_usage/state.py"],
         "helpers": coverage(policy["helpers"]),
         "child": {
             "schema": "aitm.ci-child-evidence/v1",
@@ -78,7 +79,14 @@ def inputs():
             "evidence": evidence("tests/test_core.py::test_keeps_state"),
         },
         "expected_base": identity.copy(),
+        "base_policy": copy.deepcopy(policy),
     }
+
+    values["candidate"]["children"] = [
+        {"label": "cli-help", "pid": 10, "returncode": 0},
+        {"label": "service-one-shot", "pid": 11, "returncode": 0},
+    ]
+    return values
 
 
 def test_exact_floor_accepts_behavior_and_counts(inputs):
@@ -217,12 +225,19 @@ def test_cli_checks_identity_and_supplies_exit_code(tmp_path, inputs, capsys):
         "inventory": "candidate",
         "outcomes": "candidate",
         "coverage": "product",
+        "product-inventory": "product_inventory",
         "helpers": "helpers",
         "child-evidence": "child",
         "capability": "capability",
         "base-evidence": "base",
+        "base-policy": "base_policy",
         "expected-base": "expected_base",
     }
+    from hashlib import sha256
+
+    policy_digest = sha256(json.dumps(inputs["base_policy"]).encode()).hexdigest()
+    inputs["base"]["identity"]["policy"] = policy_digest
+    inputs["expected_base"]["policy"] = policy_digest
     args = ["--mode", "pr"]
     for flag, key in names.items():
         path = tmp_path / flag
@@ -235,3 +250,57 @@ def test_cli_checks_identity_and_supplies_exit_code(tmp_path, inputs, capsys):
     (tmp_path / "inventory").write_text('{"collected":[]}')
     assert main(args) == 1
     assert "disagree" in capsys.readouterr().out
+
+
+def test_an_omitted_product_module_cannot_raise_coverage(inputs):
+    inputs["product_inventory"].append("src/aitm_usage/unimported.py")
+    result = evaluate(**inputs)
+    assert not result["passed"]
+    assert "inventory" in result["failures"][-1]
+
+
+def test_baseline_cannot_borrow_candidates_skip_allowance(inputs):
+    node = "tests/test_core.py::test_alias"
+    base = evidence(*inputs["candidate"]["collected"])
+    base["reports"][4].update(outcome="skipped", skip_reason="unavailable alias")
+    inputs["base"]["evidence"] = base
+    inputs["base_policy"]["optional_skips"].pop(node)
+    result = evaluate(**inputs)
+    assert not result["passed"]
+    assert any(
+        "base:" in failure and "skip" in failure for failure in result["failures"]
+    )
+
+
+@pytest.mark.parametrize(
+    "mismatch", [None, {"pid": 14}, {"returncode": 1}, {"label": "wrong"}]
+)
+def test_separate_child_coverage_cannot_replace_observer_receipts(inputs, mismatch):
+    if mismatch is None:
+        inputs["candidate"]["children"] = []
+    else:
+        inputs["candidate"]["children"][0].update(mismatch)
+    result = evaluate(**inputs)
+    assert not result["passed"]
+    assert any("observer child" in failure for failure in result["failures"])
+
+
+def test_needs_cli_refuses_duplicate_job_keys(tmp_path, inputs, capsys):
+    policy = tmp_path / "policy.json"
+    needs = tmp_path / "needs.json"
+    policy.write_text(json.dumps(inputs["policy"]))
+    needs.write_text('{"python":{"result":"failure"},"python":{"result":"success"}}')
+    assert main(["--policy", str(policy), "--needs", str(needs), "--mode", "push"]) == 1
+    assert "duplicate JSON" in capsys.readouterr().out
+    assert not check_jobs(inputs["policy"], {}, "unknown")["passed"]
+
+
+def test_missing_or_malformed_documents_have_blocked_dispositions(inputs):
+    inputs.update(
+        candidate={}, product={"files": {"src/aitm_usage/state.py": {}}}, child={}
+    )
+    result = evaluate(**inputs)
+    assert not result["passed"]
+    assert "invalid pytest evidence" in result["failures"]
+    assert "product: malformed line counts" in result["failures"]
+    assert "invalid child coverage evidence" in result["failures"]

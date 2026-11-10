@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+from hashlib import sha256
 from pathlib import Path
 
 PHASES = ("setup", "call", "teardown")
@@ -132,14 +133,19 @@ def _outcomes(document, optional_skips):
     return outcomes, failures
 
 
-def _line_totals(document, *, root=None, names=None):
+def _line_totals(document, *, root=None, names):
     files = document.get("files") if isinstance(document, dict) else None
     if not isinstance(files, dict) or not files:
         raise ValueError("missing line coverage")
-    if names is None:
-        if any(not name.startswith(root + "/") for name in files):
-            raise ValueError("wrong product source root")
-        names = files
+    if root is not None:
+        if (
+            not _unique_names(names)
+            or any(not name.startswith(root + "/") for name in names)
+            or set(files) != set(names)
+        ):
+            raise ValueError(
+                "product coverage does not match the tracked source inventory"
+            )
     elif any(name not in files for name in names):
         raise ValueError("missing helper in coverage denominator")
 
@@ -179,7 +185,7 @@ def _trusted_identity(actual, expected):
     )
 
 
-def _child_errors(document, required):
+def _child_errors(document, observed, required):
     if (
         not isinstance(document, dict)
         or document.get("schema") != "aitm.ci-child-evidence/v1"
@@ -190,6 +196,7 @@ def _child_errors(document, required):
         return ["missing child coverage evidence"]
     labels, pids = set(), set()
     errors = []
+    receipts = []
     for row in children:
         if not isinstance(row, dict):
             errors.append("invalid child receipt")
@@ -211,6 +218,13 @@ def _child_errors(document, required):
             continue
         labels.add(label)
         pids.add(pid)
+        receipts.append({"label": label, "pid": pid, "returncode": row["returncode"]})
+    if (
+        not isinstance(observed, list)
+        or len(observed) != len(receipts)
+        or any(receipt not in observed for receipt in receipts)
+    ):
+        errors.append("observer child receipts do not match raw coverage evidence")
     if labels != set(required):
         errors.append("missing required normal child coverage")
     return errors
@@ -242,11 +256,13 @@ def evaluate(
     policy,
     candidate,
     product,
+    product_inventory,
     helpers,
     child,
     capability,
     base=None,
     expected_base=None,
+    base_policy=None,
     mode="pr",
 ):
     if problem := _policy_error(policy):
@@ -272,9 +288,16 @@ def evaluate(
             base.get("identity"), expected_base
         ):
             failures.append("missing or drifted trusted base identity")
+        elif problem := _policy_error(base_policy):
+            failures.append(f"base: {problem}")
         else:
-            baseline, errors = _outcomes(base.get("evidence"), policy["optional_skips"])
+            baseline, errors = _outcomes(
+                base.get("evidence"), base_policy["optional_skips"]
+            )
             failures.extend(f"base: {error}" for error in errors)
+            for node in base_policy["required_tests"]:
+                if baseline.get(node) != "passed":
+                    failures.append(f"required base test did not pass: {node}")
             for node, status in baseline.items():
                 if node not in actual or (
                     status == "passed" and actual[node] != "passed"
@@ -282,11 +305,20 @@ def evaluate(
                     failures.append(
                         f"required base outcome removed or degraded: {node}"
                     )
-    failures.extend(_child_errors(child, policy["required_children"]))
+    observed_children = (
+        candidate.get("children") if isinstance(candidate, dict) else None
+    )
+    failures.extend(
+        _child_errors(child, observed_children, policy["required_children"])
+    )
 
     counts = {}
     for name, document, scope in (
-        ("product", product, {"root": policy["product_root"]}),
+        (
+            "product",
+            product,
+            {"root": policy["product_root"], "names": product_inventory},
+        ),
         ("helpers", helpers, {"names": policy["helpers"]}),
     ):
         try:
@@ -326,10 +358,12 @@ def main(argv=None):
         "inventory",
         "outcomes",
         "coverage",
+        "product-inventory",
         "helpers",
         "child-evidence",
         "capability",
         "base-evidence",
+        "base-policy",
         "expected-base",
         "needs",
     ):
@@ -347,15 +381,27 @@ def main(argv=None):
                 candidate = _read(args.outcomes)
                 if _read(args.inventory) != candidate:
                     raise ValueError("inventory and outcome records disagree")
+                expected_base = _read(args.expected_base) if args.mode == "pr" else None
+                base_policy = None
+                if args.mode == "pr":
+                    base_policy = _read(args.base_policy)
+                    if not isinstance(expected_base, dict) or sha256(
+                        Path(args.base_policy).read_bytes()
+                    ).hexdigest() != expected_base.get("policy"):
+                        raise ValueError(
+                            "base policy digest disagrees with trusted identity"
+                        )
                 result = evaluate(
                     policy,
                     candidate,
                     _read(args.coverage),
+                    _read(args.product_inventory),
                     _read(args.helpers),
                     _read(args.child_evidence),
                     _read(args.capability),
                     _read(args.base_evidence) if args.mode == "pr" else None,
-                    _read(args.expected_base) if args.mode == "pr" else None,
+                    expected_base,
+                    base_policy,
                     args.mode,
                 )
         except (OSError, ValueError) as exc:
