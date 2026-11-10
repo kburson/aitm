@@ -888,6 +888,57 @@ def test_verified_disposition_only_releases_its_covered_hold(native):
         assert native.routed(state, batch, resolved_at).scope == original
 
 
+def test_resolved_hold_rejects_original_handoff_after_restart(native):
+    from aitm_usage.monitor_scope import Disposition, Mark, ScopeState
+
+    marker_id, held_id, resolve_id = (UUID(int=i) for i in range(0x301, 0x304))
+    original = _issue(A, 116)
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        owner = state.operator(A)
+        mark = Mark(marker_id, original, native.receipt_ref(marker_id))
+        state.authorize(mark, owner)
+        _, marked = native.append(marker_id)
+        batch = state.read_source(SOURCE, native.locator())
+        state.apply_mark(mark, _verify(state, native, mark, owner, batch, marked))
+
+        held, _ = _authorize_handoff(state, native, held_id, A, _issue(B, 117), 1)
+        resolve = Disposition(
+            resolve_id,
+            A,
+            held_id,
+            native.receipt_ref(resolve_id),
+            release_previous=True,
+        )
+        state.authorize(resolve, owner)
+        _, held_at = native.append(held_id)
+        _, resolved_at = native.append(resolve_id)
+        batch = state.read_source(SOURCE, native.locator())
+        hold = state.hold(_verify(state, native, held, owner, batch, held_at))
+        assert held_at < resolved_at < hold.affected.end
+        resolved = state.dispose(
+            resolve, _verify(state, native, resolve, owner, batch, resolved_at)
+        )
+        assert resolved.state == "resolved"
+        assert state.receipt(held, owner) == resolved
+        assert native.routed(state, batch, held_at).scope == original
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        owner = state.operator(A)
+        state.authorize(held, owner)
+        batch = state.read_source(SOURCE, native.locator())
+        events = state.view().events
+        outcome = state.apply_handoff(
+            held, _verify(state, native, held, owner, batch, held_at)
+        )
+        assert outcome.status == "rejected"
+        assert outcome.affected == resolved.affected
+        assert state.view().events == events
+        assert state.receipt(held, owner) == resolved
+        assert native.routed(state, batch, held_at).scope == original
+
+
 def test_hold_overflow_becomes_a_gap_without_displacing_existing_hold(
     native, monkeypatch
 ):

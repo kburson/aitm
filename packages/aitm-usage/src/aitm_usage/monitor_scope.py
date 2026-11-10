@@ -1240,9 +1240,13 @@ class ScopeState:
         if hold is not None:
             if (hold.position, hold.command_digest) != (event.position, event.digest):
                 raise ConflictError("Scope hold has conflicting command bytes")
-            if hold.state is not HoldState.RESOLVED:
-                self._authorized.pop(command.command_id, None)
-                return HandoffDisposition(HandoffStatus.HELD, hold.affected)
+            self._authorized.pop(command.command_id, None)
+            status = (
+                HandoffStatus.REJECTED
+                if hold.state is HoldState.RESOLVED
+                else HandoffStatus.HELD
+            )
+            return HandoffDisposition(status, hold.affected)
         _, result = _timeline((*state.events, event), event.position)
         outcome = result[event.command_id]
         _, previous = _timeline(state.events, event.position)
