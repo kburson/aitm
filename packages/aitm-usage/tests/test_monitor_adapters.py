@@ -3,14 +3,17 @@
 import json
 import shlex
 from dataclasses import replace
+from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import UUID
 
 import pytest
-from test_claude import _native_tool_turn, request, user
+from test_claude import MODEL, _native_tool_turn, cost, model_counts, request, user
 from test_claude import row as claude_row
 from test_claude import usage as claude_usage
 from test_codex import (
+    AFTER,
     COMMAND,
     CUTOFF,
     PROJECT,
@@ -383,7 +386,7 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
 
 
 def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
-    _, adapter, root = _adapter(monkeypatch, source)
+    module, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "startup.jsonl"
     rows = _native_startup_rows(checkout)
@@ -483,3 +486,186 @@ def test_claude_holds_linked_receipt_until_adjoining_request(monkeypatch, source
         item for item in complete.boundaries if item.boundary.receipt_ref is not None
     ]
     assert proof.boundary.ordinal == len(rows) - 1
+
+
+def _restart_rows(case, checkout):
+    if case == "desktop":
+        rows = _desktop(checkout)
+        first_turn_end = len(rows)
+        turn = UUID(int=0x199)
+        time = AFTER + timedelta(seconds=1)
+        total = rows[-2]["payload"]["info"]["total_token_usage"]
+        extra = usage(5, 2)
+        cumulative = usage(
+            total["input_tokens"] + 5,
+            total["output_tokens"] + 2,
+            cache=total["cached_input_tokens"],
+            reasoning=total["reasoning_output_tokens"],
+        )
+        rows.extend(
+            [
+                *begin(checkout, turn, time=time),
+                response(
+                    "second-response-private", cumulative, extra, time=time, turn=turn
+                ),
+                counter(cumulative, extra, time=time),
+                end(turn, time=time),
+            ]
+        )
+        return rows, {1, first_turn_end}
+    if case == "streamed":
+        rows = _rows(CLAUDE_FIXTURE, checkout)
+        return [*rows, cost(**{MODEL: model_counts()})], set(range(1, len(rows) + 1))
+    if case == "receipt":
+        first = user(checkout)
+        command = shlex.join(
+            [
+                "aitm-usage",
+                "--project",
+                "/private/tmp/private-project",
+                "scope",
+                "mark",
+                "--marker",
+                "/private/tmp/private-marker",
+                "--session-id",
+                first["sessionId"],
+                "--json",
+            ]
+        )
+        output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
+        return [first, *_native_tool_turn(checkout, command, output)], {1}
+    call = "toolu-private-agent"
+    child_tool = "toolu-private-child-bash"
+    parent, child, child_result, completed = (
+        str(UUID(int=i)) for i in range(0x231, 0x235)
+    )
+    rows = [
+        user(checkout),
+        request(
+            checkout,
+            uuid=parent,
+            stop="tool_use",
+            isSidechain=False,
+            content=[
+                {
+                    "type": "tool_use",
+                    "id": call,
+                    "name": "Agent",
+                    "input": {"prompt": "private"},
+                }
+            ],
+        ),
+        request(
+            checkout,
+            uuid=child,
+            req="req-child",
+            msg="msg-child",
+            counts=claude_usage(8),
+            stop="tool_use",
+            isSidechain=True,
+            parent_tool_use_id=call,
+            content=[
+                {
+                    "type": "tool_use",
+                    "id": child_tool,
+                    "name": "Bash",
+                    "input": {"command": "true"},
+                }
+            ],
+        ),
+        claude_row(
+            "user",
+            checkout,
+            uuid=child_result,
+            parentUuid=child,
+            sourceToolAssistantUUID=child,
+            isSidechain=True,
+            parent_tool_use_id=call,
+            message={
+                "role": "user",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": child_tool,
+                        "content": "private",
+                    }
+                ],
+            },
+        ),
+        claude_row(
+            "user",
+            checkout,
+            uuid=completed,
+            parentUuid=parent,
+            sourceToolAssistantUUID=parent,
+            isSidechain=False,
+            message={
+                "role": "user",
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": call,
+                        "content": "private-child",
+                    }
+                ],
+            },
+            toolUseResult={
+                "status": "completed",
+                "agentId": "private-id",
+                "usage": claude_usage(8),
+            },
+        ),
+    ]
+    return rows, {1}
+
+
+@pytest.mark.parametrize("case", ["desktop", "streamed", "nested", "receipt"])
+def test_every_native_split_matches_one_read_after_restart(monkeypatch, source, case):
+    module, adapter, root = _adapter(monkeypatch, source)
+    key, directory, checkout = source
+    path = directory / "restart.jsonl"
+    rows, safe_splits = _restart_rows(case, checkout)
+
+    def latest(*batches):
+        return {item.key: item for batch in batches for item in batch.observations}
+
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    whole = adapter.read_delta(locator, None)
+    assert whole.observations
+    assert whole.cursor.checkpoint.cursor.offset == path.stat().st_size
+
+    for split in range(1, len(rows)):
+        offset = _write(path, rows[:split])
+        (locator,) = adapter.discover(root)
+        prefix = adapter.read_delta(locator, None)
+        if split not in safe_splits:
+            assert prefix.cursor is None, (case, split)
+            assert not prefix.observations
+        else:
+            assert prefix.cursor is not None, (case, split)
+        if prefix.cursor is not None:
+            assert prefix.cursor.checkpoint.cursor.offset == offset, (case, split)
+            prior = _decode(
+                _encode(prefix.cursor, module.StreamCursor), module.StreamCursor
+            )
+            restarted_root = replace(
+                root, evidence=Evidence(key, _committed_view(prefix))
+            )
+        else:
+            prior = None
+            restarted_root = root
+        _write(path, rows)
+        (restarted,) = adapter.discover(restarted_root)
+        suffix = module.ProviderAdapter().read_delta(restarted, prior)
+        assert latest(prefix, suffix) == latest(whole), (case, split)
+        expected_proofs = {
+            item.boundary for item in whole.boundaries if item.boundary.receipt_ref
+        }
+        actual_proofs = {
+            item.boundary
+            for batch in (prefix, suffix)
+            for item in batch.boundaries
+            if item.boundary.receipt_ref
+        }
+        assert actual_proofs == expected_proofs, (case, split)

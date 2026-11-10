@@ -615,6 +615,18 @@ class _RouteWalk:
 
     def user(self, frame: SourceFrame) -> None:
         tool = self.route.tool
+        if (
+            self.neutral_markers
+            and tool is not None
+            and tool.kind == "agent"
+            and _nested(frame)
+        ):
+            # A child's own tool result cannot settle the outer Agent call.
+            if _parent_tool(self.ledger, frame) != tool.tool_ref:
+                self.route = replace(
+                    self.route, tool=replace(tool, uncertain_child=True)
+                )
+            return
         self.route = _Route(frame.segment_ref)
         if tool is None or frame.row.get("isSidechain") is not False:
             return

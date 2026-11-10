@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
+from uuid import UUID
 
 from ..monitor_types import NativeSurface, ObservationTimeBasis
 from ..types import (
@@ -12,7 +13,6 @@ from ..types import (
     DiagnosticCode,
     Eligibility,
     Provider,
-    Registration,
     SourceBoundary,
     SourceCheckpoint,
     SourceRef,
@@ -31,6 +31,16 @@ class SourceRoot:
     cutoff: datetime
     checkout_anchors: tuple[Path, ...] = field(repr=False)
     evidence: SourceEvidence = field(repr=False)
+
+    @property
+    def project_id(self) -> UUID:
+        # The existing scanner calls this its namespace. In the monitor it
+        # identifies the service evidence, without identifying a destination.
+        return self.evidence.as_of().project_id
+
+    @property
+    def source_roots(self) -> tuple[Path, ...]:
+        return (self.path,)
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,7 +73,7 @@ class NativeObservation:
 
 @dataclass(frozen=True, slots=True)
 class NativeBoundary:
-    """Linked native evidence. Scope authorization belongs to the router."""
+    """Linked native evidence. Match repeats by boundary identity on replay."""
 
     boundary: SourceBoundary
     project_context: SourceRef | None
@@ -71,6 +81,8 @@ class NativeBoundary:
 
 @dataclass(frozen=True, slots=True)
 class AdapterBatch:
+    """Evidence only. A missing cursor supplies no new checkpoint."""
+
     observations: tuple[NativeObservation, ...] = ()
     boundaries: tuple[NativeBoundary, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
@@ -81,14 +93,7 @@ class ProviderAdapter:
     """Bridge the qualified macOS Codex Desktop and Claude Code surfaces."""
 
     def discover(self, root: SourceRoot) -> Iterator[SourceLocator]:
-        registration = Registration(
-            root.evidence.as_of().project_id,
-            root.path,
-            (root.path,),
-            root.checkout_anchors,
-            root.cutoff,
-        )
-        for candidate in _discover_sources(registration, root.evidence):
+        for candidate in _discover_sources(root, root.evidence):
             yield SourceLocator(replace(candidate, _monitor=True))
 
     def read_delta(
@@ -150,12 +155,17 @@ class ProviderAdapter:
                 cursor=cursor,
             )
 
+        prior_checkout = dict(frames._prior_checkout)
         observations = []
         for revision in result.revisions:
             usage = revision.record
             if not isinstance(usage, UsageObservation):
                 continue
-            proof = frames.scope_evidence(usage.boundary)
+            boundary = usage.boundary
+            proof = frames.scope_evidence(boundary)
+            context = proof.anchor_ref if proof is not None else None
+            if proof is None and source._matches(boundary):
+                context = prior_checkout.get(boundary.ordinal)
             observations.append(
                 NativeObservation(
                     revision.key,
@@ -163,7 +173,7 @@ class ProviderAdapter:
                     usage,
                     surface,
                     ObservationTimeBasis.NATIVE_USAGE_EVENT,
-                    proof.anchor_ref if proof is not None else None,
+                    context,
                 )
             )
         return AdapterBatch(

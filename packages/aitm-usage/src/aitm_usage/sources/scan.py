@@ -98,6 +98,15 @@ class SourceEvidence(Protocol):
     def as_of(self) -> LedgerView: ...
 
 
+class SourceConfiguration(Protocol):
+    """The scanner only needs source paths, checkout anchors and a namespace."""
+
+    project_id: UUID
+    source_roots: tuple[Path, ...]
+    checkout_anchors: tuple[Path, ...]
+    cutoff: datetime
+
+
 class CoverageKind(StrEnum):
     CLOSED_TURN = "closed-turn"
     RECOGNIZED_USAGE = "recognized-usage"
@@ -190,6 +199,9 @@ class FrameBatch:
     observed_through: datetime | None = None
     sideband: tuple[SidebandFrame, ...] = ()
     commit_sideband: tuple[SidebandFrame, ...] = ()
+    _prior_checkout: tuple[tuple[int, SourceRef], ...] = field(
+        default=(), repr=False, compare=False
+    )
 
     def _matching_frame(self, boundary: SourceBoundary) -> SourceFrame | None:
         matches = [
@@ -270,12 +282,14 @@ class CandidateSource:
     incarnation_ref: SourceRef
     _path: Path = field(repr=False, compare=False)
     _identity: tuple[_FileID, ...] = field(repr=False, compare=False)
-    _registration: Registration = field(repr=False, compare=False)
+    _registration: SourceConfiguration = field(repr=False, compare=False)
     _ledger: SourceEvidence = field(repr=False, compare=False)
     _enrollments: tuple[_Enrollment, ...] = field(repr=False, default=())
     _excluded: frozenset[SourceRef] = field(repr=False, default=frozenset())
-    _native_surface: NativeSurface | None = field(repr=False, default=None)
-    _monitor: bool = field(repr=False, default=False)
+    _native_surface: NativeSurface | None = field(
+        repr=False, compare=False, default=None
+    )
+    _monitor: bool = field(repr=False, compare=False, default=False)
 
     def _matches(self, entry: SourceBoundary | SourceFrame) -> bool:
         return (
@@ -512,7 +526,7 @@ class _Origin:
     startup_ordinal: int = field(default=0, compare=False)
     startup_digest: str = field(default="", compare=False)
     startup_excluded: tuple[int, ...] = ()
-    native_surface: NativeSurface | None = None
+    native_surface: NativeSurface | None = field(default=None, compare=False)
 
 
 def _origin_from(row: _Row, ordinal: int, ledger: SourceEvidence) -> _Origin | None:
@@ -728,7 +742,7 @@ def discover(registration: Registration) -> Iterator[CandidateSource]:
 
 
 def _discover_sources(
-    registration: Registration, ledger: SourceEvidence
+    registration: SourceConfiguration, ledger: SourceEvidence
 ) -> Iterator[CandidateSource]:
     seen = set()
     for root in registration.source_roots:
@@ -1120,6 +1134,14 @@ def _read(
 
     stream.seek(0)
     records = []
+    prior_ordinals = (
+        {entry.ordinal for entry in checkpoint.provider.request_prefix}
+        if source._monitor
+        and origin.provider is Provider.CLAUDE
+        and checkpoint is not None
+        else set()
+    )
+    revision_checkouts = []
     segment = None
     last_timed = None
     checkouts: dict[Path, tuple[SourceRef, _FileID]] = {}
@@ -1253,6 +1275,8 @@ def _read(
             )
             if start >= prior:
                 records.append(_CompleteRow(start, before, last_timed, proof_gap))
+            elif ordinal in prior_ordinals and last_timed.anchor_ref is not None:
+                revision_checkouts.append((ordinal, last_timed.anchor_ref))
     if origin.startup_excluded and not origin_verified:
         raise _ChangedSource
     if not prior_verified:
@@ -1264,7 +1288,14 @@ def _read(
     _verify_snapshot(stream, source, snapshot, end, prefix)
     if selections:
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
-    return _project(source, checkpoint, origin, records, admitted, pending, end, prefix)
+    result = _project(
+        source, checkpoint, origin, records, admitted, pending, end, prefix
+    )
+    return (
+        replace(result, _prior_checkout=tuple(revision_checkouts))
+        if revision_checkouts
+        else result
+    )
 
 
 def _eligibility(
