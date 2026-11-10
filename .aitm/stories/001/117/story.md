@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 117
 title: "[M07] Native scope and handoff"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/117"
 parent: 100
 children: []
 blocking: [118, 182]
 blocked-by: [116]
 created: "2026-11-10T13:57:58Z"
-updated: "2026-11-10T14:00:46Z"
-last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+updated: "2026-11-10T20:25:50+00:00"
+last-branch: "codex/aitm-117-native-scope"
+estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-10-117-native-scope-plan.md", "plan/2026-11-10-117-m07-split.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M07", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "f2e8d780402afd62b409a1259957ecb178afd4f29c33aa9725c21256d69b009d"}
