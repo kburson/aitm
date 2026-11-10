@@ -41,3 +41,16 @@ The replacement [PR #136](https://github.com/kburson/aitm/pull/136) head is `805
 Four split-equivalence scenarios exercise every row boundary for two complete Desktop turns, Claude streamed accounting and final corroboration, a nested Agent with a child tool result, and a Claude linked receipt. Each durable cursor round-trips through the wire form, and every split reproduces the single-read latest observations and receipt proofs. The cases exposed and now cover two repairs. A sidechain tool result cannot consume a pending outer Agent link. A Claude revision can retain its original verified checkout by rederiving the keyed anchor from its verified earlier native row. The scanner configuration also keeps the approved source root distinct from project state. Replayed boundaries retain stable native identities for later consumers.
 
 Local verification passed 242 focused tests, 593 locked product and CLI tests and 182 CI helper tests. Raw line coverage was 6,623/7,245 product and 778/821 helpers. Ruff and whitespace passed. [Project metadata readback](../../100/plan/project-metadata-receipt.json).
+
+### Attempt 2 Review checkpoint
+
+[Run 42852838878 attempt 1](https://github.com/kburson/aitm/actions/runs/42852838878/attempts/1) passed all six jobs on tested merge `52dc58a856edcf16128adca55af325c5b1792724` with exact replacement tree and ordered base/head parents. The raw archives matched the authenticated artifact digests. Gate replay matched the signed subject, with all 570 baseline tests retained, 22 additive M04 cases and one candidate-only CLI case. Both raw line floors and required child-process coverage passed.
+
+| Job | Outcome |
+| --- | --- |
+| [python](https://github.com/kburson/aitm/actions/runs/42852838878/job/129957874374) | Success |
+| [quality](https://github.com/kburson/aitm/actions/runs/42852838878/job/129957874876) | Success |
+| [file-checks](https://github.com/kburson/aitm/actions/runs/42852838878/job/129957875046) | Success |
+| [python-base](https://github.com/kburson/aitm/actions/runs/42852838878/job/129957875084) | Success |
+| [collect-evidence](https://github.com/kburson/aitm/actions/runs/42852838878/job/129961724706) | Success |
+| [aitm-ci](https://github.com/kburson/aitm/actions/runs/42852838878/job/129961864563) | Success |
