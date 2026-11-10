@@ -24,6 +24,12 @@ Accept the exact repository, ref and run/attempt binding and applicable base, PR
 
 The current #103 verifier resolves the live target and head and checks ordered test-merge parents, exact tree, canonical run and attempt. Its receipt shape supplies the input binding precedent. The trusted controller may establish the same identity before execution. #140 uses that binding and Git objects. Missing objects or provider linkage, a mismatch or stale binding, or an unreadable Git result yields uncertainty. No fallback to a checkout's contents, a moving ref, a merge base, the PR head tree, or an earlier attempt. The caller owns freshness checks against live authority before use.
 
+Disable Git replacement refs for every pinned commit, tree, diff and
+blob read using `git --no-replace-objects` or its equivalent. Apply
+the same constraint to the local story-base and any later endpoint
+content read so the object identity continues to name original bytes.
+[Git replacement reference behavior](https://git-scm.com/docs/git-replace#_description)
+
 ### Local inputs
 
 Take the declared story-base commit, the physical worktree and the current HEAD. Observe committed base-to-HEAD changes, HEAD-to-index staged state and index-to-worktree unstaged state separately. Record stage modes, paths and object IDs and preserve old and new endpoints across the layers. Hash effective worktree content for tracked paths and relevant untracked paths, including files with no index entry. Default to all nonignored untracked files, plus any independently declared relevant ignored inputs. An unresolved scope for ignored input that can affect execution yields uncertainty.
@@ -44,6 +50,7 @@ fetch to complete the snapshot. Treat failed or truncated Git output as uncertai
 | --- | --- |
 | `test_hosted_diff_matches_tested_tree` | A Git fixture whose merge tree differs from its PR head produces the actual base-to-tested changes, including merge-only content. Incorrect base, head, parent order, tested tree, or unbound run provenance refuses. Missing Git objects or a failed read refuses without returning a partial pair. |
 | `test_local_staged_untracked_rename_and_deleted_paths` | The fixture includes committed changes after the declared base, a staged rename and staged bytes, a separate unstaged edit or deletion, and a relevant untracked file. Verify the old and new identities, rename endpoints, deleted content on the old side, and effective worktree content on the new side. Exercise clean and cancelled-layer comparisons, and inject same-path byte, index, or path-set changes during observation to require uncertainty. |
+| Original Git objects | With a replacement ref on the pinned base or its blob, the comparison and endpoint content read use the original bytes or return uncertainty. |
 | Path handling | Round-trip non-ASCII, non-UTF-8 and delimiter-bearing names where supported, keep their stable byte identities, and refuse an escaping or aliased path. A normal deletion remains distinct from an unreadable file or an unresolved Git object. |
 | Delivery | On authorized pickup, record the focused red/green evidence with `uv run --project packages/aitm-usage --locked pytest -q tools/ci/tests/test_tia_snapshot.py` and the required exact-candidate #103 checks. The default #103 job does not collect this new leaf test. Record the focused run separately and obtain the existing gate-defining path disposition for additions under `tools/ci/`. Reconfirm the protected target and qualified CI route at JIT. |
 
