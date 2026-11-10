@@ -4,13 +4,18 @@ Use one checklist per story while the workflow is manual. Keep the checklist wit
 
 ## Copy for each story
 
-- Story and implementing agent
+- Story, implementing agent and closure owner
 - Attempt, accepted design/plan/JIT and dependencies
 - Story branch, parent target branch and pinned base
 - PR, exact head SHA and reviewed tree
-- Required CI jobs and validation scope
+- Required CI jobs, validated CI route for the parent branch and validation scope
 - Independent reviewer and verdict
-- Verified delivery result and retrospective/sign-off
+- Verified delivery result, retrospective/sign-off and time the last required gate passed
+
+### Before Develop
+
+- [ ] Verify that the required CI jobs can run for the declared parent branch and the story's validation scope. Record the workflow, trigger and required job names on planning. If the route is unavailable, name the blocker, owner and next action. Resolve it or record an explicitly authorized, scoped exception under the applicable policy before entering Develop.
+- [ ] Name the closure owner, normally the implementing agent. That owner verifies delivery, obtains the implementing agent's signed retrospective, and reconciles the issue and Project status. Keep the implementing agent available until their own retrospective is signed.
 
 ### Develop → Test
 
@@ -34,8 +39,8 @@ Use one checklist per story while the workflow is manual. Keep the checklist wit
 - [ ] Before merging, reread the current PR head, base, branch requirements, required checks and effective review. Merge through the normal authorized GitHub path only once the exact candidate is eligible.
 - [ ] Verify the merge on the declared remote parent. Record the PR URL, reviewed head/tree, merge method, merge SHA, delivery timestamp and proof of the reviewed source landing. For fast-forward or ordinary merge, verify the expected tree or content mapping as well as ancestry. For squash/rebase, record the source-to-target content mapping. Reconcile uncertain outcomes from the remote before retrying.
 - [ ] Obtain a dated retrospective and sign-off from the implementing agent after delivery verification. Record agent identity, story and attempt, reviewed source, delivered result, delivered verdict, confidence, design/plan/delivery alignment, successes, misses, lessons, and measured or Unknown timing. Link the authored record under `retro/`. An unavailable author is a sign-off gap. Any late reconstruction carries its actual author and date as a separate record.
-- [ ] Finish housekeeping for this story. Record completion and remaining obligations. Publish the evidence on `planning`, link it from the issue or PR, record follow-ups and dependency effects, and release only the story's own locks, session or temporary resources as applicable. Retain work and recovery evidence required by the plan.
-- [ ] As soon as the story's gates are satisfied, close its GitHub issue and mark the Project item Done. Verify both by reading them back. Append the dated closure and link the GitHub observations on planning. If publication or GitHub projection fails partway, retain the confirmed facts and reconcile the missing action before declaring closure complete.
+- [ ] Finish required housekeeping for this story. Publish the evidence on `planning`, link it from the issue or PR, and record dependency effects. Release only the story's own locks, session or temporary resources as applicable after sign-off and evidence retention. Give any nonblocking housekeeping its own follow-up and owner.
+- [ ] The last required gate passing triggers immediate closure. Record which gate passed and when. The closure owner closes the GitHub issue and marks the Project item Done before picking up unrelated work. Read both back. Record the planning Done checkpoint and the GitHub issue closure timestamp separately and link the observations on planning. If closure stalls or only part of it succeeds, retain the confirmed facts and record the exact blocker, owner and next action. Reconcile the missing action before declaring closure complete.
 
 For an operational or other non-source deliverable, the accepted plan must name its own verifiable target and applicable gates. Record the immutable deliverable, real validation, independent review of that version and verified result. Any source changes in that story follow the PR gates above.
 
