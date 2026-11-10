@@ -24,3 +24,7 @@ The [independently reviewed JIT](signing-probe-jit.md) authorized one diagnostic
 ## Full-Auto local checkpoint
 
 [Reviewed local candidate and verification](../attachments/local-delivery-checkpoint.md). The exact source stays in the story worktree. Recurring public signing authority and the scoped first-production-workflow pre-Develop exception remain open. Hosted validation, exact post-CI review, merge and sign-off remain separate.
+
+## Full-Auto resumption · November 10, 2026
+
+The owner authorized recurring public attestations with the reviewed permissions and sanitized digests and metadata, and authorized Develop before the first production CI result. The previous local checkpoint remains historical. The approved source is `b7cf622baafcf8600fc0fff9d4ce2f4838f7daa7`. The exact hosted CI and independent post-CI review gates remain required.

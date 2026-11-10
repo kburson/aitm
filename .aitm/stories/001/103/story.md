@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 103
 title: "GitHub CI and repository quality gates"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/103"
 parent: null
 children: [104, 105, 106]
 blocking: []
 blocked-by: []
 created: "2026-11-10T00:45:16Z"
-updated: "2026-11-10T04:59:03+00:00"
+updated: "2026-11-10T12:51:47+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 10.0, "size": "L"}
 priority: "P1"
@@ -41,3 +41,5 @@ Refined as a **10.0-agent-hour P1 epic** with three independent leaves. Each lea
 The [#104 signing probe](../104/attachments/github-signing-probe-result.md) passed and closed the binding feasibility question for this route. Production CI and delivery remain separate gates.
 
 The [#104 local delivery checkpoint](../104/attachments/local-delivery-checkpoint.md) records passing local verification and the remaining production authority gates. [#105](../105/story.md) and [#106](../106/story.md) have reviewed design and plan artifacts. Their predecessor gates remain open.
+
+Full-Auto delivery resumed on November 10. The owner authorized recurring public attestations with the reviewed permissions and sanitized digests and metadata, and authorized #104 to enter Develop before the first CI result. Actual passing CI and independent review remain merge gates.

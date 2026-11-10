@@ -14,7 +14,9 @@ Use one checklist per story while the workflow is manual. Keep the checklist wit
 
 ### Before Develop
 
-- [ ] Verify that the required CI jobs can run for the declared parent branch and the story's validation scope. Record the workflow, trigger and required job names on planning. If the route is unavailable, name the blocker, owner and next action. Resolve it or record an explicitly authorized, scoped exception under the applicable policy before entering Develop.
+Use the owner's delivery instruction for actions within the reviewed scope, including ordinary pushes, CI, review, merge and closure. Ask once if an action falls outside that scope or the owner explicitly reserved the decision.
+
+- [ ] Identify the CI route for the declared target and scope. If the story builds or repairs that route, Develop may proceed under the existing delivery authorization. Record the missing route as work to complete. Require passing CI on the exact candidate before Review and merge.
 - [ ] Name the closure owner, normally the implementing agent. That owner verifies delivery, obtains the implementing agent's signed retrospective, and reconciles the issue and Project status. Keep the implementing agent available until their own retrospective is signed.
 
 ### Develop → Test

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 104
 title: "[CI1] Bootstrap Actions and Python validation"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/104"
 parent: 103
 children: []
 blocking: [105]
 blocked-by: []
 created: "2026-11-10T02:57:04Z"
-updated: "2026-11-10T04:59:03+00:00"
+updated: "2026-11-10T12:51:47+00:00"
 last-branch: "codex/aitm-104-ci-bootstrap"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
@@ -37,3 +37,5 @@ The [single authorized signing probe](attachments/github-signing-probe-result.md
 The [delivery JIT](plan/delivery-jit.md) and [scoped review](plan/delivery-jit-review.md) admit local preparation and review under Full-Auto. The production signing-capable push and pre-Develop transition are held pending the applicable separate authority.
 
 [Local delivery checkpoint](attachments/local-delivery-checkpoint.md) records exact independently reviewed source and passing local evidence. The recurring-signing authorization and first-production-gate preflight remain open.
+
+Full-Auto delivery resumed on November 10. The owner authorized recurring public attestations with the reviewed permissions and sanitized digests and metadata, and authorized #104 to enter Develop before the first CI result. Actual passing CI and independent review remain merge gates.
