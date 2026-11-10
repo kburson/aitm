@@ -31,3 +31,11 @@ Authenticated raw replay kept all 629 baseline tests and added 22 monitor-contro
 ### Independent source review hold
 
 The [first independent source review](source-review-attempt-1.md) held the exact passing candidate for historical capture fences and permanent rejection on temporarily missing proof. The replacement must persist the current native frontier for each known stream when the writer first arms the command. It then selects the first qualified native boundary after that frontier. Commands remain queued while a required native boundary is unavailable. Preserve the signed earlier CI and review hold. Return to Develop and repeat the exact hosted and source gates for the replacement.
+
+### Capture frontier repair Test checkpoint
+
+[PR #180](https://github.com/kburson/aitm/pull/180) targets the unchanged trunk base `37a22922f072e39c35434ae645a1c20692b8da01` at head `198b75431f5a929ffd7178b2d17e463e717d956e`, tree `8f3aeb384b7b89ae573b5c563bd05f6c30656760`. [Fresh hosted run 42875770798](https://github.com/kburson/aitm/actions/runs/42875770798) is pending.
+
+The writer persists one authenticated native checkpoint per known stream before applying a source-wide change. It uses the earliest qualified native boundary strictly after that checkpoint. Native or locator unavailability leaves the command queued. Restart reuses the same frontiers, and a stream with proof cannot cause partial application while another stream waits. An exact queued command clears its saved frontiers only with the terminal receipt and state change. Direct proofs are bound to the matching armed change and writer instance.
+
+The old head reproduced both failures. The focused repair passed 116 registry, control, legacy and scan tests, including a two-stream restart and physical root substitution. The locked local gate passed 676 product and CLI tests and 182 helper tests, covering 7,952/8,734 product lines and 778/821 helper lines. Ruff and whitespace checks passed.
