@@ -67,3 +67,7 @@ Both original liveness failures reproduced on the held source. The focused final
 [Run 42882811950 attempt 1](https://github.com/kburson/aitm/actions/runs/42882811950/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `57c1572ebf9e483fa5f6e6877c208976fe8bd047` on the exact ordered base and head and candidate tree. Artifact `13794933461` has archive SHA-256 `d0d1e41b07632aed896b67eb4245fdcfb57205576eab89c16b648575b82fd5f8` and subject SHA-256 `267a13936e6799749bfbcbecb2265aa0bc88f78a6a7f9bd601c28beb0930f529`.
 
 The exact test control tree was explicit, with workflow, verifier, policy, lock and package configuration unchanged. Raw replay retained all 629 baseline identities and 705 candidate tests and matched the locked local coverage. The independent exact source re-review is pending.
+
+### Independent liveness re-review hold
+
+The [third source review](source-review-attempt-3.md) confirmed the original quiet, deleted and unfinished capture fences and held the exact passing tree for two remaining cases. A stable move of the original transcript within the approved installation must be a locator discontinuity without being reported as source absence. An old abandoned Claude request must not place a new capture gap over later completed work or a disabled interval. Return to Develop and preserve the signed run and all prior verdicts.
