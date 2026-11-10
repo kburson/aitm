@@ -54,3 +54,5 @@ Local verification passed 242 focused tests, 593 locked product and CLI tests an
 | [python-base](https://github.com/kburson/aitm/actions/runs/42852838878/job/129957875084) | Success |
 | [collect-evidence](https://github.com/kburson/aitm/actions/runs/42852838878/job/129961724706) | Success |
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42852838878/job/129961864563) | Success |
+
+[Independent exact replacement source re-review](post-ci-source-review.md) passed. The earlier hold remains in [attempt 1](source-review-attempt-1.md).
