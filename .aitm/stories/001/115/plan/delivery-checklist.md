@@ -21,3 +21,9 @@ A read-only code preflight found and replayed gaps in keyed snapshot disputes, e
 ### Attempt 1 hosted file-check failure
 
 [Run 42860016073 attempt 1](https://github.com/kburson/aitm/actions/runs/42860016073/attempts/1) belongs to head `e33282b61114cc00dbf061ea85928e9944e3ca42`. [File checks](https://github.com/kburson/aitm/actions/runs/42860016073/job/129983308133) failed because the monitor rate resource sat directly in the legacy rate directory and failed its exact legacy envelope check. Return to Develop. The monitor resource moves to the separate `rates/monitor/` namespace. The existing file gate continues to validate legacy rate cards and syntax-check the monitor JSON. The monitor loader and hosted tests validate its separate typed schema. Fresh full validation is required on the replacement.
+
+The first attempt's [quality job](https://github.com/kburson/aitm/actions/runs/42860016073/job/129983306872) also failed independently of the rate file. Ruff passed, and the unchanged actionlint invocation selected Go 1.26.11. The checksum service returned HTTP 404 for that toolchain. The earlier passing #114 run selected Go 1.26.10. The local checksum readback returned 200 for 1.26.10 and 404 for 1.26.11.
+
+### Attempt 2 Test checkpoint
+
+[PR #179](https://github.com/kburson/aitm/pull/179) now has head `511bcf17e7a694fcade1d8b2e2f364b14e2b027f` and tree `a22dccc417716be8ba1704b36acae87fe9bfc420`, with unchanged trunk base `9b12927da1a368f254537277f7fdc7139f90cc44`. The monitor rate bytes are unchanged in their own namespace. The wheel contains both the exact legacy rate card and the relocated monitor rate card. Local file checks, Ruff and fresh 629 product and CLI tests and 182 helper tests passed. The raw line floors passed at 7,141/7,818 and 778/821. Hosted [run 42860755483](https://github.com/kburson/aitm/actions/runs/42860755483) is pending.
