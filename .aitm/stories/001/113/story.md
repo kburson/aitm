@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 113
 title: "[M03] Versioned project persistence"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/113"
 parent: 100
 children: []
 blocking: [114]
 blocked-by: [112]
 created: "2026-11-10T13:57:51Z"
-updated: "2026-11-10T15:02:35+00:00"
+updated: "2026-11-10T15:12:31+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-round-1.md", "plan/jit-review.md", "plan/delivery-checklist.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-round-1.md", "plan/jit-review.md", "plan/delivery-checklist.md"], "attachments": ["attachments/versioned-persistence-compatibility.md"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M03", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "df2d7922319a140b5fbe506f594657ef954abe757616d04228476cda55f3432d"}
