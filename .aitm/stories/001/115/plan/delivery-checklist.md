@@ -57,3 +57,11 @@ Raw evidence replay retained all 592 baseline tests and added 31 native Grok and
 ### Independent source review hold
 
 The [first independent source review](source-review-attempt-1.md) held the exact passing candidate for a keyed snapshot dispute that stalled unrelated verified native turns. Return to Develop and retain both the passing signed CI and the independent hold. Reissue the source only after the regression shows unaffected turns advance while the affected key stays disputed. The candidate-only CLI test is included by the fixed hosted candidate command. The trusted-base inventory collects the package tests.
+
+### Snapshot repair Test checkpoint
+
+[PR #179](https://github.com/kburson/aitm/pull/179) targets the unchanged trunk base `9b12927da1a368f254537277f7fdc7139f90cc44` at head `ddf87559f352a1f62f947b683e512d68348a1ecc`, tree `c1c9bc00e7845278b805d4f2828de3663a79c18e`. [Fresh hosted run 42869601092](https://github.com/kburson/aitm/actions/runs/42869601092) is pending.
+
+A keyed snapshot dispute stays with the affected completion in the authenticated cursor. The reader returns each unrelated verified observation and boundary and advances their native frontier. A subsequent matching snapshot alone cannot clear the retained dispute. Native duplicate identity or overlap contradictions still hold the native frontier because they affect source continuity, and size or missing-proof limits still fail closed. The red and green regression includes cold and resumed evidence, an unrelated later turn, and repeated replay.
+
+Local focused validation passed 299 cases. The locked exact tree passed 630 product and CLI tests and 182 helper tests, with 7,146/7,825 product and 778/821 helper lines. Ruff and whitespace passed.
