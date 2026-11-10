@@ -64,3 +64,7 @@ Revision 7 is head `fef77fbe94a0b969bb6afcba6081819c5e9321ee` on the same live b
 - [x] [Revision 7 hosted run](https://github.com/kburson/aitm/actions/runs/42917830668/attempts/1): candidate Python, lint and file checks passed; trusted base failed, evidence collection failed and signing was skipped.
 
 [Revision 7 trusted-base job](https://github.com/kburson/aitm/actions/runs/42917830668/job/130184723374) failed in setup for a different unchanged monitor test, `test_project_wide_mark_is_distinct_from_anchor_only_scope`, with `BoundaryUnavailable: Native capture position is unavailable`. Keep the failure attached to its own attempt. Retry a fresh first attempt with the same candidate tree and no monitor or CI edits.
+
+Revision 8 is head `8475b124f921bd0742d04b228c0a44824369b441` with the same tree and base as revision 7. The second isolated monitor fixture passed locally. Eleven exact dashboard tests, Ruff and the guide round trip passed again.
+
+- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42918480605), delivered verifier and independent source review.
