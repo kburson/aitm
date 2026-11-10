@@ -2,28 +2,233 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
+  push:
     branches: [trunk]
-    types: [synchronize]
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: '3.13.9'
+  UV_VERSION: '0.10.6'
+  # Initial observer and policy are pinned after independent bootstrap review.
+  BOOTSTRAP_OBSERVER_BLOB: 839b73cdcc1e44f45af78bcebdbf53e9adfeee67
+  BOOTSTRAP_OBSERVER_SHA: dd08c448cafe1ef0e6f5b8eba660d8485bfe76657c109c5249e86efd735025d1
+  BOOTSTRAP_POLICY_BLOB: b93942fb31a999702ed1c2ad14035b1a5a1d22a4
+  BOOTSTRAP_POLICY_SHA: dae97b53685c6c5f079de479ef49a0dfb5c522f4c2aae9a8bfdc5618286c71a2
+
 jobs:
-  binding-probe-collect:
-    if: >-
-      github.repository == 'kburson/aitm' &&
-      github.actor == 'kburson' &&
-      github.run_attempt == '1' &&
-      github.event.number == 107 &&
-      github.event.pull_request.draft &&
-      github.event.repository.visibility == 'public' &&
-      github.event.pull_request.base.sha == 'f80f22645e2008c4cac9dc6e4003640bba976b5f' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      github.head_ref == 'codex/aitm-104-ci-bootstrap' &&
-      github.event.before == 'd34921e0dd604abb2af5b710031d8e4a85c76cee'
+  python-base:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-26
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: false
+      - name: Run isolated trusted base inventory and outcomes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$BASE"
+          out="$RUNNER_TEMP/aitm-base"
+          mkdir -p "$out/observer" "$out/evidence"
+          if [[ -f tools/ci/pytest_evidence.py ]]; then
+            git show HEAD:tools/ci/pytest_evidence.py > "$out/observer/pytest_evidence.py"
+            git show HEAD:tools/ci/policy.json > "$out/observer/policy.json"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$BOOTSTRAP_OBSERVER_BLOB" --jq .content |
+              python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > "$out/observer/pytest_evidence.py"
+            gh api "repos/$GITHUB_REPOSITORY/git/blobs/$BOOTSTRAP_POLICY_BLOB" --jq .content |
+              python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > "$out/observer/policy.json"
+            test "$(shasum -a 256 "$out/observer/pytest_evidence.py" | cut -d' ' -f1)" = "$BOOTSTRAP_OBSERVER_SHA"
+            test "$(shasum -a 256 "$out/observer/policy.json" | cut -d' ' -f1)" = "$BOOTSTRAP_POLICY_SHA"
+          fi
+          cd packages/aitm-usage
+          uv sync --locked --python "$PYTHON_VERSION"
+          PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json" \
+            uv run --locked pytest -p pytest_evidence --rootdir "$GITHUB_WORKSPACE" -q tests
+          sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
+          jq -n --arg base "$BASE" --arg tree "$(git rev-parse HEAD^{tree})" \
+            --arg observer "$(sha "$out/observer/pytest_evidence.py")" --arg policy "$(sha "$out/observer/policy.json")" \
+            --arg lock "$(sha uv.lock)" --arg configuration "$(sha pyproject.toml)" \
+            --arg runtime "$(uv run --locked python -c 'import platform; print(platform.python_version())')" \
+            --arg image "${ImageOS:?}:${ImageVersion:?}" --slurpfile evidence "$out/outcomes.json" \
+            '{identity:{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image},evidence:$evidence[0]}' > "$out/evidence/base.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: aitm-ci-base-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-base/evidence/base.json
+          if-no-files-found: error
+
+  python:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: macos-26
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        id: uv
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: packages/aitm-usage/uv.lock
+          cache-suffix: macos-26-python-3.13.9
+      - name: Qualify and record exact candidate inputs
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          root="$GITHUB_WORKSPACE"
+          out="$RUNNER_TEMP/aitm-python"
+          mkdir -p "$out/evidence"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            test "$(git cat-file -p HEAD | awk '/^$/{exit} /^parent /{print $2}')" = "$(printf '%s\n%s' "$BASE" "$PR_HEAD")"
+            sha() { shasum -a 256 | cut -d' ' -f1; }
+            if git cat-file -e "$BASE:tools/ci/pytest_evidence.py" 2>/dev/null; then
+              observer=$(git show "$BASE:tools/ci/pytest_evidence.py" | sha)
+              policy=$(git show "$BASE:tools/ci/policy.json" | sha)
+            else
+              observer=$BOOTSTRAP_OBSERVER_SHA
+              policy=$BOOTSTRAP_POLICY_SHA
+            fi
+            jq -n --arg base "$BASE" --arg tree "$(git rev-parse "$BASE^{tree}")" \
+              --arg observer "$observer" --arg policy "$policy" \
+              --arg lock "$(git show "$BASE:packages/aitm-usage/uv.lock" | sha)" \
+              --arg configuration "$(git show "$BASE:packages/aitm-usage/pyproject.toml" | sha)" \
+              --arg runtime "$PYTHON_VERSION" --arg image "${ImageOS:?}:${ImageVersion:?}" \
+              '{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image}' > "$out/evidence/expected-base.json"
+          fi
+          device=$(df -P "$RUNNER_TEMP" | awk 'NR==2 {print $1}')
+          filesystem=$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)
+          jq -n --arg os "$(uname -s)" --arg filesystem "$filesystem" \
+            --arg image "${ImageOS:?}:${ImageVersion:?}" --arg xcode "$(xcodebuild -version)" \
+            '{$os,$filesystem,$image,$xcode}' > "$out/evidence/capability.json"
+          test "$filesystem" = apfs
+          test -d "$root/packages/aitm-usage/src/aitm_usage"
+      - name: Run serial behavior suite and retain exact coverage
+        env:
+          UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
+        shell: bash
+        run: |
+          root="$GITHUB_WORKSPACE"
+          out="$RUNNER_TEMP/aitm-python"
+          start=$(date +%s)
+          cd packages/aitm-usage
+          uv sync --locked --python "$PYTHON_VERSION"
+          ready=$(date +%s)
+          export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/evidence/pytest.json"
+          export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
+          uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
+            --junitxml="$out/evidence/product-junit.xml" --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
+          uv run --locked python - "$out" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from python_gate import collect_child_coverage
+
+          root = Path(sys.argv[1])
+          result = collect_child_coverage(json.loads((root / "evidence/pytest.json").read_text()), root / ".product")
+          (root / "evidence/children.json").write_text(json.dumps(result))
+          PY
+          uv run --locked coverage combine --keep
+          uv run --locked coverage json -o "$out/evidence/product-coverage.json"
+          cd "$root"
+          unset AITM_CI_PYTEST_EVIDENCE AITM_CI_CHILD_EVIDENCE
+          printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
+          COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
+            --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
+            tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py
+          cache=cold
+          if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
+          jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
+            --argjson started "$start" --arg cache "$cache" '{$setup,$test,$started,$cache}' > "$out/timings.json"
+      - name: Build and smoke-test the exact installed wheel
+        shell: bash
+        run: |
+          out="$RUNNER_TEMP/aitm-python"
+          cd packages/aitm-usage
+          uv build --wheel --no-sources --out-dir "$out/wheel"
+          wheels=("$out"/wheel/*.whl)
+          test "${#wheels[@]}" = 1
+          wheel=${wheels[0]}
+          shasum -a 256 "$wheel" > "$out/wheel.sha256"
+          uv export --locked --no-dev --no-emit-project --format requirements.txt > "$out/runtime.txt"
+          uv venv --python "$PYTHON_VERSION" "$out/install"
+          uv pip sync --python "$out/install/bin/python" "$out/runtime.txt"
+          shasum -a 256 -c "$out/wheel.sha256"
+          uv pip install --python "$out/install/bin/python" --no-deps "$wheel"
+          "$out/install/bin/python" -I -c 'from pathlib import Path; import sys, aitm_usage; assert Path(aitm_usage.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())'
+          "$out/install/bin/aitm-usage" --help > "$out/help"
+          grep -q 'usage: aitm-usage' "$out/help"
+          jq --argjson end "$(date +%s)" '. + {total:($end-.started)} | del(.started)' "$out/timings.json" > "$out/evidence/timings.json"
+          jq -n --arg digest "$(cut -d' ' -f1 "$out/wheel.sha256")" '{$digest}' > "$out/evidence/wheel.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: aitm-ci-python-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-python/evidence/
+          if-no-files-found: error
+
+  quality:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: packages/aitm-usage/uv.lock
+          cache-suffix: ubuntu-24.04-python-3.13.9
+      - name: Lint and format checks
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
+          ruff=packages/aitm-usage/.venv/bin/ruff
+          (cd packages/aitm-usage && .venv/bin/ruff check . && .venv/bin/ruff format --check .)
+          "$ruff" check --config packages/aitm-usage/pyproject.toml tools/ci
+          "$ruff" format --check --config packages/aitm-usage/pyproject.toml tools/ci
+          go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+  collect-evidence:
+    if: always() && !cancelled() && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    needs: [python-base, python, quality]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
+      actions: read
     outputs:
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
@@ -31,31 +236,94 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 1
           persist-credentials: false
-      - name: Verify the checkout and write a fixed probe subject
+      - name: Check every required dependency
+        env:
+          NEEDS: ${{ toJSON(needs) }}
         shell: bash
         run: |
-          test "$GITHUB_REF" = refs/pull/107/merge
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          base=$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")
-          head=$(jq -er '.pull_request.head.sha' "$GITHUB_EVENT_PATH")
-          test "$(jq -er '.after' "$GITHUB_EVENT_PATH")" = "$head"
-          test "$(git cat-file -p HEAD | awk '/^$/{exit} /^parent /{print $2}')" = "$(printf '%s\n%s' "$base" "$head")"
-          mkdir "$RUNNER_TEMP/binding-subject"
-          printf '%s\n' '{"probe":"aitm-104-ordinary-pr-binding-v1"}' > "$RUNNER_TEMP/binding-subject/candidate.json"
-          printf 'Observed exact checkout %s\n' "$GITHUB_SHA"
+          mode=push
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then mode=pr; fi
+          printf '%s\n' "$NEEDS" > "$RUNNER_TEMP/aitm-needs.json"
+          python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json --needs "$RUNNER_TEMP/aitm-needs.json"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: aitm-ci-python-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-candidate
+          digest-mismatch: error
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: github.event_name == 'pull_request'
+        with:
+          name: aitm-ci-base-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-baseline
+          digest-mismatch: error
+      - name: Evaluate required evidence and assemble the candidate
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.number }}
+        shell: bash
+        run: |
+          input="$RUNNER_TEMP/aitm-candidate"
+          out="$RUNNER_TEMP/aitm-collector"
+          mkdir "$out"
+          mode=push
+          base_args=()
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            mode=pr
+            base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json" --expected-base "$input/expected-base.json")
+          fi
+          python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json \
+            --inventory "$input/pytest.json" --outcomes "$input/pytest.json" \
+            --coverage "$input/product-coverage.json" --helpers "$input/helper-coverage.json" \
+            --child-evidence "$input/children.json" --capability "$input/capability.json" \
+            "${base_args[@]}" > "$out/disposition.json"
+          cat "$out/disposition.json"
+          if [[ "$mode" == pr ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$out/run.json"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" > "$out/jobs.json"
+            jq -n --slurpfile run "$out/run.json" --slurpfile jobs "$out/jobs.json" '
+              ($jobs[0].jobs | map(select(.name=="python"))) as $matches |
+              if ($matches|length)!=1 then error("ambiguous Python lane") else
+                (($matches[0].started_at|fromdateiso8601)-($run[0].created_at|fromdateiso8601))
+              end' > "$out/queue.json"
+            jq -n --arg schema aitm.ci-candidate/v2 --argjson run "$GITHUB_RUN_ID" \
+              --argjson attempt "$GITHUB_RUN_ATTEMPT" --argjson pr "$PR_NUMBER" \
+              --arg head "$PR_HEAD" --arg base "$BASE" --arg tested "$GITHUB_SHA" \
+              --arg tree "$(git rev-parse HEAD^{tree})" --argjson jobs "$JOB_RESULTS" \
+              --arg policy "$(git rev-parse HEAD:tools/ci/policy.json)" \
+              --arg workflow "$(git rev-parse HEAD:.github/workflows/ci.yml)" \
+              --arg observer "$(git rev-parse HEAD:tools/ci/pytest_evidence.py)" \
+              --arg gate "$(git rev-parse HEAD:tools/ci/python_gate.py)" \
+              --arg lock "$(git rev-parse HEAD:packages/aitm-usage/uv.lock)" \
+              --arg inventory "$(sha256sum "$input/pytest.json" | cut -d' ' -f1)" \
+              --arg baseline "$(sha256sum "$RUNNER_TEMP/aitm-baseline/base.json" | cut -d' ' -f1)" \
+              --slurpfile result "$out/disposition.json" --slurpfile child "$input/children.json" \
+              --slurpfile timings "$input/timings.json" --slurpfile queue "$out/queue.json" --slurpfile wheel "$input/wheel.json" \
+              --slurpfile platform "$input/capability.json" --slurpfile base_identity "$input/expected-base.json" \
+              --slurpfile product "$input/product-coverage.json" --slurpfile helpers "$input/helper-coverage.json" \
+              '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$baseline,
+                controls:{$policy,$workflow,$observer,$gate,$lock},jobs:($jobs|map_values(.result)),
+                result:$result[0],children:$child[0].children,timings:($timings[0]+{queue:$queue[0]}),wheel:$wheel[0].digest,
+                platform:$platform[0],base_identity:$base_identity[0],
+                branches:{product:($product[0].totals|{covered_branches,num_branches}),
+                helpers:($helpers[0].totals|{covered_branches,num_branches})}}' > "$out/candidate.json"
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: github.event_name == 'pull_request'
         id: upload
         with:
           name: aitm-ci-collector-a${{ github.run_attempt }}
-          path: ${{ runner.temp }}/binding-subject/candidate.json
+          path: ${{ runner.temp }}/aitm-collector/candidate.json
           if-no-files-found: error
           overwrite: false
 
-  binding-probe-sign:
-    needs: binding-probe-collect
-    if: github.run_attempt == '1'
+  aitm-ci:
+    needs: collect-evidence
+    if: github.event_name == 'pull_request' && github.event.repository.visibility == 'public'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -68,8 +336,8 @@ jobs:
         id: authorize
         env:
           GH_TOKEN: ${{ github.token }}
-          COLLECTOR_ID: ${{ needs.binding-probe-collect.outputs.artifact-id }}
-          COLLECTOR_DIGEST: ${{ needs.binding-probe-collect.outputs.artifact-digest }}
+          COLLECTOR_ID: ${{ needs.collect-evidence.outputs.artifact-id }}
+          COLLECTOR_DIGEST: ${{ needs.collect-evidence.outputs.artifact-digest }}
         shell: bash
         run: |
           [[ "$COLLECTOR_ID" =~ ^[1-9][0-9]*$ ]]
@@ -117,8 +385,17 @@ jobs:
                   raise SystemExit("invalid collector archive member")
               with package.open(member) as source:
                   subject = source.read(2**20 + 1)
-          if subject != b'{"probe":"aitm-104-ordinary-pr-binding-v1"}\n':
-              raise SystemExit("unexpected probe subject")
+          import json
+
+          report = json.loads(subject)
+          if (
+              report.get("schema") != "aitm.ci-candidate/v2"
+              or report.get("run") != int(os.environ["GITHUB_RUN_ID"])
+              or report.get("attempt") != int(os.environ["GITHUB_RUN_ATTEMPT"])
+              or report.get("tested") != os.environ["GITHUB_SHA"]
+              or report.get("result", {}).get("passed") is not True
+          ):
+              raise SystemExit("invalid candidate evidence")
           destination = root / "binding-signed"
           destination.mkdir()
           (destination / "candidate.json").write_bytes(subject)
@@ -139,7 +416,7 @@ jobs:
           cp -- "$BUNDLE_PATH" "$RUNNER_TEMP/binding-signed/attestation.sigstore.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: aitm-ci-binding-probe-a${{ github.run_attempt }}
+          name: aitm-ci-evidence-a${{ github.run_attempt }}
           path: ${{ runner.temp }}/binding-signed/
           if-no-files-found: error
           overwrite: false

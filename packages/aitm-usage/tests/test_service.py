@@ -1146,7 +1146,7 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 
 
-def test_one_shot_status_uses_collecting_subprocess_pid(project):
+def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
     import subprocess
 
     root, sources, checkout, config, command = project
@@ -1172,6 +1172,14 @@ def test_one_shot_status_uses_collecting_subprocess_pid(project):
         stderr=subprocess.PIPE,
     ) as process:
         output, error = process.communicate(timeout=15)
+        if os.environ.get("AITM_CI_CHILD_EVIDENCE") == "1":
+            observer = pytestconfig.pluginmanager.get_plugin("pytest_evidence")
+            assert observer is not None, (
+                "CI child evidence requires the pytest observer"
+            )
+            observer.record_child(
+                pytestconfig, "service-one-shot", process.pid, process.returncode
+            )
         assert process.returncode == 0, error
         assert json.loads(output)["sequence"] > 0
         child_pid = process.pid
