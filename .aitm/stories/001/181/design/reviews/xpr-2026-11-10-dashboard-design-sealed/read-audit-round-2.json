@@ -1,0 +1,40 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "round": 2,
+  "artifact_path": ".aitm/stories/001/181/design/story-timing-dashboard-design.md",
+  "artifact_commit": "8be219e115777c05fa19f989bf77c5533ebf1df7",
+  "artifact_digest": "sha256:ed54c65d42aad04bde7a4f942894beb6a2280016d5fc2ff0b6411297ce5f46a5",
+  "physical_lines": 54,
+  "round_start_bound": "2026-11-10T20:43:55.857Z",
+  "round_end": "2026-11-10T20:44:28.446Z",
+  "reviewer_fingerprint": "sha256:349b0f6682b403a7d39e3a413ed147008f5b5220a8e947a14d1ba9881a0c1098",
+  "observed_response_models": [
+    "claude-opus-5-5"
+  ],
+  "reads": [
+    {
+      "requested_at": "2026-11-10T20:44:05.646Z",
+      "offset": 1,
+      "limit": null,
+      "returned_at": "2026-11-10T20:44:05.655Z",
+      "returned_start": 1,
+      "returned_count": 55,
+      "reported_total_lines": 55,
+      "displayed_first": 1,
+      "displayed_last": 55,
+      "verified_lines": 54,
+      "mismatched_lines": [],
+      "error": false
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_source_evidence": [
+    {
+      "source": "retained private provider transcript prefix through submitted_at",
+      "prefix_sha256": "332d52cd173b98d35dd3e4514f803ddac672e3e94f3ecb9a43922ef673284d2c",
+      "prefix_bytes": 486061
+    }
+  ],
+  "assurance": "Observed numbered Read tool-result lines matched byte-for-byte as UTF-8 text to every line of the native input Git blob within this round. This proves retrieval coverage, not attention or independent execution attestation. Trailing newline has no additional authored line; provider totalLines may count its empty split element."
+}

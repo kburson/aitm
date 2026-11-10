@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-10T19:52:02Z"
+updated: "2026-11-10T20:45:09Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/000/2/design/core-design.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": [], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md"]}
 expansions: []
 trips: []
 ---
@@ -49,3 +49,12 @@ Reuse the eligible activity and implementation clock in #28, qualified review ti
 
 - [Historical Actual backfill](attachments/2026-11-10-actual-backfill.md) with board readback and exact rollup inputs. Partial coverage excludes the snapshot from calibration.
 - [Coordination with Core and the usage monitor](attachments/timing-and-usage-coordination.md) with the responsibility split, wall-clock and additive effort model, and rubric rule.
+
+## Reviewed design
+
+[Story timing and early dashboard](design/story-timing-dashboard-design.md) was accepted at raw digest `sha256:ed54c65d42aad04bde7a4f942894beb6a2280016d5fc2ff0b6411297ce5f46a5`. The near-term slices are sanitized evidence on planning, a reproducible local snapshot and an offline dashboard. The later integration reuses Core C23/C25/C44 and monitor M07/M13/M14.
+
+- [Read-only feasibility evidence](design/read-only-feasibility.md)
+- [Author check](design/reviews/sar-2026-11-10-dashboard-design/review-manifest.md)
+- [Independent Codex review](design/reviews/spr-2026-11-10-dashboard-design/review-manifest.md)
+- [Cross-provider review and exact final acceptance](design/reviews/xpr-2026-11-10-dashboard-design-sealed/review-manifest.md)
