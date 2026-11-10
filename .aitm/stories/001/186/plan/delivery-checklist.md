@@ -38,3 +38,7 @@ Revision 4 is head `0814a81bc93a829c8130a2a9152120b29907deeb` on the same base `
 ## Exact hosted candidate
 
 GitHub tested `9531b8d713502b3eda259f38fe55043bf1288b29` with ordered base `49865245d175ce6c52913738f2c9a42c0abea632` and head `0814a81bc93a829c8130a2a9152120b29907deeb`. Its tree `23856755bd01534855842ecee675964c1eece94c` matches the focused candidate. Verified job records: aitm-ci, collect-evidence, file-checks, python, python-base, quality. The delivered verifier checked the signed subject and current candidate with no CI control changes.
+
+## Independent source review required changes
+
+[Revision 4 review](source-review-r4.md) reproduced four evidence-admission defects on the signed candidate. Preserve its verdict and exact identity. Return to Develop, add regression coverage for the supported registration envelope, held retries, observation-specific chronology and malformed frontmatter depth, then verify and review the corrected exact source. The accepted write set and pickup scope are unchanged.
