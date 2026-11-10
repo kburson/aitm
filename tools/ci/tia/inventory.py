@@ -10,6 +10,13 @@ Inventory = bytes
 
 _PRODUCT_TARGET = "packages/aitm-usage/tests/"
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+_CI103_CHILD_SELECTORS = {
+    "cli-help": _CLI,
+    "service-one-shot": (
+        _PRODUCT_TARGET
+        + "test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+    ),
+}
 _WORKLOAD_PROFILES = {
     "full": {"product-cli", "ci-helpers"},
     "compare-product-base": {"product-base"},
@@ -146,12 +153,30 @@ def _path(value):
     )
 
 
+def _git_ref(value):
+    return (
+        _path(value)
+        and value.startswith("refs/")
+        and not value.endswith(".")
+        and ".." not in value
+        and "@{" not in value
+        and not any(char in value for char in " ~^:?*[")
+        and all(
+            not part.startswith(".") and not part.endswith(".lock")
+            for part in value.split("/")
+        )
+    )
+
+
 def _node(nodeid, error):
     _require(_text(nodeid), error)
     source, _, remainder = nodeid.partition("::")
-    qualified, _, _ = remainder.partition("[")
+    qualified, opening, _ = remainder.partition("[")
     _require(
-        _path(source) and all(_text(part) for part in qualified.split("::")), error
+        _path(source)
+        and all(_text(part) for part in qualified.split("::"))
+        and (not opening or remainder.endswith("]")),
+        error,
     )
     return source, source + "::" + qualified
 
@@ -386,6 +411,7 @@ def _policy(suite_policy):
         for label in row.get("required_children", []):
             _require(
                 label not in child_labels
+                and _CI103_CHILD_SELECTORS.get(label) == selector
                 and "product-cli" in applicable
                 and (row.get("mandatory") or selector in required),
                 error,
@@ -393,7 +419,7 @@ def _policy(suite_policy):
             child_labels.add(label)
     _require(
         _CLI in mandatory["product-cli"]
-        and child_labels == labels
+        and child_labels == labels == _CI103_CHILD_SELECTORS.keys()
         and all(not nodes & optional.keys() for nodes in mandatory.values()),
         error,
     )
@@ -425,8 +451,7 @@ def _binding(record):
         _require(
             _digest(snapshot["commit"], 40, 64)
             and _digest(snapshot["tree"], len(snapshot["commit"]))
-            and _path(snapshot["ref"])
-            and snapshot["ref"].startswith("refs/")
+            and _git_ref(snapshot["ref"])
             and _run_identity(snapshot),
             error,
         )

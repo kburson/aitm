@@ -148,8 +148,8 @@ def test_classification_preserves_parametrized_platform_ids():
     secondary["platform_scope"] = "darwin-apfs-secondary"
     secondary["runner"]["profile"] = "secondary"
     prefix = _PRODUCT + "test_service.py::TestPlatform::test_example"
-    first = prefix + "[Linux/a::b[é]]"
-    second = prefix + "[FreeBSD/x[y]::z]"
+    first = prefix + "[Linux/a::b[é]"
+    second = prefix + "[FreeBSD/x]y::z]"
     primary["items"].extend(
         {"nodeid": node, "disposition": "collected"} for node in (first, second)
     )
@@ -204,6 +204,7 @@ def test_classification_preserves_parametrized_platform_ids():
         ("inconsistent-runner", "capability"),
         ("missing-mandatory", "collection"),
         ("unsafe-path", "collection"),
+        ("unterminated-parameter", "collection"),
         ("duplicate-override", "policy"),
         ("outside-module-override", "policy"),
         ("duplicate-policy-pair", "policy"),
@@ -245,6 +246,8 @@ def test_unclassified_or_duplicate_fails(case, category):
         items.remove(next(row for row in items if row["nodeid"] == _ACL))
     elif case == "unsafe-path":
         items[0]["nodeid"] = _PRODUCT + "sub/../test_service.py::test_fixture"
+    elif case == "unterminated-parameter":
+        items[0]["nodeid"] = _PRODUCT + "test_service.py::test_fixture[Linux/x::y"
     elif case == "duplicate-override":
         suites["overrides"].append(suites["overrides"][0])
     elif case == "outside-module-override":
@@ -447,3 +450,63 @@ def test_refreshed_scope_modules_share_native_process_isolation(nodeid):
         "integration",
         "native-process-state",
     )
+
+
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "refs/pull/139/merge..bad",
+        "refs/pull/139/.hidden",
+        "refs/heads/trailing.",
+        "refs/heads/name.lock",
+        "refs/heads/middle.lock/child",
+        "refs/heads/has space",
+        "refs/heads/has@{sequence",
+        "refs/heads/caret^",
+        "refs/heads/tilde~",
+        "refs/heads/colon:",
+        "refs/heads/open[",
+        "refs/heads/wild?",
+        "refs/heads/asterisk*",
+    ],
+)
+def test_hosted_collection_rejects_malformed_git_ref(ref):
+    binding = deepcopy(_HOSTED)
+    binding["snapshot"]["ref"] = ref
+    collection = _collection("product-cli", binding=binding)
+    with pytest.raises(ValueError, match="^malformed input:"):
+        _project(collection, "compare-product-cli")
+
+
+@pytest.mark.parametrize("ref", ["refs/heads/part./branch]", "refs/tags/été"])
+def test_hosted_collection_preserves_valid_git_ref(ref):
+    binding = deepcopy(_HOSTED)
+    binding["snapshot"]["ref"] = ref
+    inventory = json.loads(
+        _project(_collection("product-cli", binding=binding), "compare-product-cli")
+    )
+    assert inventory["binding"]["snapshot"]["ref"] == ref
+
+
+@pytest.mark.parametrize("mutation", ["transpose", "omit"])
+def test_policy_requires_exact_ci103_child_associations(mutation):
+    suites = json.loads(_SUITES.read_bytes())
+    ci103 = json.loads(_CI103.read_bytes())
+    children = {
+        rule["selector"]: rule
+        for rule in suites["overrides"]
+        if "required_children" in rule
+    }
+    if mutation == "transpose":
+        children[_CLI]["required_children"] = ["service-one-shot"]
+        children[_ONE_SHOT]["required_children"] = ["cli-help"]
+    else:
+        children[_ONE_SHOT].pop("required_children")
+        ci103["required_children"].remove("service-one-shot")
+    with pytest.raises(ValueError, match="^policy:"):
+        _project(
+            _collection("product-cli"),
+            "compare-product-cli",
+            suites=suites,
+            ci103=ci103,
+        )
