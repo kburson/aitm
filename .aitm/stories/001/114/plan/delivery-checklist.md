@@ -16,3 +16,16 @@ Codex is the implementing agent and closure owner. [Accepted pickup](jit.md), [t
 The initial 16 bridge cases failed on the missing interface, then passed on the implemented path. Two additional restart cases caught cursor advances that would discard an unfinished Codex turn or Claude tool-to-request link. They failed before the hold and passed after it. The adapter keeps unsettled deltas at their previous checkpoint for replay. The actual durable write of cursor plus accepted frontier belongs to the later claim owner. Tests retain the existing #88/#96 native evidence as the source for sanitized fixture shape. Archive copies, unqualified tuples and replay variants are deterministic derivatives.
 
 Final local verification passed 238 focused provider tests, 589 locked product and CLI tests and 182 CI helper tests. Product raw lines were 6,599/7,219 and helper raw lines 778/821. Both unrounded floors, Ruff and whitespace passed. The source bridge leaves the Linux carrier tuples disabled.
+
+### Review checkpoint
+
+[Canonical run 42848435620 attempt 1](https://github.com/kburson/aitm/actions/runs/42848435620/attempts/1) passed all six jobs. Its tested merge `2c61e01690fb5921ae125c0b1e3b07d809d33c4b` had the expected exact tree and ordered base and candidate parents. The trusted-base job ran after an approximately ten-minute runner queue in the same attempt.
+
+| Job | Outcome |
+| --- | --- |
+| [python-base](https://github.com/kburson/aitm/actions/runs/42848435620/job/129942166875) | Success |
+| [file-checks](https://github.com/kburson/aitm/actions/runs/42848435620/job/129942167055) | Success |
+| [quality](https://github.com/kburson/aitm/actions/runs/42848435620/job/129942167068) | Success |
+| [python](https://github.com/kburson/aitm/actions/runs/42848435620/job/129942167094) | Success |
+| [collect-evidence](https://github.com/kburson/aitm/actions/runs/42848435620/job/129949603274) | Success |
+| [aitm-ci](https://github.com/kburson/aitm/actions/runs/42848435620/job/129949766103) | Success |
