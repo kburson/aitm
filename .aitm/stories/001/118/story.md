@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 118
 title: "[M08] Service journal and claim order"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/118"
 parent: 100
 children: []
-blocking: [119]
+blocking: [119, 199]
 blocked-by: [117, 182, 194]
 created: "2026-11-10T13:58:00Z"
-updated: "2026-11-10T21:29:08+00:00"
-last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+updated: "2026-11-10T22:59:44+00:00"
+last-branch: "codex/aitm-118-routing-journal"
+estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-10-118-routing-journal-plan.md", "plan/2026-11-10-118-m08b-revision-disposition-split.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M08", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "2b43bde5c32a6a64be8230b656f2a37ca972b453a1df7bac6767701cb2198d9f"}
@@ -39,3 +39,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_competing_project_claims_cannot_double_charge`, `test_causal_revision_survives_stale_replay_after_restart` and `test_reservation_and_cursor_commit_together`. Assert provider archive copies keep one canonical key, a distinct verified retry keeps its own key, and an injected rollback leaves no partial claim or cursor movement.
 - [ ] Run red. Implement private keyed journal and lease. Run green with `test_ledger.py`. Commit M08.
+
+The [accepted split](plan/2026-11-10-118-m08b-revision-disposition-split.md) retains #118 for transactional first claims and replay. [M08b #199](../199/story.md) owns verified causal order and dispositions. Both gate #119. [Split receipt](plan/2026-11-10-118-m08b-split-receipt.json).

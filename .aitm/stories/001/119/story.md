@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
 blocking: [120, 122]
-blocked-by: [118]
+blocked-by: [118, 199]
 created: "2026-11-10T13:58:01Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T22:59:44+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -41,3 +41,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_restart_at_reserve_commit_and_ack_yields_one_row`, `test_stale_ack_never_rewinds_publication`, and `test_full_destination_queue_preserves_independent_progress`. Add `test_late_conflict_after_ack_produces_dispute_without_new_write` and `test_folded_replacement_and_child_withdrawal_share_view`. Assert a blocked stream’s cursor remains replayable and settlement after recovery preserves two distinct project scopes.
 - [ ] Run red. Implement guarded delivery and bounded dispositions. Run green with `test_monitor_journal.py` and `test_ledger.py`. Commit M09.
+
+The [reviewed M08 split](../118/plan/2026-11-10-118-m08b-revision-disposition-split.md) requires [M08a #118](../118/story.md) and [M08b #199](../199/story.md).

@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T21:29:08+00:00"
+updated: "2026-11-10T22:59:44+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
