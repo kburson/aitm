@@ -71,3 +71,13 @@ The exact test control tree was explicit, with workflow, verifier, policy, lock 
 ### Independent liveness re-review hold
 
 The [third source review](source-review-attempt-3.md) confirmed the original quiet, deleted and unfinished capture fences and held the exact passing tree for two remaining cases. A stable move of the original transcript within the approved installation must be a locator discontinuity without being reported as source absence. An old abandoned Claude request must not place a new capture gap over later completed work or a disabled interval. Return to Develop and preserve the signed run and all prior verdicts.
+
+### Moved locator and Claude history Test checkpoint
+
+[PR #180](https://github.com/kburson/aitm/pull/180) targets unchanged trunk `37a22922f072e39c35434ae645a1c20692b8da01` at head `7a0503f24d3eb2ffa7d70e7bacfae470c8fce0e8`, tree `57e46ef74951a44b21533816171aa3057502178e`. GitHub confirmed the exact head and base. [Fresh run 42886608928](https://github.com/kburson/aitm/actions/runs/42886608928) is pending.
+
+An original inode at another verified path proves discontinuity at the enrolled locator. It keeps the latest authorized prefix and an open-ended gap without claiming that the session is absent or ended. The command no longer depends on the callback supplying the moved file. The native verifier still requires original locator continuity before a lost stream can enroll again.
+
+Claude keeps abandoned provisional requests out of a later completed native suffix. Current in-flight tool and provisional request proofs still create gaps from the verified base. A queued enable adds no retrospective gap to the disabled interval, and a span crossing its actual fence remains Unknown.
+
+Both findings reproduced on the prior exact source. The frozen replacement passed 326 focused tests, 714 locked product and CLI tests and 182 helper tests. Raw coverage was 8,404/9,229 product and 778/821 helper lines. Ruff and whitespace passed. The exact local gate reran after the final delayed-enable assertions were saved.
