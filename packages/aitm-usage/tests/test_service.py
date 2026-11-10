@@ -184,9 +184,17 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
     def interrupted(*args):
         raise OSError("interrupted after private publication")
 
+    publish = scopes._publish
+
+    def interrupted_inbox(directory, *args, **kwargs):
+        if directory.path == root / "inbox":
+            interrupted()
+        return publish(directory, *args, **kwargs)
+
     with monkeypatch.context() as patch:
-        patch.setattr(cli, "enqueue_command", interrupted)
+        patch.setattr(scopes, "_publish", interrupted_inbox)
         command("source", "add-anchor", "--anchor", str(anchor), "--json", expected=1)
+    assert (root / "source-anchors" / f"{anchor_id}.json").is_file()
     command("collect-once", "--json")
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
