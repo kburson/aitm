@@ -27,3 +27,7 @@ GitHub readback at `2026-11-10T14:00:46Z` verified 19 open Backlog items, all 19
 | [M19](multi-project-usage-monitor-implementation-plan.md#m19-controlled-linux-qualification-and-delivery-gate) | [#129 Native Linux qualification](../../129/story.md) | [M18 #128](../../128/story.md) |
 
 The child set follows the exact accepted plan. Individual estimates and leaf-specific gates are recorded at refinement and pickup.
+
+## M04 pickup split
+
+[#134 M04-LC](../../134/story.md) and [#135 M04-LA](../../135/story.md) were added under #100 after the original 19-leaf inventory. Both require #114 and block #129. [Verified split](../../114/plan/linux-carrier-split.json).

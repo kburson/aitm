@@ -1,0 +1,45 @@
+{
+  "schema": "aitm.monitor-carrier-split/v1",
+  "verified_at": "2026-11-10T15:38:43+00:00",
+  "jit_sha256": "4b3a626d562c108b8a499c3cf03155cadcabf5b18cf1babf47b6f5ac77b04cf2",
+  "parent": 100,
+  "source_leaf": 114,
+  "qualification": 129,
+  "original_plan_retained": true,
+  "leaves": [
+    {
+      "key": "M04-LC",
+      "number": 134,
+      "title": "[M04-LC] Linux Codex CLI native carrier and adapter bridge",
+      "url": "https://github.com/kburson/aitm/issues/134",
+      "created_at": "2026-11-10T15:38:48Z",
+      "id": 6310204573,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHjJA0",
+      "parent": 100,
+      "blocked_by": [
+        114
+      ],
+      "blocking": [
+        129
+      ],
+      "status": "Backlog"
+    },
+    {
+      "key": "M04-LA",
+      "number": 135,
+      "title": "[M04-LA] Linux Claude Code linked request and adapter bridge",
+      "url": "https://github.com/kburson/aitm/issues/135",
+      "created_at": "2026-11-10T15:38:59Z",
+      "id": 6310207613,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHjJMg",
+      "parent": 100,
+      "blocked_by": [
+        114
+      ],
+      "blocking": [
+        129
+      ],
+      "status": "Backlog"
+    }
+  ]
+}

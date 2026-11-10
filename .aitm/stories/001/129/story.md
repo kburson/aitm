@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/129"
 parent: 100
 children: []
 blocking: []
-blocked-by: [128]
+blocked-by: [128, 134, 135]
 created: "2026-11-10T13:58:18Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T15:38:43+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -42,3 +42,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Add `test_linux_receipt_requires_user_manager_ext4_native_receipts_and_arch` and `test_container_evidence_cannot_satisfy_linux_activation`. Reject any missing NA-1 outcome per target. Run red, implement and run green.
 - [ ] Reproduce #102 credential-free checks on arm64 and x86-64. On each real supported target, verify authenticated Linux-native receipt and cursor continuity on Codex CLI, Claude Code and Grok Build CLI. On each architecture require two distinctly story-bound Grok turns through production admission across resume and a separate hookless eligible Grok turn counted once in its interval without a story. Prove user-manager startup, logout, allowed headless persistence, exact unit/process heartbeat, recursive watch overflow, crash replay, safe restore and qualified atomic operations on ext4. Run the complete NA-1 case and capture release receipts per target.
 - [ ] Run the full locked suite and Ruff on the release candidate. Confirm the documented supported matrix matches actual receipts. Keep unqualified surfaces out of support claims. A production installation needs a separately authorized cutover with an explicit rollback or forward-recovery decision. Commit M19 and submit the integrated package for the project’s applicable review and delivery gates.
+
+The verified Linux carrier prerequisites are [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md), alongside M18 #128. [Reviewed split](../114/plan/jit.md#host-evidence-and-split).
