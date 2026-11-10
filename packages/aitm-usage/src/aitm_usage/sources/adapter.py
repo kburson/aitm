@@ -16,6 +16,7 @@ from ..monitor_types import (
     ObservationTimeBasis,
 )
 from ..types import (
+    AdapterResult,
     Diagnostic,
     DiagnosticCode,
     Eligibility,
@@ -25,6 +26,7 @@ from ..types import (
     SourceCursor,
     SourceRef,
     UsageObservation,
+    _nonnegative,
 )
 from .claude import (
     _EMPTY,
@@ -34,8 +36,15 @@ from .claude import (
     read_claude,
     retains_streamed_prefix,
 )
-from .codex import CodexState, _read_codex, read_codex
-from .scan import CandidateSource, SourceEvidence, _discover_sources, _Snapshot, scan
+from .codex import CodexState, _read_codex
+from .scan import (
+    CandidateSource,
+    FrameBatch,
+    SourceEvidence,
+    _discover_sources,
+    _Snapshot,
+    scan,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +112,18 @@ class StreamCursor:
 
 
 @dataclass(frozen=True, slots=True)
+class NativePosition:
+    """Service-keyed position evidenced by the native stream."""
+
+    session_ref: SourceRef
+    stream_ref: SourceRef
+    ordinal: int
+
+    def __post_init__(self) -> None:
+        _nonnegative(self.ordinal)
+
+
+@dataclass(frozen=True, slots=True)
 class NativeObservation:
     key: SourceRef
     revision: int
@@ -110,6 +131,8 @@ class NativeObservation:
     native_surface: NativeSurface
     time_basis: ObservationTimeBasis
     project_context: SourceRef | None
+    position: NativePosition | None = None
+    span_end: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,6 +151,24 @@ class AdapterBatch:
     boundaries: tuple[NativeBoundary, ...] = ()
     diagnostics: tuple[Diagnostic | GrokDiagnostic, ...] = ()
     cursor: StreamCursor | None = None
+
+
+def _read_usage(
+    source: CandidateSource, frames: FrameBatch
+) -> tuple[AdapterResult, dict[SourceRef, int], bool]:
+    if source.provider is Provider.CODEX:
+        result, _, span_ends = _read_codex(
+            frames,
+            CodexState(source._ledger, neutral_markers=True),
+            Eligibility.ELIGIBLE,
+        )
+        return result, span_ends, True
+    state = ClaudeState(source._ledger, neutral_markers=True)
+    result = read_claude(frames, state, Eligibility.ELIGIBLE)
+    retains_prefix = result.provider_checkpoint is not None and retains_streamed_prefix(
+        frames, state, result.provider_checkpoint
+    )
+    return result, {}, retains_prefix
 
 
 class ProviderAdapter:
@@ -159,7 +200,7 @@ class ProviderAdapter:
             )
         held = [frame.ordinal for frame in batch.frames[len(batch.commit_frames) :]]
         if source.provider is Provider.CODEX:
-            _, unsettled = _read_codex(
+            _, unsettled, _ = _read_codex(
                 batch,
                 CodexState(source._ledger, neutral_markers=True),
                 Eligibility.ELIGIBLE,
@@ -206,7 +247,12 @@ class ProviderAdapter:
         return min(held, default=None)
 
     def read_delta(
-        self, locator: SourceLocator, cursor: StreamCursor | None
+        self,
+        locator: SourceLocator,
+        cursor: StreamCursor | None,
+        *,
+        _scope_boundaries: tuple[SourceBoundary, ...] = (),
+        _capture_limit: SourceCursor | None = None,
     ) -> AdapterBatch:
         source = locator._source
         if not isinstance(source, CandidateSource):
@@ -231,32 +277,48 @@ class ProviderAdapter:
                 )
             )
 
-        frames = scan(source, checkpoint, cutoff)
+        frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
-        if source.provider is Provider.CODEX:
-            result = read_codex(
-                frames,
-                CodexState(source._ledger, neutral_markers=True),
-                Eligibility.ELIGIBLE,
-            )
-            retains_prefix = True
-        else:
-            state = ClaudeState(source._ledger, neutral_markers=True)
-            result = read_claude(frames, state, Eligibility.ELIGIBLE)
-            retains_prefix = (
-                result.provider_checkpoint is not None
-                and retains_streamed_prefix(frames, state, result.provider_checkpoint)
-            )
+        result, span_ends, retains_prefix = _read_usage(source, frames)
+        scope_verified = True
+        if _scope_boundaries:
+            requested = set(_scope_boundaries)
+            selected = {
+                boundary: frame._prefix
+                for boundary in result.boundaries
+                if boundary in requested
+                and boundary.receipt_ref is not None
+                and (frame := frames._matching_frame(boundary)) is not None
+                and frame.anchor_ref is None
+            }
+            if selected:
+                for boundary, prefix in selected.items():
+                    source = source._select_boundary(boundary, prefix, None)
+                frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
+                if frames.cursor is None:
+                    return AdapterBatch(diagnostics=frames.diagnostics, cursor=cursor)
+                result, span_ends, retains_prefix = _read_usage(source, frames)
+                scope_verified = all(
+                    boundary in result.boundaries
+                    and (frame := frames._matching_frame(boundary)) is not None
+                    and frame.anchor_ref is None
+                    and frame._prefix == prefix
+                    for boundary, prefix in selected.items()
+                )
 
         boundaries = tuple(
             NativeBoundary(proof.boundary, proof.anchor_ref)
             for boundary in result.boundaries
             if (proof := frames.scope_evidence(boundary)) is not None
         )
-        if not retains_prefix or result.provider_checkpoint is None:
+        if (
+            not scope_verified
+            or not retains_prefix
+            or result.provider_checkpoint is None
+        ):
             return AdapterBatch(
-                boundaries=boundaries,
+                boundaries=boundaries if scope_verified else (),
                 diagnostics=(
                     *result.diagnostics,
                     Diagnostic(
@@ -288,6 +350,7 @@ class ProviderAdapter:
                     surface,
                     ObservationTimeBasis.NATIVE_USAGE_EVENT,
                     context,
+                    span_end=span_ends.get(revision.key),
                 )
             )
         return AdapterBatch(

@@ -20,6 +20,7 @@ from test_codex import (
     begin,
     counter,
     end,
+    event,
     response,
     startup,
     tool_call,
@@ -32,8 +33,10 @@ from test_codex import (
 from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
+from aitm_usage.sources.scan import _capture_position
 from aitm_usage.types import (
     Availability,
+    BoundaryKind,
     DiagnosticCode,
     LedgerView,
     Revision,
@@ -227,6 +230,37 @@ def test_codex_archive_counter_epoch_replays_once(monkeypatch, source, tmp_path)
     assert replay.cursor == durable
 
 
+def _receipt_rows(checkout, *, settle=False):
+    first, last = usage(8, 2), usage(6, 2)
+    marker = tool_call(
+        SimpleNamespace(root=checkout), "/private/tmp/command-body-secret"
+    )
+    rows = [
+        startup(checkout, originator="Codex Desktop"),
+        *begin(checkout),
+        marker,
+        response("before-private", first, first),
+        tool_output(),
+        counter(first, first),
+        response("after-private", usage(14, 4), last),
+        counter(usage(14, 4), last),
+        end(),
+    ]
+    if settle:
+        followup = UUID(int=0x211)
+        rows.extend((*begin(checkout, followup), end(followup)))
+    return rows
+
+
+def _receipt_request(batch):
+    (boundary,) = [
+        item.boundary
+        for item in batch.boundaries
+        if item.boundary.kind is BoundaryKind.REQUEST and item.boundary.receipt_ref
+    ]
+    return boundary
+
+
 def test_neutral_desktop_receipt_is_evidence_without_authority(
     monkeypatch, source, tmp_path
 ):
@@ -234,24 +268,7 @@ def test_neutral_desktop_receipt_is_evidence_without_authority(
     key, directory, _ = source
     foreign = tmp_path / "foreign-private"
     foreign.mkdir()
-    first, last = usage(8, 2), usage(6, 2)
-    marker = tool_call(
-        SimpleNamespace(root=foreign), "/private/tmp/command-body-secret"
-    )
-    _write(
-        directory / "receipt.jsonl",
-        [
-            startup(foreign, originator="Codex Desktop"),
-            *begin(foreign),
-            marker,
-            response("before-private", first, first),
-            tool_output(),
-            counter(first, first),
-            response("after-private", usage(14, 4), last),
-            counter(usage(14, 4), last),
-            end(),
-        ],
-    )
+    _write(directory / "receipt.jsonl", _receipt_rows(foreign))
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
     assert not result.observations
@@ -268,6 +285,89 @@ def test_neutral_desktop_receipt_is_evidence_without_authority(
         str(COMMAND),
     ):
         assert sentinel not in wire
+
+
+def test_codex_receipt_usage_span_includes_the_later_native_counter(
+    monkeypatch, source
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    rows = _receipt_rows(checkout, settle=True)
+    rows.insert(8, event("token_count", info=None))
+    _write(directory / "receipt.jsonl", rows)
+    (locator,) = adapter.discover(root)
+
+    result = adapter.read_delta(locator, None)
+    boundary = _receipt_request(result)
+    (observation,) = [
+        item for item in result.observations if item.usage.boundary == boundary
+    ]
+    assert observation.usage.boundary.ordinal == 7
+    assert observation.span_end == 10
+
+
+def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
+    monkeypatch, source, tmp_path
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    key, directory, _ = source
+    foreign = tmp_path / "foreign-private"
+    foreign.mkdir()
+    path = directory / "receipt.jsonl"
+    rows = _receipt_rows(foreign, settle=True)
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    limit = _capture_position(locator._source, None).cursor
+    _write(path, [*rows, event("token_count", info=None)])
+
+    lookahead = adapter.read_delta(locator, None, _capture_limit=limit)
+    assert not lookahead.observations
+    boundary = _receipt_request(lookahead)
+    forged = replace(
+        boundary, receipt_ref=key.pseudonymize("scope-receipt", "unmatched")
+    )
+    assert not adapter.read_delta(
+        locator, None, _scope_boundaries=(forged,), _capture_limit=limit
+    ).observations
+
+    scoped = adapter.read_delta(
+        locator, None, _scope_boundaries=(boundary,), _capture_limit=limit
+    )
+    (observation,) = scoped.observations
+    assert observation.usage.boundary == boundary
+    assert observation.usage.tokens.total_tokens == 8
+    assert observation.project_context is None
+    assert scoped.cursor.checkpoint.cursor == limit
+
+
+def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
+    monkeypatch, source, tmp_path
+):
+    module, adapter, root = _adapter(monkeypatch, source)
+    _, directory, _ = source
+    foreign = tmp_path / "foreign-private"
+    foreign.mkdir()
+    path = directory / "receipt.jsonl"
+    rows = _receipt_rows(foreign, settle=True)
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    lookahead = adapter.read_delta(locator, None)
+    boundary = _receipt_request(lookahead)
+
+    scan = module.scan
+
+    def change_before_rescan(candidate, *args, **kwargs):
+        if candidate._enrollments:
+            rows[4] = response("rewritten-before-private", usage(8, 2), usage(8, 2))
+            _write(path, rows)
+        return scan(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(module, "scan", change_before_rescan)
+    scoped = adapter.read_delta(locator, None, _scope_boundaries=(boundary,))
+    assert not scoped.observations and scoped.cursor is None
+    assert DiagnosticCode.BOUNDARY_UNVERIFIED in {
+        item.code for item in scoped.diagnostics
+    }
 
 
 def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
