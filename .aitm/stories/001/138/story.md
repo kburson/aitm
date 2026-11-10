@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 138
 title: "[#133 T01] Pin the serial baseline"
 kind: "story"
-state: "ready-for-plan"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/138"
 parent: 133
 children: []
 blocking: [139]
 blocked-by: []
 created: "2026-11-10T16:50:57Z"
-updated: "2026-11-10T19:01:23Z"
+updated: "2026-11-10T20:10:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
