@@ -43,3 +43,7 @@ The refreshed frozen local gate passed 867 product and CLI tests, 182 helper tes
 ### Adoption receipt replay Review checkpoint
 
 [All six hosted jobs](https://github.com/kburson/aitm/actions/runs/42911743453/attempts/1) passed. The [signed receipt](adoption-replay-hosted-ci-receipt.json) verifies tested merge `7f1abc01fa8a398e755164a19227ddd4545c6bdf`, artifact `13807847396` and subject SHA-256 `6e219ddb380c438dabb6f8ba760e73f991bc8ece2f9c856c8e01cf0d1804bb26` on the exact repaired head and tree. The trusted raw replay retained all 747 package baseline identities and passed all 867 candidate tests and both coverage floors. The first signed run and held verdict remain recorded separately. Independent exact re-review is pending.
+
+The [independent exact re-review](post-ci-source-review.md) passed on the signed head and tree. It verified exact original legacy receipts across both adoption branches and refusal at the typed producer. The first hold stays available as historical evidence. No native GitHub review was submitted. The independent verdict is off-platform.
+
+Carry forward the reviewed boundary. M16 freezes legacy ingestion and reconciles the pending manifest under the established locks. M11 checks native proof and existing exact legacy outcomes before applying an adopted request, durably publishes its own outcome and only then retires the envelope.
