@@ -72,3 +72,22 @@ The JIT pins trunk `a495d60a87ac4ca764f019dc266e579f13f1787e` for intended attem
 The GitHub Project is in Planning.
 
 **Execution hold.** A named owner-authorized disposable GitHub target, dedicated trusted test actor and isolated ruleset mutation permissions must be recorded before hosted qualification. T22 / #159 requires a qualified receipt.
+
+## Hosted qualification follow-up
+
+The owner questioned the need for a hosted fixture and indicated that
+creating a cloud repository or maintaining recurring cloud CI for
+this spike is undesirable. No hosted target or actor has been granted.
+The proposed fixture was for one-time GitHub behavior verification,
+with independent review of the retained evidence on planning.
+
+A local Git repository or worktree can test the controller's
+reservation, dispatch, timeout and reconciliation logic against a
+simulated provider. The accepted T21 receipt requires real GitHub
+evidence for actor exclusivity, bypass rejection, the tested merge
+tree, and the ordering of a stop with an already-sent merge.
+
+The JIT remains accepted and the story remains in Planning. No hosted
+probe was attempted, and no provider verdict was recorded. #159 still
+requires a qualified T21 receipt. An explicitly reviewed scope change
+would be needed to substitute a local-only deliverable.
