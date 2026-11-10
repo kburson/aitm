@@ -9,18 +9,21 @@ import os
 import re
 import selectors
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 import time
 from bisect import bisect_left
 from collections.abc import Callable
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field, fields, is_dataclass
 from pathlib import Path
 
 _GIT_TIMEOUT = 30
 _GIT_OUTPUT_LIMIT = 128 * 1024 * 1024
 _ENTRY_LIMIT = 200_000
+_WORKTREE_LIMIT = 256 * 1024 * 1024
 _BLOB_MODES = frozenset({"100644", "100755", "120000"})
 _GITLINK = "160000"
 _DIFF_FLAGS = (
@@ -88,6 +91,14 @@ class HostedRequest:
 
 
 @dataclass(frozen=True)
+class LocalRequest:
+    repository: str
+    ref_role: str
+    base_commit: str | None
+    relevant_ignored: tuple[bytes, ...] = ()
+
+
+@dataclass(frozen=True)
 class GitEndpoint:
     commit: str
     tree: str
@@ -111,6 +122,7 @@ class Change:
 class GitProfile:
     version: str
     object_format: str
+    config_scope: str = "repository-only"
     flags: tuple[str, ...] = _GIT_FLAGS
     diff_flags: tuple[str, ...] = _DIFF_FLAGS
 
@@ -122,15 +134,42 @@ class HostedProvenance:
 
 
 @dataclass(frozen=True)
+class WorktreeEndpoint:
+    worktree_digest: str
+
+
+@dataclass(frozen=True)
+class LocalObservation:
+    head: GitEndpoint
+    head_ref: bytes
+    index_entries: tuple[Entry, ...]
+    untracked_paths: tuple[bytes, ...]
+    relevant_ignored: tuple[bytes, ...]
+    ignore_sources: tuple[tuple[bytes, str | None], ...]
+    observed_absent: tuple[bytes, ...]
+    effective_entries: tuple[Entry, ...]
+    symlink_targets: tuple[tuple[bytes, bytes], ...]
+
+
+@dataclass(frozen=True)
+class LocalProvenance:
+    git: GitProfile
+    observation: LocalObservation
+    committed_changes: tuple[Change, ...]
+    staged_changes: tuple[Change, ...]
+    unstaged_changes: tuple[Change, ...]
+
+
+@dataclass(frozen=True)
 class Snapshot:
     repository: str
     mode: str
     ref_role: str
-    endpoint_identity: GitEndpoint
+    endpoint_identity: GitEndpoint | WorktreeEndpoint
     baseline_identity: GitEndpoint
     entries: tuple[Entry, ...]
     changes: tuple[Change, ...]
-    provenance: HostedProvenance
+    provenance: HostedProvenance | LocalProvenance
     _reader: Callable[[Entry], bytes] = field(repr=False, compare=False)
 
     def read_content(self, path: bytes) -> bytes:
@@ -142,11 +181,19 @@ class Snapshot:
         return self._reader(self.entries[index])
 
     def canonical_bytes(self) -> bytes:
-        record = {
-            item.name: getattr(self, item.name) for item in fields(self) if item.init
-        }
-        del record["_reader"]
-        return _canonical({"version": 1, **record})
+        return _canonical(
+            {
+                "version": 1,
+                "repository": self.repository,
+                "mode": self.mode,
+                "ref_role": self.ref_role,
+                "endpoint_identity": self.endpoint_identity,
+                "baseline_identity": self.baseline_identity,
+                "entries": self.entries,
+                "changes": self.changes,
+                "provenance": self.provenance,
+            }
+        )
 
     @property
     def digest(self) -> str:
@@ -240,7 +287,7 @@ class _Git:
         executable = "/usr/bin/git" if sys.platform == "darwin" else shutil.which("git")
         if executable is None:
             self.refuse("unsupported_profile")
-        self.command = (executable, *_GIT_FLAGS)
+        self.command = (os.path.abspath(executable), *_GIT_FLAGS)
         self.env = {
             key: value
             for key, value in os.environ.items()
@@ -318,12 +365,15 @@ class _Git:
                     self.refuse("unsupported_object")
             self.refuse("malformed_data")
         payload = body[:-1]
+        if self.object_id(kind, payload) != oid:
+            self.refuse("identity_mismatch")
+        return payload
+
+    def object_id(self, kind: str, payload: bytes) -> str:
         digest = hashlib.new(self.profile.object_format)
         digest.update(f"{kind} {len(payload)}\0".encode("ascii"))
         digest.update(payload)
-        if digest.hexdigest() != oid:
-            self.refuse("identity_mismatch")
-        return payload
+        return digest.hexdigest()
 
     def commit(self, oid: str) -> tuple[GitEndpoint, tuple[str, ...]]:
         data = self.object(oid, "commit")
@@ -333,12 +383,11 @@ class _Git:
             self.refuse("malformed_data")
         tree = self.oid(self.text(lines[0][5:]))
         parents = []
-        rest = iter(lines[1:])
-        for line in rest:
-            if not line.startswith(b"parent "):
-                break
-            parents.append(self.oid(self.text(line[7:])))
-        if any(line.startswith((b"tree ", b"parent ")) for line in rest):
+        parent_end = 1
+        while parent_end < len(lines) and lines[parent_end].startswith(b"parent "):
+            parents.append(self.oid(self.text(lines[parent_end][7:])))
+            parent_end += 1
+        if any(line.startswith((b"tree ", b"parent ")) for line in lines[parent_end:]):
             self.refuse("malformed_data")
         return GitEndpoint(oid, tree), tuple(parents)
 
@@ -352,6 +401,7 @@ class _Git:
             prefix, oid = pending.pop()
             data = self.object(oid, "tree")
             names = set()
+            prior = b""
             start = 0
             while start < len(data):
                 separator = data.find(b" ", start)
@@ -364,6 +414,10 @@ class _Git:
                 _check_path(path, self.mode)
                 if b"/" in name or name in names:
                     self.refuse("malformed_data")
+                order = name + b"/" if mode == "40000" else name
+                if order <= prior:
+                    self.refuse("malformed_data")
+                prior = order
                 names.add(name)
                 start = end + 1 + self.oid_size
                 child = data[end + 1 : start].hex()
@@ -427,21 +481,25 @@ class _Git:
             self.oid(old_oid)
             self.oid(new_oid)
             zero = "0" * (self.oid_size * 2)
-            path = next(records, b"")
+            path = next(records, None)
+            if path is None:
+                self.refuse("malformed_data")
             _check_path(path, self.mode)
             old_entry = new_entry = None
             if re.fullmatch(r"R(?:0[5-9][0-9]|100)", status):
-                new_path = next(records, b"")
+                new_path = next(records, None)
+                if new_path is None:
+                    self.refuse("malformed_data")
                 _check_path(new_path, self.mode)
                 status = "R"
-                if path == new_path:
+                if path in new or new_path in old or old_mode[:3] != new_mode[:3]:
                     self.refuse("malformed_data")
             elif status in ("A", "D", "M", "T"):
                 new_path = path
             else:
                 self.refuse("malformed_data")
             if status == "A":
-                if (old_mode, old_oid) != ("000000", zero):
+                if path in old or (old_mode, old_oid) != ("000000", zero):
                     self.refuse("malformed_data")
             else:
                 old_entry = Entry(path, old_mode, old_oid)
@@ -449,7 +507,7 @@ class _Git:
                     self.refuse("malformed_data")
                 remaining_old.remove(path)
             if status == "D":
-                if (new_mode, new_oid) != ("000000", zero):
+                if path in new or (new_mode, new_oid) != ("000000", zero):
                     self.refuse("malformed_data")
             else:
                 new_entry = Entry(new_path, new_mode, new_oid)
@@ -458,6 +516,8 @@ class _Git:
                 remaining_new.remove(new_path)
             if _GITLINK in (old_mode, new_mode):
                 self.refuse("unsupported_object")
+            if status in ("M", "T") and status != _modified(old_mode, new_mode):
+                self.refuse("malformed_data")
             result.append(Change(status, old_entry, new_entry))
         if remaining_old or remaining_new:
             self.refuse("malformed_data")
@@ -484,6 +544,10 @@ class _Git:
             "diff-tree", "--no-commit-id", "-r", *_DIFF_FLAGS, base.tree, tested.tree
         )
         return self.changes(data, before, after)
+
+
+def _modified(old_mode: str, new_mode: str) -> str:
+    return "M" if old_mode[:3] == new_mode[:3] else "T"
 
 
 def _sorted_changes(changes: list[Change]) -> tuple[Change, ...]:
@@ -527,6 +591,8 @@ def _hosted(repo: Path, request: HostedRequest) -> tuple[Snapshot, Snapshot]:
             request.tested_tree,
             request.pr_head,
         )
+        or type(binding.run_id) is not int
+        or type(binding.run_attempt) is not int
         or not isinstance(request.repository, str)
         or not re.fullmatch(r"[^/\s]+/[^/\s]+", request.repository)
         or not isinstance(request.ref, str)
@@ -535,7 +601,7 @@ def _hosted(repo: Path, request: HostedRequest) -> tuple[Snapshot, Snapshot]:
             not is_pr
             and (
                 request.ref_role != "trunk-tested"
-                or not request.ref.startswith("refs/heads/")
+                or request.ref != "refs/heads/trunk"
                 or request.pr_head is not None
             )
         )
@@ -544,8 +610,6 @@ def _hosted(repo: Path, request: HostedRequest) -> tuple[Snapshot, Snapshot]:
     if is_pr and not request.pr_head:
         raise SnapshotUncertain("hosted", "missing_authority")
     git = _Git(repo, "hosted")
-    if not is_pr:
-        git.run("check-ref-format", request.ref, failure="identity_mismatch")
     baseline, _ = git.commit(git.oid(request.base_commit, "identity_mismatch"))
     tested, parents = git.commit(git.oid(request.tested_commit, "identity_mismatch"))
     if tested.tree != request.tested_tree or (
@@ -587,6 +651,494 @@ def _hosted(repo: Path, request: HostedRequest) -> tuple[Snapshot, Snapshot]:
     )
 
 
-def resolve(repo: Path, request: HostedRequest) -> tuple[Snapshot, Snapshot]:
+def _witness(info: os.stat_result) -> tuple[int, ...]:
+    return (
+        info.st_dev,
+        info.st_ino,
+        info.st_mode,
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+    )
+
+
+@dataclass(frozen=True)
+class _LocalFile:
+    mode: str
+    data: bytes
+    witness: tuple[int, ...]
+
+
+class _CheckedTree:
+    """Read by exact directory-entry spelling beneath a pinned descriptor."""
+
+    def __init__(self, root: Path, fd: int):
+        self.root = root
+        self.fd = fd
+        self.names: dict[tuple[int, ...], frozenset[bytes]] = {}
+        self.accessed: dict[bytes, tuple[int, ...] | None] = {}
+
+    def check_root(self) -> None:
+        by_name = self.root.stat(follow_symlinks=False)
+        if not os.path.samestat(by_name, os.fstat(self.fd)):
+            raise SnapshotUncertain("local", "observation_drift")
+
+    def _names(self, directory: int) -> frozenset[bytes]:
+        witness = _witness(os.fstat(directory))
+        if witness not in self.names:
+            names = frozenset(map(os.fsencode, os.listdir(directory)))
+            if _witness(os.fstat(directory)) != witness:
+                raise SnapshotUncertain("local", "observation_drift")
+            if len(names) > _ENTRY_LIMIT:
+                raise SnapshotUncertain("local", "output_limit")
+            self.names[witness] = names
+        return self.names[witness]
+
+    def _stat(self, directory: int, name: bytes) -> os.stat_result | None:
+        exact = name in self._names(directory)
+        try:
+            info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        except FileNotFoundError:
+            if exact:
+                raise SnapshotUncertain("local", "observation_drift") from None
+            return None
+        if not exact:
+            raise SnapshotUncertain("local", "unsafe_path")
+        return info
+
+    @contextmanager
+    def _directory(self, path: bytes):
+        with ExitStack() as stack:
+            parent = self.fd
+            guards = []
+            prefix = b""
+            for name in path.split(b"/") if path else ():
+                prefix = prefix + b"/" + name if prefix else name
+                info = self._stat(parent, name)
+                if info is None:
+                    self._remember(prefix, None)
+                    parent = None
+                    break
+                witness = _witness(info)
+                self._remember(prefix, witness)
+                guards.append((parent, name, witness))
+                if stat.S_ISREG(info.st_mode):
+                    parent = None
+                    break
+                if not stat.S_ISDIR(info.st_mode):
+                    raise SnapshotUncertain("local", "unsafe_path")
+                child = os.open(
+                    name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent
+                )
+                stack.callback(os.close, child)
+                if _witness(os.fstat(child)) != witness:
+                    raise SnapshotUncertain("local", "observation_drift")
+                parent = child
+            yield parent
+            for directory, name, witness in guards:
+                current = self._stat(directory, name)
+                if current is None or _witness(current) != witness:
+                    raise SnapshotUncertain("local", "observation_drift")
+
+    def _remember(self, path: bytes, witness: tuple[int, ...] | None) -> None:
+        if path in self.accessed and self.accessed[path] != witness:
+            raise SnapshotUncertain("local", "observation_drift")
+        self.accessed[path] = witness
+
+    def read(self, path: bytes) -> _LocalFile | None:
+        _check_path(path, "local")
+        parent, _, name = path.rpartition(b"/")
+        with self._directory(parent) as directory:
+            if directory is None:
+                return None
+            info = self._stat(directory, name)
+            if info is None:
+                return None
+            witness = _witness(info)
+            if stat.S_ISLNK(info.st_mode):
+                data = os.readlink(name, dir_fd=directory)
+                mode = "120000"
+            elif stat.S_ISREG(info.st_mode):
+                mode = "100755" if info.st_mode & stat.S_IXUSR else "100644"
+                if info.st_size > _GIT_OUTPUT_LIMIT:
+                    raise SnapshotUncertain("local", "output_limit")
+                descriptor = os.open(
+                    name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory
+                )
+                with os.fdopen(descriptor, "rb") as stream:
+                    if _witness(os.fstat(descriptor)) != witness:
+                        raise SnapshotUncertain("local", "observation_drift")
+                    data = stream.read(info.st_size + 1)
+                    if (
+                        len(data) != info.st_size
+                        or _witness(os.fstat(descriptor)) != witness
+                    ):
+                        raise SnapshotUncertain("local", "observation_drift")
+            elif stat.S_ISDIR(info.st_mode):
+                mode, data = "040000", b""
+                self._remember(path, witness)
+            else:
+                raise SnapshotUncertain("local", "unsupported_object")
+            current = self._stat(directory, name)
+            if current is None or _witness(current) != witness:
+                raise SnapshotUncertain("local", "observation_drift")
+            return _LocalFile(mode, data, witness)
+
+    def catalog(
+        self, pruned: set[bytes], covered: set[bytes]
+    ) -> tuple[tuple[bytes, tuple[int, ...]], ...]:
+        """Check membership and find every directory with consulted ignore rules."""
+        remaining = set(pruned)
+        visited = {}
+        pending = [b""]
+        total = 0
+        while pending:
+            path = pending.pop()
+            with self._directory(path) as directory:
+                if directory is None:
+                    raise SnapshotUncertain("local", "observation_drift")
+                witness = _witness(os.fstat(directory))
+                visited[path] = witness
+                for name in self._names(directory):
+                    if not path and name == b".git":
+                        continue
+                    child = path + b"/" + name if path else name
+                    _check_path(child, "local")
+                    info = self._stat(directory, name)
+                    if info is None:
+                        raise SnapshotUncertain("local", "observation_drift")
+                    total += 1
+                    if total > _ENTRY_LIMIT:
+                        raise SnapshotUncertain("local", "output_limit")
+                    if stat.S_ISDIR(info.st_mode):
+                        if child in pruned:
+                            remaining.remove(child)
+                        else:
+                            pending.append(child)
+                    elif child not in covered:
+                        if not (
+                            stat.S_ISREG(info.st_mode) or stat.S_ISLNK(info.st_mode)
+                        ):
+                            raise SnapshotUncertain("local", "unsupported_object")
+                        raise SnapshotUncertain("local", "observation_drift")
+                if _witness(os.fstat(directory)) != witness:
+                    raise SnapshotUncertain("local", "observation_drift")
+        if remaining:
+            raise SnapshotUncertain("local", "observation_drift")
+        return tuple(sorted(visited.items()))
+
+
+@dataclass(frozen=True)
+class _LocalCapture:
+    observation: LocalObservation
+    head_entries: tuple[Entry, ...]
+    staged: tuple[Change, ...]
+    witnesses: tuple
+    contents: dict[bytes, _LocalFile] = field(compare=False)
+
+
+def _index(git: _Git) -> tuple[Entry, ...]:
+    result = {}
+    for record in git.nul_records(git.run("ls-files", "--stage", "-z")):
+        header, separator, path = record.partition(b"\t")
+        if not separator or len(header.split(b" ")) != 3:
+            git.refuse("malformed_data")
+        mode, oid, stage = map(git.text, header.split(b" "))
+        _check_path(path, git.mode)
+        if stage in ("1", "2", "3"):
+            git.refuse("unmerged_index")
+        if stage != "0" or path in result:
+            git.refuse("malformed_data")
+        if mode not in _BLOB_MODES:
+            git.refuse("unsupported_object")
+        result[path] = Entry(path, mode, git.oid(oid))
+    return tuple(result[path] for path in sorted(result))
+
+
+def _ancestors(paths: set[bytes]) -> set[bytes]:
+    result = set()
+    for path in paths:
+        parent = path.rpartition(b"/")[0]
+        while parent and parent not in result:
+            result.add(parent)
+            parent = parent.rpartition(b"/")[0]
+    return result
+
+
+def _membership(git: _Git) -> tuple[set[bytes], set[bytes], set[bytes]]:
+    options = ("ls-files", "--others", "--exclude-per-directory=.gitignore", "-z")
+    untracked_records = git.nul_records(git.run(*options))
+    ignored_records = git.nul_records(git.run(*options, "--ignored", "--directory"))
+    untracked, ignored, ignored_dirs = set(), set(), set()
+    for record in untracked_records:
+        if record.endswith(b"/"):
+            git.refuse("unsupported_object")
+        _check_path(record, git.mode)
+        if record in untracked:
+            git.refuse("malformed_data")
+        untracked.add(record)
+    for record in ignored_records:
+        directory = record.endswith(b"/")
+        path = record[:-1] if directory else record
+        _check_path(path, git.mode)
+        target = ignored_dirs if directory else ignored
+        if path in target:
+            git.refuse("malformed_data")
+        target.add(path)
+    if untracked & (ignored | ignored_dirs) or ignored & ignored_dirs:
+        git.refuse("malformed_data")
+    return untracked, ignored, ignored_dirs
+
+
+def _link_target(
+    path: bytes, payload: bytes, directories: dict[bytes, tuple[int, ...] | None]
+) -> bytes:
+    """Resolve only an in-root relative target through observed real directories."""
+    parts = path.split(b"/")[:-1]
+    names = payload.split(b"/")
+    for index, name in enumerate(names):
+        if name == b"..":
+            if not parts:
+                raise SnapshotUncertain("local", "unsafe_path")
+            parts.pop()
+        elif name != b".":
+            _check_path(name, "local")
+            parts.append(name)
+        if parts and index < len(names) - 1:
+            witness = directories.get(b"/".join(parts))
+            if witness is None or not stat.S_ISDIR(witness[2]):
+                raise SnapshotUncertain("local", "unsafe_path")
+    return b"/".join(parts)
+
+
+def _observe_local(
+    git: _Git, worktree: _CheckedTree, request: LocalRequest
+) -> _LocalCapture:
+    worktree.names.clear()
+    worktree.accessed.clear()
+    worktree.check_root()
+    head_id = git.run("rev-parse", "--verify", "HEAD", failure="missing_object")
+    if not head_id.endswith(b"\n"):
+        git.refuse("malformed_data")
+    head, _ = git.commit(git.oid(git.text(head_id[:-1])))
+    head_ref = git.run("rev-parse", "--symbolic-full-name", "HEAD")
+    if not head_ref.endswith(b"\n") or not head_ref[:-1] or b"\n" in head_ref[:-1]:
+        git.refuse("malformed_data")
+    head_entries = git.tree_entries(head.tree)
+    index = _index(git)
+    git.require_blobs(head_entries, index)
+    staged = git.changes(
+        git.run(
+            "diff-index",
+            "--cached",
+            "--ita-visible-in-index",
+            "-r",
+            *_DIFF_FLAGS,
+            head.tree,
+        ),
+        head_entries,
+        index,
+    )
+    untracked, ignored, ignored_dirs = _membership(git)
+    tracked = {entry.path for entry in (*head_entries, *index)}
+    covered = tracked | untracked | ignored
+    pruned = ignored_dirs - _ancestors(covered | ignored_dirs)
+    directories = worktree.catalog(pruned, covered)
+    ignore_sources = {}
+    ignore_witnesses = []
+    for directory, _ in directories:
+        path = directory + b"/.gitignore" if directory else b".gitignore"
+        rule = worktree.read(path)
+        if rule is None:
+            ignore_sources[path] = None
+        else:
+            if rule.mode not in ("100644", "100755"):
+                git.refuse("unreadable_input")
+            ignore_sources[path] = _sha256(rule.data)
+            ignore_witnesses.append((path, rule.witness))
+
+    contents = {}
+    effective = []
+    absent = []
+    inodes = set()
+    total_bytes = 0
+    requested = set(request.relevant_ignored)
+    for path in sorted(tracked | untracked | requested):
+        captured = worktree.read(path)
+        if captured is not None and captured.mode == "040000":
+            if path in requested:
+                git.refuse("unsupported_object")
+            captured = None
+        if captured is None:
+            if path in untracked:
+                git.refuse("observation_drift")
+            absent.append(path)
+            continue
+        inode = captured.witness[:2]
+        if inode in inodes:
+            git.refuse("unsafe_path")
+        inodes.add(inode)
+        total_bytes += len(captured.data)
+        if total_bytes > _WORKTREE_LIMIT:
+            git.refuse("output_limit")
+        identity = _sha256(captured.data)
+        if path in ignore_sources and identity != ignore_sources[path]:
+            git.refuse("observation_drift")
+        contents[path] = captured
+        effective.append(Entry(path, captured.mode, identity))
+
+    symlinks = []
+    for path, captured in contents.items():
+        if captured.mode != "120000":
+            continue
+        target = _link_target(path, captured.data, worktree.accessed)
+        if target not in contents or contents[target].mode == "120000":
+            git.refuse("unsafe_path")
+        symlinks.append((path, target))
+
+    worktree.check_root()
+    observation = LocalObservation(
+        head,
+        head_ref[:-1],
+        index,
+        tuple(sorted(untracked)),
+        tuple(sorted(requested)),
+        tuple(sorted(ignore_sources.items())),
+        tuple(absent),
+        tuple(effective),
+        tuple(symlinks),
+    )
+    witnesses = (
+        directories,
+        tuple(sorted(worktree.accessed.items())),
+        tuple(sorted(ignore_witnesses)),
+        tuple((path, capture.witness) for path, capture in contents.items()),
+        tuple(sorted(ignored)),
+        tuple(sorted(ignored_dirs)),
+    )
+    return _LocalCapture(observation, head_entries, staged, witnesses, contents)
+
+
+def _rename_origins(*layers: tuple[Change, ...]) -> dict[bytes, bytes]:
+    origins = {}
+    for layer in layers:
+        renames = {}
+        for change in layer:
+            if change.status == "R":
+                source, target = change.old.path, change.new.path
+                renames[target] = origins.pop(source, source)
+            elif change.status == "D":
+                origins.pop(change.old.path, None)
+        origins.update(renames)
+    return origins
+
+
+def _effective_changes(
+    git: _Git,
+    original: tuple[Entry, ...],
+    captured: _LocalCapture,
+    origins: dict[bytes, bytes] | None = None,
+) -> tuple[Change, ...]:
+    old = {entry.path: entry for entry in original}
+    new = {entry.path: entry for entry in captured.observation.effective_entries}
+    removed = old.keys() - new.keys()
+    added = new.keys() - old.keys()
+    result = []
+    for target, source in (origins or {}).items():
+        if source in removed and target in added:
+            result.append(Change("R", old[source], new[target]))
+            removed.remove(source)
+            added.remove(target)
+    result.extend(Change("D", old[path], None) for path in removed)
+    result.extend(Change("A", None, new[path]) for path in added)
+    for path in old.keys() & new.keys():
+        prior, current = old[path], new[path]
+        if prior.mode != current.mode or prior.content_id != git.object_id(
+            "blob", captured.contents[path].data
+        ):
+            result.append(Change(_modified(prior.mode, current.mode), prior, current))
+    return _sorted_changes(result)
+
+
+def _local(repo: Path, request: LocalRequest) -> tuple[Snapshot, Snapshot]:
+    if not request.base_commit:
+        raise SnapshotUncertain("local", "missing_baseline")
+    if not request.repository:
+        raise SnapshotUncertain("local", "missing_authority")
+    if (
+        not isinstance(request.repository, str)
+        or not re.fullmatch(r"[^/\s]+/[^/\s]+", request.repository)
+        or request.ref_role != "local-effective"
+    ):
+        raise SnapshotUncertain("local", "identity_mismatch")
+    for path in request.relevant_ignored:
+        _check_path(path, "local")
+    if len(set(request.relevant_ignored)) != len(request.relevant_ignored):
+        raise SnapshotUncertain("local", "unsafe_path")
+    git = _Git(repo, "local")
+    baseline, _ = git.commit(git.oid(request.base_commit, "identity_mismatch"))
+    old_entries = git.tree_entries(baseline.tree)
+    git.require_blobs(old_entries)
+    try:
+        root = os.open(git.root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        with ExitStack() as stack:
+            stack.callback(os.close, root)
+            worktree = _CheckedTree(git.root, root)
+            first = _observe_local(git, worktree, request)
+            committed = git.tree_changes(
+                baseline, first.observation.head, old_entries, first.head_entries
+            )
+            second = _observe_local(git, worktree, request)
+            if first != second:
+                git.refuse("observation_drift")
+    except OSError:
+        git.refuse("unreadable_input")
+
+    observation = first.observation
+    effective = WorktreeEndpoint(
+        _sha256(_canonical({"version": 1, "observation": observation}))
+    )
+    unstaged = _effective_changes(git, observation.index_entries, first)
+    changes = _effective_changes(
+        git, old_entries, first, _rename_origins(committed, first.staged)
+    )
+    provenance = LocalProvenance(
+        git.profile, observation, committed, first.staged, unstaged
+    )
+
+    def read_effective(entry: Entry) -> bytes:
+        return first.contents[entry.path].data
+
+    return (
+        Snapshot(
+            request.repository,
+            "local",
+            "baseline",
+            baseline,
+            baseline,
+            old_entries,
+            changes,
+            provenance,
+            git.read_blob,
+        ),
+        Snapshot(
+            request.repository,
+            "local",
+            request.ref_role,
+            effective,
+            baseline,
+            observation.effective_entries,
+            changes,
+            provenance,
+            read_effective,
+        ),
+    )
+
+
+def resolve(
+    repo: Path, request: HostedRequest | LocalRequest
+) -> tuple[Snapshot, Snapshot]:
     """Resolve the complete pair, before first, or raise typed uncertainty."""
+    if isinstance(request, LocalRequest):
+        return _local(repo, request)
     return _hosted(repo, request)
