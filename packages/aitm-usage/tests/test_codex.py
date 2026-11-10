@@ -14,6 +14,7 @@ from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
 from aitm_usage.rollup import rollup
 from aitm_usage.scopes import drain_inbox, enqueue_marker, session_reference
+from aitm_usage.sources import adapter as native
 from aitm_usage.sources.scan import checkout_anchor_reference, discover, scan
 from aitm_usage.types import (
     Availability,
@@ -467,6 +468,151 @@ def tool_output(command_id=COMMAND, *, stdout=None):
             ],
         },
     )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "mark",
+        "handoff",
+        "dispose",
+        "legacy",
+        "relative",
+        "parent-component",
+        "dot-component",
+        "double-slash",
+        "trailing-slash",
+        "nul",
+        "equal",
+        "abbreviated",
+        "reordered",
+        "quoted-flag",
+        "extra-space",
+        "chained",
+        "redirected",
+        "environment",
+        "unknown-action",
+        "wrong-status",
+        "extra-key",
+        "duplicate-key",
+        "compact-json",
+        "uppercase-uuid",
+        "missing-lf",
+        "extra-lf",
+        "failed-output",
+        "wrong-wrapper",
+        "duplicate-cmd",
+        "wrong-call",
+        "wrong-owner",
+    ],
+)
+def test_monitor_scope_receipt_at_first_desktop_request(project, monkeypatch, case):
+    ledger, registration, path, checkout, _ = project
+    monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
+    action = case if case in {"mark", "handoff", "dispose"} else "mark"
+    command = (
+        f"aitm-usage monitor scope {action} --request '/private/tmp/a b.json' --json"
+    )
+    commands = {
+        "relative": "aitm-usage monitor scope mark --request request.json --json",
+        "parent-component": "aitm-usage monitor scope mark --request /tmp/../request.json --json",
+        "dot-component": "aitm-usage monitor scope mark --request /tmp/./request.json --json",
+        "double-slash": "aitm-usage monitor scope mark --request //tmp/request.json --json",
+        "trailing-slash": "aitm-usage monitor scope mark --request /tmp/request.json/ --json",
+        "nul": "aitm-usage monitor scope mark --request '/tmp/\0request.json' --json",
+        "equal": "aitm-usage monitor scope mark --request=/tmp/request.json --json",
+        "abbreviated": "aitm-usage monitor scope mark --req /tmp/request.json --json",
+        "reordered": "aitm-usage monitor scope mark --json --request /tmp/request.json",
+        "quoted-flag": "aitm-usage monitor scope mark '--request' /tmp/request.json --json",
+        "extra-space": command.replace("scope mark", "scope  mark"),
+        "chained": command + "; printf forged",
+        "redirected": command + " >/tmp/redirect",
+        "environment": "PRIVATE_ENV=forged " + command,
+        "unknown-action": command.replace("scope mark", "scope other"),
+    }
+    command = commands.get(case, command)
+    args = json.dumps({"cmd": command})
+    if case == "duplicate-cmd":
+        args = '{"cmd": "false", "cmd": ' + json.dumps(command) + "}"
+    wrapper = f"const marker = await tools.exec_command({args}); text(marker.output);"
+    call = tool_call(ledger)
+    call["payload"]["input"] = wrapper + (
+        " text('extra');" if case == "wrong-wrapper" else "\n"
+    )
+
+    receipt_id = UUID("00000000-0000-0000-0000-000000000abc")
+    receipt = (
+        '{"command_id": "00000000-0000-0000-0000-000000000abc", "status": "queued"}\n'
+    )
+    receipts = {
+        "wrong-status": receipt.replace('"queued"', '"unavailable"'),
+        "extra-key": receipt.replace('"status"', '"extra": 0, "status"'),
+        "duplicate-key": receipt.replace('"status"', '"status": "queued", "status"'),
+        "compact-json": receipt.replace(" ", ""),
+        "uppercase-uuid": receipt.replace("abc", "ABC"),
+        "missing-lf": receipt.removesuffix("\n"),
+        "extra-lf": receipt + "\n",
+    }
+    output = tool_output(stdout=receipts.get(case, receipt))
+    if case == "failed-output":
+        output["payload"]["output"][0]["text"] = (
+            "Script failed\nWall time 0.1 seconds\nOutput:\n"
+        )
+    if case == "wrong-call":
+        output["payload"]["call_id"] = "unpaired"
+    first, last, third = usage(8, 2), usage(14, 4), usage(20, 6)
+    followup = UUID(int=0x211)
+    write(
+        path,
+        [
+            startup(checkout, originator="Codex Desktop"),
+            *begin(checkout),
+            call,
+            response("before-scope", first, first),
+            output,
+            counter(first, first),
+            response(
+                "first-after-scope",
+                last,
+                usage(6, 2),
+                thread=CHILD if case == "wrong-owner" else SESSION,
+            ),
+            counter(last, usage(6, 2)),
+            response("second-after-scope", third, usage(6, 2)),
+            counter(third, usage(6, 2)),
+            end(),
+            *begin(checkout, followup),
+            end(followup),
+        ],
+    )
+    if case == "legacy":
+        codex = adapter()
+        _, result = read(codex, source(registration), codex.CodexState(ledger))
+        assert not any(boundary.receipt_ref for boundary in result.boundaries)
+        assert len(result.revisions) == 3
+        return
+
+    provider = native.ProviderAdapter()
+    root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
+    (locator,) = provider.discover(root)
+    result = provider.read_delta(locator, None)
+    linked = [item.boundary for item in result.boundaries if item.boundary.receipt_ref]
+    if case not in {"mark", "handoff", "dispose"}:
+        assert linked == []
+        return
+    assert [(item.kind, item.ordinal) for item in linked] == [
+        (BoundaryKind.REQUEST, 7),
+        (BoundaryKind.TURN, 12),
+    ]
+    boundary = linked[0]
+    session = session_reference(ledger, Provider.CODEX, str(SESSION))
+    assert boundary.receipt_ref == ledger.pseudonymize("scope-receipt", str(receipt_id))
+    assert boundary.boundary_ref == ledger.pseudonymize(
+        "codex-scope-next-request", f"{session.value}:{receipt_id}"
+    )
+    assert len(result.observations) == 3
+    assert not ledger.as_of().current
 
 
 @pytest.mark.parametrize(

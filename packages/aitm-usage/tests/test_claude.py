@@ -16,6 +16,7 @@ from aitm_usage.ledger import Ledger
 from aitm_usage.pricing import load_rate_card
 from aitm_usage.rollup import rollup
 from aitm_usage.scopes import drain_inbox, session_reference
+from aitm_usage.sources import adapter as native
 from aitm_usage.sources.scan import discover, scan
 from aitm_usage.types import (
     Availability,
@@ -586,6 +587,131 @@ def _native_tool_turn(checkout, command, output, *, case="valid"):
         )
         return [sibling, call, result, attachment, telemetry, target]
     return [call, result, attachment, telemetry, target]
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "mark",
+        "handoff",
+        "dispose",
+        "trimmed-result",
+        "trimmed-native",
+        "padded-native",
+        "legacy",
+        "quoted-flag",
+        "wrong-status",
+        "duplicate-key",
+        "compact-json",
+        "extra-lf",
+        "mismatched-stdout",
+        "not-bash",
+        "background",
+        "tool-error",
+        "stderr",
+        "interrupted",
+        "missing-call-session",
+        "missing-result-session",
+        "wrong-result-session",
+        "unlinked-request",
+    ],
+)
+def test_monitor_scope_receipt_at_first_claude_request(project, monkeypatch, case):
+    ledger, registration, path, checkout, _ = project
+    monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
+    action = case if case in {"mark", "handoff", "dispose"} else "mark"
+    command = (
+        f"aitm-usage monitor scope {action} --request '/private/tmp/a b.json' --json"
+    )
+    if case == "quoted-flag":
+        command = command.replace("--json", "'--json'")
+    receipt_id = UUID("00000000-0000-0000-0000-000000000abc")
+    receipt = (
+        '{"command_id": "00000000-0000-0000-0000-000000000abc", "status": "queued"}\n'
+    )
+    receipts = {
+        "wrong-status": receipt.replace('"queued"', '"unavailable"'),
+        "duplicate-key": receipt.replace('"status"', '"status": "queued", "status"'),
+        "compact-json": receipt.replace(" ", ""),
+        "extra-lf": receipt + "\n",
+        "trimmed-native": receipt.removesuffix("\n"),
+        "padded-native": " " + receipt.removesuffix("\n"),
+    }
+    call, output, attachment, telemetry, target = _native_tool_turn(
+        checkout, command, receipts.get(case, receipt)
+    )
+    tool = call["message"]["content"][0]
+    result_block = output["message"]["content"][0]
+    details = output["toolUseResult"]
+    if case == "trimmed-result":
+        result_block["content"] = receipt.removesuffix("\n")
+    elif case == "mismatched-stdout":
+        details["stdout"] = receipt.replace("abc", "abd")
+    elif case == "not-bash":
+        tool["name"] = "Read"
+    elif case == "background":
+        tool["input"]["run_in_background"] = True
+    elif case == "tool-error":
+        result_block["is_error"] = True
+    elif case == "stderr":
+        details["stderr"] = "failed"
+    elif case == "interrupted":
+        details["interrupted"] = True
+    elif case == "missing-call-session":
+        del call["sessionId"]
+    elif case == "missing-result-session":
+        del output["sessionId"]
+    elif case == "wrong-result-session":
+        output["sessionId"] = str(UUID(int=0x999))
+    elif case == "unlinked-request":
+        target["requestRef"] = "unlinked"
+    write(
+        path,
+        [
+            user(checkout),
+            call,
+            output,
+            attachment,
+            telemetry,
+            target,
+            request(
+                checkout,
+                uuid=str(UUID(int=0x219)),
+                parentUuid=target["uuid"],
+                isSidechain=False,
+                req="req-second",
+                msg="msg-second",
+            ),
+        ],
+    )
+    if case == "legacy":
+        claude = adapter()
+        _, result = read(
+            claude, source(registration), claude.ClaudeState(ledger, SESSION)
+        )
+        assert not any(boundary.receipt_ref for boundary in result.boundaries)
+        assert len(result.revisions) == 3
+        return
+
+    provider = native.ProviderAdapter()
+    root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
+    (locator,) = provider.discover(root)
+    result = provider.read_delta(locator, None)
+    linked = [item.boundary for item in result.boundaries if item.boundary.receipt_ref]
+    if case not in {"mark", "handoff", "dispose", "trimmed-result", "trimmed-native"}:
+        assert linked == []
+        return
+    assert len(linked) == 1
+    (boundary,) = linked
+    session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
+    assert (boundary.kind, boundary.ordinal) == (BoundaryKind.REQUEST, 5)
+    assert boundary.receipt_ref == ledger.pseudonymize("scope-receipt", str(receipt_id))
+    assert boundary.boundary_ref == ledger.pseudonymize(
+        "claude-scope-next-request", f"{session.value}:{receipt_id}"
+    )
+    assert len(result.observations) == 3
+    assert not ledger.as_of().current
 
 
 @pytest.mark.parametrize(

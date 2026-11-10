@@ -35,8 +35,10 @@ from ..types import (
     SourceRef,
     TokenCounts,
     UsageObservation,
+    _unique_fields,
     normalize_model,
 )
+from ._scope_command import is_monitor_scope, queued_monitor_scope_id
 from .scan import FrameBatch, SourceFrame
 
 _PROVIDER = Provider.CODEX
@@ -94,11 +96,16 @@ class _Turn:
     seen_counter: bool = False
 
 
+class _Marker(Enum):
+    LEGACY = 1
+    MONITOR_SCOPE = 2
+
+
 @dataclass(frozen=True, slots=True)
 class _Call:
     call_ref: SourceRef
     segment_ref: SourceRef
-    marker: bool
+    marker: _Marker | None
     response_seen: bool = False
 
 
@@ -356,30 +363,34 @@ def _quota_window(
     )
 
 
-def _marker_command(payload: dict, project_root: Path | None) -> bool:
+def _marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
     source = payload.get("input")
     if (
         payload.get("type") != "custom_tool_call"
         or payload.get("name") != "exec"
         or type(source) is not str
     ):
-        return False
+        return None
     # Desktop can append exactly one ASCII line feed to the tool input.
     source = source.removesuffix("\n")
     if len(source) > 8192:
-        return False
+        return None
     wrapper = _MARKER_WRAPPER.fullmatch(source)
     if wrapper is None:
-        return False
+        return None
     try:
         options = _object(json.loads(wrapper[1]))
         cmd = options.get("cmd")
         if set(options) != {"cmd"} or type(cmd) is not str:
-            return False
+            return None
         parts = shlex.split(cmd)
+        if project_root is None and is_monitor_scope(cmd, parts):
+            # Refuse an ambiguous cmd inside the verified wrapper.
+            json.loads(wrapper[1], object_pairs_hook=_unique_fields)
+            return _Marker.MONITOR_SCOPE
     except (ValueError, RecursionError):
-        return False
-    return (
+        return None
+    if (
         len(parts) == 8
         and parts[:2] == ["aitm-usage", "--project"]
         and (
@@ -395,10 +406,12 @@ def _marker_command(payload: dict, project_root: Path | None) -> bool:
         and Path(parts[6]).is_absolute()
         and parts[7] == "--json"
         and cmd == shlex.join(parts)
-    )
+    ):
+        return _Marker.LEGACY
+    return None
 
 
-def _marker_output(payload: dict) -> UUID | None:
+def _marker_output(payload: dict, marker: _Marker) -> UUID | None:
     if payload.get("type") != "custom_tool_call_output":
         return None
     blocks = payload.get("output")
@@ -416,6 +429,8 @@ def _marker_output(payload: dict) -> UUID | None:
         or len(content) > 256
     ):
         return None
+    if marker is _Marker.MONITOR_SCOPE:
+        return queued_monitor_scope_id(content)
     try:
         result = _object(json.loads(content))
     except (ValueError, RecursionError):
@@ -779,7 +794,9 @@ class _Walk:
         self.discard_serial_output()
         context.serial_output = frame.segment_ref if not frame.pre_cutoff else None
         command = (
-            _marker_output(payload) if call.marker and not frame.pre_cutoff else None
+            _marker_output(payload, call.marker)
+            if call.marker is not None and not frame.pre_cutoff
+            else None
         )
         context.receipt = None
         if command is not None:

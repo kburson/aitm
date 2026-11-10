@@ -1,10 +1,11 @@
 """Private command publication and source-ordered scope projection."""
 
 import fcntl
+import hmac
 import os
 import secrets
-from collections.abc import Iterable, Iterator
-from contextlib import contextmanager
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, replace
 from pathlib import Path
 from uuid import UUID
@@ -51,7 +52,27 @@ from .types import (
 INBOX_NAME = "inbox"
 ACKS_NAME = "acks"
 MAX_COMMAND_BYTES = 64 * 1024
+_MONITOR_ADOPTION_NAME = "monitor-adoption-v1.json"
 _REVIEW_ROLES = (ReviewRole.REVIEWER, ReviewRole.SAR, ReviewRole.SPR, ReviewRole.XPR)
+
+
+class ScopeUnavailable(LedgerError):
+    """The authenticated monitor route is unavailable for a legacy scope command."""
+
+
+@dataclass(frozen=True, slots=True)
+class _AdoptionBinding:
+    project_id: UUID
+    ledger_key_id: str
+    state_path: str
+    state_identity: tuple[int, ...]
+    adoption_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class _AdoptionRecord:
+    binding: _AdoptionBinding
+    tag: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,8 +235,49 @@ def _read_private(directory: _PinnedPath, name: str) -> bytes | None:
         return data
 
 
+def read_monitor_adoption(
+    ledger: Ledger, project: _PinnedPath | None = None
+) -> UUID | None:
+    """Read the one-way legacy fence without taking either publication lock."""
+    try:
+        pin = (
+            nullcontext(project) if project is not None else _pin_directory(ledger.root)
+        )
+        with pin as pinned:
+            if pinned.path != ledger.root:
+                raise LedgerError("Adoption project path changed")
+            pinned.check()
+            data = _read_private(pinned, _MONITOR_ADOPTION_NAME)
+            pinned.check()
+            if data is None:
+                return None
+            record = _decode(data, _AdoptionRecord)
+            binding = record.binding
+            message = _encode(binding, _AdoptionBinding).encode("utf-8")
+            tag = hmac.digest(
+                ledger._key, b"aitm-usage/monitor-adoption/v1\0" + message, "sha256"
+            ).hex()
+            if (
+                not hmac.compare_digest(tag.encode("ascii"), record.tag.encode("utf-8"))
+                or _encode(record, _AdoptionRecord).encode("utf-8") != data
+                or binding.project_id != ledger.identity.project_id
+                or binding.ledger_key_id != ledger.identity.key_id
+                or binding.state_path != str(pinned.path)
+                or binding.state_identity != pinned.identities[-1]
+            ):
+                raise LedgerError("Invalid private adoption record")
+            return binding.adoption_id
+    except (LedgerError, OSError, ValueError):
+        raise ScopeUnavailable("unavailable") from None
+
+
 def _publish(
-    directory: _PinnedPath, name: str, data: bytes, *, replace_pending: bool = False
+    directory: _PinnedPath,
+    name: str,
+    data: bytes,
+    *,
+    replace_pending: bool = False,
+    before_commit: Callable[[], None] | None = None,
 ) -> bool:
     """Publish fsynced bytes relative to a pinned private directory."""
     directory.check()
@@ -235,6 +297,8 @@ def _publish(
             handle.flush()
             os.fsync(fd)
         directory.check()
+        if before_commit is not None:
+            before_commit()
         if replace_pending:
             os.replace(
                 temporary, name, src_dir_fd=directory.fd, dst_dir_fd=directory.fd
@@ -277,9 +341,15 @@ def _decode_publication(data: bytes) -> _Publication:
 
 
 @contextmanager
-def _inbox_publication(ledger: Ledger) -> Iterator[tuple[_PinnedPath, _PinnedPath]]:
+def _inbox_publication(
+    ledger: Ledger, *, project: _PinnedPath | None = None
+) -> Iterator[tuple[_PinnedPath, _PinnedPath]]:
     try:
-        with _pin_directory(ledger.root) as project:
+        pin = (
+            nullcontext(project) if project is not None else _pin_directory(ledger.root)
+        )
+        with pin as pinned:
+            pinned.check()
             if (
                 Ledger.open(ledger.root, ledger.identity.project_id).identity
                 != ledger.identity
@@ -287,11 +357,11 @@ def _inbox_publication(ledger: Ledger) -> Iterator[tuple[_PinnedPath, _PinnedPat
                 raise LedgerError("Private inbox project changed")
             # The lock uses the inbox descriptor. Adoption holds this same lock,
             # so a cutover that has already committed leaves the inbox in place.
-            with _private_child(project, INBOX_NAME, create=True) as inbox:
+            with _private_child(pinned, INBOX_NAME, create=True) as inbox:
                 assert inbox is not None
                 with _publication(inbox):
-                    yield project, inbox
-                project.check()
+                    yield pinned, inbox
+                pinned.check()
     except OSError:
         raise LedgerError("Private inbox publication failed") from None
 
@@ -333,20 +403,48 @@ def _enqueue_locked(
     return None
 
 
-def enqueue_command(directory: Path, command: InboxCommand) -> CommandReceipt | None:
-    """Queue canonical command bytes without taking the collector lease.
+def enqueue_command(
+    directory: Path, command: InboxCommand, *, claude_session: SourceRef | None = None
+) -> CommandReceipt | None:
+    """Route a legacy command without taking the collector lease.
 
-    Return the current durable outcome for a retry. None means published but
-    the consuming writer has yet to record a disposition.
+    Return the current legacy durable outcome for a retry. None means queued.
     """
     ledger = Ledger.open(directory, command.project_id)
+    scope_command = not isinstance(command.payload, SourceAnchorCommand)
+    with _pin_directory(ledger.root) as project:
+        adoption_id = read_monitor_adoption(ledger, project) if scope_command else None
+        if adoption_id is None:
+            if claude_session is None:
+                current = ledger.command_receipt(command)
+                if current is not None:
+                    return current
+            with _inbox_publication(ledger, project=project) as (_, inbox):
+                if scope_command:
+                    adoption_id = read_monitor_adoption(ledger, project)
+                if adoption_id is None:
+                    if claude_session is not None:
+                        from .service import remember_claude_session
+
+                        ledger.validate_command(command)
+                        remember_claude_session(ledger, claude_session)
+                    current = _enqueue_locked(inbox, ledger, command)
+            if adoption_id is None:
+                return (
+                    current if current is not None else ledger.command_receipt(command)
+                )
+
+    # Adoption fences legacy writes. A collector may have committed the
+    # receipt before the fence won the publication lock.
     current = ledger.command_receipt(command)
     if current is not None:
         return current
-    with _inbox_publication(ledger) as (_, inbox):
-        # The first read may predate a final commit and retirement.
-        current = _enqueue_locked(inbox, ledger, command)
-    return current if current is not None else ledger.command_receipt(command)
+
+    from .monitor_control import enqueue_adopted_scope
+
+    if not enqueue_adopted_scope(ledger, adoption_id, command, claude_session):
+        raise ScopeUnavailable("unavailable")
+    return None
 
 
 def enqueue_marker(directory: Path, marker: ScopeMarker) -> MarkerId:
