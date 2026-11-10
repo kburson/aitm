@@ -10,12 +10,12 @@ children: []
 blocking: [105]
 blocked-by: []
 created: "2026-11-10T02:57:04Z"
-updated: "2026-11-10T04:37:24+00:00"
+updated: "2026-11-10T04:56:02+00:00"
 last-branch: "codex/aitm-104-ci-bootstrap"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/103/plan/implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/design.md", "design/github-tested-merge-binding-replan.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/delivery-checklist.md", "plan/signing-probe-jit.md", "plan/signing-probe-pickup-review.md"], "attachments": ["attachments/github-binding-probe-attempt-1.md", "attachments/github-signing-probe-result.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/design.md", "design/github-tested-merge-binding-replan.md"], "plan": ["plan/implementation-plan.md", "plan/jit.md", "plan/pickup-review.md", "plan/delivery-checklist.md", "plan/signing-probe-jit.md", "plan/signing-probe-pickup-review.md", "plan/delivery-jit.md", "plan/delivery-jit-review.md"], "attachments": ["attachments/github-binding-probe-attempt-1.md", "attachments/github-signing-probe-result.md"]}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,5 @@ Refined forecast **4.0 implementation agent-hours**. Leaf design, implementation
 A [fresh JIT](plan/signing-probe-jit.md) and [independent control review](plan/signing-probe-pickup-review.md) authorize one ordinary PR signing probe. The owner authorized the scoped signing permissions and public attestation for this probe. #104 remains in Planning.
 
 The [single authorized signing probe](attachments/github-signing-probe-result.md) passed on draft PR #107. The certificate and signed evidence bind the exact run attempt to GitHub’s temporary merge. This checkpoint leaves #104 in Planning and records no production gate.
+
+The [delivery JIT](plan/delivery-jit.md) and [scoped review](plan/delivery-jit-review.md) admit local preparation and review under Full-Auto. The production signing-capable push and pre-Develop transition are held pending the applicable separate authority.
