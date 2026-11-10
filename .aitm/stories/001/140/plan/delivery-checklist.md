@@ -86,3 +86,15 @@ refreshed candidate.
 first refreshed review. The [final verifier hold](verifier-hold-62c248b9ab53.json)
 stopped #184 before merge. The earlier checks, independent review and
 owner disposition remain bound to their original head, base and tree.
+
+## Candidate `b1f30f81fb7d` · Test
+
+[Open PR](https://github.com/kburson/aitm/pull/184) · base `41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55` · head `b1f30f81fb7d604e79ddac0a2bde161d85dcbded` · local tree `47fa209c89e99e041f716d856c9ae59b3360c97e`.
+
+- Locked Python 3.13.9 and uv 0.10.6 on the isolated source checkout.
+- Exact-head focused pytest result `38 passed in 24.28s`.
+- Exact-head full local package and CI test result `1017 passed in 118.08s (0:01:58)`.
+- Ruff check, Ruff format and source diff whitespace passed.
+- Focused collection and execution are separate from the hosted #103
+  test list and helper denominator.
+- Hosted validation and independent review apply to this exact candidate.
