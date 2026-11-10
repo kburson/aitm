@@ -119,6 +119,7 @@ class NativeScopeFixture:
         pad_before=False,
         pad_after=False,
         bind=False,
+        scope_invocation=None,
     ):
         anchor = self.anchors.get(checkout, checkout)
         self.turn += 1
@@ -144,7 +145,26 @@ class NativeScopeFixture:
                     row("response_item", {"type": "reasoning", "summary": []}, time)
                 )
             call = tool_call(SimpleNamespace(root=self.ledgers[A].root), bind=bind)
-            result = tool_output(command_id)
+            if scope_invocation is None:
+                result = tool_output(command_id)
+            else:
+                request, stdout = scope_invocation
+                command = shlex.join(
+                    (
+                        "aitm-usage",
+                        "monitor",
+                        "scope",
+                        "mark",
+                        "--request",
+                        str(request),
+                        "--json",
+                    )
+                )
+                arguments = json.dumps({"cmd": command}, separators=(",", ":"))
+                call["payload"]["input"] = (
+                    f"const marker = await tools.exec_command({arguments}); text(marker.output);"
+                )
+                result = tool_output(command_id, stdout=stdout)
             call["timestamp"] = result["timestamp"] = time.isoformat()
             rows.extend((call, next_response("tool"), result))
             receipt_ordinal = start + len(rows) - 1
@@ -1180,3 +1200,66 @@ def test_scope_proof_requires_current_physical_identity_before_apply(native, cha
         with pytest.raises(LedgerError):
             state.view(batch)
         assert state.view().events == ()
+
+
+def test_queued_monitor_scope_cli_joins_only_first_native_target(
+    native, monkeypatch, capsys
+):
+    import sys
+
+    from aitm_usage import cli, monitor_registry
+    from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
+    from aitm_usage.monitor_scope import Mark, ScopeState
+    from aitm_usage.scope_admission import MarkRequest
+
+    command_id, grant_id = UUID(int=0x410), UUID(int=0x411)
+    scope = _issue(A, 116)
+    request = native.path.parent.parent / "scope-request.json"
+    request.write_text(
+        json.dumps(
+            {
+                "command_id": str(command_id),
+                "grant_id": str(grant_id),
+                "scope": {
+                    "project_id": str(A),
+                    "item": {"kind": "issue", "identifier": 116},
+                    "phase": "planning",
+                },
+            }
+        )
+    )
+    request.chmod(0o600)
+    monkeypatch.setattr(
+        monitor_registry, "default_monitor_root", lambda: native.registry.root
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["aitm-usage", "monitor", "scope", "mark", "--request", str(request), "--json"],
+    )
+    with native.registry.writer() as writer:
+        inbox = ControlInbox(writer.root)
+        reader = ScopeInboxReader(writer, inbox)
+        reader.register(grant_id, A, ("mark",))
+        reader.advertise(reader.probe(MarkRequest(command_id, grant_id, scope)))
+        assert cli.main() == 0
+        output = capsys.readouterr().out
+        assert output == f'{{"command_id": "{command_id}", "status": "queued"}}\n'
+        with inbox.publication() as locked:
+            (envelope,) = reader.iter_verified(locked)
+        assert envelope.body.request == MarkRequest(command_id, grant_id, scope)
+
+        _, first = native.append(command_id, scope_invocation=(request, output))
+        _, later = native.append(command_id, scope_invocation=(request, output))
+        state = ScopeState(writer)
+        batch = state.read_source(SOURCE, native.locator())
+        mark = Mark(command_id, scope, native.receipt_ref(command_id))
+        owner = state.operator(A)
+        state.authorize(mark, owner)
+        assert (
+            _verify(state, native, mark, owner, batch, first).position.ordinal == first
+        )
+        with pytest.raises(LedgerError, match="first unique"):
+            _verify(state, native, mark, owner, batch, later)
+        assert state.view().events == ()
+        assert state.receipt(mark, owner) is None

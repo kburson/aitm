@@ -1607,6 +1607,8 @@ class Registry:
         with inbox.publication() as locked:
             view = self.view(_confirm_publication=True)
             for command in inbox.iter_pending(locked):
+                if not isinstance(command, ControlCommand):
+                    continue
                 digest = command.payload_digest
                 receipt = _command_outcome(view, command.command_id)
                 if receipt is not None:

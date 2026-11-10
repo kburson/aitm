@@ -42,13 +42,17 @@ from .qualification import (
     verify_installed_activation,
 )
 from .rollup import rollup
-from .scopes import MAX_COMMAND_BYTES, enqueue_command, session_reference
+from .scopes import (
+    MAX_COMMAND_BYTES,
+    ScopeUnavailable,
+    enqueue_command,
+    session_reference,
+)
 from .service import (
     collect_once,
     enqueue_source_anchor,
     load_registration,
     register_project,
-    remember_claude_session,
     run_service,
     status_report,
     verify_source_anchor_receipt,
@@ -65,6 +69,7 @@ from .types import (
     Provider,
     ScopeCorrection,
     SourceAnchorCommand,
+    SourceRef,
     decode_binding,
     decode_correction,
     decode_marker,
@@ -111,7 +116,7 @@ def _item_key(text: str) -> ItemKey:
     return ItemKey(ItemKind.DRAFT, UUID(text))
 
 
-def _item_command(args: argparse.Namespace) -> InboxCommand:
+def _item_command(args: argparse.Namespace) -> tuple[InboxCommand, None]:
     project_id = open_project(args.legacy_state_dir).identity.project_id
     command_id = uuid4()
     if args.item_action == "alias":
@@ -125,15 +130,16 @@ def _item_command(args: argparse.Namespace) -> InboxCommand:
         payload = ItemParent(
             command_id, project_id, _item_key(args.child), _item_key(args.epic)
         )
-    return InboxCommand(command_id, project_id, payload)
+    return InboxCommand(command_id, project_id, payload), None
 
 
-def _scope_command(args: argparse.Namespace) -> InboxCommand:
+def _scope_command(args: argparse.Namespace) -> tuple[InboxCommand, SourceRef | None]:
     with args.input.open("rb") as source:
         data = source.read(MAX_COMMAND_BYTES + 1)
     if len(data) > MAX_COMMAND_BYTES:
         raise ValueError("Command file is too large")
     payload = args.decode(data)
+    claude_session = None
     if isinstance(payload, ScopeCorrection):
         command = InboxCommand(payload.correction_id, payload.project_id, payload)
     else:
@@ -145,17 +151,15 @@ def _scope_command(args: argparse.Namespace) -> InboxCommand:
             raw_session = os.environ.get("CODEX_THREAD_ID")
         else:
             raw_session = args.session_id
-        if (
-            session_reference(ledger, marker.provider, raw_session)
-            != marker.session_ref
-        ):
+        verified_session = session_reference(ledger, marker.provider, raw_session)
+        if verified_session != marker.session_ref:
             raise ValueError("Invoking provider session does not match")
         command = InboxCommand(marker.marker_id, marker.project_id, payload)
         if marker.provider is Provider.CLAUDE:
             ledger.validate_command(command)
-            remember_claude_session(ledger, marker.session_ref)
+            claude_session = verified_session
 
-    return command
+    return command, claude_session
 
 
 def _queue_command(args: argparse.Namespace) -> int:
@@ -163,8 +167,10 @@ def _queue_command(args: argparse.Namespace) -> int:
         if args.command == "source":
             command, receipt = _anchor_command(args)
         else:
-            command = args.command_factory(args)
-            receipt = enqueue_command(args.legacy_state_dir, command)
+            command, claude_session = args.command_factory(args)
+            receipt = enqueue_command(
+                args.legacy_state_dir, command, claude_session=claude_session
+            )
         if (
             receipt is not None
             and receipt.disposition is MarkerDisposition.ACCEPTED
@@ -175,6 +181,8 @@ def _queue_command(args: argparse.Namespace) -> int:
             )
     except monitor_registry.ProjectAdopted:
         return _collector_failure(args, "project-adopted-use-monitor")
+    except ScopeUnavailable:
+        return _collector_failure(args, "unavailable")
     except ConflictError:
         print("aitm-usage: inbox command conflict", file=sys.stderr)
         return 1
