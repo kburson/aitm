@@ -65,3 +65,9 @@ The [first independent source review](source-review-attempt-1.md) held the exact
 A keyed snapshot dispute stays with the affected completion in the authenticated cursor. The reader returns each unrelated verified observation and boundary and advances their native frontier. A subsequent matching snapshot alone cannot clear the retained dispute. Native duplicate identity or overlap contradictions still hold the native frontier because they affect source continuity, and size or missing-proof limits still fail closed. The red and green regression includes cold and resumed evidence, an unrelated later turn, and repeated replay.
 
 Local focused validation passed 299 cases. The locked exact tree passed 630 product and CLI tests and 182 helper tests, with 7,146/7,825 product and 778/821 helper lines. Ruff and whitespace passed.
+
+### Snapshot repair Review checkpoint
+
+[Run 42869601092 attempt 1](https://github.com/kburson/aitm/actions/runs/42869601092/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `2b5208ebca881bc1b383f71af0e8e9355b4839bc`, exact replacement head and tree, and ordered parents on unchanged trunk. Artifact `13790255902` had archive SHA-256 `3ab42fd5de5735616dc4c500e85ce933159ddd373f576effc9296f1449d8d264` and subject SHA-256 `28d8102a38ca8c130e8c5c5f95eeea8a2d34d648d7fef96367e58c09c68811e2`.
+
+Authenticated raw replay preserved all 592 baseline identities and added 32 native Grok and 5 Grok pricing tests plus the fixed candidate-only CLI evidence test. Product and helper raw coverage matched the local replacement. Independent re-review of the exact repair is pending.
