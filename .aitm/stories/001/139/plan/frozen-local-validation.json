@@ -1,0 +1,74 @@
+{
+  "actionlint": {
+    "exit": 0,
+    "log_sha256": "666660605982f0d63ae6e68d40a414d3e098df27585c5241653baf8df2250676"
+  },
+  "attempt": 1,
+  "exact_head_clean_before_and_after": true,
+  "exact_head_full": {
+    "failed": 0,
+    "log_sha256": "39cb1229554cf7b20d13228e9247b6ad65fafec216b43cfafbccf45372759b34",
+    "passed": 1044,
+    "seconds": 109.26
+  },
+  "file_checks": {
+    "exit": 0,
+    "log_sha256": "84f8f648ddf42b11c3aa500f6f2e2531a534cc4092be8f0d2519f6483efb4731"
+  },
+  "focused_green": {
+    "log_sha256": "3d92a3a8f179e568c4573609c7246adffbf3ff4608374443cc68ff6e4e8bdf3a",
+    "passed": 27
+  },
+  "focused_red": {
+    "cause": "missing classifier implementation at public call",
+    "failed": 27,
+    "log_sha256": "a949ba0610550dadbed7f9cb6d245a23a31043446e9afcb34f671c1238ce049b"
+  },
+  "head": "324059fec0713b143dbbdfe60a22f78c13707799",
+  "initial_full": {
+    "exit": 1,
+    "failed": 11,
+    "log_sha256": "d66daa8958d9b107bb37c654909314c873c07716d4701b062655e498e8436cd5",
+    "passed": 1033
+  },
+  "neighboring": {
+    "log_sha256": "83021867ec5652470d4195049faaaef882b1ba9a7940f2da35828de7e93ec4df",
+    "passed": 87
+  },
+  "owned_paths": [
+    "tools/ci/tests/test_tia_inventory.py",
+    "tools/ci/tia/inventory.py",
+    "tools/ci/tia/suites.json"
+  ],
+  "package_ruff": {
+    "exit": 0,
+    "log_sha256": "9b7cdc1ef64bf87c8f48042b16269eae51e243b1a72eb1e57c81837da739be03"
+  },
+  "parent": "a495d60a87ac4ca764f019dc266e579f13f1787e",
+  "private_git_bundle_sha256": "1013a41e06c1bdb0a1436aa64b0770f0138b7c5dcf07116f0a88c7cd9e81ceb6",
+  "same_failed_ids_candidate_reproduction": {
+    "failed": 0,
+    "log_sha256": "58431781cd3109f3f1d8dfa531fa416b83dd033bf50d8ee183778ea0679cb416",
+    "passed": 11
+  },
+  "same_failed_ids_frozen_parent_reproduction": {
+    "failed": 0,
+    "log_sha256": "3cb2d5371ec07ffff5c3fad20480c617ccd46f4ff742d7162b70d9bf4fd7eb08",
+    "passed": 11
+  },
+  "sanitized_reconciliation_sha256": "8a3c4c75536ff26449afe51c2662ea1604adb5840b3330d7db506df056a41f25",
+  "scope_of_initial_failures": "unchanged product tests; all 11 passed in separate targeted parent and candidate runs and the staged and exact head suites passed; root cause unconfirmed",
+  "staged_full_repeat": {
+    "failed": 0,
+    "log_sha256": "f1092c4da00c49fe732d465eee58b58a4d2f5e303546b9f0c0738359eecba87b",
+    "passed": 1044,
+    "seconds": 113.57
+  },
+  "status": "frozen_after_target_advance",
+  "tools_ruff": {
+    "exit": 0,
+    "format_log_sha256": "d41ae50829b47e318b0787bc39d2a2ea2d52b518cfc7900d2efd569e6d26ab88",
+    "log_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "tree": "6274db7be6da90391311ee8b9509dda1f2ae1b30"
+}
