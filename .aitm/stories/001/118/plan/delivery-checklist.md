@@ -17,3 +17,9 @@ The [literal trunk refresh](2026-11-10-118-target-refresh.md) and its [independe
 The locked frozen gate passed 920 product and CLI tests, 182 helper tests, Ruff, whitespace and coverage of 10,101/11,029 product and 778/821 helper lines. It adds 30 physical-store and 13 native-routing regressions over the exact baseline. An intermediate parallel run had four integration failures while the source fixtures were being corrected. The integrated source preflight held four causality checks, including a visible scope rename followed by a failed directory sync. The new native fault fixture reproduced the custody bug and now proves the journal rolls back before a fresh replay can settle the receipt. A second independent preflight passed all four repaired source paths.
 
 The two original implementation lanes independently signed their source and fixture handoffs. Formal sign-offs follow verified delivery.
+
+## Review checkpoint
+
+[All six required jobs](https://github.com/kburson/aitm/actions/runs/42922357862/attempts/1) passed on exact head `db814e9e8d37e08860e822baed72f917132541a6`. The [authenticated receipt](hosted-ci-receipt.json) verified tested merge `cd0fd26ce52f8909f663d1f9003695c324c6cb72`, exact tree `cb6ff8ce8506abc2a4bda4da3ddad93a35c33aad`, artifact `13812986424`, and signed subject SHA-256 `aeae1ddbbc543f9a25c6efd832c26778cc6a794e74b8a507c9f24128df310258`. The first verifier held because a GitHub commit read failed. The same endpoint read then succeeded, and the same trusted verifier passed the same run and tree without policy or source changes. [Initial verifier result](hosted-verifier-initial-read-hold.json)
+
+The trusted raw replay retained 876 baseline package test identities and passed all 920 candidate tests. The locked local baseline includes the fixed CLI evidence test for 877. Raw coverage passed at 10,101/11,029 product and 778/821 helper lines. Independent exact source review is pending.
