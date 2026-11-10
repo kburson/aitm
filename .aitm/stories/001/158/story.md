@@ -10,12 +10,12 @@ children: []
 blocking: [159]
 blocked-by: []
 created: "2026-11-10T16:51:45Z"
-updated: "2026-11-10T22:00:07Z"
+updated: "2026-11-10T22:29:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": ["attachments/github-merge-fence-spike.md", "attachments/github-merge-fence-rules.json"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T21", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "4c57ac72e211b052a8b7ffee538b492427775b5dc3f365a1640c80f72ac54742"}
@@ -91,3 +91,24 @@ The JIT remains accepted and the story remains in Planning. No hosted
 probe was attempted, and no provider verdict was recorded. #159 still
 requires a qualified T21 receipt. An explicitly reviewed scope change
 would be needed to substitute a local-only deliverable.
+
+## Reviewed disposable GitHub measurements
+
+The owner authorized creating a private disposable fixture, measuring
+the endpoints, and deleting the fixture afterward. Two synchronous
+requests reached terminal outcomes. The stale head returned HTTP 409
+and left the target unchanged. The stale base returned HTTP 200 and
+landed the expected tree with a different first parent. The endpoint
+alone supplies a head condition and cannot enforce the reserved base.
+
+The private repository could not use rulesets on the available
+account entitlement. The dedicated App and role-separated controls
+were unavailable. The independently accepted record covers the
+bounded endpoint measurements. The full qualification and stop
+ordering remain held, and #159 still requires a qualified receipt.
+No recurring workflow was used. Repository teardown is tracked
+separately from the retained measurement bytes.
+
+[Exact report](attachments/github-merge-fence-spike.md) ·
+[Rules and request evidence](attachments/github-merge-fence-rules.json) ·
+[Independent SPR](plan/reviews/spr-2026-11-10-endpoint-evidence.md).

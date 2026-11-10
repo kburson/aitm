@@ -1,0 +1,416 @@
+{
+  "story": 158,
+  "planning_sha": "b62000a647dccd1343573deaddf436ca179a5177",
+  "scope": "Disposable synchronous REST endpoint controls",
+  "qualification_status": "pickup_held",
+  "fixture": {
+    "allow_auto_merge": false,
+    "allow_merge_commit": true,
+    "allow_rebase_merge": true,
+    "allow_squash_merge": true,
+    "archived": false,
+    "default_branch": "trunk",
+    "delete_branch_on_merge": false,
+    "disabled": false,
+    "full_name": "kburson/aitm-158-merge-fence-a3a6eed8",
+    "id": 1453246444,
+    "is_template": false,
+    "owner": {
+      "id": 1082467,
+      "login": "kburson",
+      "type": "User"
+    },
+    "permissions": {
+      "admin": true,
+      "maintain": true,
+      "pull": true,
+      "push": true,
+      "triage": true
+    },
+    "private": true,
+    "visibility": "private"
+  },
+  "observed_actor": {
+    "kind": "OAuth repository owner",
+    "id": 1082467,
+    "login": "kburson",
+    "plan": null,
+    "type": "User"
+  },
+  "api_version": "2026-03-10",
+  "configuration_writes": [],
+  "selected_app_policy_configured": false,
+  "account_plan_disclosure": "Account API omitted the plan. Rules and legacy protection APIs denied access due to private repository feature entitlement.",
+  "merge_queue": "GitHub documents queue availability for eligible organization repositories. No queue entry route was exercised.",
+  "observations": [
+    {
+      "label": "fixture.oauth-installations",
+      "route": "user/installations",
+      "http_status": 403,
+      "request_id": "CBDD:C38A7:5BACE8:11E4826:6AF39795",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:49 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/apps/installations#list-app-installations-accessible-to-the-user-access-token",
+        "message": "You must authenticate with an access token authorized to a GitHub App in order to list installations",
+        "status": "403"
+      }
+    },
+    {
+      "label": "fixture.rulesets-before",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rulesets?includes_parents=true",
+      "http_status": 403,
+      "request_id": "CBDE:10C676:520FC2:FE7913:6AF39795",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:49 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-all-repository-rulesets",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "fixture.trunk-before.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/trunk",
+      "http_status": 200,
+      "request_id": "CBE6:18FAE4:5C264A:122C027:6AF39796",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:50 GMT",
+      "response": {
+        "name": "trunk",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "ac75c69f3933386fdc156664d71599fd1a96c930"
+      }
+    },
+    {
+      "label": "fixture.trunk-before.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/trunk",
+      "http_status": 403,
+      "request_id": "CBE8:1DE35E:52D106:FF9BD5:6AF39796",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:51 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "fixture.trunk-before.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/trunk/protection",
+      "http_status": 403,
+      "request_id": "CBEA:2D5790:5D8AD9:121B85E:6AF39797",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:51 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.before.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target",
+      "http_status": 200,
+      "request_id": "CC01:28638D:614147:12D2989:6AF3979D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:57 GMT",
+      "response": {
+        "name": "m08-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "ac75c69f3933386fdc156664d71599fd1a96c930"
+      }
+    },
+    {
+      "label": "m08.before.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m08-target",
+      "http_status": 403,
+      "request_id": "CC02:1534E1:577FE7:10E5BA5:6AF3979E",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:58 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.before.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target/protection",
+      "http_status": 403,
+      "request_id": "CC03:375A55:56A31F:10DAAFA:6AF3979E",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:15:58 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.before.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target",
+      "http_status": 200,
+      "request_id": "CCEF:4983D:4D711F:F2C242:6AF397F9",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:29 GMT",
+      "response": {
+        "name": "m08-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "ac75c69f3933386fdc156664d71599fd1a96c930"
+      }
+    },
+    {
+      "label": "m08.before.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m08-target",
+      "http_status": 403,
+      "request_id": "CCF2:2DA8ED:4C6F31:EE5B20:6AF397F9",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:30 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.before.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target/protection",
+      "http_status": 403,
+      "request_id": "CCF6:196B43:49ED6B:E78593:6AF397FA",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:30 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.after.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target",
+      "http_status": 200,
+      "request_id": "CD33:1C815A:5E82D5:12678FB:6AF39807",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:44 GMT",
+      "response": {
+        "name": "m08-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "ac75c69f3933386fdc156664d71599fd1a96c930"
+      }
+    },
+    {
+      "label": "m08.after.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m08-target",
+      "http_status": 403,
+      "request_id": "CD37:330F12:5F3396:12BFE21:6AF39808",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:44 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m08.after.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m08-target/protection",
+      "http_status": 403,
+      "request_id": "CD38:27450A:6AE5E3:1504406:6AF39808",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:44 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.before.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target",
+      "http_status": 200,
+      "request_id": "CD5B:3BBBA5:5E79ED:1257EC5:6AF3980D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:49 GMT",
+      "response": {
+        "name": "m09-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "ac75c69f3933386fdc156664d71599fd1a96c930"
+      }
+    },
+    {
+      "label": "m09.before.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m09-target",
+      "http_status": 403,
+      "request_id": "CD5D:19B358:5CEBB1:12107BD:6AF3980D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:49 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.before.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target/protection",
+      "http_status": 403,
+      "request_id": "CD5E:3C6CD2:59FE10:1176EB3:6AF3980D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:49 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.after-setup.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target",
+      "http_status": 200,
+      "request_id": "CD6A:19697A:4F33F6:F7BDBF:6AF39812",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:54 GMT",
+      "response": {
+        "name": "m09-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "7c83794ccc8eede0394abca3bc58a4c1e4bc910a"
+      }
+    },
+    {
+      "label": "m09.after-setup.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m09-target",
+      "http_status": 403,
+      "request_id": "CD6D:2962C4:5CD309:124D805:6AF39812",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:55 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.after-setup.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target/protection",
+      "http_status": 403,
+      "request_id": "CD70:D7A8A:50647B:FB40E8:6AF39813",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:17:55 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.after.branch",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target",
+      "http_status": 200,
+      "request_id": "CF92:344259:66EC43:1410235:6AF3991D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:22:21 GMT",
+      "response": {
+        "name": "m09-target",
+        "protected": false,
+        "protection": {
+          "enabled": false,
+          "required_status_checks": {
+            "checks": [],
+            "contexts": [],
+            "enforcement_level": "off"
+          }
+        },
+        "sha": "685e186e4a087ed66cad085f0d2781a5163db967"
+      }
+    },
+    {
+      "label": "m09.after.effective-rules",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rules/branches/m09-target",
+      "http_status": 403,
+      "request_id": "CF93:3BBBA5:663470:13D915F:6AF3991D",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:22:21 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-rules-for-a-branch",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "m09.after.legacy-protection",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/branches/m09-target/protection",
+      "http_status": 403,
+      "request_id": "CF95:32225E:67F1D8:1442F2E:6AF3991E",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:22:22 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    },
+    {
+      "label": "fixture.rulesets-after",
+      "route": "repos/kburson/aitm-158-merge-fence-a3a6eed8/rulesets?includes_parents=true",
+      "http_status": 403,
+      "request_id": "CF98:27450A:73D31F:16C4847:6AF3991F",
+      "api_version_selected": "2026-03-10",
+      "provider_date": "Tue, 10 Nov 2026 22:22:23 GMT",
+      "response": {
+        "documentation_url": "https://docs.github.com/rest/repos/rules#get-all-repository-rulesets",
+        "message": "Upgrade to GitHub Pro or make this repository public to enable this feature.",
+        "status": "403"
+      }
+    }
+  ],
+  "raw_observations_sha256": "c4304a90649b327063b2d5968e01ed0c060b8d1cfd222500f63adae2c086f666"
+}
