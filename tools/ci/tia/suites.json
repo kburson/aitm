@@ -1,0 +1,307 @@
+{
+  "schema": "aitm.tia-suite-policy/v1",
+  "workloads": {
+    "full": {
+      "scope_status": "complete_workload",
+      "required_pairs": [
+        [
+          "ci-helpers",
+          "darwin-apfs"
+        ],
+        [
+          "product-cli",
+          "darwin-apfs"
+        ]
+      ]
+    },
+    "compare-product-base": {
+      "scope_status": "comparison_component",
+      "required_pairs": [
+        [
+          "product-base",
+          "darwin-apfs"
+        ]
+      ]
+    },
+    "compare-product-cli": {
+      "scope_status": "comparison_component",
+      "required_pairs": [
+        [
+          "product-cli",
+          "darwin-apfs"
+        ]
+      ]
+    },
+    "compare-ci-helpers": {
+      "scope_status": "comparison_component",
+      "required_pairs": [
+        [
+          "ci-helpers",
+          "darwin-apfs"
+        ]
+      ]
+    }
+  },
+  "profiles": {
+    "product-base": {
+      "owner": "aitm-usage",
+      "targets": [
+        "packages/aitm-usage/tests/"
+      ],
+      "required_capabilities": [
+        "apfs",
+        "darwin"
+      ]
+    },
+    "product-cli": {
+      "owner": "aitm-usage",
+      "targets": [
+        "packages/aitm-usage/tests/",
+        "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+      ],
+      "required_capabilities": [
+        "apfs",
+        "darwin"
+      ]
+    },
+    "ci-helpers": {
+      "owner": "ci-tools",
+      "targets": [
+        "tools/ci/tests/test_file_checks.py",
+        "tools/ci/tests/test_pytest_evidence.py",
+        "tools/ci/tests/test_python_gate.py",
+        "tools/ci/tests/test_verify_pr.py"
+      ],
+      "required_capabilities": [
+        "apfs",
+        "darwin"
+      ]
+    }
+  },
+  "runners": {
+    "darwin-apfs": {
+      "platform_scope": "darwin-apfs",
+      "identity": {
+        "os": "Darwin",
+        "filesystem": "apfs"
+      },
+      "capabilities": [
+        "apfs",
+        "darwin",
+        "native-acl"
+      ],
+      "required_capabilities": [
+        "apfs",
+        "darwin"
+      ]
+    }
+  },
+  "modules": {
+    "packages/aitm-usage/tests/test_accounting.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_accounting"
+    },
+    "packages/aitm-usage/tests/test_activation_receipt.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_claude.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_claude"
+    },
+    "packages/aitm-usage/tests/test_codex.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_export.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_grok.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_grok"
+    },
+    "packages/aitm-usage/tests/test_grok_pricing.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_grok_pricing"
+    },
+    "packages/aitm-usage/tests/test_host_fs_publication.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_host_fs_security.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_install.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_ledger.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_adapters.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_monitor_adapters"
+    },
+    "packages/aitm-usage/tests/test_monitor_control.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_ledger_version.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_legacy.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_registry.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_scope.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_rollup.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_scan.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "test_scan"
+    },
+    "packages/aitm-usage/tests/test_scope_admission.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_scope_legacy.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_scopes.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_service.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_service_process.py": {
+      "owner": "aitm-usage",
+      "suite": "system",
+      "isolation_group": "system-process"
+    },
+    "tools/ci/tests/test_cli_evidence.py": {
+      "owner": "aitm-usage",
+      "suite": "system",
+      "isolation_group": "system-process"
+    },
+    "tools/ci/tests/test_file_checks.py": {
+      "owner": "ci-tools",
+      "suite": "integration",
+      "isolation_group": "ci-helper-serial"
+    },
+    "tools/ci/tests/test_pytest_evidence.py": {
+      "owner": "ci-tools",
+      "suite": "integration",
+      "isolation_group": "ci-helper-serial"
+    },
+    "tools/ci/tests/test_python_gate.py": {
+      "owner": "ci-tools",
+      "suite": "integration",
+      "isolation_group": "ci-helper-serial"
+    },
+    "tools/ci/tests/test_verify_pr.py": {
+      "owner": "ci-tools",
+      "suite": "integration",
+      "isolation_group": "ci-helper-serial"
+    }
+  },
+  "overrides": [
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_card_rejects_unproven_rate_classes_and_models",
+      "suite": "unit",
+      "isolation_group": "grok-pricing"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_rate_classes_do_not_use_claude_defaults",
+      "suite": "unit",
+      "isolation_group": "grok-pricing"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_legacy_v1_revision_refuses_grok_provider",
+      "suite": "unit",
+      "isolation_group": "grok-pricing"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_unknown_grok_rate_and_provider_ticks_remain_separate",
+      "suite": "unit",
+      "isolation_group": "grok-pricing"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl",
+      "required_capabilities": [
+        "native-acl"
+      ]
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_backup_refuses_store_through_physical_path_alias",
+      "required_capabilities": [
+        "apfs"
+      ]
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation",
+      "required_capabilities": [
+        "apfs"
+      ]
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer",
+      "required_capabilities": [
+        "apfs"
+      ]
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+      "suite": "system",
+      "isolation_group": "system-process",
+      "required_children": [
+        "service-one-shot"
+      ]
+    },
+    {
+      "selector": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+      "mandatory": true,
+      "required_children": [
+        "cli-help"
+      ]
+    }
+  ]
+}
