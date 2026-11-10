@@ -18,3 +18,16 @@ The new host tests passed 16 cases. The scoped suites passed 126 cases, includin
 The first overlapping product run had five Codex-reader failures that returned empty observations. All 84 reader tests then passed in isolation. The final full pass ran serially with a dedicated temporary directory. A separate initial helper invocation omitted the workflow's Python module path and failed to collect. The same helper suite passed all 182 cases with the workflow's module path.
 
 [Exact candidate ext4 receipt and baseline runtime observation](../attachments/ext4-publication-proof.md).
+
+### Review checkpoint
+
+[Canonical run 42837579428 attempt 1](https://github.com/kburson/aitm/actions/runs/42837579428/attempts/1) passed all six jobs. GitHub read back tested merge `7ae7beace1ae0af2cc0054769e2320b53f89559c` with the expected tree and ordered base/head parents. The signed subject records 547 base tests, 564 candidate tests, product coverage 6,364/6,981 and helper coverage 778/821. Independent review of the source and test-control changes is next.
+
+| Job | Outcome |
+| --- | --- |
+| [python-base](https://github.com/kburson/aitm/actions/runs/42837579428/job/129903789797) | Success |
+| [python](https://github.com/kburson/aitm/actions/runs/42837579428/job/129903790328) | Success |
+| [quality](https://github.com/kburson/aitm/actions/runs/42837579428/job/129903790399) | Success |
+| [file-checks](https://github.com/kburson/aitm/actions/runs/42837579428/job/129903790454) | Success |
+| [collect-evidence](https://github.com/kburson/aitm/actions/runs/42837579428/job/129905743545) | Success |
+| [aitm-ci](https://github.com/kburson/aitm/actions/runs/42837579428/job/129905841601) | Success |

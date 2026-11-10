@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 112
 title: "[M02] Atomic filesystem operations"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/112"
 parent: 100
 children: []
 blocking: [113]
 blocked-by: [111]
 created: "2026-11-10T13:57:49Z"
-updated: "2026-11-10T14:47:39+00:00"
+updated: "2026-11-10T14:51:36+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null
