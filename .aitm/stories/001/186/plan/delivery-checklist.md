@@ -6,7 +6,7 @@ Attempt 1. Implementer and closure owner: Codex, acting for the owner. No predec
 - [x] [PR #196](https://github.com/kburson/aitm/pull/196) opened against base `a495d60a87ac4ca764f019dc266e579f13f1787e`. GitHub readback matches clean head `1e51b9895714fb302608a6e9680bd37589ce9355` and local tree `79a6d0f472d15421b09089eadf9fd13047044197`. The three-path diff is confined to `tools/story_dashboard/`.
 - [x] Exact candidate: 7 dashboard unittest cases on CPython 3.13.9, Ruff and file checks passed. The guide example passed prospective validation, atomic publication and replay in a disposable Git fixture. Planning read `caab6f754f877c8c1b3d135e0acee0a48d775640` at `2026-11-10T22:02:49Z` retained 178 stories, 2,123 eligible events and the exact #181 seed. Two older draft events have no story ID and are held with explicit gaps. The unchanged package baseline passed 747 tests.
 - [x] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42914804492/attempts/1) and [delivered verifier](hosted-verification.json) passed.
-- [ ] Independent exact source review.
+- [ ] Independent exact source review of the replacement.
 - [ ] Normal merge, verified landing, retrospective, sign-off and issue/Project closure.
 
 ## Author correction during Test
@@ -42,3 +42,9 @@ GitHub tested `9531b8d713502b3eda259f38fe55043bf1288b29` with ordered base `4986
 ## Independent source review required changes
 
 [Revision 4 review](source-review-r4.md) reproduced four evidence-admission defects on the signed candidate. Preserve its verdict and exact identity. Return to Develop, add regression coverage for the supported registration envelope, held retries, observation-specific chronology and malformed frontmatter depth, then verify and review the corrected exact source. The accepted write set and pickup scope are unchanged.
+
+## Corrected candidate
+
+Revision 5 is head `837370a2af4f76617ce87a001ee3d3ad221dc31a` on base `49865245d175ce6c52913738f2c9a42c0abea632` and tree `07f6e63c9c76be5988e430f2a6b926620fa2a9b2`. Four new regressions reproduced the independent findings before the fix. All eleven dashboard cases, Ruff, tracked file checks, capture example and real planning seed read passed on the corrected source. New registrations require the v0 manual-bootstrap event envelope; prospective retry agrees with pinned readback; each observation respects its own recording time; malformed headers produce scoped gaps. Review fixes remain inside the same three paths.
+
+- [ ] [Current hosted run](https://github.com/kburson/aitm/actions/runs/42916448837), delivered verifier and independent source review.
