@@ -87,3 +87,9 @@ Both findings reproduced on the prior exact source. The frozen replacement passe
 [Run 42886608928 attempt 1](https://github.com/kburson/aitm/actions/runs/42886608928/attempts/1) failed on head `7a0503f24d3eb2ffa7d70e7bacfae470c8fce0e8`. Quality and File Checks passed. GitHub cancelled both required macOS Python jobs after neither was acquired by a hosted runner. The job records name no runner or steps, and their annotations identify hosted macOS arm64 capacity constraints. The collector failed on both abandoned requirements and `aitm-ci` was skipped. There is no signed passing receipt for that run.
 
 A source-empty commit on the same PR produced head `950e0262dba4e2db1b4fe573c898d4b65d7e8ce5`. GitHub confirmed the unchanged trunk base and the new head. The candidate tree remains `57e46ef74951a44b21533816171aa3057502178e`, with zero source diff and the same frozen local evidence. A normal synchronize event produced [fresh run 42889263878](https://github.com/kburson/aitm/actions/runs/42889263878). The issue remains in Test pending all required jobs and signed verification.
+
+### Moved locator and Claude history Review checkpoint
+
+[Run 42889263878 attempt 1](https://github.com/kburson/aitm/actions/runs/42889263878/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `6e64c0653dc7ee6ad46266f36128bb1678f60df6`, the exact reissued head, unchanged source tree and ordered parent identities. Artifact `13798016578` has archive SHA-256 `36e60232c7978a1de27d3434f129bc6dbe55bc8a3ab5ab5d7895048967890a98` and subject SHA-256 `d4832289d8e55da14d819061abaca4e6a864310b680b2a0f6b1bd389ccd87a6a`.
+
+Raw replay retained all 629 baseline identities and all 714 candidate tests and matched the frozen local coverage. Workflow, verifier, policy, lock and package configuration remain byte-identical to trunk. The independent exact follow-up source review is pending.
