@@ -71,3 +71,5 @@ Local focused validation passed 299 cases. The locked exact tree passed 630 prod
 [Run 42869601092 attempt 1](https://github.com/kburson/aitm/actions/runs/42869601092/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `2b5208ebca881bc1b383f71af0e8e9355b4839bc`, exact replacement head and tree, and ordered parents on unchanged trunk. Artifact `13790255902` had archive SHA-256 `3ab42fd5de5735616dc4c500e85ce933159ddd373f576effc9296f1449d8d264` and subject SHA-256 `28d8102a38ca8c130e8c5c5f95eeea8a2d34d648d7fef96367e58c09c68811e2`.
 
 Authenticated raw replay preserved all 592 baseline identities and added 32 native Grok and 5 Grok pricing tests plus the fixed candidate-only CLI evidence test. Product and helper raw coverage matched the local replacement. Independent re-review of the exact repair is pending.
+
+[Independent exact snapshot repair re-review](post-ci-source-review.md) passed. The [first source hold](source-review-attempt-1.md) remains bound to its earlier head. The supplemental serialized-cursor replay passed on the same replacement tree.
