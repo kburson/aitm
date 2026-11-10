@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 116
 title: "[M06] Registry and capture epochs"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/116"
 parent: 100
 children: []
 blocking: [117]
 blocked-by: [114]
 created: "2026-11-10T13:57:56Z"
-updated: "2026-11-10T18:39:40+00:00"
+updated: "2026-11-10T19:12:28+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: null
