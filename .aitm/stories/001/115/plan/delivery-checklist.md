@@ -31,3 +31,7 @@ The first attempt's [quality job](https://github.com/kburson/aitm/actions/runs/4
 ### Attempt 2 hosted quality hold
 
 The replacement [file check](https://github.com/kburson/aitm/actions/runs/42860755483/job/129985923599) passed. The [quality job](https://github.com/kburson/aitm/actions/runs/42860755483/job/129985923460) passed Ruff, then actionlint could not start because the unchanged workflow's automatically selected Go 1.26.11 failed checksum lookup with HTTP 404. Both attempts reproduced the same hosted toolchain failure. #115 stays in Test with exact head and gate evidence. A successful full attempt on this candidate and its required downstream checks are needed before independent source review. #116 has #114 as its sole native predecessor and may proceed through its own pickup.
+
+### Attempt 2 Review checkpoint
+
+A complete retry of the same head preserved attempt 1 and passed all six hosted jobs in [run 42860755483 attempt 2](https://github.com/kburson/aitm/actions/runs/42860755483/attempts/2). The earlier Go toolchain failure cleared without a workflow or source change. Independent source review and authenticated exact-tree verification follow.
