@@ -15,3 +15,9 @@ Project 24 readback confirmed rank 200, size M, estimate 4 agent-hours, start No
 Preflight led to the private service namespace for native boundaries, identity-checked proof instances, and independent enrollment of new streams while capture is enabled. Tests cover lease-free snapshot replacement, post-commit cleanup, and exact retry after a registry or inbox directory sync failure. Codex delegated the inbox and legacy compatibility lanes to separate implementation agents and retained both signed handoffs.
 
 The next checkpoint uses the live trunk parent for the story PR and exact hosted validation. #115 currently has a fresh run on its existing head.
+
+### Test checkpoint
+
+[PR #180](https://github.com/kburson/aitm/pull/180) targets trunk base `37a22922f072e39c35434ae645a1c20692b8da01` at head `91dd5852caa9519c7cee7e300ef1cb661e24b02d`, tree `4971d96e969c882fbb16c7183bb6ae9b6cfb4b87`. The final source patch on the earlier base and the rebased patch have the same stable patch ID. The direct disable regression prevents a previously unadmitted stream from acquiring a capture epoch.
+
+Fresh local validation on the exact rebased tree passed 671 locked product and CLI tests and 182 helper tests. Product coverage was 7,844/8,615 lines and helper coverage 778/821. Ruff and whitespace passed. GitHub confirmed the exact PR parent and candidate. Hosted validation is pending.
