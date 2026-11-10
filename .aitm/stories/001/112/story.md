@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 112
 title: "[M02] Atomic filesystem operations"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/112"
 parent: 100
 children: []
 blocking: [113]
 blocked-by: [111]
 created: "2026-11-10T13:57:49Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T14:40:17+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-review.md", "plan/delivery-checklist.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M02", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "1cb81c44265b11f433754cac28acfa72c278fcb0fa278333cca962926e164056"}
@@ -39,3 +39,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_existing_destination_survives_noreplace`, `test_directory_exchange_and_durability` and `test_unsupported_primitive_fails_without_replacement`. Assert EEXIST preserves both inode identities and a refused exchange leaves the original store intact.
 - [ ] Run red. Wire native Darwin and Linux operations through checked ctypes bindings. Run green with `test_scopes.py`, `test_export.py` and `test_install.py`, including real supported filesystem runs. Commit M02.
+
+[Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md).
