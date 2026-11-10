@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 194
 title: "[M07c] Installed scope launcher compatibility"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/194"
 parent: 100
 children: []
 blocking: [118]
 blocked-by: [182]
 created: "2026-11-10T21:27:47Z"
-updated: "2026-11-10T22:33:53+00:00"
+updated: "2026-11-10T22:39:14+00:00"
 last-branch: "codex/aitm-194-installed-scope-launcher"
 estimate: {"agent-hours": 1.75, "size": "S"}
 priority: null

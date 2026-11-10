@@ -15,3 +15,9 @@ The five shell fixture cases reproduced four previously stripped candidates. All
 An actual isolated wheel install created a genuine old receipt using the retained generator. Same-wheel replay preserved the old files. A failed upgrade restored the old installed runtime and a second approved digest upgraded through the ordinary test installer. The upgraded wheel refused absent, empty and incorrect thread candidates and queued a correctly authenticated legacy Codex mark. The separate witnessed monitor command produced an exact queued receipt through the new launcher and verified typed inbox without applying scope. Only test-only account root redirection and the fake local service controller were used.
 
 The frozen gate passed 877 product and CLI tests, 182 helper tests, Ruff, whitespace and coverage of 9,649/10,549 product and 778/821 helper lines.
+
+## Review checkpoint
+
+[All six hosted jobs](https://github.com/kburson/aitm/actions/runs/42915596021/attempts/1) passed on the exact installer candidate. The [authenticated receipt](hosted-ci-receipt.json) verified tested merge `1265b3eab24c9e242887859964df2bae30a13c1f`, artifact `13810220894` and subject SHA-256 `b970fcc0580cc908bd262b3a428cb3efd68f1993fbafcc5d96b15e70687a13de`. The reviewed tree was explicit because it contains new tests. Workflow, verifier, policy, package configuration and lock match trunk.
+
+Authenticated raw replay retained 866 baseline package identities and passed all 877 candidate tests and both coverage floors. The locked local baseline of 867 includes the extra fixed CLI control test. Independent exact source review is pending.
