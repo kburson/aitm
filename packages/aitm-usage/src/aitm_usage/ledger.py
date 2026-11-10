@@ -1,17 +1,13 @@
 """A private, project-bound SQLite history and per-source ingest checkpoints."""
 
-import ctypes
-import errno
 import fcntl
 import hashlib
 import hmac
 import os
-import pwd
 import re
 import secrets
 import sqlite3
 import stat
-import sys
 import unicodedata
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
@@ -21,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
 
+from .host_fs import HostFilesystemError, account_control_root, check_private_acl
 from .relationships import relationship_decision
 from .types import (
     CommandDigest,
@@ -52,12 +49,6 @@ DATABASE_NAME = "usage.sqlite3"
 KEY_NAME = "pseudonym.key"
 LOCK_NAME = "writer.lock"
 KEY_SIZE = 32
-ACL_TYPE_EXTENDED = 0x100
-_ACL_EMPTY = b"!#acl 1\n"
-# The default macOS home ancestry carries this non-inheriting delete protection.
-_ACL_DENY_DELETE = (
-    _ACL_EMPTY + b"group:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n"
-)
 
 _SCHEMA = """
 CREATE TABLE identity (
@@ -117,48 +108,11 @@ def _private(info: os.stat_result, *, directory: bool = False) -> None:
         raise LedgerError("Unsafe private ledger path")
 
 
-@cache
-def _mac_acl() -> ctypes.CDLL:
-    if sys.platform != "darwin":
-        raise LedgerError("Private ACL validation requires macOS")
-    try:
-        lib = ctypes.CDLL(None, use_errno=True)
-        lib.acl_get_link_np.argtypes = [ctypes.c_char_p, ctypes.c_int]
-        lib.acl_get_link_np.restype = ctypes.c_void_p
-        lib.acl_get_fd_np.argtypes = [ctypes.c_int, ctypes.c_int]
-        lib.acl_get_fd_np.restype = ctypes.c_void_p
-        lib.acl_to_text.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_ssize_t)]
-        lib.acl_to_text.restype = ctypes.c_void_p
-        lib.acl_free.argtypes = [ctypes.c_void_p]
-        lib.acl_free.restype = ctypes.c_int
-    except (AttributeError, OSError):
-        raise LedgerError("Private ACL validation is unavailable") from None
-    return lib
-
-
 def _check_acl(target: Path | int, *, ancestor: bool = False) -> None:
-    lib = _mac_acl()
-    ctypes.set_errno(0)
-    if isinstance(target, Path):
-        acl = lib.acl_get_link_np(os.fsencode(target), ACL_TYPE_EXTENDED)
-    else:
-        acl = lib.acl_get_fd_np(target, ACL_TYPE_EXTENDED)
-    if not acl:
-        if ctypes.get_errno() == errno.ENOENT:
-            return
-        raise LedgerError("Unable to validate private ACL")
     try:
-        text = lib.acl_to_text(acl, None)
-        if not text:
-            raise LedgerError("Unable to classify private ACL")
-        try:
-            value = ctypes.string_at(text)
-        finally:
-            lib.acl_free(text)
-    finally:
-        lib.acl_free(acl)
-    if value != _ACL_EMPTY and not (ancestor and value == _ACL_DENY_DELETE):
-        raise LedgerError("Unsafe private ACL")
+        check_private_acl(target, ancestor=ancestor)
+    except HostFilesystemError as exc:
+        raise LedgerError(str(exc)) from None
 
 
 def _project_path(root: Path) -> Path:
@@ -330,14 +284,10 @@ def _lease(path: Path, *, create: bool = False) -> Iterator[_PinnedPath]:
 
 
 def _control_root() -> Path:
-    # A process-local HOME override must never select a second writer guard.
     try:
-        home = Path(pwd.getpwuid(os.geteuid()).pw_dir)
-    except KeyError:
-        raise LedgerError(
-            "Unable to resolve private account control location"
-        ) from None
-    return home / "Library" / "Application Support" / "aitm-usage-control"
+        return account_control_root(os.geteuid())
+    except HostFilesystemError as exc:
+        raise LedgerError(str(exc)) from None
 
 
 def _physical_ancestry(
