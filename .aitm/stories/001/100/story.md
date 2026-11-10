@@ -2,15 +2,15 @@
 schema: "aitm.story/v0"
 id: 100
 title: "Multi-project agent usage monitor"
-kind: "story"
+kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: []
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T13:43:09Z"
+updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -40,6 +40,10 @@ Accepted SHA-256 `1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241
 
 ## Accepted implementation plan
 
-The [implementation plan](plan/multi-project-usage-monitor-implementation-plan.md) was drafted after spec acceptance and accepted at SHA-256 `8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21`. It defines 19 proposed leaves and separate native macOS and Linux qualification gates.
+The [implementation plan](plan/multi-project-usage-monitor-implementation-plan.md) was drafted after spec acceptance and accepted at SHA-256 `8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21`. It defines 19 leaves and separate native macOS and Linux qualification gates.
 
 The full cycle includes [SAR](plan/reviews/sar-2026-11-10-monitor-plan/review-manifest.md), [independent manual SPR](plan/reviews/spr-2026-11-10-monitor-plan/review-manifest.md) and [native Claude XPR](plan/reviews/xpr-2026-11-10-monitor-plan/review-manifest.md). Full-file retrieval was checked in every independent round. Plan acceptance ends this review assignment.
+
+## Verified implementation backlog
+
+#100 is the aggregate parent of the 19 numbered stories. The [leaf catalog](plan/leaf-stories.md) maps the accepted M01–M19 order to their GitHub numbers and 24 direct dependencies. The [verification receipt](plan/leaf-issue-receipt.json) records the native parent links, reciprocal dependency edges and Backlog status. The parent remains in Backlog.

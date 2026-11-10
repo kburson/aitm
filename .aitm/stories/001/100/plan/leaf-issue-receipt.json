@@ -1,0 +1,413 @@
+{
+  "schema": "aitm.backlog-verification/v0",
+  "verified_at": "2026-11-10T14:00:46Z",
+  "repository": "kburson/aitm",
+  "parent": 100,
+  "parent_state": "open",
+  "parent_project_status": "Backlog",
+  "project": {
+    "number": 24,
+    "title": "AITM-PY Backlog"
+  },
+  "source": {
+    "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md",
+    "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4",
+    "sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21"
+  },
+  "leaf_count": 19,
+  "dependency_count": 24,
+  "completed_parent_research_blockers": [
+    101,
+    102
+  ],
+  "leaves": [
+    {
+      "key": "M01",
+      "number": 111,
+      "title": "[M01] Host path security",
+      "url": "https://github.com/kburson/aitm/issues/111",
+      "id": 6308323533,
+      "node_id": "I_kwDOVnNyI88AAAABeAFgzQ",
+      "created_at": "2026-11-10T13:57:48Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVgU",
+      "project_status": "Backlog",
+      "blocked_by": [],
+      "blocking": [
+        112
+      ],
+      "section_sha256": "1ca9420de1ab889e868a4bc2a5d392de7355fdbe303d53b54dba5f145a998391"
+    },
+    {
+      "key": "M02",
+      "number": 112,
+      "title": "[M02] Atomic filesystem operations",
+      "url": "https://github.com/kburson/aitm/issues/112",
+      "id": 6308323934,
+      "node_id": "I_kwDOVnNyI88AAAABeAFiXg",
+      "created_at": "2026-11-10T13:57:49Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVhU",
+      "project_status": "Backlog",
+      "blocked_by": [
+        111
+      ],
+      "blocking": [
+        113
+      ],
+      "section_sha256": "1cb81c44265b11f433754cac28acfa72c278fcb0fa278333cca962926e164056"
+    },
+    {
+      "key": "M03",
+      "number": 113,
+      "title": "[M03] Versioned project persistence",
+      "url": "https://github.com/kburson/aitm/issues/113",
+      "id": 6308324410,
+      "node_id": "I_kwDOVnNyI88AAAABeAFkOg",
+      "created_at": "2026-11-10T13:57:51Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVi8",
+      "project_status": "Backlog",
+      "blocked_by": [
+        112
+      ],
+      "blocking": [
+        114
+      ],
+      "section_sha256": "df2d7922319a140b5fbe506f594657ef954abe757616d04228476cda55f3432d"
+    },
+    {
+      "key": "M04",
+      "number": 114,
+      "title": "[M04] Adapter contract and existing providers",
+      "url": "https://github.com/kburson/aitm/issues/114",
+      "id": 6308324871,
+      "node_id": "I_kwDOVnNyI88AAAABeAFmBw",
+      "created_at": "2026-11-10T13:57:53Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVlg",
+      "project_status": "Backlog",
+      "blocked_by": [
+        113
+      ],
+      "blocking": [
+        115,
+        116
+      ],
+      "section_sha256": "d5f5b6b75b4a42e6a7101ffa3d388c2eae603ea11e00d88bc65ab874efe27499"
+    },
+    {
+      "key": "M05",
+      "number": 115,
+      "title": "[M05] Grok evidence adapter",
+      "url": "https://github.com/kburson/aitm/issues/115",
+      "id": 6308325331,
+      "node_id": "I_kwDOVnNyI88AAAABeAFn0w",
+      "created_at": "2026-11-10T13:57:54Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVnc",
+      "project_status": "Backlog",
+      "blocked_by": [
+        114
+      ],
+      "blocking": [
+        120,
+        121
+      ],
+      "section_sha256": "ec3fe35d7eda1c6ab8b87f266a2dcd28fb97c00d37563551ae3036771983bb06"
+    },
+    {
+      "key": "M06",
+      "number": 116,
+      "title": "[M06] Registry and capture epochs",
+      "url": "https://github.com/kburson/aitm/issues/116",
+      "id": 6308325828,
+      "node_id": "I_kwDOVnNyI88AAAABeAFpxA",
+      "created_at": "2026-11-10T13:57:56Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVo0",
+      "project_status": "Backlog",
+      "blocked_by": [
+        114
+      ],
+      "blocking": [
+        117
+      ],
+      "section_sha256": "5bdd16b045dea84255d5896501f8a057417de612aeb99af5767898eacd2a5e21"
+    },
+    {
+      "key": "M07",
+      "number": 117,
+      "title": "[M07] Native scope and handoff",
+      "url": "https://github.com/kburson/aitm/issues/117",
+      "id": 6308326297,
+      "node_id": "I_kwDOVnNyI88AAAABeAFrmQ",
+      "created_at": "2026-11-10T13:57:58Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVrI",
+      "project_status": "Backlog",
+      "blocked_by": [
+        116
+      ],
+      "blocking": [
+        118
+      ],
+      "section_sha256": "f2e8d780402afd62b409a1259957ecb178afd4f29c33aa9725c21256d69b009d"
+    },
+    {
+      "key": "M08",
+      "number": 118,
+      "title": "[M08] Service journal and claim order",
+      "url": "https://github.com/kburson/aitm/issues/118",
+      "id": 6308326799,
+      "node_id": "I_kwDOVnNyI88AAAABeAFtjw",
+      "created_at": "2026-11-10T13:58:00Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVss",
+      "project_status": "Backlog",
+      "blocked_by": [
+        117
+      ],
+      "blocking": [
+        119
+      ],
+      "section_sha256": "2b43bde5c32a6a64be8230b656f2a37ca972b453a1df7bac6767701cb2198d9f"
+    },
+    {
+      "key": "M09",
+      "number": 119,
+      "title": "[M09] Project writes and ACK",
+      "url": "https://github.com/kburson/aitm/issues/119",
+      "id": 6308327269,
+      "node_id": "I_kwDOVnNyI88AAAABeAFvZQ",
+      "created_at": "2026-11-10T13:58:01Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVwA",
+      "project_status": "Backlog",
+      "blocked_by": [
+        118
+      ],
+      "blocking": [
+        120,
+        122
+      ],
+      "section_sha256": "27ac74e3d46391ecd3bfcff3b19d46fb12f75e04be809c35aedeb4842ba299a6"
+    },
+    {
+      "key": "M10",
+      "number": 120,
+      "title": "[M10] Wake and park scheduler",
+      "url": "https://github.com/kburson/aitm/issues/120",
+      "id": 6308327718,
+      "node_id": "I_kwDOVnNyI88AAAABeAFxJg",
+      "created_at": "2026-11-10T13:58:03Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVx0",
+      "project_status": "Backlog",
+      "blocked_by": [
+        115,
+        119
+      ],
+      "blocking": [
+        121
+      ],
+      "section_sha256": "49d715a1eff778056c37cf9c91352498eb0d05e71611a50f8e47c6d55050af86"
+    },
+    {
+      "key": "M11",
+      "number": 121,
+      "title": "[M11] Root watches and coordinator",
+      "url": "https://github.com/kburson/aitm/issues/121",
+      "id": 6308328168,
+      "node_id": "I_kwDOVnNyI88AAAABeAFy6A",
+      "created_at": "2026-11-10T13:58:05Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhVzk",
+      "project_status": "Backlog",
+      "blocked_by": [
+        115,
+        120
+      ],
+      "blocking": [
+        123,
+        125
+      ],
+      "section_sha256": "dd02c042d3e85c1e0e5b2d00006f513cf93ff24a2120a23f156e1e85910d8e94"
+    },
+    {
+      "key": "M12",
+      "number": 122,
+      "title": "[M12] Recovery and publication fence",
+      "url": "https://github.com/kburson/aitm/issues/122",
+      "id": 6308328665,
+      "node_id": "I_kwDOVnNyI88AAAABeAF02Q",
+      "created_at": "2026-11-10T13:58:06Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV0s",
+      "project_status": "Backlog",
+      "blocked_by": [
+        119
+      ],
+      "blocking": [
+        123,
+        126
+      ],
+      "section_sha256": "40fbe6a28387d25bbae6aba5da833599efec43d5ea17e27ee735a68eedc37d03"
+    },
+    {
+      "key": "M13",
+      "number": 123,
+      "title": "[M13] Snapshot reports",
+      "url": "https://github.com/kburson/aitm/issues/123",
+      "id": 6308329180,
+      "node_id": "I_kwDOVnNyI88AAAABeAF23A",
+      "created_at": "2026-11-10T13:58:08Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV3E",
+      "project_status": "Backlog",
+      "blocked_by": [
+        121,
+        122
+      ],
+      "blocking": [
+        124
+      ],
+      "section_sha256": "af164cbe3b92708780913eb04fe54d6ae42327e3b33b1235089da3805733e8ba"
+    },
+    {
+      "key": "M14",
+      "number": 124,
+      "title": "[M14] Compatible export and reconciliation",
+      "url": "https://github.com/kburson/aitm/issues/124",
+      "id": 6308329602,
+      "node_id": "I_kwDOVnNyI88AAAABeAF4gg",
+      "created_at": "2026-11-10T13:58:10Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV4s",
+      "project_status": "Backlog",
+      "blocked_by": [
+        123
+      ],
+      "blocking": [
+        125,
+        126
+      ],
+      "section_sha256": "af58858131bb1cb677ce3f755942a827e5ee0ca303b9693363e5fe0b62568fc4"
+    },
+    {
+      "key": "M15",
+      "number": 125,
+      "title": "[M15] Host service lifecycle",
+      "url": "https://github.com/kburson/aitm/issues/125",
+      "id": 6308330132,
+      "node_id": "I_kwDOVnNyI88AAAABeAF6lA",
+      "created_at": "2026-11-10T13:58:11Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV6c",
+      "project_status": "Backlog",
+      "blocked_by": [
+        121,
+        124
+      ],
+      "blocking": [
+        126
+      ],
+      "section_sha256": "82fe21e10af9244b8bdb55f85c05dcaa16887e0027f30bd9e4bd4f7da2b79701"
+    },
+    {
+      "key": "M16",
+      "number": 126,
+      "title": "[M16] Backup, legacy adoption and rollback",
+      "url": "https://github.com/kburson/aitm/issues/126",
+      "id": 6308330618,
+      "node_id": "I_kwDOVnNyI88AAAABeAF8eg",
+      "created_at": "2026-11-10T13:58:13Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV8Y",
+      "project_status": "Backlog",
+      "blocked_by": [
+        122,
+        124,
+        125
+      ],
+      "blocking": [
+        127
+      ],
+      "section_sha256": "e78b684bee548b914ff2cb62bc1d688f03f9be55e01103d9e4b802ea9ee64166"
+    },
+    {
+      "key": "M17",
+      "number": 127,
+      "title": "[M17] Privacy and scale integration",
+      "url": "https://github.com/kburson/aitm/issues/127",
+      "id": 6308331098,
+      "node_id": "I_kwDOVnNyI88AAAABeAF-Wg",
+      "created_at": "2026-11-10T13:58:15Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhV_U",
+      "project_status": "Backlog",
+      "blocked_by": [
+        126
+      ],
+      "blocking": [
+        128
+      ],
+      "section_sha256": "c3c59d673c65d1ecaccc52edcbea8b72af7b54111d49e04f7d97dc0ae23fbade"
+    },
+    {
+      "key": "M18",
+      "number": 128,
+      "title": "[M18] Native macOS qualification",
+      "url": "https://github.com/kburson/aitm/issues/128",
+      "id": 6308331540,
+      "node_id": "I_kwDOVnNyI88AAAABeAGAFA",
+      "created_at": "2026-11-10T13:58:16Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhWBI",
+      "project_status": "Backlog",
+      "blocked_by": [
+        127
+      ],
+      "blocking": [
+        129
+      ],
+      "section_sha256": "55abe2713c8afd7be798361def16c6c27bdafdc41e155fbd7ca932569f8cbcb7"
+    },
+    {
+      "key": "M19",
+      "number": 129,
+      "title": "[M19] Native Linux qualification",
+      "url": "https://github.com/kburson/aitm/issues/129",
+      "id": 6308332034,
+      "node_id": "I_kwDOVnNyI88AAAABeAGCAg",
+      "created_at": "2026-11-10T13:58:18Z",
+      "state": "open",
+      "parent": 100,
+      "project_item_id": "PVTI_lAHOABCEY84Bq1hZzhHhWC8",
+      "project_status": "Backlog",
+      "blocked_by": [
+        128
+      ],
+      "blocking": [],
+      "section_sha256": "b51931139199a0a7382546e295fe0c38f46c8e990b8f102b7c59021d5fcd1da3"
+    }
+  ]
+}
