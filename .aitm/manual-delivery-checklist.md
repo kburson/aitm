@@ -16,7 +16,7 @@ Use one checklist per story while the workflow is manual. Keep the checklist wit
 
 Use the owner's delivery instruction for actions within the reviewed scope, including ordinary pushes, CI, review, merge and closure. Ask once if an action falls outside that scope or the owner explicitly reserved the decision.
 
-- [ ] Identify the CI route for the declared target and scope. If the story builds or repairs that route, Develop may proceed under the existing delivery authorization. Record the missing route as work to complete. Require passing CI on the exact candidate before Review and merge.
+- [ ] Identify the validation available for the declared target and scope. During CI bootstrap, use each story's accepted validation and record the local and hosted results available for that story. Design mandatory CI use separately after the build works locally and in GitHub Actions.
 - [ ] Name the closure owner, normally the implementing agent. That owner verifies delivery, obtains the implementing agent's signed retrospective, and reconciles the issue and Project status. Keep the implementing agent available until their own retrospective is signed.
 
 ### Develop → Test
@@ -27,7 +27,7 @@ Use the owner's delivery instruction for actions within the reviewed scope, incl
 
 ### Test → Review
 
-- [ ] Run every required CI test and validation. Record the job names, run URLs, outcomes and tested SHA in planning. Verify on GitHub that the jobs actually covered the current PR head and applicable base. If CI uses a synthetic merge commit, record its identity and the exact base and head it combined. A passing job on a different head or base provides evidence for that earlier candidate.
+- [ ] Run the story's applicable tests and validations. When the story uses hosted CI, record the job names, run URLs, outcomes and tested SHA in planning. Verify on GitHub that the jobs covered the current PR head and applicable base. If CI uses a synthetic merge commit, record its identity and the exact base and head it combined. A passing job on a different head or base provides evidence for that earlier candidate.
 - [ ] Move to Review only after all applicable required checks pass on the exact candidate. Give an independent external agent the accepted design, plan, scope, pinned base, exact passing SHA or tree and CI evidence. Have the reviewer inspect specification compliance and quality, and produce a dated verdict with findings and evidence. The implementer and reviewer are separate actors.
 - [ ] Link the review record from planning and reflect the reviewer, verdict and exact reviewed SHA on the GitHub PR. Use a native GitHub review when supported. For off-platform review, link the sanitized review record in the PR and label it as off-platform. Record the native review as absent if no native review was submitted. Respect any branch requirement for native approval.
 
@@ -48,7 +48,7 @@ For an operational or other non-source deliverable, the accepted plan must name 
 
 ## Missing evidence
 
-Keep a required gate open for missing, pending, skipped, stale, failed or unavailable evidence. Record which gate is affected, the exact candidate, what GitHub actually shows, the cause if verified, and what will satisfy it. For example, when a repository has no matching workflow, record **CI unavailable** and the absence of checks on that head. An exact local run can be retained with its command, environment, inputs, head and outcome as local verification. A local pass, PR comment or retrospective cannot stand in for missing CI or a required native approval. An explicitly authorized exception under the applicable policy must identify the authority, exact scope, omitted gate, substitute evidence and resulting disposition. Preserve the actual missing status in both records.
+Keep a required gate open for missing, pending, skipped, stale, failed or unavailable evidence. Record which gate is affected, the exact candidate, what GitHub actually shows, the cause if verified, and what will satisfy it. For example, when a repository has no matching workflow, record **CI unavailable** and the absence of checks on that head. An exact local run can be retained with its command, environment, inputs, head and outcome as local verification. Treat hosted CI and native approval as separate evidence when the accepted story or GitHub branch settings require them. An explicitly authorized exception under the applicable policy must identify the authority, exact scope, omitted gate, substitute evidence and resulting disposition. Preserve the actual missing status in both records.
 
 Keep private transcripts, raw logs with sensitive contents, machine paths, credentials and personal provider identifiers out of Git. Publish sanitized evidence, safe links or digests as appropriate. Leave historical closures and their evidence gaps intact when adding late records.
 
