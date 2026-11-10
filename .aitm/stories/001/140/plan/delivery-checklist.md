@@ -127,3 +127,26 @@ tests, signed hosted validation and independent review bind the exact
 combined tree. The disposition records the before and after identities
 and comparison. A conflict, changed story scope, changed CI control or
 failed evidence would hold the merge for investigation.
+
+## Verified delivery and original sign-off
+
+[PR #184](https://github.com/kburson/aitm/pull/184)
+merged into `trunk` at `a495d60a87ac4ca764f019dc266e579f13f1787e` using an ordinary merge
+commit. GitHub recorded `2026-11-10T21:26:06Z`. Ordered parents matched
+the authorized base and reviewed head, the delivered tree equaled
+`47fa209c89e99e041f716d856c9ae59b3360c97e`, and the reviewed head had zero source diff to the
+delivered merge. The [final trusted PR verifier](premerge-verified.json)
+passed before merge.
+
+[Exact trunk push](https://github.com/kburson/aitm/actions/runs/42905013340/attempts/1) passed all four applicable hosted
+jobs. The two PR-only jobs skipped as expected. The authenticated
+Python archive replay passed with 748
+product and CLI outcomes and both coverage floors. Exact delivered
+focused test result: `87 passed in 19.98s`. [Delivery receipt](delivery-receipt.json).
+
+The [original implementer sign-off](../retro/2026-11-10-140-implementer-retrospective.md) records the
+delivery verdict. Its acceptance was the last required story gate.
+
+The final verifier first [held on a GitHub read failure](premerge-transient-hold.json).
+A fresh authenticated read and retry passed on the same head, base and
+tree before merge. [Story decision comment](https://github.com/kburson/aitm/issues/140#issuecomment-6779689115).

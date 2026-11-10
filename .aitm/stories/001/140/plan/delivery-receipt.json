@@ -1,0 +1,64 @@
+{
+  "archive": {
+    "id": 13805565772,
+    "sha256": "sha256:c6b1537a60bd15ec836815eb36b300ffe778041cbaee49201b5da17f114a0dd4"
+  },
+  "attempt": 1,
+  "base": "41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55",
+  "head": "b1f30f81fb7d604e79ddac0a2bde161d85dcbded",
+  "jobs": {
+    "aitm-ci": {
+      "conclusion": "skipped",
+      "id": 130142771060
+    },
+    "collect-evidence": {
+      "conclusion": "success",
+      "id": 130142669283
+    },
+    "file-checks": {
+      "conclusion": "success",
+      "id": 130140619637
+    },
+    "python": {
+      "conclusion": "success",
+      "id": 130140618945
+    },
+    "python-base": {
+      "conclusion": "skipped",
+      "id": 130140621336
+    },
+    "quality": {
+      "conclusion": "success",
+      "id": 130140620174
+    }
+  },
+  "merge": "a495d60a87ac4ca764f019dc266e579f13f1787e",
+  "merged_at": "2026-11-10T21:26:06Z",
+  "method": "merge commit",
+  "pr": 184,
+  "raw_replay": {
+    "baseline_tests": 0,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 9096,
+        "num_statements": 9981
+      }
+    },
+    "failures": [],
+    "passed": true,
+    "tests": 748
+  },
+  "run": "https://github.com/kburson/aitm/actions/runs/42905013340/attempts/1",
+  "run_id": 42905013340,
+  "status": "pass",
+  "story": 140,
+  "suite": 116197729916,
+  "tree": "47fa209c89e99e041f716d856c9ae59b3360c97e",
+  "trunk_tip_when_read": "a495d60a87ac4ca764f019dc266e579f13f1787e",
+  "verified_at": "2026-11-10T21:30:17.750510+00:00",
+  "workflow_id": 412848571
+}
