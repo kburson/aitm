@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 104
 title: "[CI1] Bootstrap Actions and Python validation"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/104"
 parent: 103
 children: []
 blocking: [105]
 blocked-by: []
 created: "2026-11-10T02:57:04Z"
-updated: "2026-11-10T12:56:44+00:00"
+updated: "2026-11-10T13:00:41+00:00"
 last-branch: "codex/aitm-104-ci-bootstrap"
 estimate: {"agent-hours": 4.0, "size": "S"}
 priority: "P1"

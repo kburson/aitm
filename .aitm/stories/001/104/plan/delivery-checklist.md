@@ -30,3 +30,5 @@ The [independently reviewed JIT](signing-probe-jit.md) authorized one diagnostic
 The owner authorized recurring public attestations with the reviewed permissions and sanitized digests and metadata, and authorized Develop before the first production CI result. The previous local checkpoint remains historical. The approved source is `b7cf622baafcf8600fc0fff9d4ce2f4838f7daa7`. The exact hosted CI and independent post-CI review gates remain required.
 
 The first [production run](https://github.com/kburson/aitm/actions/runs/42819416038) passed both macOS lanes. Hosted ShellCheck failed the quality lane, so the evidence collector refused and `aitm-ci` skipped. The [independently reviewed quoting fix](hosted-shellcheck-fix-review.md) reproduces all six warnings on the old source and clears them on the corrected source.
+
+The corrected [hosted run](https://github.com/kburson/aitm/actions/runs/42819951099/attempts/1) passed all five jobs. The signed bundle independently verified merge `96ab651324a28198d58b8c75c8448d07763fa2a9`, exact tree `0872521ac8b073a202a0f8054f2be4741927f57a`, and attempt 1. Product coverage was 6,285/6,910 and helper coverage was 248/270.
