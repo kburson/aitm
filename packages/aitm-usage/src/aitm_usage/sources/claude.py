@@ -65,6 +65,7 @@ class _Tool:
     assistant_ref: SourceRef
     request_ref: SourceRef
     eligible: bool
+    ordinal: int = field(compare=False)
     saw_child: bool = False
     uncertain_child: bool = False
 
@@ -75,6 +76,7 @@ class _Receipt:
     receipt_ref: SourceRef
     parent_ref: SourceRef
     request_ref: SourceRef
+    ordinal: int
     api_ref: SourceRef | None = None
 
 
@@ -600,7 +602,14 @@ class _RouteWalk:
             ):
                 kind = "agent"
         proposed = (
-            _Tool(kind, tool_ref, assistant, req, _eligible(frame, self.eligibility))
+            _Tool(
+                kind,
+                tool_ref,
+                assistant,
+                req,
+                _eligible(frame, self.eligibility),
+                frame.ordinal,
+            )
             if kind is not None
             else None
         )
@@ -659,6 +668,7 @@ class _RouteWalk:
                         ),
                         user_ref,
                         tool.request_ref,
+                        tool.ordinal,
                     ),
                 )
         elif (
@@ -1365,26 +1375,45 @@ def read_claude(
     Join scope proof with batch.scope_evidence, apply an accepted enrollment
     and rescan before publishing the cursor and usage in one ledger batch.
     """
+    return _read_claude(batch, state, eligibility)[0]
+
+
+def _read_claude(
+    batch: FrameBatch, state: ClaudeState, eligibility: Eligibility
+) -> tuple[AdapterResult, ProviderCheckpoint | None, int | None]:
     if batch.cursor is None:
-        return AdapterResult(diagnostics=batch.diagnostics)
+        return AdapterResult(diagnostics=batch.diagnostics), None, None
     _validate(batch)
     routes = _RouteWalk(batch, state, eligibility)
     gaps = _gap_ordinals(batch)
     routes.scan(batch.commit_frames, gaps)
     walk = _UsageWalk(batch, state, eligibility, routes)
-    checkpoint = walk.run(gaps)
-    if state.neutral_markers and (
-        routes.route.tool is not None or routes.route.receipt is not None
-    ):
+    observed = walk.run(gaps)
+    checkpoint = observed
+    unsettled = None
+    pending = routes.route.tool or routes.route.receipt
+    if state.neutral_markers and pending is not None:
         # Replay pending native linkage and nested-tool overlap after restart.
         checkpoint = None
+        unsettled = min(
+            (
+                entry.ordinal
+                for entry in observed.request_prefix
+                if entry.request_ref == pending.request_ref
+            ),
+            default=pending.ordinal,
+        )
     routes.scan(batch.frames[len(batch.commit_frames) :], set())
-    return AdapterResult(
-        tuple(walk.revisions),
-        tuple(dict.fromkeys(walk.diagnostics)),
-        tuple(routes.boundaries.values()),
-        checkpoint,
-        tuple(walk.quota),
+    return (
+        AdapterResult(
+            tuple(walk.revisions),
+            tuple(dict.fromkeys(walk.diagnostics)),
+            tuple(routes.boundaries.values()),
+            checkpoint,
+            tuple(walk.quota),
+        ),
+        observed,
+        unsettled,
     )
 
 
@@ -1392,12 +1421,24 @@ def retains_streamed_prefix(
     batch: FrameBatch, state: ClaudeState, checkpoint: ProviderCheckpoint
 ) -> bool:
     """Verify that eligible provisional requests can be revised after restart."""
+    return _first_unretained_request(batch, state, checkpoint) is None
+
+
+def _first_unretained_request(
+    batch: FrameBatch,
+    state: ClaudeState,
+    checkpoint: ProviderCheckpoint,
+    *,
+    start: int = 0,
+) -> int | None:
     retained = {
         item.request_ref: item.message_ref for item in checkpoint.request_prefix
     }
     for frame in batch.commit_frames:
-        if frame.row["type"] != "assistant" or not _eligible(
-            frame, Eligibility.ELIGIBLE
+        if (
+            frame.ordinal < start
+            or frame.row["type"] != "assistant"
+            or not _eligible(frame, Eligibility.ELIGIBLE)
         ):
             continue
         message = _message(frame)
@@ -1408,8 +1449,8 @@ def retains_streamed_prefix(
             continue
         request, message_ref = _request_refs(state.ledger, frame, message)
         if message_ref is None or retained.get(request) != message_ref:
-            return False
-    return True
+            return frame.ordinal
+    return None
 
 
 def advance_claude_state(

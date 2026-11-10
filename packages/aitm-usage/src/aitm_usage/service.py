@@ -14,14 +14,27 @@ from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID
 
+from . import monitor_registry
 from .accounting import account_observations
-from .ledger import ConflictError, Ledger, LedgerError, _pin_directory
+from .ledger import (
+    STORE_NAME,
+    ConflictError,
+    Ledger,
+    LedgerError,
+    WriterActive,
+    _path_exists,
+    _pin_directory,
+    _PinnedPath,
+    _project_path,
+)
 from .pricing import RateCard, load_rate_card
 from .rollup import _prices
 from .scopes import (
     INBOX_NAME,
     MAX_COMMAND_BYTES,
     BoundaryEvidence,
+    _enqueue_locked,
+    _inbox_publication,
     _private_child,
     _publication,
     _publish,
@@ -214,6 +227,8 @@ def _publish_exact(directory, name: str, data: bytes) -> None:
 
 def register_project(root: Path, config_path: Path) -> Registration:
     """Stage exact private configuration, then accept it under the writer lease."""
+    root = _project_path(root)
+    monitor_registry.check_legacy_mutation(root)
     config = _checked_config(
         _input(
             config_path,
@@ -224,16 +239,27 @@ def register_project(root: Path, config_path: Path) -> Registration:
         ),
         existing=True,
     )
-    ledger = Ledger.initialize(root, config.project_id)
-    with ledger.writer() as writer, _pin_directory(writer.root) as directory:
-        registration = _registration_revision(writer, config)
-        for revision in writer.as_of().current:
-            if revision.key == registration.key and revision != registration:
-                raise ConflictError("Project registration already exists")
-        writer.require_writer()
-        _publish_exact(directory, REGISTRATION_NAME, _encode(config, _Config).encode())
-        writer.apply(LedgerBatch((registration,)))
-        return _registration(writer, config)
+    try:
+        ledger = (
+            Ledger.open(root, config.project_id)
+            if _path_exists(root / STORE_NAME)
+            else Ledger.initialize(root, config.project_id)
+        )
+        with ledger.writer() as writer, _pin_directory(writer.root) as directory:
+            monitor_registry.check_legacy_mutation(root)
+            registration = _registration_revision(writer, config)
+            for revision in writer.as_of().current:
+                if revision.key == registration.key and revision != registration:
+                    raise ConflictError("Project registration already exists")
+            writer.require_writer()
+            _publish_exact(
+                directory, REGISTRATION_NAME, _encode(config, _Config).encode()
+            )
+            writer.apply(LedgerBatch((registration,)))
+            return _registration(writer, config)
+    except WriterActive:
+        monitor_registry.check_legacy_mutation(root)
+        raise
 
 
 def _authorized_config(
@@ -306,28 +332,52 @@ def _staged_anchor(ledger: Ledger, payload: SourceAnchorCommand) -> Path | None:
     return path
 
 
+def _anchor_input(anchor_path: Path) -> tuple[_AnchorProposal, Path]:
+    proposal = _input(anchor_path, _AnchorProposal)
+    return proposal, _path(proposal.checkout, existing=False)
+
+
+def _stage_source_anchor(
+    ledger: Ledger, project: _PinnedPath, proposal: _AnchorProposal, path: Path
+) -> InboxCommand:
+    _, registration = _authorized_config(ledger, ledger.as_of())
+    payload = SourceAnchorCommand(
+        proposal.command_id,
+        proposal.project_id,
+        registration.configuration_ref,
+        checkout_anchor_reference(ledger, path),
+    )
+    command = InboxCommand(payload.command_id, payload.project_id, payload)
+    ledger.command_receipt(command)
+    with _private_child(project, ANCHORS_NAME, create=True) as staged:
+        assert staged is not None
+        name = f"{payload.command_id}.json"
+        if _read_private(staged, name) is None and not _directory_available(path):
+            raise ValueError("Expected an available canonical checkout")
+        _publish_exact(staged, name, _encode(proposal, _AnchorProposal).encode())
+    project.check()
+    return command
+
+
 def stage_source_anchor(ledger: Ledger, anchor_path: Path) -> InboxCommand:
     """Stage the raw path privately and return the only command it authorizes."""
-    proposal = _input(anchor_path, _AnchorProposal)
-    path = _path(proposal.checkout, existing=False)
+    proposal, path = _anchor_input(anchor_path)
     with _pin_directory(ledger.root) as project:
-        _, registration = _authorized_config(ledger, ledger.as_of())
-        payload = SourceAnchorCommand(
-            proposal.command_id,
-            proposal.project_id,
-            registration.configuration_ref,
-            checkout_anchor_reference(ledger, path),
-        )
-        command = InboxCommand(payload.command_id, payload.project_id, payload)
-        ledger.command_receipt(command)
-        with _private_child(project, ANCHORS_NAME, create=True) as staged:
-            assert staged is not None
-            name = f"{payload.command_id}.json"
-            if _read_private(staged, name) is None and not _directory_available(path):
-                raise ValueError("Expected an available canonical checkout")
-            _publish_exact(staged, name, _encode(proposal, _AnchorProposal).encode())
-        project.check()
-    return command
+        return _stage_source_anchor(ledger, project, proposal, path)
+
+
+def enqueue_source_anchor(
+    ledger: Ledger, anchor_path: Path
+) -> tuple[InboxCommand, CommandReceipt | None]:
+    """Stage the raw proposal and publish its command under one inbox lock."""
+    proposal, path = _anchor_input(anchor_path)
+    with _inbox_publication(ledger) as (project, inbox):
+        monitor_registry.check_legacy_mutation(ledger.root)
+        command = _stage_source_anchor(ledger, project, proposal, path)
+        receipt = _enqueue_locked(inbox, ledger, command)
+    if receipt is None:
+        receipt = ledger.command_receipt(command)
+    return command, receipt
 
 
 def _anchor_attestation(

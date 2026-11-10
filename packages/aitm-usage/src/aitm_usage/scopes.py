@@ -276,6 +276,63 @@ def _decode_publication(data: bytes) -> _Publication:
     return _Publication(command, data)
 
 
+@contextmanager
+def _inbox_publication(ledger: Ledger) -> Iterator[tuple[_PinnedPath, _PinnedPath]]:
+    try:
+        with _pin_directory(ledger.root) as project:
+            if (
+                Ledger.open(ledger.root, ledger.identity.project_id).identity
+                != ledger.identity
+            ):
+                raise LedgerError("Private inbox project changed")
+            # The lock uses the inbox descriptor. Adoption holds this same lock,
+            # so a cutover that has already committed leaves the inbox in place.
+            with _private_child(project, INBOX_NAME, create=True) as inbox:
+                assert inbox is not None
+                with _publication(inbox):
+                    yield project, inbox
+                project.check()
+    except OSError:
+        raise LedgerError("Private inbox publication failed") from None
+
+
+def _enqueue_locked(
+    inbox: _PinnedPath, ledger: Ledger, command: InboxCommand
+) -> CommandReceipt | None:
+    """Publish while holding the inbox publication lock."""
+    current = ledger.command_receipt(command)
+    if current is not None:
+        return current
+    data = encode_command(command)
+    decoded = decode_command(data)
+    ledger.validate_command(decoded)
+    if decoded != command:
+        raise LedgerError("Private inbox command changed")
+    name = _filename(command.command_id)
+    existing = _read_private(inbox, name)
+    if existing is None:
+        publication = data
+        if _is_relationship(command):
+            snapshot = _read_publications(inbox, ledger)
+            if snapshot.relationship_halted:
+                raise LedgerError("Private relationship queue is halted")
+            order = snapshot.last_relationship_order + 1
+            publication = _publication_bytes(command, order)
+        if not _publish(inbox, name, publication):
+            existing = _read_private(inbox, name)
+    if existing is not None:
+        try:
+            prior = _decode_publication(existing)
+        except ValueError:
+            raise ConflictError("Inbox command ID has conflicting bytes") from None
+        if (
+            prior.command != command
+            or _publication_bytes(prior.command, prior.order) != existing
+        ):
+            raise ConflictError("Inbox command ID has conflicting bytes")
+    return None
+
+
 def enqueue_command(directory: Path, command: InboxCommand) -> CommandReceipt | None:
     """Queue canonical command bytes without taking the collector lease.
 
@@ -286,55 +343,10 @@ def enqueue_command(directory: Path, command: InboxCommand) -> CommandReceipt | 
     current = ledger.command_receipt(command)
     if current is not None:
         return current
-    data = encode_command(command)
-    try:
-        with _pin_directory(ledger.root) as project:
-            if Ledger.open(ledger.root, command.project_id).identity != ledger.identity:
-                raise LedgerError("Private inbox project changed")
-            with _private_child(project, INBOX_NAME, create=True) as inbox:
-                assert inbox is not None
-                with _publication(inbox):
-                    # The first read may predate a final commit and retirement.
-                    current = ledger.command_receipt(command)
-                    if current is not None:
-                        return current
-                    decoded = decode_command(data)
-                    ledger.validate_command(decoded)
-                    if decoded != command:
-                        raise LedgerError("Private inbox command changed")
-                    name = _filename(command.command_id)
-                    existing = _read_private(inbox, name)
-                    if existing is None:
-                        publication = data
-                        if _is_relationship(command):
-                            snapshot = _read_publications(inbox, ledger)
-                            if snapshot.relationship_halted:
-                                raise LedgerError(
-                                    "Private relationship queue is halted"
-                                )
-                            order = snapshot.last_relationship_order + 1
-                            publication = _publication_bytes(command, order)
-                        if not _publish(inbox, name, publication):
-                            existing = _read_private(inbox, name)
-                    if existing is not None:
-                        try:
-                            prior = _decode_publication(existing)
-                        except ValueError:
-                            raise ConflictError(
-                                "Inbox command ID has conflicting bytes"
-                            ) from None
-                        if (
-                            prior.command != command
-                            or _publication_bytes(prior.command, prior.order)
-                            != existing
-                        ):
-                            raise ConflictError(
-                                "Inbox command ID has conflicting bytes"
-                            )
-                project.check()
-    except OSError:
-        raise LedgerError("Private inbox publication failed") from None
-    return ledger.command_receipt(command)
+    with _inbox_publication(ledger) as (_, inbox):
+        # The first read may predate a final commit and retirement.
+        current = _enqueue_locked(inbox, ledger, command)
+    return current if current is not None else ledger.command_receipt(command)
 
 
 def enqueue_marker(directory: Path, marker: ScopeMarker) -> MarkerId:

@@ -1343,8 +1343,14 @@ def read_codex(
     Join boundaries with FrameBatch.scope_evidence before consuming markers.
     Rescan accepted enrollments before the single cursor and usage commit.
     """
+    return _read_codex(batch, state, eligibility)[0]
+
+
+def _read_codex(
+    batch: FrameBatch, state: CodexState, eligibility: Eligibility
+) -> tuple[AdapterResult, int | None]:
     if batch.cursor is None:
-        return AdapterResult(diagnostics=batch.diagnostics)
+        return AdapterResult(diagnostics=batch.diagnostics), None
     if (
         batch.provider_checkpoint is None
         or batch.provider_checkpoint.provider is not _PROVIDER
@@ -1353,22 +1359,28 @@ def read_codex(
     walk = _Walk(batch, state, eligibility)
     walk.committed()
     checkpoint = walk.checkpoint
+    unsettled = None
     if state.neutral_markers and (
         walk.context.turn is not None or walk.context.next_turn_receipt is not None
     ):
         # The legacy warm state can resume mid-turn. A monitor cursor stores
         # only the durable provider prefix, so replay this unsettled frontier.
         checkpoint = None
+        turn = walk.context.turn
+        unsettled = walk.ordinal if turn is None else turn.start.ordinal
     walk.lookahead_total = walk.baseline
     for frame in batch.frames[len(batch.commit_frames) :]:
         walk.step(frame, commit=False)
     ordinals = {frame.ordinal for frame in batch.frames}
-    return AdapterResult(
-        tuple(walk.revisions),
-        tuple(dict.fromkeys(walk.diagnostics)),
-        tuple(entry for entry in walk.boundaries if entry.ordinal in ordinals),
-        checkpoint,
-        tuple(walk.quota),
+    return (
+        AdapterResult(
+            tuple(walk.revisions),
+            tuple(dict.fromkeys(walk.diagnostics)),
+            tuple(entry for entry in walk.boundaries if entry.ordinal in ordinals),
+            checkpoint,
+            tuple(walk.quota),
+        ),
+        unsettled,
     )
 
 

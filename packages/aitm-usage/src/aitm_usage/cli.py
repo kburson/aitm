@@ -9,6 +9,7 @@ from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID, uuid4
 
+from . import monitor_registry
 from .backup import backup
 from .export import export_as_of
 from .install import (
@@ -31,6 +32,7 @@ from .ledger import (
     _project_path,
     _state_files,
 )
+from .monitor_control import configure_monitor_commands
 from .pricing import load_rate_card
 from .qualification import (
     PROOF_NAME,
@@ -43,15 +45,16 @@ from .rollup import rollup
 from .scopes import MAX_COMMAND_BYTES, enqueue_command, session_reference
 from .service import (
     collect_once,
+    enqueue_source_anchor,
     load_registration,
     register_project,
     remember_claude_session,
     run_service,
-    stage_source_anchor,
     status_report,
     verify_source_anchor_receipt,
 )
 from .types import (
+    CommandReceipt,
     DevelopmentBinding,
     DraftAlias,
     InboxCommand,
@@ -157,8 +160,11 @@ def _scope_command(args: argparse.Namespace) -> InboxCommand:
 
 def _queue_command(args: argparse.Namespace) -> int:
     try:
-        command = args.command_factory(args)
-        receipt = enqueue_command(args.legacy_state_dir, command)
+        if args.command == "source":
+            command, receipt = _anchor_command(args)
+        else:
+            command = args.command_factory(args)
+            receipt = enqueue_command(args.legacy_state_dir, command)
         if (
             receipt is not None
             and receipt.disposition is MarkerDisposition.ACCEPTED
@@ -167,6 +173,8 @@ def _queue_command(args: argparse.Namespace) -> int:
             verify_source_anchor_receipt(
                 Ledger.open(args.legacy_state_dir, command.project_id), receipt
             )
+    except monitor_registry.ProjectAdopted:
+        return _collector_failure(args, "project-adopted-use-monitor")
     except ConflictError:
         print("aitm-usage: inbox command conflict", file=sys.stderr)
         return 1
@@ -219,6 +227,8 @@ def _print_result(payload: dict, *, as_json: bool) -> None:
 def _register_command(args: argparse.Namespace) -> int:
     try:
         registration = register_project(args.legacy_state_dir, args.config)
+    except monitor_registry.ProjectAdopted:
+        return _collector_failure(args, "project-adopted-use-monitor")
     except WriterActive:
         return _collector_failure(args, "writer-active")
     except (LedgerError, OSError, ValueError, sqlite3.Error):
@@ -233,8 +243,11 @@ def _register_command(args: argparse.Namespace) -> int:
     return 0
 
 
-def _anchor_command(args: argparse.Namespace) -> InboxCommand:
-    return stage_source_anchor(open_project(args.legacy_state_dir), args.anchor)
+def _anchor_command(
+    args: argparse.Namespace,
+) -> tuple[InboxCommand, CommandReceipt | None]:
+    monitor_registry.check_legacy_mutation(args.legacy_state_dir)
+    return enqueue_source_anchor(open_project(args.legacy_state_dir), args.anchor)
 
 
 def _collector_failure(args: argparse.Namespace, reason: str) -> int:
@@ -446,7 +459,7 @@ def main() -> int:
     add_anchor = source.add_parser("add-anchor")
     add_anchor.add_argument("--anchor", type=Path, required=True)
     add_anchor.add_argument("--json", action="store_true")
-    add_anchor.set_defaults(handler=_queue_command, command_factory=_anchor_command)
+    add_anchor.set_defaults(handler=_queue_command)
     collect = groups.add_parser("collect-once")
     collect.add_argument("--json", action="store_true")
     collect.set_defaults(handler=_collect_command, continuous=False)
@@ -482,6 +495,7 @@ def main() -> int:
     rollup_parser.add_argument("--json", action="store_true")
     rollup_parser.set_defaults(handler=_rollup_command)
     monitor = groups.add_parser("monitor").add_subparsers(required=True)
+    configure_monitor_commands(monitor)
     monitor_report = monitor.add_parser(
         "report", help="Monitor project report (unavailable)"
     )

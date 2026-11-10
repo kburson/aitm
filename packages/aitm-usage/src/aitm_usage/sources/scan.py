@@ -373,6 +373,30 @@ class _ChangedSource(OSError):
     pass
 
 
+class _CaptureDiscontinuity(ValueError):
+    """A stable, authenticated source no longer has its prior physical prefix."""
+
+
+@dataclass(frozen=True, slots=True)
+class _CapturePosition:
+    cursor: SourceCursor
+    next_ordinal: int
+    partial_ordinal: int | None
+    provider: Provider
+    native_surface: NativeSurface | None
+    client_version: ClientVersion
+    format_version: int
+
+
+@dataclass(frozen=True, slots=True)
+class _CaptureLocatorPresence:
+    at_locator: bool
+    same_incarnation: bool
+    locator_size: int | None
+    locator_is_original: bool
+    prefix_changed: bool
+
+
 class _SourceIssue(Exception):
     def __init__(self, code: DiagnosticCode):
         self.code = code
@@ -464,6 +488,127 @@ def _transcripts(directory: int, path: Path) -> Iterator[Path]:
                     yield path / entry.name
             except OSError:
                 continue
+
+
+def _locator_reference(evidence: SourceEvidence, path: Path) -> SourceRef:
+    return evidence.pseudonymize("source-locator", os.fsencode(path).hex())
+
+
+def _incarnation_reference(evidence: SourceEvidence, identity: _FileID) -> SourceRef:
+    return evidence.pseudonymize("source-incarnation", ":".join(map(str, identity)))
+
+
+def _directory_witness(info: os.stat_result) -> tuple[_FileID, int, int]:
+    return _file_id(info), info.st_mtime_ns, info.st_ctime_ns
+
+
+def _capture_locator_presence(
+    root: Path,
+    evidence: SourceEvidence,
+    locator_ref: SourceRef,
+    incarnation_ref: SourceRef,
+    *,
+    root_identity: tuple[int, ...] | None = None,
+    prior: SourceCursor | None = None,
+) -> _CaptureLocatorPresence:
+    """Check absence by metadata and optionally reprove the one exact prior file."""
+    evidence.validate_source_ref(locator_ref)
+    evidence.validate_source_ref(incarnation_ref)
+    if prior is not None:
+        if (prior.locator_ref, prior.incarnation_ref) != (locator_ref, incarnation_ref):
+            raise ValueError("Expected the exact prior native locator")
+        evidence.validate_source_ref(prior.source_ref)
+        evidence.validate_source_ref(prior.anchor_ref)
+    directories = {}
+    locator = None
+    same_incarnation = False
+    prefix_changed = False
+    with _directory(root) as (root_fd, root_chain, root_ctimes):
+        if root_identity is not None and root_chain[-1][:2] != root_identity:
+            raise _ChangedSource
+        pending = [(root, _directory_witness(os.fstat(root_fd)))]
+        while pending:
+            path, expected = pending.pop()
+            with _directory(path) as (fd, chain, _):
+                if (
+                    chain[: len(root_chain)] != root_chain
+                    or _directory_witness(os.fstat(fd)) != expected
+                ):
+                    raise _ChangedSource
+                directories[path] = expected
+                with os.scandir(fd) as entries:
+                    for entry in sorted(
+                        entries, key=lambda item: item.name, reverse=True
+                    ):
+                        child = path / entry.name
+                        info = entry.stat(follow_symlinks=False)
+                        if stat.S_ISDIR(info.st_mode):
+                            pending.append((child, _directory_witness(info)))
+                        if _locator_reference(evidence, child) == locator_ref:
+                            locator = child, info
+                        if (
+                            stat.S_ISREG(info.st_mode)
+                            and _incarnation_reference(evidence, _file_id(info))
+                            == incarnation_ref
+                        ):
+                            same_incarnation = True
+
+        locator_size = None
+        locator_is_original = False
+        if locator is not None:
+            path, original = locator
+            with _directory(path.parent) as (parent, chain, _):
+                current = os.stat(path.name, dir_fd=parent, follow_symlinks=False)
+                if (
+                    chain[: len(root_chain)] != root_chain
+                    or _file_id(current) != _file_id(original)
+                    or current.st_mode != original.st_mode
+                    or _mtime(current) != _mtime(original)
+                ):
+                    raise _ChangedSource
+                if stat.S_ISREG(current.st_mode):
+                    locator_size = current.st_size
+                    locator_is_original = (
+                        _incarnation_reference(evidence, _file_id(current))
+                        == incarnation_ref
+                    )
+                    if (
+                        locator_is_original
+                        and prior is not None
+                        and 0 < prior.offset <= current.st_size
+                    ):
+                        with _open_snapshot(
+                            path, identity_prefix=(*chain, _file_id(current))
+                        ) as (
+                            stream,
+                            snapshot,
+                        ):
+                            digest = _hash_prefix(stream, prior.offset)
+                            _verify_snapshot(
+                                stream, path, snapshot, prior.offset, digest
+                            )
+                        prefix_changed = (
+                            _source_prefix_reference(
+                                evidence, prior.source_ref, prior.offset, digest
+                            )
+                            != prior.anchor_ref
+                        )
+        # Check the entire walk, including earlier siblings, after enumeration.
+        for path, expected in directories.items():
+            with _directory(path) as (fd, chain, ctimes):
+                if (
+                    chain[: len(root_chain)] != root_chain
+                    or ctimes[: len(root_ctimes)] != root_ctimes
+                    or _directory_witness(os.fstat(fd)) != expected
+                ):
+                    raise _ChangedSource
+    return _CaptureLocatorPresence(
+        locator is not None,
+        same_incarnation,
+        locator_size,
+        locator_is_original,
+        prefix_changed,
+    )
 
 
 def _unique_fields(pairs: list[tuple[str, object]]) -> _Row:
@@ -764,12 +909,8 @@ def _discover_sources(
                     if origin is None:
                         continue
                     seen.add(path)
-                    locator = ledger.pseudonymize(
-                        "source-locator", os.fsencode(path).hex()
-                    )
-                    incarnation = ledger.pseudonymize(
-                        "source-incarnation", ":".join(map(str, snapshot.identity[-1]))
-                    )
+                    locator = _locator_reference(ledger, path)
+                    incarnation = _incarnation_reference(ledger, snapshot.identity[-1])
                     stream_ref = (
                         ledger.pseudonymize(
                             f"{origin.provider.value}-stream", origin.session_ref.value
@@ -992,16 +1133,20 @@ def _lines(
         ordinal += 1
 
 
-def _hash_prefix(stream: BinaryIO, size: int) -> str:
-    digest = hashlib.sha256()
-    offset = 0
+def _prefix_chunks(stream: BinaryIO, size: int, *, offset: int = 0) -> Iterator[bytes]:
     while offset < size:
         # Read the descriptor directly so a buffered seek cannot reuse stale bytes.
         raw = os.pread(stream.fileno(), min(_READ_CHUNK, size - offset), offset)
         if not raw:
             raise _ChangedSource
-        digest.update(raw)
+        yield raw
         offset += len(raw)
+
+
+def _hash_prefix(stream: BinaryIO, size: int) -> str:
+    digest = hashlib.sha256()
+    for raw in _prefix_chunks(stream, size):
+        digest.update(raw)
     return digest.hexdigest()
 
 
@@ -1038,16 +1183,162 @@ def _verify_snapshot(
 
 
 def _validation_ref(
-    source: CandidateSource, origin: _Origin, offset: int, digest: str
+    source: CandidateSource, origin: _Origin | None, offset: int, digest: str
 ) -> SourceRef:
     # The held zero-byte frontier still authenticates the observed origin.
     if offset == 0:
+        if origin is None or not origin.startup_digest:
+            raise _CaptureDiscontinuity("Private source origin is unavailable")
         return source._ledger.pseudonymize(
             "source-origin", f"{source.stream_ref.value}:{origin.startup_digest}"
         )
-    return source._ledger.pseudonymize(
-        "source-prefix", f"{source.stream_ref.value}:{offset}:{digest}"
+    return _source_prefix_reference(source._ledger, source.stream_ref, offset, digest)
+
+
+def _source_prefix_reference(
+    evidence: SourceEvidence,
+    stream_ref: SourceRef,
+    offset: int,
+    digest: str,
+) -> SourceRef:
+    return evidence.pseudonymize(
+        "source-prefix", f"{stream_ref.value}:{offset}:{digest}"
     )
+
+
+def _within_source_roots(source: CandidateSource) -> bool:
+    return any(
+        root.is_absolute()
+        and ".." not in root.parts
+        and source._path.is_relative_to(root)
+        for root in source._registration.source_roots
+    )
+
+
+def _capture_cursor_identity(source: CandidateSource, cursor: SourceCursor) -> None:
+    for reference in (
+        cursor.source_ref,
+        cursor.locator_ref,
+        cursor.incarnation_ref,
+        cursor.anchor_ref,
+    ):
+        source._ledger.validate_source_ref(reference)
+    if cursor.locator_ref != source.locator_ref:
+        # Seeing the stream at another locator says nothing about the old one.
+        raise _ChangedSource
+    if (
+        cursor.incarnation_ref != source.incarnation_ref
+        or cursor.source_ref != source.stream_ref
+    ):
+        raise _CaptureDiscontinuity("Private source identity changed")
+
+
+def _verify_capture_cursor(
+    source: CandidateSource, origin: _Origin | None, cursor: SourceCursor, digest: str
+) -> None:
+    if _validation_ref(source, origin, cursor.offset, digest) != cursor.anchor_ref:
+        raise _CaptureDiscontinuity("Private source prefix changed")
+
+
+def _capture_extent(
+    stream: BinaryIO, size: int, prior_offset: int
+) -> tuple[str, str, int, int | None]:
+    """Hash and count the same descriptor bytes, including the prior prefix."""
+    digest = hashlib.sha256()
+    witnesses = []
+    complete = offset = 0
+    last = b""
+    for end in (prior_offset, size):
+        for raw in _prefix_chunks(stream, end, offset=offset):
+            digest.update(raw)
+            complete += raw.count(b"\n")
+            last = raw[-1:]
+        witnesses.append(digest.hexdigest())
+        offset = end
+    prior_prefix, prefix = witnesses
+    partial = complete if size and last != b"\n" else None
+    return prior_prefix, prefix, complete, partial
+
+
+def _capture_position(
+    source: CandidateSource,
+    prior: SourceCursor | None,
+    *,
+    fixed: SourceCursor | None = None,
+) -> _CapturePosition:
+    """Count physical rows through the present or already armed byte prefix."""
+    if not _within_source_roots(source):
+        raise _ChangedSource
+    if fixed is not None and prior is not None and fixed.offset < prior.offset:
+        raise ValueError("Private capture position precedes the authorized prefix")
+    with _open_snapshot(source._path, identity_prefix=source._identity) as (
+        stream,
+        snapshot,
+    ):
+        if (
+            _locator_reference(source._ledger, source._path) != source.locator_ref
+            or _incarnation_reference(source._ledger, snapshot.identity[-1])
+            != source.incarnation_ref
+        ):
+            raise ValueError("Invalid private capture source identity")
+        for cursor in (prior, fixed):
+            if cursor is not None:
+                _capture_cursor_identity(source, cursor)
+        size = snapshot.stat.st_size if fixed is None else fixed.offset
+        required = max(size, prior.offset if prior is not None else 0)
+        if snapshot.stat.st_size < required:
+            current = _reprobe(source._path)
+            if not snapshot.same_path(current) or current.stat.st_size >= required:
+                raise _ChangedSource
+            raise _CaptureDiscontinuity("Private source was truncated")
+
+        # A zero-offset cursor can be authenticated only with its native startup.
+        origin = _origin(stream, size or snapshot.stat.st_size, source._ledger)
+        origin_size = stream.tell()
+        prior_prefix, prefix, complete, partial = _capture_extent(
+            stream, size, prior.offset if prior is not None else 0
+        )
+        if (
+            origin is not None
+            and origin.startup_digest
+            and (_hash_prefix(stream, origin_size) != origin.startup_digest)
+        ):
+            raise _ChangedSource
+        _verify_snapshot(stream, source._path, snapshot, size, prefix)
+        if prior is not None:
+            _verify_capture_cursor(source, origin, prior, prior_prefix)
+        if fixed is not None:
+            _verify_capture_cursor(source, origin, fixed, prefix)
+        if (
+            origin is None
+            or origin.issue is not None
+            or origin.provider is None
+            or origin.session_ref is None
+            or origin.format is None
+            or (origin.provider, origin.session_ref, origin.native_surface)
+            != (source.provider, source.session_ref, source._native_surface)
+            or source._ledger.pseudonymize(
+                f"{origin.provider.value}-stream", origin.session_ref.value
+            )
+            != source.stream_ref
+        ):
+            raise ValueError("Private native source origin is unavailable")
+        cursor = SourceCursor(
+            source.stream_ref,
+            source.locator_ref,
+            source.incarnation_ref,
+            size,
+            _validation_ref(source, origin, size, prefix),
+        )
+        return _CapturePosition(
+            cursor,
+            complete if partial is None else complete + 1,
+            partial,
+            origin.provider,
+            origin.native_surface,
+            origin.client,
+            origin.format,
+        )
 
 
 def _prior_offset(source: CandidateSource, checkpoint: SourceCheckpoint | None) -> int:
@@ -1105,15 +1396,47 @@ def _verify_prior(
     raise _SourceIssue(_continuity_issue(source, cursor))
 
 
+def _verify_read_extent(
+    stream: BinaryIO,
+    snapshot: _Snapshot,
+    source: CandidateSource,
+    origin: _Origin,
+    end: int,
+    prefix: str,
+    capture_limit: SourceCursor | None,
+) -> None:
+    if capture_limit is not None:
+        # The framed rows omit a partial last row. The armed byte prefix includes it.
+        captured = _hash_prefix(stream, capture_limit.offset)
+        complete = (
+            captured if end == capture_limit.offset else _hash_prefix(stream, end)
+        )
+        if complete != prefix:
+            raise _ChangedSource
+        _verify_capture_cursor(source, origin, capture_limit, captured)
+        end, prefix = capture_limit.offset, captured
+    _verify_snapshot(stream, source._path, snapshot, end, prefix)
+
+
 def _read(
     stream: BinaryIO,
     snapshot: _Snapshot,
     source: CandidateSource,
     checkpoint: SourceCheckpoint | None,
     cutoff: datetime,
+    capture_limit: SourceCursor | None,
 ) -> FrameBatch:
     prior = _prior_offset(source, checkpoint)
-    origin = _origin(stream, snapshot.stat.st_size, source._ledger)
+    size = snapshot.stat.st_size
+    if capture_limit is not None:
+        try:
+            _capture_cursor_identity(source, capture_limit)
+        except LedgerError:
+            raise _SourceIssue(DiagnosticCode.IDENTITY_CONFLICT) from None
+        if not prior <= capture_limit.offset <= size:
+            raise _ChangedSource
+        size = capture_limit.offset
+    origin = _origin(stream, size or snapshot.stat.st_size, source._ledger)
     if origin is None or (origin.provider, origin.session_ref) != (
         source.provider,
         source.session_ref,
@@ -1126,10 +1449,12 @@ def _read(
     assert origin.provider is not None and origin.session_ref is not None
     assert origin.format is not None
 
-    if checkpoint is not None and prior == snapshot.stat.st_size:
+    if checkpoint is not None and prior == size:
         prefix = _hash_prefix(stream, prior)
         _verify_prior(source, origin, checkpoint, prior, prefix)
-        _verify_snapshot(stream, source._path, snapshot, prior, prefix)
+        _verify_read_extent(
+            stream, snapshot, source, origin, prior, prefix, capture_limit
+        )
         return _project(source, checkpoint, origin, [], {}, {}, prior, prefix)
 
     stream.seek(0)
@@ -1151,7 +1476,7 @@ def _read(
     end = 0
     prefix = hashlib.sha256().hexdigest()
     prior_verified = origin_verified = False
-    for ordinal, start, before, prefix, row in _lines(stream, snapshot.stat.st_size):
+    for ordinal, start, before, prefix, row in _lines(stream, size):
         end = stream.tell()
         if ordinal == origin.startup_ordinal:
             if prefix != origin.startup_digest:
@@ -1285,7 +1610,7 @@ def _read(
         _checkout_anchor(cwd, source) != anchor for cwd, anchor in checkouts.items()
     ):
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
-    _verify_snapshot(stream, source._path, snapshot, end, prefix)
+    _verify_read_extent(stream, snapshot, source, origin, end, prefix, capture_limit)
     if selections:
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
     result = _project(
@@ -1436,7 +1761,11 @@ def _project(
 
 
 def scan(
-    source: CandidateSource, checkpoint: SourceCheckpoint | None, cutoff: datetime
+    source: CandidateSource,
+    checkpoint: SourceCheckpoint | None,
+    cutoff: datetime,
+    *,
+    _capture_limit: SourceCursor | None = None,
 ) -> FrameBatch:
     """Verify an approved snapshot and expose complete rows through its safe cursor."""
     if (
@@ -1448,18 +1777,15 @@ def scan(
         raise ValueError("Expected the pinned activation cutoff")
     cutoff = cutoff.astimezone(UTC)
     try:
-        if not any(
-            root.is_absolute()
-            and ".." not in root.parts
-            and source._path.is_relative_to(root)
-            for root in source._registration.source_roots
-        ):
+        if not _within_source_roots(source):
             raise _ChangedSource
         with _open_snapshot(source._path, identity_prefix=source._identity) as (
             stream,
             snapshot,
         ):
-            return _read(stream, snapshot, source, checkpoint, cutoff)
+            return _read(stream, snapshot, source, checkpoint, cutoff, _capture_limit)
+    except _CaptureDiscontinuity:
+        code = DiagnosticCode.SOURCE_REPLACED
     except _SourceIssue as failure:
         code = failure.code
     except OSError as failure:
