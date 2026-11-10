@@ -73,6 +73,7 @@ _RUNTIME_DIR = re.compile(r"venv-[0-9a-f]{32}")
 _WHEEL_LIMIT = 64 * 1024 * 1024
 _COMMAND_TIMEOUT = 120
 _STOP_TIMEOUT = 10
+_THREAD_ASSIGNMENT = ' ${CODEX_THREAD_ID+"CODEX_THREAD_ID=$CODEX_THREAD_ID"}'
 _ENVIRONMENT = {
     "LC_ALL": "C",
     "PATH": "/usr/bin:/bin",
@@ -593,20 +594,17 @@ def _site(environment: Path, version: str) -> Path:
     return environment / "lib" / f"python{_minor(version)}" / "site-packages"
 
 
-def _launcher(python: Path, site: Path) -> bytes:
-    argv = [
+def _launcher(python: Path, site: Path, *, legacy: bool = False) -> bytes:
+    environment = [
         "/usr/bin/env",
         "-i",
         *(f"{key}={value}" for key, value in _ENVIRONMENT.items()),
-        str(python),
-        "-I",
-        "-S",
-        "-B",
-        "-c",
-        _RUN_CONSOLE,
-        str(site),
     ]
-    return f'#!/bin/sh\nexec {shlex.join(argv)} "$@"\n'.encode()
+    argv = [str(python), "-I", "-S", "-B", "-c", _RUN_CONSOLE, str(site)]
+    candidate = "" if legacy else _THREAD_ASSIGNMENT
+    return (
+        f'#!/bin/sh\nexec {shlex.join(environment)}{candidate} {shlex.join(argv)} "$@"\n'
+    ).encode()
 
 
 def _write_runtime_file(
@@ -630,7 +628,11 @@ def _write_runtime_file(
 
 
 def _inspect_surface(
-    executable: Path, interpreter: Path, python_version: str, wheel: _Wheel
+    executable: Path,
+    interpreter: Path,
+    python_version: str,
+    wheel: _Wheel,
+    launcher: bytes,
 ) -> Path:
     environment = executable.parent.parent
     python = executable.with_name("python")
@@ -638,7 +640,7 @@ def _inspect_surface(
     config = environment / "pyvenv.cfg"
     contents = {
         config: _venv_config(interpreter, python_version),
-        executable: _launcher(python, site),
+        executable: launcher,
         **{site / path: data for path, data in wheel.files.items()},
     }
     directories = {environment / "include" / f"python{_minor(python_version)}", site}
@@ -686,10 +688,11 @@ def _probe_runtime(
     interpreter: Path,
     python_version: str,
     wheel: _Wheel,
+    launcher: bytes,
     *,
     schema_version: int,
 ) -> _Runtime:
-    site = _inspect_surface(executable, interpreter, python_version, wheel)
+    site = _inspect_surface(executable, interpreter, python_version, wheel, launcher)
     python = executable.with_name("python")
     observed = json.loads(_run_python(python, "-c", _PROBE, str(site)))
     if not isinstance(observed, dict):
@@ -772,17 +775,27 @@ def _read_runtime(
     _, version, digest = _runtime_layout(ledger, executable)
     retained = _wheel(_wheel_path(ledger, version, digest), digest, private=True)
     for path, field, limit in (
-        (executable, "console_sha256", 8192),
+        (executable, "console_sha256", 8192 + len(_THREAD_ASSIGNMENT)),
         (base, "interpreter_sha256", _WHEEL_LIMIT),
     ):
         data = _read_owned(path, private=False, limit=limit)
         if data is None or hashlib.sha256(data).hexdigest() != record[field]:
             raise InstallError("Verified runtime files changed")
+    python_version = _interpreter(base)
+    python = executable.with_name("python")
+    site = _site(executable.parent.parent, python_version)
+    for legacy in (False, True):
+        launcher = _launcher(python, site, legacy=legacy)
+        if hashlib.sha256(launcher).hexdigest() == record["console_sha256"]:
+            break
+    else:
+        raise InstallError("Installed runtime has an unknown launcher")
     return _probe_runtime(
         executable,
         base,
-        _interpreter(base),
+        python_version,
         retained,
+        launcher,
         schema_version=ledger.identity.schema_version,
     )
 
@@ -828,6 +841,7 @@ def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
                 interpreter,
                 python_version,
                 wheel,
+                launcher,
                 schema_version=ledger.identity.schema_version,
             )
             base_bytes = _read_owned(interpreter, private=False, limit=_WHEEL_LIMIT)

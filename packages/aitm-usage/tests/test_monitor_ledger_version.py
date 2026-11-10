@@ -251,7 +251,7 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
         ),
     )
     wheel = install._Wheel("0.1.0", "1" * 64, b"", {})
-    args = (executable, tmp_path / "python3", "3.13.9", wheel)
+    args = (executable, tmp_path / "python3", "3.13.9", wheel, b"pinned launcher")
     assert install._probe_runtime(*args, schema_version=1).witness_capable
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=2)
