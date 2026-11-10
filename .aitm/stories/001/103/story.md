@@ -10,7 +10,7 @@ children: [104, 105, 106]
 blocking: []
 blocked-by: []
 created: "2026-11-10T00:45:16Z"
-updated: "2026-11-10T04:26:38+00:00"
+updated: "2026-11-10T04:37:24+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 10.0, "size": "L"}
 priority: "P1"
@@ -37,3 +37,5 @@ Refined as a **10.0-agent-hour P1 epic** with three independent leaves. Each lea
 [Implementation plan](plan/implementation-plan.md) accepted at exact SHA-256 `f81b4d18c36b1294c4bfc0635cf8bba67f231250a6a398dd92ddda63adb465fb` after [SAR](plan/reviews/sar-2026-11-09-ci-plan/review-manifest.md), [independent manual SPR](plan/reviews/spr-2026-11-09-ci-plan/review-manifest.md), [native Claude XPR](plan/reviews/xpr-2026-11-09-ci-plan/review-manifest.md). #103 remains in Planning. The leaves are [#104](../104/story.md), [#105](../105/story.md), and [#106](../106/story.md), in dependency order.
 
 **Current Planning blocker.** #104 returned to Planning after the [live GitHub binding probe](../104/attachments/github-binding-probe-attempt-1.md). GitHub associated the run with the PR head and the observed metadata did not independently bind it to the exact synthetic merge. The bootstrap PR is held as a draft. The [reviewed ordinary PR binding amendment](../104/design/github-tested-merge-binding-replan.md) preserves the normal story PR and adds signed GitHub Actions identity evidence. A fresh JIT, separate execution authorization and a successful live proof still gate delivery. The original failure evidence remains historical.
+
+The [#104 signing probe](../104/attachments/github-signing-probe-result.md) passed and closed the binding feasibility question for this route. Production CI and delivery remain separate gates.

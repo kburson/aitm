@@ -16,3 +16,7 @@ The [hosted diagnostic and exact binding assessment](../attachments/github-bindi
 ## Replan accepted in Planning
 
 The [reviewed ordinary PR binding amendment](../design/github-tested-merge-binding-replan.md) supplies the replacement design and ordered replan. Attempt 1 remains historical. A fresh JIT and separate authority for the diagnostic, permissions and public attestation are pending. Keep PR #107 as an unmerged draft.
+
+## Ordinary PR signing probe result
+
+The [independently reviewed JIT](signing-probe-jit.md) authorized one diagnostic. The [verified result](../attachments/github-signing-probe-result.md) binds the certificate and subject to exact Actions attempt 1 and the live merge. The historical failed probe remains intact. This successful diagnostic did not publish the production gate.
