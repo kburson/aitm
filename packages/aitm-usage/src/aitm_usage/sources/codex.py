@@ -170,6 +170,7 @@ class CodexState:
     _have_history: bool = field(default=False, repr=False)
     _exact_only: bool = field(default=False, repr=False)
     _thread_counts: TokenCounts | None = field(default=None, repr=False)
+    neutral_markers: bool = False
 
     def __post_init__(self) -> None:
         if self.account_ref is not None:
@@ -355,7 +356,7 @@ def _quota_window(
     )
 
 
-def _marker_command(payload: dict, project_root: Path) -> bool:
+def _marker_command(payload: dict, project_root: Path | None) -> bool:
     source = payload.get("input")
     if (
         payload.get("type") != "custom_tool_call"
@@ -380,7 +381,12 @@ def _marker_command(payload: dict, project_root: Path) -> bool:
         return False
     return (
         len(parts) == 8
-        and parts[:3] == ["aitm-usage", "--project", str(project_root)]
+        and parts[:2] == ["aitm-usage", "--project"]
+        and (
+            Path(parts[2]).is_absolute()
+            if project_root is None
+            else parts[2] == str(project_root)
+        )
         and parts[3:6]
         in (
             ["scope", "mark", "--marker"],
@@ -432,6 +438,7 @@ class _Walk:
 
     def __init__(self, batch: FrameBatch, state: CodexState, eligibility: Eligibility):
         self.state = state
+        self.marker_root = None if state.neutral_markers else state.ledger.root
         self.record_usage = eligibility is Eligibility.ELIGIBLE
         state.ledger.validate_source_ref(batch.cursor.source_ref)
         matching = _matching_context(state, batch)
@@ -753,7 +760,7 @@ class _Walk:
                 context.parallel = True
             else:
                 context.call = _Call(
-                    ref, frame.segment_ref, _marker_command(payload, self.ledger.root)
+                    ref, frame.segment_ref, _marker_command(payload, self.marker_root)
                 )
             return
 
@@ -1345,6 +1352,13 @@ def read_codex(
         raise ValueError("Expected a Codex provider checkpoint")
     walk = _Walk(batch, state, eligibility)
     walk.committed()
+    checkpoint = walk.checkpoint
+    if state.neutral_markers and (
+        walk.context.turn is not None or walk.context.next_turn_receipt is not None
+    ):
+        # The legacy warm state can resume mid-turn. A monitor cursor stores
+        # only the durable provider prefix, so replay this unsettled frontier.
+        checkpoint = None
     walk.lookahead_total = walk.baseline
     for frame in batch.frames[len(batch.commit_frames) :]:
         walk.step(frame, commit=False)
@@ -1353,7 +1367,7 @@ def read_codex(
         tuple(walk.revisions),
         tuple(dict.fromkeys(walk.diagnostics)),
         tuple(entry for entry in walk.boundaries if entry.ordinal in ordinals),
-        walk.checkpoint,
+        checkpoint,
         tuple(walk.quota),
     )
 

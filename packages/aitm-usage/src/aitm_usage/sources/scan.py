@@ -11,16 +11,18 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Protocol
 from uuid import UUID
 
 from ..ledger import Ledger, LedgerError
+from ..monitor_types import NativeSurface
 from ..scopes import BoundaryEvidence, session_reference
 from ..types import (
     ClientVersion,
     Diagnostic,
     DiagnosticCode,
     Eligibility,
+    LedgerView,
     Provider,
     ProviderCheckpoint,
     Registration,
@@ -84,6 +86,16 @@ _MAX_ROW_BYTES = 16 * 1024 * 1024
 _READ_CHUNK = 64 * 1024
 type _Row = dict[str, object]
 type _FileID = tuple[int, int, int]
+
+
+class SourceEvidence(Protocol):
+    """Read authority for native prefixes and keyed source identifiers."""
+
+    def pseudonymize(self, namespace: str, raw_reference: str) -> SourceRef: ...
+
+    def validate_source_ref(self, reference: SourceRef) -> None: ...
+
+    def as_of(self) -> LedgerView: ...
 
 
 class CoverageKind(StrEnum):
@@ -259,9 +271,11 @@ class CandidateSource:
     _path: Path = field(repr=False, compare=False)
     _identity: tuple[_FileID, ...] = field(repr=False, compare=False)
     _registration: Registration = field(repr=False, compare=False)
-    _ledger: Ledger = field(repr=False, compare=False)
+    _ledger: SourceEvidence = field(repr=False, compare=False)
     _enrollments: tuple[_Enrollment, ...] = field(repr=False, default=())
     _excluded: frozenset[SourceRef] = field(repr=False, default=frozenset())
+    _native_surface: NativeSurface | None = field(repr=False, default=None)
+    _monitor: bool = field(repr=False, default=False)
 
     def _matches(self, entry: SourceBoundary | SourceFrame) -> bool:
         return (
@@ -468,7 +482,9 @@ def _codex_payload(row: _Row) -> _Row | None:
     return payload if isinstance(payload, dict) else None
 
 
-def _session(ledger: Ledger, provider: Provider, raw: object) -> SourceRef | None:
+def _session(
+    ledger: SourceEvidence, provider: Provider, raw: object
+) -> SourceRef | None:
     if type(raw) is not str:
         return None
     try:
@@ -477,7 +493,7 @@ def _session(ledger: Ledger, provider: Provider, raw: object) -> SourceRef | Non
         return None
 
 
-def _claude_session(row: _Row, ledger: Ledger) -> SourceRef | None:
+def _claude_session(row: _Row, ledger: SourceEvidence) -> SourceRef | None:
     references = {
         _session(ledger, Provider.CLAUDE, row[key])
         for key in ("sessionId", "session_id")
@@ -496,20 +512,29 @@ class _Origin:
     startup_ordinal: int = field(default=0, compare=False)
     startup_digest: str = field(default="", compare=False)
     startup_excluded: tuple[int, ...] = ()
+    native_surface: NativeSurface | None = None
 
 
-def _origin_from(row: _Row, ordinal: int, ledger: Ledger) -> _Origin | None:
+def _origin_from(row: _Row, ordinal: int, ledger: SourceEvidence) -> _Origin | None:
     kind = row["type"]
+    surface = None
     if kind == "session_meta" and ordinal == 0:
         provider = Provider.CODEX
         metadata = _codex_payload(row) or {}
         session = _session(ledger, provider, metadata.get("id"))
         raw_client = metadata.get("cli_version")
+        if (
+            metadata.get("originator") == "Codex Desktop"
+            and metadata.get("source") == "vscode"
+        ):
+            surface = NativeSurface.CODEX_DESKTOP_MACOS
     elif kind in _CLAUDE_SESSION_ROWS and ("sessionId" in row or "session_id" in row):
         provider = Provider.CLAUDE
         metadata = row
         session = _claude_session(row, ledger)
         raw_client = row.get("version")
+        if "sessionId" in row:
+            surface = NativeSurface.CLAUDE_CODE_MACOS
     else:
         return None
     client = normalize_client_version(raw_client)
@@ -526,7 +551,7 @@ def _origin_from(row: _Row, ordinal: int, ledger: Ledger) -> _Origin | None:
         return _Origin(
             provider, session, client, issue=DiagnosticCode.UNSUPPORTED_FORMAT
         )
-    return _Origin(provider, session, client, 1)
+    return _Origin(provider, session, client, 1, native_surface=surface)
 
 
 def _closed_fields(row: _Row, fields: dict[str, type]) -> bool:
@@ -597,7 +622,7 @@ def _claude_startup_ordinals(
     preceding: list[tuple[int, _Row | None]],
     user: _Row,
     origin: _Origin,
-    ledger: Ledger,
+    ledger: SourceEvidence,
 ) -> tuple[int, ...]:
     if (
         origin.provider is not Provider.CLAUDE
@@ -658,7 +683,7 @@ def _claude_startup_ordinals(
     return tuple(ordinal for ordinal, _ in timed)
 
 
-def _origin(stream: BinaryIO, size: int, ledger: Ledger) -> _Origin | None:
+def _origin(stream: BinaryIO, size: int, ledger: SourceEvidence) -> _Origin | None:
     """Look for startup identity without following arbitrary transcript fields."""
     found_complete = False
     digest = hashlib.sha256()
@@ -699,6 +724,12 @@ def discover(registration: Registration) -> Iterator[CandidateSource]:
     candidates. Also compare locator_ref to detect replacement at a known path.
     """
     ledger = Ledger.open(registration.state_root, registration.project_id)
+    yield from _discover_sources(registration, ledger)
+
+
+def _discover_sources(
+    registration: Registration, ledger: SourceEvidence
+) -> Iterator[CandidateSource]:
     seen = set()
     for root in registration.source_roots:
         try:
@@ -743,12 +774,13 @@ def discover(registration: Registration) -> Iterator[CandidateSource]:
                         snapshot.identity,
                         registration,
                         ledger,
+                        _native_surface=origin.native_surface,
                     )
         except OSError:
             continue
 
 
-def checkout_anchor_reference(ledger: Ledger, path: Path) -> SourceRef:
+def checkout_anchor_reference(ledger: SourceEvidence, path: Path) -> SourceRef:
     """Use the scanner's checkout namespace for U02 bindings and registration."""
     return ledger.pseudonymize("checkout-anchor", os.fsencode(path).hex())
 
@@ -863,7 +895,7 @@ def _row_context(
     return None, updates, _checkout_path(metadata.get("cwd")) if updates else None
 
 
-def _claude_sideband_content(row: _Row, ledger: Ledger) -> _Row | None:
+def _claude_sideband_content(row: _Row, ledger: SourceEvidence) -> _Row | None:
     if "timestamp" in row:
         raise ValueError("Native bookkeeping must be untimed")
     kind = row["type"]
@@ -1075,6 +1107,8 @@ def _read(
         raise _SourceIssue(DiagnosticCode.SOURCE_REPLACED)
     if origin.issue is not None:
         raise _SourceIssue(origin.issue)
+    if source._monitor and origin.native_surface is not source._native_surface:
+        raise _SourceIssue(DiagnosticCode.UNSUPPORTED_FORMAT)
     assert origin.provider is not None and origin.session_ref is not None
     assert origin.format is not None
 

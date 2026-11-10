@@ -104,6 +104,7 @@ class ClaudeState:
     _stream_ref: SourceRef | None = field(default=None, repr=False)
     _checkpoint: ProviderCheckpoint | None = field(default=None, repr=False)
     _route: _Route = field(default_factory=_Route, repr=False)
+    neutral_markers: bool = False
 
     def __post_init__(self) -> None:
         if (
@@ -404,7 +405,7 @@ def _eligible(frame: SourceFrame, eligibility: Eligibility) -> bool:
     )
 
 
-def _marker_command(value: object, project_root: Path, session_id: UUID) -> bool:
+def _marker_command(value: object, project_root: Path | None, session_id: UUID) -> bool:
     if type(value) is not str or len(value) > 8192:
         return False
     try:
@@ -413,7 +414,12 @@ def _marker_command(value: object, project_root: Path, session_id: UUID) -> bool
         return False
     return (
         len(parts) == 10
-        and parts[:3] == ["aitm-usage", "--project", str(project_root)]
+        and parts[:2] == ["aitm-usage", "--project"]
+        and (
+            Path(parts[2]).is_absolute()
+            if project_root is None
+            else parts[2] == str(project_root)
+        )
         and parts[3:6]
         in (["scope", "mark", "--marker"], ["development", "bind", "--binding"])
         and Path(parts[6]).is_absolute()
@@ -473,6 +479,8 @@ class _RouteWalk:
     def __init__(self, batch: FrameBatch, state: ClaudeState, eligibility: Eligibility):
         self.ledger = state.ledger
         self.session_id = state.reserved_session_id
+        self.neutral_markers = state.neutral_markers
+        self.marker_root = None if state.neutral_markers else self.ledger.root
         self.reserved_ref = (
             session_reference(self.ledger, _PROVIDER, str(self.session_id))
             if self.session_id is not None
@@ -575,13 +583,14 @@ class _RouteWalk:
             and type(block.get("input")) is dict
         ):
             arguments = block["input"]
+            session = self.session_id
+            if self.neutral_markers and _explicit_session(self.ledger, frame):
+                session = _uuid(frame.row.get("sessionId", frame.row.get("session_id")))
             if (
                 block.get("name") == "Bash"
-                and self.session_id is not None
-                and frame.session_ref == self.reserved_ref
-                and _marker_command(
-                    arguments.get("command"), self.ledger.root, self.session_id
-                )
+                and session is not None
+                and (self.neutral_markers or frame.session_ref == self.reserved_ref)
+                and _marker_command(arguments.get("command"), self.marker_root, session)
                 and not arguments.get("run_in_background")
             ):
                 kind = "bash"
@@ -1352,6 +1361,11 @@ def read_claude(
     routes.scan(batch.commit_frames, gaps)
     walk = _UsageWalk(batch, state, eligibility, routes)
     checkpoint = walk.run(gaps)
+    if state.neutral_markers and (
+        routes.route.tool is not None or routes.route.receipt is not None
+    ):
+        # Replay pending native linkage and nested-tool overlap after restart.
+        checkpoint = None
     routes.scan(batch.frames[len(batch.commit_frames) :], set())
     return AdapterResult(
         tuple(walk.revisions),
@@ -1360,6 +1374,30 @@ def read_claude(
         checkpoint,
         tuple(walk.quota),
     )
+
+
+def retains_streamed_prefix(
+    batch: FrameBatch, state: ClaudeState, checkpoint: ProviderCheckpoint
+) -> bool:
+    """Verify that eligible provisional requests can be revised after restart."""
+    retained = {
+        item.request_ref: item.message_ref for item in checkpoint.request_prefix
+    }
+    for frame in batch.commit_frames:
+        if frame.row["type"] != "assistant" or not _eligible(
+            frame, Eligibility.ELIGIBLE
+        ):
+            continue
+        message = _message(frame)
+        if (
+            message.get("stop_reason") is not None
+            or _usage(_object(message.get("usage"))) is None
+        ):
+            continue
+        request, message_ref = _request_refs(state.ledger, frame, message)
+        if message_ref is None or retained.get(request) != message_ref:
+            return False
+    return True
 
 
 def advance_claude_state(
