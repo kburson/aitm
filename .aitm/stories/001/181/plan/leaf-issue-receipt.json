@@ -1,0 +1,224 @@
+{
+  "parent": 181,
+  "verified_at": "2026-11-10T21:03:15Z",
+  "accepted_plan_commit": "fd5b22ff0c33c582dd9a0926435d071f09ac6156",
+  "accepted_plan_sha256": "147cbee5740f725c9c65df9c09034912220d179475dc1c707e0844316a6c1c80",
+  "parent_board": {
+    "status": "Planning",
+    "priority": "P1",
+    "size": "Feature",
+    "estimate": 26.0,
+    "estimate_scope": "A and B only",
+    "transitions": [
+      {
+        "from": "Backlog",
+        "to": "Refine",
+        "observed_at": "2026-11-10T21:02:56Z"
+      },
+      {
+        "from": "Refine",
+        "to": "Ready for Planning",
+        "observed_at": "2026-11-10T21:02:58Z"
+      },
+      {
+        "from": "Ready for Planning",
+        "to": "Planning",
+        "observed_at": "2026-11-10T21:02:59Z"
+      }
+    ]
+  },
+  "leaves": [
+    {
+      "key": "A01",
+      "name": "Admit and register planning evidence",
+      "hours": 3.75,
+      "size": "M",
+      "deps": [],
+      "line": 57,
+      "section_sha256": "fd0fd511b36ded6d59a5ead118af3c006d18971c5c1df307a1e0b2743d378aa3",
+      "number": 186,
+      "title": "[#181 A01] Admit and register planning evidence",
+      "html_url": "https://github.com/kburson/aitm/issues/186",
+      "created_at": "2026-11-10T21:02:13Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [],
+      "blocking": [
+        187,
+        189
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "A02",
+      "name": "Resolve timing attribution and the legacy seed",
+      "hours": 3.75,
+      "size": "M",
+      "deps": [
+        "A01"
+      ],
+      "line": 64,
+      "section_sha256": "451ef49534a5b97aba0fd2923b597cb190c96d664fdbad78a7cf418923c41927",
+      "number": 187,
+      "title": "[#181 A02] Resolve timing attribution and the legacy seed",
+      "html_url": "https://github.com/kburson/aitm/issues/187",
+      "created_at": "2026-11-10T21:02:15Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        186
+      ],
+      "blocking": [
+        188
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "A03",
+      "name": "Compute workflow timing and epic totals",
+      "hours": 3.75,
+      "size": "M",
+      "deps": [
+        "A02"
+      ],
+      "line": 70,
+      "section_sha256": "4eb0bf6e348515dc553a8cc83910821b4aa1f1366b116313e3ddcc89f7254185",
+      "number": 188,
+      "title": "[#181 A03] Compute workflow timing and epic totals",
+      "html_url": "https://github.com/kburson/aitm/issues/188",
+      "created_at": "2026-11-10T21:02:16Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        187
+      ],
+      "blocking": [
+        190
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "A04",
+      "name": "Resolve a pinned usage report",
+      "hours": 3.0,
+      "size": "M",
+      "deps": [
+        "A01"
+      ],
+      "line": 76,
+      "section_sha256": "9650893a5b5b7b09cec23b683bd6d07f6dfa80ba2529b14102fbef98c95173f7",
+      "number": 189,
+      "title": "[#181 A04] Resolve a pinned usage report",
+      "html_url": "https://github.com/kburson/aitm/issues/189",
+      "created_at": "2026-11-10T21:02:17Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        186
+      ],
+      "blocking": [
+        190
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "A05",
+      "name": "Publish a reproducible local snapshot",
+      "hours": 3.0,
+      "size": "M",
+      "deps": [
+        "A03",
+        "A04"
+      ],
+      "line": 82,
+      "section_sha256": "b72d456125bda64b53a884fb47e18a3f08d7168988896f532d8e66b3638765b0",
+      "number": 190,
+      "title": "[#181 A05] Publish a reproducible local snapshot",
+      "html_url": "https://github.com/kburson/aitm/issues/190",
+      "created_at": "2026-11-10T21:02:19Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        188,
+        189
+      ],
+      "blocking": [
+        191,
+        192
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "A06",
+      "name": "Prove one live manual capture and board readback",
+      "hours": 2.75,
+      "size": "S",
+      "deps": [
+        "A05"
+      ],
+      "line": 88,
+      "section_sha256": "ce6bf8365ae59684a364b3e08d1034d2607f234fd19544184abe34feff6fc953",
+      "number": 191,
+      "title": "[#181 A06] Prove one live manual capture and board readback",
+      "html_url": "https://github.com/kburson/aitm/issues/191",
+      "created_at": "2026-11-10T21:02:20Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        190
+      ],
+      "blocking": [
+        193
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "B01",
+      "name": "Render and filter the offline dashboard",
+      "hours": 3.75,
+      "size": "M",
+      "deps": [
+        "A05"
+      ],
+      "line": 95,
+      "section_sha256": "812c755038cb76206a1edcbf672935444cfe4c8f02d18c72b94757f391c439d2",
+      "number": 192,
+      "title": "[#181 B01] Render and filter the offline dashboard",
+      "html_url": "https://github.com/kburson/aitm/issues/192",
+      "created_at": "2026-11-10T21:02:22Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        190
+      ],
+      "blocking": [
+        193
+      ],
+      "project_status": "Backlog"
+    },
+    {
+      "key": "B02",
+      "name": "Qualify and hand off the local dashboard",
+      "hours": 2.25,
+      "size": "S",
+      "deps": [
+        "A06",
+        "B01"
+      ],
+      "line": 101,
+      "section_sha256": "834894299283f0fe9988e868ecbd95520ed1f1b1c5fd57f72f646106d086fa81",
+      "number": 193,
+      "title": "[#181 B02] Qualify and hand off the local dashboard",
+      "html_url": "https://github.com/kburson/aitm/issues/193",
+      "created_at": "2026-11-10T21:02:23Z",
+      "state": "open",
+      "parent": 181,
+      "blocked_by": [
+        191,
+        192
+      ],
+      "blocking": [],
+      "project_status": "Backlog"
+    }
+  ]
+}
