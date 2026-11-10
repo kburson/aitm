@@ -1,0 +1,1271 @@
+{
+  "schema": "aitm.story-actual-backfill/v0",
+  "story": 181,
+  "evidence_through_utc": "2026-11-10T19:35:05Z",
+  "method": "manual reconstruction from retained Codex turn timing, Claude review timing and workflow checkpoints",
+  "calibration_eligible": false,
+  "rollup_basis": "sum each distinct actor interval once, then add the direct epic subtotal and each included descendant subtotal",
+  "entries": {
+    "100": {
+      "milliseconds": 30450874,
+      "hours": "8.4586",
+      "duration": "8:27:31",
+      "direct": {
+        "milliseconds": 4678359,
+        "hours": "1.2995",
+        "duration": "1:17:58"
+      },
+      "counted_children": [
+        111,
+        112,
+        113,
+        114,
+        115,
+        116
+      ],
+      "source_intervals": 22,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 8.4586,
+        "actual_coverage": "Partial reconstruction through 2026-11-10 13:35 CST. Six child subtotals + 1.2995 h direct epic work. Unattributed intervals excluded.",
+        "cost": null,
+        "status": "Dev"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-09T23:42:40.000+00:00",
+          "end": "2026-11-09T23:44:50.124+00:00",
+          "actor": "A001",
+          "turn": "T001",
+          "source": "Codex native turn",
+          "reason": "Epic kickoff, design, plan review, and decomposition",
+          "milliseconds": 130124
+        },
+        {
+          "start": "2026-11-10T00:19:33.000+00:00",
+          "end": "2026-11-10T00:23:32.255+00:00",
+          "actor": "A001",
+          "turn": "T002",
+          "source": "Codex native turn",
+          "reason": "Epic kickoff, design, plan review, and decomposition",
+          "milliseconds": 239255
+        },
+        {
+          "start": "2026-11-10T00:21:42.000+00:00",
+          "end": "2026-11-10T00:22:13.053+00:00",
+          "actor": "A002",
+          "turn": "T003",
+          "source": "Codex native turn",
+          "reason": "Epic builder review",
+          "milliseconds": 31053
+        },
+        {
+          "start": "2026-11-10T02:53:03.000+00:00",
+          "end": "2026-11-10T03:13:05.770+00:00",
+          "actor": "A001",
+          "turn": "T004",
+          "source": "Codex native turn",
+          "reason": "Epic specification after #101 closure",
+          "milliseconds": 1202770
+        },
+        {
+          "start": "2026-11-10T02:54:34.000+00:00",
+          "end": "2026-11-10T02:56:43.425+00:00",
+          "actor": "A003",
+          "turn": "T005",
+          "source": "Codex native turn",
+          "reason": "Epic specification SPR",
+          "milliseconds": 129425
+        },
+        {
+          "start": "2026-11-10T02:58:14.000+00:00",
+          "end": "2026-11-10T02:59:48.821+00:00",
+          "actor": "A003",
+          "turn": "T006",
+          "source": "Codex native turn",
+          "reason": "Epic specification SPR",
+          "milliseconds": 94821
+        },
+        {
+          "start": "2026-11-10T03:00:37.000+00:00",
+          "end": "2026-11-10T03:00:59.771+00:00",
+          "actor": "A003",
+          "turn": "T007",
+          "source": "Codex native turn",
+          "reason": "Epic specification SPR",
+          "milliseconds": 22771
+        },
+        {
+          "start": "2026-11-10T03:02:11.104+00:00",
+          "end": "2026-11-10T03:04:56.880+00:00",
+          "actor": "A004",
+          "turn": "T008",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic specification XPR",
+          "milliseconds": 165776
+        },
+        {
+          "start": "2026-11-10T03:06:11.863+00:00",
+          "end": "2026-11-10T03:07:06.336+00:00",
+          "actor": "A004",
+          "turn": "T009",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic specification XPR",
+          "milliseconds": 54473
+        },
+        {
+          "start": "2026-11-10T13:23:05.000+00:00",
+          "end": "2026-11-10T13:43:41.564+00:00",
+          "actor": "A001",
+          "turn": "T010",
+          "source": "Codex native turn",
+          "reason": "Epic kickoff, design, plan review, and decomposition",
+          "milliseconds": 1236564
+        },
+        {
+          "start": "2026-11-10T13:24:37.000+00:00",
+          "end": "2026-11-10T13:27:37.726+00:00",
+          "actor": "A005",
+          "turn": "T011",
+          "source": "Codex native turn",
+          "reason": "Epic implementation plan SPR",
+          "milliseconds": 180726
+        },
+        {
+          "start": "2026-11-10T13:29:28.000+00:00",
+          "end": "2026-11-10T13:30:59.402+00:00",
+          "actor": "A005",
+          "turn": "T012",
+          "source": "Codex native turn",
+          "reason": "Epic implementation plan SPR",
+          "milliseconds": 91402
+        },
+        {
+          "start": "2026-11-10T13:31:36.000+00:00",
+          "end": "2026-11-10T13:32:13.026+00:00",
+          "actor": "A005",
+          "turn": "T013",
+          "source": "Codex native turn",
+          "reason": "Epic implementation plan SPR",
+          "milliseconds": 37026
+        },
+        {
+          "start": "2026-11-10T13:32:31.983+00:00",
+          "end": "2026-11-10T13:37:43.964+00:00",
+          "actor": "A006",
+          "turn": "T014",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic implementation plan XPR",
+          "milliseconds": 311981
+        },
+        {
+          "start": "2026-11-10T13:41:27.237+00:00",
+          "end": "2026-11-10T13:42:35.403+00:00",
+          "actor": "A006",
+          "turn": "T015",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic implementation plan XPR",
+          "milliseconds": 68166
+        },
+        {
+          "start": "2026-11-10T13:56:02.000+00:00",
+          "end": "2026-11-10T14:02:05.336+00:00",
+          "actor": "A001",
+          "turn": "T016",
+          "source": "Codex native turn",
+          "reason": "Epic kickoff, design, plan review, and decomposition",
+          "milliseconds": 363336
+        },
+        {
+          "start": "2026-11-10T14:10:58.000+00:00",
+          "end": "2026-11-10T14:12:33.000+00:00",
+          "actor": "A007",
+          "turn": "T017",
+          "source": "Codex native turn",
+          "reason": "Coordinator switched from #103 and hydrated epic",
+          "milliseconds": 95000
+        },
+        {
+          "start": "2026-11-10T14:36:01.000+00:00",
+          "end": "2026-11-10T14:36:56.000+00:00",
+          "actor": "A008",
+          "turn": "T018",
+          "source": "Codex native turn",
+          "reason": "Epic delivery handoff",
+          "milliseconds": 55000
+        },
+        {
+          "start": "2026-11-10T15:29:57.000+00:00",
+          "end": "2026-11-10T15:30:20.690+00:00",
+          "actor": "A008",
+          "turn": "T019",
+          "source": "Codex native turn",
+          "reason": "Epic checkpoint after interruption",
+          "milliseconds": 23690
+        },
+        {
+          "start": "2026-11-10T16:12:25.000+00:00",
+          "end": "2026-11-10T16:14:37.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Owner-requested epic board metadata reconciliation",
+          "milliseconds": 132000
+        },
+        {
+          "start": "2026-11-10T17:40:06.000+00:00",
+          "end": "2026-11-10T17:40:17.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Epic board readback",
+          "milliseconds": 11000
+        },
+        {
+          "start": "2026-11-10T18:44:23.000+00:00",
+          "end": "2026-11-10T18:44:25.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Epic board update",
+          "milliseconds": 2000
+        }
+      ]
+    },
+    "111": {
+      "milliseconds": 2186725,
+      "hours": "0.6074",
+      "duration": "0:36:27",
+      "direct": {
+        "milliseconds": 2186725,
+        "hours": "0.6074",
+        "duration": "0:36:27"
+      },
+      "counted_children": [],
+      "source_intervals": 4,
+      "coverage": "Partial",
+      "develop_to_review_pass_observed": {
+        "milliseconds": 1711429,
+        "hours": "0.4754",
+        "duration": "0:28:31"
+      },
+      "develop_to_done_wall": {
+        "milliseconds": 774000,
+        "hours": "0.2150",
+        "duration": "0:12:54"
+      },
+      "implementer_turn": {
+        "milliseconds": 743958,
+        "hours": "0.2067",
+        "duration": "0:12:24"
+      },
+      "board_readback": {
+        "actual_agent_hours": 0.6074,
+        "actual_coverage": "Partial reconstruction. Observed pickup through closure across coordinator, implementer, and reviewer. Develop-to-review-pass subtotal 0.4754 h.",
+        "cost": null,
+        "status": "Done"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T14:12:33.000+00:00",
+          "end": "2026-11-10T14:28:53.091+00:00",
+          "actor": "A007",
+          "turn": "T017",
+          "source": "Codex native turn",
+          "reason": "Coordinator pickup through verified closure",
+          "milliseconds": 980091
+        },
+        {
+          "start": "2026-11-10T14:13:50.000+00:00",
+          "end": "2026-11-10T14:15:00.247+00:00",
+          "actor": "A009",
+          "turn": "T021",
+          "source": "Codex native turn",
+          "reason": "Independent pickup and exact source review",
+          "milliseconds": 70247
+        },
+        {
+          "start": "2026-11-10T14:15:56.000+00:00",
+          "end": "2026-11-10T14:28:19.958+00:00",
+          "actor": "A010",
+          "turn": "T022",
+          "source": "Codex native turn",
+          "reason": "Dedicated implementer",
+          "milliseconds": 743958
+        },
+        {
+          "start": "2026-11-10T14:20:00.000+00:00",
+          "end": "2026-11-10T14:26:32.429+00:00",
+          "actor": "A009",
+          "turn": "T023",
+          "source": "Codex native turn",
+          "reason": "Independent pickup and exact source review",
+          "milliseconds": 392429
+        }
+      ]
+    },
+    "112": {
+      "milliseconds": 1438647,
+      "hours": "0.3996",
+      "duration": "0:23:59",
+      "direct": {
+        "milliseconds": 1438647,
+        "hours": "0.3996",
+        "duration": "0:23:59"
+      },
+      "counted_children": [],
+      "source_intervals": 3,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 0.3996,
+        "actual_coverage": "Partial reconstruction. Observed pickup through closure, including independent reviews.",
+        "cost": null,
+        "status": "Done"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T14:36:56.000+00:00",
+          "end": "2026-11-10T14:56:50.000+00:00",
+          "actor": "A008",
+          "turn": "T018",
+          "source": "Codex native turn",
+          "reason": "Coordinator pickup through closure",
+          "milliseconds": 1194000
+        },
+        {
+          "start": "2026-11-10T14:38:45.707+00:00",
+          "end": "2026-11-10T14:39:49.647+00:00",
+          "actor": "A011",
+          "turn": "T024",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review.json",
+          "milliseconds": 63940
+        },
+        {
+          "start": "2026-11-10T14:51:43.540+00:00",
+          "end": "2026-11-10T14:54:44.247+00:00",
+          "actor": "A012",
+          "turn": "T025",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review.json",
+          "milliseconds": 180707
+        }
+      ]
+    },
+    "113": {
+      "milliseconds": 1764329,
+      "hours": "0.4901",
+      "duration": "0:29:24",
+      "direct": {
+        "milliseconds": 1764329,
+        "hours": "0.4901",
+        "duration": "0:29:24"
+      },
+      "counted_children": [],
+      "source_intervals": 4,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 0.4901,
+        "actual_coverage": "Partial reconstruction. Observed pickup through closure, including independent reviews.",
+        "cost": null,
+        "status": "Done"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T14:56:50.000+00:00",
+          "end": "2026-11-10T15:22:01.000+00:00",
+          "actor": "A008",
+          "turn": "T018",
+          "source": "Codex native turn",
+          "reason": "Coordinator pickup through closure",
+          "milliseconds": 1511000
+        },
+        {
+          "start": "2026-11-10T14:59:00.794+00:00",
+          "end": "2026-11-10T15:00:32.368+00:00",
+          "actor": "A013",
+          "turn": "T026",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r1.json",
+          "milliseconds": 91574
+        },
+        {
+          "start": "2026-11-10T15:01:05.724+00:00",
+          "end": "2026-11-10T15:01:45.737+00:00",
+          "actor": "A014",
+          "turn": "T027",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r2.json",
+          "milliseconds": 40013
+        },
+        {
+          "start": "2026-11-10T15:17:31.440+00:00",
+          "end": "2026-11-10T15:19:33.182+00:00",
+          "actor": "A015",
+          "turn": "T028",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review.json",
+          "milliseconds": 121742
+        }
+      ]
+    },
+    "114": {
+      "milliseconds": 4148528,
+      "hours": "1.1524",
+      "duration": "1:09:09",
+      "direct": {
+        "milliseconds": 4148528,
+        "hours": "1.1524",
+        "duration": "1:09:09"
+      },
+      "counted_children": [],
+      "source_intervals": 8,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 1.1524,
+        "actual_coverage": "Partial reconstruction. Observed pickup, rework, and closure. Interrupted reviewer invocation has no verified duration.",
+        "cost": null,
+        "status": "Done"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T15:22:01.000+00:00",
+          "end": "2026-11-10T15:29:30.368+00:00",
+          "actor": "A008",
+          "turn": "T018",
+          "source": "Codex native turn",
+          "reason": "Coordinator first pickup",
+          "milliseconds": 449368
+        },
+        {
+          "start": "2026-11-10T15:25:03.003+00:00",
+          "end": "2026-11-10T15:26:37.448+00:00",
+          "actor": "A016",
+          "turn": "T029",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r1.json",
+          "milliseconds": 94445
+        },
+        {
+          "start": "2026-11-10T15:27:52.261+00:00",
+          "end": "2026-11-10T15:28:56.309+00:00",
+          "actor": "A017",
+          "turn": "T030",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r2.json",
+          "milliseconds": 64048
+        },
+        {
+          "start": "2026-11-10T15:36:03.000+00:00",
+          "end": "2026-11-10T16:12:25.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator resumed pickup, implementation and rework",
+          "milliseconds": 2182000
+        },
+        {
+          "start": "2026-11-10T15:36:27.843+00:00",
+          "end": "2026-11-10T15:36:59.230+00:00",
+          "actor": "A018",
+          "turn": "T031",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r3-retry.json",
+          "milliseconds": 31387
+        },
+        {
+          "start": "2026-11-10T16:03:29.411+00:00",
+          "end": "2026-11-10T16:08:37.159+00:00",
+          "actor": "A019",
+          "turn": "T032",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review.json",
+          "milliseconds": 307748
+        },
+        {
+          "start": "2026-11-10T16:14:37.000+00:00",
+          "end": "2026-11-10T16:29:35.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator exact rework validation and closure",
+          "milliseconds": 898000
+        },
+        {
+          "start": "2026-11-10T16:24:29.822+00:00",
+          "end": "2026-11-10T16:26:31.354+00:00",
+          "actor": "A020",
+          "turn": "T033",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review-r2.json",
+          "milliseconds": 121532
+        }
+      ]
+    },
+    "115": {
+      "milliseconds": 4980097,
+      "hours": "1.3834",
+      "duration": "1:23:00",
+      "direct": {
+        "milliseconds": 4980097,
+        "hours": "1.3834",
+        "duration": "1:23:00"
+      },
+      "counted_children": [],
+      "source_intervals": 12,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 1.3834,
+        "actual_coverage": "Partial reconstruction. Observed pickup through closure. Some coordinator intervals shared with #116 could not be assigned.",
+        "cost": null,
+        "status": "Done"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T16:29:35.000+00:00",
+          "end": "2026-11-10T17:03:44.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator pickup through first hosted hold",
+          "milliseconds": 2049000
+        },
+        {
+          "start": "2026-11-10T16:34:54.395+00:00",
+          "end": "2026-11-10T16:37:32.430+00:00",
+          "actor": "A021",
+          "turn": "T034",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r1.json",
+          "milliseconds": 158035
+        },
+        {
+          "start": "2026-11-10T16:38:30.566+00:00",
+          "end": "2026-11-10T16:39:19.317+00:00",
+          "actor": "A022",
+          "turn": "T035",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r2.json",
+          "milliseconds": 48751
+        },
+        {
+          "start": "2026-11-10T16:41:57.000+00:00",
+          "end": "2026-11-10T16:47:27.609+00:00",
+          "actor": "A023",
+          "turn": "T036",
+          "source": "Codex native turn",
+          "reason": "Grok pricing implementer",
+          "milliseconds": 330609
+        },
+        {
+          "start": "2026-11-10T16:51:10.000+00:00",
+          "end": "2026-11-10T16:54:40.309+00:00",
+          "actor": "A024",
+          "turn": "T037",
+          "source": "Codex native turn",
+          "reason": "Grok source preflight",
+          "milliseconds": 210309
+        },
+        {
+          "start": "2026-11-10T17:21:04.000+00:00",
+          "end": "2026-11-10T17:24:41.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator retry evidence and reopen",
+          "milliseconds": 217000
+        },
+        {
+          "start": "2026-11-10T17:37:13.000+00:00",
+          "end": "2026-11-10T17:40:06.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator Grok attestation and replacement",
+          "milliseconds": 173000
+        },
+        {
+          "start": "2026-11-10T17:40:17.000+00:00",
+          "end": "2026-11-10T17:46:19.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator Grok evidence and review handoff",
+          "milliseconds": 362000
+        },
+        {
+          "start": "2026-11-10T17:44:38.712+00:00",
+          "end": "2026-11-10T17:48:56.967+00:00",
+          "actor": "A025",
+          "turn": "T038",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review-custody.json",
+          "milliseconds": 258255
+        },
+        {
+          "start": "2026-11-10T17:49:28.000+00:00",
+          "end": "2026-11-10T18:07:45.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator Grok repair and closure",
+          "milliseconds": 1097000
+        },
+        {
+          "start": "2026-11-10T18:04:20.615+00:00",
+          "end": "2026-11-10T18:05:12.868+00:00",
+          "actor": "A026",
+          "turn": "T039",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review-rework.json",
+          "milliseconds": 52253
+        },
+        {
+          "start": "2026-11-10T18:06:36.000+00:00",
+          "end": "2026-11-10T18:06:59.885+00:00",
+          "actor": "A023",
+          "turn": "T040",
+          "source": "Codex native turn",
+          "reason": "Grok pricing implementer",
+          "milliseconds": 23885
+        }
+      ]
+    },
+    "116": {
+      "milliseconds": 11254189,
+      "hours": "3.1262",
+      "duration": "3:07:34",
+      "direct": {
+        "milliseconds": 11254189,
+        "hours": "3.1262",
+        "duration": "3:07:34"
+      },
+      "counted_children": [],
+      "source_intervals": 25,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 3.1262,
+        "actual_coverage": "Partial reconstruction through 2026-11-10 13:35 CST. Includes work in progress and observed reviews. Some interleaved intervals remain unassigned.",
+        "cost": null,
+        "status": "Test"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T17:03:48.000+00:00",
+          "end": "2026-11-10T17:12:01.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry pickup",
+          "milliseconds": 493000
+        },
+        {
+          "start": "2026-11-10T17:05:55.177+00:00",
+          "end": "2026-11-10T17:07:27.014+00:00",
+          "actor": "A027",
+          "turn": "T041",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r1.json",
+          "milliseconds": 91837
+        },
+        {
+          "start": "2026-11-10T17:08:32.866+00:00",
+          "end": "2026-11-10T17:10:04.249+00:00",
+          "actor": "A028",
+          "turn": "T042",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r2.json",
+          "milliseconds": 91383
+        },
+        {
+          "start": "2026-11-10T17:11:07.651+00:00",
+          "end": "2026-11-10T17:11:48.551+00:00",
+          "actor": "A029",
+          "turn": "T043",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "jit-review-r3.json",
+          "milliseconds": 40900
+        },
+        {
+          "start": "2026-11-10T17:12:38.000+00:00",
+          "end": "2026-11-10T17:21:04.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry work before Grok retry",
+          "milliseconds": 506000
+        },
+        {
+          "start": "2026-11-10T17:13:20.000+00:00",
+          "end": "2026-11-10T17:23:51.912+00:00",
+          "actor": "A030",
+          "turn": "T044",
+          "source": "Codex native turn",
+          "reason": "Registry inbox implementer",
+          "milliseconds": 631912
+        },
+        {
+          "start": "2026-11-10T17:13:29.000+00:00",
+          "end": "2026-11-10T17:21:32.825+00:00",
+          "actor": "A031",
+          "turn": "T045",
+          "source": "Codex native turn",
+          "reason": "Legacy adoption implementer",
+          "milliseconds": 483825
+        },
+        {
+          "start": "2026-11-10T17:24:48.000+00:00",
+          "end": "2026-11-10T17:27:20.464+00:00",
+          "actor": "A032",
+          "turn": "T046",
+          "source": "Codex native turn",
+          "reason": "Registry source preflight",
+          "milliseconds": 152464
+        },
+        {
+          "start": "2026-11-10T17:26:09.000+00:00",
+          "end": "2026-11-10T17:28:41.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry proof changes",
+          "milliseconds": 152000
+        },
+        {
+          "start": "2026-11-10T17:29:26.000+00:00",
+          "end": "2026-11-10T17:31:55.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry validation and publication",
+          "milliseconds": 149000
+        },
+        {
+          "start": "2026-11-10T17:46:19.000+00:00",
+          "end": "2026-11-10T17:49:28.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator additional registry validation",
+          "milliseconds": 189000
+        },
+        {
+          "start": "2026-11-10T18:07:45.000+00:00",
+          "end": "2026-11-10T18:44:23.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry rebase, review and repair",
+          "milliseconds": 2198000
+        },
+        {
+          "start": "2026-11-10T18:15:56.126+00:00",
+          "end": "2026-11-10T18:18:44.461+00:00",
+          "actor": "A033",
+          "turn": "T047",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "source-review.json",
+          "milliseconds": 168335
+        },
+        {
+          "start": "2026-11-10T18:21:55.000+00:00",
+          "end": "2026-11-10T18:27:14.121+00:00",
+          "actor": "A030",
+          "turn": "T048",
+          "source": "Codex native turn",
+          "reason": "Registry inbox implementer",
+          "milliseconds": 319121
+        },
+        {
+          "start": "2026-11-10T18:34:41.392+00:00",
+          "end": "2026-11-10T18:39:01.615+00:00",
+          "actor": "A034",
+          "turn": "T049",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "repair-review.json",
+          "milliseconds": 260223
+        },
+        {
+          "start": "2026-11-10T18:41:37.477+00:00",
+          "end": "2026-11-10T18:45:31.371+00:00",
+          "actor": "A035",
+          "turn": "T050",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "capture-liveness-pickup-review.json",
+          "milliseconds": 233894
+        },
+        {
+          "start": "2026-11-10T18:44:25.000+00:00",
+          "end": "2026-11-10T19:35:05.000+00:00",
+          "actor": "A008",
+          "turn": "T020",
+          "source": "Codex native turn",
+          "reason": "Coordinator registry through the observed Test checkpoint",
+          "milliseconds": 3040000
+        },
+        {
+          "start": "2026-11-10T18:47:06.711+00:00",
+          "end": "2026-11-10T18:51:08.347+00:00",
+          "actor": "A036",
+          "turn": "T051",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "capture-liveness-pickup-r2-review.json",
+          "milliseconds": 241636
+        },
+        {
+          "start": "2026-11-10T18:51:43.185+00:00",
+          "end": "2026-11-10T18:52:49.404+00:00",
+          "actor": "A037",
+          "turn": "T052",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "capture-liveness-pickup-r3-review.json",
+          "milliseconds": 66219
+        },
+        {
+          "start": "2026-11-10T18:53:03.000+00:00",
+          "end": "2026-11-10T19:01:29.020+00:00",
+          "actor": "A031",
+          "turn": "T053",
+          "source": "Codex native turn",
+          "reason": "Legacy adoption implementer",
+          "milliseconds": 506020
+        },
+        {
+          "start": "2026-11-10T18:53:12.000+00:00",
+          "end": "2026-11-10T19:01:39.397+00:00",
+          "actor": "A030",
+          "turn": "T054",
+          "source": "Codex native turn",
+          "reason": "Registry inbox implementer",
+          "milliseconds": 507397
+        },
+        {
+          "start": "2026-11-10T19:02:09.000+00:00",
+          "end": "2026-11-10T19:05:05.960+00:00",
+          "actor": "A032",
+          "turn": "T055",
+          "source": "Codex native turn",
+          "reason": "Registry source preflight",
+          "milliseconds": 176960
+        },
+        {
+          "start": "2026-11-10T19:09:31.000+00:00",
+          "end": "2026-11-10T19:10:02.375+00:00",
+          "actor": "A032",
+          "turn": "T056",
+          "source": "Codex native turn",
+          "reason": "Registry source preflight",
+          "milliseconds": 31375
+        },
+        {
+          "start": "2026-11-10T19:20:42.801+00:00",
+          "end": "2026-11-10T19:26:32.590+00:00",
+          "actor": "A038",
+          "turn": "T057",
+          "source": "Claude result duration; completion anchor from receipt write",
+          "reason": "liveness-review.json",
+          "milliseconds": 349789
+        },
+        {
+          "start": "2026-11-10T19:27:22.000+00:00",
+          "end": "2026-11-10T19:30:15.899+00:00",
+          "actor": "A030",
+          "turn": "T058",
+          "source": "Codex native turn",
+          "reason": "Registry inbox implementer",
+          "milliseconds": 173899
+        }
+      ]
+    },
+    "133": {
+      "milliseconds": 7913712,
+      "hours": "2.1983",
+      "duration": "2:11:54",
+      "direct": {
+        "milliseconds": 6160875,
+        "hours": "1.7114",
+        "duration": "1:42:41"
+      },
+      "counted_children": [
+        138,
+        140
+      ],
+      "source_intervals": 23,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 2.1983,
+        "actual_coverage": "Partial reconstruction through 2026-11-10 13:35 CST. Two child subtotals + 1.7114 h direct epic work. Unattributed intervals excluded.",
+        "cost": null,
+        "status": "Dev"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T14:46:54.000+00:00",
+          "end": "2026-11-10T14:47:04.103+00:00",
+          "actor": "A039",
+          "turn": "T059",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 10103
+        },
+        {
+          "start": "2026-11-10T14:53:20.000+00:00",
+          "end": "2026-11-10T14:55:14.975+00:00",
+          "actor": "A039",
+          "turn": "T060",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 114975
+        },
+        {
+          "start": "2026-11-10T15:13:18.000+00:00",
+          "end": "2026-11-10T15:20:40.886+00:00",
+          "actor": "A039",
+          "turn": "T061",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 442886
+        },
+        {
+          "start": "2026-11-10T15:15:37.000+00:00",
+          "end": "2026-11-10T15:16:02.479+00:00",
+          "actor": "A040",
+          "turn": "T062",
+          "source": "Codex native turn",
+          "reason": "Epic draft review",
+          "milliseconds": 25479
+        },
+        {
+          "start": "2026-11-10T15:18:07.000+00:00",
+          "end": "2026-11-10T15:18:30.002+00:00",
+          "actor": "A040",
+          "turn": "T063",
+          "source": "Codex native turn",
+          "reason": "Epic draft review",
+          "milliseconds": 23002
+        },
+        {
+          "start": "2026-11-10T15:19:32.000+00:00",
+          "end": "2026-11-10T15:19:46.622+00:00",
+          "actor": "A040",
+          "turn": "T064",
+          "source": "Codex native turn",
+          "reason": "Epic draft review",
+          "milliseconds": 14622
+        },
+        {
+          "start": "2026-11-10T15:31:28.000+00:00",
+          "end": "2026-11-10T15:38:07.905+00:00",
+          "actor": "A039",
+          "turn": "T065",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 399905
+        },
+        {
+          "start": "2026-11-10T15:35:06.000+00:00",
+          "end": "2026-11-10T15:35:57.031+00:00",
+          "actor": "A041",
+          "turn": "T066",
+          "source": "Codex native turn",
+          "reason": "Epic specification review",
+          "milliseconds": 51031
+        },
+        {
+          "start": "2026-11-10T16:03:35.000+00:00",
+          "end": "2026-11-10T16:21:01.248+00:00",
+          "actor": "A039",
+          "turn": "T067",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 1046248
+        },
+        {
+          "start": "2026-11-10T16:07:19.000+00:00",
+          "end": "2026-11-10T16:09:42.574+00:00",
+          "actor": "A042",
+          "turn": "T068",
+          "source": "Codex native turn",
+          "reason": "Epic specification SPR",
+          "milliseconds": 143574
+        },
+        {
+          "start": "2026-11-10T16:10:57.000+00:00",
+          "end": "2026-11-10T16:11:58.104+00:00",
+          "actor": "A042",
+          "turn": "T069",
+          "source": "Codex native turn",
+          "reason": "Epic specification SPR",
+          "milliseconds": 61104
+        },
+        {
+          "start": "2026-11-10T16:12:56.753+00:00",
+          "end": "2026-11-10T16:15:54.390+00:00",
+          "actor": "A043",
+          "turn": "T070",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic design XPR",
+          "milliseconds": 177637
+        },
+        {
+          "start": "2026-11-10T16:17:26.720+00:00",
+          "end": "2026-11-10T16:18:54.923+00:00",
+          "actor": "A043",
+          "turn": "T071",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic design XPR",
+          "milliseconds": 88203
+        },
+        {
+          "start": "2026-11-10T16:22:08.000+00:00",
+          "end": "2026-11-10T16:57:14.830+00:00",
+          "actor": "A039",
+          "turn": "T072",
+          "source": "Codex native turn",
+          "reason": "Direct epic brainstorm, specification and plan",
+          "milliseconds": 2106830
+        },
+        {
+          "start": "2026-11-10T16:28:43.000+00:00",
+          "end": "2026-11-10T16:32:05.290+00:00",
+          "actor": "A044",
+          "turn": "T073",
+          "source": "Codex native turn",
+          "reason": "Epic plan SPR",
+          "milliseconds": 202290
+        },
+        {
+          "start": "2026-11-10T16:34:38.000+00:00",
+          "end": "2026-11-10T16:36:46.204+00:00",
+          "actor": "A044",
+          "turn": "T074",
+          "source": "Codex native turn",
+          "reason": "Epic plan SPR",
+          "milliseconds": 128204
+        },
+        {
+          "start": "2026-11-10T16:37:42.000+00:00",
+          "end": "2026-11-10T16:38:40.707+00:00",
+          "actor": "A044",
+          "turn": "T075",
+          "source": "Codex native turn",
+          "reason": "Epic plan SPR",
+          "milliseconds": 58707
+        },
+        {
+          "start": "2026-11-10T16:39:24.707+00:00",
+          "end": "2026-11-10T16:42:41.505+00:00",
+          "actor": "A045",
+          "turn": "T076",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic plan XPR",
+          "milliseconds": 196798
+        },
+        {
+          "start": "2026-11-10T16:45:27.952+00:00",
+          "end": "2026-11-10T16:47:20.588+00:00",
+          "actor": "A045",
+          "turn": "T077",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic plan XPR",
+          "milliseconds": 112636
+        },
+        {
+          "start": "2026-11-10T16:48:29.249+00:00",
+          "end": "2026-11-10T16:49:36.354+00:00",
+          "actor": "A045",
+          "turn": "T078",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Epic plan XPR",
+          "milliseconds": 67105
+        },
+        {
+          "start": "2026-11-10T18:36:38.000+00:00",
+          "end": "2026-11-10T18:46:06.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Epic Dev entry and shared leaf orchestration",
+          "milliseconds": 568000
+        },
+        {
+          "start": "2026-11-10T18:47:39.000+00:00",
+          "end": "2026-11-10T18:47:50.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Coordinate leaf XPR",
+          "milliseconds": 11000
+        },
+        {
+          "start": "2026-11-10T19:00:44.000+00:00",
+          "end": "2026-11-10T19:02:34.536+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Shared leaf publication and board reconciliation",
+          "milliseconds": 110536
+        }
+      ]
+    },
+    "138": {
+      "milliseconds": 1069742,
+      "hours": "0.2972",
+      "duration": "0:17:50",
+      "direct": {
+        "milliseconds": 1069742,
+        "hours": "0.2972",
+        "duration": "0:17:50"
+      },
+      "counted_children": [],
+      "source_intervals": 5,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 0.2972,
+        "actual_coverage": "Partial reconstruction. Design, refinement, and associated review work to date.",
+        "cost": null,
+        "status": "Ready for Planning"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T18:38:44.000+00:00",
+          "end": "2026-11-10T18:42:59.680+00:00",
+          "actor": "A046",
+          "turn": "T080",
+          "source": "Codex native turn",
+          "reason": "Dedicated #138 author",
+          "milliseconds": 255680
+        },
+        {
+          "start": "2026-11-10T18:44:26.000+00:00",
+          "end": "2026-11-10T18:45:55.114+00:00",
+          "actor": "A047",
+          "turn": "T081",
+          "source": "Codex native turn",
+          "reason": "Independent #138 review",
+          "milliseconds": 89114
+        },
+        {
+          "start": "2026-11-10T18:47:50.000+00:00",
+          "end": "2026-11-10T18:55:35.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Coordinator baseline XPR and reproduction",
+          "milliseconds": 465000
+        },
+        {
+          "start": "2026-11-10T18:48:00.581+00:00",
+          "end": "2026-11-10T18:51:09.676+00:00",
+          "actor": "A048",
+          "turn": "T082",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Baseline leaf XPR",
+          "milliseconds": 189095
+        },
+        {
+          "start": "2026-11-10T18:55:17.176+00:00",
+          "end": "2026-11-10T18:56:28.029+00:00",
+          "actor": "A048",
+          "turn": "T083",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Baseline leaf XPR",
+          "milliseconds": 70853
+        }
+      ]
+    },
+    "140": {
+      "milliseconds": 683095,
+      "hours": "0.1897",
+      "duration": "0:11:23",
+      "direct": {
+        "milliseconds": 683095,
+        "hours": "0.1897",
+        "duration": "0:11:23"
+      },
+      "counted_children": [],
+      "source_intervals": 8,
+      "coverage": "Partial",
+      "board_readback": {
+        "actual_agent_hours": 0.1897,
+        "actual_coverage": "Partial reconstruction. Design, refinement, and associated review work to date.",
+        "cost": null,
+        "status": "Ready for Planning"
+      },
+      "direct_intervals": [
+        {
+          "start": "2026-11-10T18:38:51.000+00:00",
+          "end": "2026-11-10T18:41:19.033+00:00",
+          "actor": "A047",
+          "turn": "T084",
+          "source": "Codex native turn",
+          "reason": "Dedicated #140 author",
+          "milliseconds": 148033
+        },
+        {
+          "start": "2026-11-10T18:44:35.000+00:00",
+          "end": "2026-11-10T18:46:06.556+00:00",
+          "actor": "A046",
+          "turn": "T085",
+          "source": "Codex native turn",
+          "reason": "Independent #140 review and re-review",
+          "milliseconds": 91556
+        },
+        {
+          "start": "2026-11-10T18:46:06.000+00:00",
+          "end": "2026-11-10T18:47:39.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Coordinator revision of Git replacement refs",
+          "milliseconds": 93000
+        },
+        {
+          "start": "2026-11-10T18:46:41.000+00:00",
+          "end": "2026-11-10T18:47:29.212+00:00",
+          "actor": "A046",
+          "turn": "T086",
+          "source": "Codex native turn",
+          "reason": "Independent #140 review and re-review",
+          "milliseconds": 48212
+        },
+        {
+          "start": "2026-11-10T18:55:44.589+00:00",
+          "end": "2026-11-10T18:58:15.126+00:00",
+          "actor": "A049",
+          "turn": "T087",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Git resolver leaf XPR",
+          "milliseconds": 150537
+        },
+        {
+          "start": "2026-11-10T18:58:21.000+00:00",
+          "end": "2026-11-10T18:59:47.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Coordinator Git configuration reproduction and review",
+          "milliseconds": 86000
+        },
+        {
+          "start": "2026-11-10T18:59:38.543+00:00",
+          "end": "2026-11-10T19:00:28.300+00:00",
+          "actor": "A049",
+          "turn": "T088",
+          "source": "Claude SDK prompt to terminal response",
+          "reason": "Git resolver leaf XPR",
+          "milliseconds": 49757
+        },
+        {
+          "start": "2026-11-10T19:00:28.000+00:00",
+          "end": "2026-11-10T19:00:44.000+00:00",
+          "actor": "A039",
+          "turn": "T079",
+          "source": "Codex native turn",
+          "reason": "Coordinator final leaf XPR check",
+          "milliseconds": 16000
+        }
+      ]
+    }
+  }
+}
