@@ -363,7 +363,11 @@ class PlanningFixture(unittest.TestCase):
             "evidence": ["attachments/companion.md", path],
             "receipt_sha256": digest(payload),
         }
-        self.append(181, event(181, "core.evidence.recorded", seed))
+        self.append(
+            181,
+            event(181, "core.evidence.recorded", seed),
+            event(181, "core.evidence.recorded", seed, STAMP),
+        )
         self.append(186, event(186, "core.evidence.recorded", seed))
         valid = self.commit()
         self.append(

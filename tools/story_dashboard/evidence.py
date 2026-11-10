@@ -863,7 +863,7 @@ def _graph(stories, own_parents, child_claims, gaps):
 
 def _registered(git, blobs, events, as_of, gaps):
     claims = defaultdict(list)
-    legacy = []
+    legacy_claims = {}
     for row in events:
         if row.kind != "core.evidence.recorded":
             continue
@@ -871,7 +871,9 @@ def _registered(git, blobs, events, as_of, gaps):
         if kind == "historical-actual-backfill":
             paths = row.data.get("evidence")
             if row.story == 181:
-                legacy.append(row)
+                # An exact retry repeats the original seed registration.
+                key = json.dumps(row.data, sort_keys=True, separators=(",", ":"))
+                legacy_claims.setdefault(key, row)
             if (
                 row.story != 181
                 or not isinstance(paths, list)
@@ -912,6 +914,7 @@ def _registered(git, blobs, events, as_of, gaps):
         except (ValueError, RecursionError):
             gaps.append(Gap(story, "invalid-receipt", full_path))
 
+    legacy = list(legacy_claims.values())
     legacy_seed = None
     path = _root(181) + LEGACY_PATH
     if len(legacy) > 1:
