@@ -1,7 +1,7 @@
 {
-  "archive_digest": "sha256:79c8f9dbe4744aaa1273ef11e02b7286075a8ad5006f8dcf8d746a6062a67487",
-  "artifact_id": 13810165353,
-  "base": "49865245d175ce6c52913738f2c9a42c0abea632",
+  "archive_digest": "sha256:b52c3b1fc6431486791e4ffff4952622c405c75842c99a101d2caae9f0fc3e53",
+  "artifact_id": 13810458722,
+  "base": "c4ea6b0d6c548830a3ad05d0bb76ec48625d1ca2",
   "controls": {
     "gate": "2a92c066422387de839560f9bdde8609c606bd12",
     "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
@@ -16,31 +16,31 @@
       "num_statements": 821
     },
     "product": {
-      "covered_lines": 9638,
-      "num_statements": 10538
+      "covered_lines": 9649,
+      "num_statements": 10549
     }
   },
-  "head": "0814a81bc93a829c8130a2a9152120b29907deeb",
+  "head": "8475b124f921bd0742d04b228c0a44824369b441",
   "jobs": {
-    "aitm-ci": 130177309941,
-    "collect-evidence": 130177225076,
-    "file-checks": 130174377843,
-    "python": 130174377906,
-    "python-base": 130174377308,
-    "quality": 130174377849
+    "aitm-ci": 130189281260,
+    "collect-evidence": 130189196526,
+    "file-checks": 130186952004,
+    "python": 130186951848,
+    "python-base": 130186951526,
+    "quality": 130186951876
   },
   "pr": 196,
   "repository": "kburson/aitm",
   "repository_id": 1450406435,
   "reviewed_tree": null,
-  "run": "https://github.com/kburson/aitm/actions/runs/42914804492/attempts/1",
+  "run": "https://github.com/kburson/aitm/actions/runs/42918480605/attempts/1",
   "run_attempt": 1,
-  "run_id": 42914804492,
+  "run_id": 42918480605,
   "status": "pass",
-  "subject_digest": "e0146dfc1c61110627a9fa1ebcffaf8201c11694ae74eb44121a2b4fb4ff0850",
+  "subject_digest": "7e01a61d7af76da032ba268773bc1760445f390ad029308d37793e3690f220fc",
   "target": "trunk",
-  "tested": "9531b8d713502b3eda259f38fe55043bf1288b29",
-  "tree": "23856755bd01534855842ecee675964c1eece94c",
-  "verified_at": "2026-11-10T22:34:08.325290+00:00",
+  "tested": "637c061712a0e17653d22653604eb68c5452c308",
+  "tree": "6107d353b1b5d40b1f5e050acbef53f57cae6e3b",
+  "verified_at": "2026-11-10T22:57:45.825451+00:00",
   "workflow_id": 412848571
 }
