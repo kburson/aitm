@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 113
 title: "[M03] Versioned project persistence"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/113"
 parent: 100
 children: []
 blocking: [114]
 blocked-by: [112]
 created: "2026-11-10T13:57:51Z"
-updated: "2026-11-10T15:12:31+00:00"
+updated: "2026-11-10T15:17:16+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
