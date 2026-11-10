@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/001/100/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/report.md"]}
 expansions: []
 trips: []
 ---
@@ -29,3 +29,7 @@ Research prerequisite for [#100](../100/story.md). The retained deliverable is a
 Inspect the available Codex CLI, Claude Code and Grok Build CLI Linux surfaces and probe Linux filesystem, file watching, locking, atomic publication and user-service requirements. Label container evidence and full user-service qualification separately.
 
 The two spikes can run concurrently. The report is the deliverable and any probe code is disposable.
+
+## Research result
+
+[Published report](attachments/report.md). The tested Linux binaries exposed native usage or lifecycle interfaces. The report demonstrates Linux kernel primitives and records the remaining authenticated-provider and systemd release qualification gates.
