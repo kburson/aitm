@@ -7,3 +7,5 @@ The local suite passed 531 product and 182 helper tests with 6,285/6,910 and 778
 The first ordinary PR attempt retains only the existing root README heading finding. GitHub's file lane reproduced MD022 and reported TypeScript not applicable. [Native failure probe](https://github.com/kburson/aitm/actions/runs/42828814252)
 
 The native probe passed Python, Python base and quality. The file lane failed on the existing Markdown heading. The collector refused that failure and the signer skipped. The exact source returns to Develop for the one-line correction. [Completed negative attempt](https://github.com/kburson/aitm/actions/runs/42828814252/attempts/1)
+
+The delivered verifier held the negative attempt. The sole corrected source change adds the missing blank line in the root README. The pinned local file check is green, and the exact head `d71ca22ba6895eb4d520c5d7b76b37ed7bffbd7d` and tree `549de417f614d7ef9f91fa6020bc1c732847bdd4` passed the [scoped source review](corrected-source-review.md). [Fresh hosted run](https://github.com/kburson/aitm/actions/runs/42829600040)
