@@ -56,3 +56,11 @@ Local verification passed 242 focused tests, 593 locked product and CLI tests an
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42852838878/job/129961864563) | Success |
 
 [Independent exact replacement source re-review](post-ci-source-review.md) passed. The earlier hold remains in [attempt 1](source-review-attempt-1.md).
+
+### Delivery and sign-off
+
+The delivered verifier passed at `2026-11-10T16:27:23.002869+00:00` for the exact reviewed tree and all six jobs. It authenticated artifact `13781602895`, archive SHA-256 `sha256:47ed127f2922d3cf3b3a29e675b2f9b031933abed1804d1f1c458853e16eaee4` and subject SHA-256 `7d224fcd3ca780a086a2bc46a0ed86e6c08faa0795e7c48aff1508da3f8c25f3`. The effective branch rule required zero native approvals. The independent off-platform verdict is recorded above.
+
+[PR #136](https://github.com/kburson/aitm/pull/136) merged by merge commit into trunk at `9b12927da1a368f254537277f7fdc7139f90cc44` at `2026-11-10T16:28:25Z`. The fetched target had the exact reviewed tree `5ca29c2890eefadd8fc8000aff442144335c4cae` and ordered parents `dc037364ba617b97244c93670d12358d0b5cbba7` and `805c9e16da0b112cdb8e15543e9c2408c1041978`. Head ancestry and zero source diff were verified.
+
+The last required gate was [implementing-agent sign-off](../retro/2026-11-10-provider-adapters.md) at `2026-11-10T16:28:56Z`.
