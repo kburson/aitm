@@ -7,7 +7,14 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
-from ..monitor_types import NativeSurface, ObservationTimeBasis
+from ..monitor_types import (
+    GrokBoundary,
+    GrokCheckpoint,
+    GrokDiagnostic,
+    GrokObservation,
+    NativeSurface,
+    ObservationTimeBasis,
+)
 from ..types import (
     Diagnostic,
     DiagnosticCode,
@@ -20,7 +27,7 @@ from ..types import (
 )
 from .claude import ClaudeState, read_claude, retains_streamed_prefix
 from .codex import CodexState, read_codex
-from .scan import CandidateSource, SourceEvidence, _discover_sources, scan
+from .scan import CandidateSource, SourceEvidence, _discover_sources, _Snapshot, scan
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,10 +51,36 @@ class SourceRoot:
 
 
 @dataclass(frozen=True, slots=True)
+class GrokOrigin:
+    """Transient writer and lineage proof supplied by the approved source context."""
+
+    session_id: str = field(repr=False)
+    system: str
+    architecture: str
+    version: str
+    build: str
+    executable_digest: str
+    format_version: int
+    lineage_id: str | None = field(repr=False)
+    incarnation: SourceRef
+    checkout: SourceRef | None = None
+    inherited_prompt_ids: frozenset[str] = field(default=frozenset(), repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokSource:
+    path: Path = field(repr=False)
+    origin: GrokOrigin | None = field(repr=False)
+    root: SourceRoot = field(repr=False)
+    snapshot: _Snapshot = field(repr=False)
+    stream_ref: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
 class SourceLocator:
     """Transient scanner handle. Persist its keyed stream reference instead."""
 
-    _source: CandidateSource = field(repr=False)
+    _source: CandidateSource | _GrokSource = field(repr=False)
 
     @property
     def stream_ref(self) -> SourceRef:
@@ -58,14 +91,14 @@ class SourceLocator:
 class StreamCursor:
     """Persist the entire checkpoint with the accepted frontier in one write."""
 
-    checkpoint: SourceCheckpoint
+    checkpoint: SourceCheckpoint | GrokCheckpoint
 
 
 @dataclass(frozen=True, slots=True)
 class NativeObservation:
     key: SourceRef
     revision: int
-    usage: UsageObservation
+    usage: UsageObservation | GrokObservation
     native_surface: NativeSurface
     time_basis: ObservationTimeBasis
     project_context: SourceRef | None
@@ -75,7 +108,7 @@ class NativeObservation:
 class NativeBoundary:
     """Linked native evidence. Match repeats by boundary identity on replay."""
 
-    boundary: SourceBoundary
+    boundary: SourceBoundary | GrokBoundary
     project_context: SourceRef | None
 
 
@@ -85,7 +118,7 @@ class AdapterBatch:
 
     observations: tuple[NativeObservation, ...] = ()
     boundaries: tuple[NativeBoundary, ...] = ()
-    diagnostics: tuple[Diagnostic, ...] = ()
+    diagnostics: tuple[Diagnostic | GrokDiagnostic, ...] = ()
     cursor: StreamCursor | None = None
 
 
@@ -100,6 +133,11 @@ class ProviderAdapter:
         self, locator: SourceLocator, cursor: StreamCursor | None
     ) -> AdapterBatch:
         source = locator._source
+        if not isinstance(source, CandidateSource):
+            return AdapterBatch()
+        checkpoint = cursor.checkpoint if cursor is not None else None
+        if checkpoint is not None and not isinstance(checkpoint, SourceCheckpoint):
+            return AdapterBatch()
         surface = source._native_surface
         cutoff = source._registration.cutoff
         if surface is None or (platform.system(), platform.machine()) != (
@@ -117,7 +155,7 @@ class ProviderAdapter:
                 )
             )
 
-        frames = scan(source, cursor.checkpoint if cursor is not None else None, cutoff)
+        frames = scan(source, checkpoint, cutoff)
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
         if source.provider is Provider.CODEX:

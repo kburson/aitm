@@ -1,5 +1,6 @@
-"""Standard public API-equivalent pricing for exact normalized requests."""
+"""Standard public API-equivalent pricing for normalized usage."""
 
+import re
 from dataclasses import dataclass
 from decimal import Context, Decimal, localcontext
 from enum import StrEnum
@@ -7,6 +8,7 @@ from functools import lru_cache
 from hashlib import sha256
 from importlib.resources import files
 
+from .monitor_types import GrokObservation, MonitorModel, MonitorProvider
 from .types import (
     Availability,
     BoundaryKind,
@@ -24,12 +26,15 @@ from .types import (
 )
 
 _DEFAULT_VERSION = "2026-11-09"
+_MONITOR_DEFAULT_VERSION = "2026-11-10"
+_GROK_STANDARD_INPUT_LIMIT = 200_000
 
 
 class _RateSource(StrEnum):
     ASTRA = "https://developers.openai.com/api/docs/models/gpt-6-astra#pricing"
     SOL = "https://developers.openai.com/api/docs/models/gpt-6.1-sol#pricing"
     OPUS = "https://platform.claude.com/docs/en/models/opus-5-5/overview#pricing"
+    GROK = "https://docs.x.ai/developers/models/grok-4.7.md"
 
 
 _MODELS = {
@@ -199,5 +204,126 @@ def _amount(usage: UsageObservation, rates: RateCard) -> Decimal | None:
 def price(usage: UsageObservation, rates: RateCard) -> PriceResult:
     """Return a public API comparison, or explicit Unknown for insufficient evidence."""
     usd = _amount(usage, rates)
+    availability = Availability.UNKNOWN if usd is None else Availability.COMPLETE
+    return PriceResult(rates.basis, availability, usd)
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokRate:
+    model: MonitorModel
+    provider: MonitorProvider
+    source: _RateSource
+    source_retrieved: str
+    source_sha256: str
+    input_threshold: int
+    uncached_input: Decimal | None
+    cache_read: Decimal | None
+    cache_creation: None
+    output: Decimal | None
+
+    def __post_init__(self) -> None:
+        if (
+            self.model is not MonitorModel.GROK_4_7
+            or self.provider is not MonitorProvider.GROK
+            or self.source is not _RateSource.GROK
+        ):
+            raise ValueError("Rate source does not match its model and provider")
+        _rate_version(self.source_retrieved)
+        if type(self.source_sha256) is not str or not re.fullmatch(
+            r"[a-f0-9]{64}", self.source_sha256
+        ):
+            raise ValueError("Expected the raw rate source SHA-256")
+        _positive(self.input_threshold)
+        if self.input_threshold > _GROK_STANDARD_INPUT_LIMIT:
+            raise ValueError("Grok input threshold exceeds the proven standard rate")
+        if self.cache_creation is not None:
+            raise ValueError("Grok cache creation has no proven public rate")
+        for rate in (self.uncached_input, self.cache_read, self.output):
+            if rate is not None:
+                _validate_rate(rate, 6)
+
+
+@dataclass(frozen=True, slots=True)
+class MonitorRateCard:
+    """Versioned monitor rates with source and pricing envelope provenance."""
+
+    version: str
+    currency: Currency
+    tier: ProcessingTier
+    entries: tuple[_GrokRate, ...]
+
+    def __post_init__(self) -> None:
+        _rate_version(self.version)
+        if (
+            self.currency is not Currency.USD
+            or self.tier is not ProcessingTier.STANDARD
+        ):
+            raise ValueError("Only Standard USD rate cards are supported")
+        _encode(self, MonitorRateCard)
+        if len({row.model for row in self.entries}) != len(self.entries):
+            raise ValueError("Expected distinct monitor model rates")
+
+    @classmethod
+    def from_json(cls, data: str | bytes) -> "MonitorRateCard":
+        return _decode(data, cls)
+
+    @property
+    @lru_cache(maxsize=8)
+    def basis(self) -> RateBasis:
+        digest = sha256(_encode(self, MonitorRateCard).encode("utf-8")).hexdigest()
+        return RateBasis(self.version, digest, self.currency)
+
+
+def load_monitor_rate_card(version: str = _MONITOR_DEFAULT_VERSION) -> MonitorRateCard:
+    """Load a monitor-only card from the installed package."""
+    _rate_version(version)
+    data = files("aitm_usage").joinpath("rates", f"monitor-{version}.json").read_bytes()
+    card = MonitorRateCard.from_json(data)
+    if card.version != version:
+        raise ValueError("Monitor rate card version does not match its resource")
+    return card
+
+
+def _grok_amount(usage: GrokObservation, rates: MonitorRateCard) -> Decimal | None:
+    if usage.coverage is not Availability.COMPLETE:
+        return None
+
+    entry = next(
+        (
+            row
+            for row in rates.entries
+            if row.model is usage.model and row.provider is usage.provider
+        ),
+        None,
+    )
+    if entry is None:
+        return None
+
+    counts = usage.tokens
+    uncached, cached, creation, output = (
+        counts.uncached_input_tokens,
+        counts.cache_read_tokens,
+        counts.cache_creation_tokens,
+        counts.output_tokens,
+    )
+    input_rate, cache_rate, output_rate = (
+        entry.uncached_input,
+        entry.cache_read,
+        entry.output,
+    )
+    if None in (uncached, cached, output, input_rate, cache_rate, output_rate):
+        return None
+    # Creation has no proven rate and known reasoning is already in output.
+    if creation != 0 or uncached + cached >= entry.input_threshold:
+        return None
+
+    with localcontext(Context(prec=64)):
+        amount = uncached * input_rate + cached * cache_rate + output * output_rate
+        return amount.scaleb(-6)
+
+
+def price_grok(usage: GrokObservation, rates: MonitorRateCard) -> PriceResult:
+    """Return a public API estimate for a supported Grok whole turn."""
+    usd = _grok_amount(usage, rates)
     availability = Availability.UNKNOWN if usd is None else Availability.COMPLETE
     return PriceResult(rates.basis, availability, usd)
