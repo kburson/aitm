@@ -30,10 +30,12 @@ from .ledger import (
 )
 from .scopes import _publish, _read_private
 from .sources.adapter import ProviderAdapter, SourceLocator, StreamCursor
-from .sources.scan import CandidateSource
+from .sources.scan import CandidateSource, _probe
 from .types import (
     Eligibility,
     LedgerView,
+    SourceBoundary,
+    SourceCheckpoint,
     SourceRef,
     _decode,
     _encode,
@@ -55,6 +57,10 @@ _REGISTRY_FORMAT = "aitm.usage.monitor-registry/v1"
 
 class ProjectAdopted(LedgerError):
     """Legacy mutation is unavailable for a pinned adopted project."""
+
+
+class BoundaryUnavailable(LedgerError):
+    """The writer must wait for an authenticated native capture frontier."""
 
 
 def default_monitor_root() -> Path:
@@ -175,6 +181,19 @@ class ApprovedSource:
 
 
 @dataclass(frozen=True, slots=True)
+class CaptureFrontier:
+    checkpoint: SourceCheckpoint
+    last_ordinal: int
+
+    def __post_init__(self) -> None:
+        _nonnegative(self.last_ordinal)
+
+    @property
+    def stream_ref(self) -> SourceRef:
+        return self.checkpoint.cursor.source_ref
+
+
+@dataclass(frozen=True, slots=True)
 class CaptureEpoch:
     project_id: UUID
     source_id: UUID
@@ -183,6 +202,8 @@ class CaptureEpoch:
     boundary_ref: SourceRef
     generation: int
     enabled: bool
+    frontier: CaptureFrontier
+    observed: CaptureFrontier
 
     def __post_init__(self) -> None:
         _nonnegative(self.ordinal)
@@ -191,10 +212,20 @@ class CaptureEpoch:
 
 @dataclass(frozen=True, slots=True)
 class VerifiedBoundary:
-    source_id: UUID
+    change: CaptureChange
     stream_ref: SourceRef
     ordinal: int
     boundary_ref: SourceRef
+    frontier: CaptureFrontier
+    observed: CaptureFrontier
+
+
+@dataclass(frozen=True, slots=True)
+class _PendingCapture:
+    command_id: UUID
+    digest: str
+    change: CaptureChange
+    frontiers: tuple[CaptureFrontier, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,6 +234,7 @@ class RegistryView:
     sources: tuple[ApprovedSource, ...] = ()
     permissions: tuple[CaptureChange, ...] = ()
     epochs: tuple[CaptureEpoch, ...] = ()
+    pending_capture: tuple[_PendingCapture, ...] = ()
     receipts: tuple[ControlReceipt, ...] = ()
     source_key_id: str | None = None
     format: str = _REGISTRY_FORMAT
@@ -252,11 +284,15 @@ class _ServiceEvidence:
             raise LedgerError("Unverified monitor source reference")
 
 
-class _AwaitBoundary(Exception):
-    pass
+class _CaptureArmed(Exception):
+    def __init__(self, view: RegistryView):
+        self.view = view
 
 
-type _BoundaryVerifier = Callable[[CaptureChange], Iterable[VerifiedBoundary]]
+type _LocateStreams = Callable[
+    [CaptureChange, frozenset[SourceRef]], Iterable[SourceLocator]
+]
+type _CaptureKey = tuple[UUID, UUID, SourceRef]
 
 
 def _identity(path: Path) -> tuple[int, int]:
@@ -276,6 +312,17 @@ def _directory(raw: str, *, private: bool = False) -> _PhysicalDirectory:
     if private:
         validate_private_path(path, directory=True)
     return _PhysicalDirectory(str(path), _identity(path))
+
+
+def _check_capture_root(directory: _PhysicalDirectory) -> None:
+    try:
+        current = _directory(directory.path)
+    except OSError:
+        raise BoundaryUnavailable(
+            "Approved source is temporarily unavailable"
+        ) from None
+    if current != directory:
+        raise ConflictError("Approved source installation identity changed")
 
 
 def _pinned(directory: _PhysicalDirectory) -> bool:
@@ -327,6 +374,10 @@ def _edge(row: CaptureChange | CaptureEpoch) -> tuple[UUID, UUID]:
     return row.project_id, row.source_id
 
 
+def _capture_key(change: CaptureChange, stream_ref: SourceRef) -> _CaptureKey:
+    return change.project_id, change.source_id, stream_ref
+
+
 def _permission(view: RegistryView, change: CaptureChange) -> RegistryView:
     if change in view.permissions:
         return view
@@ -376,7 +427,9 @@ class Registry:
     def __init__(self, root: Path, _writer: _PinnedPath | None = None):
         self.root = root.absolute()
         self._writer = _writer
-        self._verified: dict[int, VerifiedBoundary] = {}
+        self._frontiers: dict[_CaptureKey, tuple[CaptureChange, CaptureFrontier]] = {}
+        self._verified: dict[_CaptureKey, VerifiedBoundary] = {}
+        self._completed: dict[_CaptureKey, VerifiedBoundary] = {}
 
     @contextmanager
     def writer(self) -> Iterator["Registry"]:
@@ -414,6 +467,8 @@ class Registry:
             or len({_edge(item) for item in state.permissions})
             != len(state.permissions)
             or len({item.command_id for item in state.receipts}) != len(state.receipts)
+            or len({item.command_id for item in state.pending_capture})
+            != len(state.pending_capture)
             or any(item.status is ControlStatus.QUEUED for item in state.receipts)
         ):
             raise LedgerError("Duplicate private monitor registry identity")
@@ -547,26 +602,27 @@ class Registry:
         self._save(view)
         return approved
 
-    def verify_boundary(
+    def _native_delta(
         self,
-        source_id: UUID,
+        view: RegistryView,
+        change: CaptureChange,
         locator: SourceLocator,
-        boundary_ref: SourceRef,
-        cursor: StreamCursor | None = None,
-    ) -> VerifiedBoundary:
-        """Obtain a typed fence from the exact pinned native reader."""
-        self.lease
-        view = self.view()
-        source = _source(view, source_id)
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source = _source(view, change.source_id)
+        _check_capture_root(source.directory)
         candidate = locator._source
         approval = source.approval
         if (
             type(candidate) is not CandidateSource
-            or not _pinned(source.directory)
             or candidate._registration.path.resolve() != Path(source.directory.path)
             or not candidate._path.is_relative_to(candidate._registration.path)
             or (platform.system(), platform.machine())
             != (approval.platform, approval.architecture)
+            or candidate._native_surface is None
+            or candidate._native_surface.value != approval.surface
         ):
             raise LedgerError("Source is outside the approved installation")
         evidence = candidate._ledger
@@ -578,59 +634,181 @@ class Registry:
         pinned = self.source_evidence()
         if not hmac.compare_digest(pinned.key, evidence.key):
             raise LedgerError("Capture source key changed")
-        evidence.validate_source_ref(boundary_ref)
-        batch = ProviderAdapter().read_delta(locator, cursor)
-        found = {
+        evidence.validate_source_ref(locator.stream_ref)
+        reader = ProviderAdapter()
+        try:
+            matches = [
+                item
+                for item in reader.discover(candidate._registration)
+                if item.stream_ref == locator.stream_ref
+            ]
+            if len(matches) != 1 or matches[0]._source._path != candidate._path:
+                raise BoundaryUnavailable("Expected the unique current native stream")
+            current = matches[0]
+            before = _probe(candidate._path)
+            batch = reader.read_delta(
+                current, None if prior is None else StreamCursor(prior.checkpoint)
+            )
+            after = _probe(candidate._path)
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise LedgerError("Native capture version differs from approved source")
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
             item.usage.boundary
             for item in batch.observations
             if item.native_surface.value == approval.surface
             and item.usage.boundary.provider.value == approval.provider
             and item.usage.client_version.value == approval.client_version
             and item.usage.format_version == approval.format_version
-            and item.usage.boundary.boundary_ref == boundary_ref
-        }
-        if len(found) != 1:
-            raise LedgerError("Expected one verified native capture boundary")
-        (boundary,) = found
-        if boundary.stream_ref != locator.stream_ref:
-            raise LedgerError("Native capture stream changed")
-        evidence.validate_source_ref(boundary.stream_ref)
-        proof = VerifiedBoundary(
-            source_id,
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        # Claude can revise a request whose original row was already consumed.
+        latest = [checkpoint.provider.ordinal, *(item.ordinal for item in boundaries)]
+        if prior is not None:
+            latest.append(prior.last_ordinal)
+        return CaptureFrontier(checkpoint, max(latest)), boundaries
+
+    def _latest_epoch(
+        self, view: RegistryView, change: CaptureChange, stream_ref: SourceRef
+    ) -> CaptureEpoch | None:
+        return next(
+            (
+                epoch
+                for epoch in reversed(view.epochs)
+                if _edge(epoch) == _edge(change) and epoch.stream_ref == stream_ref
+            ),
+            None,
+        )
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+        frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+        return frontier
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        frontier = self._capture_frontier(view, change, locator)
+        key = _capture_key(change, locator.stream_ref)
+        self._frontiers[key] = change, frontier
+        self._verified.pop(key, None)
+        self._completed.pop(key, None)
+        return frontier
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+        observed, boundaries = self._native_delta(view, change, locator, frontier)
+        fresh = [
+            boundary
+            for boundary in boundaries
+            if boundary.ordinal > frontier.last_ordinal
+        ]
+        if (
+            not fresh
+            or observed.checkpoint.cursor.offset <= frontier.checkpoint.cursor.offset
+        ):
+            raise BoundaryUnavailable("The next native capture boundary is unavailable")
+        ordinal = min(boundary.ordinal for boundary in fresh)
+        first = {boundary for boundary in fresh if boundary.ordinal == ordinal}
+        if len(first) != 1:
+            raise BoundaryUnavailable("The next native capture boundary is ambiguous")
+        (boundary,) = first
+        locator._source._ledger.validate_source_ref(boundary.boundary_ref)
+        return VerifiedBoundary(
+            change,
             boundary.stream_ref,
             boundary.ordinal,
             boundary.boundary_ref,
+            frontier,
+            observed,
         )
-        self._verified[id(proof)] = proof
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        proof = self._verify_next(self.view(), change, locator, frontier)
+        self._verified[key] = proof
         return proof
+
+    def _finish_boundary(self, boundary: VerifiedBoundary) -> None:
+        key = _capture_key(boundary.change, boundary.stream_ref)
+        self._frontiers.pop(key, None)
+        self._verified.pop(key, None)
+        self._completed[key] = boundary
 
     def _epoch(
         self, view: RegistryView, change: CaptureChange, proof: VerifiedBoundary
     ) -> tuple[RegistryView, CaptureEpoch]:
-        _encode(change, CaptureChange)
-        _project(view, change.project_id)
-        source = _source(view, change.source_id)
-        if (
-            type(proof) is not VerifiedBoundary
-            or self._verified.get(id(proof)) is not proof
-            or proof.source_id != change.source_id
-            or not _pinned(source.directory)
-        ):
-            raise LedgerError("Native capture boundary is unavailable")
-        prior = [
-            epoch
-            for epoch in view.epochs
-            if _edge(epoch) == _edge(change) and epoch.stream_ref == proof.stream_ref
-        ]
-        previous = prior[-1] if prior else None
-        if previous is not None and proof.ordinal <= previous.ordinal:
+        _check_capture_root(_source(view, change.source_id).directory)
+        previous = self._latest_epoch(view, change, proof.stream_ref)
+        if previous is not None:
             if (
                 proof.ordinal == previous.ordinal
                 and proof.boundary_ref == previous.boundary_ref
+                and proof.frontier == previous.frontier
+                and proof.observed == previous.observed
                 and change.enabled is previous.enabled
             ):
                 return view, previous
-            raise ConflictError("Stale or conflicting capture boundary")
+            if (
+                proof.ordinal <= previous.ordinal
+                or proof.frontier.checkpoint.cursor.offset
+                < previous.observed.checkpoint.cursor.offset
+            ):
+                raise ConflictError("Stale or conflicting capture boundary")
         epoch = CaptureEpoch(
             change.project_id,
             change.source_id,
@@ -639,8 +817,22 @@ class Registry:
             proof.boundary_ref,
             1 if previous is None else previous.generation + 1,
             change.enabled,
+            proof.frontier,
+            proof.observed,
         )
         return replace(view, epochs=(*view.epochs, epoch)), epoch
+
+    def _require_direct_proof(
+        self, view: RegistryView, change: CaptureChange, boundary: VerifiedBoundary
+    ) -> None:
+        key = _capture_key(change, boundary.stream_ref)
+        if boundary.change != change or (
+            self._verified.get(key) is not boundary
+            and self._completed.get(key) is not boundary
+        ):
+            raise LedgerError("Expected a verified boundary for this capture change")
+        if any(_edge(item.change) == _edge(change) for item in view.pending_capture):
+            raise ConflictError("An ordered capture command is already pending")
 
     def set_permission(
         self, change: CaptureChange, boundary: VerifiedBoundary
@@ -649,6 +841,7 @@ class Registry:
         if type(boundary) is not VerifiedBoundary:
             raise LedgerError("Native capture boundary is unavailable")
         view = self.view()
+        self._require_direct_proof(view, change, boundary)
         streams = {
             epoch.stream_ref for epoch in view.epochs if _edge(epoch) == _edge(change)
         }
@@ -658,6 +851,7 @@ class Registry:
             raise ConflictError("Capture change requires all native streams")
         view, epoch = self._epoch(view, change, boundary)
         self._save(_permission(view, change))
+        self._finish_boundary(boundary)
         return epoch
 
     def enroll_stream(
@@ -668,6 +862,7 @@ class Registry:
             raise LedgerError("Native capture boundary is unavailable")
         change = CaptureChange(project_id, source_id, True)
         view = self.view()
+        self._require_direct_proof(view, change, boundary)
         if change not in view.permissions:
             raise ConflictError("Capture is disabled for this source")
         if any(
@@ -680,6 +875,7 @@ class Registry:
         next_view, epoch = self._epoch(view, change, boundary)
         if next_view != view:
             self._save(next_view)
+        self._finish_boundary(boundary)
         return epoch
 
     def source_read_allowed(self, project_id: UUID, source_id: UUID) -> bool:
@@ -718,9 +914,10 @@ class Registry:
     def _apply(
         self,
         view: RegistryView,
-        payload: ControlPayload,
-        verifier: _BoundaryVerifier | None,
+        command: ControlCommand,
+        locate: _LocateStreams | None,
     ) -> RegistryView:
+        payload = command.payload
         if isinstance(payload, ProjectRegistrationRequest):
             return self._register(view, payload)[0]
         if isinstance(payload, SourceApprovalRequest):
@@ -737,22 +934,57 @@ class Registry:
             )
             return self._register(view, request)[0]
         _project(view, payload.project_id)
-        approved = _source(view, payload.source_id)
-        if not _pinned(approved.directory):
-            raise LedgerError("Source installation identity changed")
-        known = {
+        _check_capture_root(_source(view, payload.source_id).directory)
+        known = frozenset(
             epoch.stream_ref for epoch in view.epochs if _edge(epoch) == _edge(payload)
-        }
-        proofs = tuple(verifier(payload)) if verifier is not None else ()
-        supplied = {
-            proof.stream_ref for proof in proofs if type(proof) is VerifiedBoundary
-        }
-        if len(supplied) != len(proofs):
-            raise ConflictError("Conflicting capture proof")
-        if not known <= supplied:
-            raise _AwaitBoundary
-        if not payload.enabled and supplied != known:
-            raise ConflictError("Disable cannot enroll a native stream")
+        )
+        if not known:
+            return _permission(view, payload)
+        if locate is None:
+            raise BoundaryUnavailable("Waiting for native capture streams")
+        try:
+            locators = tuple(locate(payload, known))
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture streams are temporarily unavailable"
+            ) from None
+        if any(type(locator) is not SourceLocator for locator in locators):
+            raise ConflictError("Invalid capture stream locator")
+        by_stream = {locator.stream_ref: locator for locator in locators}
+        if len(by_stream) != len(locators) or by_stream.keys() - known:
+            raise ConflictError("Conflicting capture stream locator")
+        if known - by_stream.keys():
+            raise BoundaryUnavailable("Waiting for all native capture streams")
+
+        pending = next(
+            (
+                item
+                for item in view.pending_capture
+                if item.command_id == command.command_id
+            ),
+            None,
+        )
+        if pending is None:
+            frontiers = tuple(
+                self._capture_frontier(view, payload, locator) for locator in locators
+            )
+            armed = _PendingCapture(
+                command.command_id, command.payload_digest, payload, frontiers
+            )
+            raise _CaptureArmed(
+                replace(view, pending_capture=(*view.pending_capture, armed))
+            )
+        if (
+            pending.digest != command.payload_digest
+            or pending.change != payload
+            or {item.stream_ref for item in pending.frontiers} != known
+            or len(pending.frontiers) != len(known)
+        ):
+            raise ConflictError("Pending capture command or frontier changed")
+        proofs = tuple(
+            self._verify_next(view, payload, by_stream[frontier.stream_ref], frontier)
+            for frontier in pending.frontiers
+        )
         for proof in proofs:
             view, _ = self._epoch(view, payload, proof)
         return _permission(view, payload)
@@ -761,14 +993,14 @@ class Registry:
         self,
         inbox: "ControlInbox",
         writer_lease: _PinnedPath,
-        boundary_verifier: _BoundaryVerifier | None,
+        locate: _LocateStreams | None,
     ) -> tuple[ControlReceipt, ...]:
         if writer_lease is not self.lease or inbox.root != self.root:
             raise LedgerError("Monitor command requires the matching coordinator lease")
         applied: list[ControlReceipt] = []
         held_edges: set[tuple[UUID, UUID]] = set()
         with inbox.publication() as locked:
-            view = self.view()
+            view = self.view(_confirm_publication=True)
             for command in inbox.iter_pending(locked):
                 digest = command.payload_digest
                 receipt = _command_outcome(view, command.command_id)
@@ -783,8 +1015,14 @@ class Registry:
                 if isinstance(payload, CaptureChange) and _edge(payload) in held_edges:
                     continue
                 try:
-                    next_view = self._apply(view, payload, boundary_verifier)
-                except _AwaitBoundary:
+                    next_view = self._apply(view, command, locate)
+                except _CaptureArmed as armed:
+                    assert isinstance(payload, CaptureChange)
+                    self._save(armed.view)
+                    view = armed.view
+                    held_edges.add(_edge(payload))
+                    continue
+                except BoundaryUnavailable:
                     assert isinstance(payload, CaptureChange)
                     held_edges.add(_edge(payload))
                     continue
@@ -800,7 +1038,15 @@ class Registry:
                     receipt = ControlReceipt(
                         command.command_id, ControlStatus.APPLIED, digest
                     )
-                view = replace(next_view, receipts=(*next_view.receipts, receipt))
+                view = replace(
+                    next_view,
+                    pending_capture=tuple(
+                        item
+                        for item in next_view.pending_capture
+                        if item.command_id != command.command_id
+                    ),
+                    receipts=(*next_view.receipts, receipt),
+                )
                 self._save(view)
                 inbox.discard(locked, command)
                 applied.append(receipt)
