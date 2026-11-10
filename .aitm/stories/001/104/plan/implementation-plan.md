@@ -1,0 +1,9 @@
+# #104 implementation plan · CI1
+
+The CI1 steps of the [accepted parent implementation plan](../../103/plan/implementation-plan.md#ci1--bootstrap-actions-and-python-validation) are the ordered delivery procedure. Parent publication `e3da5a0deec5a7859a4e113ef179cc4bba76c919`, SHA-256 `f81b4d18c36b1294c4bfc0635cf8bba67f231250a6a398dd92ddda63adb465fb`. This leaf has no predecessors and a four-agent-hour cap.
+
+1. Bind the attempt to [JIT](jit.md) and record the authorized first-workflow exception in the [delivery checklist](delivery-checklist.md). Use the fresh leaf source branch and open its normal same-repository PR into trunk.
+2. Run only the read-only `binding-observation` job on `macos-26`. Compare the canonical workflow, run attempt, PR linkage, check suite, attempt jobs, live target/head and raw merge parents. Treat logged runner and event values as corroboration. Stop and return to Planning before the production helpers, wheel or aggregate if authenticated run metadata cannot bind the exact tested merge. Retain the receipts and keep a failed probe PR unmerged.
+3. Only after a pass, reforecast within 3.25 active agent-hours plus 0.75 reserve and follow the accepted CI1 procedure. Build behavioral refusal tests first. Measure unrounded line coverage at 90% or higher for the product and, separately, the executable helpers. Run the full qualified Darwin suite and verify trusted exact-base results, child coverage shards and locked wheel smoke.
+4. Replace the diagnostic-only workflow with the real checks on that PR, retain a failing and corrected exact run, independently review the source and gate controls, merge through GitHub and verify delivered source and trunk push.
+5. Prove the current and refreshed integration route on the approved disposable refs, preserve receipts and pass custody to #105. Publish the implementing agent's own retrospective and close immediately once all #104 gates pass.
