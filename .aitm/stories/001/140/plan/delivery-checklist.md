@@ -78,3 +78,11 @@ The [independent refresh review](source-review-attempt-2.md) accepted the exact
 refreshed candidate.
 
 [Owner disposition](owner-disposition-62c248b9ab53.json) and the [trusted verifier](verifier-pass-62c248b9ab53.json) bind the exact refreshed tree. The independent review is effective on that candidate.
+
+### Second trunk refresh
+
+[PR #185](https://github.com/kburson/aitm/pull/185) advanced trunk to
+`41b4e1e69c5e9a1cb54497a4f023b73e94ef0f55` while #184 was in its
+first refreshed review. The [final verifier hold](verifier-hold-62c248b9ab53.json)
+stopped #184 before merge. The earlier checks, independent review and
+owner disposition remain bound to their original head, base and tree.
