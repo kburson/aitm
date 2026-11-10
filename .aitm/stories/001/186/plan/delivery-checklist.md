@@ -21,3 +21,9 @@ The original [hosted run](https://github.com/kburson/aitm/actions/runs/429114859
 [PR #195](https://github.com/kburson/aitm/pull/195) landed unrelated monitor paths at trunk `49865245d175ce6c52913738f2c9a42c0abea632`. Return to Develop to integrate the new trunk base into the isolated #186 branch and repeat exact candidate checks. Keep the accepted #186 paths and scope. The failed hosted attempt remains in the record.
 
 Revision 3 matches the [PR readback](https://github.com/kburson/aitm/pull/196): clean head `ad8aece4e05e3446063b1568d60549cb97302cbe`, base `49865245d175ce6c52913738f2c9a42c0abea632`, tree `23856755bd01534855842ecee675964c1eece94c`. The three story paths are byte-identical to revision 2 and are the only diff relative to trunk. All seven dashboard tests, Ruff, tracked file checks, disposable capture round trip and the exact #181 seed read passed on revision 3. The monitor test that failed on the previous hosted runner passed when reproduced locally on revision 3. No monitor files were edited for #186.
+
+## Exact-candidate hosted rerun
+
+[Revision 3 attempt 1](https://github.com/kburson/aitm/actions/runs/42913081303/attempts/1) passed base, quality, and file checks. The unchanged usage-monitor test `test_claude_startup_prefix_requires_the_entire_proven_native_chain[foreign]` failed when its fixture discovery returned no candidate; 866 other product cases passed. Evidence collection failed and the signature job was skipped. The exact named test passed in a focused local run on the same revision. Both reported hosted failures were in existing monitor fixtures, with different failure sites; the underlying runner condition is unconfirmed. No CI controls or monitor source changes are in the PR.
+
+[Attempt 2](https://github.com/kburson/aitm/actions/runs/42913081303/attempts/2) reruns **all** jobs on the same head, base and tree. No reuse of passing jobs or artifacts from attempt 1.
