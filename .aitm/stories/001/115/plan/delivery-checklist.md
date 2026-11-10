@@ -27,3 +27,7 @@ The first attempt's [quality job](https://github.com/kburson/aitm/actions/runs/4
 ### Attempt 2 Test checkpoint
 
 [PR #179](https://github.com/kburson/aitm/pull/179) now has head `511bcf17e7a694fcade1d8b2e2f364b14e2b027f` and tree `a22dccc417716be8ba1704b36acae87fe9bfc420`, with unchanged trunk base `9b12927da1a368f254537277f7fdc7139f90cc44`. The monitor rate bytes are unchanged in their own namespace. The wheel contains both the exact legacy rate card and the relocated monitor rate card. Local file checks, Ruff and fresh 629 product and CLI tests and 182 helper tests passed. The raw line floors passed at 7,141/7,818 and 778/821. Hosted [run 42860755483](https://github.com/kburson/aitm/actions/runs/42860755483) is pending.
+
+### Attempt 2 hosted quality hold
+
+The replacement [file check](https://github.com/kburson/aitm/actions/runs/42860755483/job/129985923599) passed. The [quality job](https://github.com/kburson/aitm/actions/runs/42860755483/job/129985923460) passed Ruff, then actionlint could not start because the unchanged workflow's automatically selected Go 1.26.11 failed checksum lookup with HTTP 404. Both attempts reproduced the same hosted toolchain failure. #115 stays in Test with exact head and gate evidence. A successful full attempt on this candidate and its required downstream checks are needed before independent source review. #116 has #114 as its sole native predecessor and may proceed through its own pickup.
