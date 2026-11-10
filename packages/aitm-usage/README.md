@@ -80,10 +80,10 @@ The actual native tool result must be the single queued JSON receipt for that co
 4. In the approved dedicated qualification worktree, use the native route with the actual provider-reported worktree to bind the owner to #83, #96, or one of the two controlled children. If selecting #96, record its approved ancestry with `aitm-usage --project "$ROOT" item parent --child 96 --epic 83 --json`. The marked housekeeping action uses the same allowed identities. Qualification validates the identities separately from the local relationship graph. Collect the first measured request in that binding. Where available, observe an unmarked nonowner and then an explicitly marked compatible reviewer to confirm independent attribution. Separately mark the housekeeping action and observe its first request. Capture both providers' supported model or effort switches, retry/error and nested activity where evidenced. Preserve provider-specific gaps for unavailable signals. Keep supported API-equivalent pricing separate from billed spend and task quota.
 5. After the collector settles, copy the exact private `$ROOT/status.json` to the evidence directory and save the accompanying `status --json` privately. Use the raw snapshot's `report.sequence` as `FIXED`. Keep the canonical alias and parent graph fixed from this capture through the final qualification check. Schedule any subsequent relationship commands after qualification. Retain a fixed export and the original status/launch evidence before stopping. `RATE` is the installed `load_rate_card().version`; both exports use the same installed rate card.
 
-```sh
-aitm-usage --project "$ROOT" export --as-of "$FIXED" --rate-card "$RATE" --output "$EXPORT_BEFORE" --json
-aitm-usage --project "$ROOT" service stop --json
-```
+   ```sh
+   aitm-usage --project "$ROOT" export --as-of "$FIXED" --rate-card "$RATE" --output "$EXPORT_BEFORE" --json
+   aitm-usage --project "$ROOT" service stop --json
+   ```
 
 6. While the same project service is confirmed stopped, perform one more measured native request in each of the original author and reviewer streams. Continue their already approved #83 workflow scopes and roles so the new observations resolve to those same enrollments. Retain their two stable usage keys for catch-up. Reinstall the identical approved wheel to resume the same project and ledger. Wait for the matching service producer and the two catch-up rows. Re-export the original fixed cutoff to a new private directory and compare both files byte for byte. Capture a fresh exact `status.json` snapshot after the project settles, and retain the matching `status --json` to read its authenticated offsets and observation times. Refresh these observations close to the final qualification check.
 
