@@ -1,0 +1,52 @@
+{
+  "verified_at": "2026-11-10T21:29:08+00:00",
+  "issue": {
+    "created_at": "2026-11-10T21:27:47Z",
+    "html_url": "https://github.com/kburson/aitm/issues/194",
+    "id": 6316200821,
+    "node_id": "I_kwDOVnNyI88AAAABeHmTdQ",
+    "number": 194
+  },
+  "parent": 100,
+  "blocked_by": [
+    182
+  ],
+  "blocking": [
+    118
+  ],
+  "issue_118_blocked_by": [
+    117,
+    182,
+    194
+  ],
+  "project": 24,
+  "project_items": [
+    {
+      "estimate": null,
+      "number": 182,
+      "rank": 215,
+      "size": null,
+      "start": null,
+      "status": "Backlog"
+    },
+    {
+      "estimate": null,
+      "number": 194,
+      "rank": 217,
+      "size": null,
+      "start": null,
+      "status": "Backlog"
+    },
+    {
+      "estimate": null,
+      "number": 118,
+      "rank": 220,
+      "size": null,
+      "start": null,
+      "status": "Backlog"
+    }
+  ],
+  "accepted_parent_plan_sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+  "approved_pickup_sha256": "f30d0b70b0a31a5b4d839c7a29750c0dd31260dd946758923d73ad1c7c4d231d",
+  "approved_split_sha256": "9551126182d46b8bcdcb8085d0497316738604f52508928074c2f105dd9d8b2c"
+}

@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/118"
 parent: 100
 children: []
 blocking: [119]
-blocked-by: [117, 182]
+blocked-by: [117, 182, 194]
 created: "2026-11-10T13:58:00Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T21:29:08+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -25,7 +25,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M08", "path"
 
 [GitHub issue #118](https://github.com/kburson/aitm/issues/118) · [Parent #100](../100/story.md) · [Accepted plan leaf M08](../100/plan/multi-project-usage-monitor-implementation-plan.md#m08-single-owner-journal-and-verified-revision-order)
 
-**Required predecessors** [M07a #117](../117/story.md) and [M07b #182](../182/story.md).
+**Required predecessors** [M07a #117](../117/story.md), [M07b #182](../182/story.md) and [M07c #194](../194/story.md).
 
 This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969ecadb8df74cf4a37a62c4`. Before Develop, obtain the applicable leaf design, Refine estimate, plan and JIT approval. Validate the four implementation agent-hour cap at JIT. Paths in the accepted excerpt are relative to `packages/aitm-usage`.
 
