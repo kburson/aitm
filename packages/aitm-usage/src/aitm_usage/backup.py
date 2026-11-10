@@ -16,8 +16,9 @@ from .ledger import (
     DATABASE_NAME,
     KEY_NAME,
     LOCK_NAME,
-    SCHEMA_VERSION,
+    MONITOR_SCHEMA_VERSION,
     STORE_NAME,
+    SUPPORTED_SCHEMA_VERSIONS,
     Ledger,
     LedgerError,
     LedgerIdentity,
@@ -181,6 +182,7 @@ def _candidate(root: Path, identity: LedgerIdentity) -> Ledger:
     _check_path(path)
     with _connection(path, write=True) as conn:
         _validate_identity(conn, identity)
+        sequence = _head(conn)
         if conn.execute("PRAGMA integrity_check").fetchall() != [("ok",)] or (
             conn.execute("PRAGMA foreign_key_check").fetchone() is not None
         ):
@@ -192,6 +194,8 @@ def _candidate(root: Path, identity: LedgerIdentity) -> Ledger:
     candidate = Ledger.open(root, identity.project_id)
     if candidate.identity != identity:
         raise BackupError("Backup project or key identity mismatch")
+    if identity.schema_version == MONITOR_SCHEMA_VERSION:
+        candidate.monitor_as_of(sequence)
     return candidate
 
 
@@ -276,7 +280,7 @@ def _manifest(
 ) -> tuple[bytes, BackupReceipt]:
     identity = candidate.identity
     body = {
-        "format": "aitm-usage.backup/v1",
+        "format": f"aitm-usage.backup/v{identity.schema_version}",
         "project_id": str(identity.project_id),
         "key_id": identity.key_id,
         "schema_version": identity.schema_version,
@@ -334,7 +338,12 @@ def backup(ledger: Ledger, destination: Path) -> BackupReceipt:
                     ledger.identity.project_id,
                     _state_files(ledger.root)[-1],
                 )
-                if _identity(ledger.identity.project_id, key) != ledger.identity:
+                if (
+                    _identity(
+                        ledger.identity.project_id, key, ledger.identity.schema_version
+                    )
+                    != ledger.identity
+                ):
                     raise BackupError("Backup pseudonym key changed")
                 with _create_file(store / KEY_NAME) as output:
                     output.write(ledger.identity.project_id.bytes + key)
@@ -405,7 +414,7 @@ def _verify_bundle(
 ) -> tuple[Ledger, LedgerView, dict[str, bytes], BackupReceipt]:
     if (
         type(expected.schema_version) is not int
-        or expected.schema_version != SCHEMA_VERSION
+        or expected.schema_version not in SUPPORTED_SCHEMA_VERSIONS
     ):
         raise BackupError("Unsupported restore schema")
     store = _private_store(staging)
@@ -588,7 +597,7 @@ def restore(
     try:
         if (
             type(expected.schema_version) is not int
-            or expected.schema_version != SCHEMA_VERSION
+            or expected.schema_version not in SUPPORTED_SCHEMA_VERSIONS
         ):
             raise BackupError("Unsupported restore schema")
         ledger = Ledger.open(_absolute(destination), expected.project_id)

@@ -109,7 +109,7 @@ def _item_key(text: str) -> ItemKey:
 
 
 def _item_command(args: argparse.Namespace) -> InboxCommand:
-    project_id = open_project(args.project).identity.project_id
+    project_id = open_project(args.legacy_state_dir).identity.project_id
     command_id = uuid4()
     if args.item_action == "alias":
         payload = DraftAlias(
@@ -135,7 +135,7 @@ def _scope_command(args: argparse.Namespace) -> InboxCommand:
         command = InboxCommand(payload.correction_id, payload.project_id, payload)
     else:
         marker = payload.marker if isinstance(payload, DevelopmentBinding) else payload
-        ledger = Ledger.open(args.project, marker.project_id)
+        ledger = Ledger.open(args.legacy_state_dir, marker.project_id)
         if marker.provider is Provider.CODEX:
             if args.session_id is not None:
                 raise ValueError("Codex scope requires the invoking thread")
@@ -158,14 +158,14 @@ def _scope_command(args: argparse.Namespace) -> InboxCommand:
 def _queue_command(args: argparse.Namespace) -> int:
     try:
         command = args.command_factory(args)
-        receipt = enqueue_command(args.project, command)
+        receipt = enqueue_command(args.legacy_state_dir, command)
         if (
             receipt is not None
             and receipt.disposition is MarkerDisposition.ACCEPTED
             and isinstance(command.payload, SourceAnchorCommand)
         ):
             verify_source_anchor_receipt(
-                Ledger.open(args.project, command.project_id), receipt
+                Ledger.open(args.legacy_state_dir, command.project_id), receipt
             )
     except ConflictError:
         print("aitm-usage: inbox command conflict", file=sys.stderr)
@@ -188,7 +188,7 @@ def _export_command(args: argparse.Namespace) -> int:
         card = load_rate_card(parts[1] if len(parts) == 4 else rate_id)
         if rate_id not in (card.version, card.basis.identifier):
             raise ValueError("Invalid rate card identifier")
-        view = open_project(args.project).as_of(args.as_of)
+        view = open_project(args.legacy_state_dir).as_of(args.as_of)
         receipt = export_as_of(view, card, args.output)
     except (LedgerError, OSError, ValueError, sqlite3.Error):
         print("aitm-usage: unable to export the requested snapshot", file=sys.stderr)
@@ -218,7 +218,7 @@ def _print_result(payload: dict, *, as_json: bool) -> None:
 
 def _register_command(args: argparse.Namespace) -> int:
     try:
-        registration = register_project(args.project, args.config)
+        registration = register_project(args.legacy_state_dir, args.config)
     except WriterActive:
         return _collector_failure(args, "writer-active")
     except (LedgerError, OSError, ValueError, sqlite3.Error):
@@ -234,7 +234,7 @@ def _register_command(args: argparse.Namespace) -> int:
 
 
 def _anchor_command(args: argparse.Namespace) -> InboxCommand:
-    return stage_source_anchor(open_project(args.project), args.anchor)
+    return stage_source_anchor(open_project(args.legacy_state_dir), args.anchor)
 
 
 def _collector_failure(args: argparse.Namespace, reason: str) -> int:
@@ -247,7 +247,7 @@ def _collector_failure(args: argparse.Namespace, reason: str) -> int:
 
 def _collect_command(args: argparse.Namespace) -> int:
     try:
-        ledger = open_project(args.project)
+        ledger = open_project(args.legacy_state_dir)
         registration = load_registration(ledger)
         if args.continuous:
             return run_service(registration)
@@ -262,10 +262,12 @@ def _collect_command(args: argparse.Namespace) -> int:
 
 def _status_command(args: argparse.Namespace) -> int:
     try:
-        ledger = open_project(args.project)
+        ledger = open_project(args.legacy_state_dir)
     except (LedgerError, OSError, ValueError, sqlite3.Error):
         ledger = None
-    _print_result(status_report(args.project.absolute(), ledger), as_json=args.json)
+    _print_result(
+        status_report(args.legacy_state_dir.absolute(), ledger), as_json=args.json
+    )
     return 0
 
 
@@ -277,10 +279,10 @@ def _qualify_command(args: argparse.Namespace) -> int:
     result = validate_activation_receipt(receipt)
     if not result.qualified:
         return _collector_failure(args, result.status)
-    if not (args.project / PROOF_NAME).exists():
+    if not (args.legacy_state_dir / PROOF_NAME).exists():
         return _collector_failure(args, "proof-required")
     try:
-        ledger = open_project(args.project)
+        ledger = open_project(args.legacy_state_dir)
     except (LedgerError, OSError, ValueError, sqlite3.Error):
         return _collector_failure(args, "ledger-read-gap")
     try:
@@ -305,7 +307,7 @@ def _qualify_command(args: argparse.Namespace) -> int:
 def _lifecycle_command(args: argparse.Namespace) -> int:
     action = args.lifecycle_action
     try:
-        ledger = open_project(args.project)
+        ledger = open_project(args.legacy_state_dir)
         if action == "backup":
             payload = {"status": "backed-up", **backup(ledger, args.output).as_dict()}
         else:
@@ -359,7 +361,7 @@ def _lifecycle_command(args: argparse.Namespace) -> int:
 
 def _rollup_command(args: argparse.Namespace) -> int:
     try:
-        ledger = open_project(args.project)
+        ledger = open_project(args.legacy_state_dir)
         view = ledger.as_of()
         item = (
             ItemKey(ItemKind.PROJECT)
@@ -386,15 +388,21 @@ def _rollup_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _monitor_report_unavailable(args: argparse.Namespace) -> int:
+    return _collector_failure(args, "monitor-report-unavailable")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="aitm-usage", description="Private local AITM usage"
     )
-    parser.add_argument("--project", type=Path, metavar="STATE_DIR")
+    parser.add_argument(
+        "--project", dest="legacy_state_dir", type=Path, metavar="STATE_DIR"
+    )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {version('aitm-usage')}"
     )
-    groups = parser.add_subparsers()
+    groups = parser.add_subparsers(dest="command")
     scope = groups.add_parser("scope").add_subparsers(required=True)
     development = groups.add_parser("development").add_subparsers(required=True)
     for group, name, option, decode in (
@@ -473,10 +481,23 @@ def main() -> int:
     rollup_parser.add_argument("--item", required=True)
     rollup_parser.add_argument("--json", action="store_true")
     rollup_parser.set_defaults(handler=_rollup_command)
+    monitor = groups.add_parser("monitor").add_subparsers(required=True)
+    monitor_report = monitor.add_parser(
+        "report", help="Monitor project report (unavailable)"
+    )
+    monitor_report.add_argument(
+        "--project", dest="project_id", type=UUID, required=True, metavar="UUID"
+    )
+    monitor_report.set_defaults(handler=_monitor_report_unavailable)
     args = parser.parse_args()
     if not hasattr(args, "handler"):
         parser.print_help()
         return 0
-    if args.project is None:
+    if args.command == "monitor":
+        if args.legacy_state_dir is not None:
+            parser.error(
+                "cannot combine a legacy state directory and a monitor project"
+            )
+    elif args.legacy_state_dir is None:
         parser.error("--project is required")
     return args.handler(args)

@@ -11,13 +11,14 @@ import stat
 import unicodedata
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import UUID
 
 from .host_fs import HostFilesystemError, account_control_root, check_private_acl
+from .monitor_types import MonitorLedgerView, MonitorRevision
 from .relationships import relationship_decision
 from .types import (
     CommandDigest,
@@ -43,6 +44,8 @@ from .types import (
 )
 
 SCHEMA_VERSION = 1
+MONITOR_SCHEMA_VERSION = 2
+SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, MONITOR_SCHEMA_VERSION)
 APPLICATION_ID = 0x41495455  # AITU
 STORE_NAME = "state"
 DATABASE_NAME = "usage.sqlite3"
@@ -74,6 +77,17 @@ CREATE TABLE checkpoints (
     PRIMARY KEY (source_ref, sequence)
 ) STRICT;
 """
+
+_MONITOR_SCHEMA = (
+    """CREATE TABLE monitor_revisions (
+    key TEXT NOT NULL,
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    payload TEXT NOT NULL,
+    PRIMARY KEY (key, revision)
+) STRICT""",
+    "CREATE INDEX monitor_revision_sequence ON monitor_revisions (sequence, key, revision)",
+)
 
 
 class LedgerError(RuntimeError):
@@ -365,8 +379,12 @@ def _read_key(root: Path, project_id: UUID, expected: tuple[int, int]) -> bytes:
     return payload[16:]
 
 
-def _identity(project_id: UUID, key: bytes) -> LedgerIdentity:
-    return LedgerIdentity(project_id, "sha256:" + hashlib.sha256(key).hexdigest())
+def _identity(
+    project_id: UUID, key: bytes, schema_version: int = SCHEMA_VERSION
+) -> LedgerIdentity:
+    return LedgerIdentity(
+        project_id, "sha256:" + hashlib.sha256(key).hexdigest(), schema_version
+    )
 
 
 def _state_files(root: Path) -> tuple[tuple[int, int], ...]:
@@ -429,21 +447,33 @@ def _schema_objects(
     )
 
 
+def _require_schema_version(version: int) -> None:
+    if type(version) is not int or version not in SUPPORTED_SCHEMA_VERSIONS:
+        raise LedgerError("Unsupported ledger schema")
+
+
 @cache
-def _supported_schema() -> tuple[tuple[str, str, str, str | None], ...]:
+def _supported_schema(
+    version: int = SCHEMA_VERSION,
+) -> tuple[tuple[str, str, str, str | None], ...]:
+    _require_schema_version(version)
     with closing(sqlite3.connect(":memory:")) as conn:
         conn.executescript(_SCHEMA)
+        if version == MONITOR_SCHEMA_VERSION:
+            for statement in _MONITOR_SCHEMA:
+                conn.execute(statement)
         return _schema_objects(conn)
 
 
 def _validate_identity(conn: sqlite3.Connection, identity: LedgerIdentity) -> None:
-    if conn.execute("PRAGMA user_version").fetchone() != (SCHEMA_VERSION,):
+    _require_schema_version(identity.schema_version)
+    if conn.execute("PRAGMA user_version").fetchone() != (identity.schema_version,):
         raise LedgerError("Unsupported ledger schema")
     if conn.execute("PRAGMA application_id").fetchone() != (APPLICATION_ID,):
         raise LedgerError("Unrecognized ledger application")
     if conn.execute("PRAGMA journal_mode").fetchone() != ("wal",):
         raise LedgerError("Ledger requires WAL")
-    if _schema_objects(conn) != _supported_schema():
+    if _schema_objects(conn) != _supported_schema(identity.schema_version):
         raise LedgerError("Invalid ledger table schema")
     row = conn.execute(
         "SELECT project_id, key_id FROM identity WHERE singleton = 1"
@@ -457,9 +487,10 @@ def _read_snapshot(
     root: Path, project_id: UUID
 ) -> Iterator[tuple[sqlite3.Connection, LedgerIdentity, bytes]]:
     key = _validate_storage(root, project_id)
-    identity = _identity(project_id, key)
     with _connection(_database_path(root), write=False) as conn, conn:
         conn.execute("BEGIN")
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        identity = _identity(project_id, key, version)
         _validate_identity(conn, identity)
         yield conn, identity, key
 
@@ -927,38 +958,84 @@ class Ledger:
             conn.rollback()
             return head
 
+    def upgrade_monitor_schema(self, expected_sequence: int) -> LedgerIdentity:
+        """Upgrade an explicitly selected ledger under its original writer lease."""
+        if type(expected_sequence) is not int or expected_sequence < 0:
+            raise ValueError("Expected a valid ledger sequence")
+        if self._writer is None:
+            with self.writer() as writer:
+                return writer.upgrade_monitor_schema(expected_sequence)
+        with self._write_transaction() as conn:
+            if _head(conn) != expected_sequence:
+                raise ConflictError("Ledger changed before schema upgrade")
+            if self.identity.schema_version == MONITOR_SCHEMA_VERSION:
+                return self.identity
+            for statement in _MONITOR_SCHEMA:
+                conn.execute(statement)
+            conn.execute(f"PRAGMA user_version = {MONITOR_SCHEMA_VERSION}")
+            identity = replace(self.identity, schema_version=MONITOR_SCHEMA_VERSION)
+            _validate_identity(conn, identity)
+            self.require_writer()
+            return identity
+
     def as_of(self, sequence: int | None = None) -> LedgerView:
         with self.reader() as conn:
-            head = _head(conn)
-            if sequence is None:
-                sequence = head
-            if type(sequence) is not int or not 0 <= sequence <= head:
-                raise ValueError("Sequence is outside committed ledger history")
-            revisions = conn.execute(
-                """SELECT payload FROM revisions WHERE sequence <= ?
-                   ORDER BY sequence, key, revision""",
+            return self._legacy_view(conn, sequence)
+
+    def _legacy_view(
+        self, conn: sqlite3.Connection, sequence: int | None
+    ) -> LedgerView:
+        head = _head(conn)
+        if sequence is None:
+            sequence = head
+        if type(sequence) is not int or not 0 <= sequence <= head:
+            raise ValueError("Sequence is outside committed ledger history")
+        revisions = conn.execute(
+            """SELECT payload FROM revisions WHERE sequence <= ?
+               ORDER BY sequence, key, revision""",
+            (sequence,),
+        )
+        checkpoints = conn.execute(
+            """SELECT c.payload FROM checkpoints c
+               JOIN (
+                   SELECT source_ref, MAX(sequence) AS latest
+                   FROM checkpoints WHERE sequence <= ? GROUP BY source_ref
+               ) h ON h.source_ref = c.source_ref AND h.latest = c.sequence
+               ORDER BY c.source_ref""",
+            (sequence,),
+        )
+        return LedgerView(
+            self.identity.project_id,
+            sequence,
+            tuple(
+                _decode(row[0], Revision, validate_ref=self.validate_source_ref)
+                for row in revisions
+            ),
+            tuple(
+                _decode(row[0], SourceCheckpoint, validate_ref=self.validate_source_ref)
+                for row in checkpoints
+            ),
+        )
+
+    def monitor_as_of(self, sequence: int) -> MonitorLedgerView:
+        """Read both legacy and monitor histories from one versioned snapshot."""
+        if self.identity.schema_version != MONITOR_SCHEMA_VERSION:
+            raise LedgerError("Monitor ledger schema is unavailable")
+        if type(sequence) is not int:
+            raise ValueError("Sequence is outside committed ledger history")
+        with self.reader() as conn:
+            legacy = self._legacy_view(conn, sequence)
+            rows = conn.execute(
+                """SELECT key, revision, payload FROM monitor_revisions
+                   WHERE sequence <= ? ORDER BY sequence, key, revision""",
                 (sequence,),
             )
-            checkpoints = conn.execute(
-                """SELECT c.payload FROM checkpoints c
-                   JOIN (
-                       SELECT source_ref, MAX(sequence) AS latest
-                       FROM checkpoints WHERE sequence <= ? GROUP BY source_ref
-                   ) h ON h.source_ref = c.source_ref AND h.latest = c.sequence
-                   ORDER BY c.source_ref""",
-                (sequence,),
-            )
-            return LedgerView(
-                self.identity.project_id,
-                sequence,
-                tuple(
-                    _decode(row[0], Revision, validate_ref=self.validate_source_ref)
-                    for row in revisions
-                ),
-                tuple(
-                    _decode(
-                        row[0], SourceCheckpoint, validate_ref=self.validate_source_ref
-                    )
-                    for row in checkpoints
-                ),
-            )
+            revisions = []
+            for key, number, payload in rows:
+                revision = _decode(
+                    payload, MonitorRevision, validate_ref=self.validate_source_ref
+                )
+                if (revision.key.value, revision.revision) != (key, number):
+                    raise LedgerError("Monitor revision identity changed")
+                revisions.append(revision)
+            return MonitorLedgerView(legacy, tuple(revisions))
