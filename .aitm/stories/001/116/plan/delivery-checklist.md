@@ -27,3 +27,7 @@ Fresh local validation on the exact rebased tree passed 671 locked product and C
 [Run 42872458320 attempt 1](https://github.com/kburson/aitm/actions/runs/42872458320/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `ed3f55ce1100a79d867a0fff8a48133ce1227652` with the declared ordered base and head and reviewed tree `4971d96e969c882fbb16c7183bb6ae9b6cfb4b87`. Artifact `13790103040` had archive SHA-256 `be3a37f56c8766513c4cf197b76734ade7bf7909f3386e01e8cd923ac212de6d` and subject SHA-256 `95fd65288674abbfe5b1bcdd21d8fc8d8a3e7fe07db9fcffed3a36d343c055b1`.
 
 Authenticated raw replay kept all 629 baseline tests and added 22 monitor-control, 8 legacy compatibility and 11 registry cases, plus the fixed candidate-only CLI evidence test. Raw product and helper coverage matched the local exact tree. Independent source review is pending.
+
+### Independent source review hold
+
+The [first independent source review](source-review-attempt-1.md) held the exact passing candidate for historical capture fences and permanent rejection on temporarily missing proof. The replacement must persist the current native frontier for each known stream when the writer first arms the command. It then selects the first qualified native boundary after that frontier. Commands remain queued while a required native boundary is unavailable. Preserve the signed earlier CI and review hold. Return to Develop and repeat the exact hosted and source gates for the replacement.
