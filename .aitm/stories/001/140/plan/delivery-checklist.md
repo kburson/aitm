@@ -44,3 +44,7 @@ denominator are unchanged. The existing #103 owner disposition
 applies separately to these exact additions.
 
 The owner’s exact-tree disposition is pending. The [trusted verifier hold](verifier-hold-6397dd9a5ff7.json) leaves the story in Test while the independent source verdict is retained. The PR remains open and unmerged.
+
+The owner approved the exact tree `e89faf081d000fd8749430edd8ce47328e6703bb` for the existing #103 disposition in the implementation conversation. The [trusted verifier](verifier-pass-6397dd9a5ff7.json) passed for that tree. The independent source review is retained and the story enters In review. The PR remains open and unmerged.
+
+[Exact-tree owner disposition](owner-disposition-6397dd9a5ff7.json).

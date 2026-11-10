@@ -1,0 +1,13 @@
+{
+  "story": 140,
+  "repository": "kburson/aitm",
+  "pr": 184,
+  "base": "d769b3169724eeb9ef4b4aee47d3ab4c4489072d",
+  "head": "6397dd9a5ff7e26a3711651f871f846cb3ef60f1",
+  "tested_tree": "e89faf081d000fd8749430edd8ce47328e6703bb",
+  "disposition": "approved",
+  "source": "Owner reply in implementation conversation",
+  "owner_reply": "Approve both exact trees",
+  "scope": "Existing #103 exact-tree verification through In review",
+  "stop": "Before merge"
+}

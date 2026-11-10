@@ -58,3 +58,7 @@ applies separately to these exact additions.
 The [superseded hosted run](https://github.com/kburson/aitm/actions/runs/42897701333) was cancelled after the correction push. Its results carry no authority for the replacement.
 
 The owner’s exact-tree disposition is pending. The [trusted verifier hold](verifier-hold-28db19ee8415.json) leaves the story in Test while the independent source verdict is retained. The PR remains open and unmerged.
+
+The owner approved the exact tree `cbda78ce605593be91611a02c06d51edd7ff9c87` for the existing #103 disposition in the implementation conversation. The [trusted verifier](verifier-pass-28db19ee8415.json) passed for that tree. The independent source review is retained and the story enters In review. The PR remains open and unmerged.
+
+[Exact-tree owner disposition](owner-disposition-28db19ee8415.json).
