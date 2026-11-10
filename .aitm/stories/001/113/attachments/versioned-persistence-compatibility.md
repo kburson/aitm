@@ -9,3 +9,5 @@ Recorded November 10, 2026. CPython 3.13.9 on macOS. All state was synthetic and
 - The original installed console attempted a one-shot collection after migration. It returned exit code 1 and `collection-failed`. SHA-256 comparisons of the database, WAL, pseudonym key and retained registration before and after matched. No service was started.
 
 The committed tests additionally verify stale-sequence refusal, transactional rollback after both DDL and version update, mismatched table fingerprints, v2 backup verification and argument separation. M16 retains production adoption authority.
+
+A follow-up ran the actual installed v1 wheel ledger opener directly. It raised `Unsupported ledger schema` and left the database, WAL, key and retained registration bytes identical.

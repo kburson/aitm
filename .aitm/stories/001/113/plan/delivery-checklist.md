@@ -27,3 +27,5 @@ Test-first verification produced five expected interface and CLI failures and tw
 | [quality](https://github.com/kburson/aitm/actions/runs/42841994451/job/129919364129) | Success |
 | [collect-evidence](https://github.com/kburson/aitm/actions/runs/42841994451/job/129921264289) | Success |
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42841994451/job/129921367895) | Success |
+
+The [independent off-platform review](post-ci-source-review.md) passed for the exact source and additive test control. No native GitHub review was submitted or required. The authenticated raw inventories retained every baseline test and added seven M03 cases plus the candidate-only CLI case. The delivered gate replay matched the signed result.
