@@ -112,3 +112,6 @@ separately from the retained measurement bytes.
 [Exact report](attachments/github-merge-fence-spike.md) ·
 [Rules and request evidence](attachments/github-merge-fence-rules.json) ·
 [Independent SPR](plan/reviews/spr-2026-11-10-endpoint-evidence.md).
+
+[Teardown status](plan/disposable-fixture-teardown.json) records the
+GitHub reauthentication hold and the most recent fixture readback.
