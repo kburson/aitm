@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 111
 title: "[M01] Host path security"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/111"
 parent: 100
 children: []
 blocking: [112]
 blocked-by: []
 created: "2026-11-10T13:57:48Z"
-updated: "2026-11-10T14:15:31+00:00"
+updated: "2026-11-10T14:22:09+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null

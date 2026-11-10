@@ -51,3 +51,5 @@ The full cycle includes [SAR](plan/reviews/sar-2026-11-10-monitor-plan/review-ma
 ## Full-Auto delivery
 
 The owner authorized source delivery after [#103](../103/story.md) closed. Development starts with [#111](../111/story.md) on the exact delivered trunk. Close each accepted leaf on its own evidence. Production cutover follows the separate decision in the accepted plan.
+
+The #103 delivery found the installed launcher cleared the Codex chat identity before authenticating a scope marker. The accepted plan already calls for the exact legacy carrier in M07 and the installed invocation in M18. Carry this observed launcher failure into those checks. [Usage observation](../103/attachments/delivery-evidence.md#agent-measurement)
