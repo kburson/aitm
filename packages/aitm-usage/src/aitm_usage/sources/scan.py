@@ -1011,7 +1011,7 @@ def _mtime(info: os.stat_result) -> tuple[int, int, int]:
 
 def _verify_snapshot(
     stream: BinaryIO,
-    source: CandidateSource,
+    path: Path,
     snapshot: _Snapshot,
     complete_size: int,
     prefix: str,
@@ -1030,7 +1030,7 @@ def _verify_snapshot(
         # participates in this snapshot. A changed existing row fails closed.
         if _hash_prefix(stream, complete_size) != prefix:
             raise _ChangedSource
-    current = _reprobe(source._path)
+    current = _reprobe(path)
     # A directory can be moved out and back with identical inodes at both
     # endpoints. Directory ctime witnesses apply only to this open snapshot.
     if not snapshot.same_path(current) or _mtime(current.stat) != _mtime(after):
@@ -1129,7 +1129,7 @@ def _read(
     if checkpoint is not None and prior == snapshot.stat.st_size:
         prefix = _hash_prefix(stream, prior)
         _verify_prior(source, origin, checkpoint, prior, prefix)
-        _verify_snapshot(stream, source, snapshot, prior, prefix)
+        _verify_snapshot(stream, source._path, snapshot, prior, prefix)
         return _project(source, checkpoint, origin, [], {}, {}, prior, prefix)
 
     stream.seek(0)
@@ -1285,7 +1285,7 @@ def _read(
         _checkout_anchor(cwd, source) != anchor for cwd, anchor in checkouts.items()
     ):
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
-    _verify_snapshot(stream, source, snapshot, end, prefix)
+    _verify_snapshot(stream, source._path, snapshot, end, prefix)
     if selections:
         raise _SourceIssue(DiagnosticCode.BOUNDARY_UNVERIFIED)
     result = _project(
