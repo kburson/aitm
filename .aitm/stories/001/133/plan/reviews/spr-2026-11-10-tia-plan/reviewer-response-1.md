@@ -1,0 +1,58 @@
+---
+schema: "aitm.review-response/v0"
+level: "spr"
+story: 133
+role: "reviewer"
+round: 1
+artifact_path: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
+artifact_base_commit: "d80a08d4eac326a9662adfb587d5a8ff5f42f790"
+artifact_digest: "sha256:ad0404ecabe95ba314c365796590345b0f7bcec27803574d1971ece365efea7b"
+agent: {"host": "codex", "provider": "openai", "model_id": "gpt-6.1-sol", "effort": "high"}
+role_session: "codex-collaboration:/root/tia_plan_spr"
+session_identity_kind: "distinct-collaboration-participant"
+started_at: "2026-11-10T16:29:03Z"
+submitted_at: "2026-11-10T16:31:51Z"
+start_basis: "recorded UTC bound"
+finding_ids: ["SPR-01", "SPR-02", "SPR-03", "SPR-04", "SPR-05", "SPR-06", "SPR-07"]
+answered_finding_ids: []
+---
+
+## Summary
+
+I independently read the complete numbered plan in untruncated contiguous chunks covering lines 1–96, 97–192, 193–288, 289–384, 385–480 and 481–575. The first chunk was returned at 16:29:10Z and the remaining chunks at 16:29:15Z on November 10, 2026. The raw SHA-256 matched at 16:29:03Z before retrieval and at 16:29:28Z after retrieval. A final read-only digest check at 16:30:51Z still matched. These timestamps bound retrieval and review activity. I also read all 488 lines of the accepted design, verified its declared digest, and checked the #133 story, graduated draft, #103 contract and delivery evidence, and the manual checklist.
+
+The plan carries forward the owner's explainable Python selection, conservative full fallback, independent hosted shards, and the two-stage trunk and workspace recovery. It preserves the current full PR validation procedure and reserves production activation and enrollment for separate authorization. The findings concern boundaries and acceptance evidence that a leaf could currently satisfy while omitting a required behavior.
+
+## Findings
+
+1. **SPR-01 [P1] The merge intent can outlive its incident admission at the host mutation.** T15 persists authorization before dispatch and T18 validates an incident version, but their interfaces leave a gap between reservation, dispatch, and provider readback (plan lines 334–348, 370–397). For example, ordinary intent I is reserved while healthy, a verified stop records the next epoch while the PR head and base remain unchanged, and the already-reserved request is dispatched successfully. A GitHub head/base fence cannot see the local epoch. A request whose response was lost can expose the same gap if the host is still free to commit it while the authority records the stop. T17 tests head/base movement and ambiguity separately. That can pass without proving the stop-versus-commit ordering required by design lines 394–410.
+
+2. **SPR-02 [P1] No leaf owns qualified collection before shard assignment.** T02 classifies supplied observations, T07 names a collection attack fixture, and T08's only explicit operation requires expected IDs before observing the candidate (plan lines 146–159, 217–276). The dependency flow can therefore start with a candidate-originated collection result and use the same truncated list for assignments and receipt reconciliation. Existing #103 evidence in T01 is a comparison baseline. It cannot attest to the full collection of a new candidate. An attack that hides a newly collected test before the list becomes expected can pass expected-ID comparison and leave the exact base inventory unchanged. Design lines 148–156 and 174–200 require qualified complete collection before assignment as well as qualified execution after assignment.
+
+3. **SPR-03 [P1] Candidate control changes and inventory dispositions have no end-to-end owner.** T05 resolves declarations and fallback, T10 records removals, T13 compares against the last full trunk baseline, T19 names an inventory reference, and T24 compares selected outcomes (plan lines 188–203, 264–276, 305–319, 399–412, 478–494). None is explicitly assigned to detect a change to the trusted gate controls for an ordinary PR, force full mode, and require an independently approved disposition before accepting it. Nor is a trusted input or consumer assigned for intervening reviewed inventory dispositions when scheduled or repair validation uses an older full trunk baseline. A newer candidate can then be compared against a stale required set, silently tolerating a missing obligation or holding forever on a legitimately disposed change. The rules are required by design lines 59–68, 197–212 and 371–384 and the #103 gate-defining-diff procedure.
+
+4. **SPR-04 [P1] Restored storage has no reliable way to detect loss of an open stop.** T15 correctly states that restored state must reconcile, but its CAS, idempotency and pending intent tests can all succeed when an older intact SQLite copy is opened (plan lines 334–368). For example, restore a Healthy snapshot taken before a stop. GitHub can now show a valid fresh full pass after repair while the canonical roster still has a disconnected member. Fresh scheduled evidence and a locally consistent version cannot show that the roster and earlier pending intent disappeared. No leaf owns a continuity check or a guarded recovery procedure able to prove this history before reopening. The durable incident and roster obligations in design lines 338–350 and 440–462 depend on this distinction.
+
+5. **SPR-05 [P1] Workspace qualification lacks an owned notification and observation boundary.** T22 owns an adapter and fixtures for two native harnesses, and T23 accepts an effective snapshot and fix proof supplied as arguments (plan lines 428–476). No leaf names the supported native registration and stop notification paths or the trusted actor that measures the working snapshot, runs the incident probe, and verifies its freshness at release. A client can submit a validly authenticated request containing a previously green snapshot or a candidate-written report, even after a conflict or local edit reintroduces the defect. The reducer tests can pass with fixture-supplied truth. T27's authenticated trace (lines 534–549) needs an observed path for connected notification, disconnected fail-closed enforcement, and receipt verification. Design lines 425–462 require all three. T22's four hours currently cover discovery, integration and real qualification for both harnesses without prior evidence of native hook feasibility.
+
+6. **SPR-06 [P1] The independent broken-base route is used before its capability is qualified.** T19 owns a repair verifier and workflow, tells them to use an independently qualified route, and budgets implementation and an isolated broken lock/setup drill together (plan lines 399–412). T07's observer qualification, T13's scheduled run, and T17's merge-host spike do not prove how a trusted controller obtains valid controls, installs the exact candidate, and issues full evidence when normal base setup cannot start. An otherwise passing workflow can still fail precisely when the repair exception is needed. Design lines 371–384 require a working candidate route in that case, with every candidate gate preserved. Give that capability a bounded proof before depending on it.
+
+7. **SPR-07 [P2] Hosted rehearsal can pass without proving merge-only work eligibility or rollback during an active stop.** T26 rehearses coverage, inventory and evidence holds but does not require an already admitted or fresh ordinary workspace operation to stay eligible while an ordinary merge is denied (plan lines 517–532). It can also inject the holds without proving they follow a passing selected PR whose omitted runtime result later regresses. T27 asks to record rollback evidence and the plan promises preservation during rollback (lines 534–549 and 569–575), but no task exercises the policy transition while a stop and outstanding roster entry are live. Design lines 287–290, 304–313 and 464–476 distinguish those paths.
+
+## Required changes
+
+- **SPR-01** Assign the linearization and reconciliation contract jointly to the host-fence qualification and the authority leaves. Require a disposable-host race in which a verified stop arrives between reservation and dispatch, and a race with an ambiguous in-flight ordinary merge. Prove that no ordinary update can commit on superseded admission, that a conclusively earlier commit is accounted for, and that uncertain authority holds further writes. Keep the dependent route blocked if the host cannot provide the required ordering.
+- **SPR-02** Assign discovery, classification, plan creation, and execution to explicit producer/consumer interfaces. Require a qualified collector output that binds the observed complete candidate collection to the exact tree and controls before assignment. Distinguish complete collection from selected execution. Exercise a candidate that removes a newly collected ID before assignment, and prove the verifier refuses the result in full and selected modes. Correct any direct dependencies needed for the assigned producers.
+- **SPR-03** Give the trusted exact-tree control diff and approved inventory disposition inputs clear ownership and consumers. Exercise a candidate gate-control edit that forces full mode and holds until independent disposition, a disposition bound to the wrong revision or scope, and an inventory comparison against an older baseline with both valid and missing intervening dispositions.
+- **SPR-04** Assign a bounded continuity and restore gate. Specify how an authority instance proves it has current canonical incident and pending-intent state or enters recovery without admitting work. Test restoring a pre-stop snapshot while hosted proof is green and an acknowledgment is outstanding. Test that unresolved history and lost evidence cannot clear the hold.
+- **SPR-05** Identify the actual supported entry points, delivery/notification path, and trusted workspace-proof producer. Qualify the native capabilities in bounded slices before counting on both integrations in T22. Bind measured effective state, regression result, identity, generation and incident to the receipt, and require observation at release and next admission. Exercise connected notification, disconnected enforcement, a forged or replayed client claim, and state changed after a valid acknowledgment, using real enrolled harnesses for claims about their behavior.
+- **SPR-06** Assign a bounded, owner-authorized isolated proof of the alternate controller and exact candidate route before implementation of the repair workflow depends on it. Verify a broken base workflow or lock, a fully passing exact candidate, a red candidate, and missing or misattributed reference evidence. The route must retain ordinary review, candidate coverage, native and child-process evidence, wheel and applicable file checks. Carry an explicit capability refusal into dependent leaves if the proof fails.
+- **SPR-07** Assign the remaining scenarios to bounded rehearsal deliverables. Require a passing selected candidate followed by the scheduled coverage or unselected-test outcome regression, a denied ordinary merge and a fresh admitted ordinary workspace operation under the merge-only hold. Exercise fallback of PR validation to the full route during a verified test stop with an outstanding workspace acknowledgment. Verify that the stop and roster survive and that selected validation requires fresh control qualification before restoration.
+
+## Optional suggestions
+
+T09 can make its proposed two-job cap explicitly an experimental starting point with the retuning result owned by T25. Include the representative candidate set, cache profiles and runner-minute budget in the pinned sampling recipe before launching the two windows.
+
+## Decision
+
+Revisions requested.
