@@ -469,6 +469,7 @@ def _wheel(parent, suffix, *, incompatible=False, legacy=False):
                     + (
                         "    from . import ledger as fixture_ledger\n"
                         f"    fixture_ledger._control_root = lambda: Path({str(parent / 'control')!r})\n"
+                        "    monitor_registry._control_root = fixture_ledger._control_root\n"
                     ).encode(),
                 )
             if incompatible and name == "aitm_usage/ledger.py":
@@ -585,7 +586,10 @@ class _FakeLaunchControl:
             else [sys._base_executable, "-I", "-S", "-c", "import time; time.sleep(60)"]
         )
         self.child = subprocess.Popen(
-            argv, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            argv,
+            env=install._ENVIRONMENT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         self.loaded = install.LaunchJob(
             label, path, Path(program), tuple(value["ProgramArguments"]), self.child.pid
@@ -593,6 +597,7 @@ class _FakeLaunchControl:
         if mode == "one-shot":
             result = subprocess.run(
                 [program, "--project", str(self.ledger.root), "collect-once", "--json"],
+                env=install._ENVIRONMENT,
                 capture_output=True,
                 timeout=10,
             )
@@ -1059,3 +1064,278 @@ def test_prune_preserves_nested_recovery_material(
         == "prune-failed"
     )
     assert inside.exists() and runtime.executable.exists()
+
+
+@pytest.mark.parametrize("case", ["matching", "wrong", "unset", "empty", "hostile"])
+def test_scope_launcher_forwards_only_exact_optional_thread_candidate(tmp_path, case):
+    side_effect = tmp_path / "unexpected-shell-execution"
+    hostile = (
+        f'- spaces "quoted" and \'single\' $(touch "{side_effect}") '
+        f'`touch "{side_effect}"`\nsecond line'
+    )
+    candidate = {
+        "matching": str(UUID(int=1201)),
+        "wrong": str(UUID(int=1202)),
+        "unset": None,
+        "empty": "",
+        "hostile": hostile,
+    }[case]
+    site = tmp_path / "fixture site"
+    package = site / "aitm_usage"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    (package / "cli.py").write_text(
+        "import json, os\n"
+        "def main():\n"
+        "    print(json.dumps([\n"
+        "        'CODEX_THREAD_ID' in os.environ,\n"
+        "        os.environ.get('CODEX_THREAD_ID'),\n"
+        "        os.environ.get('UNRELATED_TEST_VARIABLE'),\n"
+        "    ]))\n"
+        "    return 0\n"
+    )
+    executable = tmp_path / "fixture launcher"
+    executable.write_bytes(install._launcher(Path(sys._base_executable), site))
+    executable.chmod(0o700)
+    environment = {"UNRELATED_TEST_VARIABLE": "must be cleared"}
+    if candidate is not None:
+        environment["CODEX_THREAD_ID"] = candidate
+    observed = subprocess.run(
+        [executable], env=environment, capture_output=True, text=True, timeout=10
+    )
+    assert observed.returncode == 0, observed.stderr
+    assert json.loads(observed.stdout) == [candidate is not None, candidate, None]
+    assert not side_effect.exists()
+
+
+def test_legacy_scope_launcher_matches_golden_bytes_and_digest():
+    python = Path("/pinned/python 3")
+    site = Path("/pinned/site packages")
+    original = (
+        b"#!/bin/sh\n"
+        b"exec /usr/bin/env -i LC_ALL=C PATH=/usr/bin:/bin '/pinned/python 3' "
+        b"-I -S -B -c '\n"
+        b"import sys\n"
+        b"sys.path.insert(0, sys.argv.pop(1))\n"
+        b"from aitm_usage.cli import main\n"
+        b"raise SystemExit(main())\n"
+        b"' '/pinned/site packages' \"$@\"\n"
+    )
+    assert install._launcher(python, site, legacy=True) == original
+    assert hashlib.sha256(original).hexdigest() == (
+        "272cbc70638f983a30eceae7be3cb7a2e1bf9768ce3dcb94d0dea5c37e75045c"
+    )
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_launcher_verification_selects_exact_receipt_variant(
+    project, tmp_path, monkeypatch, legacy
+):
+    _, ledger, _ = project
+    wheel, digest = _wheel(tmp_path, "receipt-variant")
+    interpreter = Path(sys._base_executable).resolve(strict=True)
+    generator = install._launcher
+    with monkeypatch.context() as old:
+        if legacy:
+            old.setattr(
+                install,
+                "_launcher",
+                lambda python, site: generator(python, site, legacy=True),
+            )
+        runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
+    executable = runtime.executable
+    directory = executable.parents[2]
+    receipt_path = directory / install._RUNTIME
+    receipt = json.loads(receipt_path.read_bytes())
+    site = install._site(executable.parents[1], runtime.interpreter_version)
+    python = executable.with_name("python")
+    assert executable.read_bytes() == generator(python, site, legacy=legacy)
+    assert install._read_runtime(ledger, directory) == runtime
+
+    def refuse_probe(*args, **kwargs):
+        pytest.fail("Unverified launcher reached the runtime probe")
+
+    monkeypatch.setattr(install, "_probe_runtime", refuse_probe)
+    executable.write_bytes(generator(python, site, legacy=not legacy))
+    with pytest.raises(install.InstallError, match="Verified runtime files changed"):
+        install._read_runtime(ledger, directory)
+
+    unknown = b"#!/bin/sh\nexit 99\n"
+    executable.write_bytes(unknown)
+    receipt["console_sha256"] = hashlib.sha256(unknown).hexdigest()
+    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+    with pytest.raises(install.InstallError, match="unknown launcher"):
+        install._read_runtime(ledger, directory)
+
+
+def test_installed_runtime_checks_interpreter_digest_before_any_execution(
+    project, tmp_path, monkeypatch
+):
+    _, ledger, _ = project
+    wheel, digest = _wheel(tmp_path, "interpreter-pin")
+    interpreter = Path(sys._base_executable).resolve(strict=True)
+    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
+    directory = runtime.executable.parents[2]
+    receipt_path = directory / install._RUNTIME
+    receipt = json.loads(receipt_path.read_bytes())
+    receipt["interpreter_sha256"] = "0" * 64
+    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+
+    def refuse_execution(*args):
+        pytest.fail("Interpreter ran before its receipt digest was verified")
+
+    monkeypatch.setattr(install, "_interpreter", refuse_execution)
+    with pytest.raises(install.InstallError, match="Verified runtime files changed"):
+        install._read_runtime(ledger, directory)
+
+
+def test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues(
+    project, tmp_path, monkeypatch, launch_control
+):
+    from aitm_usage import monitor_registry
+    from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
+    from aitm_usage.monitor_scope import Scope
+    from aitm_usage.scope_admission import MarkRequest
+    from aitm_usage.types import BoundaryKind, ScopeMarker, WorkPhase, encode_marker
+
+    _, ledger, command = project
+    interpreter = Path(sys._base_executable).resolve(strict=True)
+    first, first_digest = _wheel(tmp_path, "old-launcher")
+    second, second_digest = _wheel(tmp_path, "new-launcher")
+    assert first_digest != second_digest and first.name == second.name
+    generator = install._launcher
+
+    def activate(action, wheel, digest, *, expected=0):
+        return command(
+            "service",
+            action,
+            "--wheel",
+            wheel,
+            "--wheel-sha256",
+            digest,
+            "--interpreter",
+            interpreter,
+            expected=expected,
+        )
+
+    with monkeypatch.context() as old:
+        old.setattr(
+            install,
+            "_launcher",
+            lambda python, site, **kwargs: generator(python, site, legacy=True),
+        )
+        assert activate("install", first, first_digest)["status"] == "installed"
+    previous = launch_control.loaded.program
+    previous_directory = previous.parents[2]
+    old_receipt = previous_directory / install._RUNTIME
+    old_receipt_bytes = old_receipt.read_bytes()
+    old_launcher_bytes = previous.read_bytes()
+    assert activate("install", first, first_digest)["status"] == "already-active"
+    assert old_receipt.read_bytes() == old_receipt_bytes
+    assert previous.read_bytes() == old_launcher_bytes
+
+    launch_control.startup = "stale"
+    launch_control.fail_digest = second_digest
+    failed = activate("upgrade", second, second_digest, expected=1)
+    assert failed["status"] == "activation-rolled-back"
+    assert launch_control.loaded.program == previous
+    assert install._read_runtime(ledger, previous_directory).executable == previous
+    assert old_receipt.read_bytes() == old_receipt_bytes
+
+    launch_control.startup = "fresh"
+    upgraded = activate("upgrade", second, second_digest)
+    assert upgraded["status"] == "upgraded"
+    executable = launch_control.loaded.program
+    assert executable != previous
+    assert command("service", "stop")["status"] == "stopped"
+    assert launch_control.loaded is None
+
+    legacy_id, thread_id = UUID(int=1201), UUID(int=1202)
+    item = ItemKey(ItemKind.ISSUE, 194)
+    marker = ScopeMarker(
+        legacy_id,
+        Provider.CODEX,
+        scopes.session_reference(ledger, Provider.CODEX, str(thread_id)),
+        1,
+        BoundaryKind.REQUEST,
+        ledger.pseudonymize("fixture", "native-boundary"),
+        datetime.fromisoformat(CUTOFF) + timedelta(seconds=1),
+        item,
+        WorkPhase.PLANNING,
+        ledger.pseudonymize("fixture", "participant"),
+        PROJECT,
+        receipt_ref=ledger.pseudonymize("scope-receipt", str(legacy_id)),
+    )
+    legacy_file = tmp_path / "legacy marker.json"
+    legacy_file.write_bytes(encode_marker(marker))
+    legacy_file.chmod(0o600)
+    legacy_args = [
+        "--project",
+        str(ledger.root),
+        "scope",
+        "mark",
+        "--marker",
+        str(legacy_file),
+        "--json",
+    ]
+
+    def invoke(program, args, thread=None):
+        env = {"UNRELATED_TEST_VARIABLE": "never forward"}
+        if thread is not None:
+            env["CODEX_THREAD_ID"] = thread
+        return subprocess.run(
+            [program, *args], env=env, capture_output=True, timeout=10
+        )
+
+    assert invoke(previous, legacy_args, str(thread_id)).returncode == 1
+    for candidate in (None, "", str(UUID(int=1203))):
+        denied = invoke(executable, legacy_args, candidate)
+        assert denied.returncode == 1
+        assert not (ledger.root / "inbox" / f"{legacy_id}.json").exists()
+    accepted = invoke(executable, legacy_args, str(thread_id))
+    assert accepted.returncode == 0, accepted.stderr
+    assert (
+        accepted.stdout
+        == f'{{"command_id": "{legacy_id}", "status": "queued"}}\n'.encode()
+    )
+    assert (ledger.root / "inbox" / f"{legacy_id}.json").exists()
+
+    monitor_root = tmp_path / "control" / "monitor"
+    inbox = ControlInbox(monitor_root)
+    command_id, grant_id = UUID(int=1204), UUID(int=1205)
+    request = tmp_path / "monitor scope request.json"
+    request.write_text(
+        json.dumps(
+            {
+                "command_id": str(command_id),
+                "grant_id": str(grant_id),
+                "scope": {"project_id": str(PROJECT)},
+            }
+        )
+    )
+    request.chmod(0o600)
+    with monitor_registry.Registry(monitor_root).writer() as writer:
+        writer.register_project(
+            monitor_registry.ProjectRegistrationRequest(
+                PROJECT, str(ledger.root), "Fixture"
+            )
+        )
+        writer.source_evidence()
+        reader = ScopeInboxReader(writer, inbox)
+        reader.register(grant_id, PROJECT, ("mark",))
+        proposal = MarkRequest(command_id, grant_id, Scope(PROJECT))
+        reader.advertise(reader.probe(proposal))
+        queued = invoke(
+            executable,
+            ["monitor", "scope", "mark", "--request", str(request), "--json"],
+        )
+        assert queued.returncode == 0, queued.stderr
+        assert (
+            queued.stdout
+            == f'{{"command_id": "{command_id}", "status": "queued"}}\n'.encode()
+        )
+        with inbox.publication() as locked:
+            (envelope,) = reader.iter_verified(locked)
+        assert envelope.body.request == proposal
+        assert writer.command_status(command_id) is None
+        assert not (monitor_root / "scope-v1.json").exists()
