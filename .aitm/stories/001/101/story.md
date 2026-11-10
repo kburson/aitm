@@ -10,7 +10,7 @@ children: []
 blocking: [100]
 blocked-by: []
 created: "2026-11-10T00:36:15Z"
-updated: "2026-11-10T00:42:05Z"
+updated: "2026-11-10T02:52:31Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -30,6 +30,6 @@ Verify native Grok Build CLI usage identity, token fields, pricing provenance, l
 
 The two spikes can run concurrently. The report is the deliverable and any probe code is disposable.
 
-## Partial evidence
+## Research result
 
-[Retained evidence report](attachments/report.md). The current Grok Build CLI sign-in was rejected before any model turn. Retained usage and native completion metadata corroborate a candidate whole-turn source and prompt lineage. The controlled two-story park and resume test is pending a refreshed sign-in.
+[Published report](attachments/report.md). Grok Build CLI 1.0.77 emitted two verified native prompt boundaries and matching usage in one resumed session. The disposable scope receipts demonstrate feasibility. The production adapter must independently validate receipt authority, versioned token semantics, missing evidence, and inherited or conflicting histories. Provider-reported cost remains separate from billed spend and comparable API-equivalent estimates.
