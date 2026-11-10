@@ -1,0 +1,84 @@
+{
+  "schema": "aitm.native-xpr-acceptance/v0",
+  "story": 100,
+  "review_id": "review-08df8b2db6c59c182fdbf1947cf957ef",
+  "status": "accepted",
+  "authority_assurance": "unavailable",
+  "commit_mode": "normal",
+  "artifact": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md",
+  "artifact_history": [
+    {
+      "blob": "c573e966f9658659f96ec438592f529562c5b96d",
+      "commit": "99c13896ee2f05aad996aa9cdacb0ced9d815fca",
+      "digest": "sha256:57b0fc3fdfdfb4bfc0d8ae90558ba2cee4effe9b22fa85ba412e4bd856fa7e37",
+      "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md",
+      "snapshot": null,
+      "turn": 0
+    },
+    {
+      "blob": "4a3d38c747cf5fade1c093fbcc14f5725e865dcc",
+      "commit": "595637256545e839542c50d744aadf6de254cfc9",
+      "digest": "sha256:8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+      "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md",
+      "snapshot": null,
+      "turn": 1
+    }
+  ],
+  "finalization_commit": "51855ead1a2b40709a81f6869fae701a7ea77267",
+  "accepted_artifact_digest": "sha256:8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+  "reviewer_provider": "anthropic",
+  "reviewer_model": "claude-opus-5-5",
+  "reviewer_effort": "high",
+  "native_manifest_digest": "sha256:3c72830c5d39317b4660492c67e3a13aa7edcc8b4759508e800e249a1a66c899",
+  "rounds": [
+    {
+      "round": 1,
+      "decision": "revisions-requested",
+      "native_sealed_finding_ids": [
+        "R1-F001",
+        "R1-F002",
+        "R1-F003",
+        "R1-F004",
+        "R1-F005",
+        "R1-F006",
+        "R1-F007",
+        "R1-F008",
+        "R1-F009"
+      ],
+      "reviewer": {
+        "portable": "reviewer-response-1.md",
+        "native_digest": "sha256:16bda4afc6a15efc6147456d308b6c26ecf876e867e4ea1b4a927f437a46befa",
+        "input_digest": "sha256:57b0fc3fdfdfb4bfc0d8ae90558ba2cee4effe9b22fa85ba412e4bd856fa7e37",
+        "submitted_at": "2026-11-10T13:37:39.066Z"
+      },
+      "author": {
+        "portable": "author-response-1.md",
+        "native_digest": "sha256:068829936c0e5bbab7c85ff45e3191d81a7589ddfb25e2c7c5024cf206e45f2f",
+        "input_digest": "sha256:57b0fc3fdfdfb4bfc0d8ae90558ba2cee4effe9b22fa85ba412e4bd856fa7e37",
+        "submitted_at": "2026-11-10T13:41:24.320Z"
+      },
+      "revision": {
+        "file": "revision-1.diff",
+        "from_commit": "99c13896ee2f05aad996aa9cdacb0ced9d815fca",
+        "commit": "595637256545e839542c50d744aadf6de254cfc9",
+        "digest": "sha256:8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+        "patch_digest": "sha256:137110378194be28544a709e651650d488beeff89f1eec298f830b32e7a73f5f"
+      }
+    },
+    {
+      "round": 2,
+      "decision": "accepted",
+      "native_sealed_finding_ids": [
+        "R2-F001",
+        "R2-F002",
+        "R2-F003"
+      ],
+      "reviewer": {
+        "portable": "reviewer-response-2.md",
+        "native_digest": "sha256:37834c98130ca61de62bef49bb33019cfd34e10ce9c1e0ef2ee59e740228e528",
+        "input_digest": "sha256:8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+        "submitted_at": "2026-11-10T13:42:32.874Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "artifact_sha256": "2ac103dd7130a01112b7182da7e59c5f4f0e7bde7482759692f9511f0ed2b330",
+  "physical_lines": 237,
+  "reads": [
+    {
+      "first_line": 1,
+      "last_line": 45,
+      "verified_lines": 45
+    },
+    {
+      "first_line": 46,
+      "last_line": 90,
+      "verified_lines": 45
+    },
+    {
+      "first_line": 91,
+      "last_line": 135,
+      "verified_lines": 45
+    },
+    {
+      "first_line": 136,
+      "last_line": 180,
+      "verified_lines": 45
+    },
+    {
+      "first_line": 181,
+      "last_line": 225,
+      "verified_lines": 45
+    },
+    {
+      "first_line": 226,
+      "last_line": 237,
+      "verified_lines": 12
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_event_stream_sha256": "bad4bdbcc25b294da168d4d78383181aeebd65389272a1b40d3f14987dac1b21",
+  "reviewer_fingerprint": "a1344d71f868990d345ae7930507e33aca8ca8c065488cede4fa562bb3bf68d4",
+  "assurance": "Compared actual Codex numbered command output to exact source text. Distinct native reviewer session verified. Retrieval coverage does not establish attention."
+}
