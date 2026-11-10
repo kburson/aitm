@@ -457,13 +457,13 @@ def _command_outcome(view: RegistryView, command_id: UUID) -> ControlReceipt | N
     return next((item for item in view.receipts if item.command_id == command_id), None)
 
 
-def _read_state(root: _PinnedPath) -> bytes | None:
+def _read_state(root: _PinnedPath, name: str, limit: int) -> bytes | None:
     for _ in range(3):
         try:
-            named = os.stat(_STATE_FILE, dir_fd=root.fd, follow_symlinks=False)
+            named = os.stat(name, dir_fd=root.fd, follow_symlinks=False)
             _private(named)
             fd = os.open(
-                _STATE_FILE,
+                name,
                 os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
                 dir_fd=root.fd,
             )
@@ -471,7 +471,7 @@ def _read_state(root: _PinnedPath) -> bytes | None:
             root.check()
             return None
         except OSError:
-            raise LedgerError("Private monitor registry is unavailable") from None
+            raise LedgerError("Private monitor state is unavailable") from None
         with os.fdopen(fd, "rb") as stream:
             opened = os.fstat(fd)
             if opened.st_nlink == 0:
@@ -479,14 +479,14 @@ def _read_state(root: _PinnedPath) -> bytes | None:
                 if not os.path.samestat(named, opened):
                     continue
                 if (named.st_mode, named.st_uid) != (opened.st_mode, opened.st_uid):
-                    raise LedgerError("Private monitor registry identity changed")
+                    raise LedgerError("Private monitor state identity changed")
             else:
                 _private(opened)
             _check_acl(fd)
-            data = stream.read(_MAX_REGISTRY_BYTES + 1)
+            data = stream.read(limit + 1)
         root.check()
         return data
-    raise LedgerError("Private monitor registry changed during read")
+    raise LedgerError("Private monitor state changed during read")
 
 
 class Registry:
@@ -516,7 +516,7 @@ class Registry:
         if not _path_exists(self.root):
             return RegistryView()
         with _pin_directory(self.root) as root:
-            data = _read_state(root)
+            data = _read_state(root, _STATE_FILE, _MAX_REGISTRY_BYTES)
             if data is not None and _confirm_publication:
                 # A previous atomic replacement may have failed its directory sync.
                 os.fsync(root.fd)
@@ -680,10 +680,10 @@ class Registry:
         self._save(view)
         return approved
 
-    def _capture_candidate(
-        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    def _approved_candidate(
+        self, view: RegistryView, source_id: UUID, locator: SourceLocator
     ) -> tuple[ApprovedSource, SourceLocator]:
-        source = _source(view, change.source_id)
+        source = _source(view, source_id)
         _check_capture_root(source.directory)
         candidate = locator._source
         approval = source.approval
@@ -736,7 +736,7 @@ class Registry:
         *,
         arm: bool = False,
     ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
-        source, current = self._capture_candidate(view, change, locator)
+        source, current = self._approved_candidate(view, change.source_id, locator)
         approval = source.approval
         candidate = current._source
         reader = ProviderAdapter()
@@ -839,7 +839,7 @@ class Registry:
             arm=True,
         )
         if previous is not None and previous.position is not None:
-            _, current = self._capture_candidate(view, change, locator)
+            _, current = self._approved_candidate(view, change.source_id, locator)
             try:
                 _capture_position(
                     current._source, previous.position, fixed=previous.position
@@ -1076,7 +1076,7 @@ class Registry:
             or previous.gap_open
         ):
             raise ConflictError("Native progress requires an admitted stream")
-        approved, current = self._capture_candidate(view, change, locator)
+        approved, current = self._approved_candidate(view, change.source_id, locator)
         base = self._capture_base(previous, None)
         snapshot = _capture_position(current._source, base.cursor, fixed=cursor.cursor)
         self._verify_capture_tuple(approved, snapshot)
@@ -1200,7 +1200,7 @@ class Registry:
         later: bool,
         saved: _CaptureArm | None = None,
     ) -> _CaptureArm:
-        source, current = self._capture_candidate(view, change, locator)
+        source, current = self._approved_candidate(view, change.source_id, locator)
         try:
             position = _capture_position(
                 current._source,

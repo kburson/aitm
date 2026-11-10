@@ -266,7 +266,7 @@ class FrameBatch:
 
 @dataclass(frozen=True, slots=True)
 class _Enrollment:
-    scope: ScopeEnrollment
+    boundary: SourceBoundary
     prefix: str | None
     anchor_ref: SourceRef | None
 
@@ -340,13 +340,18 @@ class CandidateSource:
             assert frame is not None
             prefix = frame._prefix
             anchor_ref = evidence.anchor_ref
+        return self._select_boundary(enrollment.boundary, prefix, anchor_ref)
+
+    def _select_boundary(
+        self, boundary: SourceBoundary, prefix: str | None, anchor_ref: SourceRef | None
+    ) -> "CandidateSource":
         updated = tuple(
             selector
             for selector in self._enrollments
-            if selector.scope.boundary.ordinal != enrollment.boundary.ordinal
+            if selector.boundary.ordinal != boundary.ordinal
         )
         return replace(
-            self, _enrollments=(*updated, _Enrollment(enrollment, prefix, anchor_ref))
+            self, _enrollments=(*updated, _Enrollment(boundary, prefix, anchor_ref))
         )
 
     def with_exclusion(self, frame: SourceFrame) -> "CandidateSource":
@@ -1470,7 +1475,7 @@ def _read(
     segment = None
     last_timed = None
     checkouts: dict[Path, tuple[SourceRef, _FileID]] = {}
-    selections = {entry.scope.boundary.ordinal: entry for entry in source._enrollments}
+    selections = {entry.boundary.ordinal: entry for entry in source._enrollments}
     admitted: dict[SourceRef, int] = {}
     pending: dict[SourceRef, int] = {}
     end = 0

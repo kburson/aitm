@@ -469,6 +469,7 @@ class _Walk:
         self.boundaries: list[SourceBoundary] = []
         self.diagnostics: list[Diagnostic] = list(batch.diagnostics)
         self.revisions: list[Revision] = []
+        self.span_ends: dict[SourceRef, int] = {}
         self.quota: list[QuotaEvidence] = []
         self.batch = batch
 
@@ -1223,6 +1224,7 @@ class _Walk:
                 ),
             )
         )
+        self.span_ends[key] = frame.ordinal + 1
 
     def step(self, frame: SourceFrame, commit: bool) -> None:
         if (
@@ -1348,9 +1350,9 @@ def read_codex(
 
 def _read_codex(
     batch: FrameBatch, state: CodexState, eligibility: Eligibility
-) -> tuple[AdapterResult, int | None]:
+) -> tuple[AdapterResult, int | None, dict[SourceRef, int]]:
     if batch.cursor is None:
-        return AdapterResult(diagnostics=batch.diagnostics), None
+        return AdapterResult(diagnostics=batch.diagnostics), None, {}
     if (
         batch.provider_checkpoint is None
         or batch.provider_checkpoint.provider is not _PROVIDER
@@ -1381,6 +1383,7 @@ def _read_codex(
             tuple(walk.quota),
         ),
         unsettled,
+        walk.span_ends,
     )
 
 
