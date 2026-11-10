@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 115
 title: "[M05] Grok evidence adapter"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/115"
 parent: 100
 children: []
-blocking: [120, 121]
+blocking: [120, 121, 137]
 blocked-by: [114]
 created: "2026-11-10T13:57:54Z"
-updated: "2026-11-10T16:36:16+00:00"
+updated: "2026-11-10T16:41:02+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/carrier-capture.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/carrier-capture.md", "plan/jit.md", "plan/jit-review.md", "plan/linux-carrier-split.json", "plan/delivery-checklist.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M05", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "ec3fe35d7eda1c6ab8b87f266a2dcd28fb97c00d37563551ae3036771983bb06"}
@@ -43,3 +43,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Pin the approved production scope-marker carrier with a controlled native capture before finalizing the Grok contract. #101 is the macOS feasibility baseline. If the Linux carrier is unavailable, assign the remaining implementation to an explicit M05 slice required by M19 and keep that surface disabled. Run red. Implement versioned native decoding and separate rate provenance. Run green with `test_accounting.py`. Commit M05. Later qualification proves actual receipt authority on every advertised host.
 
 [Controlled macOS Grok marker capture](plan/carrier-capture.md). Pickup review and native Linux carrier evidence remain open.
+
+The exact macOS pickup passed independent review. [#137 M05-LG](../137/story.md) owns the Linux carrier, and #129 requires its delivery. [Reviewed pickup](plan/jit.md) · [Review](plan/jit-review.md).

@@ -31,3 +31,7 @@ The child set follows the exact accepted plan. Individual estimates and leaf-spe
 ## M04 pickup split
 
 [#134 M04-LC](../../134/story.md) and [#135 M04-LA](../../135/story.md) were added under #100 after the original 19-leaf inventory. Both require #114 and block #129. [Verified split](../../114/plan/linux-carrier-split.json).
+
+## M05 pickup split
+
+[#137 M05-LG](../../137/story.md) follows #115 and blocks #129. [Verified split](../../115/plan/linux-carrier-split.json).

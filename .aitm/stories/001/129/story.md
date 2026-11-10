@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/129"
 parent: 100
 children: []
 blocking: []
-blocked-by: [128, 134, 135]
+blocked-by: [128, 134, 135, 137]
 created: "2026-11-10T13:58:18Z"
-updated: "2026-11-10T15:46:34+00:00"
+updated: "2026-11-10T16:41:02+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -44,3 +44,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Run the full locked suite and Ruff on the release candidate. Confirm the documented supported matrix matches actual receipts. Keep unqualified surfaces out of support claims. A production installation needs a separately authorized cutover with an explicit rollback or forward-recovery decision. Commit M19 and submit the integrated package for the project’s applicable review and delivery gates.
 
 The verified Linux carrier prerequisites are [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md), alongside M18 #128. [Reviewed split](../114/plan/jit.md#host-evidence-and-split).
+
+[#137 M05-LG](../137/story.md) is the Linux Grok carrier prerequisite alongside M18 and the two M04 Linux leaves. [Reviewed M05 split](../115/plan/jit.md#carrier-and-ownership).
