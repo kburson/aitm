@@ -48,6 +48,7 @@ from .scope_admission import (
     open_grant,
     pinned_destination,
     preliminary_grant,
+    require_unseen_legacy,
     require_witness,
     seal_request,
     stored_grant,
@@ -252,6 +253,7 @@ class ControlInbox:
 
             def recheck() -> None:
                 recheck_grant()
+                require_unseen_legacy(record, request)
                 if recheck_destination is not None:
                     recheck_destination()
                 check_witness_time(record, _scope_now())

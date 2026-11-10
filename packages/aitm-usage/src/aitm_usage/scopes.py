@@ -434,6 +434,12 @@ def enqueue_command(
                     current if current is not None else ledger.command_receipt(command)
                 )
 
+    # Adoption fences legacy writes. A collector may have committed the
+    # receipt before the fence won the publication lock.
+    current = ledger.command_receipt(command)
+    if current is not None:
+        return current
+
     from .monitor_control import enqueue_adopted_scope
 
     if not enqueue_adopted_scope(ledger, adoption_id, command, claude_session):

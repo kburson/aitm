@@ -159,7 +159,7 @@ def invocation(ledger, action, *, provider=Provider.CODEX):
     correction = ScopeCorrection(
         COMMAND,
         PROJECT,
-        replace(marker, marker_id=DRAFT, receipt_ref=None),
+        replace(marker, marker_id=DRAFT, receipt_ref=ref("scope-receipt", str(DRAFT))),
         ref("fixture", "correction"),
     )
     input_file.write_bytes(encode_correction(correction))
@@ -271,25 +271,221 @@ def test_adoption_wins_between_legacy_selection_and_publication(
     assert list((ledger.root / "inbox").iterdir()) == []
 
 
+def provision_legacy_reader(writer, inbox, ledger):
+    registered = writer.register_project(
+        monitor_registry.ProjectRegistrationRequest(PROJECT, str(ledger.root), "Legacy")
+    )
+    adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
+    with inbox.publication():
+        writer._save(replace(writer.view(), projects=(adopted,)))
+    writer.source_evidence()
+    reader = monitor_control.ScopeInboxReader(writer, inbox)
+    reader.register(
+        legacy_grant_id(PROJECT, ADOPTION), PROJECT, ("legacy",), adoption_id=ADOPTION
+    )
+    return reader
+
+
+def legacy_boundary(ledger, marker, anchor=None):
+    return scopes.BoundaryEvidence(
+        SourceBoundary(
+            marker.provider,
+            ledger.pseudonymize("fixture", "stream"),
+            marker.session_ref,
+            1,
+            marker.boundary_kind,
+            marker.boundary_ref,
+            receipt_ref=marker.receipt_ref,
+        ),
+        anchor,
+    )
+
+
+def establish_legacy_outcome(ledger, command, status):
+    payload = command.payload
+    conflict = status is MarkerDisposition.CONFLICT
+    evidence = ()
+    prior = None
+    if isinstance(payload, ScopeCorrection):
+        original = replace(payload.replacement, item=ItemKey(ItemKind.ISSUE, 3))
+        if conflict:
+            original = replace(
+                original, boundary_ref=ledger.pseudonymize("fixture", "other-boundary")
+            )
+        prior = InboxCommand(original.marker_id, PROJECT, original)
+        prior_evidence = (legacy_boundary(ledger, original),)
+    elif isinstance(payload, (DraftAlias, ItemParent)):
+        if conflict:
+            conflicting = (
+                replace(payload, command_id=DRAFT, issue=ItemKey(ItemKind.ISSUE, 3))
+                if isinstance(payload, DraftAlias)
+                else replace(
+                    payload,
+                    command_id=DRAFT,
+                    child=payload.parent,
+                    parent=payload.child,
+                )
+            )
+            prior = InboxCommand(DRAFT, PROJECT, conflicting)
+            prior_evidence = ()
+    else:
+        marker = payload.marker if isinstance(payload, DevelopmentBinding) else payload
+        anchor = payload.anchor_ref if isinstance(payload, DevelopmentBinding) else None
+        if status is not MarkerDisposition.PENDING:
+            proof = legacy_boundary(ledger, marker, anchor)
+            evidence = (proof,)
+            if conflict:
+                evidence += (
+                    replace(proof, boundary=replace(proof.boundary, ordinal=2)),
+                )
+
+    with ledger.writer() as writer:
+        if prior is not None:
+            scopes.enqueue_command(ledger.root, prior)
+            (receipt,) = scopes.drain_inbox(writer, prior_evidence).receipts
+            assert receipt.disposition is MarkerDisposition.ACCEPTED
+        scopes.enqueue_command(ledger.root, command)
+        (receipt,) = scopes.drain_inbox(writer, evidence).receipts
+    assert receipt.disposition is status
+    return receipt
+
+
+@contextmanager
+def adopted_with_witness(ledger, monitor_root):
+    commit_adoption(ledger, ADOPTION)
+    inbox = monitor_control.ControlInbox(monitor_root)
+    with monitor_registry.Registry(monitor_root).writer() as writer:
+        reader = provision_legacy_reader(writer, inbox, ledger)
+        _, example, _ = invocation(ledger, "alias")
+        probe_id = UUID(int=116)
+        probe = InboxCommand(probe_id, PROJECT, replace(example, command_id=probe_id))
+        reader.advertise(reader.probe(adopted_request(probe, ADOPTION, None)))
+        yield inbox
+
+
+@pytest.mark.parametrize(
+    ("action", "provider"),
+    [
+        ("mark", Provider.CLAUDE),
+        ("mark", Provider.CODEX),
+        ("bind", Provider.CLAUDE),
+        ("bind", Provider.CODEX),
+        ("correct", Provider.CODEX),
+        ("alias", Provider.CODEX),
+        ("parent", Provider.CODEX),
+    ],
+)
+@pytest.mark.parametrize(
+    "status", [MarkerDisposition.ACCEPTED, MarkerDisposition.CONFLICT]
+)
+def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
+    legacy, action, provider, status
+):
+    ledger, monitor_root, run = legacy
+    args, payload, session = invocation(ledger, action, provider=provider)
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    expected = establish_legacy_outcome(ledger, command, status)
+    before = ledger.as_of().sequence
+
+    with adopted_with_witness(ledger, monitor_root) as inbox:
+        if isinstance(payload, (DraftAlias, ItemParent)):
+            # CLI relationship invocations always create another UUID.
+            assert scopes.enqueue_command(ledger.root, command) == expected
+        else:
+            code, output = run(args)
+            assert code == 0, output
+            assert (
+                output.out
+                == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
+            )
+            assert output.err == ""
+            assert (
+                scopes.enqueue_command(ledger.root, command, claude_session=session)
+                == expected
+            )
+        with inbox.publication() as locked:
+            assert list(inbox.iter_pending(locked)) == []
+    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+    assert ledger.as_of().sequence == before
+
+
+def test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state(legacy):
+    ledger, monitor_root, run = legacy
+    args, payload, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    establish_legacy_outcome(ledger, command, MarkerDisposition.PENDING)
+    commit_adoption(ledger, ADOPTION)
+
+    code, output = run(args)
+
+    assert code == 0, output
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "pending"}}\n'
+    assert output.err == ""
+    assert not monitor_root.exists()
+    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+
+
+def test_adopted_replay_preserves_legacy_conflict_for_changed_bytes(legacy):
+    ledger, monitor_root, run = legacy
+    args, payload, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    establish_legacy_outcome(ledger, command, MarkerDisposition.ACCEPTED)
+    changed = replace(payload, item=ItemKey(ItemKind.ISSUE, 3))
+    (ledger.root.parent / "scope-input.json").write_bytes(encode_marker(changed))
+
+    with adopted_with_witness(ledger, monitor_root) as inbox:
+        code, output = run(args)
+        assert code == 1
+        assert output.out == ""
+        assert output.err == "aitm-usage: inbox command conflict\n"
+        with inbox.publication() as locked:
+            assert list(inbox.iter_pending(locked)) == []
+    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+
+
+@pytest.mark.parametrize("provider", [Provider.CLAUDE, Provider.CODEX])
+def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
+    legacy, monkeypatch, provider
+):
+    ledger, monitor_root, run = legacy
+    args, payload, _ = invocation(ledger, "mark", provider=provider)
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    scopes.enqueue_command(ledger.root, command)
+    proof = legacy_boundary(ledger, payload)
+    original_publication = scopes._publication
+    cutover_started = False
+
+    @contextmanager
+    def publication_after_legacy_commit(inbox):
+        nonlocal cutover_started
+        if not cutover_started:
+            cutover_started = True
+            with ledger.writer() as writer:
+                (receipt,) = scopes.drain_inbox(writer, (proof,)).receipts
+                assert receipt.disposition is MarkerDisposition.ACCEPTED
+                commit_adoption(ledger, ADOPTION)
+        with original_publication(inbox):
+            yield
+
+    monkeypatch.setattr(scopes, "_publication", publication_after_legacy_commit)
+    code, output = run(args)
+
+    assert cutover_started
+    assert code == 0, output
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
+    assert output.err == ""
+    assert not monitor_root.exists()
+    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+
+
 def test_adopted_legacy_requires_the_compatible_reader_witness(legacy):
     ledger, monitor_root, run = legacy
     args, payload, session = invocation(ledger, "mark", provider=Provider.CLAUDE)
     commit_adoption(ledger, ADOPTION)
     inbox = monitor_control.ControlInbox(monitor_root)
-    grant_id = legacy_grant_id(PROJECT, ADOPTION)
     command = InboxCommand(COMMAND, PROJECT, payload)
     with monitor_registry.Registry(monitor_root).writer() as writer:
-        registered = writer.register_project(
-            monitor_registry.ProjectRegistrationRequest(
-                PROJECT, str(ledger.root), "Legacy"
-            )
-        )
-        adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
-        with inbox.publication():
-            writer._save(replace(writer.view(), projects=(adopted,)))
-        writer.source_evidence()
-        reader = monitor_control.ScopeInboxReader(writer, inbox)
-        reader.register(grant_id, PROJECT, ("legacy",), adoption_id=ADOPTION)
+        reader = provision_legacy_reader(writer, inbox, ledger)
 
         code, output = run(args)
 

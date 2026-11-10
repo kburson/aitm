@@ -482,6 +482,14 @@ def open_grant(
             recheck()
 
 
+def require_unseen_legacy(record: _GrantRecord, request: ScopeRequest) -> None:
+    if isinstance(request, AdoptedRequest):
+        command = decode_command(request.legacy_bytes.encode())
+        ledger = Ledger.open(Path(record.grant.project.path), request.project_id)
+        if ledger.command_receipt(command) is not None:
+            raise LedgerError("The legacy command already has a receipt")
+
+
 def _adoption(ledger: Ledger, state: _PinnedPath) -> UUID | None:
     from .scopes import read_monitor_adoption
 

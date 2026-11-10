@@ -488,3 +488,48 @@ def test_adopted_scope_shape_refuses_separate_source_anchor_command(tmp_path):
     )
     with pytest.raises(ValueError, match="legacy command"):
         adopted_request(command, UUID(int=92), None)
+
+
+def test_typed_adopted_producer_cannot_republish_durable_legacy_command(tmp_path):
+    from test_scope_legacy import commit_adoption
+
+    from aitm_usage import scopes
+    from aitm_usage.scope_admission import adopted_request, legacy_grant_id
+    from aitm_usage.types import InboxCommand, ItemKey, ItemKind, ItemParent
+
+    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
+    payload = ItemParent(
+        COMMAND, PROJECT, ItemKey(ItemKind.ISSUE, 1), ItemKey(ItemKind.ISSUE, 2)
+    )
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    assert scopes.enqueue_command(ledger.root, command) is None
+    with ledger.writer() as legacy_writer:
+        (stored,) = scopes.drain_inbox(legacy_writer, ()).receipts
+        assert stored.disposition == "accepted"
+
+    adoption_id = UUID(int=77)
+    commit_adoption(ledger, adoption_id)
+    root = tmp_path / "monitor"
+    inbox = ControlInbox(root)
+    with Registry(root).writer() as writer:
+        registered = writer.register_project(
+            ProjectRegistrationRequest(PROJECT, str(ledger.root), "Project")
+        )
+        with inbox.publication():
+            adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
+            writer._save(replace(writer.view(), projects=(adopted,)))
+        writer.source_evidence()
+        reader = ScopeInboxReader(writer, inbox)
+        reader.register(
+            legacy_grant_id(PROJECT, adoption_id),
+            PROJECT,
+            ("legacy",),
+            adoption_id=adoption_id,
+        )
+        request = adopted_request(command, adoption_id, None)
+        reader.advertise(reader.probe(request))
+
+        with pytest.raises(LedgerError, match="legacy command already has a receipt"):
+            inbox.enqueue_scope(request)
+        assert not tuple(root.glob("inbox/*.json"))
+        assert ledger.command_receipt(command) == stored
