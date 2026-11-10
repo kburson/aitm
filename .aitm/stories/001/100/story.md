@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T00:37:46Z"
+updated: "2026-11-10T03:08:15Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -33,3 +33,7 @@ Extend the delivered [#83 collector](../../000/83/story.md) to concurrent regist
 3. Draft the implementation plan after spec acceptance. Retain the plan and its separate review collateral under `plan/`.
 
 This is a follow-on to the closed #83. The authorized work is research, spec review and planning.
+
+## Accepted specification
+
+Accepted SHA-256 `1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9` after [SAR](design/reviews/sar-2026-11-09-monitor-spec/review-manifest.md), [independent manual SPR](design/reviews/spr-2026-11-09-monitor-spec/review-manifest.md) and [native Claude XPR](design/reviews/xpr-2026-11-09-monitor-spec/review-manifest.md). Both spike reports were incorporated before review. Full-file retrieval was verified for all three SPR rounds and both XPR rounds. This acceptance authorizes drafting the plan under the owner’s planning direction.

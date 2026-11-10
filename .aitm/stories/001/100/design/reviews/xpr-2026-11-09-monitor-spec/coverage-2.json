@@ -1,0 +1,31 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "round": 2,
+  "artifact": ".aitm/stories/001/100/design/multi-project-usage-monitor-design.md",
+  "artifact_commit": "6c59fd4b2df3e3ff7e517ec96fcc97e62ae66ac8",
+  "artifact_digest": "sha256:1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9",
+  "physical_lines": 84,
+  "reviewer_fingerprint": "sha256:823649c6e9cc3bd03d5f1ae0ac1be3cff34b890beff066b8cbc16b60d7e45e2c",
+  "models": [
+    "claude-opus-5-5"
+  ],
+  "reads": [
+    {
+      "offset": 1,
+      "limit": null,
+      "first_line": 1,
+      "last_line": 84,
+      "verified_lines": 84,
+      "mismatch": []
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_transcript_prefixes": [
+    {
+      "sha256": "f27e9c23b01445bda2a6465232b07a7395e83363f69fdbe205cf45ee40b1c082",
+      "bytes": 701579
+    }
+  ],
+  "assurance": "Actual numbered Claude Read tool results matched the exact reviewed Git blob. This verifies retrieval coverage."
+}

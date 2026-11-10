@@ -1,0 +1,70 @@
+{
+  "schema": "aitm.native-xpr-acceptance/v0",
+  "story": 100,
+  "review_id": "review-349d5fb4f6c3bda1a7d3abf7672b53cc",
+  "status": "accepted",
+  "authority_assurance": "unavailable",
+  "commit_mode": "normal",
+  "artifact": ".aitm/stories/001/100/design/multi-project-usage-monitor-design.md",
+  "artifact_history": [
+    {
+      "blob": "c58ed4411fcf9300ca8e95864e37319943ce8d56",
+      "commit": "98eb6783dc73f6e875425d2c763cf856cdf08bed",
+      "digest": "sha256:d0d7a67acc4724185a82d66692182bb42b0065cc0230535f9286d7a7e7947c43",
+      "path": ".aitm/stories/001/100/design/multi-project-usage-monitor-design.md",
+      "snapshot": null,
+      "turn": 0
+    },
+    {
+      "blob": "6700f9723575990a6a202adfb6a744835c092abc",
+      "commit": "6c59fd4b2df3e3ff7e517ec96fcc97e62ae66ac8",
+      "digest": "sha256:1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9",
+      "path": ".aitm/stories/001/100/design/multi-project-usage-monitor-design.md",
+      "snapshot": null,
+      "turn": 1
+    }
+  ],
+  "finalization_commit": "752353093f51da4f8a7b4f3450accb1a8d60f936",
+  "accepted_artifact_digest": "sha256:1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9",
+  "reviewer_provider": "anthropic",
+  "reviewer_model": "claude-opus-5-5",
+  "reviewer_effort": "high",
+  "native_manifest_digest": "sha256:17efb4c197733e37ab0c6c80ad643ea40adb3ad2c91cfce58d4cda85f9b12be7",
+  "rounds": [
+    {
+      "round": 1,
+      "decision": "revisions-requested",
+      "native_sealed_finding_ids": [],
+      "reviewer": {
+        "portable": "reviewer-response-1.md",
+        "native_digest": "sha256:f01be77d727f9a75a157f35ec900e1ee999e9f388b277450729b48f275c69cb2",
+        "input_digest": "sha256:d0d7a67acc4724185a82d66692182bb42b0065cc0230535f9286d7a7e7947c43",
+        "submitted_at": "2026-11-10T03:04:49.790Z"
+      },
+      "author": {
+        "portable": "author-response-1.md",
+        "native_digest": "sha256:51756b23459875c251303bf92fbea343c471e5fabc3a7289e709be950e8ae653",
+        "input_digest": "sha256:d0d7a67acc4724185a82d66692182bb42b0065cc0230535f9286d7a7e7947c43",
+        "submitted_at": "2026-11-10T03:06:02.851Z"
+      },
+      "revision": {
+        "file": "revision-1.diff",
+        "from_commit": "98eb6783dc73f6e875425d2c763cf856cdf08bed",
+        "commit": "6c59fd4b2df3e3ff7e517ec96fcc97e62ae66ac8",
+        "digest": "sha256:1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9",
+        "patch_digest": "sha256:db0e21c9f24f4032442506b47e74785f0c7aa7a7c49f6bc7813b8e59c06df1ae"
+      }
+    },
+    {
+      "round": 2,
+      "decision": "accepted",
+      "native_sealed_finding_ids": [],
+      "reviewer": {
+        "portable": "reviewer-response-2.md",
+        "native_digest": "sha256:61b82f7d7495ac4a0623320d6229ea26dcaada751b964d19d58a6b23589060f2",
+        "input_digest": "sha256:1a5e9bb35335ab294bfc3c0d3a925bcd5eefc72d399fee52971842c6a1c241a9",
+        "submitted_at": "2026-11-10T03:07:01.924Z"
+      }
+    }
+  ]
+}

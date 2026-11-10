@@ -1,0 +1,11 @@
+## Verdict — REVISIONS REQUIRED
+
+I reread all 83 numbered lines and verified that the specification matches the checksum in the author’s disposition. Findings 2, 3, 5, 6, 7, and 9 are resolved. Findings 1, 4, and 8 still need the changes below. The revised reporting rules also expose a new export case.
+
+1. **Resolve competing handoffs consistently when proof arrives late.** Spec lines 23, 55, 76–77. A verified proposal for the same native boundary can arrive after the first proposal advanced the scope generation and its usage was acknowledged. Line 23 can classify it as either stale or conflicting. Define which generation governs validity at the target boundary and how a late conflict affects published usage. Test both arrival orders, including a competing receipt that arrives after ACK.
+
+2. **Define the replay fence when a restored watermark may be stale.** Spec lines 61, 69, 79. A crash after publication but before an independent recovery receipt is durable can leave the backup and surviving receipts in agreement even though a later decision was visible. Specify what proves the recovery watermark is current and where replay stops when that proof is unavailable. Test the interruption between publication and durable recovery evidence.
+
+3. **Add explicit Grok qualification for folded usage and forks.** Spec lines 47, 51, 77–79. The revised counting rule addresses overlap, but the delivery checks do not exercise a folded parent arriving after a child was already published. Require that case and verify that no report snapshot counts both. Also qualify a fork under a new session identity by verifying that inherited usage is excluded and genuinely new turns can count. #101 report, lines 38 and 42–45.
+
+4. **Define compatible-export behavior for a verified time correction after Core acceptance.** Spec lines 55, 59, 61. A valid correction can move an observation into a different interval without creating an evidence dispute. The spec pins the old report and protects the accepted key, but leaves the new compatible export’s behavior undefined. Specify how the corrected observation and its reconciliation appear when the original payload was already accepted. Verify that the correction neither changes the accepted payload nor creates a second charge.

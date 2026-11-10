@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.full-file-read-audit/v0",
+  "artifact_sha256": "d0d7a67acc4724185a82d66692182bb42b0065cc0230535f9286d7a7e7947c43",
+  "physical_lines": 83,
+  "reads": [
+    {
+      "first_line": 1,
+      "last_line": 30,
+      "verified_lines": 30
+    },
+    {
+      "first_line": 31,
+      "last_line": 60,
+      "verified_lines": 30
+    },
+    {
+      "first_line": 61,
+      "last_line": 83,
+      "verified_lines": 23
+    }
+  ],
+  "missing_lines": [],
+  "complete": true,
+  "private_event_stream_sha256": "7fc4631b7f143ac3e1e0a8d17751a44cad6cb9ccc54cebbe79a385e00cc0532e",
+  "reviewer_fingerprint": "2d25287a2a21b5b163166fc0b506d0a71cc50b62b5d8825d1e156956760f9c62",
+  "assurance": "Compared actual Codex numbered command output to exact source text. Distinct native reviewer session verified. Retrieval coverage does not establish attention."
+}
