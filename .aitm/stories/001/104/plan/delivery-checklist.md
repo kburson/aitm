@@ -20,3 +20,7 @@ The [reviewed ordinary PR binding amendment](../design/github-tested-merge-bindi
 ## Ordinary PR signing probe result
 
 The [independently reviewed JIT](signing-probe-jit.md) authorized one diagnostic. The [verified result](../attachments/github-signing-probe-result.md) binds the certificate and subject to exact Actions attempt 1 and the live merge. The historical failed probe remains intact. This successful diagnostic did not publish the production gate.
+
+## Full-Auto local checkpoint
+
+[Reviewed local candidate and verification](../attachments/local-delivery-checkpoint.md). The exact source stays in the story worktree. Recurring public signing authority and the scoped first-production-workflow pre-Develop exception remain open. Hosted validation, exact post-CI review, merge and sign-off remain separate.
