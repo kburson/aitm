@@ -189,6 +189,37 @@ def test_cold_restart_at_every_native_row_and_with_partial_tail(grok_source):
     assert not partial.observations and not partial.cursor
 
 
+def test_grok_positions_match_the_marked_and_next_unmarked_completions(grok_source):
+    s = grok_source
+    first_hook = (SESSION, PROMPT_A, "synthetic-event-1")
+    receipt = s.pending_receipts[first_hook]
+    batch = _batch(
+        s,
+        s.rows,
+        s.snapshot,
+        verifier=lambda *hook: receipt if hook == first_hook else None,
+    )
+
+    (marked, following) = batch.observations
+    (linked,) = batch.boundaries
+    boundary = linked.boundary
+    checkpoint = batch.cursor.checkpoint
+    session = s.key.pseudonymize("grok-session", SESSION)
+
+    assert boundary.receipt_ref == receipt
+    assert marked.position.session_ref == boundary.session_ref == session
+    assert following.position.session_ref == session
+    assert (
+        marked.position.stream_ref
+        == following.position.stream_ref
+        == boundary.stream_ref
+        == checkpoint.stream_ref
+    )
+    assert marked.position.ordinal == boundary.ordinal == len(b"".join(s.rows[:4]))
+    assert following.position.ordinal == len(b"".join(s.rows[:9]))
+    assert marked.position.ordinal < following.position.ordinal
+
+
 def test_hookless_eligible_completion_keeps_native_interval(grok_source):
     s = grok_source
     result = _batch(

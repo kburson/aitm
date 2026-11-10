@@ -34,6 +34,7 @@ from .adapter import (
     AdapterBatch,
     NativeBoundary,
     NativeObservation,
+    NativePosition,
     SourceLocator,
     SourceRoot,
     StreamCursor,
@@ -684,9 +685,18 @@ class GrokAdapter:
         )
         walk.read(data[offset:], offset)
         diagnostics, disputed = _reconcile(source, origin, walk)
+        session_ref = source.root.evidence.pseudonymize(
+            "grok-session", origin.session_id
+        )
         observations = tuple(
             NativeObservation(
-                turn.key, 1, turn.observation, _SURFACE, _TIME_BASIS, origin.checkout
+                turn.key,
+                1,
+                turn.observation,
+                _SURFACE,
+                _TIME_BASIS,
+                origin.checkout,
+                position=NativePosition(session_ref, source.stream_ref, turn.ordinal),
             )
             for turn in walk.new
             if turn.key not in disputed
