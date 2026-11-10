@@ -13,3 +13,11 @@ The [second independent review](2026-11-10-117-native-scope-pickup-review.md) pa
 Codex owns M07a integration and closure. The isolated branch `codex/aitm-117-native-scope` is pinned to literal trunk `d769b3169724eeb9ef4b4aee47d3ab4c4489072d`. #116 is closed, Done and delivered on that exact tree. The fresh locked baseline passed 714 product and CLI tests, 182 helper tests and both raw coverage floors. Project 24 read back Dev, rank 210, size M, estimate 3.5 agent-hours and start November 10. #182 is Backlog at rank 215 and has its own pending JIT fields.
 
 The implementation tests unregistered proposal refusal without a conflict, keeps only keyed stream identity in private storage, and preserves first expiry if the UTC clock regresses. If the two-hour checkpoint misses, reopen the pickup without weakening native proof. Future coordinator work consumes the named verified authority and receipt seam under the accepted split.
+
+## Test checkpoint
+
+[PR #185](https://github.com/kburson/aitm/pull/185) targets literal trunk `d769b3169724eeb9ef4b4aee47d3ab4c4489072d` at head `da288f5381e2c263756c577f3f820927d169bff4`, tree `5d65dbb000c15f14c41740e7f4517768de79d4d7`. GitHub confirmed the exact PR head and base. [Run 42899470371](https://github.com/kburson/aitm/actions/runs/42899470371) is pending.
+
+The scope state applies only the first receipt-linked native target, rechecks the pinned source and worktree, and groups competing handoffs at the canonical target. Replays preserve original scope and the first exact outcome. The locked fixture regressions cover authorized unanchored rescans, real Code/Desktop and Claude native proof, source and anchor substitution, an admitted Develop owner's matching native lineage, wrong-session refusal, ordered conflicts and late revisions, Grok coverage holds, expiry, exact retry after capture revocation and owned dispositions. M07b remains #182.
+
+The frozen local tree passed 747 product and CLI tests and 182 helper tests, covering 9,086/9,981 product and 778/821 helper lines. Ruff and whitespace passed. The original test and carrier implementers retained signed lane handoffs. Preflight corrections were verified in the frozen gate.

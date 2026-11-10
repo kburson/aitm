@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 117
 title: "[M07] Native scope and handoff"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/117"
 parent: 100
 children: []
 blocking: [118, 182]
 blocked-by: [116]
 created: "2026-11-10T13:57:58Z"
-updated: "2026-11-10T20:25:50+00:00"
+updated: "2026-11-10T20:52:45+00:00"
 last-branch: "codex/aitm-117-native-scope"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
