@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 112
 title: "[M02] Atomic filesystem operations"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/112"
 parent: 100
 children: []
 blocking: [113]
 blocked-by: [111]
 created: "2026-11-10T13:57:49Z"
-updated: "2026-11-10T14:51:36+00:00"
+updated: "2026-11-10T14:56:43+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null
@@ -41,3 +41,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Run red. Wire native Darwin and Linux operations through checked ctypes bindings. Run green with `test_scopes.py`, `test_export.py` and `test_install.py`, including real supported filesystem runs. Commit M02.
 
 [Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md).
+
+[Delivered verification and signed retrospective](plan/delivery-checklist.md#delivery-and-sign-off).
