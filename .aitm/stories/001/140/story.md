@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 140
 title: "[#133 T03] Resolve exact Git changes"
 kind: "story"
-state: "backlog"
+state: "ready-for-plan"
 issue: "https://github.com/kburson/aitm/issues/140"
 parent: 133
 children: []
 blocking: [141, 147]
 blocked-by: []
 created: "2026-11-10T16:51:02Z"
-updated: "2026-11-10T19:00:56Z"
+updated: "2026-11-10T19:01:31Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
@@ -54,3 +54,19 @@ dependency proof, and implementation authority govern pickup.
 [SAR](design/reviews/sar-2026-11-10-leaf-design/review-manifest.md) ·
 [Independent SPR](design/reviews/spr-2026-11-10-leaf-design/review-manifest.md) ·
 [Native XPR](design/reviews/xpr-2026-11-10-leaf-design/review-manifest.md).
+
+## Refined scope and pickup boundary
+
+Accepted own design at `sha256:29b5525d07b63789496f789e5faad07cdd60f8a4c2a257b3e222104db7a26248`.
+Refine estimate **3 implementation agent-hours**, size M,
+priority P1. One read-only Git resolver owns two bounded input modes and fixtures for path identity, endpoint changes, and snapshot drift.
+
+GitHub readback confirmed the parent in Dev, no inbound blockers, and
+this leaf in Ready for Planning. Reserve an isolated source worktree
+on `codex/aitm-140-git-snapshot` at pickup. This leaf owns
+`tools/ci/tia/snapshot.py` and `tools/ci/tests/test_tia_snapshot.py`. These
+paths are disjoint from [#138](../138/story.md). Keep the
+existing shared CI workflow and gate policy as read-only inputs.
+Both leaves can be planned and implemented concurrently after their
+own plan, JIT, and implementation authority. If another merge advances
+trunk, requalify the affected PR's exact base/head and required review.

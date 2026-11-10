@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 138
 title: "[#133 T01] Pin the serial baseline"
 kind: "story"
-state: "backlog"
+state: "ready-for-plan"
 issue: "https://github.com/kburson/aitm/issues/138"
 parent: 133
 children: []
 blocking: [139]
 blocked-by: []
 created: "2026-11-10T16:50:57Z"
-updated: "2026-11-10T19:00:56Z"
+updated: "2026-11-10T19:01:23Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
@@ -56,3 +56,19 @@ sanitized baseline report. **Interface**
 [SAR](design/reviews/sar-2026-11-10-leaf-design/review-manifest.md) ·
 [Independent SPR](design/reviews/spr-2026-11-10-leaf-design/review-manifest.md) ·
 [Native XPR](design/reviews/xpr-2026-11-10-leaf-design/review-manifest.md).
+
+## Refined scope and pickup boundary
+
+Accepted own design at `sha256:d080652606e1e177c4c79c5a9c17a98cdaf5ef8d38ce641f4b55ff89ac0efa0b`.
+Refine estimate **2.5 implementation agent-hours**, size S,
+priority P1. Existing qualified #103 evidence is available. Work is limited to comparing exact attempts, projecting timing evidence, and the focused tests.
+
+GitHub readback confirmed the parent in Dev, no inbound blockers, and
+this leaf in Ready for Planning. Reserve an isolated source worktree
+on `codex/aitm-138-serial-baseline` at pickup. This leaf owns
+`tools/ci/tia/baseline.py` and `tools/ci/tests/test_tia_baseline.py`. These
+paths are disjoint from [#140](../140/story.md). Keep the
+existing shared CI workflow and gate policy as read-only inputs.
+Both leaves can be planned and implemented concurrently after their
+own plan, JIT, and implementation authority. If another merge advances
+trunk, requalify the affected PR's exact base/head and required review.
