@@ -36,7 +36,9 @@ from .backup import (
 )
 from .ledger import (
     APPLICATION_ID,
+    MONITOR_SCHEMA_VERSION,
     SCHEMA_VERSION,
+    SUPPORTED_SCHEMA_VERSIONS,
     Ledger,
     LedgerError,
     WriterActive,
@@ -91,16 +93,23 @@ from importlib.metadata import distribution, distributions
 
 site = sys.argv[1]
 sys.path.insert(0, site)
-from aitm_usage import service
-from aitm_usage.ledger import APPLICATION_ID, SCHEMA_VERSION, _supported_schema
+from aitm_usage import ledger, service
+
+def fingerprint(version, rows):
+    data = json.dumps(rows, separators=(',', ':')).encode()
+    return [ledger.APPLICATION_ID, version, hashlib.sha256(data).hexdigest()]
 
 package = distribution('aitm-usage')
-schema = json.dumps(_supported_schema(), separators=(',', ':')).encode()
+legacy = fingerprint(ledger.SCHEMA_VERSION, ledger._supported_schema())
+schema = legacy
+if hasattr(ledger, 'MONITOR_SCHEMA_VERSION'):
+    version = ledger.MONITOR_SCHEMA_VERSION
+    schema = [legacy, fingerprint(version, ledger._supported_schema(version))]
 print(json.dumps({
     'version': package.version,
     'interpreter_version': platform.python_version(),
     'interpreter': sys.executable,
-    'schema': [APPLICATION_ID, SCHEMA_VERSION, hashlib.sha256(schema).hexdigest()],
+    'schema': schema,
     'packages': sorted(item.metadata['Name'] for item in distributions(path=[site])),
     'witness_capable': {'producer_mode', 'producer_pid'} <= service._Status.__dataclass_fields__.keys(),
     'entry_points': [[point.group, point.name, point.value] for point in package.entry_points],
@@ -673,7 +682,12 @@ def _inspect_surface(
 
 
 def _probe_runtime(
-    executable: Path, interpreter: Path, python_version: str, wheel: _Wheel
+    executable: Path,
+    interpreter: Path,
+    python_version: str,
+    wheel: _Wheel,
+    *,
+    schema_version: int,
 ) -> _Runtime:
     site = _inspect_surface(executable, interpreter, python_version, wheel)
     python = executable.with_name("python")
@@ -681,20 +695,30 @@ def _probe_runtime(
     if not isinstance(observed, dict):
         raise InstallError("Invalid isolated runtime probe")
     witness_capable = observed.pop("witness_capable", None)
-    schema_bytes = json.dumps(_supported_schema(), separators=(",", ":")).encode()
+    observed_schema = json.dumps(observed.pop("schema", None))
+
+    def fingerprint(version):
+        data = json.dumps(_supported_schema(version), separators=(",", ":")).encode()
+        return [APPLICATION_ID, version, hashlib.sha256(data).hexdigest()]
+
+    legacy_schema = fingerprint(SCHEMA_VERSION)
+    supported = [json.dumps([legacy_schema, fingerprint(MONITOR_SCHEMA_VERSION)])]
+    if schema_version == SCHEMA_VERSION:
+        supported.append(json.dumps(legacy_schema))
     expected = {
         "version": wheel.version,
         "interpreter_version": python_version,
         "interpreter": str(python),
         "packages": ["aitm-usage"],
-        "schema": [
-            APPLICATION_ID,
-            SCHEMA_VERSION,
-            hashlib.sha256(schema_bytes).hexdigest(),
-        ],
         "entry_points": [["console_scripts", "aitm-usage", "aitm_usage.cli:main"]],
     }
-    if observed != expected or type(witness_capable) is not bool:
+    if (
+        observed_schema not in supported
+        or type(schema_version) is not int
+        or schema_version not in SUPPORTED_SCHEMA_VERSIONS
+        or observed != expected
+        or type(witness_capable) is not bool
+    ):
         raise InstallError("Installed environment identity or schema is incompatible")
     console = subprocess.run(
         [str(executable), "--version"],
@@ -754,7 +778,13 @@ def _read_runtime(
         data = _read_owned(path, private=False, limit=limit)
         if data is None or hashlib.sha256(data).hexdigest() != record[field]:
             raise InstallError("Verified runtime files changed")
-    return _probe_runtime(executable, base, _interpreter(base), retained)
+    return _probe_runtime(
+        executable,
+        base,
+        _interpreter(base),
+        retained,
+        schema_version=ledger.identity.schema_version,
+    )
 
 
 def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
@@ -793,7 +823,13 @@ def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
                 _write_runtime_file(destination, data)
             launcher = _launcher(python, site)
             _write_runtime_file(executable, launcher, executable=True)
-            runtime = _probe_runtime(executable, interpreter, python_version, wheel)
+            runtime = _probe_runtime(
+                executable,
+                interpreter,
+                python_version,
+                wheel,
+                schema_version=ledger.identity.schema_version,
+            )
             base_bytes = _read_owned(interpreter, private=False, limit=_WHEEL_LIMIT)
             if base_bytes is None:
                 raise InstallError("Base interpreter disappeared during preparation")
