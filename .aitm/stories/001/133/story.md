@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 133
 title: "Test impact analysis, CI sharding, and Stop the Line"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
 children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178]
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-10T18:38:22Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -69,3 +69,11 @@ native links and Project identities to the exact plan.
 
 The parent stops in Planning at plan acceptance. Child pickup and
 operational activation have separate gates.
+
+## Develop checkpoint
+
+The owner advanced the epic from Planning to Dev after readback of the
+accepted design and plan, all 41 native child links, and all 64 direct
+dependency edges. The first pickup candidates are [#138](../138/story.md)
+and [#140](../140/story.md). Each leaf has its own design, refinement,
+plan and JIT gates.
