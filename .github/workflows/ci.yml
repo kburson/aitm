@@ -177,10 +177,16 @@ jobs:
           uv run --locked coverage json -o "$out/evidence/product-coverage.json"
           cd "$root"
           unset AITM_CI_PYTEST_EVIDENCE AITM_CI_CHILD_EVIDENCE
+          gh_asset=gh_2.97.0_macOS_arm64.zip
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/cli/cli/releases/download/v2.97.0/$gh_asset" -o "$out/$gh_asset"
+          (cd "$out" && printf '%s  %s\n' a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e "$gh_asset" | shasum -a 256 -c -)
+          unzip -q "$out/$gh_asset" -d "$out"
+          export PATH="$out/gh_2.97.0_macOS_arm64/bin:$PATH"
           printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
           COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
             --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
-            tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py
+            tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py tools/ci/tests/test_verify_pr.py
           cache=cold
           if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
           jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
@@ -350,6 +356,7 @@ jobs:
               --arg workflow "$(git rev-parse HEAD:.github/workflows/ci.yml)" \
               --arg observer "$(git rev-parse HEAD:tools/ci/pytest_evidence.py)" \
               --arg gate "$(git rev-parse HEAD:tools/ci/python_gate.py)" \
+              --arg verifier "$(git rev-parse HEAD:tools/ci/verify_pr.py)" \
               --arg lock "$(git rev-parse HEAD:packages/aitm-usage/uv.lock)" \
               --arg inventory "$(sha256sum "$input/pytest.json" | cut -d' ' -f1)" \
               --arg source_inventory "$(sha256sum "$input/product-inventory.json" | cut -d' ' -f1)" \
@@ -359,7 +366,7 @@ jobs:
               --slurpfile platform "$input/capability.json" --slurpfile base_identity "$input/expected-base.json" \
               --slurpfile product "$input/product-coverage.json" --slurpfile helpers "$input/helper-coverage.json" \
               '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$source_inventory,$baseline,
-                controls:{$policy,$workflow,$observer,$gate,$lock},jobs:($jobs|map_values(.result)),
+                controls:{$policy,$workflow,$observer,$gate,$lock,$verifier},jobs:($jobs|map_values(.result)),
                 checkouts:(($jobs|map_values(.outputs.checkout))+{collector:$tested}),
                 result:$result[0],children:$child[0].children,timings:($timings[0]+$provider_timing[0]),wheel:$wheel[0].digest,
                 platform:$platform[0],base_identity:$base_identity[0],
