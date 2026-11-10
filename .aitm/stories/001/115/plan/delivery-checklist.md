@@ -41,3 +41,9 @@ A complete retry of the same head preserved attempt 1 and passed all six hosted 
 The signed verifier held [run 42860755483 attempt 2](https://github.com/kburson/aitm/actions/runs/42860755483/attempts/2) for `selected attempt identity or outcome disagrees`. GitHub's run record reported `created_at=2026-11-10T17:02:22Z`, and its attempt endpoint reported `created_at=2026-11-10T17:12:06Z`. The remaining exact IDs and successful job outcomes were retained. This retry does not have merge authority.
 
 Returned to Test. Reopened [PR #179](https://github.com/kburson/aitm/pull/179) on the identical head, base and reviewed candidate tree to trigger a fresh canonical PR run. The action follows the existing `reopened` trigger. The delivery verifier and workflow are unchanged. Independent source review has yet to launch.
+
+### Fresh reopened run custody hold
+
+All six jobs passed in [run 42864395331 attempt 1](https://github.com/kburson/aitm/actions/runs/42864395331/attempts/1). The authenticated raw inventories reproduced the gate with 592 baseline tests retained and 629 candidate tests. The signed verifier nevertheless held this run. The signed subject and certificate name synthetic merge `7e9214103e24cb2705d74c181545a7ad8f8ed031`, while the live reopened PR merge ref names `0165b7fbe5e8fcb8af4a1a06b849e099be3337da`. The verifier's exact GitHub CLI command confirmed the signer digest mismatch.
+
+[PR #179](https://github.com/kburson/aitm/pull/179) now has head `803ce4e86b7e49b6d327b71a3865f0816af38a82` on unchanged trunk base `9b12927da1a368f254537277f7fdc7139f90cc44`. A source-empty commit triggered a normal synchronize event. The exact candidate tree is still `a22dccc417716be8ba1704b36acae87fe9bfc420`, with zero source diff from the earlier head. The story stays in Test until the new signed receipt matches the live merge ref.
