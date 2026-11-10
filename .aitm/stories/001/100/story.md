@@ -10,7 +10,7 @@ children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T15:38:43+00:00"
+updated: "2026-11-10T15:46:34+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null

@@ -10,7 +10,7 @@ children: []
 blocking: [129]
 blocked-by: [114]
 created: "2026-11-10T15:38:59Z"
-updated: "2026-11-10T15:38:43+00:00"
+updated: "2026-11-10T15:46:34+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
