@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 105
 title: "[CI2] Verify canonical PR evidence"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/105"
 parent: 103
 children: []
 blocking: [106]
 blocked-by: [104]
 created: "2026-11-10T02:57:05Z"
-updated: "2026-11-10T04:56:02+00:00"
+updated: "2026-11-10T13:13:39+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
@@ -31,3 +31,5 @@ Deliver the read-only verifier for the canonical Actions workflow, exact live PR
 Refined forecast **3.5 implementation agent-hours**. Leaf stays in Backlog pending its own design and pickup gates.
 
 The [leaf design](design/design.md) and [implementation plan](plan/implementation-plan.md) passed [independent scoped planning review](plan/leaf-planning-review.md). Verified predecessor delivery, applicable authority and an exact fresh JIT still gate Develop.
+
+Development pickup on `codex/aitm-105-ci-verifier` follows the [reviewed JIT](plan/jit.md) and the verified closure of #104. The story owns the trusted verifier and custody of the unmerged proof.
