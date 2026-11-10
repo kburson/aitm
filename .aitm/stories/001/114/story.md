@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 114
 title: "[M04] Adapter contract and existing providers"
 kind: "story"
-state: "review"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/114"
 parent: 100
 children: []
 blocking: [115, 116, 134, 135]
 blocked-by: [113]
 created: "2026-11-10T13:57:53Z"
-updated: "2026-11-10T16:03:21+00:00"
+updated: "2026-11-10T16:09:11+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null

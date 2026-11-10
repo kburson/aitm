@@ -29,3 +29,7 @@ Final local verification passed 238 focused provider tests, 589 locked product a
 | [python](https://github.com/kburson/aitm/actions/runs/42848435620/job/129942167094) | Success |
 | [collect-evidence](https://github.com/kburson/aitm/actions/runs/42848435620/job/129949603274) | Success |
 | [aitm-ci](https://github.com/kburson/aitm/actions/runs/42848435620/job/129949766103) | Success |
+
+### Attempt 1 review hold
+
+[Independent source review](source-review-attempt-1.md) held head `ee74b3f084798cf80404cba3877ba34e6aa55dcd` for split-and-restart proof of a new turn after a saved Desktop cursor and Claude's streamed, nested and linked-receipt paths. The trusted-base inventory contains 570 tests and the candidate contains all 570 plus 18 new bridge cases and the existing candidate-only CLI test. The raw gate replay reproduced the hosted result. Attempt 1 remains evidence for its original head.
