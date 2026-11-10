@@ -25,3 +25,7 @@ The frozen local tree passed 747 product and CLI tests and 182 helper tests, cov
 ## Review checkpoint
 
 The [signed hosted run](https://github.com/kburson/aitm/actions/runs/42899470371/attempts/1) passed all six required jobs. The [authenticated receipt](hosted-ci-receipt.json) binds exact head, base and candidate tree to tested merge `43c7866139291aa66b050e11a1b8702989d645a0`, artifact `13800999197` and subject SHA-256 `ae6220bf7baf0a696bc365516f70981d043e5933c5d409fd3d60181328be96eb`. The verifier explicitly pinned the reviewed tree because it contains new tests. The workflow, verifier, gate controls, package configuration and lock match trunk. Raw replay retained 713 baseline identities and passed all 747 candidate tests and both coverage floors. Independent source review of this exact tree is pending.
+
+### Independent exact source hold
+
+The [first independent exact source review](source-review-attempt-1.md) held the passing tree. The original handoff could be reauthorized and applied after an independent proof disposition had released the affected span to its prior owner. Preserve the signed run and return to Develop for a regression against an append-only source and a narrow terminal-outcome repair. The local baseline of 714 included the explicit CLI control test. The trusted hosted base inventory counts 713 package tests and applies the fixed CLI test to the candidate. The frozen local helper run independently counted 182 tests.
