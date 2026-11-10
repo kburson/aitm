@@ -12,3 +12,7 @@ Implementer and closure owner are the Codex delivery agent. The design, implemen
 ## Attempt 1 result · 2026-11-09 Chicago
 
 The [hosted diagnostic and exact binding assessment](../attachments/github-binding-probe-attempt-1.md) are recorded. The diagnostic job succeeded and the binding gate failed. PR #107 is an open draft. #104 returned to Planning at the owner-directed stop. The gate remains open until a reviewed route supplies immutable run-to-tested-merge evidence.
+
+## Replan accepted in Planning
+
+The [reviewed ordinary PR binding amendment](../design/github-tested-merge-binding-replan.md) supplies the replacement design and ordered replan. Attempt 1 remains historical. A fresh JIT and separate authority for the diagnostic, permissions and public attestation are pending. Keep PR #107 as an unmerged draft.
