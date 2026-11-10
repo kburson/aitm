@@ -1,0 +1,74 @@
+diff --git a/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md b/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
+index 2cd3746..28af578 100644
+--- a/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
++++ b/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md
+@@ -753,7 +753,9 @@ and a sanitized timing and selector report.
+ - [ ] `test_report_requires_each_mode_window_and_lane` checks 3/6/10
+   envelopes, p50/p95, no-test N/A and excluded queue, and rejects
+   mixing unrelated runners or attempts.
+-- [ ] Apply the pinned recipe. Seed off-path defects, local drift
++- [ ] Apply the pinned recipe. Use T01 to forecast runner minutes before
++  dispatch and return an over-cap recipe for review. Seed off-path
++  defects, local drift
+   and full fallback on the representative candidates. Report co-run
+   contention, missed impacts and retuning separately. V(qualification)
+   passes and each accepted sample has a bound run receipt.
+@@ -774,7 +776,7 @@ and a sanitized timing and selector report.
+ 
+ **Owns** isolated coverage, skip and unavailable-evidence fixtures
+ and their separate receipts.
+-**Interface** verified merge-only hold results for T40.
++**Interface** verified merge-only hold results for T41.
+ 
+ - [ ] After passing selected validation in the isolated fixture,
+   observe scheduled coverage-floor miss and, in a distinct run,
+@@ -814,11 +816,25 @@ trunk proof to every workspace acknowledgment and release.
+ - [ ] Verify the disconnected workspace can return with the fix
+   effective and provide the final acknowledgment before reopening.
+   Retain the positive release trace and a separate bound stopped
+-  fixture with one outstanding receipt as input to T40. T40 owns
++  fixture with one outstanding receipt as input to T41. T41 owns
+   rollback evidence. Keep this rehearsal isolated from live protection,
+   schedule and authority mode.
+ 
+-### T40. Rehearse rollback with a live stop — 3h, P1, T35/T37/T39
++### T40. Rehearse exact repair of a merge-only hold — 3.5h, P1, T37/T38
++
++**Owns** the isolated broken-scheduled-setup repair and release trace.
++**Interface** bound merge-only recovery proof for T41.
++
++- [ ] Use T37's broken scheduled setup, with no verified failing test.
++  Record the appointed owner's substantiation of the trunk control
++  cause. Bind the single exact repair PR to the current hold version,
++  with independent gate-change disposition.
++- [ ] Require T24's full candidate proof and T22's conditional host
++  mutation. Run a fresh full suite on confirmed current trunk. Retain
++  refusal while another recorded cause is unresolved, then the
++  verified merge-only release with no workspace-update phase.
++
++### T41. Rehearse rollback with a live stop — 3h, P1, T35/T39/T40
+ 
+ **Owns** `tools/ci/tia/rollback.py`, `test_tia_rollback.py` and the
+ disposable rollback report.
+@@ -838,10 +854,10 @@ disposable rollback report.
+ | --- | --- |
+ | §§2–3 exact candidates, graph witness, conservative fallback | T02–T06, T10, T34 |
+ | §4 trusted observation, shards, test inventory and coverage | T01–T02, T07–T14, T34 |
+-| §5 timing, staged adoption, shadow, delayed schedule and rollback | T13–T15, T19, T34–T40 |
+-| §6 isolated failures, negative evidence, merge, repair and health | T15–T26, T36–T38 |
++| §5 timing, staged adoption, shadow, delayed schedule and rollback | T13–T15, T19, T34–T41 |
++| §6 isolated failures, negative evidence, merge, repair and health | T15–T26, T36–T38, T40 |
+ | §6 workspace pause and verified all-workspace restart | T18–T20, T26–T33, T39 |
+-| §7 acceptance, real-host and failure-injection proofs | Exact T04/T05 witness assertions plus T35–T40 traces |
++| §7 acceptance, real-host and failure-injection proofs | Exact T04/T05 witness assertions plus T35–T41 traces |
+ 
+ At JIT verify the direct dependency result, exact accepted leaf inputs,
+ four-hour estimate, supported route and the current base. A completed
+@@ -854,6 +870,6 @@ Acceptance of this plan binds its exact bytes. It does not open Develop,
+ approve disposable-host mutations, install credentials or enroll agents.
+ A later cutover proposal must present verified T07/T21/T23/T28 capability,
+ full versus sharded parity, the T35 timing and coverage tradeoff, the
+-T36–T40 traces, explicit changed-outcome/coverage policy, and a rollback to
++T36–T41 traces, explicit changed-outcome/coverage policy, and a rollback to
+ full PR validation that preserves any live incident. If owner approval
+ or authority qualification is absent, keep the existing full PR gate.
