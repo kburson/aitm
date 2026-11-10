@@ -23,3 +23,16 @@ owner requested progression through Done after independent JIT.
 - [ ] Verify hosted #103 attempt and exact tested source. [CI run](https://github.com/kburson/aitm/actions/runs/42915266772)
 - [ ] Retain independent exact-source review and required #103 disposition.
 - [ ] Verify trunk delivery and original implementer sign-off, then Close.
+
+### First exact source candidate
+
+The [post-commit local run](local-validation-6687ba0262df.json) passed
+1,165 tests on the exact clean head. All six jobs passed on the
+[canonical hosted attempt](https://github.com/kburson/aitm/actions/runs/42915266772/attempts/1).
+[Signed artifact replay](hosted-ci-receipt-6687ba0262df.json) confirmed
+867 candidate outcomes, 866 base outcomes, and both line floors.
+
+Independent source inspection reproduced malformed pytest parameter
+wrappers, invalid hosted Git refs, and transposed child labels
+being admitted. The story returns to Develop for scoped corrections.
+This head retains its successful tests and its source review hold.

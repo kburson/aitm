@@ -1,0 +1,68 @@
+{
+  "actionlint": {
+    "exit": 0,
+    "log_sha256": "0a870bd4b9da75116b47dc32fd6358dec2e371d64b617826d9682cf2f6f3c2e1",
+    "version": "1.7.12"
+  },
+  "attempt": 1,
+  "exact_head_clean_before_and_after": true,
+  "exact_head_full": {
+    "failed": 0,
+    "log_sha256": "5011102cfbcd99a9805fe698ce6d45620a73a91900749ad50efadc1b98db0e7d",
+    "passed": 1165,
+    "seconds": 124.07
+  },
+  "file_checks": {
+    "exit": 0,
+    "log_sha256": "905222245095893aed75daf6d655cc5847ef4984ba53f6dbbdac0d15f224540b",
+    "node": "24.22.2"
+  },
+  "focused_green": {
+    "log_sha256": "c7830d2f13f8e0f9b8ec8e0c14b457d7634c13c96f3c88b5841197d54704f008",
+    "passed": 29
+  },
+  "focused_target_refresh_red": {
+    "cause": "unclassified new module at public call",
+    "failed": 2,
+    "log_sha256": "4b0a390c508db824fecadb5d38156c6002f660c17e9a283acde0448fcd0d34d8"
+  },
+  "frozen_local_validation_sha256": "28cb556f6faf7181436cdd99da5ab1ab1a48eaf50fc83c4e8ebdd157dcf489ba",
+  "full_local_advisory_inventory_sha256": "28bea2e012cd450519ec3b106d330770a243582deefd9377a37572bb7b21760a",
+  "full_local_advisory_obligations": 1049,
+  "head": "6687ba0262df6eb99e76c66509bf32262017d5b5",
+  "latest_live_target_readback": "49865245d175ce6c52913738f2c9a42c0abea632",
+  "neighboring": {
+    "log_sha256": "a98db7de081adfefaf8f346ece0a4cf89e62308ec25e0781ecee3fe44c921a4e",
+    "passed": 87,
+    "seconds": 22.12
+  },
+  "owned_paths": [
+    "tools/ci/tests/test_tia_inventory.py",
+    "tools/ci/tia/inventory.py",
+    "tools/ci/tia/suites.json"
+  ],
+  "parent": "49865245d175ce6c52913738f2c9a42c0abea632",
+  "projection_choices": {
+    "capabilities": "runner minimums checked per scope; per-test APFS and native ACL requirements retained explicitly",
+    "qualifying_hosted_collection": "trusted caller responsibility",
+    "replay": "comparison-only local fixture bindings with original source kind, tree, receipt, role and run when present",
+    "runner": "reviewed runner profile plus actual named runner identity; observed identity and controls retained"
+  },
+  "python": "3.13.9",
+  "ruff_product_and_ci": {
+    "exit": 0,
+    "log_sha256": "0c4a349ffc8f74ee8cff53f86b032f8e80c2890739107bb55ad65d171d28855d"
+  },
+  "sanitized_reconciliation_sha256": "8345f3e19afb38aff144b08e4ed7bd8dc0b95d8e1edd71fce40ea859fafa487a",
+  "staged_full": {
+    "failed": 0,
+    "log_sha256": "b2562302db4041a3970a1344b9e2c62739dfb56a35abc1f7f575d969168cabb1",
+    "passed": 1165,
+    "seconds": 124.55
+  },
+  "staged_test_tree_equals_committed_tree": true,
+  "status": "exact_local_validation_pass",
+  "target": "trunk",
+  "tree": "ffc00d32b1fa7d9a91c986958a86d19dabc41dfe",
+  "uv": "0.10.6"
+}
