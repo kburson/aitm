@@ -360,7 +360,7 @@ jobs:
               --slurpfile product "$input/product-coverage.json" --slurpfile helpers "$input/helper-coverage.json" \
               '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$source_inventory,$baseline,
                 controls:{$policy,$workflow,$observer,$gate,$lock},jobs:($jobs|map_values(.result)),
-                checkouts:($jobs|map_values(.outputs.checkout))+{collector:$tested},
+                checkouts:(($jobs|map_values(.outputs.checkout))+{collector:$tested}),
                 result:$result[0],children:$child[0].children,timings:($timings[0]+$provider_timing[0]),wheel:$wheel[0].digest,
                 platform:$platform[0],base_identity:$base_identity[0],
                 branches:{product:($product[0].totals|{covered_branches,num_branches}),
