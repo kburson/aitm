@@ -93,3 +93,5 @@ A source-empty commit on the same PR produced head `950e0262dba4e2db1b4fe573c898
 [Run 42889263878 attempt 1](https://github.com/kburson/aitm/actions/runs/42889263878/attempts/1) passed all six jobs. The delivered verifier authenticated tested merge `6e64c0653dc7ee6ad46266f36128bb1678f60df6`, the exact reissued head, unchanged source tree and ordered parent identities. Artifact `13798016578` has archive SHA-256 `36e60232c7978a1de27d3434f129bc6dbe55bc8a3ab5ab5d7895048967890a98` and subject SHA-256 `d4832289d8e55da14d819061abaca4e6a864310b680b2a0f6b1bd389ccd87a6a`.
 
 Raw replay retained all 629 baseline identities and all 714 candidate tests and matched the frozen local coverage. Workflow, verifier, policy, lock and package configuration remain byte-identical to trunk. The independent exact follow-up source review is pending.
+
+The [independent exact follow-up](post-ci-source-review.md) passed both moved-locator liveness and Claude historical eligibility findings. The review is off-platform. The three prior holds and hosted runner failure retain their original source identities.
