@@ -13,3 +13,9 @@ Attempt 1. Implementer and closure owner: Codex, acting for the owner. No predec
 An added regression exposed an identical legacy-registration retry being held as a second seed. The author reproduced the failure, corrected exact retries to deduplicate, and is replacing the candidate. The original run remains evidence only for its original SHA. Conflicting legacy claims remain held.
 
 The original [hosted run](https://github.com/kburson/aitm/actions/runs/42911485968/attempts/1) passed and is superseded. The same PR now has clean head `41361c78a6fdbfe6ad1e08168c9f13c94d390787` and tree `083f30d03da84aad4545e42bb71428e0fc9bed49` on the unchanged base. All seven focused tests, including the retry regression, Ruff, file checks, the guide fixture and pinned planning read passed on the replacement.
+
+## Failed hosted attempt and trunk advance
+
+[Revision 2 attempt 1](https://github.com/kburson/aitm/actions/runs/42912258750/attempts/1) on head `41361c78a6fdbfe6ad1e08168c9f13c94d390787` passed base, quality, and file checks. The existing usage-monitor behavior test `test_cloned_scope_proof_and_changed_authorized_bytes_are_refused` failed while establishing the fixture's native scope proof with “Verified native scope source changed.” The collector consequently failed and the signature job was skipped. No monitor, workflow or CI helper paths were modified in #186. The earlier revision passed the same unchanged package suite. The detailed cause inside the hosted native fixture was not established.
+
+[PR #195](https://github.com/kburson/aitm/pull/195) landed unrelated monitor paths at trunk `49865245d175ce6c52913738f2c9a42c0abea632`. Return to Develop to integrate the new trunk base into the isolated #186 branch and repeat exact candidate checks. Keep the accepted #186 paths and scope. The failed hosted attempt remains in the record.
