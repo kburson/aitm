@@ -1,0 +1,9 @@
+# #106 implementation pickup · November 10, 2026
+
+Target trunk is `e0469c325527ee413943c7cc9a98fef2c57c93c0`, the delivered verifier commit. #105 is Done and closed after the independent live proof and the author's sign-off. This leaf works from its own `codex/aitm-106-ci-files` branch into trunk. The Codex delivery coordinator owns the PR, exact evidence, source review and closure. The implementing agent signs their own retrospective.
+
+Use the [leaf plan](implementation-plan.md), [accepted design](../design/design.md) and [parent plan](../../103/plan/implementation-plan.md). The estimate remains 2.5 agent-hours. The pinned target has four tracked Markdown files and one YAML workflow. Markdownlint 0.24.0 with long-line checks relaxed reports only a missing heading blank line and a misindented list fence. The pinned yamllint 1.38.0 check passes this workflow. There is no tracked product TypeScript. Pin Node 24.22.2, the markdownlint-cli2 lock and yamllint tool lock. Keep actionlint and ShellCheck. Check existing declared JSON formats with their validators and use exact documented fixture exclusions.
+
+Implement portable file checks, a visible TypeScript disposition and the additive workflow dependency and policy. Preserve the existing tests and both unrounded 90% line floors. Use a scoped, independently reviewed deliberate Markdown failure and its corrected ordinary PR to show that the new workflow reports the right results. Independently review the passing source, verify exact signed evidence with the delivered verifier and manual readback, merge via GitHub and close immediately after signed verification and housekeeping. The workflow's aggregate demonstrates this CI feature. Future mandatory repository settings remain deferred.
+
+[Verified dependency](https://github.com/kburson/aitm/issues/105) · [Delivered verifier](https://github.com/kburson/aitm/pull/109)
