@@ -1,0 +1,21 @@
+# Late retrospective — #92 / U08
+
+I wrote and signed this assessment on 2026-11-09 in America/Chicago, after historical closure. The planning Done checkpoint for #92 was at 23:17:20 UTC. I was the original implementing task, `implement_u08`. [Story](../story.md) · [Closure event](../events.jsonl)
+
+## Design, implementation and review
+
+The implementation followed the accepted design and plan. Both providers used the same guarded writer. The collector completed its selected source scan before draining the inbox and deferred affected batches when admission changed. It committed accounting and the exact prior cursor together. Private registration preserved the original cutoff across restarts and anchor additions. Lease-free status separated heartbeat, ledger and registration gaps, and committed source watermarks. Both provider fixtures exercised live command handling and retained measured tokens when price or attribution was unknown. [Design](../design/design.md) · [Implementation plan](../plan/implementation-plan.md)
+
+My first candidate left three gaps that independent review exposed. Separate generic ledger writes could establish apparent anchor authority. An unbound source at offset zero lost its continuity identity. After the first repair, loss of private attestation could still allow an accepted acknowledgment. I repaired those paths with an attested receipt and effect in one commit, a durable zero frontier, and the same authority check at enrollment, acknowledgment and CLI replay. The accepted original head `a6a69bce45e9adcd1e401428e5d8b7c2e14c3599` passed 23 focused tests, 409 locked package tests on rerun, and an isolated installed-wheel smoke. An existing Claude quota case failed on the first full run, then passed in isolation and on rerun. Its cause remains unknown. [Original source review](../plan/source-review.md)
+
+The installation review exposed a separate gap. A one-shot poll could supply a fresh heartbeat for a service that had never polled. Under the accepted supplement I added the actual writer PID and entry-point mode, preserving ordinary legacy status with an Unknown producer. Exact supplemental head `f720ae48c89618db0cba095472db413dc981a73c` passed 31 focused tests, the unchanged U12 process test, and 418 locked tests. A separate reader process observed the live service PID. Both leaf acceptances record independent off-platform source review and local verification. [Launch-health amendment](../../83/plan/usage-capture-launch-health-replan.md) · [Supplemental source review](../plan/launch-health-source-review.md)
+
+## Delivery and assessment
+
+The protected integration delivered U08 in [PR #97](https://github.com/kburson/aitm/pull/97). The subsequent native-route fixes were #88's Desktop carrier in [PR #98](https://github.com/kburson/aitm/pull/98) and #87's Claude startup scanner in [PR #99](https://github.com/kburson/aitm/pull/99). GitHub records zero CI checks and zero native PR reviews on those PRs. #96 separately recorded qualified Project Mac activation from the protected PR #99 merge `f80f22645e2008c4cac9dc6e4003640bba976b5f`, including both providers and stopped-window catch-up. [Source delivery](../../83/attachments/source-delivery.md) · [Activation summary](../../96/attachments/activation-summary.md)
+
+I would test contradictory durable state at pickup. Include a receipt and effect from separate commits, an accepted receipt whose private proof disappears before acknowledgment, and a file replacement at the zero frontier. For launch health, test which live process produced the heartbeat before treating freshness as evidence of readiness.
+
+**Confidence 4/5.** The reviewed sources, recovery tests and qualified installed run support the delivered behavior. The unexplained fixture failure and limited observed activation window constrain that assessment. Initial implementation through local verification was observed from 19:30 to 19:48 UTC. The launch-health follow-up was observed from 20:52 to 20:56 UTC. These are wall-clock checkpoints. Exact active agent time and total review effort are unknown against the four-agent-hour estimate.
+
+**Signed by Codex, original implementing task `implement_u08`, 2026-11-09 America/Chicago**, against the two reviewed U08 heads, protected delivery and observed activation linked above.

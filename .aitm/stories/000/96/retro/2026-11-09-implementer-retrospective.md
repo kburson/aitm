@@ -1,0 +1,17 @@
+# U11 project Mac activation retrospective
+
+I wrote and signed this assessment after the #96 planning Done checkpoint on 2026-11-09 at 23:17:20 UTC. I was the original U11 implementer and operated the live qualification in the dedicated #96 worktree. [Story](../story.md) · [Closure record](../events.jsonl)
+
+## Design, plan, and delivery
+
+The accepted plan called for real #83-only provider work, isolated GUI launchd recovery before production, and a sanitized receipt verified by the installed collector. The final run passed both arrival orders for each provider, backup and guarded restore, version upgrade and rollback, scoped planning and overlapping review, owner binding and housekeeping, and stopped-window catch-up on both streams. The production export replayed 42 rows byte for byte at sequence 409. The installed verifier returned `qualified` on protected merge `f80f22645e2008c4cac9dc6e4003640bba976b5f`. [Design](../design/design.md) · [Plan](../plan/implementation-plan.md) · [Activation summary](../attachments/activation-summary.md) · [Sanitized receipt](../../83/attachments/activation-receipt.json)
+
+The integrated collector shipped in PR #97 from independently reviewed head `00ccef89e1e0bd541981b4a367d005f699c63769`. The #88 Desktop carrier repair shipped in PR #98 from `699bd901ffd761dfaf28eeac0be25d04791cb416`. The #87 Claude startup scanner repair shipped in PR #99 from `239a863c97bd7de3af66934f41fffcdacab985fe`. The source delivery record documents off-platform independent agent reviews and local locked suites of 491, 501, and 530 tests. GitHub recorded zero native reviews and zero CI checks on all three PRs. [Source delivery record](../../83/attachments/source-delivery.md)
+
+## Misses and lessons
+
+Live evidence exposed the Desktop tool call’s trailing newline and Claude’s startup records without a checkout anchor. Both findings triggered scoped replanning before production. My first capture helper lost its pre-poll timestamp, so that run served as diagnosis only. A later partial Codex prefix lacked its paired counter, and the first production restart crossed an in-progress Codex turn whose context was transient. Fresh proofs used complete response and counter pairs, and the successful restart retry began a fresh turn in the same stream while stopped. The restart also correctly refused unexpected Finder metadata. I retained the file and reverified the exact runtime before retrying. Persist capture time before polling, confirm the source bytes immediately afterward, and start restart exercises with a fresh native turn. [Desktop diagnostic](../attachments/desktop-marker-diagnostic.md) · [Claude diagnostic](../attachments/claude-startup-diagnostic.md) · [Activation summary](../attachments/activation-summary.md)
+
+**Confidence 4/5.** Exact installed verification and an independent repeat support the activation result. The receipt preserves gaps for unavailable telemetry and leaves task-level quota and billed spend unknown. The controlled workload’s conservative cumulative bound was 1,315.425 seconds of the 1,800-second allowance within a four-agent-hour plan. The checkpoint span includes waits and replanning, so exact active implementation time is unknown. [Activation summary](../attachments/activation-summary.md) · [Usage evidence](../../83/attachments/agent-usage.md)
+
+Signed on **2026-11-09** (America/Chicago) by **Codex `/root/implement_u11`**, original #96 implementer. This signature covers the present assessment against the reviewed source heads and observed activation evidence above.
