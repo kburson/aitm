@@ -72,7 +72,7 @@ jobs:
             uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" -q packages/aitm-usage/tests
           cd packages/aitm-usage
           sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
-          jq -n --arg base "$BASE" --arg tree "$(git rev-parse HEAD^{tree})" \
+          jq -n --arg base "$BASE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
             --arg observer "$(sha "$out/observer/pytest_evidence.py")" --arg policy "$(sha "$out/observer/policy.json")" \
             --arg lock "$(sha uv.lock)" --arg configuration "$(sha pyproject.toml)" \
             --arg runtime "$(uv run --locked python -c 'import platform; print(platform.python_version())')" \
@@ -269,8 +269,8 @@ jobs:
         shell: bash
         run: |
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          mode=push
-          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then mode=pr; fi
+          mode='push'
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then mode='pr'; fi
           printf '%s\n' "$NEEDS" > "$RUNNER_TEMP/aitm-needs.json"
           python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json --needs "$RUNNER_TEMP/aitm-needs.json"
           jq -e --arg merge "$GITHUB_SHA" --arg base "$BASE" --arg mode "$mode" '
@@ -317,10 +317,10 @@ jobs:
           input="$RUNNER_TEMP/aitm-candidate"
           out="$RUNNER_TEMP/aitm-collector"
           mkdir "$out"
-          mode=push
+          mode='push'
           base_args=()
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
-            mode=pr
+            mode='pr'
             base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
                        --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"
                        --expected-base "$input/expected-base.json")
@@ -345,7 +345,7 @@ jobs:
             jq -n --arg schema aitm.ci-candidate/v2 --argjson run "$GITHUB_RUN_ID" \
               --argjson attempt "$GITHUB_RUN_ATTEMPT" --argjson pr "$PR_NUMBER" \
               --arg head "$PR_HEAD" --arg base "$BASE" --arg tested "$GITHUB_SHA" \
-              --arg tree "$(git rev-parse HEAD^{tree})" --argjson jobs "$JOB_RESULTS" \
+              --arg tree "$(git rev-parse 'HEAD^{tree}')" --argjson jobs "$JOB_RESULTS" \
               --arg policy "$(git rev-parse HEAD:tools/ci/policy.json)" \
               --arg workflow "$(git rev-parse HEAD:.github/workflows/ci.yml)" \
               --arg observer "$(git rev-parse HEAD:tools/ci/pytest_evidence.py)" \
