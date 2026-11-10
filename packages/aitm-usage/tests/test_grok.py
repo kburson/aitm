@@ -263,7 +263,9 @@ def test_snapshot_conflict_and_cache_categories(grok_source):
     turn["modelUsage"]["grok-4.7-build"]["inputTokens"] += 1
     turn["modelUsage"]["grok-4.7-build"]["totalTokens"] += 1
     conflict = _batch(s, s.rows, changed, result.cursor)
-    assert not conflict.observations and conflict.cursor == result.cursor
+    assert not conflict.observations
+    assert conflict.cursor.checkpoint.offset == result.cursor.checkpoint.offset
+    assert conflict.cursor != result.cursor
     assert any(
         gap.code is DiagnosticCode.IDENTITY_CONFLICT
         and gap.observation_key == result.observations[0].key
@@ -292,12 +294,36 @@ def test_internally_conflicting_snapshot_disputes_the_matched_turn(grok_source):
     s.snapshot["turns"][0]["modelUsage"]["grok-4.7-build"]["costUsdTicks"] += 1
     cold = _batch(s, s.rows, s.snapshot)
     resumed = _batch(s, s.rows, s.snapshot, before.cursor)
+    assert cold.observations == before.observations[1:]
+    assert cold.boundaries == before.boundaries[1:]
+    assert not resumed.observations and not resumed.boundaries
     for result in (cold, resumed):
-        assert not result.observations
         (dispute,) = result.diagnostics
         assert dispute.code is DiagnosticCode.IDENTITY_CONFLICT
         assert dispute.observation_key == before.observations[0].key
-    assert resumed.cursor == before.cursor
+    assert resumed.cursor == cold.cursor
+
+
+def test_retained_snapshot_dispute_allows_later_turns_and_cannot_clear_itself(
+    grok_source,
+):
+    s = grok_source
+    clean = _batch(s, s.rows, s.snapshot)
+    changed = json.loads(json.dumps(s.snapshot))
+    changed["turns"][0]["costUsdTicks"] += 1
+    first = _batch(s, s.rows[:5], {"sessionId": SESSION, "turns": changed["turns"][:1]})
+    assert not first.observations and not first.boundaries
+    wire = adapter.StreamCursor
+    prior = _decode(_encode(first.cursor, wire), wire)
+    second = _batch(s, s.rows, changed, prior)
+    assert second.observations == clean.observations[1:]
+    assert second.boundaries == clean.boundaries[1:]
+    assert second.cursor.checkpoint.offset > prior.checkpoint.offset
+    assert second.diagnostics == first.diagnostics
+    replay = _batch(s, s.rows, s.snapshot, second.cursor)
+    assert not replay.observations and not replay.boundaries
+    assert replay.diagnostics == first.diagnostics
+    assert replay.cursor == second.cursor
 
 
 def test_duplicate_prompt_with_conflicting_verified_marker_disputes_after_restart(
@@ -346,13 +372,15 @@ def test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff(grok_source):
     assert dispute.observation_key == before.observations[0].key
 
 
-def test_bounded_snapshot_reports_all_keyed_disputes_without_advancing(grok_source):
+def test_bounded_snapshot_records_all_keyed_disputes(grok_source):
     s = grok_source
     before = _batch(s, s.rows, s.snapshot)
     for row in s.snapshot["turns"]:
         row["costUsdTicks"] += 1
     replay = _batch(s, s.rows, s.snapshot, before.cursor)
-    assert not replay.observations and replay.cursor == before.cursor
+    assert not replay.observations
+    assert replay.cursor.checkpoint.offset == before.cursor.checkpoint.offset
+    assert replay.cursor != before.cursor
     assert {item.observation_key for item in replay.diagnostics} == {
         item.key for item in before.observations
     }

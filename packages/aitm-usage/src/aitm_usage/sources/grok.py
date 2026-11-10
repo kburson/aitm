@@ -310,7 +310,7 @@ class _NativeWalk:
         self.read_headless = read_headless
         self.completions = {turn.key: turn for turn in prior}
         self.new: list[GrokCompletion] = []
-        self.boundaries: list[NativeBoundary] = []
+        self.boundaries: list[tuple[SourceRef, NativeBoundary]] = []
         self.prompt: str | None = None
         self.hook: _Update | None = None
         self.user_chunk = False
@@ -410,7 +410,10 @@ class _NativeWalk:
         )
         if old is not None:
             if old != replace(
-                complete, ordinal=old.ordinal, receipt_ref=old.receipt_ref
+                complete,
+                ordinal=old.ordinal,
+                receipt_ref=old.receipt_ref,
+                snapshot_dispute=old.snapshot_dispute,
             ):
                 raise _Held(DiagnosticCode.IDENTITY_CONFLICT, key)
             if (
@@ -423,7 +426,9 @@ class _NativeWalk:
         self.remember(complete)
         self.new.append(complete)
         if boundary is not None:
-            self.boundaries.append(NativeBoundary(boundary, self.origin.checkout))
+            self.boundaries.append(
+                (key, NativeBoundary(boundary, self.origin.checkout))
+            )
 
     def remember(self, completion: GrokCompletion) -> None:
         if len(self.completions) >= _MAX_TURNS:
@@ -512,10 +517,9 @@ def _snapshot_rows(source: _GrokSource, origin: GrokOrigin) -> list[_Row] | None
 
 def _reconcile(
     source: _GrokSource, origin: GrokOrigin, walk: _NativeWalk
-) -> tuple[tuple[GrokDiagnostic, ...], tuple[GrokDiagnostic, ...]]:
+) -> tuple[tuple[GrokDiagnostic, ...], set[SourceRef]]:
     rows = _snapshot_rows(source, origin)
     matched: set[SourceRef] = set()
-    disputes: list[GrokDiagnostic] = []
     orphan = False
     prior_ordinal = -1
     for value in rows or ():
@@ -544,25 +548,31 @@ def _reconcile(
         prior_ordinal = turn.ordinal
         if turn.observation is None:
             continue
+        code = None
         try:
             snapshot_content = _stored_accounting(row).reference(source)
             if snapshot_content != turn.native_content_ref:
-                raise _Held(DiagnosticCode.IDENTITY_CONFLICT)
+                code = DiagnosticCode.IDENTITY_CONFLICT
         except _Held as hold:
-            disputes.append(
-                GrokDiagnostic(hold.code, turn.observed_at, source.stream_ref, turn.key)
-            )
+            code = hold.code
         except ValueError:
-            disputes.append(
-                GrokDiagnostic(
-                    DiagnosticCode.IDENTITY_CONFLICT,
-                    turn.observed_at,
-                    source.stream_ref,
-                    turn.key,
-                )
-            )
-        else:
+            code = DiagnosticCode.IDENTITY_CONFLICT
+        if code is None:
             matched.add(turn.key)
+        elif turn.snapshot_dispute is None:
+            # A later snapshot alone cannot withdraw a prior keyed dispute.
+            walk.completions[turn.key] = replace(turn, snapshot_dispute=code)
+    disputed = {
+        turn.key: turn
+        for turn in walk.completions.values()
+        if turn.snapshot_dispute is not None
+    }
+    disputes = tuple(
+        GrokDiagnostic(
+            turn.snapshot_dispute, turn.observed_at, source.stream_ref, turn.key
+        )
+        for turn in disputed.values()
+    )
     gaps = [
         GrokDiagnostic(
             DiagnosticCode.UNRECONCILED_USAGE,
@@ -571,7 +581,7 @@ def _reconcile(
             turn.key,
         )
         for turn in walk.new
-        if turn.key not in matched
+        if turn.key not in matched and turn.key not in disputed
     ]
     if orphan:
         gaps.append(
@@ -579,7 +589,7 @@ def _reconcile(
                 DiagnosticCode.UNRECONCILED_USAGE, source.root.cutoff, source.stream_ref
             )
         )
-    return tuple(gaps), tuple(disputes)
+    return (*gaps, *disputes), set(disputed)
 
 
 class GrokAdapter:
@@ -673,16 +683,18 @@ class GrokAdapter:
             source, origin, history, self.verify_receipt, self.read_headless
         )
         walk.read(data[offset:], offset)
-        diagnostics, disputes = _reconcile(source, origin, walk)
-        if disputes:
-            return AdapterBatch(diagnostics=disputes, cursor=cursor)
+        diagnostics, disputed = _reconcile(source, origin, walk)
         observations = tuple(
             NativeObservation(
                 turn.key, 1, turn.observation, _SURFACE, _TIME_BASIS, origin.checkout
             )
             for turn in walk.new
+            if turn.key not in disputed
+        )
+        boundaries = tuple(
+            boundary for key, boundary in walk.boundaries if key not in disputed
         )
         checkpoint = _checkpoint(source, origin, data, tuple(walk.completions.values()))
         return AdapterBatch(
-            observations, tuple(walk.boundaries), diagnostics, StreamCursor(checkpoint)
+            observations, boundaries, diagnostics, StreamCursor(checkpoint)
         )

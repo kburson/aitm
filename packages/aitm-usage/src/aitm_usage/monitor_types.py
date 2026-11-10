@@ -188,11 +188,22 @@ class GrokCompletion:
     observation: GrokObservation | None
     native_content_ref: SourceRef | None
     receipt_ref: SourceRef | None
+    snapshot_dispute: DiagnosticCode | None = None
 
     def __post_init__(self) -> None:
         _nonnegative(self.ordinal)
+        if self.snapshot_dispute not in (
+            None,
+            DiagnosticCode.IDENTITY_CONFLICT,
+            DiagnosticCode.OVERLAP_UNVERIFIED,
+        ):
+            raise ValueError("Invalid Grok snapshot dispute")
         if self.observation is None:
-            if self.native_content_ref is not None or self.receipt_ref is not None:
+            if (
+                self.native_content_ref is not None
+                or self.receipt_ref is not None
+                or self.snapshot_dispute is not None
+            ):
                 raise ValueError("Excluded Grok completion can retain only lineage")
         elif (
             self.observation.observed_at != self.observed_at
