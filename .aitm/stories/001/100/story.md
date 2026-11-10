@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T22:59:44+00:00"
+updated: "2026-11-10T23:53:02+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -74,3 +74,5 @@ After base monitor proof, develop independent distribution and optional
 AITM-Core runtime configuration as a separate enhancement.
 [Proposed design](design/independent-deployment-enhancement.md) ·
 [Proposed plan](plan/independent-deployment-enhancement.md).
+
+The independently reviewed M08b split narrows [#199](../199/story.md) to the writer-issued Claude source proof and adds [#201](../201/story.md), [#202](../202/story.md), [#203](../203/story.md), [#204](../204/story.md) as separate #119 gates. The folded usage leaf stays open unless exact covering native evidence and the atomic intent pass or an independently re-accepted parent change has a verified replacement blocker. [Native split receipt](../199/plan/2026-11-10-199-m08b-proof-split-receipt.json).

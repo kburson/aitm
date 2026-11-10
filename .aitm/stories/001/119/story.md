@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
 blocking: [120, 122]
-blocked-by: [118, 199]
+blocked-by: [118, 199, 201, 202, 203, 204]
 created: "2026-11-10T13:58:01Z"
-updated: "2026-11-10T22:59:44+00:00"
+updated: "2026-11-10T23:53:02+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -43,3 +43,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 - [ ] Run red. Implement guarded delivery and bounded dispositions. Run green with `test_monitor_journal.py` and `test_ledger.py`. Commit M09.
 
 The [reviewed M08 split](../118/plan/2026-11-10-118-m08b-revision-disposition-split.md) requires [M08a #118](../118/story.md) and [M08b #199](../199/story.md).
+
+The [second independently reviewed M08b split](../199/plan/2026-11-10-199-m08b-proof-split.md) retains #118 and #199 and adds direct prerequisites [#201](../201/story.md), [#202](../202/story.md), [#203](../203/story.md), [#204](../204/story.md). Keep the project write ACK and atomic publication of a qualifying folded replacement in M09. [Native split receipt](../199/plan/2026-11-10-199-m08b-proof-split-receipt.json).

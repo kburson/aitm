@@ -1,0 +1,118 @@
+{
+  "accepted_parent_plan_sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21",
+  "approved_pickup_sha256": "cc160a8c83169d8f3d20f6372487af882f08c27acaf2d3aecbfd3733d15fabbf",
+  "approved_split_sha256": "1c97ab7d36b9fe162e59472e89da03a36b2ddbcf83717f6fb70a89eeba85000f",
+  "earlier_118_split_sha256": "3ebb10df4b8b6c9b5416ed7f2e2b9e76688207248aa2bb67fe9aa84ae9f6202f",
+  "existing_199_blocked_by": [
+    118
+  ],
+  "existing_199_blocking": [
+    119,
+    201
+  ],
+  "fold_producer": "conditional Claude qualification, not authorized by the split verdict",
+  "issue_119_blocked_by": [
+    118,
+    199,
+    201,
+    202,
+    203,
+    204
+  ],
+  "leaves": [
+    {
+      "blocked_by": [
+        199
+      ],
+      "blocking": [
+        119,
+        202
+      ],
+      "created_at": "2026-11-10T23:49:52Z",
+      "html_url": "https://github.com/kburson/aitm/issues/201",
+      "id": 6318315996,
+      "node_id": "I_kwDOVnNyI88AAAABeJnZ3A",
+      "number": 201,
+      "project": {
+        "estimate": null,
+        "rank": 226,
+        "size": null,
+        "start date": null,
+        "status": "Backlog"
+      },
+      "state": "open",
+      "title": "[M08b2] Durable causal revision succession"
+    },
+    {
+      "blocked_by": [
+        201
+      ],
+      "blocking": [
+        119,
+        203
+      ],
+      "created_at": "2026-11-10T23:50:03Z",
+      "html_url": "https://github.com/kburson/aitm/issues/202",
+      "id": 6318318144,
+      "node_id": "I_kwDOVnNyI88AAAABeJniQA",
+      "number": 202,
+      "project": {
+        "estimate": null,
+        "rank": 227,
+        "size": null,
+        "start date": null,
+        "status": "Backlog"
+      },
+      "state": "open",
+      "title": "[M08b3] Verified incomparable-content disputes"
+    },
+    {
+      "blocked_by": [
+        202
+      ],
+      "blocking": [
+        119,
+        204
+      ],
+      "created_at": "2026-11-10T23:50:13Z",
+      "html_url": "https://github.com/kburson/aitm/issues/203",
+      "id": 6318320035,
+      "node_id": "I_kwDOVnNyI88AAAABeJnpow",
+      "number": 203,
+      "project": {
+        "estimate": null,
+        "rank": 228,
+        "size": null,
+        "start date": null,
+        "status": "Backlog"
+      },
+      "state": "open",
+      "title": "[M08b4] Verified scope and coverage dispositions"
+    },
+    {
+      "blocked_by": [
+        203
+      ],
+      "blocking": [
+        119
+      ],
+      "created_at": "2026-11-10T23:50:22Z",
+      "html_url": "https://github.com/kburson/aitm/issues/204",
+      "id": 6318321834,
+      "node_id": "I_kwDOVnNyI88AAAABeJnwqg",
+      "number": 204,
+      "project": {
+        "estimate": null,
+        "rank": 229,
+        "size": null,
+        "start date": null,
+        "status": "Backlog"
+      },
+      "state": "open",
+      "title": "[M08b5] Qualified folded usage intent"
+    }
+  ],
+  "parent": 100,
+  "project": 24,
+  "verified_at": "2026-11-10T23:51:19+00:00"
+}
