@@ -3,7 +3,7 @@
   "line_floor": 90,
   "package": "aitm-usage",
   "product_root": "src/aitm_usage",
-  "helpers": ["tools/ci/python_gate.py", "tools/ci/pytest_evidence.py"],
+  "helpers": ["tools/ci/python_gate.py", "tools/ci/pytest_evidence.py", "tools/ci/verify_pr.py"],
   "required_tests": [
     "packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl",
     "packages/aitm-usage/tests/test_install.py::test_restore_fences_publication_until_atomic_swap",

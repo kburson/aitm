@@ -17,3 +17,13 @@ go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 Local tests give local evidence. For delivery, read the authenticated PR, workflow, latest run attempt and its jobs. Verify the attempt archive and its signed subject against the ordinary PR merge ref. The signed certificate must identify the actual source SHA and exact invocation. Confirm the raw merge parents against live base and head, approved workflow and policy controls, both raw line floors, and exact review before merging. The signed artifact contains sanitized evidence and creates a public GitHub attestation and Sigstore transparency record.
 
 The isolated base lane uses the delivered observer and policy from the exact target. On initial bootstrap it uses the independently reviewed and digest-pinned standalone blobs. The signer downloads only the exact collector archive, verifies the raw digest and allowed member, and signs the fixed evidence file without candidate checkout or executable input.
+
+## Verify a pull request from the target
+
+Run the delivered verifier from a clean checkout of the current declared target with GitHub CLI 2.97.0.
+
+```sh
+python tools/ci/verify_pr.py --repo kburson/aitm --pr 123 --target trunk --output /tmp/aitm-ci-readback.json
+```
+
+The verifier reads GitHub and writes the local result. For a reviewed gate-control change, pass `--reviewed-tree <tested-tree-sha>` from the existing source review. A stale run, incomplete attempt, invalid bundle or mismatched merge holds the result. The verifier does not change branch protection or merge the PR.
