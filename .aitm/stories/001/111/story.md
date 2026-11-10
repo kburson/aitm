@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 111
 title: "[M01] Host path security"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/111"
 parent: 100
 children: []
 blocking: [112]
 blocked-by: []
 created: "2026-11-10T13:57:48Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T14:15:31+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.5, "size": "S"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/jit.md", "plan/jit-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M01", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "1ca9420de1ab889e868a4bc2a5d392de7355fdbe303d53b54dba5f145a998391"}
@@ -39,3 +39,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_private_acl_rejects_linux_default_acl_and_unknown_enforcement`, `test_pinned_path_rejects_symlink_and_wrong_owner` and `test_uid_guard_ignores_home_override`. Assert `0700` with a permissive default ACL fails and an unavailable ACL capability refuses state admission.
 - [ ] Run the named file to show red. Implement the checked OS boundary and run green with `test_ledger.py`. Exercise real ACL enforcement on the qualified Linux volume. Commit only M01 paths.
+
+[Reviewed design, estimate, plan and exact pickup](plan/jit.md) · [Independent review](plan/jit-review.md).

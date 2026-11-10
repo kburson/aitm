@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 100
 title: "Multi-project agent usage monitor"
 kind: "epic"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
 children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-10T14:15:31+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -32,7 +32,7 @@ Extend the delivered [#83 collector](../../000/83/story.md) to concurrent regist
 2. Review the [spec](design/multi-project-usage-monitor-design.md) through SAR, independent SPR and independent XPR to acceptance. Retain exact revisions, full-file coverage and review collateral in `design/reviews/`.
 3. Draft the implementation plan after spec acceptance. Retain the plan and its separate review collateral under `plan/`.
 
-This is a follow-on to the closed #83. The authorized work is research, spec review and planning.
+This is a follow-on to the closed #83. The original assignment covered research, spec review and planning.
 
 ## Accepted specification
 
@@ -46,4 +46,8 @@ The full cycle includes [SAR](plan/reviews/sar-2026-11-10-monitor-plan/review-ma
 
 ## Verified implementation backlog
 
-#100 is the aggregate parent of the 19 numbered stories. The [leaf catalog](plan/leaf-stories.md) maps the accepted M01–M19 order to their GitHub numbers and 24 direct dependencies. The [verification receipt](plan/leaf-issue-receipt.json) records the native parent links, reciprocal dependency edges and Backlog status. The parent remains in Backlog.
+#100 is the aggregate parent of the 19 numbered stories. The [leaf catalog](plan/leaf-stories.md) maps the accepted M01–M19 order to their GitHub numbers and 24 direct dependencies. The [verification receipt](plan/leaf-issue-receipt.json) records the native parent links, reciprocal dependency edges and Backlog status. The parent stayed in Backlog through that verification.
+
+## Full-Auto delivery
+
+The owner authorized source delivery after [#103](../103/story.md) closed. Development starts with [#111](../111/story.md) on the exact delivered trunk. Close each accepted leaf on its own evidence. Production cutover follows the separate decision in the accepted plan.
