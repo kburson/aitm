@@ -27,3 +27,9 @@ The first-target fixture used actual CLI stdout, the verified typed queue and a 
 [All six hosted jobs](https://github.com/kburson/aitm/actions/runs/42909159699/attempts/1) passed on the exact candidate. The [authenticated receipt](hosted-ci-receipt.json) verified tested merge `2074ab2e0efddae94dd118012017f1de8bbb1fa3`, artifact `13805759575` and subject SHA-256 `af7afc24c3b7746d500925f64abd990959a1f85ea80260423cf872ce53221812`. The exact reviewed tree was explicit because it contains new tests. The workflow, verifier, policy, other CI tools, package configuration and lock match trunk.
 
 Authenticated raw replay retained 747 baseline package identities and passed all 848 candidate tests with both raw coverage floors. The local baseline of 748 includes the extra fixed CLI control test. Independent exact source review is pending.
+
+### Independent exact source hold
+
+The [first independent exact source review](source-review-attempt-1.md) held the passing tree because a command with a durable legacy receipt could enter the adopted monitor queue on retry. Preserve the signed result and return to Develop. The repair must return the original read-only legacy receipt and prevent a new queue acknowledgement even when compatible monitor admission exists.
+
+The trusted hosted base inventory counts 747 package tests, while the locked local baseline adds the fixed CLI evidence test for 748. The signed tested SHA is the synthetic PR merge on the exact recorded head and base. The carrier author verified that neutral Claude readers never receive a reserved session ID, and that the scanner requires explicit matching native sessions. The existing neutral receipt behavior is preserved by this check.
