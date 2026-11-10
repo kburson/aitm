@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 138
 title: "[#133 T01] Pin the serial baseline"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/138"
 parent: 133
 children: []
 blocking: [139]
 blocked-by: []
 created: "2026-11-10T16:50:57Z"
-updated: "2026-11-10T20:54:26Z"
+updated: "2026-11-10T21:09:51Z"
 last-branch: "codex/aitm-138-serial-baseline"
 estimate: {"agent-hours": 2.5, "size": "S"}
 priority: "P1"
@@ -87,3 +87,7 @@ and reserve the declared source worktree under separate authorization.
 ## Attempt 1
 
 Authorized implementation on `codex/aitm-138-serial-baseline` from trunk `d769b3169724eeb9ef4b4aee47d3ab4c4489072d`. Worktree `aitm-138-dev`, implementer `codex-collaboration:/root/impl138`, closure owner Codex coordinator. Stop before merge.
+
+## Delivery and closure
+
+[Delivery proof](plan/delivery-receipt.json) · [Original implementer sign-off](retro/2026-11-10-138-implementer-retrospective.md) · [Closure readback](plan/closure-receipt.json).

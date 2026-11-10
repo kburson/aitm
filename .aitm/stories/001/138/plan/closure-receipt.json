@@ -1,0 +1,14 @@
+{
+  "delivery_receipt": "plan/delivery-receipt.json",
+  "github_closed_at": "2026-11-10T21:09:48Z",
+  "implementer_signoff": "retro/2026-11-10-138-implementer-retrospective.md",
+  "implementer_signoff_sha256": "edcad4c30870c2da8f61be626e929eb697687c0eb49d4b05e106a9df680facec",
+  "issue": "https://github.com/kburson/aitm/issues/138",
+  "issue_reason": "completed",
+  "issue_state": "closed",
+  "merge": "0175e77c398dc97c59db166fa64e2e9a673b4b40",
+  "project": 24,
+  "project_observed_at": "2026-11-10T21:09:51Z",
+  "project_status": "Done",
+  "story": 138
+}
