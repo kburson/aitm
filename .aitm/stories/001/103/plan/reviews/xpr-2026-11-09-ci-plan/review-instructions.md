@@ -1,0 +1,3 @@
+# #103 implementation plan XPR
+
+Use the sealed invitation and installed native join and submit commands. Edit only the pending reviewer response. Read the current implementation plan through EOF in contiguous fresh Read ranges of at most 20 lines. State actual line ranges, completeness and truncation. Compare the accepted design, especially the 90% per package and CI helper floor, meaningful behavioral tests, complete exact evidence, independently closable leaves, bootstrap order and four-hour leaf cap. Review whether each delivery and refusal route is executable. Keep Epic #2, C01 and implementation outside this review. On a later round freshly read the complete revised artifact and prior author dispositions. No Git.

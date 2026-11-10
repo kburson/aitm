@@ -10,7 +10,7 @@ children: [104, 105, 106]
 blocking: []
 blocked-by: []
 created: "2026-11-10T00:45:16Z"
-updated: "2026-11-10T02:58:06+00:00"
+updated: "2026-11-10T03:22:55+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 10.0, "size": "L"}
 priority: "P1"
@@ -34,4 +34,4 @@ Design accepted on exact SHA-256 `d48fc2bd0b1973c48a39b4b197a9ab7e97d77db7bdd349
 
 Refined as a **10.0-agent-hour P1 epic** with three independent leaves. Each leaf stays within four implementation agent-hours and closes on its own evidence. The local baseline was **530 passing tests and 90.9551% line coverage**. Hosted evidence remains a delivery gate. [Baseline](attachments/local-coverage-baseline.md).
 
-[Implementation plan](plan/implementation-plan.md) is in Planning for review. The leaves are [#104](../104/story.md), [#105](../105/story.md), and [#106](../106/story.md), in dependency order.
+[Implementation plan](plan/implementation-plan.md) accepted at exact SHA-256 `f81b4d18c36b1294c4bfc0635cf8bba67f231250a6a398dd92ddda63adb465fb` after [SAR](plan/reviews/sar-2026-11-09-ci-plan/review-manifest.md), [independent manual SPR](plan/reviews/spr-2026-11-09-ci-plan/review-manifest.md), [native Claude XPR](plan/reviews/xpr-2026-11-09-ci-plan/review-manifest.md). #103 remains in Planning. The leaves are [#104](../104/story.md), [#105](../105/story.md), and [#106](../106/story.md), in dependency order.

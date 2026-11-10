@@ -1,0 +1,7 @@
+# #103 SAR implementation plan record
+
+Self-review by Codex Sol 6.1 high, `sha256:664318926dfdb04419486df4dc11e2de5f5ae3b5fa76b098a3d841a6e3c93bef`. The initial full 70-line review at 2026-11-10T03:05:35Z covered `f1ff236fd7cc954411658142960d194984fe54eeb42ebd142c36238d3dfc287e`. It identified gaps in exact node identity, normal subprocess proof, trusted base provenance, the initial gate-control review and the explicit behavioral-test and helper-coverage contract.
+
+At 2026-11-10T03:21:40Z I freshly read lines 1–20, 21–40, 41–60 and 61–77 to EOF, and accepted the exact plan `sha256:f81b4d18c36b1294c4bfc0635cf8bba67f231250a6a398dd92ddda63adb465fb` at source `c21b7a4dea3c973fc0983fd74ded633cff241551`. The plan keeps the unrounded 90% line floor for active packages and the separate executable helper scope, measures unimported code and requires observable assertions. It establishes an early stop if the hosted proof cannot bind a run to its tested merge, requires an independently pinned observer for the first trusted-base baseline, and verifies exact run and attempt evidence. CI2 now exercises each missing, skipped, stale and mismatched evidence case identified in the preceding reviews. The three child stories can close as soon as their own gates pass. The exact review preserves the 10.0-agent-hour estimate and leaves Develop authorization, Epic #2 and C01 outside this review.
+
+[Exact plan](../../implementation-plan.md) · [Independent SPR](../spr-2026-11-09-ci-plan/review-manifest.md) · [Native XPR](../xpr-2026-11-09-ci-plan/review-manifest.md).
