@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 139
 title: "[#133 T02] Classify the pytest inventory"
 kind: "story"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/139"
 parent: 133
 children: []
 blocking: [141, 142, 144, 147, 148]
 blocked-by: [138]
 created: "2026-11-10T16:50:59Z"
-updated: "2026-11-10T21:59:42Z"
+updated: "2026-11-10T22:00:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-139-classify-pytest-inventory-design.md"], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-139-classify-pytest-inventory-design.md"], "plan": ["plan/2026-11-10-139-classify-pytest-inventory.md", "plan/2026-11-10-139-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T02", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "ade97a158a01113fdd6c0651f09b46de587adb902a86e0d8908c371e4c5edd54"}
@@ -56,3 +56,16 @@ that distinction in the inventory identity.
 [Design](design/2026-11-10-139-classify-pytest-inventory-design.md) · [Scoped independent SPR](plan/reviews/spr-2026-11-10-jit/review-manifest.md).
 
 The design adopts the accepted #133 contract for this leaf.
+
+## Accepted Plan and JIT
+
+[Implementation plan](plan/2026-11-10-139-classify-pytest-inventory.md) · [JIT pickup](plan/2026-11-10-139-jit.md) ·
+[Scoped independent SPR](plan/reviews/spr-2026-11-10-jit/review-manifest.md).
+
+Refinement verified **3.5 implementation agent-hours**, size M, P1,
+with Rank 20 preserved. Classify the delivered pytest inventory with a versioned policy and focused reconciliation tests.
+The JIT pins trunk `a495d60a87ac4ca764f019dc266e579f13f1787e` for intended attempt 1.
+The GitHub Project is in Planning.
+
+Before Develop, recheck the reviewed inputs and bind an isolated source
+worktree to the authorized attempt.
