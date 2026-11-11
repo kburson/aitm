@@ -21,3 +21,7 @@ The v1-layout first claim authenticates the historical capture prefix and exact 
 ## Review checkpoint
 
 [All six required jobs](https://github.com/kburson/aitm/actions/runs/42937140018/attempts/1) passed on exact head `8887c7142617014c9e3712c8b3eba22f21331cf1`. The [authenticated receipt](hosted-ci-receipt.json) verified tested merge `1090446b073e7277cae0f5e6b41995dd30e9b47c`, tree `eb1145db4bd3f7ab88c832c40e0ca180d335d798`, artifact `13819571030` and signed subject SHA-256 `09293ae8b92afbeb13656b45ee3f4c2fb4612ec46b3a52ec3f43490098725a86`. The trusted raw replay retained 947 baseline package test identities and passed all 970 candidate tests. The locked local baseline includes the fixed CLI control for 948. Raw coverage passed at 10,360/11,301 product and 778/821 helpers. Independent exact source review is pending.
+
+### Independent source HOLD and return to Develop
+
+The [first exact independent source review](post-ci-source-review-held-r1.md) held the successful hosted candidate for changed behavior on an already disputed first-owner key. The current candidate returned DISPUTED for same-owner changed and unrecorded material. Prior behavior returned HELD for that material. Both statuses already keep the cursor replayable, but the unplanned disposition change must be removed. Exact recorded first material remains DISPUTED. Add a real native fixture for changed material on the existing disputed key and retain the [first signed CI receipt](hosted-ci-receipt.json).
