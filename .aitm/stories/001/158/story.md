@@ -113,5 +113,5 @@ separately from the retained measurement bytes.
 [Rules and request evidence](attachments/github-merge-fence-rules.json) ·
 [Independent SPR](plan/reviews/spr-2026-11-10-endpoint-evidence.md).
 
-[Teardown status](plan/disposable-fixture-teardown.json) records the
-GitHub reauthentication hold and the most recent fixture readback.
+[Teardown receipt](plan/disposable-fixture-teardown.json) records GitHub's
+deletion confirmation and the authenticated HTTP 404 readback.

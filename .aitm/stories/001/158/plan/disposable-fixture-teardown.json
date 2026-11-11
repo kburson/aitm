@@ -10,12 +10,16 @@
   "authority": "owner-authorized creation, one-time measurements and deletion",
   "probes": "terminal and reconciled",
   "workflow_runs": 0,
-  "status": "pending-owner-reauthentication",
-  "observed_at": "2026-11-10T22:41:47.213117+00:00",
+  "status": "deleted",
   "rest_delete": {
     "http_status": 403,
     "message": "Must have admin rights to Repository."
   },
   "web_delete": "Exact repository entered and submitted; GitHub displayed Confirm access and offered passkey or password.",
-  "remaining": "Owner reauthenticates in GitHub. Confirm repository no longer resolves, or complete exact authorized final prompt if GitHub returns to it."
+  "initial_attempt_observed_at": "2026-11-10T22:41:47.213117+00:00",
+  "verification": {
+    "observed_at": "2026-11-11T01:43:49.807865+00:00",
+    "browser": "GitHub confirmed successful deletion after owner reauthentication.",
+    "authenticated_rest_readback": 404
+  }
 }
