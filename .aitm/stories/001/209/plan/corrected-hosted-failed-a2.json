@@ -1,0 +1,44 @@
+{
+  "status": "completed",
+  "conclusion": "failure",
+  "attempt": 2,
+  "headSha": "941542dd9695e6f1a330c8b020f6384cbed0a427",
+  "jobs": [
+    {
+      "name": "python-base",
+      "databaseId": 130635108948,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "quality",
+      "databaseId": 130635109292,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "file-checks",
+      "databaseId": 130635109372,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "python",
+      "databaseId": 130635109568,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "collect-evidence",
+      "databaseId": 130639029204,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "aitm-ci",
+      "databaseId": 130639169940,
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ]
+}
