@@ -117,3 +117,11 @@ Trusted raw replay retained all 995 hosted package baseline IDs, passed all 1,07
 The [additional exact source review](post-ci-source-review-resumed.md) passed with no blockers after signed hosted validation. The verdict preserves the narrow empty-span error-message assertion and the absent mark-only grant-specific fixture as nonblocking observations. The locked local and hosted candidate suites include the CLI help control. The hosted `python-base` job inventories only `packages/aitm-usage/tests`. The [workflow at the verified literal base](https://github.com/kburson/aitm/blob/bc8063b66522ed3a27c95d1bb0546f1e73249612/.github/workflows/ci.yml#L70-L72) and [actual ID reconciliation](resumed-baseline-id-reconciliation.json) identify that one difference.
 
 Carry to #210 that real later usage makes the proof-only path unable to reissue and that expiry invalidates a GAP proposal issued for a HELD target. #209 owns journal recording. #210 owns independently qualified settlement.
+
+## Verified delivery and original implementer sign-offs
+
+[PR #211](https://github.com/kburson/aitm/pull/211) merged to literal trunk as `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. The [delivery receipt](verified-delivery.json) records ordered parents `bc8063b66522ed3a27c95d1bb0546f1e73249612` and `8d8cb2874aefba1898dc7b73c5695c4e7b0cd611`, verified ancestry, reviewed tree `6b684109b1d85d98ba01563fb034a2d3040ddc5d` and zero diff against the reviewed candidate.
+
+Both original implementers signed. [Codec retrospective](../retro/2026-11-11-203-codec-implementation-retrospective.md), SHA-256 `b5fedea5ffdceb76a33ef6e28f4069cfb150e32de336199f793094ac038648db`. [Proposal integration retrospective](../retro/2026-11-11-203-proposal-implementation-retrospective.md), SHA-256 `3302a7eae57f92f0d91c7fa9e5f9bf05359ceff2b55a8ea9436ce3e958a85b82`.
+
+The [native dependency readback](close-dependency-readback.json) confirms #203 directly gates #209, #204 and #119. #210 still requires #209. #204 still requires both #203 and #210. #119 retains all eight direct dependencies.
