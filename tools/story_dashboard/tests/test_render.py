@@ -292,6 +292,56 @@ class RendererFixture(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(ValueError):
                 render.render(view)
 
+    def test_unknown_nested_fields_cannot_copy_private_exports_to_html(self):
+        top = deepcopy(self.view)
+        top["provider_export"] = {"raw_transcript": "PRIVATE_TOP_CANARY"}
+        story = deepcopy(self.view)
+        story["stories"][1]["provider_export"] = {
+            "raw_transcript": "PRIVATE_STORY_CANARY"
+        }
+        measure = deepcopy(self.view)
+        measure["stories"][1]["timing"]["actual"]["raw_export"] = {
+            "prompt": "PRIVATE_MEASURE_CANARY"
+        }
+        evidence = deepcopy(self.view)
+        evidence["stories"][1]["timing"]["actual"]["evidence"][0]["raw_export"] = {
+            "prompt": "PRIVATE_SOURCE_CANARY"
+        }
+        for scope, view in (
+            ("top", top),
+            ("story", story),
+            ("measure", measure),
+            ("evidence", evidence),
+        ):
+            with self.subTest(scope=scope), self.assertRaises(ValueError):
+                render.render(view)
+
+    def test_malformed_detail_values_cannot_crash_a_disclosure(self):
+        reason = deepcopy(self.view)
+        reason["stories"][1]["timing"]["actual"]["evidence"][0]["reason"] = {
+            "toString": False
+        }
+        bases = deepcopy(self.view)
+        bases["stories"][1]["timing"]["actual"]["bases"] = [{"toString": False}]
+        coverage_notes = deepcopy(self.view)
+        coverage_notes["stories"][1]["timing"]["actual"]["reasons"] = [False]
+        gap = deepcopy(self.view)
+        gap["stories"][1]["cost"]["inclusive"]["gaps"].append(
+            {
+                "story": 186,
+                "code": {"toString": False},
+                "evidence": self.link(".aitm/stories/001/186/events.jsonl:3"),
+            }
+        )
+        for scope, view in (
+            ("reason", reason),
+            ("basis", bases),
+            ("coverage", coverage_notes),
+            ("gap", gap),
+        ):
+            with self.subTest(scope=scope), self.assertRaises(ValueError):
+                render.render(view)
+
 
 if __name__ == "__main__":
     unittest.main()
