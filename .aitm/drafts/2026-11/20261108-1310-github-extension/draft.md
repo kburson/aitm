@@ -3,7 +3,7 @@ kind: draft
 slug: github-extension
 title: aitm-github — GitHub backlog and git-host provider, board projection, init
 created: 2026-11-08T19:10:12Z
-updated: 2026-11-08T19:10:12Z
+updated: 2026-11-11T14:41:24Z
 origin: .aitm/drafts/2026-11/20261108-0852-aitm-rewrite-brainstorm/draft.md
 section: github-extension
 package: aitm-github
@@ -28,3 +28,12 @@ depends-on: [aitm-core]
 - Do human edits on GitHub (board drags, labels, title) get imported on next sync, or overwritten?
 - Field set for the new board, and which fields are projections vs human-owned.
 - Verify REST item-field PATCH live before relying on it.
+
+
+## C05 intake from #181
+
+M2 owns the authorized Project writer, field mappings, approved triggers and readback. Qualify Actual after #228 (historical) or #229 (native), according to projected scope. Cost separately needs #230 and complete verified pricing. Retain Partial with a partial value and surface Unknown. Replay later publications without a state change, uncertain ACK, concurrent edits, superseded output, and interruption between writing a metric and its coverage. Verify authorization, mapping and safe reconciliation in a disposable Project before production activation.
+
+Preliminary integration estimate 3.75 h. Carry this intake into the milestone's own refinement and JIT when it graduates.
+
+[Reviewed requirements](https://github.com/kburson/aitm/blob/20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b/.aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md#c05-project-through-the-github-extension) · [Shared qualification evidence](https://github.com/kburson/aitm/blob/c794b1b0be8b7bb67ba7bb1d530fe8a80296f95b/.aitm/stories/002/227/attachments/qualification.md)

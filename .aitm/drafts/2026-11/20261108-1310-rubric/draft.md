@@ -3,7 +3,7 @@ kind: draft
 slug: rubric
 title: aitm-rubric — planning and estimation rubric with ML
 created: 2026-11-08T19:10:12Z
-updated: 2026-11-08T19:10:12Z
+updated: 2026-11-11T14:41:24Z
 origin: .aitm/drafts/2026-11/20261108-0852-aitm-rewrite-brainstorm/draft.md
 section: rubric
 package: aitm-rubric
@@ -25,3 +25,12 @@ depends-on: [aitm-core]
 
 - Feature set and units.
 - Minimum corpus before numeric calibration is trusted.
+
+
+## C07 intake from #181
+
+Use qualified Actual from #228 or #229 and the retained estimate and Close outcome from Core #51. Match estimate revision, phase, agent and role scope, attempt and timing basis. Admit only complete, comparable observations. Keep Partial, Unknown and mismatched evidence available for diagnosis outside calibration. Verify a complete pair can qualify without usage.
+
+Preliminary integration estimate 1.50 h. Carry this intake into the milestone's own refinement and JIT when it graduates.
+
+[Reviewed requirements](https://github.com/kburson/aitm/blob/20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b/.aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md#c07-verify-estimate-comparability) · [Shared qualification evidence](https://github.com/kburson/aitm/blob/c794b1b0be8b7bb67ba7bb1d530fe8a80296f95b/.aitm/stories/002/227/attachments/qualification.md)

@@ -7,7 +7,7 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/51"
 parent: 2
 children: []
-blocking: [65, 66]
+blocking: [65, 66, 230]
 blocked-by: [28, 36, 49]
 created: "2026-11-09T08:03:03Z"
 updated: "2026-11-09T13:53:09Z"
