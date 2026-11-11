@@ -41,7 +41,8 @@ verifier held at its reviewed-tree check while independent review ran.
 
 Claude Opus 5.5 medium gave an independent off-platform **PASS** after
 hosted validation. The reviewer bound the base, head, test merge, and
-tree above, and reported no blocking findings. Review input SHA-256
+tree above, and reported no blocking findings. [Review response](fixture-isolation-pr245-review.md).
+Review input SHA-256
 `fee9f9c4e738fbdaef0d6a35c5b1cf727c2881729313914bea2f25dbc997c8fd`.
 The reviewer confirmed scope, fixture and artifact separation, test
 inputs, coverage, and signing. No native GitHub review was submitted.
@@ -56,4 +57,28 @@ its original fixture placement, within the scope of the source patch.
 
 The owner instruction to deliver the fixture isolation from #231
 applies to this exact extracted workflow change. The reviewed tree
-above is the resulting #103 disposition scope.
+above is the resulting #103 disposition scope. The
+[trusted verifier receipt](fixture-isolation-pr245-verifier.json) passed
+for the exact tree and signed attempt.
+
+## Delivery
+
+PR #245 merged through GitHub with the reviewed head pinned. The
+delivered trunk commit is `21b06b2b8be47adcf4c3c747ba7c0a6469196f79`.
+GitHub readback verified the reviewed base and head as ordered parents
+and the reviewed tree `1b4859c42c61b379e68a5bd20af5d077a54f209b`.
+
+The [exact trunk push](https://github.com/kburson/aitm/actions/runs/43087210117/attempts/1)
+passed. The complete Python job took 462 seconds, leaving 18 seconds
+under the unchanged 480-second limit. Wheel smoke, artifact upload and
+the push collector passed. The base lane and attestation signer are
+PR-only. The [trunk receipt](fixture-isolation-trunk-qualification.json)
+binds the push SHA, artifact digest, 1,071 test IDs and coverage totals.
+Both qualifying samples used a warm cache.
+
+Fixture delivery and separate hosted qualification satisfy the #197
+hold prerequisites. #197's head remains
+`dbbc729574c9b078658af310b2efa2945020224f`. Its old failed attempt is
+still the latest run for that head. A refresh to current trunk and
+fresh exact-candidate validation are the next #139 steps. #159 remains
+blocked by open issues #157 and #158.

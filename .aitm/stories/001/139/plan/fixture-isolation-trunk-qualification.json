@@ -1,0 +1,37 @@
+{
+  "commit": "21b06b2b8be47adcf4c3c747ba7c0a6469196f79",
+  "run": 43087210117,
+  "attempt": 1,
+  "url": "https://github.com/kburson/aitm/actions/runs/43087210117/attempts/1",
+  "python_job": 130754616209,
+  "python_seconds": 462,
+  "job_limit_seconds": 480,
+  "jobs": {
+    "file-checks": "success",
+    "quality": "success",
+    "python": "success",
+    "python-base": "skipped",
+    "collect-evidence": "success",
+    "aitm-ci": "skipped"
+  },
+  "python_artifact": 13887907024,
+  "python_archive_digest": "sha256:92f35704d2b5315acb3bf9c02c7618cbaa381438b609b357a3d2141b56eb2bbd",
+  "python_tests": 1071,
+  "timings": {
+    "setup": 4,
+    "test": 435,
+    "cache": "warm",
+    "total": 440
+  },
+  "coverage": {
+    "product": {
+      "covered_lines": 10655,
+      "num_statements": 11604
+    },
+    "helper": {
+      "covered_lines": 778,
+      "num_statements": 821
+    }
+  },
+  "wheel_digest": "0e06548d0ec181534cbd9b6179b1b86fbc98a2da78664d4cd34bed8e8924c381"
+}
