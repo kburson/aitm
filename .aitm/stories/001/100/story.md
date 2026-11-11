@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 209, 210, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
 blocking: []
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-10T23:53:02+00:00"
+updated: "2026-11-11T02:41:48+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -61,6 +61,8 @@ Full-Auto resumed November 10, 2026. [#112 M02](../112/story.md) and [#113 M03](
 The reviewed M04 pickup split unavailable Linux carriers into [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md). Each follows #114 and blocks #129. The original accepted plan is preserved. [Split receipt](../114/plan/linux-carrier-split.json).
 
 The reviewed M07 split retains [#117 M07a](../117/story.md) for native routing and holds and assigns [#182 M07b](../182/story.md) the producer, compatibility and installed launcher work. Both gate #118. [Split and native evidence](../117/plan/2026-11-10-117-m07-split.md) · [Board receipt](../117/plan/2026-11-10-117-m07-split-receipt.json).
+
+The reviewed disposition split assigns [#203](../203/story.md) the separate native receipt proof, [#209](../209/story.md) atomic journal recording and [#210](../210/story.md) qualified effective settlement. All three directly gate #119, and #210 also gates #204. [Accepted split and native readback](../203/plan/2026-11-10-203-disposition-proof-split.md).
 
 ## GitHub Project metadata
 

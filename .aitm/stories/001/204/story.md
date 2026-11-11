@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/204"
 parent: 100
 children: []
 blocking: [119]
-blocked-by: [203]
+blocked-by: [203, 210]
 created: "2026-11-10T23:50:22Z"
-updated: "2026-11-10T23:53:02+00:00"
+updated: "2026-11-11T02:41:48+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -28,3 +28,5 @@ plan-origin: {"kind": "accepted-parent-plan-split", "story": 100, "key": "M08b5"
 Independently qualify a bounded, pinned pre-M09 Claude producer for exact closed child membership and aggregate inclusion. If proof exists, record the covering parent and exact withdrawal intent in one journal change. An observed association or equal totals cannot establish coverage. Stay open on proof failure, with #119 blocked, unless a separately re-accepted parent plan and native replacement blocker are already verified. M09 owns actual ACK and atomic publication.
 
 Project 24 Rank 229. Size and Estimate follow its own independent Refine and JIT. Start Date follows Develop.
+
+[#210 qualified effective settlement](../210/story.md) is an additional native prerequisite. The existing #203 edge and the positive folded producer gate remain.
