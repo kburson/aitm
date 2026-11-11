@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 199
 title: "[M08b1] Verified Claude revision proof"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/199"
 parent: 100
 children: []
 blocking: [119, 201]
 blocked-by: [118]
 created: "2026-11-10T22:57:50Z"
-updated: "2026-11-11T00:19:57+00:00"
+updated: "2026-11-11T00:25:26+00:00"
 last-branch: "codex/aitm-199-claude-revision-proof"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null

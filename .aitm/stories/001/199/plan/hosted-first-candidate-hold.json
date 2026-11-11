@@ -1,0 +1,31 @@
+{
+  "head": "39265dd199b694f6b6b694ba19c29b6000ab506a",
+  "jobs": {
+    "aitm-ci": "skipped",
+    "collect-evidence": "failure",
+    "file-checks": "success",
+    "python": "success",
+    "python-base": "success",
+    "quality": "success"
+  },
+  "raw_gate": {
+    "baseline_tests": 919,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 10236,
+        "num_statements": 11175
+      }
+    },
+    "failures": [
+      "required base outcome removed or degraded: packages/aitm-usage/tests/test_monitor_scope.py::test_late_claude_revision_keeps_its_original_native_scope"
+    ],
+    "passed": false,
+    "tests": 948
+  },
+  "run": "https://github.com/kburson/aitm/actions/runs/42930421313/attempts/1",
+  "tree": "8a23cd16f6f4d1c8538baa33befd0d934de2424c"
+}
