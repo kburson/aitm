@@ -1,0 +1,23 @@
+{
+  "artifact_sha256": "71dae425e57507082796dc4e8f475eadb4201de4eb0ead5d74c64942e6be419c",
+  "review_round": 1,
+  "physical_lines": 107,
+  "matched_lines": 107,
+  "matched_result_ranges": [
+    [
+      1,
+      60,
+      60
+    ],
+    [
+      61,
+      107,
+      47
+    ]
+  ],
+  "missing_lines": [],
+  "observed_models": [
+    "claude-opus-5-5"
+  ],
+  "reviewer_transcript_prefix_sha256": "6cdeddd55feef55581fcd7e51ef01da4e9c51e2cf0622908b740f22f55138a0d"
+}

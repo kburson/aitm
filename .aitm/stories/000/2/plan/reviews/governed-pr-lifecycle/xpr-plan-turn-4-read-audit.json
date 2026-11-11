@@ -1,0 +1,48 @@
+{
+  "artifact_sha256": "e4245997416a6e39188aacbab246a1fbb41d9ccc8c50e1a2971d85f52b033db3",
+  "review_round": 4,
+  "physical_lines": 396,
+  "matched_lines": 396,
+  "matched_result_ranges": [
+    [
+      1,
+      60,
+      60
+    ],
+    [
+      61,
+      120,
+      60
+    ],
+    [
+      121,
+      180,
+      60
+    ],
+    [
+      181,
+      240,
+      60
+    ],
+    [
+      241,
+      300,
+      60
+    ],
+    [
+      301,
+      360,
+      60
+    ],
+    [
+      361,
+      396,
+      36
+    ]
+  ],
+  "missing_lines": [],
+  "observed_models": [
+    "claude-opus-5-5"
+  ],
+  "reviewer_transcript_prefix_sha256": "5ea8d75dea542232145048632fda5a69ba9e1b15f7870abfa122bb67b61166f7"
+}
