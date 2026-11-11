@@ -19,8 +19,9 @@ independent capability qualification.
 
 - Provision the story issue through the existing permanent identity
   protocol. Atomically finalize the numbered Backlog story, parent
-  relationship and pending provisioning action. Dispatch branch and
-  PR writes only after verified shared publication. Record repository,
+  relationship and pending provisioning action with one exclusive
+  lifecycle slot per permanent story, repository and managed role.
+  Dispatch branch and PR writes only after verified shared publication. Record repository,
   parent ref, initial base, working ref, PR identity and resource
   incarnation. Journal a separate broker dispatch claim for each
   external effect. Recover ambiguous outcomes with positive ownership
@@ -28,8 +29,12 @@ independent capability qualification.
 - Use the declared feature or epic parent as the child PR base. A
   missing parent is an unavailable binding. A branch-backed epic
   explicitly designates an ordinary integration delivery story to own
-  the shared branch and its draft. The story uses its own Core review
-  and delivery authority. A narrowly scoped Core source guard allows
+  the shared branch and its upstream draft. Declare the Backlog
+  relationship, integration resource owner and literal delivery target
+  separately. The epic's required scope includes the integration
+  delivery, which uses its own Core review and delivery authority.
+  Where the shared branch is also a governed merge target, its target
+  policy controls writes, including those requested by its owner. A narrowly scoped Core source guard allows
   this delivery to prove an exact, nonempty composed source change
   from verified child deliveries when it has no source commits of its
   own. A pure aggregate epic and local-only planning remain supported.
@@ -59,7 +64,10 @@ resource incarnation, effective policy, and anchored repository and
 refs. An incarnation survives ordinary session rebind. Current-session
 mutations also require the current attempt and C16 binding generation.
 Provisioning and terminal cleanup use narrowly scoped service claims.
-Credentials stay outside agent workspaces.
+Bind literal host resources exclusively to one incarnation. Terminally
+reconcile outstanding host writes before reuse, unless qualified host
+isolation prevents them reaching the replacement. Credentials stay
+outside agent workspaces.
 Managed mode requires qualified tool and network isolation for direct
 provider calls, including anonymous API routes. Unsupported isolation
 leaves managed provider operations unavailable. Local Core and
@@ -67,11 +75,13 @@ supported observation remain available.
 
 On a trunk-bound ready or merge request, the service reads the live
 protected GitHub flag ref and resolves its record at the returned OID.
-Local cached refs supply no authorization. Ready promotion must honor
-the current policy at the host transition for the exact PR, head and
-target. An unqualified route stays unavailable, and ambiguous effects
-hold subsequent promotion until reconciled. While held, the nominated
-repair may seek review. Only the exact independently reviewed repair
+Local cached refs supply no authorization. The broker orders ready
+dispatch with accepted hold and retarget admission for the exact PR,
+head and target. Already-sent readiness may finish during a hold. It
+carries no merge authority, and its result must be reconciled before
+further ready or retarget operations. Retarget requires a verified
+draft and fresh admission for the new target. While held, the
+nominated repair may seek review. Only the exact independently reviewed repair
 with full passing candidate proof is eligible to merge. Feature pushes
 and non-default merges continue through their own policies. Require
 exact parent delivery evidence on every managed merge. Default-branch

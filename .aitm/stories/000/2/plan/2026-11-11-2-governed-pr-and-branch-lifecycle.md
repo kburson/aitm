@@ -22,8 +22,8 @@ describe behavior. Final command spelling belongs to leaf refinement.
 | --- | --- |
 | Create a branch-backed Backlog story | Create or reconcile the permanent issue identity, establish the exact parent ref, create the origin working branch from that parent, open its draft PR, and record the linked identities. The story remains in Backlog. |
 | Pick up or resume work | Bind the story, branch, draft PR and authorized worktree. Reuse the existing worktree ownership and lifecycle rules. |
-| Push or refresh a story branch | Resolve its bound remote and ref. Push only that story branch through the authorized route. Refresh against its actual parent and record the resulting head and CI identity. |
-| Mark the PR ready | Resolve the actual PR, target, head and lifecycle state. Require a qualified exact promotion transition. For a default-target PR, enforce the live flag and promotion policy at that transition. While held, only the nominated repair can be promoted. Non-default targets follow their own policy. |
+| Push or refresh a story branch | Resolve its bound remote and ref. Push only that story branch through the authorized route and honor its target policy if it also receives merges. Refresh against its actual parent and record the resulting head and CI identity. |
+| Mark the PR ready | Resolve the actual PR, target, head and lifecycle state. Order broker dispatch against the live flag and competing requests for the exact PR, head and target. While held, dispatch new default-target promotion only for the nominated repair. Non-default targets follow their own policy. |
 | Merge the PR | Apply the declared parent's review, CI and exact-delivery policy. Require a qualified host route for the literal target, reviewed head, applicable base and tested result. For a default-target PR, also enforce the live line version at mutation. While held, allow only the exact full-passing, reviewed repair binding. |
 | Abandon a story | Record abandonment, close the linked PR, retire its exact working branch, and remove its owned worktree after safe disposition of local work. Record each verified outcome. |
 | Discover or inspect | List available operations and explain their usage, arguments, applicable policy, side effects, status, and next permitted action. Support normal CLI help and a versioned machine-readable catalog through the same command registration. |
@@ -34,18 +34,34 @@ branches used to deliver stories, features or epics. The default branch,
 planning branch, authority refs and temporary fixtures have their own
 roles. A child story uses its declared feature or epic parent branch as
 the PR base. A missing or unbound parent blocks provisioning. The
-explicit parent record selects the branch owner and incarnation. A
-branch-backed epic designates an ordinary, explicitly related
-integration delivery story to own its working branch and default-target
-draft. The aggregate epic retains C62's child-based state and acquires
-no implementation attempt or PR. Provision the delivery story's
-branch and draft in Backlog before children need the parent. Hold
-the integration story's delivery on its declared child prerequisites,
-independently of that early provisioning. Children deliver to the
-integration branch under C39–C41. The integration story then binds
-its own attempt to the resulting head and obtains its own review,
-CI and C41 admission for the default target. Child evidence alone
-cannot authorize that PR. The integration story owns its retirement.
+record stores three distinct relationships. Backlog parentage and
+required scope belong to the story graph. The resolved integration
+resource owner and incarnation identify the shared working ref.
+The literal delivery target determines each PR base.
+
+A branch-backed epic explicitly designates an ordinary story in its
+required C62 scope as the integration delivery owner. That story has
+an explicitly declared upstream target, the default branch for a
+top-level epic. Its own branch is the declared target of the component
+stories. Reject source/target aliasing and implicit default-target
+fallback. The epic itself acquires no implementation attempt or PR.
+Provision the integration story and its upstream draft in Backlog
+against the existing upstream before component stories need the
+integration ref. Component delivery depends on that ref being
+provisioned, while integration delivery waits for component delivery
+or an accepted scope disposition. These conditions apply to separate
+stages and do not create a circular pickup prerequisite.
+
+Component stories deliver to the integration branch under C39–C41.
+The integration story binds its own attempt to the resulting head and
+obtains its own review, CI and C41 admission for the upstream target.
+Child evidence alone cannot authorize that PR or complete the epic.
+C62 keeps the required integration delivery unresolved until verified
+upstream delivery or an explicit, accepted scope revision. Abandoning
+the owner holds epic completion. A replacement requires an accepted
+graph revision, reconciliation of dependent bindings and proof of the
+retained component changes in the new incarnation. The designated
+integration story owns retirement through the dependent fence.
 
 Add a bounded Core contract amendment for a declared integration
 delivery whose only changes came from the children. Accepted C76
@@ -83,8 +99,12 @@ Issue creation, ref creation and PR creation are separate provider
 effects. Reuse Core's numbered issue reservation and dispatch
 ownership for issue creation. Finalize the numbered Backlog story,
 reciprocal relationships and pending provisioning action in one Core
-transaction. Verify shared publication before any branch or draft
-dispatch. Freeze the declared parent incarnation, literal repository
+transaction. Use compare-and-set on the single semantic lifecycle
+slot for permanent story, repository and managed role, with exclusive
+ownership of the literal host resources. One current or unresolved
+incarnation occupies the slot. Competing operation and incarnation
+IDs must resolve that reservation. Verify shared publication before
+any branch or draft dispatch. Freeze the declared parent incarnation, literal repository
 and ref, and initial source OID in the provisioning read-set.
 Verify the initial source and recheck the binding at each stage.
 Reconcile old intent before admitting explicit reparent or replacement.
@@ -98,7 +118,13 @@ the live C16 generation and attempt where applicable. Before pickup a
 trusted provisioning role may act only on a published provisioning
 claim. Terminal cleanup uses its own service role and exact
 retired-incarnation claim after the working session is fenced. Old
-claims confer no authority over replacement resources.
+claims confer no authority over replacement resources. An unsent
+fenced intent emits no host call. An already-sent effect needs
+terminal reconciliation. Block provisioning that reuses a literal
+host identity until old writes are terminal, including a delete or
+push that might still match the same ref and OID. A distinct,
+non-reused identity or qualified provider fence can exclude the
+old effect. An internal incarnation ID alone cannot do so.
 
 For every provider effect, acquire one durable dispatch claim for
 its stage, role or principal, resource incarnation, exact target,
@@ -157,18 +183,36 @@ managed-provider operations as unsupported and retain local
 planning and supported observation. Never advertise a CLI-only
 installation as a provider enforcement boundary.
 
-Ready promotion is ordered at the verified provider status
-transition. Require a provider-qualified ordering for the exact PR,
-head and target, including the current flag and nomination for a
-default-target transition. A hold, head change or retarget that wins
-before transition invalidates the old request. A transition already
-committed before a hold may leave an ordinary PR ready, with its
-merge still blocked. Reconcile timeouts with terminal provider
-evidence before retrying. Hold unresolved promotions and report the
-actual draft state when it becomes verifiable. If the host cannot
-prove this ordering, the managed promotion route stays unavailable.
-Retargeting uses separate governed admission and cannot carry a prior
-promotion or merge allowance to the new target.
+Treat draft state as the #133 workflow convention. GitHub documents
+ready mutation inputs for the PR identity and client request
+correlation, without predicates for flag, head or target. Order the
+trusted broker's ready dispatch instead. Use the same durable admission
+order for ready, hold acceptance, head-changing actions on that ref and
+retarget. Recheck the actual PR, head, literal target and live flag
+before dispatch. Deny a superseded unsent intent. A hold accepted before
+dispatch blocks ordinary trunk readiness even while the flag update
+is pending. A request sent earlier may complete later, including after
+the flag is held. Journal the outcome and reconcile to actual provider
+state. Keep the independently enforced merge gate closed for that PR.
+A lost response blocks further promotion and retarget for the affected
+PR until terminal provider proof. Do not delay committing the hold on
+account of readiness. An ordinary PR already ready after an admitted
+transition stays merge-blocked. Surface that state and its receipt.
+[GitHub ready mutation input](https://docs.github.com/en/graphql/reference/pulls#markpullrequestreadyforreviewinput).
+
+Ready and retarget qualification belongs to the Core GitHub adapter
+and managed runtime. Control the available managed action routes for
+the relevant PR and ref, and defer the managed action if that boundary
+or readback cannot be proved. Retarget of an already-ready PR requires
+verified conversion to draft before any target change. Require the
+actual PR and draft state before dispatch and reconcile an ambiguous
+conversion or retarget before proceeding. After retarget, discard old
+promotion and CI authorization and require fresh admission and CI for
+the actual target. Deny a ready target change when re-drafting cannot
+be verified. A passing #158 target mutation qualification leaves
+managed repair promotion and the integrated repair flow unavailable
+if this separate readiness capability is unavailable. It still
+supplies its own host-boundary result.
 
 Apply Core C39–C41's admitted target mutation and verified delivery
 contract to all managed merge commands. A feature or epic target uses
@@ -179,6 +223,21 @@ If a provider cannot enforce the required tuple at mutation, defer
 that managed route as unsupported. Preserve the existing ability to
 observe and verify independently authorized external delivery under
 its own policy. A mismatched result never satisfies Core delivery.
+
+Give literal refs explicit roles. When a story working ref is also
+a governed integration target, apply the target's write policy to
+every route. For a target reserved for reviewed delivery, disable
+generic owner pushes to it. Land component changes through C41.
+Refresh the integration branch only through a separately admitted,
+expected-old-head operation whose evidence accounts for upstream
+changes, retained delivered contributions and any conflict
+resolution. Disallow unexplained incoming changes and hold the route
+if exact write provenance or writer control is unavailable. If a
+declared parent policy permits direct owner work, require a distinct
+authorized intent with expected old head, scoped provenance and a
+receipt. It cannot substitute for delivery required by that parent
+policy. Recheck the new parent head and invalidate superseded child
+candidate proof and integration attempt evidence after each write.
 
 The GitHostProvider surface exposes typed operations and provider
 capabilities, including remote PR creation, transition, merge, retirement
@@ -229,13 +288,20 @@ cannot create delivered status or recreate retired resources.
    and retirement with temporary AITM refs only. Prove the managed
    agent cannot call the provider directly, while constrained AITM
    operations access only their authorized targets. Qualify
-   non-default delivery independently. An unsupported route confirms
-   denial only. Default-target merge qualification belongs to step 3.
+   non-default delivery independently, including refs with both working
+   and target roles. Own the ready/retarget admission and reconciliation
+   qualification in this step. An unsupported route confirms denial
+   only. Default-target merge qualification belongs to step 3.
 3. **Delivery integration.** #133 owns selected CI, full fallback,
    recovery and post-release refresh. #158 owns default-target
-   exactness, writer exclusivity and in-flight ordering. Wire the
-   commands to those qualified capabilities without extending the
-   hold to feature and epic parents. Keep #159 blocked on #157/#158.
+   exactness, writer exclusivity and in-flight ordering, qualified
+   using synthetic evidence independently of later CI. Gate managed
+   repair integration on positive #158 and step 2 readiness receipts.
+   Require #133's T34 and T36–T40 producers and actual CI and recovery
+   evidence for end-to-end acceptance. Keep feature and epic parents
+   outside the trunk hold. #159 still requires #157, #158 and its own
+   authorized pickup. Existing #103 and production protections
+   require their own authorization for any change.
 4. **Guidance and acceptance.** Verify each exposed operation has
    current CLI help and a machine-readable entry. Prove skill/MCP
    routing invokes the same commands and respects the runtime
@@ -255,12 +321,13 @@ capability disabled and supplies denial evidence only.
 
 | Fixture and prerequisite | Entry point and required result | Retained evidence |
 | --- | --- | --- |
-| Deterministic Core store, restart and concurrent callers | Provision and recover at each effect boundary. One branch and draft survive rebind. Deny stale mutation and replay against replacement. Hold foreign collisions and unresolved dispatch. | Published claims, dispatch counts, result ownership, restart and rebind trace. |
+| Deterministic Core store, restart and concurrent callers | Provision and recover at each effect boundary. Race different operation and incarnation IDs for one permanent story slot. One branch and draft survive rebind. Deny stale mutation and same-ref, same-OID replacement while an old effect can still land. Hold foreign collisions and unresolved dispatch. | Published claims, dispatch counts, result ownership, restart and rebind trace. |
 | Deterministic parent retirement fixture, then managed temporary AITM parent | Race child provisioning, reparent and retarget against retirement with unchanged parent OID. Exercise both winners, an ambiguous admitted write and an uncontrolled host route. Verify retained scrap source is recoverable before deletion and old cleanup cannot touch replacement. | Ordered admissions, dependent and ref readback, source-retention and cleanup receipts. |
 | Temporary AITM parent and working refs, qualified adapter credential | Provision an actual draft, including any required bootstrap. Push a later change and show CI for the actual target. | Draft ID, exact head and base, source diff, bootstrap disposition and actual CI run. |
 | Installed CLI and contained runtime with trusted broker | Deny direct Git and API calls, including anonymous routes. Prove broker rejects unauthorized repository, ref, action and stale generation. An authorized feature push succeeds. | Runtime route and credential inventory, observed denies, broker receipts and host readback. |
-| Temporary non-default and default stand-in targets, live fixture hold | Promote the permitted PR through the managed command. Race a hold, head change and retarget with provider transition and include an ambiguous result. Deny stale transitions when the competing change wins. | Ordering receipts, actual PR state, terminal request reconciliation and independent merge-denial observation. |
-| Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared feature or epic parent, then deny a stale base. Verify a pure aggregate has no PR and child evidence cannot admit the integration story's default-target delivery. | Target CI, exact reviewed and delivered tuple, actual parent readback and authorization denials. |
+| Temporary targets and step 2 managed ready/retarget qualification | Race a hold, push and retarget against ready dispatch. Exercise both an unsent loser and a previously sent transition finishing late. Reconcile an ambiguous result. Retarget an already-ready non-default PR only after verified redraft, with positive and denied cases and lost responses. Prove fresh target-specific admission and CI. | Admission order, draft and target readback, reconciliation and independent merge denial. |
+| Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared parent and deny a stale base. Reject a generic owner push of the same child change to its governed parent ref. Prove approved refresh and permitted direct work under their respective policies. Reject self-target, premature epic close and abandoned-owner completion. Verify pure aggregate behavior. | Target CI, exact delivery and refresh evidence, graph/terminal disposition and observed denials. |
 | Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Verify ordinary stories retain their existing guard. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
-| Temporary default stand-in, accepted #158 capability and independently reviewed fixture | Exercise ordinary merge denial, exact repair, held recovery, reopen and first refreshed delivery. A branch-backed epic fixture then completes its separately reviewed integration delivery. | #158 qualification receipt, flag and trunk-equivalent history, repair and post-release CI, per-delivery review and host receipts. |
+| #158 temporary default stand-in and synthetic qualification inputs | Exercise host merge ordering and exactness per #158. Inject a passing merge qualification with managed readiness unavailable and verify that Core holds managed repair activation. | Separate #158 host receipt and Core capability/refusal result, with synthetic inputs identified. |
+| End-to-end temporary default stand-in, qualified #158 and ready routes, delivered #133 T34 and T36–T40 | Exercise actual scheduled failure, ordinary denial, exact repair, full passing recovery on repaired target, reopening and newly admitted post-release CI. Reject a same-tuple result admitted before release and completed afterward. Complete a separately reviewed epic integration delivery. | Trusted actual run and shard IDs, exact recovery and release records, post-release CI, review and host receipts. |
 | Installed distribution with CLI, skill and MCP | Enumerate operation and argument schemas, invoke each available operation through supported interfaces, and compare admission and typed results. | Catalog/version, actual help and dispatch traces, capability and unsupported outputs. |
