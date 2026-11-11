@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 193
 title: "[#181 B02] Qualify and hand off the local dashboard"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/193"
 parent: 181
 children: []
 blocking: []
 blocked-by: [191, 192]
 created: "2026-11-10T21:02:23Z"
-updated: "2026-11-11T05:23:19Z"
+updated: "2026-11-11T05:24:18Z"
 last-branch: "codex/aitm-193-dashboard-handoff"
 estimate: {"agent-hours": 2.25, "size": "S"}
 priority: "P1"
