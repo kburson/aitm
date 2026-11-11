@@ -61,3 +61,7 @@ The owner authorized an operational fix to the hosted capture failure. Both nati
 ### First isolated hosted attempt
 
 On [run 43059217996 attempt 1](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/1), the literal baseline Python lane passed with private fixtures. The exact candidate Python lane logged progress through 78% with no reported test failure before cancellation at the existing eight-minute limit. Collection failed and the final gate was skipped. The [terminal job receipt](isolated-hosted-a1-terminal.json) is retained. A whole unchanged retry keeps the signature bound to one attempt. Both fresh local suites passed and matched the previous local test inventories and raw coverage.
+
+### Second isolated hosted attempt
+
+On [run 43059217996 attempt 2](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/2), the baseline passed again. The exact candidate reported 1,102 product and CLI tests in 497.31 seconds and 182 helpers in 19.22 seconds. The candidate's installed-wheel build and smoke step also succeeded. GitHub canceled the candidate during artifact upload. The [terminal job receipt](isolated-hosted-a2-terminal.json) preserves the passed test and wheel steps and canceled upload. Collection failed and the final gate was skipped. The third attempt reruns the same six jobs on the same revision and retains the existing time limits.
