@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 192
 title: "[#181 B01] Render and filter the offline dashboard"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/192"
 parent: 181
 children: []
 blocking: [193]
 blocked-by: [190]
 created: "2026-11-10T21:02:22Z"
-updated: "2026-11-11T05:14:37Z"
-last-branch: "codex/aitm-192-offline-dashboard"
+updated: "2026-11-11T05:18:19Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #190. The proposed estimate is 3.75 implementation agent-h
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `fec3d8f685fd1d133bb9797d47c02552805e6bc1` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/221) · [Signed CI](plan/hosted-verification-3.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)

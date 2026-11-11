@@ -3,8 +3,8 @@
 Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordinating Codex agent. Target trunk. Pickup base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Predecessors #190 are delivered. File ownership is defined by the exact pickup.
 
 - [x] [Design, Plan and JIT](jit.md) and [independent acceptance](jit-review.md).
-- [ ] Local verification, applicable hosted CI and independent source acceptance.
-- [ ] Verified merge, implementing-agent sign-off, and issue/Project closure.
+- [x] Local verification, applicable hosted CI and independent source acceptance.
+- [x] Verified merge, implementing-agent sign-off, and issue/Project closure.
 
 ## Candidate 1
 
@@ -107,3 +107,7 @@ Read-only pickup preparation, as planning contributor, was observed in the half-
 The exact renderer tree remained `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` after the two hosted retries. The second run's candidate Python lane passed the full product suite. Its trusted-base job separately failed in existing monitor tests. The frozen base's hosted push suite and the three focused tests on both local checkouts passed. Both prior runs remain linked in the delivery history.
 
 The signed candidate matches tested merge `52a26ceb751fcdd0ea35b53a90167522ad863024`, with the ordered base/head parents and the exact tree above.
+
+## Verified delivery
+
+[PR #221](https://github.com/kburson/aitm/pull/221) merged to trunk at `2026-11-11T05:16:55Z` as `fec3d8f685fd1d133bb9797d47c02552805e6bc1`. The exact reviewed tree `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` is reachable from remote trunk `fec3d8f685fd1d133bb9797d47c02552805e6bc1`. Ordered merge parents `aa7dff45156919bcbe34d0489335949259bc584a` and `96d9788f36f6be71315a5014bc2e9412fae6692c` match the tested candidate. [Implementing-agent sign-off](../retro/2026-11-10-implementer-signoff.md) passed at `2026-11-11T05:18:12Z`. The issue closed Completed at `2026-11-11T05:18:15Z` and the project item read back Done.
