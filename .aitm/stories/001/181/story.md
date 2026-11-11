@@ -10,12 +10,12 @@ children: [186, 187, 188, 189, 190, 191, 192, 193]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-10T21:58:03Z"
+updated: "2026-11-11T05:33:43Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"
 origin: ".aitm/stories/000/2/design/core-design.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md", "attachments/2026-11-10-local-dashboard-handoff.md"]}
 expansions: []
 trips: []
 ---
@@ -64,3 +64,7 @@ Reuse the eligible activity and implementation clock in #28, qualified review ti
 [Refinement](plan/refinement.md) sets a P1 estimate of 26.0 implementation agent-hours for A/B. The [accepted plan](plan/story-timing-dashboard-implementation-plan.md) binds to raw digest `sha256:147cbee5740f725c9c65df9c09034912220d179475dc1c707e0844316a6c1c80`. The [leaf catalog](plan/leaf-stories.md) lists eight verified Backlog children with nine reciprocal dependency edges. A01 leads capture. B01 starts after the snapshot, with no dependency on Core #2 or the monitor #100.
 
 [Native plan review](plan/reviews/xpr-2026-11-10-dashboard-plan-sealed/review-manifest.md) · [Independent Codex review](plan/reviews/spr-2026-11-10-dashboard-plan/review-manifest.md). Slice C retains its integration checkpoint and separate refinement. Parent status is Planning.
+
+## Local dashboard handoff
+
+[Delivered A/B evidence and timing readback](attachments/2026-11-10-local-dashboard-handoff.md)
