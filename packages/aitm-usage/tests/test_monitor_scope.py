@@ -1855,6 +1855,7 @@ def test_legacy_writers_preserve_both_v2_collections(native, operation):
         "terminal-too-early",
         "terminal-reused-receipt",
         "terminal-reused-boundary",
+        "empty-span",
         "empty-prefix",
         "same-prefix",
         "changed-stream",
@@ -1921,6 +1922,8 @@ def test_v2_decoder_rejects_malformed_or_unowned_shape(native, changed):
             boundary["receipt_ref"] = target["boundary"]["receipt_ref"]
         elif changed == "terminal-reused-boundary":
             boundary["boundary_ref"] = target["boundary"]["boundary_ref"]
+        elif changed == "empty-span":
+            hold["affected"]["end"] = hold["affected"]["start"]
         elif changed == "empty-prefix":
             target["prefix"]["offset"] = 0
         elif changed == "same-prefix":
@@ -2238,6 +2241,7 @@ def _route_disposition_fixture(
     prior=True,
     disabled=False,
     wrong_type=False,
+    preexisting_legacy=False,
 ):
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import Disposition, Mark, ScopeState
@@ -2264,17 +2268,24 @@ def _route_disposition_fixture(
             == "applied"
         )
 
-    older_rows = native.path.read_bytes()
-    older_counters = (native.turn, native.total)
     hold_id, command_id = UUID(int=0x601), UUID(int=0x602)
     proposal, _ = _authorize_handoff(state, native, hold_id, A, _issue(B, 209), 1)
     _, held_at = native.append(hold_id)
+    legacy = legacy_proof = None
+    if preexisting_legacy:
+        legacy_id = UUID(int=0x607)
+        legacy = Disposition(legacy_id, A, hold_id, native.receipt_ref(legacy_id))
+        state.authorize(legacy, owner)
+        _, legacy_at = native.append(legacy_id)
     held_batch = state.read_source(SOURCE, native.locator())
     original = native.target(held_batch, hold_id, held_at)
     hold = state.hold(
         state.verify_boundary(proposal, owner, held_batch, original),
         retain_route_target=True,
     )
+    if legacy is not None:
+        assert hold.affected.start <= legacy_at < hold.affected.end
+        legacy_proof = _verify(state, native, legacy, owner, held_batch, legacy_at)
     held_prefix = native.path.read_bytes()
     if disabled:
         change = CaptureChange(A, SOURCE, False)
@@ -2330,8 +2341,8 @@ def _route_disposition_fixture(
         digest=digest,
         followup=followup,
         when=when,
-        older_rows=older_rows,
-        older_counters=older_counters,
+        legacy=legacy,
+        legacy_proof=legacy_proof,
         held_at=held_at,
     )
 
@@ -2422,7 +2433,7 @@ def test_issued_route_disposition_requires_current_evidence(
     import os
 
     from aitm_usage.monitor_control import _filename
-    from aitm_usage.monitor_scope import Disposition, HoldState, ScopeState
+    from aitm_usage.monitor_scope import HoldState, ScopeState
 
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
@@ -2431,7 +2442,8 @@ def test_issued_route_disposition_requires_current_evidence(
             tmp_path,
             monkeypatch,
             capsys,
-            release=change in ("expire", "expired-proposal"),
+            release=change == "expired-proposal",
+            preexisting_legacy=change == "legacy-dispose",
         )
         state = current.state
         proof = state.verify_route_disposition(current.command, current.terminal)
@@ -2452,22 +2464,17 @@ def test_issued_route_disposition_requires_current_evidence(
         elif change in ("expire", "expired-proposal"):
             current.clock[0] = current.hold.expires_at + timedelta(seconds=1)
             if change == "expire":
+                assert record.outcome is HoldState.GAP
                 assert state.expire() == (replace(current.hold, state=HoldState.GAP),)
             else:
                 assert state.view().holds == (current.hold,)
         elif change == "legacy-dispose":
-            native.path.write_bytes(current.older_rows)
-            native.turn, native.total = current.older_counters
-            command_id = UUID(int=0x607)
-            legacy = Disposition(
-                command_id, A, current.hold.command_id, native.receipt_ref(command_id)
+            prefix = native.path.read_bytes()
+            assert (
+                state.dispose(current.legacy, current.legacy_proof).state
+                is HoldState.GAP
             )
-            state.authorize(legacy, current.owner)
-            _, at = native.append(command_id)
-            assert at == current.held_at
-            batch = state.read_source(SOURCE, native.locator())
-            legacy_proof = _verify(state, native, legacy, current.owner, batch, at)
-            assert state.dispose(legacy, legacy_proof).state is HoldState.GAP
+            assert native.path.read_bytes() == prefix
         elif change == "consumed":
             with current.inbox.publication() as locked:
                 os.unlink(
@@ -2483,7 +2490,12 @@ def test_issued_route_disposition_requires_current_evidence(
             future = datetime.now(UTC) + timedelta(minutes=2)
             monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
         before = state.view()
-        with pytest.raises(LedgerError):
+        error = {
+            "expire": "Scope disposition is no longer current",
+            "expired-proposal": "original scope cannot be proposed",
+            "legacy-dispose": "Current scope hold cannot authorize",
+        }.get(change)
+        with pytest.raises(LedgerError, match=error):
             state.require_route_disposition(proof)
         assert state.view() == before
         assert state._snapshot().route_dispositions == (record,)
@@ -2502,6 +2514,31 @@ def test_issued_route_disposition_requires_current_evidence(
             with pytest.raises(LedgerError, match="unsettled native terminal"):
                 reopened.verify_route_disposition(current.command, terminal)
             assert reopened._snapshot().route_dispositions == (record,)
+
+
+def test_legacy_resolution_blocks_first_route_proposal_without_rewriting_native_rows(
+    native, tmp_path, monkeypatch, capsys
+):
+    from aitm_usage.monitor_scope import HoldState
+
+    with native.registry.writer() as writer:
+        current = _route_disposition_fixture(
+            native, writer, tmp_path, monkeypatch, capsys, preexisting_legacy=True
+        )
+        state = current.state
+        prefix = native.path.read_bytes()
+        assert (
+            state.dispose(current.legacy, current.legacy_proof).state is HoldState.GAP
+        )
+        assert native.path.read_bytes() == prefix
+        before = state.view()
+        stored = _scope_file(native).read_bytes()
+        with pytest.raises(LedgerError, match="Current scope hold cannot authorize"):
+            state.verify_route_disposition(current.command, current.terminal)
+        assert state.view() == before
+        assert _scope_file(native).read_bytes() == stored
+        assert not state._snapshot().route_dispositions
+        assert current.journal.cursor_for(SOURCE, native.locator()) == current.cursor
 
 
 def test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure(
