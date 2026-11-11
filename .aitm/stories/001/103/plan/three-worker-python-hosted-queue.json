@@ -1,0 +1,47 @@
+{
+  "delivery": "held_pending_signed_hosted_ci",
+  "exact_base": "21b06b2b8be47adcf4c3c747ba7c0a6469196f79",
+  "exact_head": "60205b332d88c322e1c75d7b81f5e17b4f97cf11",
+  "exact_tree": "fb51558994097a3e488010061a0b3b53c1b24f41",
+  "observed_at": "2026-11-11T20:40:51.917517+00:00",
+  "pr": 246,
+  "reopened_test_merge": "91018f05129b0ae96ead71f082ebfe21abf71ba3",
+  "repository": "kburson/aitm",
+  "runs": [
+    {
+      "age_seconds_at_readback": 1099,
+      "conclusion": "",
+      "createdAt": "2026-11-11T20:22:32Z",
+      "databaseId": 43095662569,
+      "headSha": "b337230805dc25402c76e2cf87fb650a6a4e3403",
+      "materialized_jobs": 0,
+      "status": "queued",
+      "url": "https://github.com/kburson/aitm/actions/runs/43095662569"
+    },
+    {
+      "age_seconds_at_readback": 1040,
+      "conclusion": "",
+      "createdAt": "2026-11-11T20:23:31Z",
+      "databaseId": 43095765407,
+      "headSha": "60205b332d88c322e1c75d7b81f5e17b4f97cf11",
+      "materialized_jobs": 0,
+      "status": "queued",
+      "url": "https://github.com/kburson/aitm/actions/runs/43095765407"
+    },
+    {
+      "age_seconds_at_readback": 524,
+      "conclusion": "",
+      "createdAt": "2026-11-11T20:32:07Z",
+      "databaseId": 43096622316,
+      "headSha": "60205b332d88c322e1c75d7b81f5e17b4f97cf11",
+      "materialized_jobs": 0,
+      "status": "queued",
+      "url": "https://github.com/kburson/aitm/actions/runs/43096622316"
+    }
+  ],
+  "trusted_verifier": {
+    "reason": "selected attempt is not complete and successful",
+    "status": "hold",
+    "verified_at": "2026-11-11T20:38:10.819847+00:00"
+  }
+}

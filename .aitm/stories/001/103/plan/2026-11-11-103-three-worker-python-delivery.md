@@ -63,3 +63,10 @@ Keep delivery held for the canonical exact-head signed CI result, the
 independent merge-authorizing review and trusted verifier. After an
 authorized merge, verify the exact trunk push, full inventory, product
 coverage, both subprocess proofs, helper results and wheel evidence.
+
+The [queue and verifier receipt](three-worker-python-hosted-queue.json)
+records all three events with zero jobs. The trusted verifier reported
+`selected attempt is not complete and successful`. Nearly ten minutes
+after reopening, the canonical event still showed zero jobs. #246 stayed
+open at the exact reviewed source. The signed hosted gate and final
+review remain pending, so there is no delivered trunk run to verify.
