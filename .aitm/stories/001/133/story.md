@@ -77,3 +77,13 @@ accepted design and plan, all 41 native child links, and all 64 direct
 dependency edges. The first pickup candidates are [#138](../138/story.md)
 and [#140](../140/story.md). Each leaf has its own design, refinement,
 plan and JIT gates.
+
+## Disposable repository authorization
+
+The owner approved one disposable GitHub repository for the #158 spike.
+The [spike record](../158/story.md#one-time-repository-authorization)
+and teardown receipt record its use and deletion. The owner declined
+continual use of disposable repositories. Any follow-on qualification
+or rehearsal that depends on another disposable GitHub repository
+requires a revised plan before pickup. #159 remains gated on qualified
+merge evidence.

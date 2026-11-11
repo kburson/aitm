@@ -115,3 +115,15 @@ separately from the retained measurement bytes.
 
 [Teardown receipt](plan/disposable-fixture-teardown.json) records GitHub's
 deletion confirmation and the authenticated HTTP 404 readback.
+
+## One-time repository authorization
+
+The owner approved one disposable GitHub repository for this spike,
+including its deletion after the measurements. That authorization was
+used and the teardown is verified. The owner declined continual use of
+disposable repositories. Further hosted qualification that depends on
+another disposable repository is on hold pending a revised plan.
+
+The retained endpoint evidence records that the REST merge accepted a
+moved base. It leaves the proposed ruleset, App, and in-flight stop
+controls unqualified. #159 still requires qualified merge evidence.
