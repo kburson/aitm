@@ -1,0 +1,889 @@
+{
+  "disposition": "bounded GitHub merge evidence; full qualification held; #159 blocked",
+  "custody": {
+    "recorded_at_utc": "2026-11-11T04:15:14Z",
+    "repository": "kburson/aitm",
+    "repository_id": 1450406435,
+    "exact_target": "refs/heads/aitm-qualify-158/8xxSJX4w/target",
+    "custodian": "coordinating Codex agent for this #158 trial",
+    "unresolved_request_policy": "After dispatch, one planned exact-target activation is allowed. Hold all other experiment writes until terminal result and independent state readback. Retain fixture if unresolved."
+  },
+  "integration_preflight": {
+    "collaborators": [
+      {
+        "login": "kburson",
+        "role_name": "admin"
+      }
+    ],
+    "workflows": [
+      {
+        "id": 412848571,
+        "path": ".github/workflows/ci.yml",
+        "state": "active"
+      }
+    ],
+    "ci_trigger_source": {
+      "trunk_commit": "f7646bc4da35173e9b0e468e4810b4e9265b0f47",
+      "source_lines": [
+        "name: CI",
+        "",
+        "on:",
+        "  pull_request:",
+        "    types: [opened, synchronize, reopened]",
+        "  push:",
+        "    branches: [trunk]",
+        "",
+        "permissions: {}",
+        ""
+      ]
+    },
+    "repository_webhook_count": 0,
+    "deploy_key_count": 0,
+    "claude": {
+      "public_manifest": {
+        "events": [
+          "branch_protection_rule",
+          "check_run",
+          "check_suite",
+          "commit_comment",
+          "discussion",
+          "discussion_comment",
+          "issues",
+          "issue_comment",
+          "merge_group",
+          "merge_queue_entry",
+          "pull_request",
+          "pull_request_review",
+          "pull_request_review_comment",
+          "pull_request_review_thread",
+          "push",
+          "release",
+          "repository_ruleset",
+          "status",
+          "sub_issues"
+        ],
+        "permissions": {
+          "actions": "write",
+          "administration": "read",
+          "checks": "write",
+          "contents": "write",
+          "discussions": "write",
+          "issues": "write",
+          "members": "read",
+          "merge_queues": "read",
+          "metadata": "read",
+          "pull_requests": "write",
+          "repository_creation": "write",
+          "repository_hooks": "write",
+          "statuses": "read",
+          "workflows": "write"
+        },
+        "slug": "claude",
+        "updated_at": "2026-11-06T04:29:41Z"
+      },
+      "authenticated_claude_code_account": {
+        "plan_shown": "Pro",
+        "scheduled_tasks": 0,
+        "auto_open_pull_requests_enabled": false,
+        "auto_fix_pull_requests_enabled": true
+      },
+      "fixture_prs_attached_to_claude_session": false,
+      "provider_private_delivery_log_inspected": false
+    },
+    "codex_connector_public_manifest": {
+      "events": [
+        "check_run",
+        "check_suite",
+        "commit_comment",
+        "issues",
+        "issue_comment",
+        "pull_request",
+        "pull_request_review",
+        "pull_request_review_comment",
+        "pull_request_review_thread",
+        "repository",
+        "status",
+        "sub_issues"
+      ],
+      "permissions": {
+        "actions": "write",
+        "checks": "read",
+        "contents": "write",
+        "emails": "read",
+        "issues": "write",
+        "metadata": "read",
+        "pull_requests": "write",
+        "statuses": "read",
+        "workflows": "write"
+      },
+      "slug": "chatgpt-codex-connector",
+      "updated_at": "2026-09-23T18:52:59Z"
+    },
+    "fixture_activity": {
+      "open": {
+        "issue_comments": [],
+        "inline_comments": [],
+        "reviews": [],
+        "head_check_runs": [],
+        "test_merge_check_runs": [],
+        "head_actions_runs": {
+          "total_count": 0
+        }
+      },
+      "fresh": {
+        "issue_comments": [],
+        "inline_comments": [],
+        "reviews": [],
+        "head_check_runs": [],
+        "test_merge_check_runs": [],
+        "head_actions_runs": {
+          "total_count": 0
+        }
+      },
+      "race": {
+        "issue_comments": [],
+        "inline_comments": [],
+        "reviews": [],
+        "head_check_runs": [],
+        "test_merge_check_runs": [],
+        "head_actions_runs": {
+          "total_count": 0
+        }
+      }
+    },
+    "target_actions_runs": {
+      "total_count": 0
+    }
+  },
+  "open_control": {
+    "candidate": {
+      "pr": 214,
+      "host_test_merge": "e76e09db25aff8583105b47b03026aee811ec9dd",
+      "tree": "ee126abd41459f46b17125b3a5c281a4a737f454",
+      "ordered_parents": [
+        "47dd013da5db8c5a65a1dd40a3847d90e9f0cd68",
+        "d7011d2548d24d83cb6ea67f3816b20e7bf85217"
+      ]
+    },
+    "merge_response": {
+      "status": 200,
+      "github_request_id": "C5DA:191FC2:1DA633E:5C1718F:6AF3EC02",
+      "sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "merged": true,
+      "message": "Pull Request successfully merged"
+    },
+    "landed_git_object": {
+      "commit": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "ordered_parents": [
+        "47dd013da5db8c5a65a1dd40a3847d90e9f0cd68",
+        "d7011d2548d24d83cb6ea67f3816b20e7bf85217"
+      ],
+      "tree": "ee126abd41459f46b17125b3a5c281a4a737f454"
+    },
+    "pr_after": {
+      "base": {
+        "ref": "aitm-qualify-158/8xxSJX4w/target",
+        "repo_id": 1450406435,
+        "sha": "47dd013da5db8c5a65a1dd40a3847d90e9f0cd68"
+      },
+      "draft": false,
+      "head": {
+        "ref": "aitm-qualify-158/8xxSJX4w/open-head",
+        "repo_id": 1450406435,
+        "sha": "d7011d2548d24d83cb6ea67f3816b20e7bf85217"
+      },
+      "id": 5253706948,
+      "merge_commit_sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "mergeable": null,
+      "mergeable_state": "unknown",
+      "merged": true,
+      "merged_at": "2026-11-11T04:16:03Z",
+      "merged_by": "kburson",
+      "number": 214,
+      "state": "closed"
+    }
+  },
+  "fresh_after_activation": {
+    "candidate": {
+      "pr": 215,
+      "host_test_merge": "ef0ddc8c6d9902a514234da6b287c55daee60be2",
+      "tree": "6752b3aa53289e845cc33a08cc3a0a0cb468bf21",
+      "ordered_parents": [
+        "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "53b0f67d2cb930418e3745900441aa066fea2b94"
+      ]
+    },
+    "pr_before_stop": {
+      "base": {
+        "ref": "aitm-qualify-158/8xxSJX4w/target",
+        "repo_id": 1450406435,
+        "sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+      },
+      "draft": false,
+      "head": {
+        "ref": "aitm-qualify-158/8xxSJX4w/fresh-head",
+        "repo_id": 1450406435,
+        "sha": "53b0f67d2cb930418e3745900441aa066fea2b94"
+      },
+      "id": 5253714975,
+      "merge_commit_sha": "ef0ddc8c6d9902a514234da6b287c55daee60be2",
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "merged": false,
+      "merged_at": null,
+      "merged_by": null,
+      "number": 215,
+      "state": "open"
+    },
+    "local_stop_marker": {
+      "simulated_scheduled_failure": true,
+      "recorded_at_utc": "2026-11-11T04:17:28Z",
+      "ref": "refs/heads/aitm-qualify-158/8xxSJX4w/target",
+      "tip": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "pending_merge_requests": 0
+    },
+    "activation_response": {
+      "status": 200,
+      "github_request_id": "C678:3DD0BF:1D4AD72:5B2E482:6AF3EC58",
+      "id": 27005608,
+      "enforcement": "active",
+      "updated_at": "2026-11-10T22:17:28.877-06:00"
+    },
+    "active_rule": {
+      "_links": {
+        "html": {
+          "href": "https://github.com/kburson/aitm/rules/27005608"
+        },
+        "self": {
+          "href": "https://api.github.com/repos/kburson/aitm/rulesets/27005608"
+        }
+      },
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/aitm-qualify-158/8xxSJX4w/target"
+          ]
+        }
+      },
+      "created_at": "2026-11-10T22:17:02.940-06:00",
+      "current_user_can_bypass": "never",
+      "enforcement": "active",
+      "id": 27005608,
+      "name": "AITM 158 8xxSJX4w PR stop trial",
+      "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGcEqg",
+      "rules": [
+        {
+          "type": "update"
+        }
+      ],
+      "source": "kburson/aitm",
+      "source_type": "Repository",
+      "target": "branch",
+      "updated_at": "2026-11-10T22:17:28.877-06:00"
+    },
+    "merge_response": {
+      "status": 405,
+      "github_request_id": "C691:13F1:5CB328:11F672C:6AF3EC5E",
+      "message": "Repository rule violations found\n\nCannot update this protected ref.\n\n"
+    },
+    "rule_suite": {
+      "actor_id": 1082467,
+      "actor_name": "kburson",
+      "after_sha": "ebf7130a7640a90f2b987ff2eae665e0c2809a9a",
+      "before_sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "id": 5037466737,
+      "pushed_at": "2026-11-10T22:17:35-06:00",
+      "ref": "refs/heads/aitm-qualify-158/8xxSJX4w/target",
+      "repository_id": 1450406435,
+      "repository_name": "aitm",
+      "result": "fail",
+      "rule_evaluations": [
+        {
+          "details": "Cannot update this protected ref.",
+          "enforcement": "active",
+          "result": "fail",
+          "rule_source": {
+            "id": 27005608,
+            "name": "AITM 158 8xxSJX4w PR stop trial",
+            "type": "ruleset"
+          },
+          "rule_type": "update"
+        }
+      ]
+    },
+    "web_view": {
+      "pr": 215,
+      "merge_status": "Merge is blocked",
+      "merge_button_enabled": false,
+      "mutation_attempted": false
+    },
+    "pr_after": {
+      "base": {
+        "ref": "aitm-qualify-158/8xxSJX4w/target",
+        "repo_id": 1450406435,
+        "sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+      },
+      "draft": false,
+      "head": {
+        "ref": "aitm-qualify-158/8xxSJX4w/fresh-head",
+        "repo_id": 1450406435,
+        "sha": "53b0f67d2cb930418e3745900441aa066fea2b94"
+      },
+      "id": 5253714975,
+      "merge_commit_sha": "a8a2f8649047fc962760efc096d3ef6f5825bca2",
+      "mergeable": true,
+      "mergeable_state": "blocked",
+      "merged": false,
+      "merged_at": null,
+      "merged_by": null,
+      "number": 215,
+      "state": "open"
+    },
+    "target_after": {
+      "git": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "rest": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+    }
+  },
+  "already_sent": {
+    "candidate": {
+      "pr": 216,
+      "host_test_merge": "df7bac351d8e64e26d498a2fd2de5bf0d9f9243b",
+      "tree": "2cb3400f7ab6e6efe058ab8869e6eaf7f462a37d",
+      "ordered_parents": [
+        "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "2c885ecfce8b981ea7875c309c61b5b7ace53d50"
+      ]
+    },
+    "pr_before": {
+      "base": {
+        "ref": "aitm-qualify-158/8xxSJX4w/target",
+        "repo_id": 1450406435,
+        "sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+      },
+      "draft": false,
+      "head": {
+        "ref": "aitm-qualify-158/8xxSJX4w/race-head",
+        "repo_id": 1450406435,
+        "sha": "2c885ecfce8b981ea7875c309c61b5b7ace53d50"
+      },
+      "id": 5253719570,
+      "merge_commit_sha": "df7bac351d8e64e26d498a2fd2de5bf0d9f9243b",
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "merged": false,
+      "merged_at": null,
+      "merged_by": null,
+      "number": 216,
+      "state": "open"
+    },
+    "rule_before": {
+      "_links": {
+        "html": {
+          "href": "https://github.com/kburson/aitm/rules/27005608"
+        },
+        "self": {
+          "href": "https://api.github.com/repos/kburson/aitm/rulesets/27005608"
+        }
+      },
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/aitm-qualify-158/8xxSJX4w/target"
+          ]
+        }
+      },
+      "created_at": "2026-11-10T22:17:02.940-06:00",
+      "current_user_can_bypass": "never",
+      "enforcement": "disabled",
+      "id": 27005608,
+      "name": "AITM 158 8xxSJX4w PR stop trial",
+      "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGcEqg",
+      "rules": [
+        {
+          "type": "update"
+        }
+      ],
+      "source": "kburson/aitm",
+      "source_type": "Repository",
+      "target": "branch",
+      "updated_at": "2026-11-10T22:18:27.354-06:00"
+    },
+    "driver_sha256": "001d29f71f9751b9259910479f249d8af71ef02872c61ec0186eb4a234677a89",
+    "client_journal": [
+      {
+        "event": "armed",
+        "monotonic_ns": 6170150449245416,
+        "utc": "2026-11-11T04:19:26.772314+00:00",
+        "base": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "head": "2c885ecfce8b981ea7875c309c61b5b7ace53d50",
+        "tested_tree": "2cb3400f7ab6e6efe058ab8869e6eaf7f462a37d",
+        "merge_path": "/repos/kburson/aitm/pulls/216/merge",
+        "payload_sha256": "53d193a2085d325e97b18c9d640b50ad6075e0698598cfaf7f59e3e2d8b865e5",
+        "rule_path": "/repos/kburson/aitm/rulesets/27005608",
+        "provider_dates_before": [
+          "Wed, 11 Nov 2026 04:19:26 GMT",
+          "Wed, 11 Nov 2026 04:19:26 GMT"
+        ]
+      },
+      {
+        "event": "merge_transport_send_returned",
+        "monotonic_ns": 6170150450187833,
+        "utc": "2026-11-11T04:19:26.773245+00:00"
+      },
+      {
+        "event": "simulated_scheduled_failure",
+        "monotonic_ns": 6170150450559375,
+        "utc": "2026-11-11T04:19:26.773616+00:00"
+      },
+      {
+        "event": "stop_activation_transport_send_returned",
+        "monotonic_ns": 6170150450797166,
+        "utc": "2026-11-11T04:19:26.773854+00:00"
+      }
+    ],
+    "activation_response": {
+      "status": 200,
+      "github_request_id": "C799:3B9C06:5C89DE:11EFC59:6AF3ECCE",
+      "provider_date": "Wed, 11 Nov 2026 04:19:27 GMT",
+      "headers_received": {
+        "monotonic_ns": 6170150773225750,
+        "utc": "2026-11-11T04:19:27.096291+00:00"
+      },
+      "body_received": {
+        "monotonic_ns": 6170150773255958,
+        "utc": "2026-11-11T04:19:27.096319+00:00"
+      },
+      "body": {
+        "id": 27005608,
+        "name": "AITM 158 8xxSJX4w PR stop trial",
+        "target": "branch",
+        "source_type": "Repository",
+        "source": "kburson/aitm",
+        "enforcement": "active",
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/aitm-qualify-158/8xxSJX4w/target"
+            ]
+          }
+        },
+        "rules": [
+          {
+            "type": "update"
+          }
+        ],
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGcEqg",
+        "created_at": "2026-11-10T22:17:02.940-06:00",
+        "updated_at": "2026-11-10T22:19:26.995-06:00",
+        "bypass_actors": [],
+        "current_user_can_bypass": "never",
+        "_links": {
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/27005608"
+          },
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/27005608"
+          }
+        }
+      }
+    },
+    "merge_response": {
+      "status": 405,
+      "github_request_id": "C798:19D036:1F36CA8:60ABAE0:6AF3ECCE",
+      "provider_date": "Wed, 11 Nov 2026 04:19:28 GMT",
+      "headers_received": {
+        "monotonic_ns": 6170151831556625,
+        "utc": "2026-11-11T04:19:28.154644+00:00"
+      },
+      "body_received": {
+        "monotonic_ns": 6170151831605375,
+        "utc": "2026-11-11T04:19:28.154691+00:00"
+      },
+      "body": {
+        "message": "Repository rule violations found\n\nCannot update this protected ref.\n\n",
+        "documentation_url": "https://docs.github.com/rest/pulls/pulls#merge-a-pull-request",
+        "status": "405"
+      }
+    },
+    "rule_suite": {
+      "actor_id": 1082467,
+      "actor_name": "kburson",
+      "after_sha": "c4ec4904c248da52f543b9617f3a7a97db96b3a7",
+      "before_sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "id": 5037489739,
+      "pushed_at": "2026-11-10T22:19:28-06:00",
+      "ref": "refs/heads/aitm-qualify-158/8xxSJX4w/target",
+      "repository_id": 1450406435,
+      "repository_name": "aitm",
+      "result": "fail",
+      "rule_evaluations": [
+        {
+          "details": "Cannot update this protected ref.",
+          "enforcement": "active",
+          "result": "fail",
+          "rule_source": {
+            "id": 27005608,
+            "name": "AITM 158 8xxSJX4w PR stop trial",
+            "type": "ruleset"
+          },
+          "rule_type": "update"
+        }
+      ]
+    },
+    "pr_after": {
+      "base": {
+        "ref": "aitm-qualify-158/8xxSJX4w/target",
+        "repo_id": 1450406435,
+        "sha": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+      },
+      "draft": false,
+      "head": {
+        "ref": "aitm-qualify-158/8xxSJX4w/race-head",
+        "repo_id": 1450406435,
+        "sha": "2c885ecfce8b981ea7875c309c61b5b7ace53d50"
+      },
+      "id": 5253719570,
+      "merge_commit_sha": "9b5edf0a42abb5b88abb79d23c6c6df854feafe6",
+      "mergeable": true,
+      "mergeable_state": "blocked",
+      "merged": false,
+      "merged_at": null,
+      "merged_by": null,
+      "number": 216,
+      "state": "open"
+    },
+    "target_after": {
+      "git": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+      "rest": "3987f6cf0aa72e64352b058b910c7a80b1069cb7"
+    },
+    "provider_admission_before_stop_observed": false
+  },
+  "protection_and_cleanup": {
+    "production_readback_sha256": {
+      "before": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      },
+      "open-with-disabled-rule": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      },
+      "fresh-active": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      },
+      "race-open": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      },
+      "race-active": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      },
+      "after": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab"
+      }
+    },
+    "production_readbacks": {
+      "ruleset-26821811.json": {
+        "_links": {
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/26821811"
+          },
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/26821811"
+          }
+        },
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/trunk"
+            ]
+          }
+        },
+        "created_at": "2026-11-08T19:18:16.868-06:00",
+        "current_user_can_bypass": "never",
+        "enforcement": "active",
+        "id": 26821811,
+        "name": "aitm: protect trunk",
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGZRLM",
+        "rules": [
+          {
+            "type": "deletion"
+          },
+          {
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "type": "pull_request"
+          }
+        ],
+        "source": "kburson/aitm",
+        "source_type": "Repository",
+        "target": "branch",
+        "updated_at": "2026-11-08T19:18:16.920-06:00"
+      },
+      "ruleset-26821812.json": {
+        "_links": {
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/26821812"
+          },
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/26821812"
+          }
+        },
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/planning"
+            ]
+          }
+        },
+        "created_at": "2026-11-08T19:18:17.401-06:00",
+        "current_user_can_bypass": "never",
+        "enforcement": "active",
+        "id": 26821812,
+        "name": "aitm: protect planning",
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGZRLQ",
+        "rules": [
+          {
+            "type": "deletion"
+          },
+          {
+            "type": "non_fast_forward"
+          },
+          {
+            "type": "required_linear_history"
+          }
+        ],
+        "source": "kburson/aitm",
+        "source_type": "Repository",
+        "target": "branch",
+        "updated_at": "2026-11-08T19:39:49.068-06:00"
+      },
+      "effective-trunk.json": [
+        {
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "deletion"
+        },
+        {
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "non_fast_forward"
+        },
+        {
+          "parameters": {
+            "allowed_merge_methods": [
+              "merge",
+              "squash",
+              "rebase"
+            ],
+            "dismiss_stale_reviews_on_push": false,
+            "require_code_owner_review": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 0,
+            "required_review_thread_resolution": false,
+            "required_reviewers": []
+          },
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "pull_request"
+        }
+      ],
+      "effective-planning.json": [
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "deletion"
+        },
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "non_fast_forward"
+        },
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "required_linear_history"
+        }
+      ]
+    },
+    "ruleset_ids_by_stage": {
+      "before": [
+        26821811,
+        26821812
+      ],
+      "open-with-disabled-rule": [
+        26821811,
+        26821812,
+        27005608
+      ],
+      "fresh-active": [
+        26821811,
+        26821812,
+        27005608
+      ],
+      "race-open": [
+        26821811,
+        26821812,
+        27005608
+      ],
+      "race-active": [
+        26821811,
+        26821812,
+        27005608
+      ],
+      "after": [
+        26821811,
+        26821812
+      ]
+    },
+    "effective_fixture_rules_by_stage": {
+      "before": [],
+      "open-with-disabled-rule": [],
+      "fresh-active": [
+        {
+          "ruleset_id": 27005608,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "update"
+        }
+      ],
+      "race-open": [],
+      "race-active": [
+        {
+          "ruleset_id": 27005608,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "update"
+        }
+      ],
+      "after": []
+    },
+    "git_ref_readbacks_by_stage": {
+      "before": {
+        "refs/heads/planning": "0dcaab82b6c361b5975b83308f676acc5e4fd231",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "open-with-disabled-rule": {
+        "refs/heads/aitm-qualify-158/8xxSJX4w/fresh-head": "53b0f67d2cb930418e3745900441aa066fea2b94",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/open-head": "d7011d2548d24d83cb6ea67f3816b20e7bf85217",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/race-head": "2c885ecfce8b981ea7875c309c61b5b7ace53d50",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/target": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "refs/heads/planning": "0dcaab82b6c361b5975b83308f676acc5e4fd231",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "fresh-active": {
+        "refs/heads/aitm-qualify-158/8xxSJX4w/fresh-head": "53b0f67d2cb930418e3745900441aa066fea2b94",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/open-head": "d7011d2548d24d83cb6ea67f3816b20e7bf85217",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/race-head": "2c885ecfce8b981ea7875c309c61b5b7ace53d50",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/target": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "refs/heads/planning": "0dcaab82b6c361b5975b83308f676acc5e4fd231",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "race-open": {
+        "refs/heads/aitm-qualify-158/8xxSJX4w/fresh-head": "53b0f67d2cb930418e3745900441aa066fea2b94",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/open-head": "d7011d2548d24d83cb6ea67f3816b20e7bf85217",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/race-head": "2c885ecfce8b981ea7875c309c61b5b7ace53d50",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/target": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "refs/heads/planning": "aef66593e6ad07bd0f55eb241ae83daf5fcd902a",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "race-active": {
+        "refs/heads/aitm-qualify-158/8xxSJX4w/fresh-head": "53b0f67d2cb930418e3745900441aa066fea2b94",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/open-head": "d7011d2548d24d83cb6ea67f3816b20e7bf85217",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/race-head": "2c885ecfce8b981ea7875c309c61b5b7ace53d50",
+        "refs/heads/aitm-qualify-158/8xxSJX4w/target": "3987f6cf0aa72e64352b058b910c7a80b1069cb7",
+        "refs/heads/planning": "6ee77a2d5d6d6680ceef3dab37e5cf5204b61d7a",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "after": {
+        "refs/heads/planning": "ecd34ab6f81664c8bfc3e07e2faddf17cf04c27b",
+        "refs/heads/trunk": "72ca2d2535248844b164014d7817bffec0e9fb7e"
+      }
+    },
+    "fresh_pr_close": {
+      "status": 200,
+      "github_request_id": "C838:373225:424B6:CE080:6AF3ED12",
+      "number": 215,
+      "state": "closed"
+    },
+    "race_pr_close": {
+      "status": 200,
+      "github_request_id": "C845:DD5CE:4B77F:EDB56:6AF3ED14",
+      "number": 216,
+      "state": "closed"
+    },
+    "rule_delete": {
+      "status": 204,
+      "github_request_id": "C850:3AF17F:4BF80:ECE79:6AF3ED18"
+    },
+    "terminal_race_response_reconciled_before_cleanup": true,
+    "fixture_ref_deletions": {
+      "open-head": [
+        "To https://github.com/kburson/aitm.git",
+        "-\t:refs/heads/aitm-qualify-158/8xxSJX4w/open-head\t[deleted]",
+        "Done"
+      ],
+      "fresh-head": [
+        "To https://github.com/kburson/aitm.git",
+        "-\t:refs/heads/aitm-qualify-158/8xxSJX4w/fresh-head\t[deleted]",
+        "Done"
+      ],
+      "race-head": [
+        "To https://github.com/kburson/aitm.git",
+        "-\t:refs/heads/aitm-qualify-158/8xxSJX4w/race-head\t[deleted]",
+        "Done"
+      ],
+      "target": [
+        "To https://github.com/kburson/aitm.git",
+        "-\t:refs/heads/aitm-qualify-158/8xxSJX4w/target\t[deleted]",
+        "Done"
+      ]
+    }
+  }
+}

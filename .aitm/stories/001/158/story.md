@@ -145,3 +145,19 @@ on push and ruleset events was unverified when the temporary branch
 and rule were created. The hosted PR merge and already-sent request
 cases remain open. #158 stays in Planning and #159 stays in Backlog
 pending a qualified merge receipt.
+
+## Existing-repository PR merge trial
+
+[Trial report](plan/2026-11-10-158-existing-repo-pr-trial.md) ·
+[Synchronous receipt](attachments/2026-11-10-158-existing-repo-pr-trial.json) ·
+[Asynchronous receipt](attachments/2026-11-10-158-existing-repo-async-merge-trial.json).
+
+The active exact-branch rule denied a fresh synchronous REST merge
+and blocked the web merge button. One synchronous merge sent before
+the simulated stop also returned a terminal denial. In the async
+trial, GitHub accepted a merge before the stop, reported it pending
+after activation, and returned a terminal rule denial for the same
+UUID. Both stopped targets stayed fixed. The trial removed the
+temporary rules and refs and verified the production protections.
+The exact-base and exclusive-writer guarantees remain open. #158 stays
+in Planning and #159 remains blocked.
