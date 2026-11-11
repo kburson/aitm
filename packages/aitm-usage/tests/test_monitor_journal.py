@@ -1,6 +1,8 @@
 """Exercise routing journal authority with real native capture and scope evidence."""
 
+import json
 import os
+import shlex
 from dataclasses import replace
 from datetime import timedelta
 from shutil import copyfile
@@ -258,6 +260,14 @@ def test_competing_project_claims_cannot_double_charge(native):
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         assert journal.as_of(before.sequence) == before
+        assert journal.as_of() == after
+        owner_replay = journal.prepare(LIVE, native.locator())
+        (original,) = (
+            item
+            for item in owner_replay.candidates
+            if item.observation.key == winner.key
+        )
+        assert journal.reserve(original, owner_replay.progress).status == "disputed"
         assert journal.as_of() == after
 
 
@@ -598,3 +608,470 @@ def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
         journal.reserve_batch(prepared)
         assert journal.cursor_for(LIVE, locator) == prepared.progress
         assert len(journal.as_of().claims) == len(original.claims) + 1
+
+
+@pytest.fixture
+def journal_claude(tmp_path, monkeypatch):
+    from test_monitor_scope import ClaudeScopeFixture, NativeScopeFixture
+
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+    return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
+
+
+def _claude_candidates(prepared, ordinal):
+    return tuple(
+        item
+        for item in prepared.candidates
+        if item.observation.usage.boundary.ordinal == ordinal
+    )
+
+
+def _claim_for(view, key):
+    (claim,) = (claim for claim in view.claims if claim.key == key)
+    return claim
+
+
+def _prepare_claude_mark(state, native):
+    from test_claude import SESSION as CLAUDE_SESSION
+    from test_claude import _native_tool_turn
+
+    command_id = UUID(int=0x450)
+    scope = Scope(A, ItemKey(ItemKind.ISSUE, 201), WorkPhase.PLANNING)
+    command = Mark(command_id, scope, native.native.receipt_ref(command_id))
+    owner = state.operator(A)
+    state.authorize(command, owner)
+    invocation = shlex.join(
+        (
+            "aitm-usage",
+            "--project",
+            str(native.native.ledgers[A].root),
+            "scope",
+            "mark",
+            "--marker",
+            "/private/tmp/marker.json",
+            "--session-id",
+            str(CLAUDE_SESSION),
+            "--json",
+        )
+    )
+    native.append(
+        *_native_tool_turn(
+            native.anchor,
+            invocation,
+            json.dumps({"command_id": str(command_id), "status": "queued"}),
+        )
+    )
+    batch = native.read(state)
+    target = native.native.target(batch, command_id)
+    boundary = state.verify_boundary(command, owner, batch, target)
+    return command, boundary
+
+
+def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(native.source_id, native.locator())
+        (original,) = _claude_candidates(first, ordinal)
+        journal.reserve_batch(first)
+        prior = journal.as_of()
+        saved = _claim_for(prior, original.observation.key)
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+
+    with registry.writer() as writer:
+        scopes = ScopeState(writer)
+        command, boundary = _prepare_claude_mark(scopes, native)
+        assert scopes.apply_mark(command, boundary).status == "applied"
+        native.append(
+            native.request(3, counts=claude_usage(output=6), stop=None),
+            native.request(3, counts=claude_usage(output=7)),
+        )
+        journal = RoutingJournal(writer, scopes)
+        prepared = journal.prepare(native.source_id, native.locator())
+        original, middle, latest = _claude_candidates(prepared, ordinal)
+        assert journal.reserve(latest, prepared.progress).status == "held"
+        assert journal.as_of() == prior
+
+        outcomes = journal.reserve_batch(prepared)
+        selected = tuple(
+            outcome
+            for candidate, outcome in zip(prepared.candidates, outcomes, strict=True)
+            if candidate in (original, middle, latest)
+        )
+        assert [outcome.status for outcome in selected] == [
+            "replay",
+            "pending",
+            "pending",
+        ]
+        assert selected[1].sequence == selected[2].sequence == prior.sequence + 1
+        current = journal.as_of()
+        revised = _claim_for(current, original.observation.key)
+        assert revised.usage.tokens.output_tokens == 7
+        assert revised.revision == 3 and revised.sequence == current.sequence
+        assert (revised.project_id, revised.scope, revised.evidence) == (
+            saved.project_id,
+            saved.scope,
+            saved.evidence,
+        )
+        assert revised.usage.observed_at == saved.usage.observed_at
+        assert journal.as_of(prior.sequence) == prior
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        replay = journal.prepare(native.source_id, native.locator())
+        original, older, latest = _claude_candidates(replay, ordinal)
+        for candidate in (older, original, latest):
+            assert journal.reserve(candidate, replay.progress).status == "replay"
+        assert journal.as_of() == current
+        assert journal.as_of(prior.sequence) == prior
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+
+
+def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
+    from test_claude import MODEL, cost, model_counts
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(native.source_id, native.locator())
+        journal.reserve_batch(first)
+        cursor = first.progress
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+        sequence = journal.as_of().sequence + 1
+        # Represent an exact earlier isolated checkpoint. The real quota
+        # diagnostic remains unresolved and cannot grant progress in this leaf.
+        with journal._store.transaction(write=True) as connection:
+            journal._write_progress(connection, first._read, sequence)
+
+    native.append(
+        native.request(3, counts=claude_usage(output=6)),
+        cost(**{MODEL: model_counts(14, 6, 15, 9, 12)}),
+    )
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        assert journal.cursor_for(native.source_id, native.locator()) == cursor
+        prepared = journal.prepare(native.source_id, native.locator())
+        original, successor, terminal = _claude_candidates(prepared, ordinal)
+        for candidate in (successor, terminal):
+            assert journal._scopes.verified_revision(
+                prepared._read.batch, candidate.observation
+            )
+        assert original.observation.revision == 1
+        assert {item.code for item in prepared._read.batch.diagnostics} == {
+            DiagnosticCode.COVERAGE_GAP
+        }
+        assert len(prepared.candidates) == len(prepared._read.batch.observations)
+        assert journal._boundaries_settled(
+            prepared._read, journal._scopes.view(prepared._read.batch)
+        )
+        outcomes = journal.reserve_batch(prepared)
+        assert all(outcome.status in ("replay", "pending") for outcome in outcomes)
+        selected = [
+            outcome.status
+            for candidate, outcome in zip(prepared.candidates, outcomes, strict=True)
+            if candidate in (original, successor, terminal)
+        ]
+        assert selected == ["replay", "pending", "pending"]
+        assert journal.cursor_for(native.source_id, native.locator()) == cursor
+
+
+@pytest.mark.parametrize("rewrite", ["before-original", "between-edges", "predecessor"])
+def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrite):
+    from test_claude import usage as claude_usage
+    from test_claude import user as claude_user
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        before = native.append(claude_user(native.anchor))
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
+        between = native.append(claude_user(native.anchor))
+        native.append(native.request(3, counts=claude_usage(output=6), stop=None))
+        current = journal.prepare(native.source_id, native.locator())
+        original, successor = _claude_candidates(current, ordinal)
+        assert journal.reserve(successor, current.progress).status == "pending"
+        saved = journal.as_of()
+
+    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    if rewrite == "predecessor":
+        rows[ordinal]["message"]["usage"] = claude_usage(output=5)
+    else:
+        edited = before if rewrite == "before-original" else between
+        rows[edited]["message"]["content"] = "rewritten without changing usage"
+    write(native.path, rows)
+    native.append(native.request(3, counts=claude_usage(output=7)))
+
+    with registry.writer() as writer:
+        scopes = ScopeState(writer)
+        journal = RoutingJournal(writer, scopes)
+        prepared = journal.prepare(native.source_id, native.locator())
+        _, known, later = _claude_candidates(prepared, ordinal)
+        assert known.observation.usage == successor.observation.usage
+        assert scopes.verified_revision(prepared._read.batch, known.observation)
+        assert scopes.verified_revision(prepared._read.batch, later.observation)
+        for candidate in (known, later):
+            assert journal.reserve(candidate, prepared.progress).status == "held"
+        assert journal.as_of() == saved
+        assert _claim_for(saved, original.observation.key).revision == 2
+
+
+def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
+    journal_claude,
+):
+    from test_claude import usage as claude_usage
+    from test_claude import user as claude_user
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        padding = native.append(claude_user(native.anchor))
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        current = journal.prepare(native.source_id, native.locator())
+        (original,) = _claude_candidates(current, ordinal)
+        journal.reserve_batch(current)
+        saved = journal.as_of()
+        with journal._store.transaction() as connection:
+            assert connection.execute(
+                "SELECT count(*) FROM claim_revisions"
+            ).fetchone() == (0,)
+
+    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows[padding]["message"]["content"] = "rewritten after the original capture witness"
+    write(native.path, rows)
+    native.append(native.request(3, counts=claude_usage(output=6)))
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        prepared = journal.prepare(native.source_id, native.locator())
+        replay, successor = _claude_candidates(prepared, ordinal)
+        assert replay.observation.usage == original.observation.usage
+        assert journal.reserve(successor, prepared.progress).status == "pending"
+        assert journal.as_of(saved.sequence) == saved
+
+
+def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal, _original_capture
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(native.source_id, native.locator())
+        journal.reserve_batch(first)
+        native.append(native.request(3, counts=claude_usage(output=6), stop=None))
+        current = journal.prepare(native.source_id, native.locator())
+        _, successor = _claude_candidates(current, ordinal)
+        assert journal.reserve(successor, current.progress).status == "pending"
+        saved = journal.as_of()
+        original_evidence = _claim_for(saved, successor.observation.key).evidence
+        assert _original_capture(
+            current._read.batch, A, original_evidence, writer.view()
+        )
+
+        root_path = native.root.path.with_name("claude-archive")
+        root_path.mkdir()
+        path = root_path / "claude.jsonl"
+        root = replace(native.root, path=root_path)
+        archive_source = UUID(int=7)
+        rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        write(path, rows[:1])
+        writer.approve_source(
+            SourceApprovalRequest(
+                archive_source,
+                "claude",
+                "claude-code-macos",
+                "Darwin",
+                "arm64",
+                "2.1.318",
+                1,
+                str(root_path),
+            )
+        )
+        (locator,) = native.native.adapter.discover(root)
+        capture = CaptureChange(A, archive_source, True)
+        frontier = writer.capture_frontier(capture, locator)
+        write(path, rows[1:], append=True)
+        (locator,) = native.native.adapter.discover(root)
+        writer.set_permission(
+            capture, writer.verify_boundary(capture, locator, frontier)
+        )
+
+        archive = journal.prepare(archive_source, locator)
+        assert not _original_capture(
+            archive._read.batch, A, original_evidence, writer.view()
+        )
+        original, known = _claude_candidates(archive, ordinal)
+        assert known.observation.key == successor.observation.key
+        assert journal.reserve(original, archive.progress).status == "replay"
+        assert journal.reserve(known, archive.progress).status == "replay"
+
+        write(path, [native.request(3, counts=claude_usage(output=7))], append=True)
+        (locator,) = native.native.adapter.discover(root)
+        extended = journal.prepare(archive_source, locator)
+        _, _, new = _claude_candidates(extended, ordinal)
+        assert journal._scopes.verified_revision(extended._read.batch, new.observation)
+        assert journal.reserve(new, extended.progress).status == "held"
+        assert journal.as_of() == saved
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+        assert journal.cursor_for(archive_source, locator) is None
+
+
+def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(native.source_id, native.locator())
+        journal.reserve_batch(first)
+        saved = journal.as_of()
+        native.apply_capture(writer, A, False, 4)
+        native.append(native.request(3, counts=claude_usage(output=6), stop=None))
+        native.apply_capture(writer, A, True, 5)
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        prepared = journal.prepare(native.source_id, native.locator())
+        _, disabled, later = _claude_candidates(prepared, ordinal)
+        for candidate in (disabled, later):
+            assert journal.reserve(candidate, prepared.progress).status == "held"
+        assert journal.as_of() == saved
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+
+
+def test_claude_revision_rolls_back_when_the_final_read_check_fails(
+    journal_claude, monkeypatch
+):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(native.source_id, native.locator())
+        journal.reserve_batch(first)
+        saved = journal.as_of()
+        native.append(native.request(3, counts=claude_usage(output=6)))
+        prepared = journal.prepare(native.source_id, native.locator())
+        _, successor = _claude_candidates(prepared, ordinal)
+        fresh = journal._fresh_view
+        checked = False
+
+        def reject_final(read):
+            nonlocal checked
+            if checked:
+                raise LedgerError("test final native custody failure")
+            checked = True
+            return fresh(read)
+
+        monkeypatch.setattr(journal, "_fresh_view", reject_final)
+        with pytest.raises(LedgerError, match="test final native custody failure"):
+            journal.reserve(successor, prepared.progress)
+        assert journal.as_of() == saved
+
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        assert journal.as_of() == saved
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+        prepared = journal.prepare(native.source_id, native.locator())
+        _, successor = _claude_candidates(prepared, ordinal)
+        assert journal.reserve(successor, prepared.progress).status == "pending"
+        assert journal.as_of().sequence == saved.sequence + 1
+
+
+def test_verified_claude_revision_does_not_change_saved_original_scope(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    with registry.writer() as writer:
+        native.approve(writer)
+        scopes = ScopeState(writer)
+        command, boundary = _prepare_claude_mark(scopes, native)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, scopes)
+        first = journal.prepare(native.source_id, native.locator())
+        (original,) = _claude_candidates(first, ordinal)
+        assert journal.reserve(original, first.progress).status == "pending"
+        saved = journal.as_of()
+        assert _claim_for(saved, original.observation.key).scope is None
+
+        assert scopes.apply_mark(command, boundary).status == "applied"
+        native.append(native.request(3, counts=claude_usage(output=6)))
+        prepared = journal.prepare(native.source_id, native.locator())
+        _, successor = _claude_candidates(prepared, ordinal)
+        proof = scopes.verified_revision(prepared._read.batch, successor.observation)
+        assert proof is not None and proof.route.scope == command.scope
+        assert journal.reserve(successor, prepared.progress).status == "held"
+        assert journal.as_of() == saved
+
+
+def test_journal_refuses_mismatched_v1_first_claim_payload(native):
+    from aitm_usage.monitor_journal import RoutingJournal, _ClaimPayload
+    from aitm_usage.types import _decode, _encode
+
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        locator = native.locator()
+        prepared = journal.prepare(LIVE, locator)
+        (candidate,) = prepared.candidates
+        assert journal.reserve(candidate, prepared.progress).status == "pending"
+        key = candidate.observation.key.value
+        with journal._store.transaction(write=True) as connection:
+            (raw,) = connection.execute(
+                "SELECT payload FROM claims WHERE key = ?", (key,)
+            ).fetchone()
+            original = _decode(raw, _ClaimPayload)
+            changed_usage = replace(
+                original.material.usage,
+                observed_at=original.material.usage.observed_at + timedelta(seconds=1),
+            )
+            corrupt = replace(
+                original, material=replace(original.material, usage=changed_usage)
+            )
+            connection.execute(
+                "UPDATE claims SET payload = ? WHERE key = ?",
+                (_encode(corrupt, _ClaimPayload).encode(), key),
+            )
+
+        replay = journal.prepare(LIVE, locator)
+        (same,) = replay.candidates
+        with pytest.raises(LedgerError, match="Stored first claim material changed"):
+            journal.reserve(same, replay.progress)
+        with pytest.raises(LedgerError, match="Stored first claim material changed"):
+            journal.as_of()
