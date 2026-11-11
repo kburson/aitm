@@ -4,23 +4,28 @@ Read a pinned AITM planning commit and generate a standalone HTML dashboard. It 
 
 ## Build and open
 
-Use a POSIX system, Python 3.13 or later, Git, and a complete clone of AITM with the dashboard tools on trunk. Run these commands from the source checkout. The qualification used macOS, Python 3.13.9 and Chrome. A shallow clone can omit historical planning pins. Keep output in a private directory outside every Git worktree. The UTC cutoff must be at or after the selected planning commit and the receipt registrations you intend to include.
+Use a POSIX system, Python 3.13 or later, Git, and a complete clone of AITM with the dashboard tools on trunk. Run these commands from the source checkout. They use `python3.13` by default. Set `PYTHON_BIN` to another Python 3.13+ executable if needed. The qualification used macOS, Python 3.13.9 and Chrome. A shallow clone can omit historical planning pins. Keep output in a private directory outside every Git worktree. The UTC cutoff must be at or after the selected planning commit and the receipt registrations you intend to include.
 
 ```sh
+(
+set -e
+python_bin="${PYTHON_BIN:-python3.13}"
+"$python_bin" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 13) else "Python 3.13 or later is required")'
 git fetch origin refs/heads/planning:refs/remotes/origin/planning
 reader="$(pwd -P)"
 planning_sha="$(git rev-parse origin/planning)"
 cutoff_utc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 output="$(mktemp -d "${TMPDIR:-/tmp}/aitm-story-dashboard.XXXXXX")"
 
-python -m tools.story_dashboard.snapshot \
+"$python_bin" -m tools.story_dashboard.snapshot \
   --repo "$reader" --commit "$planning_sha" --as-of "$cutoff_utc" \
   --output "$output"
-python -m tools.story_dashboard.render \
+"$python_bin" -m tools.story_dashboard.render \
   --snapshot "$output/snapshot.json" --output "$output/dashboard.html"
 
 shasum -a 256 "$output/snapshot.json"
 printf 'Open %s\n' "$output/dashboard.html"
+)
 ```
 
 Match the digest to `snapshot_sha256` in `validation.json`. The report records source and coverage gaps. Open `dashboard.html` directly from disk. Use the epic, state and Actual coverage filters, then expand **Timing and evidence** on an epic or child. A link opens the corresponding GitHub issue or commit-pinned source when selected.
