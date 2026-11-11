@@ -57,3 +57,7 @@ Attempt 3 ended in failure. The candidate job was canceled, evidence collection 
 ### Hosted capture fixture recovery
 
 The owner authorized an operational fix to the hosted capture failure. Both native Python lanes now use separate, freshly created runner fixture directories. The deterministic scratch reproduction failed under shared-directory metadata churn and passed with the same churn and isolated fixture placement. Source custody, coverage thresholds, test selection, and signing are preserved. The [independent workflow-control review](hosted-capture-isolation-review.md) passed the exact new head and tree. [Fresh hosted run](https://github.com/kburson/aitm/actions/runs/43059217996) is validating this exact pair. The remaining independent product/source review follows the signed pass.
+
+### First isolated hosted attempt
+
+On [run 43059217996 attempt 1](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/1), the literal baseline Python lane passed with private fixtures. The exact candidate Python lane logged progress through 78% with no reported test failure before cancellation at the existing eight-minute limit. Collection failed and the final gate was skipped. The [terminal job receipt](isolated-hosted-a1-terminal.json) is retained. A whole unchanged retry keeps the signature bound to one attempt. Both fresh local suites passed and matched the previous local test inventories and raw coverage.
