@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 189
 title: "[#181 A04] Resolve a pinned usage report"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/189"
 parent: 181
 children: []
 blocking: [190]
 blocked-by: [186]
 created: "2026-11-10T21:02:17Z"
-updated: "2026-11-11T04:02:28Z"
-last-branch: "codex/aitm-189-usage-view"
+updated: "2026-11-11T04:05:25Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #186. The proposed estimate is 3 implementation agent-hour
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `f7646bc4da35173e9b0e468e4810b4e9265b0f47` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/212) · [Signed CI](plan/hosted-verification-1.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)
