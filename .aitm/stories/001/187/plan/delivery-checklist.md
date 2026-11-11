@@ -28,6 +28,6 @@ Both named monitor failures passed on a focused local rerun using the same sourc
 [PR #208](https://github.com/kburson/aitm/pull/208) targets trunk base `1282538954dc5a7e7f7b27da4e3ab096892e3add`, head `27abd178ce3e0b1e076e2c94c3a4a3f863179254`, tree `f62fbd48047f73baf52f65f86b33d475328b2f1f`. The two-path diff is confined to the attribution module and its tests. The clean candidate passed the dashboard suite, Ruff and both real planning pins with all 114 direct intervals and ten exact direct subtotals.
 
 - [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42946905299/attempts/1) and [delivered verifier](hosted-verification-r3.json) passed.
-- [ ] Independent source review.
+- [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review. No native review was submitted.
 
 The tested merge `ecf070613b90ad20f8a833134477bbd615065150` has the ordered base and head parents above and the same tree as the local candidate. The trusted verifier checked the signed evidence for all six jobs. Dashboard tests remain separate local proof.
