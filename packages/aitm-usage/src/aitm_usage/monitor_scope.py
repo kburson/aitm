@@ -1,6 +1,7 @@
 """Private native scope decisions and provenance-only coverage holds."""
 
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
@@ -61,11 +62,13 @@ from .sources.scan import (
     checkout_anchor_reference,
 )
 from .types import (
+    BoundaryKind,
     DevelopmentBinding,
     Diagnostic,
     Eligibility,
     InboxCommand,
     ItemKey,
+    Provider,
     ReviewRole,
     ScopeEnrollment,
     SourceBoundary,
@@ -81,6 +84,7 @@ from .types import (
 
 _FILE = "scope-v1.json"
 _FORMAT = "aitm.usage.monitor-scope/v1"
+_FORMAT_V2 = "aitm.usage.monitor-scope/v2"
 _MAX_SNAPSHOT = 1024 * 1024
 _MAX_HOLDS = 256
 _MAX_AUTHORIZATIONS = 256
@@ -245,6 +249,36 @@ class _ScopeSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class _HeldRouteTarget:
+    hold_id: UUID
+    boundary: SourceBoundary
+    prefix: SourceCursor
+
+
+@dataclass(frozen=True, slots=True)
+class _RouteDispositionRecord:
+    command_id: UUID
+    command_digest: str
+    request_digest: str
+    hold_id: UUID
+    hold_state: HoldState
+    outcome: HoldState
+    boundary: SourceBoundary
+    prefix: SourceCursor
+    checkout: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
+class _ScopeSnapshotV2:
+    events: tuple[_ScopeEvent, ...]
+    holds: tuple[ProofHold, ...]
+    resolutions: tuple[_Resolution, ...]
+    held_route_targets: tuple[_HeldRouteTarget, ...]
+    route_dispositions: tuple[_RouteDispositionRecord, ...]
+    format: str = _FORMAT_V2
+
+
+@dataclass(frozen=True, slots=True)
 class _ObservationProof:
     observation: NativeObservation = field(repr=False)
     position: ScopePosition
@@ -328,6 +362,98 @@ def _stream(
         position.session_ref,
         position.stream_ref,
     )
+
+
+def _prefix_identity(prefix: SourceCursor) -> tuple[SourceRef, SourceRef, SourceRef]:
+    return prefix.source_ref, prefix.locator_ref, prefix.incarnation_ref
+
+
+def _validate_scope_snapshot(state: _ScopeSnapshot | _ScopeSnapshotV2) -> None:
+    if (
+        (isinstance(state, _ScopeSnapshot) and state.format != _FORMAT)
+        or len({entry.command_id for entry in state.events}) != len(state.events)
+        or len({entry.command_id for entry in state.holds}) != len(state.holds)
+        or len({entry.command_id for entry in state.resolutions})
+        != len(state.resolutions)
+        or any(event.reported is None for event in state.events)
+    ):
+        raise LedgerError("Invalid private scope custody")
+
+
+def _validate_route_records(state: _ScopeSnapshotV2) -> None:
+    holds = {hold.command_id: hold for hold in state.holds}
+    targets = {row.hold_id: row for row in state.held_route_targets}
+    records = state.route_dispositions
+    legacy_ids = set(holds)
+    legacy_ids.update(row.command_id for row in (*state.events, *state.resolutions))
+    if (
+        state.format != _FORMAT_V2
+        or len(targets) != len(state.held_route_targets)
+        or len({row.command_id for row in records}) != len(records)
+        or len({row.hold_id for row in records}) != len(records)
+    ):
+        raise LedgerError("Invalid private scope route custody")
+
+    for hold_id, target in targets.items():
+        hold = holds.get(hold_id)
+        boundary = target.boundary
+        if (
+            hold is None
+            or not re.fullmatch(r"[a-f0-9]{64}", hold.command_digest)
+            or hold.position.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+            or boundary.provider is not Provider.CODEX
+            or (boundary.session_ref, boundary.stream_ref, boundary.ordinal)
+            != (
+                hold.position.session_ref,
+                hold.position.stream_ref,
+                hold.position.ordinal,
+            )
+            or boundary.receipt_ref is None
+            or target.prefix.source_ref != boundary.stream_ref
+            or target.prefix.offset <= 0
+        ):
+            raise LedgerError("Invalid private scope held route target")
+
+    # Records preserve the hold state at issuance. Legacy expiry or resolution
+    # can change the current hold without invalidating this historical record.
+    for record in records:
+        target = targets.get(record.hold_id)
+        boundary = record.boundary
+        if (
+            target is None
+            or record.command_id in legacy_ids
+            or not re.fullmatch(r"[a-f0-9]{64}", record.command_digest)
+            or not re.fullmatch(r"[a-f0-9]{64}", record.request_digest)
+            or record.hold_state not in (HoldState.HELD, HoldState.GAP)
+            or record.outcome not in (HoldState.GAP, HoldState.RESOLVED)
+            or (
+                record.outcome is HoldState.RESOLVED
+                and record.hold_state is not HoldState.HELD
+            )
+            or (boundary.provider, boundary.session_ref, boundary.stream_ref)
+            != (
+                target.boundary.provider,
+                target.boundary.session_ref,
+                target.boundary.stream_ref,
+            )
+            or boundary.kind is not BoundaryKind.TURN
+            or boundary.ordinal <= target.boundary.ordinal
+            or boundary.ordinal < holds[record.hold_id].affected.end
+            or boundary.boundary_ref == target.boundary.boundary_ref
+            or boundary.receipt_ref in (None, target.boundary.receipt_ref)
+            or _prefix_identity(record.prefix) != _prefix_identity(target.prefix)
+            or record.prefix.offset <= target.prefix.offset
+        ):
+            raise LedgerError("Invalid private scope route disposition")
+
+
+def _require_unused_route_disposition_id(
+    state: _ScopeSnapshot | _ScopeSnapshotV2, command_id: UUID
+) -> None:
+    if isinstance(state, _ScopeSnapshotV2) and any(
+        row.command_id == command_id for row in state.route_dispositions
+    ):
+        raise ConflictError("Scope route disposition ID is already reserved")
 
 
 def _digest(command: ScopeCommand) -> str:
@@ -527,7 +653,7 @@ class ScopeState:
             WeakValueDictionary()
         )
 
-    def _snapshot(self, *, confirm: bool = False) -> _ScopeSnapshot:
+    def _snapshot(self, *, confirm: bool = False) -> _ScopeSnapshot | _ScopeSnapshotV2:
         if not _path_exists(self.registry.root):
             return _ScopeSnapshot()
         with _pin_directory(self.registry.root) as root:
@@ -539,24 +665,68 @@ class ScopeState:
             return _ScopeSnapshot()
         if len(data) > _MAX_SNAPSHOT:
             raise LedgerError("Private scope state exceeds its limit")
+        state: _ScopeSnapshot | _ScopeSnapshotV2
         try:
             state = _decode(data, _ScopeSnapshot)
         except ValueError:
-            raise LedgerError("Invalid private scope state") from None
-        if (
-            state.format != _FORMAT
-            or len({entry.command_id for entry in state.events}) != len(state.events)
-            or len({entry.command_id for entry in state.holds}) != len(state.holds)
-            or len({entry.command_id for entry in state.resolutions})
-            != len(state.resolutions)
-            or any(event.reported is None for event in state.events)
-        ):
-            raise LedgerError("Invalid private scope custody")
+            try:
+                state = _decode(data, _ScopeSnapshotV2)
+            except ValueError:
+                raise LedgerError("Invalid private scope state") from None
+        _validate_scope_snapshot(state)
+        if isinstance(state, _ScopeSnapshotV2):
+            _validate_route_records(state)
+            if self.registry._writer is not None:
+                self._require_route_custody(state)
         return state
 
-    def _save(self, state: _ScopeSnapshot) -> None:
+    def _require_route_custody(self, state: _ScopeSnapshotV2) -> None:
+        self.registry.lease
+        view = self.registry.view()
+        if view.source_key_id is None:
+            raise LedgerError(
+                "Route custody requires an initialized monitor source key"
+            )
+        evidence = self.registry.source_evidence()
+        holds = {hold.command_id: hold for hold in state.holds}
+        for target in state.held_route_targets:
+            position = holds[target.hold_id].position
+            try:
+                source = _source(view, position.source_id)
+            except ValueError:
+                raise LedgerError("Held route source is not approved") from None
+            if (
+                source.approval.surface != position.surface
+                or source.approval.provider != target.boundary.provider
+            ):
+                raise LedgerError("Held route source approval does not match")
+            _encode(target, _HeldRouteTarget, validate_ref=evidence.validate_source_ref)
+            if target.boundary.receipt_ref != evidence.pseudonymize(
+                "scope-receipt", str(target.hold_id)
+            ):
+                raise LedgerError(
+                    "Held route target receipt is bound to another command"
+                )
+        for record in state.route_dispositions:
+            _encode(
+                record,
+                _RouteDispositionRecord,
+                validate_ref=evidence.validate_source_ref,
+            )
+            if record.boundary.receipt_ref != evidence.pseudonymize(
+                "scope-receipt", str(record.command_id)
+            ):
+                raise LedgerError(
+                    "Route disposition receipt is bound to another command"
+                )
+
+    def _save(self, state: _ScopeSnapshot | _ScopeSnapshotV2) -> None:
         lease = self.registry.lease
-        data = _encode(state, _ScopeSnapshot).encode()
+        if isinstance(state, _ScopeSnapshotV2):
+            _validate_scope_snapshot(state)
+            _validate_route_records(state)
+            self._require_route_custody(state)
+        data = _encode(state, type(state)).encode()
         if len(data) > _MAX_SNAPSHOT:
             raise LedgerError("Private scope state exceeds its limit")
         with _pin_directory(self.registry.root) as root:
@@ -1366,6 +1536,7 @@ class ScopeState:
     ) -> HandoffDisposition:
         self._require_boundary(receipt, command)
         state = self._snapshot(confirm=True)
+        _require_unused_route_disposition_id(state, command.command_id)
         event = _ScopeEvent(
             receipt.command_id,
             receipt.digest,
@@ -1445,9 +1616,13 @@ class ScopeState:
             raise ValueError("Expected an aware scope clock")
         return value.astimezone(UTC)
 
-    def hold(self, receipt: VerifiedBoundary) -> ProofHold:
+    def hold(
+        self, receipt: VerifiedBoundary, *, retain_route_target: bool = False
+    ) -> ProofHold:
         self._require_boundary(receipt)
         state = self._snapshot(confirm=True)
+        _require_unused_route_disposition_id(state, receipt.command_id)
+        target = self._route_target(receipt) if retain_route_target else None
         prior = next(
             (hold for hold in state.holds if hold.command_id == receipt.command_id),
             None,
@@ -1458,6 +1633,25 @@ class ScopeState:
                 receipt.digest,
             ):
                 raise ConflictError("Scope hold has conflicting native proof")
+            if target is not None:
+                targets = (
+                    state.held_route_targets
+                    if isinstance(state, _ScopeSnapshotV2)
+                    else ()
+                )
+                saved = next(
+                    (row for row in targets if row.hold_id == prior.command_id), None
+                )
+                if saved is None:
+                    raise LedgerError("Scope hold has no retained route target")
+                if (
+                    saved != target
+                    or prior.project_id != receipt._authority.project_id
+                    or prior.affected != receipt.affected
+                ):
+                    raise ConflictError(
+                        "Retained route target has conflicting native proof"
+                    )
             return prior
         _, dispositions = _timeline(state.events, receipt.position)
         previous = dispositions.get(receipt.command_id)
@@ -1478,9 +1672,41 @@ class ScopeState:
             now + _HOLD_TIME,
             HoldState.GAP if unresolved >= _MAX_HOLDS else HoldState.HELD,
         )
-        self._save(replace(state, holds=(*state.holds, hold)))
+        if target is None:
+            self._save(replace(state, holds=(*state.holds, hold)))
+        else:
+            if hold.state is not HoldState.HELD:
+                raise LedgerError("Cannot retain a route target at hold capacity")
+            if isinstance(state, _ScopeSnapshot):
+                state = _ScopeSnapshotV2(
+                    state.events, state.holds, state.resolutions, (), ()
+                )
+            self._save(
+                replace(
+                    state,
+                    holds=(*state.holds, hold),
+                    held_route_targets=(*state.held_route_targets, target),
+                )
+            )
         self._authorized.pop(receipt.command_id, None)
         return hold
+
+    def _route_target(self, receipt: VerifiedBoundary) -> _HeldRouteTarget:
+        batch = receipt._batch
+        owner = receipt._authority.project_id
+        boundary, prefix = receipt.native_boundary, batch._native_cursor
+        if (
+            not receipt.eligible
+            or receipt.checkout is None
+            or receipt.anchor_project != owner
+            or owner not in batch._admitted
+            or receipt.position.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+            or boundary is None
+            or prefix is None
+            or prefix.offset <= 0
+        ):
+            raise LedgerError("Expected an eligible, owned native route target")
+        return _HeldRouteTarget(receipt.command_id, boundary, prefix)
 
     def expire(self) -> tuple[ProofHold, ...]:
         self.registry.lease
@@ -1506,6 +1732,7 @@ class ScopeState:
     def dispose(self, command: Disposition, receipt: VerifiedBoundary) -> ProofHold:
         self._require_boundary(receipt, command)
         state = self._snapshot(confirm=True)
+        _require_unused_route_disposition_id(state, command.command_id)
         existing = next(
             (
                 item

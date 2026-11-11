@@ -1518,3 +1518,550 @@ def test_queued_monitor_scope_cli_joins_only_first_native_target(
             _verify(state, native, mark, owner, batch, later)
         assert state.view().events == ()
         assert state.receipt(mark, owner) is None
+
+
+def _scope_file(native):
+    return native.registry.root / "scope-v1.json"
+
+
+def _scope_bytes(payload):
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+
+
+def _held_receipt(state, native, command_id):
+    command, owner = _authorize_handoff(state, native, command_id, A, _issue(B, 117), 1)
+    _, ordinal = native.append(command_id)
+    batch = state.read_source(SOURCE, native.locator())
+    return _verify(state, native, command, owner, batch, ordinal)
+
+
+def _append_storage_fixture_terminal(native, command_id):
+    native.turn += 1
+    turn = UUID(int=0x200 + native.turn)
+    time = AFTER + timedelta(seconds=native.turn)
+    call, output = tool_call(native.ledgers[A]), tool_output(command_id)
+    call["timestamp"] = output["timestamp"] = time.isoformat()
+    native.total += 4
+    total, delta = usage(native.total, native.total), usage(4, 4)
+    write(
+        native.path,
+        [
+            *begin(native.anchors[A], turn, time=time),
+            call,
+            response(
+                f"response-{native.turn}-terminal", total, delta, time=time, turn=turn
+            ),
+            counter(total, delta, time=time),
+            output,
+            end(turn, time=time),
+        ],
+        append=True,
+    )
+    native.append()
+
+
+def _stored_disposition_fixture(state, native):
+    """Seed storage from real native boundaries without issuing a proposal."""
+    from aitm_usage.monitor_scope import Disposition
+    from aitm_usage.types import SourceBoundary, SourceCursor, _encode
+
+    held_id, legacy_id, terminal_id = (UUID(int=i) for i in range(0x501, 0x504))
+    owner = state.operator(A)
+    command, _ = _authorize_handoff(state, native, held_id, A, _issue(B, 117), 1)
+    legacy = Disposition(legacy_id, A, held_id, native.receipt_ref(legacy_id))
+    state.authorize(legacy, owner)
+    _, held_at = native.append(held_id)
+    _, legacy_at = native.append(legacy_id)
+    batch = state.read_source(SOURCE, native.locator())
+    receipt = _verify(state, native, command, owner, batch, held_at)
+    hold = state.hold(receipt)
+
+    path = _scope_file(native)
+    payload = json.loads(path.read_bytes())
+    terminal = Disposition(terminal_id, A, held_id, native.receipt_ref(terminal_id))
+    state.authorize(terminal, owner)
+    _append_storage_fixture_terminal(native, terminal_id)
+    current = state.read_source(SOURCE, native.locator())
+    target = native.target(current, terminal_id)
+    terminal_receipt = state.verify_boundary(terminal, owner, current, target)
+    legacy_receipt = _verify(state, native, legacy, owner, current, legacy_at)
+    payload["format"] = "aitm.usage.monitor-scope/v2"
+    payload["held_route_targets"] = [
+        {
+            "hold_id": str(held_id),
+            "boundary": json.loads(_encode(receipt.native_boundary, SourceBoundary)),
+            "prefix": json.loads(_encode(batch._native_cursor, SourceCursor)),
+        }
+    ]
+    payload["route_dispositions"] = [
+        {
+            "command_id": str(terminal_id),
+            "command_digest": terminal_receipt.digest,
+            "request_digest": "a" * 64,
+            "hold_id": str(held_id),
+            "hold_state": "held",
+            "outcome": "gap",
+            "boundary": json.loads(
+                _encode(terminal_receipt.native_boundary, SourceBoundary)
+            ),
+            "prefix": json.loads(_encode(current._native_cursor, SourceCursor)),
+            "checkout": native.anchor_ref(A).value,
+        }
+    ]
+    path.write_bytes(_scope_bytes(payload))
+    return hold, legacy, legacy_receipt, terminal, terminal_receipt, payload
+
+
+def test_retained_hold_writes_its_boundary_and_fixed_prefix_together(native):
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.types import SourceBoundary, SourceCursor, _encode
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        command_id = UUID(int=0x501)
+        receipt = _held_receipt(state, native, command_id)
+        with pytest.raises(LedgerError, match="writer-verified native scope receipt"):
+            state.hold(replace(receipt), retain_route_target=True)
+        assert not _scope_file(native).exists()
+        hold = state.hold(receipt, retain_route_target=True)
+        path = _scope_file(native)
+        data = path.read_bytes()
+        assert json.loads(data) == {
+            "format": "aitm.usage.monitor-scope/v2",
+            "events": [],
+            "holds": [json.loads(_encode(hold, type(hold)))],
+            "resolutions": [],
+            "held_route_targets": [
+                {
+                    "hold_id": str(hold.command_id),
+                    "boundary": json.loads(
+                        _encode(receipt.native_boundary, SourceBoundary)
+                    ),
+                    "prefix": json.loads(
+                        _encode(receipt._batch._native_cursor, SourceCursor)
+                    ),
+                }
+            ],
+            "route_dispositions": [],
+        }
+        assert state.hold(receipt, retain_route_target=True) == hold
+        native.append()
+        command, owner = _authorize_handoff(
+            state, native, command_id, A, _issue(B, 117), 1
+        )
+        batch = state.read_source(SOURCE, native.locator())
+        refreshed = _verify(state, native, command, owner, batch, hold.position.ordinal)
+        assert refreshed.native_boundary == receipt.native_boundary
+        assert (
+            refreshed._batch._native_cursor.offset
+            > receipt._batch._native_cursor.offset
+        )
+        with pytest.raises(LedgerError, match="conflicting native proof"):
+            state.hold(refreshed, retain_route_target=True)
+        assert path.read_bytes() == data
+    assert ScopeState(native.registry).view().holds == (hold,)
+
+
+def test_default_hold_keeps_v1_and_cannot_be_retroactively_retained(native):
+    from aitm_usage.monitor_scope import ProofHold, ScopeState
+    from aitm_usage.types import _encode
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        receipt = _held_receipt(state, native, UUID(int=0x501))
+        hold = state.hold(receipt)
+        path = _scope_file(native)
+        data = path.read_bytes()
+        assert data == _scope_bytes(
+            {
+                "events": [],
+                "format": "aitm.usage.monitor-scope/v1",
+                "holds": [json.loads(_encode(hold, ProofHold))],
+                "resolutions": [],
+            }
+        )
+        with pytest.raises(LedgerError, match="no retained route target"):
+            state.hold(receipt, retain_route_target=True)
+        assert path.read_bytes() == data
+        assert state.hold(receipt) == hold
+
+
+@pytest.mark.parametrize("checkout", [B, UNKNOWN])
+def test_route_target_requires_the_receipts_anchored_owner(native, checkout):
+    from aitm_usage.monitor_scope import ScopeState
+
+    command_id = UUID(int=0x501)
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        command, owner = _authorize_handoff(
+            state, native, command_id, A, _issue(B, 117), 1
+        )
+        cwd = native.anchors[checkout] if checkout == B else native.transcripts
+        _, ordinal = native.append(command_id, checkout=cwd)
+        batch = state.read_source(SOURCE, native.locator())
+        receipt = _verify(state, native, command, owner, batch, ordinal)
+        assert receipt.eligible and receipt.anchor_project != A
+        with pytest.raises(LedgerError, match="owned native route target"):
+            state.hold(receipt, retain_route_target=True)
+        assert not _scope_file(native).exists()
+        assert state.hold(receipt).project_id == A
+
+
+def test_retained_hold_refuses_capacity_gap_before_publication(native, monkeypatch):
+    from aitm_usage import monitor_scope
+
+    monkeypatch.setattr(monitor_scope, "_MAX_HOLDS", 1)
+    with native.registry.writer() as writer:
+        state = monitor_scope.ScopeState(writer)
+        first = state.hold(_held_receipt(state, native, UUID(int=0x501)))
+        second = _held_receipt(state, native, UUID(int=0x502))
+        path = _scope_file(native)
+        data = path.read_bytes()
+        with pytest.raises(LedgerError, match="route target.*capacity"):
+            state.hold(second, retain_route_target=True)
+        assert path.read_bytes() == data
+        overflow = state.hold(second)
+        assert overflow.state == "gap"
+        assert state.view().holds == (first, overflow)
+
+
+@pytest.mark.parametrize("when", ["before-replace", "after-replace"])
+def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
+    native, monkeypatch, when
+):
+    import os
+
+    from aitm_usage.monitor_scope import ScopeState
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        first = state.hold(_held_receipt(state, native, UUID(int=0x501)))
+        receipt = _held_receipt(state, native, UUID(int=0x502))
+        path = _scope_file(native)
+        data = path.read_bytes()
+        real_replace, real_fsync = os.replace, os.fsync
+        published = False
+
+        def interrupt_replace(source, destination, **kwargs):
+            nonlocal published
+            if destination != path.name:
+                return real_replace(source, destination, **kwargs)
+            if when == "before-replace":
+                raise OSError("interrupted scope publication")
+            real_replace(source, destination, **kwargs)
+            published = True
+
+        def interrupt_sync(fd):
+            if published:
+                raise OSError("interrupted scope publication")
+            real_fsync(fd)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(os, "replace", interrupt_replace)
+            patch.setattr(os, "fsync", interrupt_sync)
+            with pytest.raises(OSError, match="interrupted scope publication"):
+                state.hold(receipt, retain_route_target=True)
+        if when == "before-replace":
+            assert path.read_bytes() == data
+            assert state.view().holds == (first,)
+        else:
+            payload = json.loads(path.read_bytes())
+            assert len(payload["holds"]) == 2
+            assert [row["hold_id"] for row in payload["held_route_targets"]] == [
+                str(receipt.command_id)
+            ]
+        hold = state.hold(receipt, retain_route_target=True)
+        assert state.view().holds == (first, hold)
+        assert not list(path.parent.glob(".publishing-*"))
+
+
+@pytest.mark.parametrize("operation", ["mark", "handoff", "hold", "expire", "dispose"])
+def test_legacy_writers_preserve_both_v2_collections(native, operation):
+    from aitm_usage.monitor_scope import Mark, ScopeState
+
+    with native.registry.writer() as writer:
+        moment = AFTER
+        state = ScopeState(writer, clock=lambda: moment)
+        hold, legacy, legacy_receipt, _, _, payload = _stored_disposition_fixture(
+            state, native
+        )
+        initial = state.view()
+        assert initial.holds == (hold,)
+        assert ScopeState(native.registry).view() == initial
+
+        command_id = UUID(int=0x504)
+        if operation == "mark":
+            mark = Mark(command_id, _issue(A, 116), native.receipt_ref(command_id))
+            owner = state.operator(A)
+            state.authorize(mark, owner)
+            _, ordinal = native.append(command_id)
+            batch = state.read_source(SOURCE, native.locator())
+            assert (
+                state.apply_mark(
+                    mark, _verify(state, native, mark, owner, batch, ordinal)
+                ).status
+                == "applied"
+            )
+        elif operation == "handoff":
+            command, owner = _authorize_handoff(
+                state, native, command_id, A, _issue(B, 117), 1
+            )
+            _, ordinal = native.append(command_id)
+            batch = state.read_source(SOURCE, native.locator())
+            assert (
+                state.apply_handoff(
+                    command, _verify(state, native, command, owner, batch, ordinal)
+                ).status
+                == "held"
+            )
+        elif operation == "hold":
+            state.hold(_held_receipt(state, native, command_id))
+        elif operation == "expire":
+            moment = hold.expires_at
+            assert len(state.expire()) == 1
+        else:
+            assert state.dispose(legacy, legacy_receipt).state == "gap"
+        data = _scope_file(native).read_bytes()
+        assert data != _scope_bytes(payload)
+        updated = json.loads(data)
+        assert data == _scope_bytes(updated)
+        assert updated["format"] == "aitm.usage.monitor-scope/v2"
+        for collection in ("held_route_targets", "route_dispositions"):
+            assert _scope_bytes(updated[collection]) == _scope_bytes(
+                payload[collection]
+            )
+        assert ScopeState(native.registry).view() == state.view()
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "unknown",
+        "mixed",
+        "missing",
+        "extra",
+        "nested",
+        "hold-digest",
+        "command-digest",
+        "request-digest",
+        "held-state",
+        "outcome",
+        "resolved-from-gap",
+        "duplicate-target",
+        "duplicate-disposition",
+        "second-disposition",
+        "unowned-target",
+        "unowned-disposition",
+        "terminal-too-early",
+        "terminal-reused-receipt",
+        "terminal-reused-boundary",
+        "empty-prefix",
+        "same-prefix",
+        "changed-stream",
+        "changed-locator",
+        "changed-incarnation",
+        "changed-session",
+        "wrong-provider",
+        "wrong-target-position",
+        "wrong-hold-surface",
+    ],
+)
+def test_v2_decoder_rejects_malformed_or_unowned_shape(native, changed):
+    from aitm_usage.monitor_scope import ScopeState
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        *_, payload = _stored_disposition_fixture(state, native)
+        target = payload["held_route_targets"][0]
+        record = payload["route_dispositions"][0]
+        hold = payload["holds"][0]
+        boundary, prefix = record["boundary"], record["prefix"]
+        other = native.receipt_ref(UUID(int=0x505)).value
+        if changed == "unknown":
+            payload["format"] = "aitm.usage.monitor-scope/v3"
+        elif changed == "mixed":
+            payload["format"] = "aitm.usage.monitor-scope/v1"
+        elif changed == "missing":
+            del payload["held_route_targets"]
+        elif changed == "extra":
+            payload["extra"] = None
+        elif changed == "nested":
+            record["extra"] = None
+        elif changed == "hold-digest":
+            hold["command_digest"] = "X" * 64
+        elif changed == "command-digest":
+            record["command_digest"] = "A" * 64
+        elif changed == "request-digest":
+            record["request_digest"] = "a" * 63
+        elif changed == "held-state":
+            record["hold_state"] = "resolved"
+        elif changed == "outcome":
+            record["outcome"] = "held"
+        elif changed == "resolved-from-gap":
+            record["hold_state"], record["outcome"] = "gap", "resolved"
+        elif changed == "duplicate-target":
+            payload["held_route_targets"].append(target)
+        elif changed == "duplicate-disposition":
+            payload["route_dispositions"].append(record)
+        elif changed == "second-disposition":
+            payload["route_dispositions"].append(
+                record
+                | {
+                    "command_id": str(UUID(int=0x505)),
+                    "boundary": boundary | {"receipt_ref": other},
+                }
+            )
+        elif changed == "unowned-target":
+            target["hold_id"] = str(UUID(int=0x505))
+        elif changed == "unowned-disposition":
+            record["hold_id"] = str(UUID(int=0x505))
+        elif changed == "terminal-too-early":
+            boundary["ordinal"] = hold["affected"]["end"] - 1
+        elif changed == "terminal-reused-receipt":
+            boundary["receipt_ref"] = target["boundary"]["receipt_ref"]
+        elif changed == "terminal-reused-boundary":
+            boundary["boundary_ref"] = target["boundary"]["boundary_ref"]
+        elif changed == "empty-prefix":
+            target["prefix"]["offset"] = 0
+        elif changed == "same-prefix":
+            prefix["offset"] = target["prefix"]["offset"]
+        elif changed == "changed-stream":
+            prefix["source_ref"] = boundary["stream_ref"] = other
+        elif changed == "changed-locator":
+            prefix["locator_ref"] = other
+        elif changed == "changed-incarnation":
+            prefix["incarnation_ref"] = other
+        elif changed == "changed-session":
+            boundary["session_ref"] = other
+        elif changed == "wrong-provider":
+            boundary["provider"] = "claude"
+        elif changed == "wrong-target-position":
+            target["boundary"]["ordinal"] += 1
+        else:
+            hold["position"]["surface"] = "codex-cli-linux"
+        path = _scope_file(native)
+        data = _scope_bytes(payload)
+        path.write_bytes(data)
+        with pytest.raises(LedgerError, match="Invalid private scope"):
+            ScopeState(native.registry).view()
+        with pytest.raises(LedgerError, match="Invalid private scope"):
+            state.expire()
+        assert path.read_bytes() == data
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        "target-receipt",
+        "record-receipt",
+        "target-boundary",
+        "record-boundary",
+        "target-epoch",
+        "record-epoch",
+        "target-prefix",
+        "record-prefix",
+        "checkout",
+        "source-id",
+    ],
+)
+def test_v2_writer_requires_service_custody_before_mutation(native, changed):
+    from aitm_usage.monitor_scope import ScopeState
+
+    with native.registry.writer() as writer:
+        now = AFTER
+        state = ScopeState(writer, clock=lambda: now)
+        hold, *_, payload = _stored_disposition_fixture(state, native)
+        target = payload["held_route_targets"][0]
+        record = payload["route_dispositions"][0]
+        foreign = native.ledgers[A].pseudonymize("foreign", "ref").value
+        wrong = native.receipt_ref(UUID(int=0x505)).value
+        if changed == "checkout":
+            record["checkout"] = foreign
+        elif changed == "source-id":
+            payload["holds"][0]["position"]["source_id"] = str(UNKNOWN)
+        else:
+            collection, field = changed.split("-")
+            row = target if collection == "target" else record
+            if field == "prefix":
+                row["prefix"]["anchor_ref"] = foreign
+            else:
+                row["boundary"][f"{field}_ref"] = (
+                    wrong if field == "receipt" else foreign
+                )
+        path = _scope_file(native)
+        data = _scope_bytes(payload)
+        path.write_bytes(data)
+        reader_view = ScopeState(native.registry).view()
+        assert reader_view.events == ()
+        assert len(reader_view.holds) == 1
+        now = hold.expires_at
+        with pytest.raises(LedgerError):
+            state.expire()
+        assert path.read_bytes() == data
+
+
+def test_v2_writer_refuses_uninitialized_source_key_without_creating_it(
+    native, tmp_path
+):
+    from aitm_usage.monitor_scope import ScopeState
+
+    with native.registry.writer() as writer:
+        *_, payload = _stored_disposition_fixture(ScopeState(writer), native)
+    target = Registry(tmp_path / "separate-monitor")
+    with target.writer() as writer:
+        path = writer.root / "scope-v1.json"
+        data = _scope_bytes(payload)
+        path.write_bytes(data)
+        path.chmod(0o600)
+        before = tuple(writer.root.iterdir())
+        assert ScopeState(target).view().holds
+        with pytest.raises(LedgerError, match="initialized monitor source key"):
+            ScopeState(writer).expire()
+        assert tuple(writer.root.iterdir()) == before
+        assert path.read_bytes() == data
+
+
+def test_v2_snapshot_does_not_follow_a_link_to_another_file(native):
+    from aitm_usage.monitor_scope import ScopeState
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        _stored_disposition_fixture(state, native)
+        path = _scope_file(native)
+        external = native.path.parent / "external-scope.json"
+        data = path.read_bytes()
+        path.rename(external)
+        path.symlink_to(external)
+        with pytest.raises(LedgerError):
+            ScopeState(native.registry).view()
+        with pytest.raises(LedgerError):
+            state.expire()
+        assert path.is_symlink()
+        assert external.read_bytes() == data
+
+
+def test_stored_route_disposition_id_is_reserved_against_legacy_writes(native):
+    from aitm_usage.monitor_scope import Mark, ScopeState
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer)
+        _, _, _, command, receipt, _ = _stored_disposition_fixture(state, native)
+        path = _scope_file(native)
+        data = path.read_bytes()
+        assert state.receipt(command, state.operator(A)) is None
+        with pytest.raises(LedgerError, match="route disposition ID"):
+            state.dispose(command, receipt)
+        with pytest.raises(LedgerError, match="route disposition ID"):
+            state.hold(receipt)
+
+        fresh = ScopeState(writer)
+        mark = Mark(command.command_id, _issue(A, 116), command.receipt_ref)
+        owner = fresh.operator(A)
+        fresh.authorize(mark, owner)
+        batch = fresh.read_source(SOURCE, native.locator())
+        mark_receipt = _verify(
+            fresh, native, mark, owner, batch, receipt.position.ordinal
+        )
+        with pytest.raises(LedgerError, match="route disposition ID"):
+            fresh.apply_mark(mark, mark_receipt)
+        assert path.read_bytes() == data
