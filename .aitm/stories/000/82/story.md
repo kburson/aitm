@@ -7,10 +7,10 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/82"
 parent: 2
 children: []
-blocking: [66, 69]
+blocking: [66, 69, 235]
 blocked-by: [75, 27, 26, 37, 40, 58, 64, 79, 80]
 created: "2026-11-09T13:42:14Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -38,7 +38,7 @@ This is a 3.5 implementation agent-hour, P1/S leaf from the [accepted parent pla
 
 **Blocked by:** [C72 / #75](../75/story.md), [C21 / #27](../27/story.md), [C22 / #26](../26/story.md), [C28 / #37](../37/story.md), [C31 / #40](../40/story.md), [C64 / #58](../58/story.md), [C63 / #64](../64/story.md), [C76 / #79](../79/story.md), [C79 / #80](../80/story.md).
 
-**Blocking:** [C67 / #66](../66/story.md), [C59 / #69](../69/story.md).
+**Blocking:** [C67 / #66](../66/story.md), [C59 / #69](../69/story.md), [C82 / #235](../../002/235/story.md).
 
 Dependencies include shared-file serialization. Required interfaces and evidence must actually be delivered; a closed issue alone is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -75,3 +75,12 @@ Created from accepted epic decomposition under the owner's scoped planning autho
 The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d477aa951740`, full-plan SHA-256 `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`, section SHA-256 `f165431a5c590a27f3fedaac03ea5dc3d4998e6271999343b83e9fc9b3f6888e`. This record and GitHub issue keep the same permanent identity. Estimate and dependency revisions are manual bootstrap planning facts; no native reconcile/transition or runtime acceptance is asserted. [Reconciliation receipt](../2/plan/leaf-reconciliation-receipt.json).
 
 [Design phase retrospective](../2/design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md) and [plan phase retrospective](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md) review the planning work, not this leaf's future Review→Done sign-off.
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+This leaf supplies a prerequisite interface to the managed lifecycle amendment.
+
+New dependent leaves [C82 / #235](../../002/235/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

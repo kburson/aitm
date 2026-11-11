@@ -7,13 +7,13 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/80"
 parent: 2
 children: []
-blocking: [61, 62, 81, 65, 82, 66]
+blocking: [61, 62, 81, 65, 82, 66, 238, 239]
 blocked-by: [79, 42, 45, 46, 49, 63]
 created: "2026-11-09T13:42:11Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff"
 plan-origin: {"kind": "accepted-parent-plan", "story": 2, "key": "C79", "path": ".aitm/stories/000/2/plan/core-implementation-plan.md", "publication": "bd4adf06c90fcf02bf0930bbdec5d477aa951740", "raw-sha256": "19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8", "section-sha256": "b780dff78b37e38aa62830b75a68917d9367a5ad9375fa5c6354c25c622c0b75"}
@@ -34,11 +34,11 @@ As a developer delivering aitm-core, I want the bounded C79 capability and proof
 
 ## Scope and estimate rationale
 
-This is a 3 implementation agent-hour, P1/S leaf from the [accepted parent plan](../2/plan/core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff). S is the bounded ≤4 h scope; P1 follows the foundational core priority. The estimate includes local verification and source review, reuses delivered prerequisite contracts, and is not measured actuals or a calendar promise. Resplit/review at JIT if the cap is not defensible; expansion is not planned overflow.
+The baseline estimate of 3 implementation agent-hours (P1/S) comes from the [accepted parent plan](../2/plan/core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff). S is the bounded ≤4 h scope; P1 follows the foundational core priority. The estimate includes local verification and source review, reuses delivered prerequisite contracts, and is not measured actuals or a calendar promise. Resplit/review at JIT if the cap is not defensible; expansion is not planned overflow.
 
 **Blocked by:** [C76 / #79](../79/story.md), [C35 / #42](../42/story.md), [C38 / #45](../45/story.md), [C39 / #46](../46/story.md), [C42 / #49](../49/story.md), [C62 / #63](../63/story.md).
 
-**Blocking:** [C65 / #61](../61/story.md), [C66 / #62](../62/story.md), [C78 / #81](../81/story.md), [C49 / #65](../65/story.md), [C75 / #82](../82/story.md), [C67 / #66](../66/story.md).
+**Blocking:** [C65 / #61](../61/story.md), [C66 / #62](../62/story.md), [C78 / #81](../81/story.md), [C49 / #65](../65/story.md), [C75 / #82](../82/story.md), [C67 / #66](../66/story.md), [C85 / #238](../../002/238/story.md), [C86 / #239](../../002/239/story.md).
 
 Dependencies include shared-file serialization. Required interfaces and evidence must actually be delivered; a closed issue alone is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -75,3 +75,14 @@ Created from accepted epic decomposition under the owner's scoped planning autho
 The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d477aa951740`, full-plan SHA-256 `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`, section SHA-256 `b780dff78b37e38aa62830b75a68917d9367a5ad9375fa5c6354c25c622c0b75`. This record and GitHub issue keep the same permanent identity. Estimate and dependency revisions are manual bootstrap planning facts; no native reconcile/transition or runtime acceptance is asserted. [Reconciliation receipt](../2/plan/leaf-reconciliation-receipt.json).
 
 [Design phase retrospective](../2/design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md) and [plan phase retrospective](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md) review the planning work, not this leaf's future Review→Done sign-off.
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Expose the exact verified-delivery and required-completion record from the successful sign-off path for later retirement admission. Prove failed or stale sign-off does not qualify and pending cleanup does not revoke verified delivery. C85 owns the terminal dispatch and cleanup.
+
+The current planning estimate is **3.5 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+New dependent leaves [C85 / #238](../../002/238/story.md), [C86 / #239](../../002/239/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

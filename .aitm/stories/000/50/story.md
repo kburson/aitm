@@ -7,13 +7,13 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/50"
 parent: 2
 children: []
-blocking: [58, 63, 64, 65]
+blocking: [58, 63, 64, 65, 234]
 blocked-by: [17, 14, 22, 37, 42, 40, 74]
 created: "2026-11-09T08:02:58Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c43-durable-resident-action-queue-and-replay"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -34,11 +34,11 @@ As a developer delivering aitm-core, I want the bounded C43 capability and proof
 
 ## Scope and estimate rationale
 
-This is the 3 implementation agent-hour, P1/S leaf from the [accepted parent plan](../2/plan/core-implementation-plan.md#c43-durable-resident-action-queue-and-replay), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
+The baseline estimate of 3 implementation agent-hours (P1/S) comes from the [accepted parent plan](../2/plan/core-implementation-plan.md#c43-durable-resident-action-queue-and-replay), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
 
 **Blocked by:** [C09 / #17](../17/story.md), [C13 / #14](../14/story.md), [C17 / #22](../22/story.md), [C28 / #37](../37/story.md), [C35 / #42](../42/story.md), [C31 / #40](../40/story.md), [C74 / #74](../74/story.md).
 
-**Blocking:** [C64 / #58](../58/story.md), [C62 / #63](../63/story.md), [C63 / #64](../64/story.md), [C49 / #65](../65/story.md).
+**Blocking:** [C64 / #58](../58/story.md), [C62 / #63](../63/story.md), [C63 / #64](../64/story.md), [C49 / #65](../65/story.md), [C81 / #234](../../002/234/story.md).
 
 Dependencies include shared-file serialization, not only functional dependencies. A closed issue without delivered required interfaces is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -89,3 +89,14 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "fa5a19732396fde50308e0331d8cc60e72f204d3d7efe4886824939db2b0cbd2"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Expose a replay-safe terminal action envelope keyed by the exact completed or retired incarnation and usable only after shared publication. Exercise restart and duplicate replay. C85 supplies retirement-specific action policy and effect orchestration.
+
+The current planning estimate is **3.5 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+New dependent leaves [C81 / #234](../../002/234/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

@@ -7,10 +7,10 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/21"
 parent: 2
 children: []
-blocking: [22, 74, 30, 36, 41, 77, 52, 57]
+blocking: [22, 74, 30, 36, 41, 77, 52, 57, 234]
 blocked-by: [11, 12, 16]
 created: "2026-11-09T08:00:54Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 4.0, "size": "S"}
@@ -38,7 +38,7 @@ This is the 4 implementation agent-hour, P1/S leaf from the [accepted parent pla
 
 **Blocked by:** [C06 / #11](../11/story.md), [C07 / #12](../12/story.md), [C15 / #16](../16/story.md).
 
-**Blocking:** [C17 / #22](../22/story.md), [C74 / #74](../74/story.md), [C33 / #30](../30/story.md), [C27 / #36](../36/story.md), [C32 / #41](../41/story.md), [C73 / #77](../77/story.md), [C45 / #52](../52/story.md), [C61 / #57](../57/story.md).
+**Blocking:** [C17 / #22](../22/story.md), [C74 / #74](../74/story.md), [C33 / #30](../30/story.md), [C27 / #36](../36/story.md), [C32 / #41](../41/story.md), [C73 / #77](../77/story.md), [C45 / #52](../52/story.md), [C61 / #57](../57/story.md), [C81 / #234](../../002/234/story.md).
 
 Dependencies include shared-file serialization, not only functional dependencies. A closed issue without delivered required interfaces is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -87,3 +87,14 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "ba43c7279c929657ff07d7af4efb9151ef82c135073d406fd6f58e03115aa1c5"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Keep authoring and session binding generation behavior. C81 separately owns a stable managed incarnation that survives an ordinary C16 rebind. C83 owns the hosted pickup prerequisite.
+
+The current planning estimate is **4 implementation agent-hours** (P1/S). The baseline decomposition recorded **4 h**.
+
+New dependent leaves [C81 / #234](../../002/234/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

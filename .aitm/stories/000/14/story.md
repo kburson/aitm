@@ -7,10 +7,10 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/14"
 parent: 2
 children: []
-blocking: [15, 25, 28, 50, 64]
+blocking: [15, 25, 28, 50, 64, 233]
 blocked-by: [4, 12]
 created: "2026-11-09T08:00:23Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
@@ -38,7 +38,7 @@ This is the 3 implementation agent-hour, P1/S leaf from the [accepted parent pla
 
 **Blocked by:** [C02 / #4](../4/story.md), [C07 / #12](../12/story.md).
 
-**Blocking:** [C14 / #15](../15/story.md), [C20 / #25](../25/story.md), [C23 / #28](../28/story.md), [C43 / #50](../50/story.md), [C63 / #64](../64/story.md).
+**Blocking:** [C14 / #15](../15/story.md), [C20 / #25](../25/story.md), [C23 / #28](../28/story.md), [C43 / #50](../50/story.md), [C63 / #64](../64/story.md), [C80 / #233](../../002/233/story.md).
 
 Dependencies include shared-file serialization, not only functional dependencies. A closed issue without delivered required interfaces is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -87,3 +87,14 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "378e27d96518ccc5f869dd9ab0958a6952dc6e6b160f8c6760ad4dd4e286314d"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+The provider extension registration, typed errors and capability discovery are the foundation. The managed action, result and capability extension is delivered by C80.
+
+The current planning estimate is **3 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+New dependent leaves [C80 / #233](../../002/233/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

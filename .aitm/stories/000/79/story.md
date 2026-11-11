@@ -10,7 +10,7 @@ children: []
 blocking: [80, 61, 62, 81, 65, 82, 66]
 blocked-by: [37, 38, 40, 42, 45, 46, 47, 48, 49, 63, 64]
 created: "2026-11-09T13:42:10Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
@@ -75,3 +75,12 @@ Created from accepted epic decomposition under the owner's scoped planning autho
 The current accepted parent section is published `bd4adf06c90fcf02bf0930bbdec5d477aa951740`, full-plan SHA-256 `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`, section SHA-256 `cd996ca3e63bba34abbda6cda18d03e7a801f126a690ea43c1bf7fb25dfa5e9d`. This record and GitHub issue keep the same permanent identity. Estimate and dependency revisions are manual bootstrap planning facts; no native reconcile/transition or runtime acceptance is asserted. [Reconciliation receipt](../2/plan/leaf-reconciliation-receipt.json).
 
 [Design phase retrospective](../2/design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md) and [plan phase retrospective](../2/plan/reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md) review the planning work, not this leaf's future Review→Done sign-off.
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Keep the tagged, nonempty ordinary source guard and its evidence contract. C86 adds the separately registered, tightly scoped alternative only for a designated integration delivery.
+
+The current planning estimate is **3 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

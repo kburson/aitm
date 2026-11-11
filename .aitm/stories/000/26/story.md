@@ -7,13 +7,13 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/26"
 parent: 2
 children: []
-blocking: [27, 37, 76, 39, 63, 65, 82]
+blocking: [27, 37, 76, 39, 63, 65, 82, 234]
 blocked-by: [16, 25, 74]
 created: "2026-11-09T08:01:14Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.5, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c22-graduation-and-atomic-relationships"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -34,11 +34,11 @@ As a developer delivering aitm-core, I want the bounded C22 capability and proof
 
 ## Scope and estimate rationale
 
-This is the 3.5 implementation agent-hour, P1/S leaf from the [accepted parent plan](../2/plan/core-implementation-plan.md#c22-graduation-and-atomic-relationships), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
+The baseline estimate of 3.5 implementation agent-hours (P1/S) comes from the [accepted parent plan](../2/plan/core-implementation-plan.md#c22-graduation-and-atomic-relationships), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
 
 **Blocked by:** [C15 / #16](../16/story.md), [C20 / #25](../25/story.md), [C74 / #74](../74/story.md).
 
-**Blocking:** [C21 / #27](../27/story.md), [C28 / #37](../37/story.md), [C71 / #76](../76/story.md), [C30 / #39](../39/story.md), [C62 / #63](../63/story.md), [C49 / #65](../65/story.md), [C75 / #82](../82/story.md).
+**Blocking:** [C21 / #27](../27/story.md), [C28 / #37](../37/story.md), [C71 / #76](../76/story.md), [C30 / #39](../39/story.md), [C62 / #63](../63/story.md), [C49 / #65](../65/story.md), [C75 / #82](../82/story.md), [C81 / #234](../../002/234/story.md).
 
 Dependencies include shared-file serialization, not only functional dependencies. A closed issue without delivered required interfaces is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -88,3 +88,14 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "6c4e34f9f32455cc17838a4046880a59d110f850c3b3e398cceee4b13221ce9e"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Publish the explicit target and pending hosted provisioning intent with the graduated Backlog identity and reciprocal graph relationships. Resolve branch-backed parent targets separately from Backlog parentage. Preserve local-only graduation. Test explicit default/no-parent/aggregate targets and refusal or pending for missing/unbound targets. C82 handles existing-story backfill.
+
+The current planning estimate is **4 implementation agent-hours** (P1/S). The baseline decomposition recorded **3.5 h**.
+
+New dependent leaves [C81 / #234](../../002/234/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

@@ -1,6 +1,8 @@
 # Core leaf stories
 
-Current accepted [implementation plan](core-implementation-plan.md): publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`, raw SHA-256 `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`. **79 leaves / 257.5 implementation agent-hours**, all ≤4 h, P1/S. Initial Refine remains 180 h/XL/P1; prior accepted Plan was 220.5 h/70 leaves. These estimates include verification/source review, not measured throughput. [Current reconciliation receipt](leaf-reconciliation-receipt.json) and [original creation receipt](leaf-issue-receipt.json).
+Current accepted [implementation plan](core-implementation-plan.md): publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`, raw SHA-256 `19b607f81a82ce7680339abab2adbd96ca91351c229c9bcf4dc2c0fc89d887b8`. **79 baseline leaves / 257.5 implementation agent-hours**, all ≤4 h, P1/S. Initial Refine remains 180 h/XL/P1; prior accepted Plan was 220.5 h/70 leaves. These estimates include verification/source review, not measured throughput. [Current reconciliation receipt](leaf-reconciliation-receipt.json) and [original creation receipt](leaf-issue-receipt.json).
+
+The [governed PR lifecycle reconciliation](2026-11-11-2-governed-pr-lifecycle-reconciliation.md) brings the implementation decomposition to **89 leaves / 297.25 h**. The table reflects revised estimates for existing children and lists new leaves in a separate table. #228 and #229 remain separately estimated post-release follow-ups.
 
 Separate design and plan full-file validation is complete, with complete actual fresh input retrieval verified in every round. [Design retrospective](../design/reviews/xpr-2026-11-09-core-design-fullfile/retrospective.md) and [plan retrospective](reviews/xpr-2026-11-09-core-plan-fullfile/retrospective.md). Historical reviews and their procedure audit remain unchanged in meaning; the new validations fulfill the later owner instruction.
 
@@ -31,8 +33,8 @@ Rows are the accepted topological order. Numeric C-key order is not execution or
 | 21 | [C18](core-implementation-plan.md#c18-snapshot-index-and-read-only-queries) | [#23](https://github.com/kburson/aitm/issues/23) / [story](../../23/story.md) | 3.5 | C02 / #4, C08 / #13 |
 | 22 | [C19](core-implementation-plan.md#c19-ideas-drafts-and-atomic-discard) | [#24](https://github.com/kburson/aitm/issues/24) / [story](../../24/story.md) | 2.5 | C09 / #17, C15 / #16 |
 | 23 | [C74](core-implementation-plan.md#c74-entity-scoped-editing-and-graduation-handoff) | [#74](https://github.com/kburson/aitm/issues/74) / [story](../../74/story.md) | 3.5 | C16 / #21, C17 / #22, C19 / #24 |
-| 24 | [C20](core-implementation-plan.md#c20-semantic-identity-reservations-and-uncertain-dispatch) | [#25](https://github.com/kburson/aitm/issues/25) / [story](../../25/story.md) | 3.5 | C09 / #17, C13 / #14, C19 / #24, C74 / #74 |
-| 25 | [C22](core-implementation-plan.md#c22-graduation-and-atomic-relationships) | [#26](https://github.com/kburson/aitm/issues/26) / [story](../../26/story.md) | 3.5 | C15 / #16, C20 / #25, C74 / #74 |
+| 24 | [C20](core-implementation-plan.md#c20-semantic-identity-reservations-and-uncertain-dispatch) | [#25](https://github.com/kburson/aitm/issues/25) / [story](../../25/story.md) | 4 | C09 / #17, C13 / #14, C19 / #24, C74 / #74 |
+| 25 | [C22](core-implementation-plan.md#c22-graduation-and-atomic-relationships) | [#26](https://github.com/kburson/aitm/issues/26) / [story](../../26/story.md) | 4 | C15 / #16, C20 / #25, C74 / #74 |
 | 26 | [C21](core-implementation-plan.md#c21-shared-local-number-allocation) | [#27](https://github.com/kburson/aitm/issues/27) / [story](../../27/story.md) | 3.5 | C22 / #26, C17 / #22, C74 / #74 |
 | 27 | [C23](core-implementation-plan.md#c23-activity-eligibility-and-implementation-clock-fold) | [#28](https://github.com/kburson/aitm/issues/28) / [story](../../28/story.md) | 3.5 | C02 / #4, C13 / #14 |
 | 28 | [C24](core-implementation-plan.md#c24-portable-review-schemas-and-patch-reconstruction) | [#29](https://github.com/kburson/aitm/issues/29) / [story](../../29/story.md) | 3 | C02 / #4, C03 / #5, C56 / #8 |
@@ -59,7 +61,7 @@ Rows are the accepted topological order. Numeric C-key order is not execution or
 | 49 | [C40](core-implementation-plan.md#c40-reviewed-squash-and-rebase-transformation-plans) | [#47](https://github.com/kburson/aitm/issues/47) / [story](../../47/story.md) | 3 | C39 / #46 |
 | 50 | [C41](core-implementation-plan.md#c41-admitted-target-mutation-and-exact-result-recovery) | [#48](https://github.com/kburson/aitm/issues/48) / [story](../../48/story.md) | 3.5 | C32 / #41, C40 / #47, C06 / #11, C39 / #46 |
 | 51 | [C42](core-implementation-plan.md#c42-atomic-sign-off-and-retained-evidence-reconstruction) | [#49](https://github.com/kburson/aitm/issues/49) / [story](../../49/story.md) | 3.5 | C29 / #38, C38 / #45, C39 / #46 |
-| 52 | [C43](core-implementation-plan.md#c43-durable-resident-action-queue-and-replay) | [#50](https://github.com/kburson/aitm/issues/50) / [story](../../50/story.md) | 3 | C09 / #17, C13 / #14, C17 / #22, C28 / #37, C35 / #42, C31 / #40, C74 / #74 |
+| 52 | [C43](core-implementation-plan.md#c43-durable-resident-action-queue-and-replay) | [#50](https://github.com/kburson/aitm/issues/50) / [story](../../50/story.md) | 3.5 | C09 / #17, C13 / #14, C17 / #22, C28 / #37, C35 / #42, C31 / #40, C74 / #74 |
 | 53 | [C44](core-implementation-plan.md#c44-estimate-lineage-usage-and-learning-outcomes) | [#51](https://github.com/kburson/aitm/issues/51) / [story](../../51/story.md) | 2.5 | C23 / #28, C27 / #36, C42 / #49 |
 | 54 | [C45](core-implementation-plan.md#c45-spike-deliverable-binding-and-validation-walk) | [#52](https://github.com/kburson/aitm/issues/52) / [story](../../52/story.md) | 3 | C29 / #38, C33 / #30, C35 / #42, C38 / #45, C39 / #46, C42 / #49, C16 / #21 |
 | 55 | [C77](core-implementation-plan.md#c77-legacy-kind-normalization-and-unresolved-inventory) | [#78](https://github.com/kburson/aitm/issues/78) / [story](../../78/story.md) | 2.5 | C03 / #5, C54 / #6 |
@@ -71,10 +73,10 @@ Rows are the accepted topological order. Numeric C-key order is not execution or
 | 61 | [C64](core-implementation-plan.md#c64-deterministic-two-clone-qualification-fixtures) | [#58](https://github.com/kburson/aitm/issues/58) / [story](../../58/story.md) | 2.5 | C09 / #17, C10 / #18, C21 / #27, C43 / #50 |
 | 62 | [C70](core-implementation-plan.md#c70-post-preflight-consumer-integration-qualification) | [#59](https://github.com/kburson/aitm/issues/59) / [story](../../59/story.md) | 3 | C31 / #40, C64 / #58, C27 / #36, C28 / #37, C30 / #39 |
 | 63 | [C50](core-implementation-plan.md#c50-shared-store-conflicts-and-publication-recovery-qualification) | [#60](https://github.com/kburson/aitm/issues/60) / [story](../../60/story.md) | 3 | C64 / #58, C17 / #22, C30 / #39 |
-| 64 | [C62](core-implementation-plan.md#c62-epic-aggregation-and-scope-resolution-checkpoint) | [#63](https://github.com/kburson/aitm/issues/63) / [story](../../63/story.md) | 3 | C22 / #26, C29 / #38, C38 / #45, C42 / #49, C43 / #50 |
+| 64 | [C62](core-implementation-plan.md#c62-epic-aggregation-and-scope-resolution-checkpoint) | [#63](https://github.com/kburson/aitm/issues/63) / [story](../../63/story.md) | 4 | C22 / #26, C29 / #38, C38 / #45, C42 / #49, C43 / #50 |
 | 65 | [C63](core-implementation-plan.md#c63-installed-extension-discovery-and-commandinit-composition) | [#64](https://github.com/kburson/aitm/issues/64) / [story](../../64/story.md) | 3 | C12 / #20, C13 / #14, C14 / #15, C43 / #50, C01 / #3, C62 / #63 |
 | 66 | [C76](core-implementation-plan.md#c76-source-commit-guard-and-retained-source-evidence) | [#79](https://github.com/kburson/aitm/issues/79) / [story](../../79/story.md) | 3 | C28 / #37, C29 / #38, C31 / #40, C35 / #42, C38 / #45, C39 / #46, C40 / #47, C41 / #48, C42 / #49, C62 / #63, C63 / #64 |
-| 67 | [C79](core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff) | [#80](https://github.com/kburson/aitm/issues/80) / [story](../../80/story.md) | 3 | C76 / #79, C35 / #42, C38 / #45, C39 / #46, C42 / #49, C62 / #63 |
+| 67 | [C79](core-implementation-plan.md#c79-test-and-review-exit-composites-with-atomic-signoff) | [#80](https://github.com/kburson/aitm/issues/80) / [story](../../80/story.md) | 3.5 | C76 / #79, C35 / #42, C38 / #45, C39 / #46, C42 / #49, C62 / #63 |
 | 68 | [C65](core-implementation-plan.md#c65-execution-fences-and-clock-rebuild-qualification) | [#61](https://github.com/kburson/aitm/issues/61) / [story](../../61/story.md) | 3.5 | C64 / #58, C30 / #39, C31 / #40, C32 / #41, C35 / #42, C38 / #45, C42 / #49, C61 / #57, C76 / #79, C79 / #80 |
 | 69 | [C66](core-implementation-plan.md#c66-managed-delivery-race-and-recovery-qualification) | [#62](https://github.com/kburson/aitm/issues/62) / [story](../../62/story.md) | 3 | C64 / #58, C41 / #48, C42 / #49, C76 / #79, C79 / #80 |
 | 70 | [C78](core-implementation-plan.md#c78-installed-transition-explanation-and-unknown-guards) | [#81](https://github.com/kburson/aitm/issues/81) / [story](../../81/story.md) | 3 | C18 / #23, C28 / #37, C29 / #38, C62 / #63, C76 / #79, C79 / #80 |
@@ -133,6 +135,23 @@ Earliest-ready waves reflect dependency and shared-file ordering, not promised c
 - Wave 39: C53 / #70.
 - Wave 40: C69 / #71.
 - Wave 41: C60 / #72.
+
+## Managed PR lifecycle amendment leaves
+
+| Key | Issue / record | Hours | Required predecessors | Earliest wave |
+| --- | --- | ---: | --- | ---: |
+| [C80](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c80) | [#233](https://github.com/kburson/aitm/issues/233) / [story](../../../002/233/story.md) | 3.5 | [C13 / #14](https://github.com/kburson/aitm/issues/14) | 10 |
+| [C81](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c81) | [#234](https://github.com/kburson/aitm/issues/234) / [story](../../../002/234/story.md) | 4 | [C16 / #21](https://github.com/kburson/aitm/issues/21), [C20 / #25](https://github.com/kburson/aitm/issues/25), [C22 / #26](https://github.com/kburson/aitm/issues/26), [C43 / #50](https://github.com/kburson/aitm/issues/50), [C64 / #58](https://github.com/kburson/aitm/issues/58), [C80 / #233](https://github.com/kburson/aitm/issues/233) | 29 |
+| [C82](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c82) | [#235](https://github.com/kburson/aitm/issues/235) / [story](../../../002/235/story.md) | 3 | [C75 / #82](https://github.com/kburson/aitm/issues/82), [C81 / #234](https://github.com/kburson/aitm/issues/234) | 35 |
+| [C84](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c84) | [#236](https://github.com/kburson/aitm/issues/236) / [story](../../../002/236/story.md) | 3.5 | [C81 / #234](https://github.com/kburson/aitm/issues/234) | 30 |
+| [C83](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c83) | [#237](https://github.com/kburson/aitm/issues/237) / [story](../../../002/237/story.md) | 3.75 | [C82 / #235](https://github.com/kburson/aitm/issues/235), [C84 / #236](https://github.com/kburson/aitm/issues/236) | 36 |
+| [C85](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c85) | [#238](https://github.com/kburson/aitm/issues/238) / [story](../../../002/238/story.md) | 4 | [C79 / #80](https://github.com/kburson/aitm/issues/80), [C83 / #237](https://github.com/kburson/aitm/issues/237) | 37 |
+| [C86](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c86) | [#239](https://github.com/kburson/aitm/issues/239) / [story](../../../002/239/story.md) | 4 | [C79 / #80](https://github.com/kburson/aitm/issues/80), [C83 / #237](https://github.com/kburson/aitm/issues/237) | 37 |
+| [C87](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c87) | [#240](https://github.com/kburson/aitm/issues/240) / [story](../../../002/240/story.md) | 4 | [C67 / #66](https://github.com/kburson/aitm/issues/66), [C82 / #235](https://github.com/kburson/aitm/issues/235), [C85 / #238](https://github.com/kburson/aitm/issues/238) | 38 |
+| [C88](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c88) | [#241](https://github.com/kburson/aitm/issues/241) / [story](../../../002/241/story.md) | 4 | [C41 / #48](https://github.com/kburson/aitm/issues/48), [C84 / #236](https://github.com/kburson/aitm/issues/236), [C86 / #239](https://github.com/kburson/aitm/issues/239) | 38 |
+| [C89](2026-11-11-2-governed-pr-lifecycle-reconciliation.md#c89) | [#242](https://github.com/kburson/aitm/issues/242) / [story](../../../002/242/story.md) | 3 | [C87 / #240](https://github.com/kburson/aitm/issues/240), [C88 / #241](https://github.com/kburson/aitm/issues/241) | 39 |
+
+Wave values use the combined in-epic dependency graph. #83 remains an external prerequisite to C01. Hosted qualification depends on the receiving package plans and their real provider receipts.
 
 ## Release, migration and owner choices
 

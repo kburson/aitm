@@ -7,10 +7,10 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/66"
 parent: 2
 children: []
-blocking: [68, 69]
+blocking: [68, 69, 240]
 blocked-by: [65, 56, 64, 51, 76, 74, 82, 79, 81, 80]
 created: "2026-11-09T08:04:10Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 2.5, "size": "S"}
@@ -38,7 +38,7 @@ This is the 2.5 implementation agent-hour, P1/S leaf from the [accepted parent p
 
 **Blocked by:** [C49 / #65](../65/story.md), [C51 / #56](../56/story.md), [C63 / #64](../64/story.md), [C44 / #51](../51/story.md), [C71 / #76](../76/story.md), [C74 / #74](../74/story.md), [C75 / #82](../82/story.md), [C76 / #79](../79/story.md), [C78 / #81](../81/story.md), [C79 / #80](../80/story.md).
 
-**Blocking:** [C52 / #68](../68/story.md), [C59 / #69](../69/story.md).
+**Blocking:** [C52 / #68](../68/story.md), [C59 / #69](../69/story.md), [C87 / #240](../../002/240/story.md).
 
 Dependencies include shared-file serialization, not only functional dependencies. A closed issue without delivered required interfaces is insufficient. This is an ordinary child, not an expansion. [Execution order and independent work](../2/plan/leaf-stories.md).
 
@@ -87,3 +87,12 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "2b3e83bb81e6ffa5a8d44ad26364deb12ee229d838ef3b6012795d557d71d341"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+This leaf supplies a prerequisite interface to the managed lifecycle amendment.
+
+New dependent leaves [C87 / #240](../../002/240/story.md).
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

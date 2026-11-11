@@ -1,0 +1,457 @@
+{
+  "schema": "aitm.core-lifecycle-reconciliation-receipt/v0",
+  "verified_at": "2026-11-11T16:06:22Z",
+  "parent": 2,
+  "parent_body_sha256": "0d83f2a00d690f347450791ce5e0ec156f811a706d3fd35ad51b9525766f40ca",
+  "accepted_publication": "8939d9fff17599fe644604b5b267625b4bc5621f",
+  "accepted_plan": ".aitm/stories/000/2/plan/2026-11-11-2-governed-pr-and-branch-lifecycle.md",
+  "accepted_plan_sha256": "e4245997416a6e39188aacbab246a1fbb41d9ccc8c50e1a2971d85f52b033db3",
+  "route": "manual-bootstrap",
+  "runtime_transition": false,
+  "original_native_child_count": 81,
+  "native_child_count": 91,
+  "native_children": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    228,
+    229,
+    233,
+    234,
+    235,
+    236,
+    237,
+    238,
+    239,
+    240,
+    241,
+    242
+  ],
+  "original_native_blocking_edge_count": 329,
+  "native_blocking_edge_count": 353,
+  "native_added_edges": [
+    {
+      "blocked": 233,
+      "blocker": 14
+    },
+    {
+      "blocked": 234,
+      "blocker": 21
+    },
+    {
+      "blocked": 234,
+      "blocker": 25
+    },
+    {
+      "blocked": 234,
+      "blocker": 26
+    },
+    {
+      "blocked": 234,
+      "blocker": 50
+    },
+    {
+      "blocked": 234,
+      "blocker": 58
+    },
+    {
+      "blocked": 234,
+      "blocker": 233
+    },
+    {
+      "blocked": 235,
+      "blocker": 82
+    },
+    {
+      "blocked": 235,
+      "blocker": 234
+    },
+    {
+      "blocked": 236,
+      "blocker": 234
+    },
+    {
+      "blocked": 237,
+      "blocker": 235
+    },
+    {
+      "blocked": 237,
+      "blocker": 236
+    },
+    {
+      "blocked": 238,
+      "blocker": 80
+    },
+    {
+      "blocked": 238,
+      "blocker": 237
+    },
+    {
+      "blocked": 239,
+      "blocker": 80
+    },
+    {
+      "blocked": 239,
+      "blocker": 237
+    },
+    {
+      "blocked": 240,
+      "blocker": 66
+    },
+    {
+      "blocked": 240,
+      "blocker": 235
+    },
+    {
+      "blocked": 240,
+      "blocker": 238
+    },
+    {
+      "blocked": 241,
+      "blocker": 48
+    },
+    {
+      "blocked": 241,
+      "blocker": 236
+    },
+    {
+      "blocked": 241,
+      "blocker": 239
+    },
+    {
+      "blocked": 242,
+      "blocker": 240
+    },
+    {
+      "blocked": 242,
+      "blocker": 241
+    }
+  ],
+  "affected_issue_readback": {
+    "14": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL4w8",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "c48e3edb05baf57f2a073037301c3d9a2fda1733ccb28145a01368ebcd258e27"
+    },
+    "21": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL4yw",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "633c37bce24fd99a4a273e6b6b53168f5be5d98cbed65aaa5fe3d9965cb97304"
+    },
+    "25": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL4zs",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "388f97daac6ba65ace5318e638ed235dd1bc46068734ab0cd0a870e95c02a9cd"
+    },
+    "26": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL4zw",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "e3d9b783296115b7292583572485786fe175b311563258a61fcd9c057444d948"
+    },
+    "46": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL44U",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "7fc1dedfe2f901b30a32706eb753373be08bd7ba58c9ca070281ac5808047a84"
+    },
+    "47": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL44o",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "dfa4a6e672b964dafed5bd66d29a4e1be50e2d195695ac4e3c578894b119c6f7"
+    },
+    "48": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL45A",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "5ff9a4f0c1367c165d89ececa1f4485dc13f4607517d45447780a16604cea28a"
+    },
+    "50": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL45Y",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "5085b4bc58f75b944d056dce1732762efbf98370a3cf854f9f47b45d22d587c8"
+    },
+    "58": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL47k",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "d1374f299804758fd0870373d3bfd86c86b9cefed28596a933a76da43ecb5423"
+    },
+    "63": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL49I",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "00e92776ff526b7693a6a1f49f91ae56ac40991ced84cea8b6c2b7cea3f34199"
+    },
+    "66": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHL49s",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "276a64ad8b570e83ac6cf71386b55aa7812fefb93fdd1a62b11d143fb8f70a04"
+    },
+    "79": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHM4YY",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "5c2a2ce0443a48890acd589410482b4cc488e3f251877088d22a4c3e369726c7"
+    },
+    "80": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHM4Zg",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "d1bd4ca5fbb59bf367412244778ab36efdfde158af5df29b2aa2c68831fa771a"
+    },
+    "82": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhHM4ck",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "2e739c815ecb3c23dda8ca8ce686bc988f1f8169de8bbb4c77bbfbfcd3813d97"
+    },
+    "233": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31lg",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "e8333c09abc3f507b3606b701908ad1acc93d77d9c0fdf36d26df8b7c6bde0dd",
+      "plan_key": "C80",
+      "issue_database_id": 6332184813,
+      "parent": 2,
+      "blocked_by": [
+        14
+      ],
+      "created_at": "2026-11-11T15:58:14Z"
+    },
+    "234": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31l4",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "96de6381f80378a1960a2c70a81dadc18d298db27c572f4af77cc7a22775e9ed",
+      "plan_key": "C81",
+      "issue_database_id": 6332184967,
+      "parent": 2,
+      "blocked_by": [
+        21,
+        25,
+        26,
+        50,
+        58,
+        233
+      ],
+      "created_at": "2026-11-11T15:58:15Z"
+    },
+    "235": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31mI",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "e62f82850ab7bb4c4bcf5833923f7eeb15324fdd1049712861cb8381b43755ed",
+      "plan_key": "C82",
+      "issue_database_id": 6332185123,
+      "parent": 2,
+      "blocked_by": [
+        82,
+        234
+      ],
+      "created_at": "2026-11-11T15:58:15Z"
+    },
+    "236": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31mw",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "271559129fe563da416c7f4591a5a71637915a7d446ed906e0f0f6f8bd92bc8b",
+      "plan_key": "C84",
+      "issue_database_id": 6332185272,
+      "parent": 2,
+      "blocked_by": [
+        234
+      ],
+      "created_at": "2026-11-11T15:58:16Z"
+    },
+    "237": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31mk",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "d85882e13d6c1242475475c4e3152a04eb7fee2b5e591651787d454b254f952f",
+      "plan_key": "C83",
+      "issue_database_id": 6332185432,
+      "parent": 2,
+      "blocked_by": [
+        235,
+        236
+      ],
+      "created_at": "2026-11-11T15:58:16Z"
+    },
+    "238": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31pc",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "ecc8bb8c0ac4119804883a4b52b71bf320c76b8b7978674f70fd7796c1ae4367",
+      "plan_key": "C85",
+      "issue_database_id": 6332185594,
+      "parent": 2,
+      "blocked_by": [
+        80,
+        237
+      ],
+      "created_at": "2026-11-11T15:58:17Z"
+    },
+    "239": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31qU",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "09c0bfa5480c0bbf3bc871b036b149665217de6b41683ed4ab49d817060995ee",
+      "plan_key": "C86",
+      "issue_database_id": 6332186340,
+      "parent": 2,
+      "blocked_by": [
+        80,
+        237
+      ],
+      "created_at": "2026-11-11T15:58:19Z"
+    },
+    "240": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31rM",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "4afc8efb05357c2e1594e8219cf23ee5b54690ee6731683775707bbbdd23e192",
+      "plan_key": "C87",
+      "issue_database_id": 6332186511,
+      "parent": 2,
+      "blocked_by": [
+        66,
+        235,
+        238
+      ],
+      "created_at": "2026-11-11T15:58:20Z"
+    },
+    "241": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31r4",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "a6927c173819739549537b29da9d7630a0b1d8f73c27b85233a46e60fca45960",
+      "plan_key": "C88",
+      "issue_database_id": 6332186685,
+      "parent": 2,
+      "blocked_by": [
+        48,
+        236,
+        239
+      ],
+      "created_at": "2026-11-11T15:58:21Z"
+    },
+    "242": {
+      "project_item": "PVTI_lAHOABCEY84Bq1hZzhH31ss",
+      "project_status": "Backlog",
+      "issue_state": "open",
+      "body_sha256": "674bbbcea17fba4a12b0a126d976164ab867b765baf3bb18ff55e22286ae4ffc",
+      "plan_key": "C89",
+      "issue_database_id": 6332186884,
+      "parent": 2,
+      "blocked_by": [
+        240,
+        241
+      ],
+      "created_at": "2026-11-11T15:58:21Z"
+    }
+  },
+  "issue_159": {
+    "state": "open",
+    "blocked_by": {
+      "157": "open",
+      "158": "open"
+    },
+    "body_unchanged": true
+  },
+  "core_implementation_estimate": {
+    "original_leaf_count": 79,
+    "leaf_count": 89,
+    "original_agent_hours": 257.5,
+    "revised_existing_delta_hours": 3,
+    "added_leaf_hours": 36.75,
+    "agent_hours": 297.25,
+    "leaf_maximum_agent_hours": 4,
+    "separate_post_release_issues": [
+      228,
+      229
+    ]
+  }
+}

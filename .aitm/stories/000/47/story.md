@@ -10,7 +10,7 @@ children: []
 blocking: [48, 79]
 blocked-by: [46]
 created: "2026-11-09T08:02:45Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.0, "size": "S"}
@@ -87,3 +87,12 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "a36e70f85863a4007b8b1c0928f3c4ed8032bf853dd2415871825f764f70ea61"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Keep the exact reviewed transform contract. C86 consumes the mapping for any verified bootstrap rewrite or omission. The managed wrapper remains a separate consumer.
+
+The current planning estimate is **3 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

@@ -10,7 +10,7 @@ children: []
 blocking: [47, 48, 49, 52, 79, 80, 65]
 blocked-by: [45]
 created: "2026-11-09T08:02:41Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
 estimate: {"agent-hours": 3.5, "size": "S"}
@@ -87,3 +87,12 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "18fe01eb954a96fb7fcd047cd014876bc53944863e9dd84df447b17649b4f561"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+Positive observation and exact delivery mapping remain the source of proof. C86 consumes that evidence and accounts for attested bootstrap history without changing the observation contract or granting admission.
+
+The current planning estimate is **3.5 implementation agent-hours** (P1/S). The baseline decomposition recorded **3.5 h**.
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

@@ -10,10 +10,10 @@ children: []
 blocking: [64, 79, 80, 81, 65]
 blocked-by: [26, 38, 45, 49, 50]
 created: "2026-11-09T08:03:57Z"
-updated: "2026-11-09T13:53:09Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: "planning"
 last-worktree: "/Users/kpburson/projects/aitm-workspace/planning"
-estimate: {"agent-hours": 3.0, "size": "S"}
+estimate: {"agent-hours": 4, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/000/2/plan/core-implementation-plan.md#c62-epic-aggregation-and-scope-resolution-checkpoint"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -34,7 +34,7 @@ As a developer delivering aitm-core, I want the bounded C62 capability and proof
 
 ## Scope and estimate rationale
 
-This is the 3 implementation agent-hour, P1/S leaf from the [accepted parent plan](../2/plan/core-implementation-plan.md#c62-epic-aggregation-and-scope-resolution-checkpoint), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
+The baseline estimate of 3 implementation agent-hours (P1/S) comes from the [accepted parent plan](../2/plan/core-implementation-plan.md#c62-epic-aggregation-and-scope-resolution-checkpoint), publication `bd4adf06c90fcf02bf0930bbdec5d477aa951740`. The estimate includes local verification and source-review engagement; it is not measured actuals or a calendar promise. S means this scoped deliverable is estimated at no more than four hours; P1 follows the core's foundational priority. Prerequisite interfaces and fixtures are reused as stated in the plan. At JIT, resplit/review if current evidence makes the cap implausible; expansion is not planned overflow.
 
 **Blocked by:** [C22 / #26](../26/story.md), [C29 / #38](../38/story.md), [C38 / #45](../45/story.md), [C42 / #49](../49/story.md), [C43 / #50](../50/story.md).
 
@@ -89,3 +89,12 @@ Original plan-origin metadata (retained as historical source; old events/draft r
   "section-sha256": "21a4bfc15642d00f1432f0c4337cd2aeed254751c64116c2d1bba7eeeabd2825"
 }
 ```
+
+<!-- aitm-core-lifecycle-reconciliation -->
+## Governed PR lifecycle amendment
+
+In the aggregate required-scope evaluator, require the explicitly designated integration delivery to satisfy its upstream obligation before closing the epic. Hold when the owner is abandoned pending accepted scope replacement or revision. Reject self-targets and keep pure aggregate behavior. Managed branch, delivery and source proof are separate leaves.
+
+The current planning estimate is **4 implementation agent-hours** (P1/S). The baseline decomposition recorded **3 h**.
+
+[Amendment reconciliation](../2/plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md). This is a Backlog planning update.

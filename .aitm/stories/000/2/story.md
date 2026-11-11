@@ -6,22 +6,22 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
-children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229]
+children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-11T14:41:24Z"
+updated: "2026-11-11T16:02:43Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
-estimate: { agent-hours: 257.5, size: XL }
+estimate: { agent-hours: 297.25, size: XL }
 priority: P1
 original-estimate: { agent-hours: 180, size: XL, priority: P1, source: refinement.md }
 origin: .aitm/drafts/2026-11/20261108-1310-core
 files:
   draft: draft.md
   events: events.jsonl
-  design: [design/core-design.md]
-  plan: [plan/core-implementation-plan.md]
+  design: [design/core-design.md, design/2026-11-11-2-governed-pr-and-branch-lifecycle-design.md]
+  plan: [plan/core-implementation-plan.md, plan/2026-11-11-2-governed-pr-and-branch-lifecycle.md]
   attachments: []
 expansions: []
 trips: []
@@ -80,3 +80,9 @@ Design published `3702cfde855e7a2345e12439f19cc2ee9ebe7291`; current plan publis
 ## Production timing qualification from #181
 
 [#228 Legacy timing replay](../../002/228/story.md) and [#229 Native Actual](../../002/229/story.md) qualify dashboard use of the existing Core contracts after #72. They are post-release follow-ups and do not extend the #72 release acceptance. #51 remains the Core receiver and outcome owner. The accepted Core plan remains the source for its existing implementation leaves.
+
+## Governed PR lifecycle amendment
+
+The [reviewed amendment](plan/2026-11-11-2-governed-pr-and-branch-lifecycle.md) and [review collateral](plan/reviews/governed-pr-lifecycle/review-cycle.md) were published at `8939d9fff17599fe644604b5b267625b4bc5621f`. The [child reconciliation](plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md) records the new Core leaves, retained IDs, updated estimates, and native dependency readback.
+
+The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 and #229 retain their separate 7.5 h preliminary post-release scope. The GitHub and harness qualifications have separate package handoffs. #159 remains blocked by #157 and #158. Epic and leaf lifecycle authority remains at the existing planning boundary.
