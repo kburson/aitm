@@ -1,14 +1,14 @@
 {
-  "status": "in_progress",
-  "conclusion": "",
+  "status": "completed",
+  "conclusion": "failure",
   "attempt": 3,
   "headSha": "941542dd9695e6f1a330c8b020f6384cbed0a427",
   "jobs": [
     {
       "name": "python",
       "databaseId": 130639800503,
-      "status": "in_progress",
-      "conclusion": ""
+      "status": "completed",
+      "conclusion": "cancelled"
     },
     {
       "name": "python-base",
@@ -27,6 +27,18 @@
       "databaseId": 130639801303,
       "status": "completed",
       "conclusion": "success"
+    },
+    {
+      "name": "collect-evidence",
+      "databaseId": 130647661089,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "aitm-ci",
+      "databaseId": 130647751692,
+      "status": "completed",
+      "conclusion": "skipped"
     }
   ]
 }

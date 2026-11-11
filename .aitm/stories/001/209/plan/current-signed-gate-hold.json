@@ -23,5 +23,46 @@
   "error": "BoundaryUnavailable: Native capture position is unavailable",
   "exact_case_repassed_locally_on_base_and_head": true,
   "current_signed_pass_available": false,
-  "independent_source_recovery_launched": false
+  "independent_source_recovery_launched": false,
+  "workflow_status": "completed",
+  "workflow_conclusion": "failure",
+  "jobs": [
+    {
+      "name": "python",
+      "databaseId": 130639800503,
+      "status": "completed",
+      "conclusion": "cancelled"
+    },
+    {
+      "name": "python-base",
+      "databaseId": 130639800951,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "file-checks",
+      "databaseId": 130639801061,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "quality",
+      "databaseId": 130639801303,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "collect-evidence",
+      "databaseId": 130647661089,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "aitm-ci",
+      "databaseId": 130647751692,
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "project_readback": "project-held-readback.json"
 }
