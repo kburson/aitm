@@ -1,0 +1,42 @@
+{
+  "head": "275f2b2b5db611d1aab8648276f769396355c2f1",
+  "attempt": 1,
+  "status": "completed",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "name": "python-base",
+      "conclusion": "failure",
+      "failedSteps": [
+        "Run isolated trusted base inventory and outcomes"
+      ]
+    },
+    {
+      "name": "python",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "file-checks",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "quality",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "collect-evidence",
+      "conclusion": "failure",
+      "failedSteps": [
+        "Check every required dependency and its checkout and artifact custody"
+      ]
+    },
+    {
+      "name": "aitm-ci",
+      "conclusion": "skipped",
+      "failedSteps": []
+    }
+  ]
+}

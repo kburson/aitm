@@ -55,3 +55,9 @@ The incoming dashboard files were `tools/story_dashboard/tests/test_usage.py` an
 ### Exact refreshed Test against current trunk
 
 [PR #211](https://github.com/kburson/aitm/pull/211) read back refreshed head `275f2b2b5db611d1aab8648276f769396355c2f1`, tree `1490c373a1f2468bb4a50e2eaacdf73b4885d1b6`, and literal trunk `f7646bc4da35173e9b0e468e4810b4e9265b0f47`. The refreshed detached baseline passed 996 product and CLI and 182 helpers. The candidate passed 1,071 product and CLI and 182 helpers, retaining every baseline ID. The product raw line counts are 10,461/11,407 baseline and 10,655/11,604 candidate. Both helper runs passed 778/821. Ruff and whitespace passed. The #203 product candidate is byte-identical to the previous target's replacement. Native Test continues for fresh hosted evidence on this exact candidate.
+
+### Refreshed hosted attempt 1 failed at literal baseline
+
+[Refreshed hosted attempt 1](https://github.com/kburson/aitm/actions/runs/42957558060/attempts/1) passed the candidate Python job, quality and file checks. The literal trunk Python baseline failed in the inherited #202 case `test_claude_conflict_requires_distinct_usage_and_current_independent_custody[disabled]` with `BoundaryUnavailable: Native capture frontier is unavailable`. The other 994 hosted baseline package tests passed. Evidence collection refused and attestation was skipped. [Native failed attempt receipt](hosted-ci-refreshed-failed-a1.json).
+
+The frozen detached refreshed local baseline passed all 996 product and CLI IDs and 182 helpers. Five independent fresh runs of the inherited failing case on that exact local baseline passed. The actual hosted filesystem trigger is unverified. Preserve the exact failure and rerun all required jobs once on the same head and literal base. No test or custody gate changes. Further repeated failure keeps Test open pending new evidence.
