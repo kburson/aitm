@@ -1,0 +1,70 @@
+{
+  "literal_base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "head": "0bcb00c69cbf5d38431480b90260d013a6f09e3e",
+  "tree": "6bad3235d96230997930b513328dc7faf4e78ef1",
+  "retained_baseline_ids": 1071,
+  "candidate_ids": 1102,
+  "retained_helper_ids": 182,
+  "new_ids": [
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_claude_explicit_quota_gap_preserves_earlier_cursor",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row[same-command]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row[same-hold]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_preserves_old_projection_when_late_claim_arrives",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_projects_each_matching_origin_once",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence[empty]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence[foreign-field]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence[noncanonical]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence[wrong-hold]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence[wrong-receipt]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[consumed]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[copy]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[expired]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[foreign-issuer]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[revoked]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[withdrawn]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_distinguishes_generic_native_codex_gap_from_quota",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_independently_admitted_claude_copy_with_changed_scope",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_keyed_grok_contradiction_without_touching_codex",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics[aggregate-overlap]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics[mixed]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement[gap]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement[resolved]",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_v3_upgrade_preserves_native_journal_historical_views",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[3]",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_legacy_upgrade_uses_one_transaction_and_only_final_version[3]",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_route_disposition_table_enforces_strict_identity_and_commit",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_v3_upgrade_rolls_back_after_ddl_and_can_retry[interrupt]",
+    "packages/aitm-usage/tests/test_monitor_journal_store.py::test_v3_upgrade_rolls_back_after_ddl_and_can_retry[replace-directory]"
+  ],
+  "candidate_coverage": {
+    "product": {
+      "covered_lines": 10730,
+      "num_statements": 11681
+    },
+    "helper": {
+      "covered_lines": 778,
+      "num_statements": 821
+    }
+  },
+  "baseline_coverage": {
+    "product": {
+      "covered_lines": 10655,
+      "num_statements": 11604
+    },
+    "helper": {
+      "covered_lines": 778,
+      "num_statements": 821
+    }
+  },
+  "isolated_fixture_verification": {
+    "local_candidate_test_ids_unchanged": true,
+    "local_base_test_ids_unchanged": true
+  },
+  "fresh_local_run": {
+    "candidate_ids_match_previous": true,
+    "raw_coverage_matches_previous": true,
+    "literal_base_unchanged": true
+  }
+}
