@@ -27,9 +27,11 @@ shasum -a 256 "$output/snapshot.json" "$output/validation.json" "$output/dashboa
 | Case | Observed |
 | --- | --- |
 | Additive and owner wait | 3,600,000 ms Actual with or without 1,800,000 ms owner wait. |
-| In-turn tool | One additional qualified 60,000 ms inside the extended turn brings Actual to 3,660,000 ms. The same selected priced usage remains $0.0125. |
+| In-turn tool | One additional qualified 60,000 ms tool span within a separate bound turn brings Actual to 3,660,000 ms. Two distinct pinned synthetic snapshots selected the same usage receipt and both returned $0.0125. |
 | Parallel work | 3.25 h Actual, 2h 45m elapsed, 2h 15m observed working wall time and 30m owner wait. |
 | Missing and unauthenticated usage | Qualified timing remains measurable when Cost is Unknown. The pre-held timing input contributes no value and carries a gap. The unverified usage receipt produces Unknown Cost with an unverified-usage gap. |
+
+The fixture records ancestry, actor, logical turn, role, attempt, phase and coverage for downstream consumers. The paired local snapshots retain their disposable pins, the same usage receipt digest and exact amounts.
 
 The unauthenticated timing case exercises the fold after rejection. C03 owns qualification of native admission; C05 and C06 own production Project and hosted viewer parity.
 

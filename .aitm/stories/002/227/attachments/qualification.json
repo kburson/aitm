@@ -354,12 +354,23 @@
   },
   "verification": {
     "board_metric_writes": 0,
+    "combined_tool_cost_snapshot_readback": {
+      "as_of_utc": "2026-11-10T21:00:00Z",
+      "baseline_actual_ms": 3600000,
+      "baseline_cost_usd": "0.0125",
+      "baseline_pin": "48a88ccce903f4e6f0472f70059a309cfb28c166",
+      "extended_actual_ms": 3660000,
+      "extended_cost_usd": "0.0125",
+      "extended_pin": "370592e9be412584dd9392b4e5eed338b07cd83a",
+      "same_usage_receipt_sha256": "cc03e5e30c0bf5336f4fec38abbf18b2af9bd9eb667aa00c74e3d40dd1c2917d"
+    },
     "dashboard_suite": {
       "command": "python3.13 -m unittest discover -s tools/story_dashboard/tests",
       "exit": 0,
       "tests": 61
     },
     "fixture_cases_passed": 6,
+    "fixture_revision": "added explicit ancestry and turn/role/attempt/coverage; verified two distinct pinned snapshots",
     "monitor_probe": {
       "command": "aitm-usage monitor report --project 00000000-0000-0000-0000-000000000001",
       "execution": "current trunk CLI source and installed distribution metadata, disposable UUID",
@@ -370,6 +381,6 @@
     "qualification_from_utc": "2026-11-11T14:08:40Z",
     "qualification_through_utc": "2026-11-11T14:09:11Z",
     "runtime_gate": "held",
-    "shared_fixtures_sha256": "7590d3fbd1648819c8de5a5e864b5d89b2d3fe54dbb788716fdc92992e8f035b"
+    "shared_fixtures_sha256": "0be5a5036654abb09ba32d0277428ee41564d5de863300fa2202fa34a1c88b80"
   }
 }

@@ -9,30 +9,42 @@
       "intervals": [
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 15,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "b",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 45,
           "key": "b",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 15,
-          "story": 187
+          "story": 187,
+          "turn": "turn-b"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 60,
           "key": "coord",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "coordinator",
           "start_minute": 45,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         }
       ]
     },
@@ -46,39 +58,68 @@
       "intervals": [
         {
           "actor": "a",
-          "end_minute": 16,
+          "attempt": "attempt-1",
+          "coverage": "complete",
+          "end_minute": 15,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "b",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 45,
           "key": "b",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 15,
-          "story": 187
+          "story": 187,
+          "turn": "turn-b"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 60,
           "key": "coord",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "coordinator",
           "start_minute": 45,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         },
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
+          "end_minute": 16,
+          "key": "a-extra",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "role": "implementer",
+          "start_minute": 15,
+          "story": 186,
+          "turn": "turn-a-extra"
+        },
+        {
+          "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 16,
           "key": "tool",
           "kind": "tool",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 15,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a-extra"
         }
       ]
     },
@@ -93,30 +134,42 @@
       "intervals": [
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 15,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "b",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 45,
           "key": "b",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 15,
-          "story": 187
+          "story": 187,
+          "turn": "turn-b"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 60,
           "key": "coord",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "coordinator",
           "start_minute": 45,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         }
       ]
     },
@@ -128,39 +181,55 @@
       "intervals": [
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 15,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "b",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 45,
           "key": "b",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 15,
-          "story": 187
+          "story": 187,
+          "turn": "turn-b"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 60,
           "key": "coord",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "coordinator",
           "start_minute": 45,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         },
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 90,
           "key": "wait",
           "kind": "owner-wait",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 60,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         }
       ]
     },
@@ -174,57 +243,81 @@
       "intervals": [
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 90,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "b",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 120,
           "key": "b",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 30,
-          "story": 187
+          "story": 187,
+          "turn": "turn-b"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 165,
           "key": "coord",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "coordinator",
           "start_minute": 150,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         },
         {
           "actor": "a",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 150,
           "key": "wait",
           "kind": "owner-wait",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 120,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": null,
           "key": "epic-start",
           "kind": "workflow-start",
           "phase": "all-phase",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         },
         {
           "actor": "c",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 165,
           "key": "epic-delivered",
           "kind": "workflow-delivered",
           "phase": "all-phase",
+          "role": "implementer",
           "start_minute": null,
-          "story": 181
+          "story": 181,
+          "turn": "turn-c"
         }
       ]
     },
@@ -242,18 +335,44 @@
         {
           "actor": "a",
           "admission": "held",
+          "attempt": "attempt-1",
+          "coverage": "complete",
           "end_minute": 15,
           "key": "a",
           "kind": "agent-turn",
           "phase": "implement",
+          "role": "implementer",
           "start_minute": 0,
-          "story": 186
+          "story": 186,
+          "turn": "turn-a"
         }
       ]
     }
   },
+  "combined_tool_cost_snapshot_readback": {
+    "as_of_utc": "2026-11-10T21:00:00Z",
+    "baseline_actual_ms": 3600000,
+    "baseline_cost_usd": "0.0125",
+    "baseline_pin": "48a88ccce903f4e6f0472f70059a309cfb28c166",
+    "extended_actual_ms": 3660000,
+    "extended_cost_usd": "0.0125",
+    "extended_pin": "370592e9be412584dd9392b4e5eed338b07cd83a",
+    "same_usage_receipt_sha256": "cc03e5e30c0bf5336f4fec38abbf18b2af9bd9eb667aa00c74e3d40dd1c2917d"
+  },
+  "descendants": {
+    "181": [
+      186,
+      187
+    ],
+    "186": [],
+    "187": []
+  },
   "inputs": "synthetic evidence, separate timing and usage inputs",
   "local_execution": "Delivered timing fold; delivered legacy usage selection. The unauthenticated timing input is pre-held and passed to the fold as a gap. Native admission and hosted projection remain downstream tests.",
+  "parents": {
+    "186": 181,
+    "187": 181
+  },
   "priced_usage_fixture": {
     "coverage": "complete",
     "priced_usd": "0.0125",
@@ -272,6 +391,7 @@
       "output": 75
     }
   },
+  "project": "aitm",
   "schema": "aitm.c01-shared-fixtures/v1",
   "story": 227,
   "use_by": [
