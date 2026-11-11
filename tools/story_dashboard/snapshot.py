@@ -5,14 +5,15 @@ import hashlib
 import json
 import os
 import re
+import secrets
 import subprocess
-import tempfile
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from .attribution import resolve_timing
-from .evidence import Event, Gap, PlanningTree, read_tree
+from .evidence import STATES, TOKEN, Event, Gap, PlanningTree, read_tree
 from .timing import DurationMeasure, StoryTiming, project_timing
 from .usage import ReportSelector, UsageMeasure, select_usage
 
@@ -27,7 +28,7 @@ _EVIDENCE = re.compile(
     r"(?:[A-Za-z0-9][A-Za-z0-9_.-]*/)*[A-Za-z0-9][A-Za-z0-9_.-]*)"
     r"(?::(?P<line>[1-9][0-9]*))?"
 )
-_PROGRESS = {"core.state.entered", "core.story.graduated", "core.doc.accepted"}
+_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
 _DURATIONS = (
     "direct_actual",
     "descendant_actual",
@@ -152,10 +153,34 @@ def _cost(commit: str, measure: UsageMeasure, sources: dict[str, dict]) -> dict:
     }
 
 
+def _is_progress(event: Event) -> bool:
+    if event.kind == "core.state.entered":
+        state = event.data.get("state")
+        return isinstance(state, str) and state in STATES
+    if event.kind == "core.story.graduated":
+        return event.data.get("issue") == f"{GITHUB}/issues/{event.story}"
+    if event.kind == "core.doc.accepted":
+        role, path, digest = (
+            event.data.get(key) for key in ("role", "path", "raw_digest")
+        )
+        if not all(isinstance(value, str) for value in (role, path, digest)):
+            return False
+        match = _EVIDENCE.fullmatch(path)
+        return bool(
+            match
+            and match["story"] == str(event.story)
+            and match["bucket"] == f"{event.story // 100:03d}"
+            and match["line"] is None
+            and TOKEN.fullmatch(role)
+            and _DIGEST.fullmatch(digest)
+        )
+    return False
+
+
 def _last_progress(events: tuple[Event, ...]) -> dict[int, Event]:
     progress = {}
     for event in events:
-        if event.kind not in _PROGRESS:
+        if not _is_progress(event):
             continue
         current = progress.get(event.story)
         if current is None or (event.timestamp, event.recorded_at) >= (
@@ -166,6 +191,18 @@ def _last_progress(events: tuple[Event, ...]) -> dict[int, Event]:
     return progress
 
 
+def _estimate_bases(events: tuple[Event, ...]) -> dict[str, str]:
+    bases = {}
+    for event in events:
+        if event.kind != "core.estimate.set":
+            continue
+        scope = event.data.get("scope")
+        basis = scope.get("basis") if isinstance(scope, dict) else None
+        if isinstance(basis, str) and TOKEN.fullmatch(basis):
+            bases[event.source] = basis
+    return bases
+
+
 def _build(
     tree: PlanningTree, selector: ReportSelector | None
 ) -> tuple[Snapshot, dict]:
@@ -173,6 +210,7 @@ def _build(
     timing = project_timing(tree, facts)
     usage = select_usage(tree, selector)
     progress = _last_progress(tree.events)
+    estimate_bases = _estimate_bases(tree.events)
     receipt_sources = {}
     for item in tree.registrations:
         if item.sha256 in usage.resolved_receipt_digests:
@@ -208,6 +246,7 @@ def _build(
                     "size": estimate.size,
                     "phase": estimate.phase,
                     "roles": None if estimate.roles is None else list(estimate.roles),
+                    "basis": estimate_bases.get(estimate.source),
                     "evidence": _evidence(tree.commit, estimate.source),
                 },
                 "timing": _timing(tree.commit, timing[number]),
@@ -325,18 +364,41 @@ def external_output_path(path: Path, repo: Path | None = None) -> Path:
     return target
 
 
-def atomic_write(destination: Path, data: bytes) -> None:
-    """Atomically replace an operator output file in its existing directory."""
-    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as stream:
-        temp = Path(stream.name)
-        try:
+@contextmanager
+def _output_directory(directory: Path, repo: Path | None = None):
+    fd = os.open(directory, os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        if external_output_path(directory, repo) != directory or not os.path.samestat(
+            os.fstat(fd), directory.stat(follow_symlinks=False)
+        ):
+            raise ValueError("output directory changed during validation")
+        yield fd
+    finally:
+        os.close(fd)
+
+
+def _replace_output(directory: int, name: str, data: bytes) -> None:
+    temp = f".story-dashboard-{secrets.token_hex(16)}.tmp"
+    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=directory)
+    try:
+        with os.fdopen(fd, "wb") as stream:
             stream.write(data)
             stream.flush()
             os.fsync(stream.fileno())
-            stream.close()
-            os.replace(temp, destination)
-        finally:
-            temp.unlink(missing_ok=True)
+        os.replace(temp, name, src_dir_fd=directory, dst_dir_fd=directory)
+    finally:
+        try:
+            os.unlink(temp, dir_fd=directory)
+        except FileNotFoundError:
+            pass
+
+
+def atomic_write(destination: Path, data: bytes) -> None:
+    """Atomically replace a verified external output in its existing directory."""
+    external_output_path(destination)
+    directory = external_output_path(destination.parent)
+    with _output_directory(directory) as fd:
+        _replace_output(fd, destination.name, data)
 
 
 def _unique_object(items: list[tuple[str, Any]]) -> dict:
@@ -380,10 +442,11 @@ def main(argv: list[str] | None = None) -> int:
         validation["snapshot_sha256"] = hashlib.sha256(payload).hexdigest()
         report = _canonical(validation)
         directory.mkdir(parents=True, exist_ok=True)
-        for artifact in (snapshot_path, validation_path):
-            external_output_path(artifact, args.repo)
-        atomic_write(snapshot_path, payload)
-        atomic_write(validation_path, report)
+        with _output_directory(directory, args.repo) as fd:
+            for artifact in (snapshot_path, validation_path):
+                external_output_path(artifact, args.repo)
+            _replace_output(fd, snapshot_path.name, payload)
+            _replace_output(fd, validation_path.name, report)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         parser.error(str(exc))
     return 0

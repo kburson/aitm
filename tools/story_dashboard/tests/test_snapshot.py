@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import test_evidence as fixture
 
@@ -91,6 +92,7 @@ class SnapshotFixture(unittest.TestCase):
         self.assertEqual(child["estimate"]["agent_hours"], "2.5")
         self.assertEqual(child["estimate"]["phase"], "implement")
         self.assertEqual(child["estimate"]["roles"], ["implementer"])
+        self.assertIsNone(child["estimate"]["basis"])
         self.assertEqual(
             child["last_progress"]["evidence"]["url"],
             f"https://github.com/kburson/aitm/blob/{self.pin}/.aitm/stories/001/186/events.jsonl#L2",
@@ -175,6 +177,78 @@ class SnapshotFixture(unittest.TestCase):
         result = self.run_cli(self.git.repo, output, selector=selector)
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertFalse(output.exists())
+
+    def test_estimate_basis_comes_from_its_exact_event(self):
+        for basis in ("scoped-agent-turn", "unsupported private text"):
+            with self.subTest(basis=basis):
+                self.git.append(
+                    186,
+                    fixture.event(
+                        186,
+                        "core.estimate.set",
+                        {
+                            "agent_hours": 3,
+                            "scope": {"basis": basis},
+                        },
+                    ),
+                )
+                pin = self.git.commit()
+                out = self.out / "estimate"
+                self.assert_pass(self.run_cli(self.git.repo, out, pin=pin))
+                row = json.loads((out / "snapshot.json").read_bytes())["stories"][1]
+                self.assertEqual(row["estimate"]["agent_hours"], "3")
+                self.assertEqual(
+                    row["estimate"]["basis"], basis if " " not in basis else None
+                )
+
+    def test_atomic_output_stays_bound_to_checked_directory(self):
+        path = (self.out / "outside").resolve()
+        path.mkdir()
+        moved = path.with_name("moved")
+        replace = os.replace
+
+        def swap_then_replace(*args, **kwargs):
+            path.rename(moved)
+            path.symlink_to(self.git.repo, target_is_directory=True)
+            return replace(*args, **kwargs)
+
+        with patch.object(snapshot.os, "replace", side_effect=swap_then_replace):
+            snapshot.atomic_write(path / "output.json", b"snapshot")
+        self.assertEqual((moved / "output.json").read_bytes(), b"snapshot")
+        self.assertFalse((self.git.repo / "output.json").exists())
+
+    def test_only_eligible_events_advance_progress(self):
+        self.git.append(
+            186,
+            fixture.event(186, "core.state.entered", {"state": "invalid"}),
+            fixture.event(186, "core.doc.accepted", {}),
+            fixture.event(186, "core.story.graduated", {"issue": "elsewhere"}),
+        )
+        pin = self.git.commit()
+        out = self.out / "progress"
+        self.assert_pass(self.run_cli(self.git.repo, out, pin=pin))
+        progress = json.loads((out / "snapshot.json").read_bytes())["stories"][1][
+            "last_progress"
+        ]
+        self.assertEqual(progress["kind"], "core.state.entered")
+        self.assertEqual(progress["occurred_at_utc"], "2026-11-10T19:59:00Z")
+        self.git.append(
+            186,
+            fixture.event(
+                186,
+                "core.doc.accepted",
+                {
+                    "role": "jit",
+                    "path": ".aitm/stories/001/186/plan/jit.md",
+                    "raw_digest": "sha256:" + "1" * 64,
+                },
+            ),
+        )
+        self.assert_pass(self.run_cli(self.git.repo, out, pin=self.git.commit()))
+        progress = json.loads((out / "snapshot.json").read_bytes())["stories"][1][
+            "last_progress"
+        ]
+        self.assertEqual(progress["kind"], "core.doc.accepted")
 
     def test_commit_source_links_are_canonical(self):
         root = "https://github.com/kburson/aitm/blob/" + self.pin + "/"
