@@ -722,29 +722,29 @@ def test_ordinary_mark_routes_unanchored_usage_after_native_rescan(native):
         assert native.routed(state, after, marked).scope == scope
 
 
-def test_late_claude_revision_keeps_its_original_native_scope(native):
-    from test_claude import SESSION as CLAUDE_SESSION
-    from test_claude import _native_tool_turn
-    from test_claude import request as claude_request
-    from test_claude import usage as claude_usage
-    from test_claude import user as claude_user
+class ClaudeScopeFixture:
+    source_id = UUID(int=6)
 
-    from aitm_usage.monitor_scope import ScopeState
+    def __init__(self, native):
+        from test_claude import user as claude_user
 
-    source_id, command_id = UUID(int=6), UUID(int=0x301)
-    root_path = native.transcripts.parent / "claude-transcripts"
-    root_path.mkdir()
-    path = root_path / "claude.jsonl"
-    anchor = native.anchors[A]
-    root = replace(native.root, path=root_path)
+        self.native = native
+        self.anchor = native.anchors[A]
+        root_path = native.transcripts.parent / "claude-transcripts"
+        root_path.mkdir()
+        self.path = root_path / "claude.jsonl"
+        self.root = replace(native.root, path=root_path)
+        write(self.path, [claude_user(self.anchor)])
 
-    def locate():
-        (locator,) = native.adapter.discover(root)
+    def locator(self):
+        (locator,) = self.native.adapter.discover(self.root)
         return locator
 
-    def request(number, **changes):
+    def request(self, number, **changes):
+        from test_claude import request as claude_request
+
         return claude_request(
-            anchor,
+            self.anchor,
             req=f"request-{number}",
             msg=f"message-{number}",
             uuid=str(UUID(int=0x310 + number)),
@@ -752,37 +752,91 @@ def test_late_claude_revision_keeps_its_original_native_scope(native):
             **changes,
         )
 
-    write(path, [claude_user(anchor), request(0)])
-    with native.registry.writer() as writer:
+    def append(self, *rows):
+        start = len(self.path.read_bytes().splitlines())
+        write(self.path, rows, append=True)
+        return start
+
+    def apply_capture(self, writer, project, enabled, number):
+        change = CaptureChange(project, self.source_id, enabled)
+        frontier = writer.capture_frontier(change, self.locator())
+        self.append(self.request(number))
+        boundary = writer.verify_boundary(change, self.locator(), frontier)
+        return writer.set_permission(change, boundary)
+
+    def approve(self, writer):
         writer.approve_source(
             SourceApprovalRequest(
-                source_id,
+                self.source_id,
                 "claude",
                 "claude-code-macos",
                 "Darwin",
                 "arm64",
                 "2.1.318",
                 1,
-                str(root_path),
+                str(self.root.path),
             )
         )
-        for number, project_id in enumerate((A, B), 1):
-            change = CaptureChange(project_id, source_id, True)
-            frontier = writer.capture_frontier(change, locate())
-            write(path, [request(number)], append=True)
-            proof = writer.verify_boundary(change, locate(), frontier)
-            writer.set_permission(change, proof)
+        self.apply_capture(writer, A, True, 1)
+        self.apply_capture(writer, B, True, 2)
 
+    def read(self, state):
+        return state.read_source(self.source_id, self.locator())
+
+    def queue_capture(self, writer, command_id, *, enabled):
+        from aitm_usage.monitor_control import ControlInbox, ControlStatus
+        from aitm_usage.monitor_registry import ControlCommand
+
+        inbox = ControlInbox(writer.root)
+        command = ControlCommand(command_id, CaptureChange(A, self.source_id, enabled))
+        assert inbox.enqueue(command).status is ControlStatus.QUEUED
+
+        def locate(_change, _known):
+            return (self.locator(),)
+
+        assert writer.apply_pending(inbox, writer.lease, locate) == ()
+        (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+        assert receipt.status is ControlStatus.APPLIED
+        return writer.view().epochs[-1]
+
+
+@pytest.fixture
+def claude_scope(native):
+    return ClaudeScopeFixture(native)
+
+
+@pytest.mark.parametrize("same_project", [False, True], ids=["handoff", "mark"])
+def test_late_claude_revision_keeps_its_original_native_scope(
+    claude_scope, same_project
+):
+    from test_claude import AFTER as CLAUDE_AFTER
+    from test_claude import SESSION as CLAUDE_SESSION
+    from test_claude import _native_tool_turn
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_scope import Mark, ScopeState
+
+    native = claude_scope.native
+    command_id = UUID(int=0x301)
+    path, anchor = claude_scope.path, claude_scope.anchor
+
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
         state = ScopeState(writer)
-        original_ordinal = len(path.read_bytes().splitlines())
-        write(path, [request(3, stop=None)], append=True)
-        early = state.read_source(source_id, locate())
+        original_ordinal = claude_scope.append(claude_scope.request(3, stop=None))
+        early = claude_scope.read(state)
         original = native.observation(early, original_ordinal)
         assert native.routed(state, early, original_ordinal).project_id == A
 
-        handoff, owner = _authorize_handoff(
-            state, native, command_id, A, _issue(B, 117), 0
-        )
+        destination = _issue(A if same_project else B, 117)
+        if same_project:
+            command = Mark(command_id, destination, native.receipt_ref(command_id))
+            owner = state.operator(A)
+            state.authorize(command, owner)
+        else:
+            command, owner = _authorize_handoff(
+                state, native, command_id, A, destination, 0
+            )
         shell_command = shlex.join(
             [
                 "aitm-usage",
@@ -803,13 +857,20 @@ def test_late_claude_revision_keeps_its_original_native_scope(native):
             json.dumps({"command_id": str(command_id), "status": "queued"}),
         )
         write(path, carrier, append=True)
-        handoff_batch = state.read_source(source_id, locate())
+        handoff_batch = claude_scope.read(state)
         target = native.target(handoff_batch, command_id)
-        boundary = state.verify_boundary(handoff, owner, handoff_batch, target)
-        assert state.apply_handoff(handoff, boundary).status == "applied"
+        boundary = state.verify_boundary(command, owner, handoff_batch, target)
+        apply = state.apply_mark if same_project else state.apply_handoff
+        assert apply(command, boundary).status == "applied"
 
-        write(path, [request(3, counts=claude_usage(output=6))], append=True)
-        current = state.read_source(source_id, locate())
+        claude_scope.append(
+            claude_scope.request(
+                3,
+                counts=claude_usage(output=6),
+                time=CLAUDE_AFTER + timedelta(seconds=10),
+            )
+        )
+        current = claude_scope.read(state)
         (revised,) = (
             observation
             for observation in current.observations
@@ -820,8 +881,197 @@ def test_late_claude_revision_keeps_its_original_native_scope(native):
         from aitm_usage.monitor_scope import resolve_route
 
         decision = resolve_route(revised, native.registry.view(), state.view(current))
-        assert decision.project_id == A
-        assert native.routed(state, current, target.boundary.ordinal).project_id == B
+        assert decision.project_id == A and decision.scope is None
+        assert (
+            native.routed(state, current, target.boundary.ordinal).scope == destination
+        )
+
+        proof = state.verified_revision(current, revised)
+        assert proof is not None and proof.route == decision
+        assert proof.original.ordinal == original_ordinal
+        assert proof.later.ordinal == len(path.read_bytes().splitlines()) - 1
+        assert proof.observation is revised
+        assert revised.usage.observed_at == original.usage.observed_at
+        with pytest.raises(LedgerError):
+            state.verified_revision(replace(current), revised)
+        with pytest.raises(LedgerError):
+            ScopeState(writer).verified_revision(current, revised)
+        assert state.verified_revision(current, replace(revised)) is None
+
+        claude_scope.apply_capture(writer, A, False, 4)
+        with pytest.raises(LedgerError):
+            state.verified_revision(current, revised)
+
+
+def test_claude_revision_rejects_a_replaced_fixed_prefix(claude_scope):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_scope import ScopeState
+
+    native = claude_scope.native
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
+        state = ScopeState(writer)
+        claude_scope.append(
+            claude_scope.request(3, stop=None),
+            claude_scope.request(3, counts=claude_usage(output=6)),
+        )
+        batch = claude_scope.read(state)
+        ((revision, _),) = batch._revision_witnesses
+        assert state.verified_revision(batch, revision) is not None
+
+        path = claude_scope.path
+        original = path.rename(path.with_suffix(".retained"))
+        path.write_bytes(original.read_bytes())
+        with pytest.raises(LedgerError):
+            state.verified_revision(batch, revision)
+
+
+def test_claude_cumulative_revision_cannot_cross_disabled_capture(claude_scope):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_scope import ScopeState
+
+    native = claude_scope.native
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
+        state = ScopeState(writer)
+        original_ordinal = claude_scope.append(claude_scope.request(3, stop=None))
+        early = claude_scope.read(state)
+        original = native.observation(early, original_ordinal)
+        disabled = claude_scope.apply_capture(writer, A, False, 4)
+        during = claude_scope.append(
+            claude_scope.request(3, counts=claude_usage(output=6), stop=None)
+        )
+        enabled = claude_scope.apply_capture(writer, A, True, 5)
+        after = claude_scope.append(
+            claude_scope.request(3, counts=claude_usage(output=7))
+        )
+        assert original_ordinal < disabled.ordinal <= during < enabled.ordinal <= after
+
+        current = claude_scope.read(state)
+        witnesses = [
+            (observation, witness)
+            for observation, witness in current._revision_witnesses
+            if observation.key == original.key
+        ]
+        assert [entry.later_ordinal for _, entry in witnesses] == [during, after]
+        assert all(
+            state.verified_revision(current, observation) is None
+            for observation, _ in witnesses
+        )
+
+
+def test_claude_terminal_proof_cannot_certify_disabled_counters(claude_scope):
+    from test_claude import MODEL, cost, model_counts
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.types import Availability
+
+    native = claude_scope.native
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
+        state = ScopeState(writer)
+        original_ordinal = claude_scope.append(claude_scope.request(3, stop=None))
+        early = claude_scope.read(state)
+        original = native.observation(early, original_ordinal)
+        disabled = claude_scope.apply_capture(writer, A, False, 4)
+        during = claude_scope.append(
+            claude_scope.request(3, counts=claude_usage(output=6))
+        )
+        enabled = claude_scope.apply_capture(writer, A, True, 5)
+        later = claude_scope.append(cost(**{MODEL: model_counts(22, 10, 25, 15, 20)}))
+        assert original_ordinal < disabled.ordinal <= during < enabled.ordinal <= later
+
+        current = claude_scope.read(state)
+        (update, terminal) = (
+            (observation, witness)
+            for observation, witness in current._revision_witnesses
+            if observation.key == original.key
+        )
+        assert update[1].later_ordinal == during
+        assert terminal[1].later_ordinal == later
+        assert terminal[1].predecessor is update[0]
+        assert terminal[0].usage.availability is Availability.COMPLETE
+        assert state.verified_revision(current, update[0]) is None
+        assert state.verified_revision(current, terminal[0]) is None
+
+
+def test_claude_terminal_proof_cannot_depend_on_other_disabled_counters(claude_scope):
+    from test_claude import MODEL, cost, model_counts
+
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.types import Availability
+
+    native = claude_scope.native
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
+        state = ScopeState(writer)
+        original_ordinal = claude_scope.append(claude_scope.request(3))
+        early = claude_scope.read(state)
+        original = native.observation(early, original_ordinal)
+        disabled = claude_scope.apply_capture(writer, A, False, 4)
+        enabled = claude_scope.apply_capture(writer, A, True, 5)
+        later = claude_scope.append(cost(**{MODEL: model_counts(20, 10, 25, 15, 20)}))
+        assert original_ordinal < disabled.ordinal < enabled.ordinal <= later
+
+        current = claude_scope.read(state)
+        (revision,) = [
+            item
+            for item in current.observations
+            if item.key == original.key
+            and item.usage.availability is Availability.COMPLETE
+        ]
+        assert state.verified_revision(current, revision) is None
+
+
+@pytest.mark.parametrize("reenable", [False, True], ids=["disabled", "reenabled"])
+def test_claude_cost_state_checks_its_physical_row(claude_scope, reenable):
+    from test_claude import MODEL, cost, model_counts
+    from test_claude import user as claude_user
+
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.types import Availability, Eligibility
+
+    native = claude_scope.native
+    with native.registry.writer() as writer:
+        claude_scope.approve(writer)
+        state = ScopeState(writer)
+        original_ordinal = claude_scope.append(claude_scope.request(3))
+        early = claude_scope.read(state)
+        original = native.observation(early, original_ordinal)
+        assert original.usage.availability is Availability.PARTIAL
+        disable = claude_scope.queue_capture(writer, UUID(int=0x370), enabled=False)
+        context = original_ordinal
+        if reenable:
+            context = claude_scope.append(claude_user(claude_scope.anchor))
+            enable = claude_scope.queue_capture(writer, UUID(int=0x371), enabled=True)
+            assert disable.ordinal <= context < enable.ordinal
+        position = claude_scope.append(cost(**{MODEL: model_counts(12, 6, 15, 9, 12)}))
+        decide = writer.span_disposition
+        stream = original.usage.boundary.stream_ref
+        assert decide(A, claude_scope.source_id, stream, context, context + 1) is (
+            Eligibility.EXCLUDED if reenable else Eligibility.ELIGIBLE
+        )
+        assert decide(A, claude_scope.source_id, stream, position, position + 1) is (
+            Eligibility.ELIGIBLE if reenable else Eligibility.EXCLUDED
+        )
+
+        current = claude_scope.read(state)
+        (revision,) = [
+            item
+            for item in current.observations
+            if item.key == original.key
+            and item.usage.availability is Availability.COMPLETE
+        ]
+        result = state.verified_revision(current, revision)
+        if reenable:
+            assert result is not None and result.later.ordinal == position
+            assert result.original.ordinal == original_ordinal
+            assert result.route.project_id == A
+        else:
+            assert result is None
 
 
 def test_verified_disposition_only_releases_its_covered_hold(native):

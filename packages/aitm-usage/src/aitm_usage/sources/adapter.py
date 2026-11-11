@@ -21,18 +21,22 @@ from ..types import (
     DiagnosticCode,
     Eligibility,
     Provider,
+    Revision,
     SourceBoundary,
     SourceCheckpoint,
     SourceCursor,
     SourceRef,
     UsageObservation,
+    _encode,
     _nonnegative,
 )
 from .claude import (
     _EMPTY,
     ClaudeState,
+    _ClaudeRevisionKind,
     _first_unretained_request,
     _read_claude,
+    _RevisionRecorder,
     read_claude,
     retains_streamed_prefix,
 )
@@ -40,7 +44,9 @@ from .codex import CodexState, _read_codex
 from .scan import (
     CandidateSource,
     FrameBatch,
+    SidebandFrame,
     SourceEvidence,
+    SourceFrame,
     _discover_sources,
     _Snapshot,
     scan,
@@ -136,6 +142,39 @@ class NativeObservation:
 
 
 @dataclass(frozen=True, slots=True)
+class _NativeRevisionWitness:
+    predecessor: NativeObservation
+    predecessor_material: SourceRef
+    successor_material: SourceRef
+    predecessor_ordinal: int
+    later_ordinal: int
+    prefix_ref: SourceRef
+    kind: _ClaudeRevisionKind
+    terminal_contributor_spans: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _ClaudeReadRevision:
+    predecessor_id: int
+    predecessor_ordinal: int
+    later_ordinal: int
+    prefix_ref: SourceRef
+    kind: _ClaudeRevisionKind
+    terminal_contributor_spans: tuple[tuple[int, int], ...]
+
+
+def _claude_revision_material(
+    evidence: SourceEvidence, observation: NativeObservation
+) -> SourceRef:
+    if not isinstance(observation.usage, UsageObservation):
+        raise ValueError("Expected native Claude usage")
+    revision = Revision(observation.key, observation.revision, observation.usage)
+    return evidence.pseudonymize(
+        "claude-revision-material", _encode(revision, Revision)
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class NativeBoundary:
     """Linked native evidence. Match repeats by boundary identity on replay."""
 
@@ -154,7 +193,9 @@ class AdapterBatch:
 
 
 def _read_usage(
-    source: CandidateSource, frames: FrameBatch
+    source: CandidateSource,
+    frames: FrameBatch,
+    record_revision: _RevisionRecorder | None,
 ) -> tuple[AdapterResult, dict[SourceRef, int], bool]:
     if source.provider is Provider.CODEX:
         result, _, span_ends = _read_codex(
@@ -164,7 +205,12 @@ def _read_usage(
         )
         return result, span_ends, True
     state = ClaudeState(source._ledger, neutral_markers=True)
-    result = read_claude(frames, state, Eligibility.ELIGIBLE)
+    if record_revision is None:
+        result = read_claude(frames, state, Eligibility.ELIGIBLE)
+    else:
+        result, _, _ = _read_claude(
+            frames, state, Eligibility.ELIGIBLE, record_revision
+        )
     retains_prefix = result.provider_checkpoint is not None and retains_streamed_prefix(
         frames, state, result.provider_checkpoint
     )
@@ -253,6 +299,8 @@ class ProviderAdapter:
         *,
         _scope_boundaries: tuple[SourceBoundary, ...] = (),
         _capture_limit: SourceCursor | None = None,
+        _revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]]
+        | None = None,
     ) -> AdapterBatch:
         source = locator._source
         if not isinstance(source, CandidateSource):
@@ -277,10 +325,38 @@ class ProviderAdapter:
                 )
             )
 
+        read_revisions: dict[int, _ClaudeReadRevision] = {}
+
+        def record_revision(
+            predecessor: Revision,
+            successor: Revision,
+            prior_ordinal: int,
+            frame: SourceFrame | SidebandFrame,
+            terminal_contributors: tuple[tuple[int, int], ...],
+        ) -> None:
+            kind = (
+                _ClaudeRevisionKind.COST_STATE
+                if isinstance(frame, SidebandFrame)
+                else _ClaudeRevisionKind(frame.row["type"])
+            )
+            prefix_ref = source._ledger.pseudonymize(
+                "claude-revision-prefix",
+                f"{frame.stream_ref.value}:{frame.ordinal}:{frame._prefix}",
+            )
+            read_revisions[id(successor)] = _ClaudeReadRevision(
+                id(predecessor),
+                prior_ordinal,
+                frame.ordinal,
+                prefix_ref,
+                kind,
+                terminal_contributors,
+            )
+
+        recorder = record_revision if _revision_witnesses is not None else None
         frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
-        result, span_ends, retains_prefix = _read_usage(source, frames)
+        result, span_ends, retains_prefix = _read_usage(source, frames, recorder)
         scope_verified = True
         if _scope_boundaries:
             requested = set(_scope_boundaries)
@@ -293,12 +369,15 @@ class ProviderAdapter:
                 and frame.anchor_ref is None
             }
             if selected:
+                read_revisions.clear()
                 for boundary, prefix in selected.items():
                     source = source._select_boundary(boundary, prefix, None)
                 frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
                 if frames.cursor is None:
                     return AdapterBatch(diagnostics=frames.diagnostics, cursor=cursor)
-                result, span_ends, retains_prefix = _read_usage(source, frames)
+                result, span_ends, retains_prefix = _read_usage(
+                    source, frames, recorder
+                )
                 scope_verified = all(
                     boundary in result.boundaries
                     and (frame := frames._matching_frame(boundary)) is not None
@@ -332,7 +411,7 @@ class ProviderAdapter:
             )
 
         prior_checkout = dict(frames._prior_checkout)
-        observations = []
+        observations: dict[int, NativeObservation] = {}
         for revision in result.revisions:
             usage = revision.record
             if not isinstance(usage, UsageObservation):
@@ -342,20 +421,41 @@ class ProviderAdapter:
             context = proof.anchor_ref if proof is not None else None
             if proof is None and source._matches(boundary):
                 context = prior_checkout.get(boundary.ordinal)
-            observations.append(
-                NativeObservation(
-                    revision.key,
-                    revision.revision,
-                    usage,
-                    surface,
-                    ObservationTimeBasis.NATIVE_USAGE_EVENT,
-                    context,
-                    span_end=span_ends.get(revision.key),
-                )
+            observations[id(revision)] = NativeObservation(
+                revision.key,
+                revision.revision,
+                usage,
+                surface,
+                ObservationTimeBasis.NATIVE_USAGE_EVENT,
+                context,
+                span_end=span_ends.get(revision.key),
             )
-        return AdapterBatch(
-            tuple(observations),
+        batch = AdapterBatch(
+            tuple(observations.values()),
             boundaries,
             result.diagnostics,
             StreamCursor(SourceCheckpoint(frames.cursor, result.provider_checkpoint)),
         )
+        if _revision_witnesses is not None:
+            witnesses = []
+            for successor_id, edge in read_revisions.items():
+                predecessor = observations.get(edge.predecessor_id)
+                successor = observations.get(successor_id)
+                if predecessor is not None and successor is not None:
+                    witnesses.append(
+                        (
+                            successor,
+                            _NativeRevisionWitness(
+                                predecessor,
+                                _claude_revision_material(source._ledger, predecessor),
+                                _claude_revision_material(source._ledger, successor),
+                                edge.predecessor_ordinal,
+                                edge.later_ordinal,
+                                edge.prefix_ref,
+                                edge.kind,
+                                edge.terminal_contributor_spans,
+                            ),
+                        )
+                    )
+            _revision_witnesses.extend(witnesses)
+        return batch
