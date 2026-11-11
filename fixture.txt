@@ -1,1 +1,1 @@
-Synthetic Stop the Line fixture fwFtz9AY / async-open-head
+Synthetic Stop the Line fixture fwFtz9AY / async-race-head
