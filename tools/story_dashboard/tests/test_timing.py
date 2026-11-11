@@ -457,6 +457,45 @@ class TimingMetrics(unittest.TestCase):
         self.assertEqual(corroborated.implementation_elapsed.milliseconds, 600_000)
         self.assertEqual(corroborated.implementation_elapsed.coverage, "complete")
 
+    def test_tied_starts_for_different_attempts_require_authoritative_selection(self):
+        first = observation("start-a", 10, None, kind="workflow-start")
+        second = observation(
+            "start-b", 10, None, kind="workflow-start", attempt="attempt-b"
+        )
+        finishes = (
+            observation("finish-a", None, 30, kind="workflow-delivered"),
+            observation(
+                "finish-b", None, 20, kind="workflow-delivered", attempt="attempt-b"
+            ),
+        )
+        authoritative = tree(
+            states={186: "done"},
+            events=(
+                event(186, 10, "develop", attempt="attempt-b"),
+                event(186, 20, "done", attempt="attempt-b"),
+            ),
+        )
+        for starts in ((first, second), (second, first)):
+            with self.subTest(order=[row.scope.attempt for row in starts]):
+                disputed = project(tree(), *starts, *finishes)[186]
+                self.assertIsNone(disputed.implementation_elapsed.milliseconds)
+                self.assertIsNone(disputed.implementation_age.milliseconds)
+                self.assertIn(
+                    "conflicting-implementation-attempt",
+                    disputed.implementation_elapsed.reasons,
+                )
+                self.assertEqual(
+                    {
+                        source.source_ref
+                        for source in disputed.implementation_elapsed.sources
+                    },
+                    {"manual:start-a", "manual:start-b"},
+                )
+                selected = project(authoritative, *starts, *finishes)[186]
+                self.assertEqual(selected.implementation_elapsed.milliseconds, 600_000)
+                self.assertEqual(selected.implementation_elapsed.coverage, "complete")
+                self.assertIn("workflow-develop", selected.implementation_elapsed.bases)
+
     def test_conflicting_same_attempt_starts_remain_unknown(self):
         row = project(
             tree(),

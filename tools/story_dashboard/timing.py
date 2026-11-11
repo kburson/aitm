@@ -668,19 +668,28 @@ def _implementation_marks(
     open_scope: bool,
     evidence: _Evidence,
 ) -> tuple[_Mark | None, _Mark | None, bool]:
-    explicit_start = starts[-1] if starts else None
-    if explicit_start is not None and (
-        develop is None
-        or explicit_start.ms >= develop.ms
-        and explicit_start.attempt != develop.attempt
-    ):
-        develop, conflict = _coalesce_marks(
-            [mark for mark in starts if mark.attempt == explicit_start.attempt],
-            evidence,
-            "conflicting-implementation-start",
-        )
-        if conflict:
-            return None, None, True
+    if starts and (develop is None or starts[-1].ms >= develop.ms):
+        latest = starts[-1]
+        tied = [mark for mark in starts if mark.ms == latest.ms]
+        attempts = {mark.attempt for mark in tied}
+        if len(attempts) > 1:
+            if (
+                develop is None
+                or develop.attempt is None
+                or develop.attempt not in attempts
+            ):
+                for mark in tied:
+                    evidence.absorb(mark.evidence)
+                evidence.reasons.add("conflicting-implementation-attempt")
+                return None, None, True
+        elif develop is None or latest.attempt != develop.attempt:
+            develop, conflict = _coalesce_marks(
+                [mark for mark in starts if mark.attempt == latest.attempt],
+                evidence,
+                "conflicting-implementation-start",
+            )
+            if conflict:
+                return None, None, True
     if develop is None:
         return None, done or (finishes[-1] if finishes else None), False
 
