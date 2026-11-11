@@ -76,7 +76,8 @@ Read-only pickup preparation, as planning contributor, was observed in the half-
 
 [Source PR #221](https://github.com/kburson/aitm/pull/221) targets trunk base `aa7dff45156919bcbe34d0489335949259bc584a`. Exact head `96d9788f36f6be71315a5014bc2e9412fae6692c` and tree `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
-- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42963929800), delivered verifier and independent source review.
+- [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42963929800/attempts/1) and [delivered verifier](hosted-verification-3.json) passed.
+- [ ] Independent source review.
 
 # #192 renderer candidate verification
 
@@ -104,3 +105,5 @@ For B02, use `browser/offline-browser-proof.mjs` and `browser/probe.js`. The bro
 Read-only pickup preparation, as planning contributor, was observed in the half-open UTC window `2026-11-11T04:35:08Z` to `2026-11-11T04:35:52Z`. Implementation and first-candidate verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:44:20Z` to `2026-11-11T04:56:20Z`. Correction and verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:56:58Z` to `2026-11-11T05:00:14Z`. Waiting between assignments, coordinator work and hosted verification are outside these checkpoints.
 
 The exact renderer tree remained `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` after the two hosted retries. The second run's candidate Python lane passed the full product suite. Its trusted-base job separately failed in existing monitor tests. The frozen base's hosted push suite and the three focused tests on both local checkouts passed. Both prior runs remain linked in the delivery history.
+
+The signed candidate matches tested merge `52a26ceb751fcdd0ea35b53a90167522ad863024`, with the ordered base/head parents and the exact tree above.
