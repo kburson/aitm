@@ -36,8 +36,9 @@ independent capability qualification.
   Where the shared branch is also a governed merge target, its target
   policy controls writes, including those requested by its owner. A narrowly scoped Core source guard allows
   this delivery to prove an exact, nonempty composed source change
-  from verified child deliveries when it has no source commits of its
-  own. A pure aggregate epic and local-only planning remain supported.
+  against its literal upstream baseline from verified child deliveries
+  when it has no source commits of its own. A pure aggregate epic
+  and local-only planning remain supported.
 - Open a draft PR during provisioning of every managed working branch.
   Qualify an immediate draft on GitHub when head starts at the same
   commit as its parent. If the host needs ahead history, qualify a

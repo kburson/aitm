@@ -69,9 +69,10 @@ otherwise requires nonempty story-tagged implementation commits, which
 a child-only integration attempt cannot supply. Add a typed composed
 source receipt as an alternative Develop-exit proof for the explicitly
 designated integration delivery story only. Bind the receipt to its
-current attempt and declared parent binding, pinned default-target
-baseline, exact integration head and tree, and verified C39–C41
-child-to-integration delivery receipts. Verify a nonempty source delta
+current attempt, literal upstream ref, resolved upstream identity
+and incarnation where applicable, pinned upstream baseline, exact
+integration head and tree, and verified C39–C41 child-to-integration
+delivery receipts. Verify a nonempty source delta
 and prove its complete source mapping from the admitted child
 deliveries to the exact candidate, including the recorded history
 after any base refresh. A missing, stale, unexplained or empty delta
@@ -79,10 +80,14 @@ fails this alternative. Re-evaluate it after source or baseline
 changes. Keep ordinary C76 tagged-source guards for every other
 story and defect. This typed receipt supplies source eligibility only.
 Require the integration attempt's own current Test, independent
-source review, and C41 admission for the exact default-target
-delivery. Do not create an empty tagged commit to pass the guard.
-A pure aggregate epic has no inferred delivery story, branch or PR. Existing local-only planning remains available without
-hosted resources. A managed hosted branch cannot be marked provisioned
+source review, and C41 admission for that exact upstream delivery.
+Apply #158 and the live trunk policy only when the literal upstream
+is the protected default target. Do not create an empty tagged
+commit to pass the guard.
+
+A pure aggregate epic has no inferred delivery story, branch or PR.
+Existing local-only planning remains available without hosted
+resources. A managed hosted branch cannot be marked provisioned
 until its draft is verified.
 
 For GitHub, first test whether the host accepts an immediate draft when
@@ -327,7 +332,7 @@ capability disabled and supplies denial evidence only.
 | Installed CLI and contained runtime with trusted broker | Deny direct Git and API calls, including anonymous routes. Prove broker rejects unauthorized repository, ref, action and stale generation. An authorized feature push succeeds. | Runtime route and credential inventory, observed denies, broker receipts and host readback. |
 | Temporary targets and step 2 managed ready/retarget qualification | Race a hold, push and retarget against ready dispatch. Exercise both an unsent loser and a previously sent transition finishing late. Reconcile an ambiguous result. Retarget an already-ready non-default PR only after verified redraft, with positive and denied cases and lost responses. Prove fresh target-specific admission and CI. | Admission order, draft and target readback, reconciliation and independent merge denial. |
 | Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared parent and deny a stale base. Reject a generic owner push of the same child change to its governed parent ref. Prove approved refresh and permitted direct work under their respective policies. Reject self-target, premature epic close and abandoned-owner completion. Verify pure aggregate behavior. | Target CI, exact delivery and refresh evidence, graph/terminal disposition and observed denials. |
-| Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Verify ordinary stories retain their existing guard. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
+| Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Verify ordinary stories retain their existing guard. Prove a nested non-default integration against an upstream with a different baseline from default. Deny default or sibling substitution. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
 | #158 temporary default stand-in and synthetic qualification inputs | Exercise host merge ordering and exactness per #158. Inject a passing merge qualification with managed readiness unavailable and verify that Core holds managed repair activation. | Separate #158 host receipt and Core capability/refusal result, with synthetic inputs identified. |
 | End-to-end temporary default stand-in, qualified #158 and ready routes, delivered #133 T34 and T36–T40 | Exercise actual scheduled failure, ordinary denial, exact repair, full passing recovery on repaired target, reopening and newly admitted post-release CI. Reject a same-tuple result admitted before release and completed afterward. Complete a separately reviewed epic integration delivery. | Trusted actual run and shard IDs, exact recovery and release records, post-release CI, review and host receipts. |
 | Installed distribution with CLI, skill and MCP | Enumerate operation and argument schemas, invoke each available operation through supported interfaces, and compare admission and typed results. | Catalog/version, actual help and dispatch traces, capability and unsupported outputs. |
