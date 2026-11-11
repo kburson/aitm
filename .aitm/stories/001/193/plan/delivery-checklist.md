@@ -32,7 +32,7 @@ The later view contains receipt SHA-256 `8d3bf226f4e47fac1153dad67b4ecae5fdbabb2
 [Source PR #222](https://github.com/kburson/aitm/pull/222) targets trunk base `fec3d8f685fd1d133bb9797d47c02552805e6bc1`. Exact head `81a16c8b7a7d55e2e3b1f78e7575f947a3a0e989` and tree `e87d9baa14c08a903ee34f1b0a8ded958d10a015` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
 - [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42965457517/attempts/1) and [delivered verifier](hosted-verification-2.json) passed.
-- [ ] Independent source review.
+- [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review, with native approval absent.
 
 ## B02 clean-reader qualification
 
