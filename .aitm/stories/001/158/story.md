@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md"], "attachments": ["attachments/github-merge-fence-spike.md", "attachments/github-merge-fence-rules.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md", "plan/2026-11-11-158-merge-only-qualification.md"], "attachments": ["attachments/github-merge-fence-spike.md", "attachments/github-merge-fence-rules.json"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T21", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "4c57ac72e211b052a8b7ffee538b492427775b5dc3f365a1640c80f72ac54742"}
@@ -31,6 +31,19 @@ The planning estimate is 3.5 implementation agent-hours.
 Recheck it at the leaf's own refinement and JIT. The parent plan
 defines this leaf's boundaries. Its own applicable design, plan, JIT,
 dependency proof, and implementation authority govern pickup.
+
+## Current merge-only qualification scope
+
+[Revised #158 plan](plan/2026-11-11-158-merge-only-qualification.md)
+· [#133 design amendment](../133/design/2026-11-11-133-merge-only-stop-the-line-design.md).
+
+Qualify a single GitHub flag and host-enforced trunk merge route in the
+existing AITM repository. Cover an exact repair, fresh full validation
+on repaired trunk, and new PR CI after refresh. Background feature pushes
+and non-default merges continue. The earlier disposable-repository plan,
+workspace pause, and routine pre-run hold are superseded for this work.
+Prior measurements remain evidence. #158 stays in Planning and #159
+stays blocked pending a qualified receipt and its other prerequisites.
 
 ## Accepted plan excerpt
 

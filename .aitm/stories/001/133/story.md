@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -27,10 +27,27 @@ trips: []
 As an AITM contributor, I want story validation to show which tests are
 affected, run them on independent CI shards, and run the full suite
 whenever impact is uncertain. If a defect escapes PR validation and
-fails the scheduled trunk suite, restore trunk and deliver the fix to
-all governed workspaces before ordinary work resumes.
+fails the scheduled trunk suite, hold ordinary trunk merges, deliver
+one fully validated repair, and reopen after the full suite passes on
+repaired trunk. Agents continue working, pushing and integrating into
+non-default parents throughout the hold.
 
 This is a follow-on to the delivered [#103 CI quality gates](../103/story.md).
+
+## Current Stop the Line amendment
+
+The owner directed a merge-only hold on trunk. One shared GitHub flag
+controls trunk admission. Recovery is a full pass on current repaired
+trunk, followed by a current-trunk refresh and fresh CI for each
+pending trunk-bound PR. Feature pushes and feature-to-epic merges
+continue under their normal target rules.
+
+[Design amendment](design/2026-11-11-133-merge-only-stop-the-line-design.md)
+· [Implementation plan amendment](plan/2026-11-11-133-merge-only-stop-the-line.md)
+· [#158 hosted qualification plan](../158/plan/2026-11-11-158-merge-only-qualification.md).
+
+The original exact reviews below retain their historical scope.
+Changed leaves require replan and review before pickup. #159 stays blocked.
 
 ## Design review
 
