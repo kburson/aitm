@@ -1,0 +1,10 @@
+{
+  "literal_base": "e4701f2e89d34f93f13d717199254b66aa3f0457",
+  "tree": "f62fbd48047f73baf52f65f86b33d475328b2f1f",
+  "matching": [
+    {
+      "nodeid": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[after]",
+      "outcome": "passed"
+    }
+  ]
+}

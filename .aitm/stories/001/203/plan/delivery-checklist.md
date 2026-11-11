@@ -33,3 +33,9 @@ The [baseline ID reconciliation](baseline-id-reconciliation.json) confirms the e
 The issued GAP token changes from its recorded HELD target after real expiry and reaches the explicit stale-token refusal. The RESOLVED expiry control reaches its separate deadline gate. The legacy disposition uses a separately authorized receipt already present in the original fixed span, leaves every transcript byte intact and reaches the explicit legacy-resolution refusal on both require and first issuance. The targeted gate passed 11 cases.
 
 The replacement locked gate passed 1,071 product and CLI tests, 182 helpers, Ruff, whitespace and raw 10,655/11,604 product and 778/821 helper lines. All 996 local baseline IDs remain. The first hosted evidence and independent HOLD remain separately retained.
+
+### Replacement hosted attempt 1 failed
+
+[Hosted attempt 1](https://github.com/kburson/aitm/actions/runs/42954038318/attempts/1) failed on the inherited `test_claude_content_and_ownership_disputes_remain_separate[after]` at discovery of the already approved independent archive. The exact locator enumerator returned zero entries before journal preparation. The other 1,070 tests passed. Evidence collection failed on the required Python job and attestation was skipped. [Native failed check receipt](hosted-ci-replacement-failed.json).
+
+The [same-run literal baseline](hosted-ci-failure-baseline-case.json) passed that exact test, and the earlier signed #203 candidate passed it with the same product source. The inherited test and scanner/adapter source match literal trunk byte for byte. Five independent fresh local runs of that exact test passed on literal trunk and five on the exact replacement. Hosted discovery's underlying transient cause is unverified. Preserve the failure and rerun all six jobs on the same exact head and tree. The required gate remains open pending fresh authenticated evidence.
