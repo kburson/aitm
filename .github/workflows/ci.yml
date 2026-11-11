@@ -68,8 +68,11 @@ jobs:
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
+          # Keep native fixtures away from the shared system temp directory and evidence output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-base-fixtures.XXXXXXXX")
           PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json" \
-            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" -q packages/aitm-usage/tests
+            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+              --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
           cd packages/aitm-usage
           sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
           jq -n --arg base "$BASE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
@@ -161,8 +164,11 @@ jobs:
           ready=$(date +%s)
           export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/evidence/pytest.json"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
+          # Keep native fixtures away from the shared system temp directory and coverage output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
           uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
-            --junitxml="$out/evidence/product-junit.xml" --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
+            --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
+            --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
           uv run --locked python - "$out" <<'PY'
           import json
           import sys
