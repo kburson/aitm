@@ -21,3 +21,10 @@ The independent preliminary review reproduced two defects on candidate 1. A boun
 [Candidate 2 CI](https://github.com/kburson/aitm/actions/runs/42946132032/attempts/1) passed trusted base, quality and file checks. The [candidate Python job](https://github.com/kburson/aitm/actions/runs/42946132032/job/130279377837) failed in two existing Codex monitor tests. Evidence collection failed and signing was skipped.
 
 Monitor failure evidence: `test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[reasoning-True-]` found no candidate, and `test_activation_frontier_requires_exact_first_eligible_delta[warm-True]` returned no expected observation. The other 994 cases passed. The monitor, CI policy and verifier are unchanged relative to the base. Trigger a fresh first attempt, because the verifier's GitHub rerun timestamp check is a known hold.
+Both named monitor failures passed on a focused local rerun using the same source.
+
+## Candidate 3
+
+[PR #208](https://github.com/kburson/aitm/pull/208) targets trunk base `1282538954dc5a7e7f7b27da4e3ab096892e3add`, head `27abd178ce3e0b1e076e2c94c3a4a3f863179254`, tree `f62fbd48047f73baf52f65f86b33d475328b2f1f`. The two-path diff is confined to the attribution module and its tests. The clean candidate passed the dashboard suite, Ruff and both real planning pins with all 114 direct intervals and ten exact direct subtotals.
+
+- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42946905299), delivered verifier and independent source review.

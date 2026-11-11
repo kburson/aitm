@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 187
 title: "[#181 A02] Resolve timing attribution and the legacy seed"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/187"
 parent: 181
 children: []
 blocking: [188]
 blocked-by: [186]
 created: "2026-11-10T21:02:15Z"
-updated: "2026-11-11T02:33:56Z"
+updated: "2026-11-11T02:34:36Z"
 last-branch: "codex/aitm-187-timing-attribution"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
