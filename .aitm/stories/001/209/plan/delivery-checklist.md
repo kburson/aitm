@@ -89,3 +89,9 @@ The fixture isolation and independent workflow-control audit stand. The existing
 ### Fresh exact hosted candidate
 
 An empty commit advances the candidate from `d1916b81fc05417c6ff709beb59890d22369243b` to `62bf79e9cf625f7aa268212e68f1c671010a8259` while retaining exact tree `6bad3235d96230997930b513328dc7faf4e78ef1` and literal base `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. Git comparison confirmed zero source diff between revisions and byte-identical complete base-to-head diffs. The [new canonical run](https://github.com/kburson/aitm/actions/runs/43072937185) uses its first attempt. The [identity receipt](fresh-exact-candidate.json) binds the previous workflow-control audit to the same reviewed tree. The original verifier and all acceptance controls apply.
+
+### Fresh first-attempt retry after the execution limit
+
+[Run 43072937185 attempt 1](https://github.com/kburson/aitm/actions/runs/43072937185/attempts/1) passed the baseline, file checks, quality, 1,102 candidate product and CLI tests, and 182 helpers. The [runner annotation](first-fresh-runner-annotations.json) confirms cancellation at the eight-minute maximum before wheel verification and upload. Collection failed and the final gate was skipped. [Terminal receipt](first-fresh-hosted-terminal.json).
+
+The second empty commit moves from `62bf79e9cf625f7aa268212e68f1c671010a8259` to `0bcb00c69cbf5d38431480b90260d013a6f09e3e` on the identical reviewed tree `6bad3235d96230997930b513328dc7faf4e78ef1` and literal base `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. [Candidate identity](fresh-exact-candidate-retry.json) and [new first attempt](https://github.com/kburson/aitm/actions/runs/43074418177/attempts/1).
