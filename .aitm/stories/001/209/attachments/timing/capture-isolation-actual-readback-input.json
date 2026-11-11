@@ -1,0 +1,45 @@
+{
+  "story": 209,
+  "sources": [
+    {
+      "path": "full-auto-refine-1-209.json",
+      "sha256": "b2ccc5cd967cc3950380cdd585b0a1e780001cf184a34d96fe55c45061707677"
+    },
+    {
+      "path": "full-auto-jit-1-209.json",
+      "sha256": "86def105bb0bb73257156b677e78ffa51258c34eb6c6f27f8cee21db4fe8a939"
+    },
+    {
+      "path": "full-auto-develop-1-209.json",
+      "sha256": "75cfa95e8231578969cf320cba262d938a04598ab2963987347fdd330435087e"
+    },
+    {
+      "path": "full-auto-test-1-209.json",
+      "sha256": "b98852862309bf5571abf9c1a1f299549abe5a4d7510dfe45adfe1b00bb81c11"
+    },
+    {
+      "path": "full-auto-rework-1-209.json",
+      "sha256": "33d0797cd56cc324299b596ed0018b2d6172a6f8dc6e18fcb690f4b45e8cff7b"
+    },
+    {
+      "path": "full-auto-retest-1-209.json",
+      "sha256": "108f51a25edc2d3ceab525f4dfba91c8d4ba4a7c17acdcf9e1ea9871af1c6de1"
+    },
+    {
+      "path": "full-auto-capture-isolation-checkpoint-1-209.json",
+      "sha256": "45ab76bb4367f37cf7547416c2104b19fec6bd6156e260d3fe9bac0478ebad9f"
+    }
+  ],
+  "observation_count": 390,
+  "milliseconds": 2049413,
+  "actual_hours": "0.5693",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-11T17:06:54.754Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union; current dashboard requires bucket 002 for story 209"
+}
