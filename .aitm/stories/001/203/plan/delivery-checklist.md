@@ -89,3 +89,7 @@ The incoming paths `tools/story_dashboard/snapshot.py` and `tools/story_dashboar
 ### Current exact Test after final target refresh
 
 [PR #211](https://github.com/kburson/aitm/pull/211) read back head `d0d34c727ab0044bd89c6d06e14583129c6d7b4a`, tree `cef51758dbeae317af2ec1a3e9e930b1493b35c0`, and literal trunk `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. The clean refreshed baseline passed all 996 product and CLI and 182 helper tests. The exact candidate passed 1,071 product and CLI and 182 helpers, retaining all 996 local baseline IDs. Both raw coverage floors, Ruff and whitespace passed. The complete product diff is byte-identical to the prior reviewed product diff. Fresh hosted validation is running for this exact pair. A further paid independent review needs explicit owner authorization.
+
+### Current hosted attempt 1 failed before attestation
+
+[Hosted attempt 1](https://github.com/kburson/aitm/actions/runs/42961757503/attempts/1) passed the literal baseline, quality and file checks. The candidate Python job had 1,068 passing tests, two failures and one setup error. The inherited Claude dispose receipt case found no linked receipt. The #203 expired-GAP replay and resolved setup cases received no discovery locator. Evidence collection refused and attestation was skipped. [Native failure receipt](hosted-ci-current-failed-a1.json). The host-side triggers remain unverified. Retain this outcome and perform one full identical head/base retry without changing tests or gates.
