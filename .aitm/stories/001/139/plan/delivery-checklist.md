@@ -283,3 +283,6 @@ isolated base lane, and the exact-attempt signed gate. After both
 prerequisites pass, refresh #197 to current trunk and perform its own
 required validation. Retain the failed attempts and exact-tree owner
 disposition as evidence. #139 stays in Test while the hold is active.
+
+[Fixture isolation delivery and hosted qualification](2026-11-11-139-fixture-isolation-delivery.md)
+tracks the separate candidate and exact gate evidence.
