@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 191
 title: "[#181 A06] Prove one live manual capture and board readback"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/191"
 parent: 181
 children: []
 blocking: [193]
 blocked-by: [190]
 created: "2026-11-10T21:02:20Z"
-updated: "2026-11-11T04:43:18Z"
+updated: "2026-11-11T04:47:20Z"
 last-branch: "codex/aitm-191-live-pilot"
 estimate: {"agent-hours": 2.75, "size": "S"}
 priority: "P1"
