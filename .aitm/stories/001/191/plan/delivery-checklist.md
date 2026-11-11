@@ -3,8 +3,8 @@
 Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordinating Codex agent. Target trunk. Pickup base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Predecessors #190 are delivered. File ownership is defined by the exact pickup.
 
 - [x] [Design, Plan and JIT](jit.md) and [independent acceptance](jit-review.md).
-- [ ] Local verification, applicable hosted CI and independent source acceptance.
-- [ ] Verified merge, implementing-agent sign-off, and issue/Project closure.
+- [x] Local verification, applicable hosted CI and independent source acceptance.
+- [x] Verified merge, implementing-agent sign-off, and issue/Project closure.
 
 ## Candidate 1
 
@@ -52,3 +52,7 @@ The baseline at planning `a23893955d7cedb68aabf3b216553b83c48472f2` and UTC cuto
 | Final and independent readback | 0.0014 h | Partial. Verified #191 pilot through 2026-11-11T04:43:35.855000Z. | Blank |
 
 The signed candidate matches tested merge `64dce0a3d8ab3a671b511358a846650008d98bfb`, with the ordered base/head parents and the exact tree above.
+
+## Verified delivery
+
+[PR #220](https://github.com/kburson/aitm/pull/220) merged to trunk at `2026-11-11T04:56:33Z` as `aa7dff45156919bcbe34d0489335949259bc584a`. The exact reviewed tree `cb00e4153a717fa718a0df7fe63e30f87f5b9938` is reachable from remote trunk `aa7dff45156919bcbe34d0489335949259bc584a`. Ordered merge parents `5cc77ab5f66e98d9d2777d7816f662e71a8804e9` and `b7688fc1d08289f5853d09beb924fa5d11d136da` match the tested candidate. [Implementing-agent sign-off](../retro/2026-11-10-implementer-signoff.md) passed at `2026-11-11T04:56:36Z`. The issue closed Completed at `2026-11-11T04:56:38Z` and the project item read back Done.

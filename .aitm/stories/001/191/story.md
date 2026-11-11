@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 191
 title: "[#181 A06] Prove one live manual capture and board readback"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/191"
 parent: 181
 children: []
 blocking: [193]
 blocked-by: [190]
 created: "2026-11-10T21:02:20Z"
-updated: "2026-11-11T04:54:57Z"
-last-branch: "codex/aitm-191-live-pilot"
+updated: "2026-11-11T04:56:41Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 2.75, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -39,3 +39,9 @@ Required predecessors #190. The proposed estimate is 2.75 implementation agent-h
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `aa7dff45156919bcbe34d0489335949259bc584a` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/220) · [Signed CI](plan/hosted-verification-2.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)
