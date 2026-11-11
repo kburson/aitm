@@ -70,3 +70,26 @@ records all three events with zero jobs. The trusted verifier reported
 after reopening, the canonical event still showed zero jobs. #246 stayed
 open at the exact reviewed source. The signed hosted gate and final
 review remain pending, so there is no delivered trunk run to verify.
+
+## Automatic CI trigger investigation
+
+GitHub recorded three `pull_request` runs for #246. The CI workflow is
+active and the repository allows Actions. Its `push` trigger targets
+`trunk`. Opening, updating, or reopening an existing PR uses the
+`pull_request` trigger. The latest #246 run has zero jobs in the Actions
+jobs API, including the Ubuntu jobs. GitHub reports zero pending workflow
+approvals and zero pending deployments. No job declares a deployment
+environment.
+
+The existing Python job provisions Python 3.13.9 through `setup-uv` and
+installs the locked development dependencies with `uv sync --locked`.
+An offline lock dry run on the exact branch resolved without changes.
+The lock includes pytest, pytest-xdist, execnet and coverage. Dependency
+installation is a job step. The queue is stalled before that step.
+
+One diagnostic rerun of the previously successful selected job in the
+[qualification workflow](https://github.com/kburson/aitm/actions/runs/43093752137)
+was accepted and also reported `queued` with zero jobs at readback. It
+used a separate workflow and ref. The original qualification artifact
+remains available by its recorded ID and digest. The provider exposes
+the queue state but gives no reason for why it persists.
