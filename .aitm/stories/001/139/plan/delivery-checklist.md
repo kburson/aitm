@@ -229,3 +229,26 @@ in Test and the PR remains open.
 [Independent identity confirmation](source-review-attempt-5-reopened-ci-confirmation.md).
 
 [Exact #103 owner disposition scope](owner-disposition-scope-dbbc729574c9-reopened.json).
+
+## Exact owner approval and verifier correction
+
+The owner [approved the three additions](owner-disposition-approved-7d93353e06c8.json)
+on tested tree `7d93353e06c8177c19bc1f918217e2f8ccf75da7`. That disposition
+applies to PR #197. The independent CI evidence requirement remains in force.
+
+The [verifier correction](https://github.com/kburson/aitm/pull/244) is a
+separate draft at `64df4e773fe0bdfb52d2854b55ad40535758e6d3`. The first
+attempt still requires equal creation times. A rerun can report its own
+creation time between original run creation and the attempt update. Every
+attempt must still start at or after original run creation. Job and
+attestation freshness continue to use the reported attempt start. The
+recorded attempt 3 metadata passes this check, including GitHub's reported
+start two seconds before the rerun creation record.
+
+Six new regression cases use fixed timestamps and local GitHub API fixtures.
+All 276 local CI-helper tests passed. The 188 coverage-lane cases passed
+with 95.2% verifier line coverage. The 47 inventory tests on PR #197's exact
+head passed twice in separate pytest processes. Keep unit cases isolated,
+with independent fixtures and repeatable inputs. Integration cases may use
+internal components together and mock external services. Reserve live
+provider and cross-system connections for end-to-end validation.
