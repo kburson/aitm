@@ -1,0 +1,32 @@
+{
+  "status": "in_progress",
+  "conclusion": "",
+  "attempt": 3,
+  "headSha": "941542dd9695e6f1a330c8b020f6384cbed0a427",
+  "jobs": [
+    {
+      "name": "python",
+      "databaseId": 130639800503,
+      "status": "in_progress",
+      "conclusion": ""
+    },
+    {
+      "name": "python-base",
+      "databaseId": 130639800951,
+      "status": "completed",
+      "conclusion": "failure"
+    },
+    {
+      "name": "file-checks",
+      "databaseId": 130639801061,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "quality",
+      "databaseId": 130639801303,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ]
+}

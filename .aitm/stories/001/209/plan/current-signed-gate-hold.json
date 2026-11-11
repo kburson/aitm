@@ -1,0 +1,27 @@
+{
+  "story": 209,
+  "state": "test",
+  "recorded_at": "2026-11-11T16:10:02+00:00",
+  "pull_request": {
+    "baseRefName": "trunk",
+    "baseRefOid": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+    "headRefOid": "941542dd9695e6f1a330c8b020f6384cbed0a427",
+    "number": 231,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/231"
+  },
+  "corrected_tree": "2cb1397f7b0e8d647934f5e9d46c84b693930cef",
+  "workflow_run": 43051863613,
+  "attempt": 3,
+  "failed_required_job": {
+    "name": "python-base",
+    "databaseId": 130639800951,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "case": "test_v2_decoder_rejects_malformed_or_unowned_shape[same-prefix]",
+  "error": "BoundaryUnavailable: Native capture position is unavailable",
+  "exact_case_repassed_locally_on_base_and_head": true,
+  "current_signed_pass_available": false,
+  "independent_source_recovery_launched": false
+}
