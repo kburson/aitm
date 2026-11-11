@@ -32,7 +32,8 @@ _DATABASE = "journal.sqlite3"
 _FILES = (_DATABASE, f"{_DATABASE}-wal", f"{_DATABASE}-shm")
 _APPLICATION_ID = 0x4149544A  # AITJ
 _LEGACY_SCHEMA_VERSION = 1
-_SCHEMA_VERSION = 2
+_REVISION_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
 _SCHEMA = """
 CREATE TABLE identity (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -80,13 +81,29 @@ CREATE TABLE claim_revisions (
 ) STRICT;
 """
 
+_CONTENT_DISPUTE_SCHEMA = """
+CREATE TABLE content_disputes (
+    key TEXT PRIMARY KEY REFERENCES claims(key),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    payload BLOB NOT NULL
+) STRICT;
+"""
+
 
 @cache
 def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], ...]:
+    if version not in {
+        _LEGACY_SCHEMA_VERSION,
+        _REVISION_SCHEMA_VERSION,
+        _SCHEMA_VERSION,
+    }:
+        raise LedgerError("Unsupported routing journal schema version")
     with closing(sqlite3.connect(":memory:")) as conn:
         conn.executescript(_SCHEMA)
-        if version == _SCHEMA_VERSION:
+        if version in {_REVISION_SCHEMA_VERSION, _SCHEMA_VERSION}:
             conn.execute(_REVISION_SCHEMA)
+        if version == _SCHEMA_VERSION:
+            conn.execute(_CONTENT_DISPUTE_SCHEMA)
         return _schema_objects(conn)
 
 
@@ -97,9 +114,11 @@ def _validate_identity(
         if conn.execute("PRAGMA application_id").fetchone() != (_APPLICATION_ID,):
             raise LedgerError("Unrecognized routing journal application")
         stored = conn.execute("PRAGMA user_version").fetchone()
-        if stored not in {(_LEGACY_SCHEMA_VERSION,), (_SCHEMA_VERSION,)} or (
-            version is not None and stored != (version,)
-        ):
+        if stored not in {
+            (_LEGACY_SCHEMA_VERSION,),
+            (_REVISION_SCHEMA_VERSION,),
+            (_SCHEMA_VERSION,),
+        } or (version is not None and stored != (version,)):
             raise LedgerError("Unsupported routing journal schema version")
         stored_version = stored[0]
         if conn.execute("PRAGMA journal_mode").fetchone() != ("wal",):
@@ -194,6 +213,7 @@ def _initialize_database(staging: _PinnedPath, key_id: str) -> _StoreIdentity:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript("BEGIN IMMEDIATE;\n" + _SCHEMA)
         conn.execute(_REVISION_SCHEMA)
+        conn.execute(_CONTENT_DISPUTE_SCHEMA)
         conn.execute(f"PRAGMA application_id = {_APPLICATION_ID}")
         conn.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
         conn.execute("INSERT INTO identity VALUES (1, ?)", (key_id,))
@@ -234,8 +254,8 @@ class JournalStore:
                     version = _validate_identity(conn, key_id, version=expected)
                     if published is None:
                         self._evidence = self._read_evidence(root)
-                if version == _LEGACY_SCHEMA_VERSION:
-                    self._upgrade_v1(root, directory)
+                if version != _SCHEMA_VERSION:
+                    self._upgrade(root, directory, version)
                 # Confirm a validated store even if a prior publisher lost its sync.
                 try:
                     os.fsync(root.fd)
@@ -321,12 +341,20 @@ class JournalStore:
             yield conn
             self._check_store(root, directory)
 
-    def _upgrade_v1(self, root: _PinnedPath, directory: _PinnedPath) -> None:
+    def _upgrade(self, root: _PinnedPath, directory: _PinnedPath, version: int) -> None:
         try:
             with self._pinned_transaction(root, directory, write=True) as conn:
-                _validate_identity(conn, self._key_id, version=_LEGACY_SCHEMA_VERSION)
+                _validate_identity(conn, self._key_id, version=version)
                 _validate_foreign_keys(conn)
-                conn.execute(_REVISION_SCHEMA)
+                if version == _LEGACY_SCHEMA_VERSION:
+                    conn.execute(_REVISION_SCHEMA)
+                    if _schema_objects(conn) != _supported_schema(
+                        _REVISION_SCHEMA_VERSION
+                    ):
+                        raise LedgerError(
+                            "Invalid routing journal intermediate table schema"
+                        )
+                conn.execute(_CONTENT_DISPUTE_SCHEMA)
                 conn.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
                 _validate_identity(conn, self._key_id)
                 _validate_foreign_keys(conn)
