@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 181
 title: "Deliver the local story timing dashboard"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/181"
 parent: null
 children: [186, 187, 188, 189, 190, 191, 192, 193, 227]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-11T14:42:13Z"
+updated: "2026-11-11T14:44:06Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"
 origin: ".aitm/stories/000/2/design/core-design.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json", "plan/2026-11-11-181-slice-c-refinement.md", "plan/2026-11-11-181-slice-c-implementation-plan.md"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md", "attachments/2026-11-10-local-dashboard-handoff.md", "attachments/2026-11-11-production-scope-transfer.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json", "plan/2026-11-11-181-slice-c-refinement.md", "plan/2026-11-11-181-slice-c-implementation-plan.md"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md", "attachments/2026-11-10-local-dashboard-handoff.md", "attachments/2026-11-11-production-scope-transfer.md", "attachments/2026-11-11-181-closure-readback.md"]}
 expansions: []
 trips: []
 ---
@@ -76,3 +76,6 @@ The reviewed Slice C checkpoint recorded a conditional plan for automatic Actual
 ## Owner-approved scope transfer and closure
 
 [Production ownership, dashboard delivery evidence and sign-off](attachments/2026-11-11-production-scope-transfer.md) records the decision to complete this epic for the local dashboard and C01 qualification. The reviewed production requirements follow their owning backlog and milestone drafts. [Epic retrospective and sign-off](retro/2026-11-11-181-epic-signoff.md).
+
+
+[GitHub and AITM-PY closure readback](attachments/2026-11-11-181-closure-readback.md).
