@@ -1,0 +1,42 @@
+{
+  "1": {
+    "source": {
+      "sha": "1452999b2f0f5a90161e39862458029c0084772c",
+      "source_sha256": "88688af92365577a7f1565290b216d599d9ee1abbe802d06585b4c3353af4a58",
+      "archive_sha256": "04bfad6476e55d3d3fb2b5b294cef56f22b2f58741d4b309d303bb84e3e03f81"
+    },
+    "exit": 0,
+    "refusal": {
+      "gate_versions": [
+        3
+      ],
+      "message": "Unsupported routing journal schema version",
+      "unchanged": {
+        "journal.sqlite3": "d2915c7608749b9473db7d7e4ec34d7ae562cbbef8f19d1197464792e63aabd7",
+        "journal.sqlite3-shm": "ad50f62514364a7da7a9a928d1a34278d75d7297ba00321875b2632d4eb5fcc9",
+        "journal.sqlite3-wal": "7358d404442d5ccf9d1d949e28296c3864f82befe73608e3f5859344efade20f"
+      }
+    },
+    "stderr": ""
+  },
+  "2": {
+    "source": {
+      "sha": "5324a80bad7730b2bdb4a2b87acf00f7171305c0",
+      "source_sha256": "cee323eb5056c18b16a84d20b7234a36f093a8545ad9c0e1d5d2af8dfa14d38a",
+      "archive_sha256": "750e0b12eb0a515f9c9d22016f037479a4d391a56e08660d7e30b7951f3086ac"
+    },
+    "exit": 0,
+    "refusal": {
+      "gate_versions": [
+        3
+      ],
+      "message": "Unsupported routing journal schema version",
+      "unchanged": {
+        "journal.sqlite3": "d2915c7608749b9473db7d7e4ec34d7ae562cbbef8f19d1197464792e63aabd7",
+        "journal.sqlite3-shm": "ad50f62514364a7da7a9a928d1a34278d75d7297ba00321875b2632d4eb5fcc9",
+        "journal.sqlite3-wal": "7358d404442d5ccf9d1d949e28296c3864f82befe73608e3f5859344efade20f"
+      }
+    },
+    "stderr": ""
+  }
+}
