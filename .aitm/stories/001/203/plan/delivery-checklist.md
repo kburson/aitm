@@ -61,3 +61,9 @@ The incoming dashboard files were `tools/story_dashboard/tests/test_usage.py` an
 [Refreshed hosted attempt 1](https://github.com/kburson/aitm/actions/runs/42957558060/attempts/1) passed the candidate Python job, quality and file checks. The literal trunk Python baseline failed in the inherited #202 case `test_claude_conflict_requires_distinct_usage_and_current_independent_custody[disabled]` with `BoundaryUnavailable: Native capture frontier is unavailable`. The other 994 hosted baseline package tests passed. Evidence collection refused and attestation was skipped. [Native failed attempt receipt](hosted-ci-refreshed-failed-a1.json).
 
 The frozen detached refreshed local baseline passed all 996 product and CLI IDs and 182 helpers. Five independent fresh runs of the inherited failing case on that exact local baseline passed. The actual hosted filesystem trigger is unverified. Preserve the exact failure and rerun all required jobs once on the same head and literal base. No test or custody gate changes. Further repeated failure keeps Test open pending new evidence.
+
+### Refreshed hosted attempt 2 passed on the preceding trunk
+
+[Hosted attempt 2](https://github.com/kburson/aitm/actions/runs/42957558060/attempts/2) passed all six jobs. The [native historical receipt](hosted-ci-refreshed-historical-a2.json) preserves that outcome. [PR #213](https://github.com/kburson/aitm/pull/213) advanced literal trunk to `72ca2d2535248844b164014d7817bffec0e9fb7e`, tree `0df8ed8cfebd9b597d20e6c4851f060cfada0618`, before the current trusted verification and independent source gate.
+
+The incoming files `tools/story_dashboard/tests/test_timing.py` and `tools/story_dashboard/timing.py` are disjoint from both #203 paths. An ordinary candidate merge incorporates the newer trunk and leaves all #203 product bytes intact. The latest head and literal base need their own locked local, signed hosted and independent source gates.
