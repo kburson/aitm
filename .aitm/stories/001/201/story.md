@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 201
 title: "[M08b2] Durable causal revision succession"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/201"
 parent: 100
 children: []
 blocking: [119, 202]
 blocked-by: [199]
 created: "2026-11-10T23:49:52Z"
-updated: "2026-11-11T00:54:23+00:00"
+updated: "2026-11-11T01:12:29+00:00"
 last-branch: "codex/aitm-201-durable-revision-succession"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: null
