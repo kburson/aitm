@@ -3,8 +3,8 @@
 Attempt 1. Implementer and closure owner are Codex. Target branch `trunk`. Prerequisite #186 is delivered and closed. Only the two attribution paths and #187's own planning records are in scope.
 
 - [x] [Design, Plan and JIT](jit.md) reviewed and accepted in the [independent verdict](jit-review.md).
-- [ ] Exact candidate, focused dashboard verification and hosted CI.
-- [ ] Independent source review, merge readback, retrospective and closure.
+- [x] Exact candidate, focused dashboard verification and hosted CI.
+- [x] Independent source review, merge readback, retrospective and closure.
 
 ## Candidate 1
 
@@ -31,3 +31,7 @@ Both named monitor failures passed on a focused local rerun using the same sourc
 - [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review. No native review was submitted.
 
 The tested merge `ecf070613b90ad20f8a833134477bbd615065150` has the ordered base and head parents above and the same tree as the local candidate. The trusted verifier checked the signed evidence for all six jobs. Dashboard tests remain separate local proof.
+
+## Verified landing and closure
+
+[PR #208](https://github.com/kburson/aitm/pull/208) merged normally at `2026-11-11T02:43:07Z` into [`e4701f2e89d34f93f13d717199254b66aa3f0457`](https://github.com/kburson/aitm/commit/e4701f2e89d34f93f13d717199254b66aa3f0457) with the verified tree `f62fbd48047f73baf52f65f86b33d475328b2f1f`. Its ordered parents are base `1282538954dc5a7e7f7b27da4e3ab096892e3add` and reviewed head `27abd178ce3e0b1e076e2c94c3a4a3f863179254`. The [implementer sign-off](../retro/2026-11-10-timing-attribution.md) was the last gate at `2026-11-11T02:43:13Z`. GitHub closed [#187](https://github.com/kburson/aitm/issues/187) as Completed at `2026-11-11T02:43:16Z`. AITM-PY read back Done. #188 can proceed through its own gates.

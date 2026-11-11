@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 187
 title: "[#181 A02] Resolve timing attribution and the legacy seed"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/187"
 parent: 181
 children: []
 blocking: [188]
 blocked-by: [186]
 created: "2026-11-10T21:02:15Z"
-updated: "2026-11-11T02:40:54Z"
-last-branch: "codex/aitm-187-timing-attribution"
+updated: "2026-11-11T02:43:20Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #186. The proposed estimate is 3.75 implementation agent-h
 ## Delivery evidence
 
 [Accepted design, plan and JIT](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+[Source PR #208](https://github.com/kburson/aitm/pull/208) · [Signed hosted verification](plan/hosted-verification-r3.json) · [Independent review](plan/post-ci-source-review.md) · [Implementer sign-off](retro/2026-11-10-timing-attribution.md).
+
+Verified on trunk at `e4701f2e89d34f93f13d717199254b66aa3f0457`. GitHub is Closed as Completed and the AITM-PY item is Done. #188's A02 prerequisite is delivered.
