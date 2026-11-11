@@ -558,13 +558,14 @@ class RoutingJournal:
         disputed = connection.execute(
             "SELECT min(sequence) FROM disputes WHERE key = ?", (key.value,)
         ).fetchone()[0]
-        if disputed is not None:
-            return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
         if observation.revision == 1 and digest == old_digest:
+            if disputed is not None:
+                return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
             return ClaimDisposition(ClaimStatus.REPLAY, key, project, old_sequence)
         held = ClaimDisposition(ClaimStatus.HELD, key, project, old_sequence)
         if (
-            observation.revision == 1
+            disputed is not None
+            or observation.revision == 1
             or observation.native_surface is not NativeSurface.CLAUDE_CODE_MACOS
         ):
             return held

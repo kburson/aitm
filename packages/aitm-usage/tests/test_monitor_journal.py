@@ -227,6 +227,7 @@ def test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts(native)
 def test_competing_project_claims_cannot_double_charge(native):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    copy_prefix = native.paths[COPY].read_bytes()
     native.append(COPY, native.turn(3, checkout=B))
     native.append(LIVE, native.turn(3))
     with native.registry.writer() as writer:
@@ -268,6 +269,19 @@ def test_competing_project_claims_cannot_double_charge(native):
             if item.observation.key == winner.key
         )
         assert journal.reserve(original, owner_replay.progress).status == "disputed"
+        assert journal.as_of() == after
+
+        native.paths[COPY].write_bytes(copy_prefix)
+        native.append(COPY, native.turn(3, checkout=A, increment=5))
+        changed = journal.prepare(COPY, native.locator(COPY))
+        (unrecorded,) = (
+            item for item in changed.candidates if item.observation.key == winner.key
+        )
+        assert unrecorded.route.project_id == A
+        assert unrecorded.observation.usage != original.observation.usage
+        assert journal.reserve(unrecorded, changed.progress).status == "held"
+        assert journal.cursor_for(COPY, native.locator(COPY)) is None
+        assert journal.cursor_for(LIVE, native.locator()) == live.progress
         assert journal.as_of() == after
 
 
