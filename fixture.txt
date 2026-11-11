@@ -1,1 +1,1 @@
-Synthetic Stop the Line fixture fwFtz9AY / base
+Synthetic Stop the Line fixture fwFtz9AY / async-open-head
