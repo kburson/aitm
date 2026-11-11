@@ -1,0 +1,20 @@
+{
+  "advisory_obligations": 1152,
+  "base": "5324a80bad7730b2bdb4a2b87acf00f7171305c0",
+  "focused": {
+    "passed": 47
+  },
+  "full": {
+    "failed": 0,
+    "log_sha256": "f7215ed35ec1a27274f6782fee06bc8be2e45c1117bde414483d0a92ba7d722a",
+    "passed": 1286,
+    "seconds": 148.86
+  },
+  "head": "a2b52e4367325f1638102dba6709933e1634d262",
+  "ruff_check": "pass",
+  "ruff_format_check": "pass",
+  "sanitized_reconciliation_sha256": "b0d05440d13fb3783baed55201e3fcac129350368992bcdd726bc415a70c8b0d",
+  "status": "pass",
+  "story": 139,
+  "tree": "583a652fb4e1d9112c2f77401095b814f8c7e625"
+}

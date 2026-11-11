@@ -93,3 +93,23 @@ on the shared snapshot
 `ae49cc4f00ed734485b003ce3dbf2a717e37eadc553025209548bb5f9e376a58`.
 [Hosted attempt 2](https://github.com/kburson/aitm/actions/runs/42940157251/attempts/2)
 is the bounded exact-trunk retry.
+
+The bounded retry passed with all four applicable push jobs. Verified
+archive `13822032683` SHA-256
+`ef3a59a38d63e895486445be261abb0d342770ec6e40bf83b654f608ee0060e3`
+and raw pytest SHA-256
+`61029da1be74ac1786447aec2e6c38b0b00202db87d628dec309af73a3c92d0a`.
+Hosted product and CLI IDs matched all 970 local IDs. The artifact
+recorded 10,360/11,301 product and 778/821 helper lines. The first
+hosted failure remains part of the record, and its cause is unknown.
+
+[PR #197](https://github.com/kburson/aitm/pull/197) now has head
+`a2b52e4367325f1638102dba6709933e1634d262`, tree
+`583a652fb4e1d9112c2f77401095b814f8c7e625`, and the exact trunk
+base above. The only change to owned files since the prior review
+is the two explicit rules in the suite policy. The
+[local validation](local-validation-a2b52e436732.json) passed all
+1,286 tests and Ruff checks. The
+[reconciliation](inventory-reconciliation-a2b52e436732.json) records
+1,152 advisory obligations. The story reentered Test with
+[fresh hosted PR checks](https://github.com/kburson/aitm/actions/runs/42944835329).
