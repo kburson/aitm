@@ -10,7 +10,7 @@ children: [186, 187, 188, 189, 190, 191, 192, 193, 227]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-11T14:03:54Z"
+updated: "2026-11-11T14:16:19Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"
@@ -78,3 +78,5 @@ Slice C has a conditional plan for automatic Actual and Cost and a preliminary *
 ### C01 read-only qualification
 
 [#227 Pin producer capabilities and shared acceptance fixtures](../../002/227/story.md) follows the delivered #193 handoff.
+
+[C01 evidence and exact parity readback](../../002/227/attachments/qualification.md) records the completed read-only baseline. Automatic Actual and Cost remain gated under the reviewed Slice C plan.
