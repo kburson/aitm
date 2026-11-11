@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 202
 title: "[M08b3] Verified incomparable-content disputes"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/202"
 parent: 100
 children: []
 blocking: [119, 203]
 blocked-by: [201]
 created: "2026-11-10T23:50:03Z"
-updated: "2026-11-11T02:18:45+00:00"
+updated: "2026-11-11T02:25:59+00:00"
 last-branch: "codex/aitm-202-incomparable-revision-disputes"
 estimate: {"agent-hours": 3.9, "size": "M"}
 priority: null
