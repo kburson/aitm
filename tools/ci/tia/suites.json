@@ -162,6 +162,16 @@
       "suite": "integration",
       "isolation_group": "native-process-state"
     },
+    "packages/aitm-usage/tests/test_monitor_journal.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_journal_store.py": {
+      "owner": "aitm-usage",
+      "suite": "integration",
+      "isolation_group": "native-process-state"
+    },
     "packages/aitm-usage/tests/test_monitor_ledger_version.py": {
       "owner": "aitm-usage",
       "suite": "integration",
