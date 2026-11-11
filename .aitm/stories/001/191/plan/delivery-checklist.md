@@ -34,7 +34,7 @@ Candidate 1 was superseded before Review. The two reproducibility fixes are expl
 [Source PR #220](https://github.com/kburson/aitm/pull/220) targets trunk base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Exact head `b7688fc1d08289f5853d09beb924fa5d11d136da` and tree `cb00e4153a717fa718a0df7fe63e30f87f5b9938` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
 - [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42961639074/attempts/1) and [delivered verifier](hosted-verification-2.json) passed.
-- [ ] Independent source review.
+- [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review, with native approval absent.
 
 ## Live capture and board readback
 
