@@ -1,0 +1,282 @@
+{
+  "base_utc": "2026-11-10T09:00:00Z",
+  "bounds": "half-open; offsets in minutes",
+  "cases": {
+    "additive": {
+      "expected": {
+        "actual_ms": 3600000
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "end_minute": 15,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        },
+        {
+          "actor": "b",
+          "end_minute": 45,
+          "key": "b",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 15,
+          "story": 187
+        },
+        {
+          "actor": "c",
+          "end_minute": 60,
+          "key": "coord",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 45,
+          "story": 181
+        }
+      ]
+    },
+    "in_turn_tool": {
+      "expected": {
+        "actual_ms": 3660000,
+        "baseline_cost_usd": "0.0125",
+        "cost_usd": "0.0125",
+        "delta_ms": 60000
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "end_minute": 16,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        },
+        {
+          "actor": "b",
+          "end_minute": 45,
+          "key": "b",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 15,
+          "story": 187
+        },
+        {
+          "actor": "c",
+          "end_minute": 60,
+          "key": "coord",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 45,
+          "story": 181
+        },
+        {
+          "actor": "a",
+          "end_minute": 16,
+          "key": "tool",
+          "kind": "tool",
+          "phase": "implement",
+          "start_minute": 15,
+          "story": 186
+        }
+      ]
+    },
+    "missing_usage": {
+      "expected": {
+        "actual_ms": 900000,
+        "cost_coverage": "unknown",
+        "cost_usd": null,
+        "subject": 186,
+        "usage_selector": null
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "end_minute": 15,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        },
+        {
+          "actor": "b",
+          "end_minute": 45,
+          "key": "b",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 15,
+          "story": 187
+        },
+        {
+          "actor": "c",
+          "end_minute": 60,
+          "key": "coord",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 45,
+          "story": 181
+        }
+      ]
+    },
+    "owner_wait": {
+      "expected": {
+        "actual_ms": 3600000,
+        "owner_wait_ms": 1800000
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "end_minute": 15,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        },
+        {
+          "actor": "b",
+          "end_minute": 45,
+          "key": "b",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 15,
+          "story": 187
+        },
+        {
+          "actor": "c",
+          "end_minute": 60,
+          "key": "coord",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 45,
+          "story": 181
+        },
+        {
+          "actor": "a",
+          "end_minute": 90,
+          "key": "wait",
+          "kind": "owner-wait",
+          "phase": "implement",
+          "start_minute": 60,
+          "story": 186
+        }
+      ]
+    },
+    "parallel": {
+      "expected": {
+        "actual_ms": 11700000,
+        "all_phase_elapsed_ms": 9900000,
+        "owner_wait_ms": 1800000,
+        "working_wall_ms": 8100000
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "end_minute": 90,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        },
+        {
+          "actor": "b",
+          "end_minute": 120,
+          "key": "b",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 30,
+          "story": 187
+        },
+        {
+          "actor": "c",
+          "end_minute": 165,
+          "key": "coord",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 150,
+          "story": 181
+        },
+        {
+          "actor": "a",
+          "end_minute": 150,
+          "key": "wait",
+          "kind": "owner-wait",
+          "phase": "implement",
+          "start_minute": 120,
+          "story": 186
+        },
+        {
+          "actor": "c",
+          "end_minute": null,
+          "key": "epic-start",
+          "kind": "workflow-start",
+          "phase": "all-phase",
+          "start_minute": 0,
+          "story": 181
+        },
+        {
+          "actor": "c",
+          "end_minute": 165,
+          "key": "epic-delivered",
+          "kind": "workflow-delivered",
+          "phase": "all-phase",
+          "start_minute": null,
+          "story": 181
+        }
+      ]
+    },
+    "unauthenticated_provider": {
+      "expected": {
+        "actual_coverage": "unknown",
+        "actual_ms": null,
+        "cost_coverage": "unknown",
+        "cost_usd": null,
+        "subject": 186,
+        "timing_gap": "unauthenticated-provider",
+        "usage_gap": "unverified-usage"
+      },
+      "intervals": [
+        {
+          "actor": "a",
+          "admission": "held",
+          "end_minute": 15,
+          "key": "a",
+          "kind": "agent-turn",
+          "phase": "implement",
+          "start_minute": 0,
+          "story": 186
+        }
+      ]
+    }
+  },
+  "inputs": "synthetic evidence, separate timing and usage inputs",
+  "local_execution": "Delivered timing fold; delivered legacy usage selection. The unauthenticated timing input is pre-held and passed to the fold as a gap. Native admission and hosted projection remain downstream tests.",
+  "priced_usage_fixture": {
+    "coverage": "complete",
+    "priced_usd": "0.0125",
+    "selector": {
+      "cutoff_utc": "2026-11-10T20:00:00Z",
+      "pricing_basis": "api-equivalent",
+      "project": "aitm",
+      "rate_card": "rates-1",
+      "report_id": "report-1",
+      "window_end_utc": "2026-11-10T20:00:00Z",
+      "window_start_utc": "2026-11-10T19:00:00Z"
+    },
+    "subject": 186,
+    "tokens": {
+      "input": 125,
+      "output": 75
+    }
+  },
+  "schema": "aitm.c01-shared-fixtures/v1",
+  "story": 227,
+  "use_by": [
+    "C03",
+    "C05",
+    "C06"
+  ]
+}

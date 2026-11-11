@@ -1,0 +1,375 @@
+{
+  "board": {
+    "fields": {
+      "Actual": {
+        "id": "PVTF_lAHOABCEY84Bq1hZzhpPgWw",
+        "type": "NUMBER"
+      },
+      "Actual coverage": {
+        "id": "PVTF_lAHOABCEY84Bq1hZzhpXtas",
+        "type": "TEXT"
+      },
+      "Cost": {
+        "id": "PVTF_lAHOABCEY84Bq1hZzhpXV-s",
+        "type": "NUMBER"
+      },
+      "Elapsed": null,
+      "Owner wait": null
+    },
+    "items": {
+      "181": {
+        "actual_hours": "2.9460",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "186": {
+        "actual_hours": "1.1354",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "187": {
+        "actual_hours": "0.5224",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "188": {
+        "actual_hours": "0.4150",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "189": {
+        "actual_hours": "0.1672",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "190": {
+        "actual_hours": "0.2156",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "191": {
+        "actual_hours": "0.0819",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "192": {
+        "actual_hours": "0.3224",
+        "cost_usd": null,
+        "coverage": "partial"
+      },
+      "193": {
+        "actual_hours": "0.0823",
+        "cost_usd": null,
+        "coverage": "partial"
+      }
+    },
+    "url": "https://github.com/users/kburson/projects/24"
+  },
+  "capabilities": {
+    "changed_paths_since_delivered": [
+      "packages/aitm-usage/src/aitm_usage/monitor_scope.py",
+      "packages/aitm-usage/tests/test_monitor_scope.py"
+    ],
+    "github_m2": "draft",
+    "installed_legacy_cli": "aitm-usage 0.1.0",
+    "issues": {
+      "100": {
+        "board": "Dev",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "116": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "117": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "118": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "119": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "120": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "121": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "122": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "123": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "124": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "128": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "129": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "182": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "194": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "2": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "203": {
+        "board": "Done",
+        "reason": "COMPLETED",
+        "state": "CLOSED"
+      },
+      "204": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "209": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "210": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "23": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "28": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "34": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "36": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "51": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "53": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "54": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "55": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "56": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      },
+      "72": {
+        "board": "Backlog",
+        "reason": null,
+        "state": "OPEN"
+      }
+    },
+    "trunk_packages": [
+      "aitm-usage"
+    ],
+    "usage_report": {
+      "availability": "unavailable",
+      "cutoff": null,
+      "publication": null,
+      "rate_basis": null,
+      "window": null
+    },
+    "viewer_m6": "draft"
+  },
+  "capability_planning": "883c123e0ed1e71dcd7ae85d3909dee143f45886",
+  "current_trunk": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "delivered_trunk": "bc8063b66522ed3a27c95d1bb0546f1e73249612",
+  "historical": {
+    "epic": {
+      "as_of_utc": "2026-11-11T05:33:20Z",
+      "html_sha256": "0fad4c852595a17c7909ea6f12f77ed78bddd79f29e240d1b872f1de025d7a1b",
+      "planning": "3a28d392ad0c5782b1898b387a4ecbc8e694ecb1",
+      "schema": "aitm.story-dashboard/v1",
+      "snapshot_sha256": "f500e9725452af95d8fb4e58ec613a786b95534071b85e17f51eb06e4679c510",
+      "usage_selector": null,
+      "validation_sha256": "d7b851f1fde85d4823b3a75a9db7c278e77bd8282743c00fa3663cfd2804c0e3"
+    },
+    "story": {
+      "as_of_utc": "2026-11-11T04:23:16Z",
+      "html_sha256": null,
+      "planning": "17761cc1928fd916cf32a9c078d4a742bfcb32b8",
+      "schema": "aitm.story-dashboard/v1",
+      "snapshot_sha256": "e46da18999caf132dcc451e9ae8e7b12dd5517a49113f85931c48d93c5e3772a",
+      "usage_selector": null,
+      "validation_sha256": "3497de8b8d908759aa0e62bd313de3bced70e4fba6bd82e6aaa2dfa227821ab6"
+    }
+  },
+  "historical_legacy_seed": {
+    "path": ".aitm/stories/001/181/attachments/2026-11-10-actual-backfill.json",
+    "sha256": "8d619b606cfd0142c46da7402ee52c20b95d3a78725894c12cc385309342b139"
+  },
+  "schema": "aitm.c01-qualification/v1",
+  "story": 227,
+  "timing_receipts": {
+    "181": {
+      "coverage": "partial",
+      "direct_ms": 13754,
+      "evidence_through_utc": "2026-11-11T05:33:05.053000Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/181/attachments/timing/checkpoint-004c734f99fc88e224a96934-181.json": "33f3dcd05062ed1ed9bb6922be65525539287b8630da8e8971167d518243f47a",
+        ".aitm/stories/001/181/attachments/timing/checkpoint-3ef80a581735400dead8c86c-181.json": "5c10e0900f0a78b8eb7aad5363ee49b463e53e62a9267428048f6d9ae44c8cda"
+      }
+    },
+    "186": {
+      "coverage": "partial",
+      "direct_ms": 4087308,
+      "evidence_through_utc": "2026-11-10T23:00:58.088000Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/186/attachments/timing/native-f708a11bffdede26cf3e6abe-186.json": "e29b877bf0b7759177f20b8c363a05b4e2940b8615cfbd30a2176e165bd181bc"
+      }
+    },
+    "187": {
+      "coverage": "partial",
+      "direct_ms": 1880699,
+      "evidence_through_utc": "2026-11-11T02:43:52.841000Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/187/attachments/timing/native-e326ae24af6dccecdde2a46e-187.json": "8849310e65a92b1139de043ef8e63aab59db7887cb9949c7d35e55f561e5a0cb"
+      }
+    },
+    "188": {
+      "coverage": "partial",
+      "direct_ms": 1494000,
+      "evidence_through_utc": "2026-11-11T04:21:37Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/188/attachments/timing/checkpoint-7476405cda9cd7019f0a80ad-188.json": "62f88a22855a680d0dd422b231e43357787e1a12866ddeb46abf3febdb54d2cf",
+        ".aitm/stories/001/188/attachments/timing/checkpoint-9e47ea59e84a6c4f638ee2e2-188.json": "42987b3f6807bb6ea3c3380569569399535f656aae95fbf4915fe819db01e911",
+        ".aitm/stories/001/188/attachments/timing/checkpoint-c20bff73d39ca7277ac095ba-188.json": "4aa277f20ab026ad4a4d03b12195bf92e343aa95a6f5c69a192fea38ef5c69cf",
+        ".aitm/stories/001/188/attachments/timing/checkpoint-d8b52581f6a9b2f8a4677a59-188.json": "24eb748e9342a6d90ec092919c70091505c195208c15f61a081882d4aef460af",
+        ".aitm/stories/001/188/attachments/timing/checkpoint-dddd6d12e265e0c350fb7967-188.json": "434022886724e5ee43a59a3dfa52842dcfe6e080dc38c0d641099c0b58491eb3"
+      }
+    },
+    "189": {
+      "coverage": "partial",
+      "direct_ms": 602000,
+      "evidence_through_utc": "2026-11-11T04:05:04Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/189/attachments/timing/checkpoint-119b4853ab4bbdb79762038a-189.json": "c60d4907ce072f60c0360c46392192dc8865c47f0ea7c30cca3cd3e2f7d086fd",
+        ".aitm/stories/001/189/attachments/timing/checkpoint-575c7953b82ab2ae85431c8e-189.json": "397aa8d63564e135604e5e4f490af95e3615b9cb992247233d958482f47ccf92",
+        ".aitm/stories/001/189/attachments/timing/checkpoint-9950117f8f54d1a30a78260b-189.json": "ecd593b195f02db97c4e634d9ee6a487858542515eb4a4ee32eb6fe1b412e6ce",
+        ".aitm/stories/001/189/attachments/timing/checkpoint-fd3e887a135dc0bdde72e3b5-189.json": "0ed66400703e0752def848b9bde78f1b8abfd4e1585ea02c67ad37c015e7fcf6"
+      }
+    },
+    "190": {
+      "coverage": "partial",
+      "direct_ms": 776000,
+      "evidence_through_utc": "2026-11-11T04:41:04Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/190/attachments/timing/checkpoint-3ab48d481ac50b7a81fc1f1b-190.json": "89a468c1c5481520a9ae278add2b594e567ceeadc03d40d986aff2e09e57ea66",
+        ".aitm/stories/001/190/attachments/timing/checkpoint-4a2fdb2726ffe97895c1b292-190.json": "e1afa24c946fe1eb25260e26395c49dd57d56f4dc1309ddf1f569112870c0761",
+        ".aitm/stories/001/190/attachments/timing/checkpoint-f9251b1e5d3ab5cc6b36799f-190.json": "acad99ba7bb8c4bdaa6cf2e50bc6811d3ee2a8d4f3cf33ad7b825028905c9a61"
+      }
+    },
+    "191": {
+      "coverage": "partial",
+      "direct_ms": 294901,
+      "evidence_through_utc": "2026-11-11T04:56:35.332000Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/191/attachments/timing/checkpoint-34d8ea735e82e03bd3850bc0-191.json": "7857f01b45fe99fb21881f8bdb9b7d19a2f461fcfb1f2e969de4e147b21ef8f1",
+        ".aitm/stories/001/191/attachments/timing/checkpoint-7c9a3239e0459ed8fb3dca3c-191.json": "6b9f00e18f27949d308038be3349246dcd7ee7985772a4a28720a63d0478f9ef",
+        ".aitm/stories/001/191/attachments/timing/checkpoint-df26a539a717771bb22c9d59-191.json": "d60794a69d81dde1632fd96cd6861112b42da256860537aae3adb1db2ff63689",
+        ".aitm/stories/001/191/attachments/timing/live-pilot-a06-191.json": "8d3bf226f4e47fac1153dad67b4ecae5fdbabb24ccbc73ebaf8ed9ae7d13076c"
+      }
+    },
+    "192": {
+      "coverage": "partial",
+      "direct_ms": 1160677,
+      "evidence_through_utc": "2026-11-11T05:17:54Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/192/attachments/timing/checkpoint-13b4c207926dd374246c8f86-192.json": "33e6936f3a0945740bbd41320d727d94dd60046ca7b05e9c74ebeee1f864d50c",
+        ".aitm/stories/001/192/attachments/timing/checkpoint-914933c0fe5384650622dbf3-192.json": "be133b57a379688182d491d4f335cec805fba22cfb045fe579aff41f03b21b15",
+        ".aitm/stories/001/192/attachments/timing/checkpoint-b373219da36bade5170392a9-192.json": "ce57986f26e9031a6f8b7f4f33964c0635c3b6dcc1f59bd013c8d0e3d43df255",
+        ".aitm/stories/001/192/attachments/timing/checkpoint-be43a7b55d7a027976b574d7-192.json": "b6305d36628abb6c00050fe08194346be4eb3fac44b1569fac048e9e7a132a24"
+      }
+    },
+    "193": {
+      "coverage": "partial",
+      "direct_ms": 296372,
+      "evidence_through_utc": "2026-11-11T05:32:21.605000Z",
+      "receipt_sha256_by_path": {
+        ".aitm/stories/001/193/attachments/timing/checkpoint-6909abc9891fbc5c52d761cf-193.json": "fb917d76bdbf0193edec02e2d07367a647c4177aef2ad10291333dc350144d0a",
+        ".aitm/stories/001/193/attachments/timing/checkpoint-83992d51ea3a3c39a12c27a2-193.json": "0f900be2556046372c3716014011f85d4472e9feefffe256fb609f7c2b91c795",
+        ".aitm/stories/001/193/attachments/timing/checkpoint-dbaab6aea364081e57565fec-193.json": "b4a9616664209f5b13879a8739f6a487809f1f229571a4fca177182222ab985b"
+      }
+    }
+  },
+  "verification": {
+    "board_metric_writes": 0,
+    "dashboard_suite": {
+      "command": "python3.13 -m unittest discover -s tools/story_dashboard/tests",
+      "exit": 0,
+      "tests": 61
+    },
+    "fixture_cases_passed": 6,
+    "monitor_probe": {
+      "command": "aitm-usage monitor report --project 00000000-0000-0000-0000-000000000001",
+      "execution": "current trunk CLI source and installed distribution metadata, disposable UUID",
+      "exit": 1,
+      "message": "aitm-usage: monitor-report-unavailable"
+    },
+    "python": "Python 3.13.9",
+    "qualification_from_utc": "2026-11-11T14:08:40Z",
+    "qualification_through_utc": "2026-11-11T14:09:11Z",
+    "runtime_gate": "held",
+    "shared_fixtures_sha256": "7590d3fbd1648819c8de5a5e864b5d89b2d3fe54dbb788716fdc92992e8f035b"
+  }
+}
