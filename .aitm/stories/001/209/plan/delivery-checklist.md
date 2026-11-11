@@ -65,3 +65,9 @@ On [run 43059217996 attempt 1](https://github.com/kburson/aitm/actions/runs/4305
 ### Second isolated hosted attempt
 
 On [run 43059217996 attempt 2](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/2), the baseline passed again. The exact candidate reported 1,102 product and CLI tests in 497.31 seconds and 182 helpers in 19.22 seconds. The candidate's installed-wheel build and smoke step also succeeded. GitHub canceled the candidate during artifact upload. The [terminal job receipt](isolated-hosted-a2-terminal.json) preserves the passed test and wheel steps and canceled upload. Collection failed and the final gate was skipped. The third attempt reruns the same six jobs on the same revision and retains the existing time limits.
+
+### Third isolated hosted attempt
+
+On [run 43059217996 attempt 3](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/3), GitHub canceled both macOS jobs after fifteen minutes in the queue. Both [job checks](isolated-hosted-a3-terminal.json) recorded no executed steps. GitHub reported that neither hosted runner acquired the job after multiple attempts and annotated macOS arm64 capacity constraints. The hosted signature and source recovery remain pending. The existing full workflow was retried against the same head and literal base.
+
+The [exact local test inventory](isolated-local-test-inventory.json) records 1,071 baseline and 1,102 candidate product and CLI tests, 182 helpers per side, identical inventories to the previous local verification, and identical raw coverage. The [Project readback](project-capture-isolation-readback.json) verifies Rank 228.1, Estimate 3.90, Actual 0.5693 partial, Size M and the original Start Date.
