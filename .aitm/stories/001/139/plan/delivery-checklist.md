@@ -131,3 +131,28 @@ pass and disposition hold above apply to the prior base. The
 new target changed product code and tests in the two already
 mapped journal modules. Recheck the current inventory and review
 the exact replacement before delivery.
+
+### Current review on the #202 base
+
+PR #197 fast-forwarded to head `a5fdd76f7e682e2a9ff547db900a9c82ac502fc1`
+on literal trunk `1282538954dc5a7e7f7b27da4e3ab096892e3add`. All three
+independently reviewed files are byte-identical to the prior
+candidate. The [exact trunk push](https://github.com/kburson/aitm/actions/runs/42945628106/attempts/1)
+passed and its authenticated archive `13823420424` matched all 996
+locally collected product and CLI IDs. There are 26 additions and
+zero removals. All additions are in the two reviewed journal modules.
+The [reconciliation](inventory-reconciliation-a5fdd76f7e68.json)
+records 1,178 advisory obligations, and the
+[local validation](local-validation-a5fdd76f7e68.json) passed 1,312
+tests with zero failures.
+
+All six jobs passed on the [exact hosted attempt](https://github.com/kburson/aitm/actions/runs/42945914184/attempts/1).
+[Authenticated artifact replay](hosted-ci-receipt-a5fdd76f7e68.json)
+verified 996 candidate outcomes, 995 base outcomes and both coverage
+floors. [Independent source review](source-review-attempt-4.md)
+accepted the candidate with no new findings.
+
+The [trusted #103 verifier](verifier-hold-a5fdd76f7e68.json) requires
+the first explicit owner disposition for the three new files under
+`tools/ci` on tested tree `7709cca894edba3e40e4b193a091e3077e4d5534`.
+The story remains in Test pending that disposition.
