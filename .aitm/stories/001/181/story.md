@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/181"
 parent: null
-children: [186, 187, 188, 189, 190, 191, 192, 193]
+children: [186, 187, 188, 189, 190, 191, 192, 193, 227]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-11T12:51:45Z"
+updated: "2026-11-11T14:03:54Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"
@@ -74,3 +74,7 @@ Reuse the eligible activity and implementation clock in #28, qualified review ti
 [Current capability and dependency readback](plan/2026-11-11-181-slice-c-refinement.md) · [Reviewed Slice C plan](plan/2026-11-11-181-slice-c-implementation-plan.md) · [Plan review](plan/reviews/2026-11-11-181-slice-c-review.md).
 
 Slice C has a conditional plan for automatic Actual and Cost and a preliminary **21.25 h** integration estimate. The existing manual Actual and offline dashboard use verified planning receipts. Automatic Actual needs Core's pinned read and qualified activity, legacy adoption where applicable, and the supported GitHub writer. Automatic Cost separately needs monitor M13/M14 and the compatible Core C44 receiver. Hosted viewing uses master #1 M6. The plan records the precise open dependencies and capability gates. Slice C remains at the planning checkpoint.
+
+### C01 read-only qualification
+
+[#227 Pin producer capabilities and shared acceptance fixtures](../../002/227/story.md) follows the delivered #193 handoff.
