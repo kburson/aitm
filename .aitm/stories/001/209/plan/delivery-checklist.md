@@ -17,3 +17,9 @@ The four-path candidate is frozen at `b1ec12ad4767edffe3c407dc909556faa39a01fa`,
 [PR #231](https://github.com/kburson/aitm/pull/231) read back exact head `b1ec12ad4767edffe3c407dc909556faa39a01fa`, tree `080a9b47a73681e399b73477b67875811efdd234` and literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. The [locked local gate](local-test-inventory.json) passed 1,100 product and CLI tests and 182 helpers, retaining the exact baseline sets of 1,071 and 182. Raw coverage passed at 10,730/11,681 product and 778/821 helper lines. Ruff and whitespace passed.
 
 [Project Test](project-test-readback.json) preserves Rank 228.1, Size M, Estimate 3.90 and partial Actual 0.2677. Signed hosted validation and the independent exact source review are pending.
+
+## Signed hosted Review checkpoint
+
+[All six required jobs](https://github.com/kburson/aitm/actions/runs/43048396036/attempts/1) passed on exact head `b1ec12ad4767edffe3c407dc909556faa39a01fa` and literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. The [authenticated receipt](hosted-ci-receipt.json) verifies tested merge `288957ac3111f7dc41ed19543bcd525ddb0443e1` and reviewed tree `080a9b47a73681e399b73477b67875811efdd234`. Artifact `13868707752` has signed subject SHA-256 `9e6adccd3253da02141b6f54e28ddd26c4aa4c7a93dac7ef9eb56fe4d3e5d743`.
+
+Trusted raw replay retained the 1,070 hosted package baseline IDs, passed all 1,100 candidate tests and both raw coverage floors. The [exact ID comparison](hosted-baseline-id-reconciliation.json) verifies the only extra local baseline ID is the fixed CLI help control and the local and hosted candidate IDs are identical. The candidate and local baseline explicitly include the CLI control. The [literal workflow](https://github.com/kburson/aitm/blob/b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5/.github/workflows/ci.yml#L70-L72) shows that hosted python-base inventories package tests only. Project 24 read back In review. Independent exact source review is pending.
