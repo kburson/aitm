@@ -70,6 +70,14 @@ CREATE TABLE content_disputes (
     payload BLOB NOT NULL
 ) STRICT;
 """
+_V4_DISPOSITION_SCHEMA = """
+CREATE TABLE route_dispositions (
+    command TEXT PRIMARY KEY,
+    hold TEXT NOT NULL UNIQUE,
+    sequence INTEGER NOT NULL UNIQUE REFERENCES commits,
+    payload BLOB NOT NULL
+) STRICT;
+"""
 
 
 def _directory(registry: Registry) -> Path:
@@ -138,8 +146,27 @@ def _create_v2_store(writer):
     return evidence
 
 
+def _create_v3_store(writer):
+    evidence = _create_v2_store(writer)
+    with _sqlite(_database(writer)) as conn:
+        conn.execute(_V3_CONTENT_SCHEMA)
+        conn.execute("PRAGMA user_version = 3")
+        conn.execute("INSERT INTO content_disputes VALUES ('key', 3, x'00ff')")
+    return evidence
+
+
+def _create_legacy_store(writer, version):
+    return {1: _create_v1_store, 2: _create_v2_store, 3: _create_v3_store}[version](
+        writer
+    )
+
+
 def _legacy_rows(conn, version):
-    names = _V1_TABLES + (("claim_revisions",) if version == 2 else ())
+    names = _V1_TABLES
+    if version >= 2:
+        names += ("claim_revisions",)
+    if version >= 3:
+        names += ("content_disputes",)
     return {
         name: conn.execute(f"SELECT * FROM {name} ORDER BY rowid").fetchall()
         for name in names
@@ -174,7 +201,7 @@ def _durable_bytes(registry):
 def _assert_exact_legacy_upgrade(tmp_path, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        evidence = (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        evidence = _create_legacy_store(writer, version)
         identities = _storage_identity(registry)
         with _sqlite(_database(registry)) as conn:
             original_schema = _schema_objects(conn)
@@ -183,7 +210,7 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
         store = journal.JournalStore(writer)
         assert store.evidence == evidence
         with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
             assert conn.execute("PRAGMA application_id").fetchone() == (
                 _V1_APPLICATION_ID,
             )
@@ -194,9 +221,12 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             assert conn.execute("SELECT key_id FROM identity").fetchone() == (
                 evidence.key_id,
             )
-            assert conn.execute("SELECT * FROM content_disputes").fetchall() == []
+            assert conn.execute("SELECT * FROM route_dispositions").fetchall() == []
             new_schema = _schema_objects(conn)
-            added = {"content_disputes"}
+            added = {"route_dispositions"}
+            if version < 3:
+                added.add("content_disputes")
+                assert conn.execute("SELECT * FROM content_disputes").fetchall() == []
             if version == 1:
                 added.add("claim_revisions")
                 assert conn.execute("SELECT * FROM claim_revisions").fetchall() == []
@@ -206,18 +236,23 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             assert _legacy_rows(conn, version) == original_rows
         _assert_storage_identity(identities)
     with _sqlite(":memory:") as conn:
-        conn.executescript(_V1_SCHEMA + _V2_REVISION_SCHEMA + _V3_CONTENT_SCHEMA)
+        conn.executescript(
+            _V1_SCHEMA
+            + _V2_REVISION_SCHEMA
+            + _V3_CONTENT_SCHEMA
+            + _V4_DISPOSITION_SCHEMA
+        )
         assert _schema_objects(conn) == new_schema
     fresh = Registry(tmp_path / "fresh")
     with fresh.writer() as writer:
         writer.source_evidence()
         with journal.JournalStore(writer).transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
             assert _schema_objects(conn) == new_schema
 
 
 def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
-    # Retain the baseline node ID; the fresh target is now v3.
+    # Retain the baseline node ID after later schema upgrades.
     _assert_exact_legacy_upgrade(tmp_path, 1)
 
 
@@ -225,10 +260,14 @@ def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path):
     _assert_exact_legacy_upgrade(tmp_path, 2)
 
 
+def test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4(tmp_path):
+    _assert_exact_legacy_upgrade(tmp_path, 3)
+
+
 def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        _create_legacy_store(writer, version)
         identities = _storage_identity(registry)
         expected_bytes = _durable_bytes(registry)
         with _sqlite(_database(registry)) as conn:
@@ -255,10 +294,11 @@ def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
             if (
                 migration is not None
                 and migration.in_transaction
-                and migration.execute("PRAGMA user_version").fetchone() == (3,)
+                and migration.execute("PRAGMA user_version").fetchone() == (4,)
             ):
                 assert (
-                    migration.execute("SELECT * FROM content_disputes").fetchall() == []
+                    migration.execute("SELECT * FROM route_dispositions").fetchall()
+                    == []
                 )
                 assert _legacy_rows(migration, version) == original_rows
                 if version == 1:
@@ -290,7 +330,7 @@ def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
             assert _schema_objects(conn) == original_schema
             assert _legacy_rows(conn, version) == original_rows
         with journal.JournalStore(writer).transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
             assert _legacy_rows(conn, version) == original_rows
 
 
@@ -302,6 +342,11 @@ def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
 def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
     _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 2)
+
+
+@pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
+def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
+    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 3)
 
 
 @pytest.mark.parametrize(
@@ -635,13 +680,13 @@ def test_retired_writer_cannot_reopen_or_use_saved_store(tmp_path):
             journal.JournalStore(writer)
 
 
-@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize("version", [1, 2, 3])
 def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
     tmp_path, monkeypatch, version
 ):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        _create_legacy_store(writer, version)
         statements = []
         open_database = journal._open
 
@@ -659,13 +704,13 @@ def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
         assert normalized.count("COMMIT") == 1
         assert [
             sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")
-        ] == ["PRAGMA USER_VERSION = 3"]
+        ] == ["PRAGMA USER_VERSION = 4"]
         creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
-        assert len(creates) == (2 if version == 1 else 1)
-        assert creates[-1].startswith("CREATE TABLE CONTENT_DISPUTES")
+        assert len(creates) == 4 - version
+        assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
 
 
-@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize("version", [1, 2, 3])
 def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
     tmp_path, version
 ):
@@ -722,3 +767,23 @@ def test_content_dispute_table_enforces_private_strict_foreign_keys(tmp_path):
             conn.execute(insert, ("key", 3, b"payload"))
             with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
                 conn.execute(insert, ("key", 3, b"different"))
+
+
+def test_route_disposition_table_enforces_strict_identity_and_commit(tmp_path):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        _create_v3_store(writer)
+        with journal.JournalStore(writer).transaction(write=True) as conn:
+            insert = "INSERT INTO route_dispositions VALUES (?, ?, ?, ?)"
+            with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+                conn.execute(insert, ("command", "hold", 999, b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="cannot store TEXT"):
+                conn.execute(insert, ("command", "hold", 3, "payload"))
+            conn.execute(insert, ("command", "hold", 3, b"payload"))
+            for values in (
+                ("command", "other-hold", 2, b"payload"),
+                ("other-command", "hold", 2, b"payload"),
+                ("other-command", "other-hold", 3, b"payload"),
+            ):
+                with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+                    conn.execute(insert, values)
