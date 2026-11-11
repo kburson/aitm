@@ -36,3 +36,5 @@ For B02, use `browser/offline-browser-proof.mjs` and `browser/probe.js`. The bro
 ## Implementer checkpoints
 
 Read-only pickup preparation, as planning contributor, was observed in the half-open UTC window `2026-11-11T04:35:08Z` to `2026-11-11T04:35:52Z`. Implementation and first-candidate verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:44:20Z` to `2026-11-11T04:56:20Z`. Correction and verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:56:58Z` to `2026-11-11T05:00:14Z`. Waiting between assignments, coordinator work and hosted verification are outside these checkpoints.
+
+[Hosted candidate 1](https://github.com/kburson/aitm/actions/runs/42962849388) was superseded after the trusted-base runner failed before checkout. [Job 130333228284](https://github.com/kburson/aitm/actions/runs/42962849388/job/130333228284) failed all three fetches of exact trunk with DNS resolution errors. Local Git independently resolved and read the same trunk object. The retry uses the identical source tree and a new first-attempt run.

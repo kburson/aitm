@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 192
 title: "[#181 B01] Render and filter the offline dashboard"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/192"
 parent: 181
 children: []
 blocking: [193]
 blocked-by: [190]
 created: "2026-11-10T21:02:22Z"
-updated: "2026-11-11T05:01:11Z"
+updated: "2026-11-11T05:04:04Z"
 last-branch: "codex/aitm-192-offline-dashboard"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
