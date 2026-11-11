@@ -113,3 +113,21 @@ is the two explicit rules in the suite policy. The
 [reconciliation](inventory-reconciliation-a2b52e436732.json) records
 1,152 advisory obligations. The story reentered Test with
 [fresh hosted PR checks](https://github.com/kburson/aitm/actions/runs/42944835329).
+
+All six jobs passed on the [refreshed hosted attempt](https://github.com/kburson/aitm/actions/runs/42944835329/attempts/1).
+[Authenticated artifact replay](hosted-ci-receipt-a2b52e436732.json)
+verified 970 candidate outcomes, 969 base outcomes and both coverage
+floors. [Independent source review](source-review-attempt-3.md)
+accepted the exact candidate with no new findings.
+
+The [trusted #103 verifier](verifier-hold-a2b52e436732.json) held for
+the first explicit owner disposition on tested tree
+`583a652fb4e1d9112c2f77401095b814f8c7e625`. The gate-control diff consists
+of the three additive TIA files under `tools/ci`.
+
+The #202 merge advanced trunk to
+`1282538954dc5a7e7f7b27da4e3ab096892e3add` during review. The
+pass and disposition hold above apply to the prior base. The
+new target changed product code and tests in the two already
+mapped journal modules. Recheck the current inventory and review
+the exact replacement before delivery.

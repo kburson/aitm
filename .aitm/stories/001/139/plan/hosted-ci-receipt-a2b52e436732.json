@@ -1,0 +1,68 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_inventory.py": "fbe0e5e91472c15e36eb15ddf2e5c156902c8f7d",
+    "tools/ci/tia/inventory.py": "2f542dcdb9e6518c637d445fce673377d3dd34af",
+    "tools/ci/tia/suites.json": "e0d88968b23412c0f5594149d87e643554a0e9af"
+  },
+  "artifact": {
+    "archive_digest": "sha256:d126e26bbf1063de4c5ff24fbff7d32c5578767ebe0b590fee0dccfcc1e81748",
+    "id": 13822551543,
+    "subject_digest": "a2d9f1051d3b711ba6ba5be27a85ae05e156abfe33ccfdbe8c4ff7310cec1522"
+  },
+  "attempt": 1,
+  "base": "5324a80bad7730b2bdb4a2b87acf00f7171305c0",
+  "boundary": "source review and exact-tree disposition recorded separately",
+  "controls": {
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "96424d880798d78e1eae93fba4d748d4fe985792"
+  },
+  "coverage": {
+    "helpers": {
+      "covered_lines": 778,
+      "num_statements": 821
+    },
+    "product": {
+      "covered_lines": 10360,
+      "num_statements": 11301
+    }
+  },
+  "head": "a2b52e4367325f1638102dba6709933e1634d262",
+  "jobs": {
+    "aitm-ci": 130277195496,
+    "collect-evidence": 130277131926,
+    "file-checks": 130275013449,
+    "python": 130275013810,
+    "python-base": 130275013711,
+    "quality": 130275013757
+  },
+  "pr": 197,
+  "raw_replay": {
+    "baseline_tests": 969,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 10360,
+        "num_statements": 11301
+      }
+    },
+    "failures": [],
+    "passed": true,
+    "tests": 970
+  },
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/42944835329/attempts/1",
+  "run_id": 42944835329,
+  "status": "authenticated-hosted-checks-and-raw-replay-pass",
+  "story": 139,
+  "suite": 116302557577,
+  "tested": "dee2d17be88da7239bc9f81cd706e997fd9845c7",
+  "tree": "583a652fb4e1d9112c2f77401095b814f8c7e625",
+  "workflow_id": 412848571
+}
