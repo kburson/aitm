@@ -24,3 +24,5 @@ At 1280 and 390 CSS pixels, both pinned views opened in Chrome offline with zero
 | Live capture pilot | `527dce9bd7847181a67dc23c6bb2c9844f15c87f` | `2026-11-11T04:45:27Z` | `94a2c286b3de1bce4e49eb38cc1b35128ce470de83c644e65f843809a33f6fe9` | `80a1adbe65515b073b01aa49bf02c5e2982b93a8af32f75527fdff724afa7803` | `4b3c1143bdedb532ddafc51821e499c3fe483d71573fcdebbc68c75451a40fb7` |
 
 The later view contains receipt SHA-256 `8d3bf226f4e47fac1153dad67b4ecae5fdbabb24ccbc73ebaf8ed9ae7d13076c` and 4,891 ms of Actual through `2026-11-11T04:43:35.855000Z`. Both JSON and HTML remained local.
+
+[Candidate 1 hosted run](https://github.com/kburson/aitm/actions/runs/42965221943) was superseded after an independent clean reader found the generic Python launcher could resolve to Python 2.7. The corrected README explicitly selects and checks Python 3.13 or later. The exact updated shell block built an HTML and validated snapshot from a separate macOS reader with its default Python 3.13.1.
