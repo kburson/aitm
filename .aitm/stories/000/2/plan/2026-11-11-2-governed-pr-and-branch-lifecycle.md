@@ -1,5 +1,7 @@
 # #2 Governed story branch and PR lifecycle proposal
 
+**Spec** [Governed PR and working branch lifecycle design](../design/2026-11-11-2-governed-pr-and-branch-lifecycle-design.md).
+
 **For review.** This is a cross-epic planning proposal. Core owns the
 agent-facing workflow and provider contract. GitHub-specific behavior
 belongs in `aitm-github`, with skill and MCP guidance in
