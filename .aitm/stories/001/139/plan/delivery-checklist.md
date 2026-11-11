@@ -268,3 +268,7 @@ and file checks passed. Evidence collection failed and signing was skipped.
 The deployed verifier and a diagnostic run of the patched verifier both
 held on the latest attempt's unsuccessful outcome. The earlier signed
 attempt remains historical. PR #197 stays open and #139 remains in Test.
+
+[Runtime and fixture diagnosis](2026-11-11-139-ci-runtime-diagnosis.md)
+records the hosted timeout, the reproduced capture failures, and the
+local serial-versus-worker comparison for this exact tree.
