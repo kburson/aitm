@@ -1,0 +1,17 @@
+{
+  "story": 209,
+  "source": "full-auto-refine-1-209.json",
+  "source_sha256": "b2ccc5cd967cc3950380cdd585b0a1e780001cf184a34d96fe55c45061707677",
+  "observation_count": 23,
+  "milliseconds": 142144,
+  "actual_hours": "0.0395",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-11T14:49:47.209Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union; current dashboard requires bucket 002 for story 209"
+}

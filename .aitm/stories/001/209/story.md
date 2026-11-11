@@ -10,12 +10,12 @@ children: []
 blocking: [119, 210]
 blocked-by: [203]
 created: "2026-11-11T02:38:34Z"
-updated: "2026-11-11T02:41:48+00:00"
+updated: "2026-11-11T14:52:05+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-11-209-journal-disposition-refine.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan-split", "story": 100, "key": "M08b4b", "source-leaf": 199, "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "split-sha256": "1c97ab7d36b9fe162e59472e89da03a36b2ddbcf83717f6fb70a89eeba85000f", "path": ".aitm/stories/001/199/plan/2026-11-10-199-m08b-proof-split.md", "refinement": {"source-leaf": 203, "sha256": "0158b267bcfcee8989639d7aa89a84bdf4e1687849ec449abfab07fe198a6cbf", "path": ".aitm/stories/001/203/plan/2026-11-10-203-disposition-proof-split.md"}}
@@ -32,3 +32,7 @@ Record writer-verified disposition evidence in the private routing journal under
 Exercise the #115 keyed Grok contradiction with the actual approved reader against existing durable claims. Record the missing Grok scope admission. Preserve unresolved quota-only, generic, mixed and aggregate diagnostics and copied-scope causal refusal. M09 owns publication and project ACK.
 
 Project 24 Rank 228.1. Size and Estimate follow independent Refine and JIT. Start Date follows Develop.
+
+## Independent Refine
+
+[Round one](plan/2026-11-11-209-refine-review-r1.md) held on migration detail and misread the #119 dependency list. Both native reads included #202 and all eight dependencies. [Round two](plan/2026-11-11-209-refine-review-r2.md) passed the [amended Refine](plan/2026-11-11-209-journal-disposition-refine.md). Separate exact JIT is pending. [Measured Refine Actual](attachments/timing/refine-actual-readback-input.json) is a partial coordinator total from bounded progress intervals.
