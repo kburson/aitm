@@ -10,7 +10,7 @@ Codex owns the isolated branch `codex/aitm-201-durable-revision-succession` and 
 
 ## Test checkpoint
 
-[PR #206](https://github.com/kburson/aitm/pull/206) read back exact head `8887c7142617014c9e3712c8b3eba22f21331cf1`, tree `eb1145db4bd3f7ab88c832c40e0ca180d335d798` and literal trunk `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3`. [Hosted run 42937140018](https://github.com/kburson/aitm/actions/runs/42937140018) is pending. Required jobs are file-checks, quality, python-base, python, collect-evidence and aitm-ci.
+[PR #206](https://github.com/kburson/aitm/pull/206) read back exact head `8887c7142617014c9e3712c8b3eba22f21331cf1`, tree `eb1145db4bd3f7ab88c832c40e0ca180d335d798` and literal trunk `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3`. [Hosted run 42937140018](https://github.com/kburson/aitm/actions/runs/42937140018) passed before the first source review and is retained below. Required jobs are file-checks, quality, python-base, python, collect-evidence and aitm-ci.
 
 The exact frozen local gate passed 970 product and CLI tests and 182 helpers, Ruff, whitespace and raw coverage of 10,360/11,301 product and 778/821 helper lines. All 948 local baseline test IDs remain. The two-file migration commit `272c51484de88bb5e7f0a748c210479fd05f56e3` passed 959 product and CLI tests, 182 helpers and strict v1 compatibility. Both required native RED fixtures existed and the migration was GREEN and committed before proceeding past the reviewed checkpoint. The final integrated related suite passed 273 tests.
 
@@ -28,6 +28,10 @@ The [first exact independent source review](post-ci-source-review-held-r1.md) he
 
 ## Replacement Test checkpoint
 
-[PR #206](https://github.com/kburson/aitm/pull/206) read back replacement head `ae0e3a774e242af35210e57eeee499b789214afe`, tree `d34be057faf72d4c157c0dbf4e43003ccf40612d` and the unchanged literal trunk `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3`. [Hosted run 42938964526](https://github.com/kburson/aitm/actions/runs/42938964526) is pending. The changed material on the actual disputed key returned DISPUTED in RED and now returns HELD. Exact recorded first material still returns DISPUTED. Neither cursor nor view changed, and all 24 related journal tests passed. Only that classification and its fixture differ from the earlier published candidate.
+[PR #206](https://github.com/kburson/aitm/pull/206) read back replacement head `ae0e3a774e242af35210e57eeee499b789214afe`, tree `d34be057faf72d4c157c0dbf4e43003ccf40612d` and the unchanged literal trunk `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3`. [Hosted run 42938964526](https://github.com/kburson/aitm/actions/runs/42938964526) passed and was authenticated below. The changed material on the actual disputed key returned DISPUTED in RED and now returns HELD. Exact recorded first material still returns DISPUTED. Neither cursor nor view changed, and all 24 related journal tests passed. Only that classification and its fixture differ from the earlier published candidate.
 
 The fresh locked full gate again passed 970 product and CLI, 182 helpers, Ruff, whitespace and raw coverage of 10,360/11,301 product and 778/821 helper lines. All 948 local baseline IDs remain. No schema, gate controls or routing producer changed in the replacement.
+
+## Replacement Review checkpoint
+
+[All six hosted jobs](https://github.com/kburson/aitm/actions/runs/42938964526/attempts/1) passed on exact replacement head `ae0e3a774e242af35210e57eeee499b789214afe`. The [authenticated receipt](hosted-ci-replacement-receipt.json) verified tested merge `d2967c1f8a6887fda0fe1f2d3cacea5c087315b5`, tree `d34be057faf72d4c157c0dbf4e43003ccf40612d`, artifact `13819413267`, and signed subject SHA-256 `a98a23398b08ab0f7fe68a2811d042462c5b9f8fd533d209a55763e5880c4ea9`. The raw replay retained all 947 package baseline identities and passed all 970 candidate tests with both raw coverage floors. The [earlier signed receipt](hosted-ci-receipt.json) and [independent HOLD](post-ci-source-review-held-r1.md) remain intact. Exact replacement source review is pending.
