@@ -1148,7 +1148,7 @@ class RoutingJournal:
                     _JournalDispositionPayload,
                     validate_ref=evidence.validate_source_ref,
                 ).encode("utf-8")
-                connection.execute("INSERT INTO commits VALUES (?)", (sequence,))
+                self._record_sequence(connection, sequence)
                 connection.execute(
                     "INSERT INTO route_dispositions VALUES (?, ?, ?, ?)",
                     (command, hold_id, sequence, raw),

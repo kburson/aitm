@@ -34,7 +34,15 @@ from aitm_usage.monitor_registry import (
 )
 from aitm_usage.monitor_scope import Mark, Scope, ScopeState
 from aitm_usage.sources.adapter import ProviderAdapter, SourceRoot
-from aitm_usage.types import BoundaryKind, DiagnosticCode, ItemKey, ItemKind, WorkPhase
+from aitm_usage.types import (
+    Availability,
+    BoundaryKind,
+    DiagnosticCode,
+    ItemKey,
+    ItemKind,
+    Provider,
+    WorkPhase,
+)
 
 A, B, LIVE, COPY = (UUID(int=number) for number in range(1, 5))
 
@@ -1188,7 +1196,7 @@ def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
 
 
 def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
-    from test_claude import MODEL, cost, model_counts
+    from test_claude import MODEL, cost, model_counts, rate_event
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
@@ -1209,7 +1217,10 @@ def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_c
         with journal._store.transaction(write=True) as connection:
             journal._write_progress(connection, first._read, sequence)
 
-    native.append(
+    invalid_quota = rate_event(native.anchor)
+    invalid_quota["rate_limit_info"] = {}
+    quota_at = native.append(
+        invalid_quota,
         native.request(3, counts=claude_usage(output=6)),
         cost(**{MODEL: model_counts(14, 6, 15, 9, 12)}),
     )
@@ -1223,9 +1234,15 @@ def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_c
                 prepared._read.batch, candidate.observation
             )
         assert original.observation.revision == 1
-        assert {item.code for item in prepared._read.batch.diagnostics} == {
-            DiagnosticCode.COVERAGE_GAP
-        }
+        batch = prepared._read.batch
+        (diagnostic,) = batch.diagnostics
+        assert diagnostic.code is DiagnosticCode.COVERAGE_GAP
+        assert diagnostic.provider is Provider.CLAUDE
+        assert batch.source_id == native.source_id
+        assert diagnostic.source_ref == native.locator().stream_ref
+        assert diagnostic.ordinal == quota_at
+        raw = native.path.read_bytes().splitlines()
+        assert json.loads(raw[quota_at])["type"] == "rate_limit_event"
         assert len(prepared.candidates) == len(prepared._read.batch.observations)
         assert journal._boundaries_settled(
             prepared._read, journal._scopes.view(prepared._read.batch)
@@ -2015,3 +2032,272 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
             assert original_cursor.incarnation_ref == rival_cursor.incarnation_ref
         assert journal.reserve(contender, rival.progress).status == "held"
         assert journal.as_of() == saved
+
+
+def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
+    tmp_path, monkeypatch
+):
+    from test_grok import FIXTURES, GROK_BINARY, SESSION
+    from test_monitor_scope import SOURCE, NativeScopeFixture
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import resolve_route
+    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
+
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+    native = NativeScopeFixture(tmp_path, monkeypatch)
+    source_id = UUID(int=6)
+    approved_root = tmp_path / "grok-transcripts"
+    session = approved_root / SESSION
+    session.mkdir(parents=True)
+    updates = session / "updates.jsonl"
+    updates.write_bytes((FIXTURES / "updates.jsonl").read_bytes())
+    usage_path = session / "usage.json"
+    usage_path.write_bytes((FIXTURES / "usage.json").read_bytes())
+    root = replace(
+        native.root, path=approved_root, cutoff=datetime(2026, 1, 1, tzinfo=UTC)
+    )
+    origin = GrokOrigin(
+        session_id=SESSION,
+        system="Darwin",
+        architecture="arm64",
+        version="1.0.77",
+        build="50ca579fa996",
+        executable_digest=GROK_BINARY,
+        format_version=1,
+        lineage_id=SESSION,
+        incarnation=native.evidence.pseudonymize("grok-incarnation", "fixture"),
+        checkout=native.anchor_ref(A),
+    )
+    reader = GrokAdapter(
+        lambda path: origin if path == updates else None, lambda *_: None
+    )
+    (locator,) = reader.discover(root)
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer, grok_reader=reader)
+        journal = RoutingJournal(writer, state)
+        codex = native.locator()
+        initial = journal.prepare(SOURCE, codex)
+        journal.reserve_batch(initial)
+        before = journal.as_of()
+        assert before.claims and journal.cursor_for(SOURCE, codex) == initial.progress
+        writer.approve_source(
+            SourceApprovalRequest(
+                source_id,
+                "grok",
+                "grok-build-macos",
+                "Darwin",
+                "arm64",
+                "1.0.77",
+                1,
+                str(approved_root),
+            )
+        )
+        original_view = state.view()
+        clean = state.read_source(source_id, locator)
+        assert len(clean.observations) == 2
+        first = clean.observations[0]
+        body = json.loads(usage_path.read_bytes())
+        body["turns"][0]["modelUsage"]["grok-4.7-build"]["costUsdTicks"] += 1
+        usage_path.write_text(json.dumps(body))
+        conflict = state.read_source(source_id, locator)
+        (diagnostic,) = conflict.diagnostics
+        assert diagnostic.code is DiagnosticCode.IDENTITY_CONFLICT
+        assert diagnostic.observation_key == first.key
+        assert conflict.observations == clean.observations[1:]
+        assert not any(epoch.source_id == source_id for epoch in writer.view().epochs)
+        scoped = state.view(conflict)
+        assert all(
+            resolve_route(o, writer.view(), scoped).status == "held"
+            for o in conflict.observations
+        )
+        with pytest.raises(LedgerError, match="verified native session"):
+            journal.prepare(source_id, locator)
+        assert state.view() == original_view
+        assert journal.as_of() == before
+        assert journal.cursor_for(SOURCE, codex) == initial.progress
+
+
+def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
+    journal_claude,
+):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    with native.native.registry.writer() as writer:
+        native.approve(writer)
+        scopes = ScopeState(writer)
+        command, boundary = _prepare_claude_mark(scopes, native)
+        assert scopes.apply_mark(command, boundary).status == "applied"
+        journal = RoutingJournal(writer, scopes)
+        ordinal = native.append(native.request(3, stop=None))
+        first = journal.prepare(native.source_id, native.locator())
+        assert (
+            journal.reserve(
+                _claude_candidates(first, ordinal)[0], first.progress
+            ).status
+            == "pending"
+        )
+        native.append(native.request(3, counts=claude_usage(output=6)))
+        live = journal.prepare(native.source_id, native.locator())
+        _, revised = _claude_candidates(live, ordinal)
+        assert revised.route.scope == command.scope
+        assert journal.reserve(revised, live.progress).status == "pending"
+        witness = scopes.verified_revision(live._read.batch, revised.observation)
+        assert witness is not None
+        saved = journal.as_of()
+        live_cursor = journal.cursor_for(native.source_id, native.locator())
+        copy_source = UUID(int=7)
+        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        _, locate = _claude_archive(native, writer, prefix, copy_source)
+        copy = journal.prepare(copy_source, locate())
+        _, reproduced = _claude_candidates(copy, ordinal)
+        assert reproduced.observation.key == revised.observation.key
+        assert reproduced.route.project_id == A and reproduced.route.scope is None
+        copied_witness = scopes.verified_revision(
+            copy._read.batch, reproduced.observation
+        )
+        assert copied_witness is not None
+        assert (
+            copied_witness.witness.successor_material
+            == witness.witness.successor_material
+        )
+        assert copied_witness.witness.prefix_ref == witness.witness.prefix_ref
+        assert journal.reserve(reproduced, copy.progress).status == "held"
+        assert (
+            journal.as_of() == saved
+            and journal.cursor_for(copy_source, locate()) is None
+        )
+        assert journal.cursor_for(native.source_id, native.locator()) == live_cursor
+
+
+def test_journal_distinguishes_generic_native_codex_gap_from_quota(
+    tmp_path, monkeypatch
+):
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = NativeJournalFixture(tmp_path, monkeypatch)
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        prior = journal.prepare(LIVE, native.locator())
+        journal.reserve_batch(prior)
+        assert journal.cursor_for(LIVE, native.locator()) == prior.progress
+        saved = journal.as_of()
+        turn = native.turn(3)
+        native.append(LIVE, [*turn[:2], turn[-1]])
+        locator = native.locator()
+        current = journal.prepare(LIVE, locator)
+        batch = current._read.batch
+        (diagnostic,) = batch.diagnostics
+        assert diagnostic.code is DiagnosticCode.COVERAGE_GAP
+        assert diagnostic.provider is Provider.CODEX
+        assert diagnostic.source_ref == locator.stream_ref and batch.source_id == LIVE
+        raw = native.paths[LIVE].read_bytes().splitlines()
+        assert json.loads(raw[diagnostic.ordinal])["payload"]["type"] == "task_complete"
+        assert journal._boundaries_settled(current._read, journal._scopes.view(batch))
+        assert all(
+            result.status == "replay" for result in journal.reserve_batch(current)
+        )
+        assert journal.as_of() == saved
+        assert journal.cursor_for(LIVE, locator) == prior.progress
+
+
+@pytest.mark.parametrize("mixed", [False, True], ids=["aggregate-overlap", "mixed"])
+def test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics(
+    journal_claude, mixed
+):
+    from test_claude import rate_event
+    from test_monitor_adapters import _restart_rows
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    with native.native.registry.writer() as writer:
+        native.approve(writer)
+        native.append(native.request(3))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        early = journal.prepare(native.source_id, native.locator())
+        journal.reserve_batch(early)
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+        # Preserve the verified earlier cursor as fixture setup.
+        sequence = journal.as_of().sequence + 1
+        with journal._store.transaction(write=True) as connection:
+            journal._write_progress(connection, early._read, sequence)
+        rows, _ = _restart_rows("nested", native.anchor)
+        start = native.append(*rows[:2], rows[-1], *rows[2:-1])
+        quota_at = None
+        if mixed:
+            invalid_quota = rate_event(native.anchor)
+            invalid_quota["rate_limit_info"] = {}
+            quota_at = native.append(invalid_quota, native.request(4))
+        locator = native.locator()
+        current = journal.prepare(native.source_id, locator)
+        batch = current._read.batch
+        assert batch.source_id == native.source_id
+        assert all(
+            item.provider is Provider.CLAUDE and item.source_ref == locator.stream_ref
+            for item in batch.diagnostics
+        )
+        overlap = [
+            item.ordinal
+            for item in batch.diagnostics
+            if item.code is DiagnosticCode.OVERLAP_UNVERIFIED
+        ]
+        assert start + 2 in overlap
+        raw = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        assert raw[start + 2]["toolUseResult"]["status"] == "completed"
+        assert any(
+            item.usage.availability is Availability.UNKNOWN
+            for item in batch.observations
+        )
+        if mixed:
+            assert any(
+                item.code is DiagnosticCode.COVERAGE_GAP and item.ordinal == quota_at
+                for item in batch.diagnostics
+            )
+            assert raw[quota_at]["type"] == "rate_limit_event"
+            assert any(
+                item.code is DiagnosticCode.UNRECONCILED_USAGE
+                for item in batch.diagnostics
+            )
+        journal.reserve_batch(current)
+        assert journal.cursor_for(native.source_id, locator) == early.progress
+
+
+def test_v3_upgrade_preserves_native_journal_historical_views(tmp_path, monkeypatch):
+    from aitm_usage._monitor_journal_store import _open
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = NativeJournalFixture(tmp_path, monkeypatch)
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        first = journal.prepare(LIVE, native.locator())
+        journal.reserve_batch(first)
+        early = journal.as_of()
+        assert early.claims
+        native.append(LIVE, native.turn(3))
+        latest = journal.prepare(LIVE, native.locator())
+        journal.reserve_batch(latest)
+        current = journal.as_of()
+        assert current.sequence > early.sequence
+        assert journal.cursor_for(LIVE, native.locator()) == latest.progress
+        rows = _prior_journal_rows(journal)
+        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
+        # Use the real native data as a v3 fixture by removing the empty v4 table.
+        with _open(database, write=True) as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            assert (
+                connection.execute("SELECT * FROM route_dispositions").fetchall() == []
+            )
+            connection.execute("DROP TABLE route_dispositions")
+            connection.execute("PRAGMA user_version = 3")
+
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        assert journal.as_of() == current
+        assert journal.as_of(early.sequence) == early
+        assert _prior_journal_rows(journal) == rows
+        assert journal.cursor_for(LIVE, native.locator()) == latest.progress
