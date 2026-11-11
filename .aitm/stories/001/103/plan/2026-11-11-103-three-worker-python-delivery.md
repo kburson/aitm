@@ -93,3 +93,19 @@ was accepted and also reported `queued` with zero jobs at readback. It
 used a separate workflow and ref. The original qualification artifact
 remains available by its recorded ID and digest. The provider exposes
 the queue state but gives no reason for why it persists.
+
+The workflow downloaded from GitHub's exact #246 test merge
+`91018f05129b0ae96ead71f082ebfe21abf71ba3` matched the local file and
+passed actionlint. The changes to `ci.yml` are confined to the Python
+job's test step. Trigger, concurrency, job predicates and runner labels
+match trunk. The diagnostic workflow then completed with
+`startup_failure` and zero jobs on its unchanged, previously passing
+workflow revision. Its prior qualification artifacts remain available.
+
+The oldest superseded #246 event, `43095662569`, still showed `queued`
+with zero jobs. The force-cancel API returned HTTP 409 and reported
+that the run had not been queued. Request ID
+`D828:1C25E2:D3501C:299112C:6AF4D591`. The latest #246 run was left
+in place. This is consistent with the
+[GitHub-documented stuck or out-of-sync workflow state](https://docs.github.com/en/actions/how-tos/troubleshoot-workflows#canceling-workflows).
+GitHub has not exposed the underlying startup failure reason.
