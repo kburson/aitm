@@ -33,7 +33,8 @@ Candidate 1 was superseded before Review. The two reproducibility fixes are expl
 
 [Source PR #220](https://github.com/kburson/aitm/pull/220) targets trunk base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Exact head `b7688fc1d08289f5853d09beb924fa5d11d136da` and tree `cb00e4153a717fa718a0df7fe63e30f87f5b9938` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
-- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42961639074), delivered verifier and independent source review.
+- [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42961639074/attempts/1) and [delivered verifier](hosted-verification-2.json) passed.
+- [ ] Independent source review.
 
 ## Live capture and board readback
 
@@ -49,3 +50,5 @@ The baseline at planning `a23893955d7cedb68aabf3b216553b83c48472f2` and UTC cuto
 | First interruption and resume | Blank | Pending verification | Blank |
 | Second interruption and resume | 0.0014 h | Pending verification | Blank |
 | Final and independent readback | 0.0014 h | Partial. Verified #191 pilot through 2026-11-11T04:43:35.855000Z. | Blank |
+
+The signed candidate matches tested merge `64dce0a3d8ab3a671b511358a846650008d98bfb`, with the ordered base/head parents and the exact tree above.
