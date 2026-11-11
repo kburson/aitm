@@ -125,3 +125,7 @@ Carry to #210 that real later usage makes the proof-only path unable to reissue 
 Both original implementers signed. [Codec retrospective](../retro/2026-11-11-203-codec-implementation-retrospective.md), SHA-256 `b5fedea5ffdceb76a33ef6e28f4069cfb150e32de336199f793094ac038648db`. [Proposal integration retrospective](../retro/2026-11-11-203-proposal-implementation-retrospective.md), SHA-256 `3302a7eae57f92f0d91c7fa9e5f9bf05359ceff2b55a8ea9436ce3e958a85b82`.
 
 The [native dependency readback](close-dependency-readback.json) confirms #203 directly gates #209, #204 and #119. #210 still requires #209. #204 still requires both #203 and #210. #119 retains all eight direct dependencies.
+
+## Native Close
+
+[Issue #203](https://github.com/kburson/aitm/issues/203) is Closed Completed and Project 24 is Done. The [native Close receipt](native-close-receipt.json) verifies Rank 228, Size M, Estimate 3.85 agent-hours and November 10 Start date. The [dependency readback](close-dependency-readback.json) matched immediately before and after Close. #209 is next at its independent Refine and JIT gates.

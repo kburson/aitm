@@ -1,0 +1,18 @@
+{
+  "issue": {
+    "closedAt": "2026-11-11T12:55:34Z",
+    "number": 203,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/203"
+  },
+  "project": {
+    "estimate": 3.85,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHqfx8",
+    "issue": 203,
+    "rank": 228,
+    "size": "M",
+    "start date": "2026-11-10",
+    "status": "Done"
+  }
+}
