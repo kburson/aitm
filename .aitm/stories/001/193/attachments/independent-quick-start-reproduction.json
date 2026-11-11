@@ -1,0 +1,152 @@
+{
+  "base": "fec3d8f685fd1d133bb9797d47c02552805e6bc1",
+  "fixed_case_substitutions": [
+    "planning_sha",
+    "cutoff_utc"
+  ],
+  "head": "81a16c8b7a7d55e2e3b1f78e7575f947a3a0e989",
+  "python_default": "Python 3.13.1",
+  "quick_start_default_unmodified": true,
+  "quick_start_shell_block_sha256": "76340e2ee0e9186db28efdfae45952c7e53b4a1590fa581e7a5aa4f94da89ba7",
+  "reader": "separate full clone, exact candidate from origin, clean detached checkout",
+  "tree": "e87d9baa14c08a903ee34f1b0a8ded958d10a015",
+  "unsupported_python_override_rejected": true,
+  "views": {
+    "historical": {
+      "browser": {
+        "1280": {
+          "automaticWebRequests": 0,
+          "browser": "Chrome headless",
+          "offline": true,
+          "result": {
+            "childDetail": true,
+            "coverageFilter": true,
+            "epicDetail": true,
+            "epicFilter": true,
+            "latest": false,
+            "ownerWait": true,
+            "pilotRefresh": false,
+            "pinnedEvidence": true,
+            "planning": "17761cc1928fd916cf32a9c078d4a742bfcb32b8",
+            "rows": 169,
+            "scopedElapsed": true,
+            "stateFilter": true,
+            "unknownCost": true
+          }
+        },
+        "390": {
+          "automaticWebRequests": 0,
+          "browser": "Chrome headless",
+          "offline": true,
+          "result": {
+            "childDetail": true,
+            "coverageFilter": true,
+            "epicDetail": true,
+            "epicFilter": true,
+            "latest": false,
+            "ownerWait": true,
+            "pilotRefresh": false,
+            "pinnedEvidence": true,
+            "planning": "17761cc1928fd916cf32a9c078d4a742bfcb32b8",
+            "rows": 169,
+            "scopedElapsed": true,
+            "stateFilter": true,
+            "unknownCost": true
+          }
+        }
+      },
+      "html_sha256": "19995aa7a55e636a9c58a40a04942cc7e512f349661b26c27839550ff5e83e1c",
+      "planning": {
+        "as_of_utc": "2026-11-11T04:23:16Z",
+        "commit": "17761cc1928fd916cf32a9c078d4a742bfcb32b8",
+        "committed_at_utc": "2026-11-10T20:25:50Z"
+      },
+      "snapshot_sha256": "e46da18999caf132dcc451e9ae8e7b12dd5517a49113f85931c48d93c5e3772a",
+      "validation_sha256": "3497de8b8d908759aa0e62bd313de3bced70e4fba6bd82e6aaa2dfa227821ab6"
+    },
+    "latest": {
+      "browser": {
+        "1280": {
+          "automaticWebRequests": 0,
+          "browser": "Chrome headless",
+          "offline": true,
+          "result": {
+            "childDetail": true,
+            "coverageFilter": true,
+            "epicDetail": true,
+            "epicFilter": true,
+            "latest": true,
+            "ownerWait": true,
+            "pilotRefresh": false,
+            "pinnedEvidence": true,
+            "planning": "1f2c651446566ec16ea4b95589d34fe4313cd904",
+            "rows": 179,
+            "scopedElapsed": true,
+            "stateFilter": true,
+            "unknownCost": true
+          }
+        }
+      },
+      "html_sha256": "4998b523887995f7b00412922c3773868547ad82658f5966c71b3eedfa274786",
+      "planning": {
+        "as_of_utc": "2026-11-11T05:24:22Z",
+        "commit": "1f2c651446566ec16ea4b95589d34fe4313cd904",
+        "committed_at_utc": "2026-11-11T05:24:19Z"
+      },
+      "snapshot_sha256": "bdf9218291bcf9e0f92aa95958cc3be4425e0d3c80032efcbde770b7cb851719",
+      "validation_sha256": "07b4b39366c15060afe1b4c5fbf24cff6b6edda84e497062f4f5d89c5b45c45f"
+    },
+    "pilot": {
+      "browser": {
+        "1280": {
+          "automaticWebRequests": 0,
+          "browser": "Chrome headless",
+          "offline": true,
+          "result": {
+            "childDetail": true,
+            "coverageFilter": true,
+            "epicDetail": true,
+            "epicFilter": true,
+            "latest": false,
+            "ownerWait": true,
+            "pilotRefresh": true,
+            "pinnedEvidence": true,
+            "planning": "527dce9bd7847181a67dc23c6bb2c9844f15c87f",
+            "rows": 179,
+            "scopedElapsed": true,
+            "stateFilter": true,
+            "unknownCost": true
+          }
+        },
+        "390": {
+          "automaticWebRequests": 0,
+          "browser": "Chrome headless",
+          "offline": true,
+          "result": {
+            "childDetail": true,
+            "coverageFilter": true,
+            "epicDetail": true,
+            "epicFilter": true,
+            "latest": false,
+            "ownerWait": true,
+            "pilotRefresh": true,
+            "pinnedEvidence": true,
+            "planning": "527dce9bd7847181a67dc23c6bb2c9844f15c87f",
+            "rows": 179,
+            "scopedElapsed": true,
+            "stateFilter": true,
+            "unknownCost": true
+          }
+        }
+      },
+      "html_sha256": "4b3c1143bdedb532ddafc51821e499c3fe483d71573fcdebbc68c75451a40fb7",
+      "planning": {
+        "as_of_utc": "2026-11-11T04:45:27Z",
+        "commit": "527dce9bd7847181a67dc23c6bb2c9844f15c87f",
+        "committed_at_utc": "2026-11-11T04:45:15Z"
+      },
+      "snapshot_sha256": "94a2c286b3de1bce4e49eb38cc1b35128ce470de83c644e65f843809a33f6fe9",
+      "validation_sha256": "80a1adbe65515b073b01aa49bf02c5e2982b93a8af32f75527fdff724afa7803"
+    }
+  }
+}
