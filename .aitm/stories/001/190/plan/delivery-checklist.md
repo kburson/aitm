@@ -3,8 +3,8 @@
 Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordinating Codex agent. Target trunk. Pickup base `72ca2d2535248844b164014d7817bffec0e9fb7e`. Predecessors #188, #189 are delivered. File ownership is defined by the exact pickup.
 
 - [x] [Design, Plan and JIT](jit.md) and [independent acceptance](jit-review.md).
-- [ ] Local verification, applicable hosted CI and independent source acceptance.
-- [ ] Verified merge, implementing-agent sign-off, and issue/Project closure.
+- [x] Local verification, applicable hosted CI and independent source acceptance.
+- [x] Verified merge, implementing-agent sign-off, and issue/Project closure.
 
 ## Candidate 2
 
@@ -24,3 +24,7 @@ Python 3.13.9 ran 56 dashboard tests, including the real planning pin, with Ruff
 Precheck found a missing estimate basis, malformed events that displaced progress, and a directory substitution race. The revised candidate includes tests for all three. The initial hosted run [42959652223](https://github.com/kburson/aitm/actions/runs/42959652223) on head `4698428af832024651c54b2fc53a5b580485140b` was superseded before Test.
 
 The signed candidate matches tested merge `d7e93ca475bbfb2e54870ddb348fc8e355073dd3`, with the ordered base/head parents and the exact tree above.
+
+## Verified delivery
+
+[PR #219](https://github.com/kburson/aitm/pull/219) merged to trunk at `2026-11-11T04:41:45Z` as `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. The exact reviewed tree `4d0144095980203ca7833e3581adac0e32cee6a4` is reachable from remote trunk `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Ordered merge parents `72ca2d2535248844b164014d7817bffec0e9fb7e` and `577ba9382cd8298922a83803aa3e66abdc853fa3` match the tested candidate. [Implementing-agent sign-off](../retro/2026-11-10-implementer-signoff.md) passed at `2026-11-11T04:41:48Z`. The issue closed Completed at `2026-11-11T04:41:51Z` and the project item read back Done.

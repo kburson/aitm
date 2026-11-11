@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 190
 title: "[#181 A05] Publish a reproducible local snapshot"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/190"
 parent: 181
 children: []
 blocking: [191, 192]
 blocked-by: [188, 189]
 created: "2026-11-10T21:02:19Z"
-updated: "2026-11-11T04:39:22Z"
-last-branch: "codex/aitm-190-local-snapshot"
+updated: "2026-11-11T04:41:54Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #188, #189. The proposed estimate is 3 implementation agen
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `5cc77ab5f66e98d9d2777d7816f662e71a8804e9` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/219) · [Signed CI](plan/hosted-verification-2.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)
