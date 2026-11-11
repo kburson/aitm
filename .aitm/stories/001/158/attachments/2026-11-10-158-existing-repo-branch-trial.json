@@ -1,0 +1,542 @@
+{
+  "disposition": "bounded evidence; full qualification held",
+  "approved_proposal": {
+    "original_commit": "0ec4443ff2f5ea98e452e94783c3d5626b1c01b4",
+    "planning_candidate_commit": "20007c633239d38dbbfc8854af947b26e78337d2",
+    "sha256": "7376aacd67a6956682db082c97ec0ab8ff5b5534dacbc243473b0c7d8762f0ee"
+  },
+  "repository": {
+    "allow_auto_merge": false,
+    "default_branch": "trunk",
+    "full_name": "kburson/aitm",
+    "id": 1450406435,
+    "permissions": {
+      "admin": true,
+      "maintain": true,
+      "pull": true,
+      "push": true,
+      "triage": true
+    },
+    "private": false
+  },
+  "actor": "kburson",
+  "target": "refs/heads/aitm-qualify-158/ND9aWlcq/target",
+  "automation_preflight": {
+    "workflow_inventory": [
+      {
+        "id": 412848571,
+        "path": ".github/workflows/ci.yml",
+        "state": "active"
+      }
+    ],
+    "repository_webhooks": 0,
+    "deploy_keys": 0,
+    "application_side_pr_trigger_configuration": "unverified",
+    "test_pull_requests_opened": 0,
+    "fixture_actions_runs_readback": {
+      "branch": "aitm-qualify-158/ND9aWlcq/target",
+      "total_count": 0
+    },
+    "workflow_source": {
+      "commit": "e4701f2e89d34f93f13d717199254b66aa3f0457",
+      "path": ".github/workflows/ci.yml",
+      "push_branches": [
+        "trunk"
+      ],
+      "pull_request_types": [
+        "opened",
+        "synchronize",
+        "reopened"
+      ]
+    },
+    "installed_apps": [
+      {
+        "name": "Claude",
+        "authenticated_installation_readback": {
+          "repository_selection": "All repositories",
+          "code": "read and write",
+          "pull_requests": "read and write",
+          "workflows": "read and write",
+          "includes_trial_repository": true
+        },
+        "public_app_manifest": {
+          "events": [
+            "branch_protection_rule",
+            "check_run",
+            "check_suite",
+            "commit_comment",
+            "discussion",
+            "discussion_comment",
+            "issues",
+            "issue_comment",
+            "merge_group",
+            "merge_queue_entry",
+            "pull_request",
+            "pull_request_review",
+            "pull_request_review_comment",
+            "pull_request_review_thread",
+            "push",
+            "release",
+            "repository_ruleset",
+            "status",
+            "sub_issues"
+          ],
+          "html_url": "https://github.com/apps/claude",
+          "permissions": {
+            "actions": "write",
+            "administration": "read",
+            "checks": "write",
+            "contents": "write",
+            "discussions": "write",
+            "issues": "write",
+            "members": "read",
+            "merge_queues": "read",
+            "metadata": "read",
+            "pull_requests": "write",
+            "repository_creation": "write",
+            "repository_hooks": "write",
+            "statuses": "read",
+            "workflows": "write"
+          },
+          "slug": "claude"
+        }
+      },
+      {
+        "name": "ChatGPT Codex Connector",
+        "authenticated_installation_readback": {
+          "repository_selection": "All repositories",
+          "code": "read and write",
+          "pull_requests": "read and write",
+          "workflows": "read and write",
+          "includes_trial_repository": true
+        },
+        "public_app_manifest": {
+          "events": [
+            "check_run",
+            "check_suite",
+            "commit_comment",
+            "issues",
+            "issue_comment",
+            "pull_request",
+            "pull_request_review",
+            "pull_request_review_comment",
+            "pull_request_review_thread",
+            "repository",
+            "status",
+            "sub_issues"
+          ],
+          "html_url": "https://github.com/apps/chatgpt-codex-connector",
+          "permissions": {
+            "actions": "write",
+            "checks": "read",
+            "contents": "write",
+            "emails": "read",
+            "issues": "write",
+            "metadata": "read",
+            "pull_requests": "write",
+            "statuses": "read",
+            "workflows": "write"
+          },
+          "slug": "chatgpt-codex-connector"
+        }
+      }
+    ],
+    "application_side_push_and_ruleset_trigger_configuration": "unverified",
+    "disposition": "branch trial proceeded with unverified Claude push and repository_ruleset event behavior; deviation from approved setup hold"
+  },
+  "synthetic_commits_newest_first": [
+    "adae824bd3bdc1f176e0c619c74e16528cfc6ded 81a9e37cc168236e47f8e148a5e39e24f19581dd da23abf90919452aafef1a4a6295de659ac1b832 stopped-candidate",
+    "81a9e37cc168236e47f8e148a5e39e24f19581dd 75e65f0ec876a8aa9fa4a4cb8c28f7c060554d2a a3457a9da2b4d318a87053dbd090dc16bb8cdc66 open-control",
+    "75e65f0ec876a8aa9fa4a4cb8c28f7c060554d2a  125c6323e7f3d1c9fb79b9124643b7883733919a seed"
+  ],
+  "observations": {
+    "seed_git_push": [
+      "remote: ",
+      "remote: Create a pull request for 'aitm-qualify-158/ND9aWlcq/target' on GitHub by visiting:        ",
+      "remote:      https://github.com/kburson/aitm/pull/new/aitm-qualify-158/ND9aWlcq/target        ",
+      "remote: ",
+      "To https://github.com/kburson/aitm.git",
+      "*\t75e65f0ec876a8aa9fa4a4cb8c28f7c060554d2a:refs/heads/aitm-qualify-158/ND9aWlcq/target\t[new branch]",
+      "Done"
+    ],
+    "seed_ref": {
+      "object": {
+        "sha": "75e65f0ec876a8aa9fa4a4cb8c28f7c060554d2a",
+        "type": "commit"
+      },
+      "ref": "refs/heads/aitm-qualify-158/ND9aWlcq/target"
+    },
+    "open_line_git_push": [
+      "To https://github.com/kburson/aitm.git",
+      " \t81a9e37cc168236e47f8e148a5e39e24f19581dd:refs/heads/aitm-qualify-158/ND9aWlcq/target\t75e65f0..81a9e37",
+      "Done"
+    ],
+    "open_line_ref": {
+      "object": {
+        "sha": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+        "type": "commit"
+      },
+      "ref": "refs/heads/aitm-qualify-158/ND9aWlcq/target"
+    },
+    "local_failure_marker": {
+      "event": "simulated_scheduled_full_suite_failure",
+      "recorded_at_utc": "2026-11-11T04:04:43Z",
+      "ref": "refs/heads/aitm-qualify-158/ND9aWlcq/target",
+      "tip": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+      "already_sent_trial_requests": 0
+    },
+    "ruleset_create_request": {
+      "name": "AITM 158 ND9aWlcq temporary stop trial",
+      "target": "branch",
+      "enforcement": "active",
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "include": [
+            "refs/heads/aitm-qualify-158/ND9aWlcq/target"
+          ],
+          "exclude": []
+        }
+      },
+      "rules": [
+        {
+          "type": "update"
+        }
+      ]
+    },
+    "ruleset_create_response": {
+      "status": 201,
+      "github_request_id": "C0E1:267537:109122F:33E9389:6AF3E95B"
+    },
+    "active_ruleset_readback": {
+      "_links": {
+        "html": {
+          "href": "https://github.com/kburson/aitm/rules/27005244"
+        },
+        "self": {
+          "href": "https://api.github.com/repos/kburson/aitm/rulesets/27005244"
+        }
+      },
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/aitm-qualify-158/ND9aWlcq/target"
+          ]
+        }
+      },
+      "created_at": "2026-11-10T22:04:44.196-06:00",
+      "current_user_can_bypass": "never",
+      "enforcement": "active",
+      "id": 27005244,
+      "name": "AITM 158 ND9aWlcq temporary stop trial",
+      "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGcETw",
+      "rules": [
+        {
+          "type": "update"
+        }
+      ],
+      "source": "kburson/aitm",
+      "source_type": "Repository",
+      "target": "branch",
+      "updated_at": "2026-11-10T22:04:44.215-06:00"
+    },
+    "stopped_git_push_exit": 1,
+    "stopped_git_push": [
+      "remote: error: GH013: Repository rule violations found for refs/heads/aitm-qualify-158/ND9aWlcq/target.        ",
+      "remote: Review all repository rules at https://github.com/kburson/aitm/rules?ref=refs%2Fheads%2Faitm-qualify-158%2FND9aWlcq%2Ftarget        ",
+      "remote: ",
+      "remote: - Cannot update this protected ref.        ",
+      "remote: ",
+      "error: failed to push some refs to 'https://github.com/kburson/aitm.git'",
+      "To https://github.com/kburson/aitm.git",
+      "!\tadae824bd3bdc1f176e0c619c74e16528cfc6ded:refs/heads/aitm-qualify-158/ND9aWlcq/target\t[remote rejected] (push declined due to repository rule violations)",
+      "Done"
+    ],
+    "stopped_ref": {
+      "object": {
+        "sha": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+        "type": "commit"
+      },
+      "ref": "refs/heads/aitm-qualify-158/ND9aWlcq/target"
+    },
+    "host_rule_suite": {
+      "actor_id": 1082467,
+      "actor_name": "kburson",
+      "after_sha": "adae824bd3bdc1f176e0c619c74e16528cfc6ded",
+      "before_sha": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+      "id": 5037309333,
+      "pushed_at": "2026-11-10T22:05:06-06:00",
+      "ref": "refs/heads/aitm-qualify-158/ND9aWlcq/target",
+      "repository_id": 1450406435,
+      "repository_name": "aitm",
+      "result": "fail",
+      "rule_evaluations": [
+        {
+          "enforcement": "active",
+          "result": "pass",
+          "rule_source": {
+            "type": "secret_scanning"
+          },
+          "rule_type": "secret_scanning"
+        },
+        {
+          "details": "Cannot update this protected ref.",
+          "enforcement": "active",
+          "result": "fail",
+          "rule_source": {
+            "id": 27005244,
+            "name": "AITM 158 ND9aWlcq temporary stop trial",
+            "type": "ruleset"
+          },
+          "rule_type": "update"
+        }
+      ]
+    },
+    "ruleset_delete_response": {
+      "status": 204,
+      "github_request_id": "C151:3CF12E:1C5D52E:59234F6:6AF3E988"
+    },
+    "fixture_ref_delete": [
+      "To https://github.com/kburson/aitm.git",
+      "-\t:refs/heads/aitm-qualify-158/ND9aWlcq/target\t[deleted]",
+      "Done"
+    ],
+    "stopped_git_ref_check": {
+      "command": "git ls-remote --heads https://github.com/kburson/aitm.git refs/heads/aitm-qualify-158/ND9aWlcq/target",
+      "expected_tip": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+      "verified_by": "Successful post-denial shell equality assertion, before the saved REST readback",
+      "separate_stdout_captured": false
+    }
+  },
+  "protection_evidence": {
+    "canonical_production_readback_sha256_by_phase": {
+      "before": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab",
+        "workflows.json": "044322ffd567aab9853e66d1f9887eaf6e0bad204e663d4752012cf24467f4f0"
+      },
+      "active": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab",
+        "workflows.json": "044322ffd567aab9853e66d1f9887eaf6e0bad204e663d4752012cf24467f4f0"
+      },
+      "after": {
+        "ruleset-26821811.json": "caaf146f8113e2b87190024946f6ca17659a9c3c9b867f68e6dc3495131c541f",
+        "ruleset-26821812.json": "6776e9528a59c95bf29c7ff8d4bf73d848a04700f83e968587441fc632a7310e",
+        "effective-trunk.json": "46bd83edf8407f437efb3ef2522dca20b4cbb2a2ae71b0f9feedd1d0e2b99fe9",
+        "effective-planning.json": "47bc3226dd3c8eb959907903a093c8044d4e789ce11ad1b3a703ce726c9400ab",
+        "workflows.json": "044322ffd567aab9853e66d1f9887eaf6e0bad204e663d4752012cf24467f4f0"
+      }
+    },
+    "production_readbacks": {
+      "ruleset-26821811.json": {
+        "_links": {
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/26821811"
+          },
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/26821811"
+          }
+        },
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/trunk"
+            ]
+          }
+        },
+        "created_at": "2026-11-08T19:18:16.868-06:00",
+        "current_user_can_bypass": "never",
+        "enforcement": "active",
+        "id": 26821811,
+        "name": "aitm: protect trunk",
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGZRLM",
+        "rules": [
+          {
+            "type": "deletion"
+          },
+          {
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "type": "pull_request"
+          }
+        ],
+        "source": "kburson/aitm",
+        "source_type": "Repository",
+        "target": "branch",
+        "updated_at": "2026-11-08T19:18:16.920-06:00"
+      },
+      "ruleset-26821812.json": {
+        "_links": {
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/26821812"
+          },
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/26821812"
+          }
+        },
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/planning"
+            ]
+          }
+        },
+        "created_at": "2026-11-08T19:18:17.401-06:00",
+        "current_user_can_bypass": "never",
+        "enforcement": "active",
+        "id": 26821812,
+        "name": "aitm: protect planning",
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGZRLQ",
+        "rules": [
+          {
+            "type": "deletion"
+          },
+          {
+            "type": "non_fast_forward"
+          },
+          {
+            "type": "required_linear_history"
+          }
+        ],
+        "source": "kburson/aitm",
+        "source_type": "Repository",
+        "target": "branch",
+        "updated_at": "2026-11-08T19:39:49.068-06:00"
+      },
+      "effective-trunk.json": [
+        {
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "deletion"
+        },
+        {
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "non_fast_forward"
+        },
+        {
+          "parameters": {
+            "allowed_merge_methods": [
+              "merge",
+              "squash",
+              "rebase"
+            ],
+            "dismiss_stale_reviews_on_push": false,
+            "require_code_owner_review": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 0,
+            "required_review_thread_resolution": false,
+            "required_reviewers": []
+          },
+          "ruleset_id": 26821811,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "pull_request"
+        }
+      ],
+      "effective-planning.json": [
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "deletion"
+        },
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "non_fast_forward"
+        },
+        {
+          "ruleset_id": 26821812,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "required_linear_history"
+        }
+      ],
+      "workflows.json": [
+        {
+          "id": 412848571,
+          "path": ".github/workflows/ci.yml",
+          "state": "active"
+        }
+      ]
+    },
+    "ruleset_ids_by_phase": {
+      "before": [
+        26821811,
+        26821812
+      ],
+      "active": [
+        26821811,
+        26821812,
+        27005244
+      ],
+      "after": [
+        26821811,
+        26821812
+      ]
+    },
+    "effective_fixture_rules_by_phase": {
+      "before": [],
+      "active": [
+        {
+          "ruleset_id": 27005244,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "update"
+        }
+      ],
+      "after": []
+    },
+    "git_ref_readbacks_by_phase": {
+      "before": {
+        "refs/heads/planning": "3609d3a8ff646672aa7e29c3c674cd912e3311c8",
+        "refs/heads/trunk": "e4701f2e89d34f93f13d717199254b66aa3f0457"
+      },
+      "active": {
+        "refs/heads/aitm-qualify-158/ND9aWlcq/target": "81a9e37cc168236e47f8e148a5e39e24f19581dd",
+        "refs/heads/planning": "db55344c6269971bfb48a0f173d29a1d571378fb",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      },
+      "after": {
+        "refs/heads/planning": "d7ff1362dbef542f136ed87bf8ea4691673f9918",
+        "refs/heads/trunk": "f7646bc4da35173e9b0e468e4810b4e9265b0f47"
+      }
+    }
+  },
+  "custody": {
+    "trial_and_teardown_operator": "coordinating Codex agent",
+    "pretrial_pending_request_custodian_designation": "not recorded",
+    "unresolved_hosted_requests_after_teardown": 0
+  }
+}

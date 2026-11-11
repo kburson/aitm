@@ -127,3 +127,21 @@ another disposable repository is on hold pending a revised plan.
 The retained endpoint evidence records that the REST merge accepted a
 moved base. It leaves the proposed ruleset, App, and in-flight stop
 controls unqualified. #159 still requires qualified merge evidence.
+
+## Existing-repository branch trial
+
+The owner approved the [existing-repository trial
+scope](plan/2026-11-10-158-existing-repo-qualification-proposal.md).
+GitHub allowed a direct fast-forward push while the test branch was
+open and rejected the same actor's fresh fast-forward after the
+exact-branch stop rule took effect. The trial removed the temporary rule
+and branch and verified the `trunk` and `planning` protections.
+
+[Trial report](plan/2026-11-10-158-existing-repo-branch-trial.md) ·
+[Machine-readable evidence](attachments/2026-11-10-158-existing-repo-branch-trial.json).
+
+The trial record documents a preflight deviation. Claude's behavior
+on push and ruleset events was unverified when the temporary branch
+and rule were created. The hosted PR merge and already-sent request
+cases remain open. #158 stays in Planning and #159 stays in Backlog
+pending a qualified merge receipt.
