@@ -33,6 +33,7 @@ from .sources.adapter import (
     SourceLocator,
     StreamCursor,
     _claude_revision_material,
+    _NativeRevisionWitness,
 )
 from .sources.scan import CandidateSource, _capture_position, _CaptureDiscontinuity
 from .types import (
@@ -120,6 +121,26 @@ class _StoredRevision:
 
 
 @dataclass(frozen=True, slots=True)
+class _ContentEdge:
+    material: SourceRef
+    origin: ClaimEvidence
+    later_ordinal: int
+    prefix_ref: SourceRef
+    locator_ref: SourceRef
+    incarnation_ref: SourceRef
+
+    def __post_init__(self) -> None:
+        _nonnegative(self.later_ordinal)
+
+
+@dataclass(frozen=True, slots=True)
+class _ContentDisputePayload:
+    common: SourceRef
+    accepted: _ContentEdge
+    contender: _ContentEdge
+
+
+@dataclass(frozen=True, slots=True)
 class PendingClaim:
     key: SourceRef
     project_id: UUID
@@ -140,10 +161,21 @@ class OwnershipDispute:
 
 
 @dataclass(frozen=True, slots=True)
+class ContentDispute:
+    key: SourceRef
+    project_id: UUID
+    common: SourceRef
+    accepted: _ContentEdge
+    contender: _ContentEdge
+    sequence: int
+
+
+@dataclass(frozen=True, slots=True)
 class JournalView:
     sequence: int
     claims: tuple[PendingClaim, ...]
     disputes: tuple[OwnershipDispute, ...]
+    content_disputes: tuple[ContentDispute, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,6 +305,117 @@ def _revision_head(
         (key.value, sequence),
     ).fetchone()
     return None if row is None else _stored_revision(row, key, evidence)
+
+
+def _revision_by_material(
+    connection: sqlite3.Connection,
+    key: SourceRef,
+    material: SourceRef,
+    evidence: _ServiceEvidence,
+) -> _StoredRevision | None:
+    row = connection.execute(
+        "SELECT sequence,later_ordinal,material,predecessor,payload"
+        " FROM claim_revisions WHERE key = ? AND material = ?",
+        (key.value, material.value),
+    ).fetchone()
+    return None if row is None else _stored_revision(row, key, evidence)
+
+
+def _same_revision(revision: _StoredRevision, witness: _NativeRevisionWitness) -> bool:
+    return (
+        revision.material == witness.successor_material
+        and revision.predecessor == witness.predecessor_material
+        and revision.ordinal == witness.later_ordinal
+        and revision.payload.prefix_ref == witness.prefix_ref
+    )
+
+
+def _distinct_accepted_child(
+    connection: sqlite3.Connection,
+    key: SourceRef,
+    common: SourceRef,
+    usage: UsageObservation,
+    evidence: _ServiceEvidence,
+) -> _StoredRevision | None:
+    child = None
+    rows = connection.execute(
+        "SELECT sequence,later_ordinal,material,predecessor,payload"
+        " FROM claim_revisions WHERE key = ?",
+        (key.value,),
+    )
+    for row in rows:
+        revision = _stored_revision(row, key, evidence)
+        if usage == revision.payload.usage:
+            return None
+        if revision.predecessor == common:
+            if child is not None:
+                return None
+            child = revision
+    return child
+
+
+def _claim_span(origin: ClaimEvidence) -> tuple:
+    return (
+        origin.surface,
+        origin.session_ref,
+        origin.stream_ref,
+        origin.start,
+        origin.end,
+    )
+
+
+def _accepted_edge(revision: _StoredRevision, origin: ClaimEvidence) -> _ContentEdge:
+    return _ContentEdge(
+        revision.material,
+        origin,
+        revision.ordinal,
+        revision.payload.prefix_ref,
+        revision.payload.locator_ref,
+        revision.payload.incarnation_ref,
+    )
+
+
+def _stored_content_dispute(
+    connection: sqlite3.Connection,
+    key: SourceRef,
+    original: ClaimEvidence,
+    sequence: int,
+    data: bytes,
+    evidence: _ServiceEvidence,
+) -> _ContentDisputePayload:
+    _positive(sequence)
+    payload = _decode(
+        data, _ContentDisputePayload, validate_ref=evidence.validate_source_ref
+    )
+    accepted, contender = payload.accepted, payload.contender
+    common = _revision_by_material(connection, key, payload.common, evidence)
+    child = _revision_by_material(connection, key, accepted.material, evidence)
+    if (
+        common is None
+        or child is None
+        or not common.sequence <= child.sequence <= sequence
+        or child.predecessor != common.material
+        or accepted != _accepted_edge(child, original)
+        or _claim_span(contender.origin) != _claim_span(original)
+        or contender.origin.source_id == original.source_id
+        or contender.incarnation_ref == accepted.incarnation_ref
+        or contender.material in (common.material, accepted.material)
+        or contender.prefix_ref == accepted.prefix_ref
+        or not common.ordinal < min(accepted.later_ordinal, contender.later_ordinal)
+    ):
+        raise LedgerError("Stored content dispute does not match durable claim history")
+    return payload
+
+
+def _matches_content_edge(
+    edge: _ContentEdge, common: SourceRef, witness: _NativeRevisionWitness
+) -> bool:
+    return (
+        witness.predecessor_material == common
+        and witness.successor_material == edge.material
+        and witness.later_ordinal == edge.later_ordinal
+        and witness.prefix_ref == edge.prefix_ref
+    )
 
 
 def _physical_stream(cursor: SourceCursor) -> tuple[SourceRef, SourceRef, SourceRef]:
@@ -558,19 +701,24 @@ class RoutingJournal:
         disputed = connection.execute(
             "SELECT min(sequence) FROM disputes WHERE key = ?", (key.value,)
         ).fetchone()[0]
+        content = connection.execute(
+            "SELECT sequence,payload FROM content_disputes WHERE key = ?",
+            (key.value,),
+        ).fetchone()
         if observation.revision == 1 and digest == old_digest:
             if disputed is not None:
                 return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
-            return ClaimDisposition(ClaimStatus.REPLAY, key, project, old_sequence)
+            if content is None:
+                return ClaimDisposition(ClaimStatus.REPLAY, key, project, old_sequence)
         held = ClaimDisposition(ClaimStatus.HELD, key, project, old_sequence)
         if (
-            disputed is not None
+            (disputed is not None and content is None)
             or observation.revision == 1
             or observation.native_surface is not NativeSurface.CLAUDE_CODE_MACOS
         ):
             return held
         return self._reserve_revision(
-            connection, candidate, position, registry, sequence, first, held
+            connection, candidate, position, registry, sequence, first, held, content
         )
 
     def _reserve_revision(
@@ -582,6 +730,7 @@ class RoutingJournal:
         sequence: int,
         first: _ClaimPayload,
         held: ClaimDisposition,
+        content: tuple[int, bytes] | None,
     ) -> ClaimDisposition:
         observation = candidate.observation
         key, owner = held.key, held.project_id
@@ -590,20 +739,7 @@ class RoutingJournal:
             candidate.route.scope != first.material.scope
             or observation.time_basis is not first.material.time_basis
             or observation.usage.observed_at != first.material.usage.observed_at
-            or (
-                position.surface,
-                position.session_ref,
-                position.stream_ref,
-                position.start,
-                position.end,
-            )
-            != (
-                original.surface,
-                original.session_ref,
-                original.stream_ref,
-                original.start,
-                original.end,
-            )
+            or _claim_span(position) != _claim_span(original)
         ):
             return held
         batch = candidate._read.batch
@@ -612,27 +748,45 @@ class RoutingJournal:
             return held
         witness = proof.witness
         evidence = self._store.evidence
-        known = connection.execute(
-            "SELECT sequence,later_ordinal,material,predecessor,payload"
-            " FROM claim_revisions WHERE key = ? AND material = ?",
-            (key.value, witness.successor_material.value),
-        ).fetchone()
-        if known is not None:
-            prior = _stored_revision(known, key, evidence)
-            if (
-                prior.predecessor == witness.predecessor_material
-                and prior.ordinal == witness.later_ordinal
-                and prior.payload.prefix_ref == witness.prefix_ref
+        cursor = batch._native_cursor
+        assert cursor is not None
+        if content is not None:
+            written, raw = content
+            dispute = _stored_content_dispute(
+                connection, key, original, written, raw, evidence
+            )
+            if _matches_content_edge(dispute.accepted, dispute.common, witness) or (
+                _matches_content_edge(dispute.contender, dispute.common, witness)
+                and position == dispute.contender.origin
+                and (cursor.locator_ref, cursor.incarnation_ref)
+                == (dispute.contender.locator_ref, dispute.contender.incarnation_ref)
             ):
-                return ClaimDisposition(ClaimStatus.REPLAY, key, owner, prior.sequence)
+                return ClaimDisposition(ClaimStatus.DISPUTED, key, owner, written)
             return held
 
+        known = _revision_by_material(
+            connection, key, witness.successor_material, evidence
+        )
+        if known is not None:
+            if _same_revision(known, witness):
+                return ClaimDisposition(ClaimStatus.REPLAY, key, owner, known.sequence)
+            return held
+
+        if position.source_id != original.source_id:
+            return self._record_content_dispute(
+                connection,
+                candidate,
+                position,
+                registry,
+                sequence,
+                first,
+                held,
+                witness,
+            )
         if position != original or not _original_capture(
             batch, owner, original, registry
         ):
             return held
-        cursor = batch._native_cursor
-        assert cursor is not None
         latest = _revision_head(connection, key, sequence, evidence)
         if latest is None:
             genesis = replace(observation, revision=1, usage=first.material.usage)
@@ -680,6 +834,71 @@ class RoutingJournal:
             ),
         )
         return ClaimDisposition(ClaimStatus.PENDING, key, owner, sequence)
+
+    def _record_content_dispute(
+        self,
+        connection: sqlite3.Connection,
+        candidate: RoutedRevision,
+        position: ClaimEvidence,
+        registry: RegistryView,
+        sequence: int,
+        first: _ClaimPayload,
+        held: ClaimDisposition,
+        witness: _NativeRevisionWitness,
+    ) -> ClaimDisposition:
+        key, owner = held.key, held.project_id
+        evidence = self._store.evidence
+        common = _revision_by_material(
+            connection, key, witness.predecessor_material, evidence
+        )
+        if common is None or witness.predecessor_ordinal != common.ordinal:
+            return held
+        batch = candidate._read.batch
+        predecessor = self._scopes.verified_revision(batch, witness.predecessor)
+        if predecessor is None or not _same_revision(common, predecessor.witness):
+            return held
+
+        usage = candidate.observation.usage
+        assert type(usage) is UsageObservation
+        if usage == first.material.usage:
+            return held
+        child = _distinct_accepted_child(
+            connection, key, common.material, usage, evidence
+        )
+
+        cursor = batch._native_cursor
+        assert cursor is not None
+        if (
+            child is None
+            or child.ordinal <= common.ordinal
+            or witness.later_ordinal <= common.ordinal
+            or witness.prefix_ref == child.payload.prefix_ref
+            or cursor.incarnation_ref == child.payload.incarnation_ref
+            or not _original_capture(batch, owner, position, registry)
+        ):
+            return held
+
+        payload = _ContentDisputePayload(
+            common.material,
+            _accepted_edge(child, first.evidence),
+            _ContentEdge(
+                witness.successor_material,
+                position,
+                witness.later_ordinal,
+                witness.prefix_ref,
+                cursor.locator_ref,
+                cursor.incarnation_ref,
+            ),
+        )
+        data = _encode(
+            payload, _ContentDisputePayload, validate_ref=evidence.validate_source_ref
+        ).encode()
+        self._record_sequence(connection, sequence)
+        connection.execute(
+            "INSERT INTO content_disputes(key,sequence,payload) VALUES (?,?,?)",
+            (key.value, sequence, data),
+        )
+        return ClaimDisposition(ClaimStatus.DISPUTED, key, owner, sequence)
 
     def _write_progress(
         self, connection: sqlite3.Connection, read: _Read, sequence: int
@@ -819,4 +1038,33 @@ class RoutingJournal:
                         written,
                     )
                 )
-            return JournalView(limit, tuple(claims), tuple(disputes))
+            content_disputes = []
+            for key, project, first, digest, written, raw in connection.execute(
+                "SELECT d.key,c.project,c.payload,c.digest,d.sequence,d.payload"
+                " FROM content_disputes d JOIN claims c ON d.key = c.key"
+                " WHERE d.sequence <= ? ORDER BY d.sequence,d.key",
+                (limit,),
+            ):
+                observation_key = SourceRef(key)
+                evidence.validate_source_ref(observation_key)
+                payload = _stored_content_dispute(
+                    connection,
+                    observation_key,
+                    _stored_claim(first, digest).evidence,
+                    written,
+                    raw,
+                    evidence,
+                )
+                content_disputes.append(
+                    ContentDispute(
+                        observation_key,
+                        UUID(project),
+                        payload.common,
+                        payload.accepted,
+                        payload.contender,
+                        written,
+                    )
+                )
+            return JournalView(
+                limit, tuple(claims), tuple(disputes), tuple(content_disputes)
+            )

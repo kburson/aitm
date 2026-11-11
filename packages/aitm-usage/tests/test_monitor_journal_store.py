@@ -50,6 +50,26 @@ CREATE TABLE progress (
 ) STRICT;
 """
 _V1_TABLES = ("identity", "commits", "claims", "disputes", "progress")
+# Exact additive DDL from the last v2 writer, retained independently of v3.
+_V2_REVISION_SCHEMA = """
+CREATE TABLE claim_revisions (
+    key TEXT NOT NULL REFERENCES claims(key),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    later_ordinal INTEGER NOT NULL,
+    material TEXT NOT NULL,
+    predecessor TEXT NOT NULL,
+    payload BLOB NOT NULL,
+    PRIMARY KEY (key, sequence, later_ordinal),
+    UNIQUE (key, material)
+) STRICT;
+"""
+_V3_CONTENT_SCHEMA = """
+CREATE TABLE content_disputes (
+    key TEXT PRIMARY KEY REFERENCES claims(key),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    payload BLOB NOT NULL
+) STRICT;
+"""
 
 
 def _directory(registry: Registry) -> Path:
@@ -102,17 +122,34 @@ def _create_v1_store(writer):
     return evidence
 
 
+def _create_v2_store(writer):
+    evidence = _create_v1_store(writer)
+    with _sqlite(_database(writer)) as conn:
+        conn.execute(_V2_REVISION_SCHEMA)
+        conn.execute("PRAGMA user_version = 2")
+        conn.execute("INSERT INTO commits VALUES (3)")
+        conn.executemany(
+            "INSERT INTO claim_revisions VALUES (?, ?, ?, ?, ?, ?)",
+            [
+                ("key", 2, 7, "revision-2", "digest", b"\x00revision-2\xff"),
+                ("key", 3, 9, "revision-3", "revision-2", b"\x00revision-3\xfe"),
+            ],
+        )
+    return evidence
+
+
+def _legacy_rows(conn, version):
+    names = _V1_TABLES + (("claim_revisions",) if version == 2 else ())
+    return {
+        name: conn.execute(f"SELECT * FROM {name} ORDER BY rowid").fetchall()
+        for name in names
+    }
+
+
 def _schema_objects(conn):
     return conn.execute(
         "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
     ).fetchall()
-
-
-def _v1_rows(conn):
-    return {
-        name: conn.execute(f"SELECT * FROM {name} ORDER BY rowid").fetchall()
-        for name in _V1_TABLES
-    }
 
 
 def _storage_identity(registry):
@@ -134,49 +171,69 @@ def _durable_bytes(registry):
     }
 
 
-def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
+def _assert_exact_legacy_upgrade(tmp_path, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        evidence = _create_v1_store(writer)
-    identities = _storage_identity(registry)
-    with _sqlite(_database(registry)) as conn:
-        v1_schema = _schema_objects(conn)
-        v1_rows = _v1_rows(conn)
-
-    with registry.writer() as writer:
+        evidence = (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        identities = _storage_identity(registry)
+        with _sqlite(_database(registry)) as conn:
+            original_schema = _schema_objects(conn)
+            original_rows = _legacy_rows(conn, version)
+            old_tip = conn.execute("SELECT max(sequence) FROM commits").fetchone()
         store = journal.JournalStore(writer)
         assert store.evidence == evidence
         with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
             assert conn.execute("PRAGMA application_id").fetchone() == (
                 _V1_APPLICATION_ID,
             )
-            assert _v1_rows(conn) == v1_rows
-            upgraded_schema = _schema_objects(conn)
-            assert [
-                item for item in upgraded_schema if item[2] != "claim_revisions"
-            ] == v1_schema
-            assert conn.execute("SELECT * FROM claim_revisions").fetchall() == []
-    _assert_storage_identity(identities)
-
-    fresh_registry = Registry(tmp_path / "fresh")
-    with fresh_registry.writer() as writer:
+            assert _legacy_rows(conn, version) == original_rows
+            assert (
+                conn.execute("SELECT max(sequence) FROM commits").fetchone() == old_tip
+            )
+            assert conn.execute("SELECT key_id FROM identity").fetchone() == (
+                evidence.key_id,
+            )
+            assert conn.execute("SELECT * FROM content_disputes").fetchall() == []
+            new_schema = _schema_objects(conn)
+            added = {"content_disputes"}
+            if version == 1:
+                added.add("claim_revisions")
+                assert conn.execute("SELECT * FROM claim_revisions").fetchall() == []
+            assert [row for row in new_schema if row[2] not in added] == original_schema
+    with registry.writer() as writer:
+        with journal.JournalStore(writer).transaction() as conn:
+            assert _legacy_rows(conn, version) == original_rows
+        _assert_storage_identity(identities)
+    with _sqlite(":memory:") as conn:
+        conn.executescript(_V1_SCHEMA + _V2_REVISION_SCHEMA + _V3_CONTENT_SCHEMA)
+        assert _schema_objects(conn) == new_schema
+    fresh = Registry(tmp_path / "fresh")
+    with fresh.writer() as writer:
         writer.source_evidence()
         with journal.JournalStore(writer).transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
-            assert _schema_objects(conn) == upgraded_schema
+            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
+            assert _schema_objects(conn) == new_schema
 
 
-@pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
+def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
+    # Retain the baseline node ID; the fresh target is now v3.
+    _assert_exact_legacy_upgrade(tmp_path, 1)
+
+
+def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path):
+    _assert_exact_legacy_upgrade(tmp_path, 2)
+
+
+def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        _create_v1_store(writer)
+        (_create_v1_store if version == 1 else _create_v2_store)(writer)
         identities = _storage_identity(registry)
         expected_bytes = _durable_bytes(registry)
         with _sqlite(_database(registry)) as conn:
             original_schema = _schema_objects(conn)
-            original_rows = _v1_rows(conn)
+            original_rows = _legacy_rows(conn, version)
 
         directory = _directory(registry)
         saved = registry.root / "saved"
@@ -198,11 +255,17 @@ def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
             if (
                 migration is not None
                 and migration.in_transaction
-                and migration.execute("PRAGMA user_version").fetchone() == (2,)
+                and migration.execute("PRAGMA user_version").fetchone() == (3,)
             ):
                 assert (
-                    migration.execute("SELECT * FROM claim_revisions").fetchall() == []
+                    migration.execute("SELECT * FROM content_disputes").fetchall() == []
                 )
+                assert _legacy_rows(migration, version) == original_rows
+                if version == 1:
+                    assert (
+                        migration.execute("SELECT * FROM claim_revisions").fetchall()
+                        == []
+                    )
                 interrupted = True
                 if failure == "interrupt":
                     raise RuntimeError("injected interruption after migration DDL")
@@ -223,19 +286,33 @@ def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
         _assert_storage_identity(identities)
         assert _durable_bytes(registry) == expected_bytes
         with _sqlite(_database(registry)) as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (1,)
+            assert conn.execute("PRAGMA user_version").fetchone() == (version,)
             assert _schema_objects(conn) == original_schema
-            assert _v1_rows(conn) == original_rows
+            assert _legacy_rows(conn, version) == original_rows
         with journal.JournalStore(writer).transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
-            assert _v1_rows(conn) == original_rows
+            assert conn.execute("PRAGMA user_version").fetchone() == (3,)
+            assert _legacy_rows(conn, version) == original_rows
+
+
+@pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
+def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
+    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 1)
+
+
+@pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
+def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
+    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 2)
 
 
 @pytest.mark.parametrize(
     ("damage", "message"),
     [
         ("PRAGMA application_id = 0", "application"),
-        ("PRAGMA user_version = 3", "schema version"),
+        pytest.param(
+            "PRAGMA user_version = 3",
+            "table schema",
+            id="PRAGMA user_version = 3-schema version",
+        ),
         ("PRAGMA user_version = 2", "table schema"),
         ("CREATE TABLE claim_revisions (key TEXT) STRICT", "table schema"),
         ("UPDATE identity SET key_id = 'foreign'", "source key identity"),
@@ -262,8 +339,8 @@ def test_exact_v1_validation_refuses_v2_without_modifying_either_store(tmp_path)
     with v1_registry.writer() as writer:
         v1 = _create_v1_store(writer)
     with v2_registry.writer() as writer:
-        v2 = writer.source_evidence()
-        with journal.JournalStore(writer).transaction() as conn:
+        v2 = _create_v2_store(writer)
+        with _sqlite(_database(writer)) as conn:
             assert conn.execute("PRAGMA user_version").fetchone() == (2,)
     expected_bytes = [
         _durable_bytes(registry) for registry in (v1_registry, v2_registry)
@@ -556,3 +633,92 @@ def test_retired_writer_cannot_reopen_or_use_saved_store(tmp_path):
             _sequences(store)
         with pytest.raises(LedgerError):
             journal.JournalStore(writer)
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
+    tmp_path, monkeypatch, version
+):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        statements = []
+        open_database = journal._open
+
+        @contextmanager
+        def trace_migration(database, *, write):
+            with open_database(database, write=write) as conn:
+                if write:
+                    conn.set_trace_callback(statements.append)
+                yield conn
+
+        monkeypatch.setattr(journal, "_open", trace_migration)
+        journal.JournalStore(writer)
+        normalized = [" ".join(sql.split()).upper() for sql in statements]
+        assert normalized.count("BEGIN IMMEDIATE") == 1
+        assert normalized.count("COMMIT") == 1
+        assert [
+            sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")
+        ] == ["PRAGMA USER_VERSION = 3"]
+        creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
+        assert len(creates) == (2 if version == 1 else 1)
+        assert creates[-1].startswith("CREATE TABLE CONTENT_DISPUTES")
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
+    tmp_path, version
+):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        evidence = writer.source_evidence()
+        journal.JournalStore(writer)
+        expected = {p: p.read_bytes() for p in _directory(registry).iterdir()}
+        with journal._open(_database(registry), write=False) as conn:
+            with pytest.raises(LedgerError, match="schema version"):
+                journal._validate_identity(conn, evidence.key_id, version=version)
+        assert {p: p.read_bytes() for p in expected} == expected
+
+
+@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "PRAGMA user_version = 4",
+        "PRAGMA user_version = 0",
+        "CREATE TABLE content_disputes (key TEXT) STRICT",
+        "UPDATE identity SET key_id = 'foreign'",
+    ],
+)
+def test_mixed_or_unknown_legacy_schema_is_refused_without_migration(
+    tmp_path, version, damage
+):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        (_create_v1_store if version == 1 else _create_v2_store)(writer)
+        with _sqlite(_database(registry)) as conn:
+            conn.execute(damage)
+        identities = _storage_identity(registry)
+        expected = _durable_bytes(registry)
+        with pytest.raises(LedgerError):
+            journal.JournalStore(writer)
+        _assert_storage_identity(identities)
+        assert _durable_bytes(registry) == expected
+
+
+def test_content_dispute_table_enforces_private_strict_foreign_keys(tmp_path):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        _create_v2_store(writer)
+        with journal.JournalStore(writer).transaction(write=True) as conn:
+            insert = "INSERT INTO content_disputes VALUES (?, ?, ?)"
+            assert conn.execute("PRAGMA foreign_keys").fetchone() == (1,)
+            assert conn.execute("PRAGMA synchronous").fetchone() == (2,)
+            for key, sequence in [("missing", 1), ("key", 999)]:
+                with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+                    conn.execute(insert, (key, sequence, b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="cannot store TEXT"):
+                conn.execute(insert, ("key", 3, "invalid"))
+            conn.execute(insert, ("key", 3, b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+                conn.execute(insert, ("key", 3, b"different"))
