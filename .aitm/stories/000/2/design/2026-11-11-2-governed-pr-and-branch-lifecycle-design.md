@@ -21,12 +21,16 @@ independent capability qualification.
   protocol. Atomically finalize the numbered Backlog story, parent
   relationship and pending provisioning action. Dispatch branch and
   PR writes only after verified shared publication. Record repository,
-  parent ref, initial base, working ref, PR identity and generation.
-  Recover partial or ambiguous outcomes without duplicating resources.
+  parent ref, initial base, working ref, PR identity and resource
+  incarnation. Journal a separate broker dispatch claim for each
+  external effect. Recover ambiguous outcomes with positive ownership
+  evidence, and require proven safe replay before resending.
 - Use the declared feature or epic parent as the child PR base. A
-  missing parent is an unavailable binding. A tracked epic integration
-  branch can have a separate draft delivery to the default branch.
-  A pure aggregate epic and local-only planning remain supported.
+  missing parent is an unavailable binding. A branch-backed epic
+  explicitly designates an ordinary integration delivery story to own
+  the shared branch and its draft. The story uses its own Core review
+  and delivery authority. A pure aggregate epic and local-only
+  planning remain supported.
 - Open a draft PR during provisioning of every managed working branch.
   Qualify an immediate draft on GitHub when head starts at the same
   commit as its parent. If the host needs ahead history, qualify a
@@ -36,19 +40,24 @@ independent capability qualification.
   machine-readable catalog. Each operation identifies permitted
   arguments, preconditions, side effects, result and next action.
   Expose the same operations through the skill and MCP.
-- Abandonment fences the current generation and journals cleanup.
-  Reconcile outstanding effects, close the linked PR, conditionally
-  delete its exact source ref, and use the owning manager to remove
-  its worktree after safe disposition of local changes. Resolve
-  dependents using the ref before deletion. Retain the issue, PR
-  and host outcomes. Preserve the prior generation on scrap and
-  invalidate prior evidence when applicable on refactor.
+- Abandonment fences the current resource incarnation and journals
+  terminal cleanup authority. Order the retirement fence with
+  dependent admission, including parent selection and PR retargeting.
+  Account for all routes that could introduce a dependent before
+  deleting the exact source ref. Close its linked PR and use the
+  owning manager to remove its worktree after safe disposition of
+  local changes. Scrap requires a verified durable source-retention
+  receipt. Refactor invalidates prior evidence when applicable.
 
 ## Authority and delivery
 
-A trusted service authenticates each operation against current
-story generation, published intent, effective policy, and anchored
-repository and refs. Credentials stay outside agent workspaces.
+A trusted service admits each effect against durable published state,
+the authenticated principal or service role, the exact operation and
+resource incarnation, effective policy, and anchored repository and
+refs. An incarnation survives ordinary session rebind. Current-session
+mutations also require the current attempt and C16 binding generation.
+Provisioning and terminal cleanup use narrowly scoped service claims.
+Credentials stay outside agent workspaces.
 Managed mode requires qualified tool and network isolation for direct
 provider calls, including anonymous API routes. Unsupported isolation
 leaves managed provider operations unavailable. Local Core and
@@ -56,7 +65,10 @@ supported observation remain available.
 
 On a trunk-bound ready or merge request, the service reads the live
 protected GitHub flag ref and resolves its record at the returned OID.
-Local cached refs supply no authorization. While held, the nominated
+Local cached refs supply no authorization. Ready promotion must honor
+the current policy at the host transition for the exact PR, head and
+target. An unqualified route stays unavailable, and ambiguous effects
+hold subsequent promotion until reconciled. While held, the nominated
 repair may seek review. Only the exact independently reviewed repair
 with full passing candidate proof is eligible to merge. Feature pushes
 and non-default merges continue through their own policies. Require
