@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 209
 title: "[M08b4b] Atomic journal disposition and coverage projection"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/209"
 parent: 100
 children: []
 blocking: [119, 210]
 blocked-by: [203]
 created: "2026-11-11T02:38:34Z"
-updated: "2026-11-11T14:52:05+00:00"
-last-branch: "planning"
+updated: "2026-11-11T15:02:49+00:00"
+last-branch: "codex/aitm-209-journal-disposition"
 estimate: {"agent-hours": 3.9, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
