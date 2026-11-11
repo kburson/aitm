@@ -61,6 +61,9 @@ qualification recipe and estimate at refinement before dispatch. The
 [#197 hold](../139/plan/delivery-checklist.md) and #159's blockers apply
 independently of this qualification work.
 
+[Local testmon advisory trial](attachments/2026-11-11-172-testmon-advisory-trial.md)
+records a Python dependency cluster and a missed data-file regression.
+
 ## Accepted plan excerpt
 
 ### T35. Measure selection and sharding qualification — 3h, P2, T06/T34

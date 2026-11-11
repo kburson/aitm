@@ -287,3 +287,37 @@ disposition as evidence. #139 stays in Test while the hold is active.
 [Fixture isolation delivery and hosted qualification](2026-11-11-139-fixture-isolation-delivery.md)
 records both prerequisites passing on PR #245 and its delivered trunk
 tree. #197 remains at its prior head pending refresh and its own CI.
+
+## Refresh onto fixture-isolated trunk
+
+[PR #197](https://github.com/kburson/aitm/pull/197) fast-forwarded its
+working branch to `2dd98bb7f5029188cf693e7c1317dd5fc0675e2b` by merging
+literal trunk `21b06b2b8be47adcf4c3c747ba7c0a6469196f79` into the prior
+head. GitHub tested `4b827703b5275928cf474bc242383592a924f697` with
+those exact ordered base and head parents, producing tested tree
+`35ad17ad3121728482ba9acdfcdd8e724c56289f`. The three inventory additions
+match their previously approved blob IDs. The only change between the
+approved and refreshed trees is the fixture-isolation workflow already
+delivered on trunk in #245. All 47 focused local inventory tests passed.
+
+[Fresh hosted attempt 1](https://github.com/kburson/aitm/actions/runs/43088954749/attempts/1)
+passed all six jobs. The complete candidate Python job took 445 seconds
+through wheel smoke and artifact publication, with 35 seconds under
+the eight-minute limit. The isolated base job took 289 seconds. The
+[hosted receipt](hosted-validation-35ad17ad3121-a1.json) verifies the
+signed artifact, 1,071 candidate and 1,070 base outcomes, both coverage
+floors, and both required subprocess records.
+
+The [exact #103 scope](owner-disposition-scope-35ad17ad3121.json) names
+the three additions and the refreshed tested tree. The prior owner
+approval was bound to `7d93353e06c8177c19bc1f918217e2f8ccf75da7`.
+The trusted verifier held on the refreshed tree at the exact disposition
+check. The signed evidence was checked separately and grants no owner
+disposition. PR #197 remains open and #139 remains in Test. #159 remains
+blocked by #157 and #158.
+
+The [#172 advisory trial](../../172/attachments/2026-11-11-172-testmon-advisory-trial.md)
+used two scratch copies of this exact source tree. It grouped three
+Python-edit suggestions under the existing `grok-pricing` unit policy
+and reproduced a rate-card JSON regression missed by testmon selection.
+Full-suite fallback and the reviewed suite policy continue to govern.

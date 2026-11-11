@@ -1,0 +1,96 @@
+{
+  "hosted_conclusion": "success",
+  "jobs": {
+    "aitm-ci": {
+      "conclusion": "success",
+      "elapsed_seconds": 13,
+      "job_id": 130764736628
+    },
+    "collect-evidence": {
+      "conclusion": "success",
+      "elapsed_seconds": 12,
+      "job_id": 130764600685
+    },
+    "file-checks": {
+      "conclusion": "success",
+      "elapsed_seconds": 15,
+      "job_id": 130760623966
+    },
+    "python": {
+      "conclusion": "success",
+      "elapsed_seconds": 445,
+      "job_id": 130760623228
+    },
+    "python-base": {
+      "conclusion": "success",
+      "elapsed_seconds": 289,
+      "job_id": 130760623360
+    },
+    "quality": {
+      "conclusion": "success",
+      "elapsed_seconds": 20,
+      "job_id": 130760622877
+    }
+  },
+  "local_inventory_tests_passed": 47,
+  "python_job_limit_seconds": 480,
+  "repository": "kburson/aitm",
+  "run_url": "https://github.com/kburson/aitm/actions/runs/43088954749/attempts/1",
+  "signed_artifact_verification": {
+    "artifact_digest": "sha256:0cbac3f6e41d70625e7727da6a0432917df01d738776fa8af8804e43c76f7b66",
+    "artifact_id": 13888271749,
+    "attempt": 1,
+    "base": "21b06b2b8be47adcf4c3c747ba7c0a6469196f79",
+    "check_suite": 116686929648,
+    "child_labels": [
+      "cli-help",
+      "service-one-shot"
+    ],
+    "controls": {
+      "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+      "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+      "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+      "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+      "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+      "workflow": "7314705a5054920b885a3445c75ecf4fd7bf29c6"
+    },
+    "head": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+    "invocation": "https://github.com/kburson/aitm/actions/runs/43088954749/attempts/1",
+    "pr": 197,
+    "result": {
+      "baseline_tests": 1070,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 778,
+          "num_statements": 821
+        },
+        "product": {
+          "covered_lines": 10655,
+          "num_statements": 11604
+        }
+      },
+      "failures": [],
+      "passed": true,
+      "tests": 1071
+    },
+    "run": 43088954749,
+    "scope": "attestation and signed payload diagnostic before independent review",
+    "subject_digest": "9f3b8e3d8bc2f49780fdc45792783eef9a6473f64aa68f6f78a0e9f84905b0a6",
+    "tested": "4b827703b5275928cf474bc242383592a924f697",
+    "timings": {
+      "cache": "warm",
+      "hosted_seconds": 445,
+      "queue": 4,
+      "setup": 3,
+      "test": 421,
+      "total": 425
+    },
+    "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+    "wheel_digest": "0e06548d0ec181534cbd9b6179b1b86fbc98a2da78664d4cd34bed8e8924c381"
+  },
+  "trusted_verifier": {
+    "reason": "gate controls changed or disposition is stale; provide the exact reviewed tree",
+    "status": "hold",
+    "verified_at": "2026-11-11T19:46:09.279709+00:00"
+  }
+}

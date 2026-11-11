@@ -1,0 +1,29 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_inventory.py": "fbe0e5e91472c15e36eb15ddf2e5c156902c8f7d",
+    "tools/ci/tia/inventory.py": "2f542dcdb9e6518c637d445fce673377d3dd34af",
+    "tools/ci/tia/suites.json": "e0d88968b23412c0f5594149d87e643554a0e9af"
+  },
+  "base": "21b06b2b8be47adcf4c3c747ba7c0a6469196f79",
+  "exact_tested_tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+  "existing_controls_matching_literal_target": {
+    "configuration": "8768e767deb75abaa0616da83e84de5d3df84508",
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "7314705a5054920b885a3445c75ecf4fd7bf29c6"
+  },
+  "head": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+  "hosted_run_attempt": 1,
+  "hosted_run_id": 43088954749,
+  "owner_disposition": "required_for_refreshed_exact_tree",
+  "policy_story": 103,
+  "pr": 197,
+  "previous_owner_approved_tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "previous_tree_difference": [".github/workflows/ci.yml"],
+  "repository": "kburson/aitm",
+  "story": 139,
+  "tested_commit": "4b827703b5275928cf474bc242383592a924f697"
+}
