@@ -3,7 +3,7 @@
 import os
 import shutil
 import sqlite3
-from contextlib import closing
+from contextlib import closing, contextmanager
 from pathlib import Path
 
 import pytest
@@ -12,6 +12,44 @@ from aitm_usage import _monitor_journal_store as journal
 from aitm_usage import host_fs
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_registry import Registry
+
+_V1_APPLICATION_ID = 0x4149544A
+# Exact schema from the last v1 writer, before any upgrade code existed.
+_V1_SCHEMA = """
+CREATE TABLE identity (
+    singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+    key_id TEXT NOT NULL
+) STRICT;
+CREATE TABLE commits (
+    sequence INTEGER PRIMARY KEY
+) STRICT;
+CREATE TABLE claims (
+    key TEXT PRIMARY KEY,
+    project TEXT NOT NULL,
+    digest TEXT NOT NULL,
+    payload BLOB NOT NULL,
+    sequence INTEGER NOT NULL REFERENCES commits
+) STRICT;
+CREATE TABLE disputes (
+    key TEXT NOT NULL REFERENCES claims(key),
+    contender TEXT NOT NULL,
+    digest TEXT NOT NULL,
+    evidence BLOB NOT NULL,
+    sequence INTEGER NOT NULL REFERENCES commits,
+    PRIMARY KEY (key, contender, digest, evidence)
+) STRICT;
+CREATE TABLE progress (
+    source TEXT NOT NULL,
+    surface TEXT NOT NULL,
+    stream TEXT NOT NULL,
+    locator TEXT NOT NULL,
+    incarnation TEXT NOT NULL,
+    sequence INTEGER NOT NULL REFERENCES commits,
+    cursor BLOB NOT NULL,
+    PRIMARY KEY (source, surface, stream, locator, incarnation, sequence)
+) STRICT;
+"""
+_V1_TABLES = ("identity", "commits", "claims", "disputes", "progress")
 
 
 def _directory(registry: Registry) -> Path:
@@ -29,6 +67,235 @@ def _key(registry: Registry) -> Path:
 def _sequences(store: journal.JournalStore) -> list[tuple[int]]:
     with store.transaction() as conn:
         return conn.execute("SELECT sequence FROM commits ORDER BY sequence").fetchall()
+
+
+@contextmanager
+def _sqlite(database):
+    with closing(sqlite3.connect(database)) as conn, conn:
+        conn.setconfig(sqlite3.SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, True)
+        yield conn
+
+
+def _create_v1_store(writer):
+    evidence = writer.source_evidence()
+    _directory(writer).mkdir(mode=0o700)
+    database = _database(writer)
+    database.touch(mode=0o600)
+    with _sqlite(database) as conn:
+        assert conn.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+        conn.execute("PRAGMA foreign_keys=ON")
+        conn.executescript("BEGIN IMMEDIATE;\n" + _V1_SCHEMA)
+        conn.execute(f"PRAGMA application_id = {_V1_APPLICATION_ID}")
+        conn.execute("PRAGMA user_version = 1")
+        conn.execute("INSERT INTO identity VALUES (1, ?)", (evidence.key_id,))
+        conn.executemany("INSERT INTO commits VALUES (?)", [(1,), (2,)])
+        conn.execute(
+            "INSERT INTO claims VALUES ('key', 'project', 'digest', x'00ff', 1)"
+        )
+        conn.execute(
+            "INSERT INTO disputes VALUES ('key', 'contender', 'other', x'fe01', 2)"
+        )
+        conn.execute(
+            "INSERT INTO progress VALUES ('source', 'surface', 'stream', 'locator',"
+            " 'incarnation', 1, x'0102')"
+        )
+    return evidence
+
+
+def _schema_objects(conn):
+    return conn.execute(
+        "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+    ).fetchall()
+
+
+def _v1_rows(conn):
+    return {
+        name: conn.execute(f"SELECT * FROM {name} ORDER BY rowid").fetchall()
+        for name in _V1_TABLES
+    }
+
+
+def _storage_identity(registry):
+    directory = _directory(registry)
+    return {
+        path: path.stat() for path in (directory, _key(registry), *directory.iterdir())
+    }
+
+
+def _assert_storage_identity(identities):
+    assert all(os.path.samestat(info, path.stat()) for path, info in identities.items())
+
+
+def _durable_bytes(registry):
+    return {
+        path: path.read_bytes()
+        for path in _directory(registry).iterdir()
+        if not path.name.endswith("-shm")
+    }
+
+
+def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        evidence = _create_v1_store(writer)
+    identities = _storage_identity(registry)
+    with _sqlite(_database(registry)) as conn:
+        v1_schema = _schema_objects(conn)
+        v1_rows = _v1_rows(conn)
+
+    with registry.writer() as writer:
+        store = journal.JournalStore(writer)
+        assert store.evidence == evidence
+        with store.transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+            assert conn.execute("PRAGMA application_id").fetchone() == (
+                _V1_APPLICATION_ID,
+            )
+            assert _v1_rows(conn) == v1_rows
+            upgraded_schema = _schema_objects(conn)
+            assert [
+                item for item in upgraded_schema if item[2] != "claim_revisions"
+            ] == v1_schema
+            assert conn.execute("SELECT * FROM claim_revisions").fetchall() == []
+    _assert_storage_identity(identities)
+
+    fresh_registry = Registry(tmp_path / "fresh")
+    with fresh_registry.writer() as writer:
+        writer.source_evidence()
+        with journal.JournalStore(writer).transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+            assert _schema_objects(conn) == upgraded_schema
+
+
+@pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
+def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        _create_v1_store(writer)
+        identities = _storage_identity(registry)
+        expected_bytes = _durable_bytes(registry)
+        with _sqlite(_database(registry)) as conn:
+            original_schema = _schema_objects(conn)
+            original_rows = _v1_rows(conn)
+
+        directory = _directory(registry)
+        saved = registry.root / "saved"
+        open_database = journal._open
+        check_store = journal.JournalStore._check_store
+        migration = None
+        interrupted = False
+
+        @contextmanager
+        def observe_write_connection(database, *, write):
+            nonlocal migration
+            with open_database(database, write=write) as conn:
+                if write:
+                    migration = conn
+                yield conn
+
+        def fail_precommit(store, root, pin):
+            nonlocal interrupted
+            if (
+                migration is not None
+                and migration.in_transaction
+                and migration.execute("PRAGMA user_version").fetchone() == (2,)
+            ):
+                assert (
+                    migration.execute("SELECT * FROM claim_revisions").fetchall() == []
+                )
+                interrupted = True
+                if failure == "interrupt":
+                    raise RuntimeError("injected interruption after migration DDL")
+                directory.rename(saved)
+                shutil.copytree(saved, directory)
+            check_store(store, root, pin)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(journal, "_open", observe_write_connection)
+            patch.setattr(journal.JournalStore, "_check_store", fail_precommit)
+            error = RuntimeError if failure == "interrupt" else LedgerError
+            with pytest.raises(error):
+                journal.JournalStore(writer)
+        assert interrupted
+        if failure == "replace-directory":
+            shutil.rmtree(directory)
+            saved.rename(directory)
+        _assert_storage_identity(identities)
+        assert _durable_bytes(registry) == expected_bytes
+        with _sqlite(_database(registry)) as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (1,)
+            assert _schema_objects(conn) == original_schema
+            assert _v1_rows(conn) == original_rows
+        with journal.JournalStore(writer).transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+            assert _v1_rows(conn) == original_rows
+
+
+@pytest.mark.parametrize(
+    ("damage", "message"),
+    [
+        ("PRAGMA application_id = 0", "application"),
+        ("PRAGMA user_version = 3", "schema version"),
+        ("PRAGMA user_version = 2", "table schema"),
+        ("CREATE TABLE claim_revisions (key TEXT) STRICT", "table schema"),
+        ("UPDATE identity SET key_id = 'foreign'", "source key identity"),
+        ("UPDATE claims SET sequence = 999", "foreign key"),
+    ],
+)
+def test_invalid_v1_is_refused_before_upgrade(tmp_path, damage, message):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        _create_v1_store(writer)
+        with _sqlite(_database(registry)) as conn:
+            conn.execute(damage)
+        identities = _storage_identity(registry)
+        expected_bytes = _durable_bytes(registry)
+        with pytest.raises(LedgerError, match=message):
+            journal.JournalStore(writer)
+        _assert_storage_identity(identities)
+        assert _durable_bytes(registry) == expected_bytes
+
+
+def test_exact_v1_validation_refuses_v2_without_modifying_either_store(tmp_path):
+    v1_registry = Registry(tmp_path / "v1")
+    v2_registry = Registry(tmp_path / "v2")
+    with v1_registry.writer() as writer:
+        v1 = _create_v1_store(writer)
+    with v2_registry.writer() as writer:
+        v2 = writer.source_evidence()
+        with journal.JournalStore(writer).transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+    expected_bytes = [
+        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
+    ]
+    with _sqlite(_database(v1_registry)) as conn:
+        journal._validate_identity(conn, v1.key_id, version=1)
+    with _sqlite(_database(v2_registry)) as conn:
+        with pytest.raises(LedgerError, match="schema version"):
+            journal._validate_identity(conn, v2.key_id, version=1)
+    assert [
+        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
+    ] == expected_bytes
+
+
+def test_revision_table_enforces_foreign_keys_and_uniqueness_in_writes(tmp_path):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        _create_v1_store(writer)
+        with journal.JournalStore(writer).transaction(write=True) as conn:
+            assert conn.execute("PRAGMA foreign_keys").fetchone() == (1,)
+            assert conn.execute("PRAGMA synchronous").fetchone() == (2,)
+            insert = "INSERT INTO claim_revisions VALUES (?, ?, ?, ?, ?, ?)"
+            for key, sequence in [("missing", 1), ("key", 999)]:
+                with pytest.raises(sqlite3.IntegrityError, match="FOREIGN KEY"):
+                    conn.execute(insert, (key, sequence, 7, "new", "old", b"payload"))
+            conn.execute(insert, ("key", 2, 7, "new", "old", b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+                conn.execute(insert, ("key", 2, 8, "new", "old", b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+                conn.execute(insert, ("key", 2, 7, "another", "old", b"payload"))
+            with pytest.raises(sqlite3.IntegrityError, match="cannot store TEXT"):
+                conn.execute(insert, ("key", 2, 8, "another", "old", "invalid"))
 
 
 def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
