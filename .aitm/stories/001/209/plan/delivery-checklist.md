@@ -71,3 +71,7 @@ On [run 43059217996 attempt 2](https://github.com/kburson/aitm/actions/runs/4305
 On [run 43059217996 attempt 3](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/3), GitHub canceled both macOS jobs after fifteen minutes in the queue. Both [job checks](isolated-hosted-a3-terminal.json) recorded no executed steps. GitHub reported that neither hosted runner acquired the job after multiple attempts and annotated macOS arm64 capacity constraints. The hosted signature and source recovery remain pending. The existing full workflow was retried against the same head and literal base.
 
 The [exact local test inventory](isolated-local-test-inventory.json) records 1,071 baseline and 1,102 candidate product and CLI tests, 182 helpers per side, identical inventories to the previous local verification, and identical raw coverage. The [Project readback](project-capture-isolation-readback.json) verifies Rank 228.1, Estimate 3.90, Actual 0.5693 partial, Size M and the original Start Date.
+
+### Fourth isolated hosted attempt
+
+On [run 43059217996 attempt 4](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/4), the literal baseline passed with private fixtures again. The candidate logged progress through 98 percent with no reported test failure. GitHub annotated that the job exceeded the existing eight-minute maximum, and canceled it before evidence publication. The [terminal receipt](isolated-hosted-a4-terminal.json) records failed collection and a skipped final gate. The fifth attempt is an unchanged whole-workflow retry.
