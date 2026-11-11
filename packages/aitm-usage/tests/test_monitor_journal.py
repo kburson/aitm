@@ -225,9 +225,15 @@ def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
     with journal_disposition() as case:
         journal, scopes, native = case.journal, case.scopes, case.native
         before = journal.as_of()
+        scope_bytes = case.scope_file.read_bytes()
+        scope_view = scopes.view()
+        assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         change = journal.record_disposition(case.proof)
         recorded = journal.as_of()
         assert recorded.dispositions[0].affected == (case.first,)
+        assert case.scope_file.read_bytes() == scope_bytes
+        assert scopes.view() == scope_view
+        assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         _finish_disposition_turn(native, case.followup, case.when)
         assert native.path.read_bytes().startswith(case.prefix)
         with pytest.raises(LedgerError):
@@ -236,6 +242,14 @@ def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
         batch = scopes.read_source(case.source_id, native.locator())
         legacy = _verify(scopes, native, case.legacy, case.owner, batch, case.legacy_at)
         assert scopes.dispose(case.legacy, legacy).state == "resolved"
+        resolved_view = scopes.view()
+        resolved_bytes = case.scope_file.read_bytes()
+        with pytest.raises(LedgerError, match="Current scope hold cannot authorize"):
+            journal.record_disposition(case.proof)
+        assert journal.as_of() == recorded
+        assert scopes.view() == resolved_view
+        assert case.scope_file.read_bytes() == resolved_bytes
+        assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         prepared = journal.prepare(case.source_id, native.locator())
         (late,) = (
             item for item in prepared.candidates if item.observation.key == case.later
@@ -286,7 +300,7 @@ def test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck(
 
 
 @pytest.mark.parametrize(
-    "change", ["copy", "foreign-issuer", "consumed", "revoked", "expired"]
+    "change", ["copy", "foreign-issuer", "consumed", "revoked", "expired", "withdrawn"]
 )
 def test_journal_disposition_requires_live_issuer_even_on_replay(
     journal_disposition, monkeypatch, change
@@ -311,6 +325,8 @@ def test_journal_disposition_requires_live_issuer_even_on_replay(
                 )
         elif change == "revoked":
             case.reader.revoke(case.request.grant_id)
+        elif change == "withdrawn":
+            case.reader.withdraw(case.request.grant_id)
         else:
             future = datetime.now(UTC) + timedelta(minutes=2)
             monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
@@ -426,6 +442,7 @@ def test_journal_disposition_projects_each_matching_origin_once(journal_disposit
 
         other_source = replace(origin, source_id=UUID(int=0x636))
         contender_key = key("ownership")
+        assert contender_key not in case.proof.hold.affected.observation_keys
         accepted_key = key("content-accepted")
         rival_key = key("content-contender")
         claims = [first, replace(first, key=contender_key, project_id=B)]
@@ -1196,12 +1213,19 @@ def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
 
 
 def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
+    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=False)
+
+
+def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(journal_claude):
+    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=True)
+
+
+def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
     from test_claude import MODEL, cost, model_counts, rate_event
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1217,10 +1241,12 @@ def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_c
         with journal._store.transaction(write=True) as connection:
             journal._write_progress(connection, first._read, sequence)
 
-    invalid_quota = rate_event(native.anchor)
-    invalid_quota["rate_limit_info"] = {}
-    quota_at = native.append(
-        invalid_quota,
+    quota_at = None
+    if explicit_quota:
+        invalid_quota = rate_event(native.anchor)
+        invalid_quota["rate_limit_info"] = {}
+        quota_at = native.append(invalid_quota)
+    native.append(
         native.request(3, counts=claude_usage(output=6)),
         cost(**{MODEL: model_counts(14, 6, 15, 9, 12)}),
     )
@@ -1240,9 +1266,17 @@ def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_c
         assert diagnostic.provider is Provider.CLAUDE
         assert batch.source_id == native.source_id
         assert diagnostic.source_ref == native.locator().stream_ref
-        assert diagnostic.ordinal == quota_at
         raw = native.path.read_bytes().splitlines()
-        assert json.loads(raw[quota_at])["type"] == "rate_limit_event"
+        if explicit_quota:
+            assert diagnostic.ordinal == quota_at
+            assert json.loads(raw[quota_at])["type"] == "rate_limit_event"
+        else:
+            assert all(json.loads(line)["type"] != "rate_limit_event" for line in raw)
+        assert all(
+            candidate.route.project_id == A
+            and candidate.route.scope == original.route.scope
+            for candidate in (original, successor, terminal)
+        )
         assert len(prepared.candidates) == len(prepared._read.batch.observations)
         assert journal._boundaries_settled(
             prepared._read, journal._scopes.view(prepared._read.batch)
@@ -2120,11 +2154,11 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
 
 
 def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
-    journal_claude,
+    journal_claude, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
-    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_journal import RoutingJournal, _claim_span
 
     native = journal_claude
     with native.native.registry.writer() as writer:
@@ -2166,7 +2200,67 @@ def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
             == witness.witness.successor_material
         )
         assert copied_witness.witness.prefix_ref == witness.witness.prefix_ref
-        assert journal.reserve(reproduced, copy.progress).status == "held"
+        reserve_revision = journal._reserve_revision
+        checked = []
+
+        def compare_scope(
+            connection, candidate, position, registry, sequence, first, held, content
+        ):
+            assert candidate is reproduced
+            assert candidate.route.scope is None
+            assert first.material.scope == command.scope
+            assert candidate.observation.time_basis is first.material.time_basis
+            assert (
+                candidate.observation.usage.observed_at
+                == first.material.usage.observed_at
+            )
+            assert _claim_span(position) == _claim_span(first.evidence)
+            witness_checks = []
+
+            def stop_at_witness(batch, observation):
+                witness_checks.append((batch, observation))
+                return None
+
+            # Compare the single scope field at the guarded decision. The
+            # control stops at the next check before it can record any effect.
+            with monkeypatch.context() as patch:
+                patch.setattr(scopes, "verified_revision", stop_at_witness)
+                result = reserve_revision(
+                    connection,
+                    candidate,
+                    position,
+                    registry,
+                    sequence,
+                    first,
+                    held,
+                    content,
+                )
+                assert result is held and not witness_checks
+                matching = replace(
+                    candidate,
+                    route=replace(candidate.route, scope=first.material.scope),
+                )
+                assert (
+                    reserve_revision(
+                        connection,
+                        matching,
+                        position,
+                        registry,
+                        sequence,
+                        first,
+                        held,
+                        content,
+                    )
+                    is held
+                )
+                assert witness_checks == [(copy._read.batch, candidate.observation)]
+            checked.append(candidate)
+            return result
+
+        with monkeypatch.context() as patch:
+            patch.setattr(journal, "_reserve_revision", compare_scope)
+            assert journal.reserve(reproduced, copy.progress).status == "held"
+        assert checked == [reproduced]
         assert (
             journal.as_of() == saved
             and journal.cursor_for(copy_source, locate()) is None
@@ -2294,9 +2388,21 @@ def test_v3_upgrade_preserves_native_journal_historical_views(tmp_path, monkeypa
             )
             connection.execute("DROP TABLE route_dispositions")
             connection.execute("PRAGMA user_version = 3")
+            connection.execute("COMMIT")
+
+        with _open(database, write=False) as connection:
+            assert connection.execute("PRAGMA user_version").fetchone() == (3,)
+            assert (
+                connection.execute(
+                    "SELECT name FROM sqlite_schema WHERE name = 'route_dispositions'"
+                ).fetchone()
+                is None
+            )
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
+        with journal._store.transaction() as connection:
+            assert connection.execute("PRAGMA user_version").fetchone() == (4,)
         assert journal.as_of() == current
         assert journal.as_of(early.sequence) == early
         assert _prior_journal_rows(journal) == rows
