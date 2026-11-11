@@ -45,3 +45,7 @@ The first-claim payload/digest consistency check is intentional fail-closed hard
 [PR #206](https://github.com/kburson/aitm/pull/206) merged into literal trunk at `2026-11-11T01:36:15Z` as `5324a80bad7730b2bdb4a2b87acf00f7171305c0`. Fetched trunk contains the merge with ordered parents `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3` and `ae0e3a774e242af35210e57eeee499b789214afe`, exact tree `d34be057faf72d4c157c0dbf4e43003ccf40612d`, candidate ancestry and zero source diff. All six required checks and the exact off-platform verdict passed. Branch rules permitted an ordinary merge with zero required native approvals.
 
 The original [SQLite migration author](../retro/2026-11-10-201-store-migration-implementer-retrospective.md) and [journal adjudication implementer](../retro/2026-11-10-201-journal-adjudication-implementer-retrospective.md) personally signed. Both signatures and the [fresh native dependency readback](close-dependency-readback.json) were verified at `2026-11-11T01:38:45+00:00`, clearing the final Close prerequisites.
+
+### Done
+
+GitHub read back [#201](https://github.com/kburson/aitm/issues/201) Closed (Completed) at `2026-11-11T01:38:49Z`. [Project 24](https://github.com/users/kburson/projects/24/views/1) read back Done. #202 may enter separate Refine and JIT. #119 remains gated by #202 through #204.
