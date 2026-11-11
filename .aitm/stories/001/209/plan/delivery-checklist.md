@@ -11,3 +11,9 @@ The real native proposal and late-overlap REDs reached the missing recording API
 The final focused gate passed 120 journal and store tests. The source-specific held inputs distinguish a real malformed Claude quota event from a same-code generic Codex gap, verify native Agent aggregate overlap and mixed diagnostics, and preserve the independently admitted copied-scope refusal. Grok's real keyed contradiction leaves prior Codex claims and cursor intact. The Grok reader has no project capture and journal admission for the test surface. #210 owns independently qualified settlement. M09 owns project publication and ACK.
 
 The four-path candidate is frozen at `b1ec12ad4767edffe3c407dc909556faa39a01fa`, tree `080a9b47a73681e399b73477b67875811efdd234`. The exact locked local gate is running. [Cumulative measured Actual](../attachments/timing/develop-actual-readback-input.json) is a partial subtotal of verified coordinator progress.
+
+## Test checkpoint
+
+[PR #231](https://github.com/kburson/aitm/pull/231) read back exact head `b1ec12ad4767edffe3c407dc909556faa39a01fa`, tree `080a9b47a73681e399b73477b67875811efdd234` and literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. The [locked local gate](local-test-inventory.json) passed 1,100 product and CLI tests and 182 helpers, retaining the exact baseline sets of 1,071 and 182. Raw coverage passed at 10,730/11,681 product and 778/821 helper lines. Ruff and whitespace passed.
+
+[Project Test](project-test-readback.json) preserves Rank 228.1, Size M, Estimate 3.90 and partial Actual 0.2677. Signed hosted validation and the independent exact source review are pending.
