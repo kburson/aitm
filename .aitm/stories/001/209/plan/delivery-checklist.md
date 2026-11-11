@@ -81,3 +81,11 @@ On [run 43059217996 attempt 4](https://github.com/kburson/aitm/actions/runs/4305
 On [run 43059217996 attempt 5](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/5), the exact literal baseline, file checks and quality passed. GitHub canceled the candidate after fifteen minutes in the queue with no steps run. [Terminal check readback](isolated-hosted-a5-terminal.json) and [runner annotations](isolated-hosted-a5-runner.json) establish the candidate runner acquisition failure. Earlier isolated attempt 2 passed both complete candidate test suites and installed wheel verification before upload was canceled. The exact signed gate remains held on one complete hosted attempt.
 
 The fixture isolation and independent workflow-control audit stand. The existing eight-minute maximum, all test and coverage requirements, artifact custody and signing apply. The one remaining authorized exact source review is unused. #209 remains Test. #210 at Rank 228.2 follows verified #209 delivery and Close. [Cumulative Actual evidence](../attachments/timing/capture-final-hold-actual-readback-input.json) measures partial coordinator engagement.
+
+### Successful rerun held by the trusted verifier
+
+[Run 43059217996 attempt 6](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/6) passed all six jobs and emitted an attestation. The [trusted verifier held](isolated-hosted-a6-verifier-hold.json) because the canonical workflow list returned creation time 2026-11-11T16:31:47Z and the exact attempt endpoint returned 2026-11-11T17:46:33Z. [Identity comparison](isolated-hosted-a6-run-identity.json) confirms the other checked associations and outcomes agree. The exact source recovery remains unused.
+
+### Fresh exact hosted candidate
+
+An empty commit advances the candidate from  to  while retaining exact tree  and literal base . Git comparison confirmed zero source diff between revisions and byte-identical complete base-to-head diffs. The [new canonical run](https://github.com/kburson/aitm/actions/runs/43072937185) uses its first attempt. The [identity receipt](fresh-exact-candidate.json) binds the previous workflow-control audit to the same reviewed tree. The original verifier and all acceptance controls apply.

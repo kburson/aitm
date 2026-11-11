@@ -1,0 +1,68 @@
+{
+  "selected": {
+    "id": 43059217996,
+    "run_attempt": 6,
+    "check_suite_id": 116606096584,
+    "created_at": "2026-11-11T16:31:47Z",
+    "status": "completed",
+    "conclusion": "success",
+    "pull_requests": [
+      {
+        "url": "https://api.github.com/repos/kburson/aitm/pulls/231",
+        "id": 5262123501,
+        "number": 231,
+        "head": {
+          "ref": "codex/aitm-209-journal-disposition",
+          "sha": "d1916b81fc05417c6ff709beb59890d22369243b",
+          "repo": {
+            "id": 1450406435,
+            "url": "https://api.github.com/repos/kburson/aitm",
+            "name": "aitm"
+          }
+        },
+        "base": {
+          "ref": "trunk",
+          "sha": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+          "repo": {
+            "id": 1450406435,
+            "url": "https://api.github.com/repos/kburson/aitm",
+            "name": "aitm"
+          }
+        }
+      }
+    ]
+  },
+  "attempt": {
+    "id": 43059217996,
+    "run_attempt": 6,
+    "check_suite_id": 116606096584,
+    "created_at": "2026-11-11T17:46:33Z",
+    "status": "completed",
+    "conclusion": "success",
+    "pull_requests": [
+      {
+        "url": "https://api.github.com/repos/kburson/aitm/pulls/231",
+        "id": 5262123501,
+        "number": 231,
+        "head": {
+          "ref": "codex/aitm-209-journal-disposition",
+          "sha": "d1916b81fc05417c6ff709beb59890d22369243b",
+          "repo": {
+            "id": 1450406435,
+            "url": "https://api.github.com/repos/kburson/aitm",
+            "name": "aitm"
+          }
+        },
+        "base": {
+          "ref": "trunk",
+          "sha": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+          "repo": {
+            "id": 1450406435,
+            "url": "https://api.github.com/repos/kburson/aitm",
+            "name": "aitm"
+          }
+        }
+      }
+    ]
+  }
+}
