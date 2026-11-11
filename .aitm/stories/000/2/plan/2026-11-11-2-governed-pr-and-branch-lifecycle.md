@@ -46,6 +46,25 @@ integration branch under C39–C41. The integration story then binds
 its own attempt to the resulting head and obtains its own review,
 CI and C41 admission for the default target. Child evidence alone
 cannot authorize that PR. The integration story owns its retirement.
+
+Add a bounded Core contract amendment for a declared integration
+delivery whose only changes came from the children. Accepted C76
+otherwise requires nonempty story-tagged implementation commits, which
+a child-only integration attempt cannot supply. Add a typed composed
+source receipt as an alternative Develop-exit proof for the explicitly
+designated integration delivery story only. Bind the receipt to its
+current attempt and declared parent binding, pinned default-target
+baseline, exact integration head and tree, and verified C39–C41
+child-to-integration delivery receipts. Verify a nonempty source delta
+and prove its complete source mapping from the admitted child
+deliveries to the exact candidate, including the recorded history
+after any base refresh. A missing, stale, unexplained or empty delta
+fails this alternative. Re-evaluate it after source or baseline
+changes. Keep ordinary C76 tagged-source guards for every other
+story and defect. This typed receipt supplies source eligibility only.
+Require the integration attempt's own current Test, independent
+source review, and C41 admission for the exact default-target
+delivery. Do not create an empty tagged commit to pass the guard.
 A pure aggregate epic has no inferred delivery story, branch or PR. Existing local-only planning remains available without
 hosted resources. A managed hosted branch cannot be marked provisioned
 until its draft is verified.
@@ -201,7 +220,9 @@ cannot create delivered status or recreate retired resources.
 1. **Core contract and command discovery.** Refine the additions
    against C13 provider contracts, C16 bindings, C20/C22 identity
    and graduation, C39–C41 delivery, C43 action recovery, C62 epic
-   aggregation, and the installed CLI ledger. Test one branch-backed
+   aggregation, C76 source eligibility, and the installed CLI ledger.
+   Refine the designated integration source guard as a bounded Core
+   leaf before hosted integration delivery. Test one branch-backed
    story identity, exact parent, replacement generations, each failure
    point, duplicate callers, and recovery from lost acknowledgments.
 2. **GitHub adapter and runtime isolation.** Qualify draft provisioning
@@ -240,5 +261,6 @@ capability disabled and supplies denial evidence only.
 | Installed CLI and contained runtime with trusted broker | Deny direct Git and API calls, including anonymous routes. Prove broker rejects unauthorized repository, ref, action and stale generation. An authorized feature push succeeds. | Runtime route and credential inventory, observed denies, broker receipts and host readback. |
 | Temporary non-default and default stand-in targets, live fixture hold | Promote the permitted PR through the managed command. Race a hold, head change and retarget with provider transition and include an ambiguous result. Deny stale transitions when the competing change wins. | Ordering receipts, actual PR state, terminal request reconciliation and independent merge-denial observation. |
 | Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared feature or epic parent, then deny a stale base. Verify a pure aggregate has no PR and child evidence cannot admit the integration story's default-target delivery. | Target CI, exact reviewed and delivered tuple, actual parent readback and authorization denials. |
+| Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Verify ordinary stories retain their existing guard. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
 | Temporary default stand-in, accepted #158 capability and independently reviewed fixture | Exercise ordinary merge denial, exact repair, held recovery, reopen and first refreshed delivery. A branch-backed epic fixture then completes its separately reviewed integration delivery. | #158 qualification receipt, flag and trunk-equivalent history, repair and post-release CI, per-delivery review and host receipts. |
 | Installed distribution with CLI, skill and MCP | Enumerate operation and argument schemas, invoke each available operation through supported interfaces, and compare admission and typed results. | Catalog/version, actual help and dispatch traces, capability and unsupported outputs. |

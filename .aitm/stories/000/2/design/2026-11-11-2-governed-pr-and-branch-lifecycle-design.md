@@ -29,8 +29,10 @@ independent capability qualification.
   missing parent is an unavailable binding. A branch-backed epic
   explicitly designates an ordinary integration delivery story to own
   the shared branch and its draft. The story uses its own Core review
-  and delivery authority. A pure aggregate epic and local-only
-  planning remain supported.
+  and delivery authority. A narrowly scoped Core source guard allows
+  this delivery to prove an exact, nonempty composed source change
+  from verified child deliveries when it has no source commits of its
+  own. A pure aggregate epic and local-only planning remain supported.
 - Open a draft PR during provisioning of every managed working branch.
   Qualify an immediate draft on GitHub when head starts at the same
   commit as its parent. If the host needs ahead history, qualify a
