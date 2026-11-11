@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 190
 title: "[#181 A05] Publish a reproducible local snapshot"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/190"
 parent: 181
 children: []
 blocking: [191, 192]
 blocked-by: [188, 189]
 created: "2026-11-10T21:02:19Z"
-updated: "2026-11-11T04:35:05Z"
+updated: "2026-11-11T04:39:22Z"
 last-branch: "codex/aitm-190-local-snapshot"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
