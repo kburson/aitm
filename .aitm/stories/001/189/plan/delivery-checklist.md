@@ -11,6 +11,6 @@ Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordin
 [Source PR #212](https://github.com/kburson/aitm/pull/212) targets trunk base `e4701f2e89d34f93f13d717199254b66aa3f0457`. Exact head `ae937d4e8aaba9813b3ac9b57a36d7baa2b8f0e0` and tree `2f4a860a0058ede02d48b4d9a048787553f9c720` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
 - [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42955953124/attempts/1) and [delivered verifier](hosted-verification-1.json) passed.
-- [ ] Independent source review.
+- [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review, with native approval absent.
 
 The signed candidate matches tested merge `83ee6cc4b3e9e2265c0d772845bbdec4ddca8bef`, with the ordered base/head parents and the exact tree above.
