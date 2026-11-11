@@ -15,3 +15,7 @@
 The codec checkpoint committed `53af9e587557f1b463d23dbb4fc35e900412228c` with 92 focused and frozen-reader tests. The frozen v1 package read and reproduced the v1 file bytes. It refused v2 at the strict allowlisted envelope gate, with v2 bytes unchanged. Both exact native REDs reached the absent proposal API. The integrated suite passed 214 tests before the extra expired-GAP and fresh-writer later-usage controls. These passed separately and then in the final exact locked gate.
 
 The candidate uses a real admitted chronological terminal and sealed current request. The terminal remains unresolved and supplies no progress. Existing route and hold state, journal bytes and prior cursor are compared across proof, replay and restart. The source preflight found no blocking issue. All six hosted jobs and independent exact source review are pending.
+
+## Review checkpoint
+
+[All six required checks](https://github.com/kburson/aitm/actions/runs/42951909558/attempts/1) passed on exact head `3359eda7ebf21db2267e2faf3436f72c4bf9a7d6`. The [authenticated receipt](hosted-ci-receipt.json) records tested merge `b17c55aa53b596520208d4f528a6435f475d962f`, tree `0354543e89d0557b1e8949682af2844615d8c0b0`, artifact `13826255038` and signed subject SHA-256 `3cfcd344dfccb42c9133d939aeffcd13f640a986f7a110dde867cfca79051061`. The trusted raw replay retained all 995 hosted baseline package IDs and passed all 1069 candidate tests and both coverage floors. The extra local baseline ID is the fixed CLI control. Independent exact source review is pending.
