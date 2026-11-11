@@ -2,7 +2,8 @@
 
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -65,6 +66,7 @@ from .types import (
     BoundaryKind,
     DevelopmentBinding,
     Diagnostic,
+    DiagnosticCode,
     Eligibility,
     InboxCommand,
     ItemKey,
@@ -331,6 +333,16 @@ class VerifiedBoundary:
     native_boundary: SourceBoundary | None
     _batch: VerifiedScopeBatch = field(repr=False)
     _authority: ScopeAuthority = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class VerifiedRouteDisposition:
+    """Private current proposal evidence issued by one scope writer."""
+
+    record: _RouteDispositionRecord
+    hold: ProofHold
+    _terminal: VerifiedBoundary = field(repr=False)
+    _command: Disposition = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -650,6 +662,10 @@ class ScopeState:
             WeakValueDictionary()
         )
         self._boundaries: WeakValueDictionary[int, VerifiedBoundary] = (
+            WeakValueDictionary()
+        )
+
+        self._route_proofs: WeakValueDictionary[int, VerifiedRouteDisposition] = (
             WeakValueDictionary()
         )
 
@@ -1806,6 +1822,233 @@ class ScopeState:
         )
         self._authorized.pop(command.command_id, None)
         return hold
+
+    @contextmanager
+    def _route_request(self, command: Disposition) -> Iterator[str]:
+        from .monitor_control import (
+            INBOX_NAME,
+            ControlInbox,
+            ScopeInboxReader,
+            _scope_now,
+        )
+        from .scope_admission import DispositionRequest, open_grant, require_witness
+
+        self.registry.lease
+        if not _path_exists(self.registry.root / INBOX_NAME):
+            raise LedgerError("Current typed disposition is unavailable")
+        inbox = ControlInbox(self.registry.root)
+        with inbox.publication() as locked:
+            reader = ScopeInboxReader(self.registry, inbox)
+            envelope = next(
+                (
+                    item
+                    for item in reader.iter_verified(locked)
+                    if item.command_id == command.command_id
+                ),
+                None,
+            )
+            request = envelope.body.request if envelope is not None else None
+            if type(request) is not DispositionRequest or (
+                request.project_id,
+                request.hold_id,
+                request.release_previous,
+            ) != (command.project_id, command.hold_id, command.release_previous):
+                raise LedgerError("Current typed disposition is unavailable")
+            with open_grant(self.registry, request.grant_id) as (grant, recheck, _):
+                require_witness(self.registry, grant, _scope_now())
+                yield envelope.payload_digest
+                recheck()
+                require_witness(self.registry, grant, _scope_now())
+
+    def _route_proposal(
+        self, command: Disposition, terminal: VerifiedBoundary, request_digest: str
+    ) -> tuple[_ScopeSnapshotV2, ProofHold, _RouteDispositionRecord]:
+        self._require_boundary(terminal, command)
+        state = self._snapshot(confirm=True)
+        if not isinstance(state, _ScopeSnapshotV2):
+            raise LedgerError("Scope hold has no retained route target")
+        target = next(
+            (
+                item
+                for item in state.held_route_targets
+                if item.hold_id == command.hold_id
+            ),
+            None,
+        )
+        hold = next(
+            (item for item in state.holds if item.command_id == command.hold_id), None
+        )
+        if target is None or hold is None:
+            raise LedgerError("Scope hold has no retained route target")
+        if (
+            hold.project_id != command.project_id
+            or hold.state not in (HoldState.HELD, HoldState.GAP)
+            or any(
+                item.result.command_id == hold.command_id for item in state.resolutions
+            )
+        ):
+            raise LedgerError("Current scope hold cannot authorize a route disposition")
+        if any(
+            item.command_id == command.command_id
+            for item in (*state.events, *state.holds, *state.resolutions)
+        ):
+            raise ConflictError("Scope disposition ID conflicts with legacy state")
+
+        batch = terminal._batch
+        boundary = terminal.native_boundary
+        prefix = batch._native_cursor
+        source = batch._locator._source
+        if (
+            batch.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+            or type(source) is not CandidateSource
+            or prefix is None
+            or boundary is None
+            or boundary.kind is not BoundaryKind.TURN
+            or terminal.command_id == hold.command_id
+            or terminal.position.ordinal < hold.affected.end
+            or _stream(terminal.position) != _stream(hold.position)
+            or terminal.anchor_project != hold.project_id
+            or terminal.checkout is None
+            or not terminal.eligible
+            or batch.cursor is not None
+            or len(batch.diagnostics) != 1
+            or batch.diagnostics[0].code is not DiagnosticCode.BOUNDARY_UNVERIFIED
+            or any(
+                item.boundary.ordinal >= boundary.ordinal and item.boundary != boundary
+                for item in batch.boundaries
+            )
+        ):
+            raise LedgerError(
+                "Disposition requires an unsettled native terminal receipt"
+            )
+
+        original = tuple(
+            item for item in batch.boundaries if item.boundary == target.boundary
+        )
+        if (
+            len(original) != 1
+            or original[0].project_context != terminal.checkout
+            or hold.project_id
+            not in self._eligible(
+                batch._admitted,
+                replace(hold.position, ordinal=hold.affected.start),
+                hold.affected.end,
+            )
+            or prefix.offset <= target.prefix.offset
+        ):
+            raise LedgerError(
+                "Disposition target no longer matches the admitted owned scope span"
+            )
+        try:
+            _capture_position(source, target.prefix, fixed=target.prefix)
+            current = _capture_position(source, None).cursor
+        except (_CaptureDiscontinuity, OSError, ValueError):
+            raise LedgerError("Disposition source prefix changed") from None
+        if current != prefix:
+            raise LedgerError(
+                "Disposition terminal is no longer the current fixed read"
+            )
+
+        outcome = HoldState.GAP
+        if command.release_previous:
+            prior, _ = _timeline(
+                state.events, hold.position, through=hold.affected.start - 1
+            )
+            endpoints = {
+                event.position.ordinal
+                for event in state.events
+                if _stream(event.position) == _stream(hold.position)
+                and hold.affected.start <= event.position.ordinal < hold.affected.end
+            } | {hold.affected.end - 1}
+            if (
+                hold.state is not HoldState.HELD
+                or self._now() >= hold.expires_at
+                or prior.scope is None
+                or prior.scope.project_id != hold.project_id
+                or prior.checkout != terminal.checkout
+                or prior.held
+                or any(
+                    _timeline(state.events, hold.position, through=end)[0] != prior
+                    for end in endpoints
+                )
+            ):
+                raise LedgerError("The original scope cannot be proposed for release")
+            outcome = HoldState.RESOLVED
+
+        return (
+            state,
+            hold,
+            _RouteDispositionRecord(
+                command.command_id,
+                terminal.digest,
+                request_digest,
+                hold.command_id,
+                hold.state,
+                outcome,
+                boundary,
+                prefix,
+                terminal.checkout,
+            ),
+        )
+
+    def verify_route_disposition(
+        self, command: Disposition, terminal: VerifiedBoundary
+    ) -> VerifiedRouteDisposition:
+        """Record exact proposal evidence while leaving routing and holds unchanged."""
+        if type(command) is not Disposition:
+            raise LedgerError("Expected an owned disposition command")
+        self._require_boundary(terminal, command)
+        with self._route_request(command) as request_digest:
+            state, hold, record = self._route_proposal(
+                command, terminal, request_digest
+            )
+            existing = next(
+                (
+                    row
+                    for row in state.route_dispositions
+                    if row.command_id == record.command_id
+                    or row.hold_id == record.hold_id
+                ),
+                None,
+            )
+            if existing is None:
+                state = replace(
+                    state, route_dispositions=(*state.route_dispositions, record)
+                )
+                self._save(state)
+            elif existing != record:
+                raise ConflictError(
+                    "Scope disposition has conflicting recorded evidence"
+                )
+            if self._route_proposal(command, terminal, request_digest) != (
+                state,
+                hold,
+                record,
+            ):
+                raise LedgerError("Scope disposition changed during publication")
+        proof = VerifiedRouteDisposition(record, hold, terminal, command)
+        self._route_proofs[id(proof)] = proof
+        return proof
+
+    def require_route_disposition(
+        self, proof: VerifiedRouteDisposition
+    ) -> _RouteDispositionRecord:
+        """Recheck a proposal issued by this writer without recording an effect."""
+        if (
+            type(proof) is not VerifiedRouteDisposition
+            or self._route_proofs.get(id(proof)) is not proof
+        ):
+            raise LedgerError("Expected a current writer-verified route disposition")
+        with self._route_request(proof._command) as request_digest:
+            state, hold, record = self._route_proposal(
+                proof._command, proof._terminal, request_digest
+            )
+            if (hold, record) != (
+                proof.hold,
+                proof.record,
+            ) or record not in state.route_dispositions:
+                raise LedgerError("Scope disposition is no longer current")
+        return record
 
     def view(
         self, *batches: VerifiedScopeBatch, _confirm_publication: bool = False
