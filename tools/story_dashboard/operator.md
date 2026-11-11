@@ -31,7 +31,7 @@ Use this manual workflow while the local dashboard reads evidence from planning.
 
 Resolve the AITM-PY project and item by repository and issue number. Verify the numeric Actual and Cost fields and the text Actual coverage field. Record their IDs, existing values, the planning pin, snapshot digest and applicable evidence-through. Confirm the story is still the intended board target and that its planning evidence has not changed since the snapshot. Hold the write if it is stale, if fields are missing, or if the projected Actual is Unknown.
 
-Divide the snapshot's `timing.actual.milliseconds` by 3,600,000 and round once to four decimal hours. Derive the coverage label from that same measure and include its evidence cutoff when known. Use these readback pairs in sequence.
+Divide the snapshot's `timing.actual.milliseconds` by 3,600,000 using decimal arithmetic and round once to four decimal hours, with ties rounded to even. Derive the coverage label from that same measure and include its evidence cutoff when known. Use these readback pairs in sequence.
 
 | Checkpoint | Actual | Actual coverage |
 | --- | --- | --- |
@@ -40,7 +40,7 @@ Divide the snapshot's `timing.actual.milliseconds` by 3,600,000 and round once t
 | After changing Actual | Target value | Pending verification |
 | Final | Target value | Target label |
 
-Write and read back the interim label first. Write Actual and read back the numeric value and interim label. Only then write the final coverage label. Read both fields back again. After an interruption or ambiguous response, reread the item and continue from the exact matching checkpoint. Hold on any conflicting pair and reconcile the evidence before changing fields. Preserve the original pair when the target cannot be established.
+Write and read back the interim label first. Write Actual and read back the numeric value and interim label. Only then write the final coverage label. Read both fields back again. After an interruption or ambiguous response, verify the same snapshot and validation digest binding, target item and field IDs, and freshness of the target story evidence. Reread the item and continue from the exact matching checkpoint. Hold on any conflicting pair and reconcile the evidence before changing fields. Preserve the original pair when the target cannot be established.
 
 Read Cost independently. A populated Cost requires a verified monitor export and complete pricing coverage for the exact report selector and target scope. An empty, unpriced Cost stays blank. Tool duration contributes to Actual within the qualified turn. A usage receipt supplies any measured cost.
 
