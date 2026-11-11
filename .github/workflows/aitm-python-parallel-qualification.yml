@@ -1,0 +1,64 @@
+name: Python parallel qualification
+
+on:
+  push:
+    branches: [codex/aitm-python-parallel-qualification]
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: '3.13.9'
+  UV_VERSION: '0.10.6'
+  QUALIFICATION_SOURCE: '2dd98bb7f5029188cf693e7c1317dd5fc0675e2b'
+  QUALIFICATION_TREE: '35ad17ad3121728482ba9acdfcdd8e724c56289f'
+
+jobs:
+  qualification:
+    name: Python ${{ matrix.mode }} / ${{ matrix.workers }} workers
+    runs-on: macos-26
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: full
+            workers: 2
+          - mode: full
+            workers: 3
+          - mode: selected
+            workers: 3
+    steps:
+      - name: Check out the trial harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: harness
+          persist-credentials: false
+      - name: Check out the exact #197 source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.QUALIFICATION_SOURCE }}
+          path: source
+          persist-credentials: false
+      - name: Set up locked Python
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: false
+      - name: Run the qualification
+        env:
+          TRIAL_MODE: ${{ matrix.mode }}
+          TRIAL_WORKERS: ${{ matrix.workers }}
+        shell: bash
+        run: |
+          bash harness/.github/qualification/python-parallel/run.sh \
+            "$GITHUB_WORKSPACE/source" "$TRIAL_MODE" "$TRIAL_WORKERS" \
+            "$RUNNER_TEMP/aitm-parallel-proof"
+      - name: Upload qualification evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: qualification-${{ matrix.mode }}-${{ matrix.workers }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-parallel-proof/evidence/
+          if-no-files-found: error
