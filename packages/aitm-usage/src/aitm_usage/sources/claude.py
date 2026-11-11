@@ -2,9 +2,11 @@
 
 import json
 import shlex
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from decimal import Decimal
+from enum import StrEnum
 from pathlib import Path
 from uuid import UUID
 
@@ -57,6 +59,18 @@ _WINDOWS = {
 }
 _TELEMETRY = ("api-request", "api-request-shape", "attachment", "queue-operation")
 _GAPS = (DiagnosticCode.IDENTITY_CONFLICT, DiagnosticCode.MALFORMED_USAGE)
+
+
+class _ClaudeRevisionKind(StrEnum):
+    ASSISTANT = "assistant"
+    RESULT = "result"
+    COST_STATE = "cost-state"
+
+
+type _RevisionRecorder = Callable[
+    [Revision, Revision, int, SourceFrame | SidebandFrame, tuple[tuple[int, int], ...]],
+    None,
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -517,6 +531,7 @@ class _RouteWalk:
         self.reports: dict[int, tuple[_Tool, TokenCounts]] = {}
         self.child_results: set[int] = set()
         self.overlap_gaps: set[int] = set()
+        self.linked_children: dict[int, SourceRef] = {}
 
     def assistant(self, frame: SourceFrame) -> None:
         message = _message(frame)
@@ -543,6 +558,8 @@ class _RouteWalk:
                 if not valid or parent is None:
                     tool = replace(tool, uncertain_child=True)
                 elif parent == tool.tool_ref:
+                    if tool.eligible and self.neutral_markers:
+                        self.linked_children[frame.ordinal] = parent
                     tool = replace(tool, saw_child=True)
                 if not valid or parent != tool.tool_ref:
                     self.overlap_gaps.add(frame.ordinal)
@@ -822,6 +839,12 @@ def _gap_ordinals(batch: FrameBatch) -> set[int]:
     }
 
 
+@dataclass(frozen=True, slots=True)
+class _TerminalCounter:
+    ordinal: int
+    parent_ref: SourceRef | None
+
+
 class _UsageWalk:
     def __init__(
         self,
@@ -829,7 +852,11 @@ class _UsageWalk:
         state: ClaudeState,
         eligibility: Eligibility,
         routes: _RouteWalk,
+        record_revision: _RevisionRecorder | None,
     ):
+        self._record_revision = record_revision
+        self._revision_positions: dict[SourceRef, int] = {}
+        self._counter_positions: dict[SourceRef, _TerminalCounter] = {}
         self.ledger = state.ledger
         self.view = (
             state.prior_view if state.prior_view is not None else self.ledger.as_of()
@@ -907,13 +934,39 @@ class _UsageWalk:
             self.gap(frame, code)
 
     def publish(
-        self, key: SourceRef, record: UsageObservation, previous: Revision | None
+        self,
+        key: SourceRef,
+        record: UsageObservation,
+        previous: Revision | None,
+        *,
+        evidence: SourceFrame | SidebandFrame | None = None,
+        terminal_contributors: tuple[tuple[int, int], ...] = (),
     ) -> None:
         revision = Revision(
             key, 1 if previous is None else previous.revision + 1, record
         )
         self.current[key] = revision
         self.revisions.append(revision)
+        if self._record_revision is not None:
+            prior_ordinal = self._revision_positions.pop(key, None)
+            if (
+                evidence is not None
+                and evidence._prefix
+                and record.boundary.stream_ref == self.stream
+            ):
+                self._revision_positions[key] = evidence.ordinal
+                if (
+                    previous is not None
+                    and prior_ordinal is not None
+                    and prior_ordinal < evidence.ordinal
+                ):
+                    self._record_revision(
+                        previous,
+                        revision,
+                        prior_ordinal,
+                        evidence,
+                        terminal_contributors,
+                    )
 
     def lineage(
         self, req: SourceRef, prefix: RequestPrefix, session: SourceRef
@@ -1121,15 +1174,45 @@ class _UsageWalk:
                 context_tokens=_context(counts),
                 processing_tier=revised_tier,
             )
-        self.prefix[req] = RequestPrefix(
-            req, msg, record.boundary.ordinal, counts, stopped
-        )
+        prefix = RequestPrefix(req, msg, record.boundary.ordinal, counts, stopped)
+        self.prefix[req] = prefix
         self.messages[msg] = req
+        if self._record_revision is not None:
+            self._record_terminal_counter(key, frame, tool, prior, prefix)
         if previous is None or record != previous.record:
-            self.publish(key, record, previous)
+            self.publish(key, record, previous, evidence=frame)
             self.changed.add(key)
         if tool is not None:
             self.withdraw_overlapping_report(frame, tool)
+
+    def _record_terminal_counter(
+        self,
+        key: SourceRef,
+        frame: SourceFrame,
+        parent_ref: SourceRef | None,
+        prior: RequestPrefix | None,
+        prefix: RequestPrefix,
+    ) -> None:
+        previous = self._counter_positions.get(key)
+        if previous is None and prior is not None:
+            # Earlier reads and invalidated contributors have no same-read origin.
+            return
+        verified_parent = (
+            previous.parent_ref
+            if previous is not None
+            else self.routes.linked_children.get(frame.ordinal)
+        )
+        if frame.ordinal in self.routes.overlap_gaps or (
+            _nested(frame)
+            and (verified_parent is None or parent_ref != verified_parent)
+        ):
+            self._counter_positions.pop(key, None)
+            return
+        if frame._prefix and prefix != prior:
+            # A later stop can complete a request without changing its usage.
+            self._counter_positions[key] = _TerminalCounter(
+                frame.ordinal, verified_parent
+            )
 
     def withdraw_overlapping_report(self, frame: SourceFrame, tool: SourceRef) -> None:
         key = _report_key(self.ledger, self.stream, tool)
@@ -1186,8 +1269,7 @@ class _UsageWalk:
     def terminal(
         self,
         models: object,
-        session: SourceRef,
-        ordinal: int,
+        evidence_row: SourceFrame | SidebandFrame,
         location: SourceFrame | UsageObservation | None,
     ) -> None:
         totals: dict[str, TokenCounts] = {}
@@ -1200,7 +1282,7 @@ class _UsageWalk:
             for req, prefix in self.prefix.items():
                 if prefix.tokens == _EMPTY:
                     continue
-                revision = self.lineage(req, prefix, session)
+                revision = self.lineage(req, prefix, evidence_row.session_ref)
                 if revision is None or not prefix.complete or not _exact(prefix.tokens):
                     valid = False
                     break
@@ -1225,16 +1307,40 @@ class _UsageWalk:
                 for model, total in totals.items()
             )
         ):
+            contributors = ()
+            if (
+                self._record_revision is not None
+                and baseline == _ZERO
+                and all(
+                    revision.key in self._counter_positions for revision, _ in qualified
+                )
+            ):
+                contributors = tuple(
+                    (
+                        record.boundary.ordinal,
+                        self._counter_positions[revision.key].ordinal + 1,
+                    )
+                    for revision, record in qualified
+                )
             for revision, record in qualified:
                 if record.availability is Availability.PARTIAL:
                     self.publish(
                         revision.key,
                         replace(record, availability=Availability.COMPLETE),
                         revision,
+                        evidence=evidence_row if contributors else None,
+                        terminal_contributors=contributors,
                     )
             return
         if location is not None:
-            self.gap(location, DiagnosticCode.UNRECONCILED_USAGE, ordinal=ordinal)
+            diagnostic_ordinal = (
+                evidence_row.timed_ordinal
+                if isinstance(evidence_row, SidebandFrame)
+                else evidence_row.ordinal
+            )
+            self.gap(
+                location, DiagnosticCode.UNRECONCILED_USAGE, ordinal=diagnostic_ordinal
+            )
 
     def sideband(self, event: SidebandFrame) -> None:
         if self.eligibility is not Eligibility.ELIGIBLE:
@@ -1255,12 +1361,7 @@ class _UsageWalk:
                     if prior is not None:
                         location = prior.record
                         break
-        self.terminal(
-            event.content.get("modelUsage"),
-            event.session_ref,
-            event.timed_ordinal,
-            location,
-        )
+        self.terminal(event.content.get("modelUsage"), event, location)
 
     def step(self, frame: SourceFrame) -> None:
         if _eligible(frame, self.eligibility):
@@ -1307,12 +1408,7 @@ class _UsageWalk:
                     frame.row.get("subtype") == "success"
                     and frame.row.get("is_error") is False
                 ):
-                    self.terminal(
-                        frame.row.get("modelUsage"),
-                        frame.session_ref,
-                        frame.ordinal,
-                        frame,
-                    )
+                    self.terminal(frame.row.get("modelUsage"), frame, frame)
                 else:
                     self.gap(frame, DiagnosticCode.COVERAGE_GAP)
         elif kind == "rate_limit_event":
@@ -1401,7 +1497,10 @@ def read_claude(
 
 
 def _read_claude(
-    batch: FrameBatch, state: ClaudeState, eligibility: Eligibility
+    batch: FrameBatch,
+    state: ClaudeState,
+    eligibility: Eligibility,
+    record_revision: _RevisionRecorder | None = None,
 ) -> tuple[AdapterResult, ProviderCheckpoint | None, int | None]:
     if batch.cursor is None:
         return AdapterResult(diagnostics=batch.diagnostics), None, None
@@ -1409,7 +1508,7 @@ def _read_claude(
     routes = _RouteWalk(batch, state, eligibility)
     gaps = _gap_ordinals(batch)
     routes.scan(batch.commit_frames, gaps)
-    walk = _UsageWalk(batch, state, eligibility, routes)
+    walk = _UsageWalk(batch, state, eligibility, routes, record_revision)
     observed = walk.run(gaps)
     checkpoint = observed
     unsettled = None

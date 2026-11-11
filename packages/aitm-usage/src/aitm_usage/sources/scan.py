@@ -176,6 +176,7 @@ class SidebandFrame:
     segment_ref: SourceRef | None
     timed_ordinal: int | None
     content: _Row = field(repr=False, compare=False)
+    _prefix: str = field(repr=False, compare=False, default="")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1525,6 +1526,7 @@ def _read(
                             last_timed.segment_ref if last_timed is not None else None,
                             last_timed.ordinal if last_timed is not None else None,
                             content,
+                            _prefix=prefix,
                         )
                         records.append(
                             _CompleteRow(

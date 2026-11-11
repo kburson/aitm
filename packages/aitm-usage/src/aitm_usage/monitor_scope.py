@@ -19,9 +19,10 @@ from .monitor_registry import (
     _pinned,
     _project,
     _read_state,
+    _ServiceEvidence,
     _source,
 )
-from .monitor_types import GrokCheckpoint, NativeSurface
+from .monitor_types import GrokCheckpoint, GrokDiagnostic, NativeSurface
 from .scopes import _publish
 from .sources.adapter import (
     AdapterBatch,
@@ -31,8 +32,11 @@ from .sources.adapter import (
     ProviderAdapter,
     SourceLocator,
     StreamCursor,
+    _claude_revision_material,
     _GrokSource,
+    _NativeRevisionWitness,
 )
+from .sources.claude import _ClaudeRevisionKind
 from .sources.grok import (
     _MAX_NATIVE_BYTES,
     GrokAdapter,
@@ -58,6 +62,7 @@ from .sources.scan import (
 )
 from .types import (
     DevelopmentBinding,
+    Diagnostic,
     Eligibility,
     InboxCommand,
     ItemKey,
@@ -255,12 +260,27 @@ class VerifiedScopeBatch:
     surface: NativeSurface
     observations: tuple[NativeObservation, ...]
     boundaries: tuple[NativeBoundary, ...]
+    diagnostics: tuple[Diagnostic | GrokDiagnostic, ...]
     cursor: StreamCursor | None
     _proofs: tuple[_ObservationProof, ...] = field(repr=False)
     _admitted: frozenset[UUID] = field(repr=False)
     _locator: SourceLocator = field(repr=False)
     _native_cursor: SourceCursor | None = field(repr=False)
     _registry: RegistryView = field(repr=False)
+    _revision_witnesses: tuple[
+        tuple[NativeObservation, _NativeRevisionWitness], ...
+    ] = field(default=(), repr=False, compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedRevision:
+    observation: NativeObservation = field(repr=False)
+    witness: _NativeRevisionWitness = field(repr=False)
+    route: RouteDecision
+    original: ScopePosition
+    later: ScopePosition
+    _batch: VerifiedScopeBatch = field(repr=False)
+    _writer: Registry = field(repr=False)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -771,6 +791,7 @@ class ScopeState:
         """Read one exact pinned native stream and retain provenance for its results."""
         self.registry.lease
         view = self.registry.view()
+        revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]] = []
         if type(locator._source) is CandidateSource:
             if not any(
                 self.registry.capture_read_limit(
@@ -809,6 +830,7 @@ class ScopeState:
                     source_id, current.stream_ref
                 ),
                 _capture_limit=native_cursor,
+                _revision_witnesses=revision_witnesses,
             )
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
@@ -861,19 +883,152 @@ class ScopeState:
                 )
             )
         verified = VerifiedScopeBatch(
-            source_id,
-            surface,
-            batch.observations,
-            batch.boundaries,
-            batch.cursor,
-            tuple(proofs),
-            admitted,
-            current,
-            native_cursor,
-            view,
+            source_id=source_id,
+            surface=surface,
+            observations=batch.observations,
+            boundaries=batch.boundaries,
+            diagnostics=batch.diagnostics,
+            cursor=batch.cursor,
+            _proofs=tuple(proofs),
+            _admitted=admitted,
+            _locator=current,
+            _native_cursor=native_cursor,
+            _registry=view,
+            _revision_witnesses=tuple(revision_witnesses),
         )
         self._batches[id(verified)] = verified
         return verified
+
+    def verified_revision(
+        self, batch: VerifiedScopeBatch, observation: NativeObservation
+    ) -> _VerifiedRevision | None:
+        """Prove one later Claude change while retaining its original route."""
+        view = self.view(batch, _confirm_publication=True)
+        witness = next(
+            (
+                entry
+                for candidate, entry in batch._revision_witnesses
+                if candidate is observation
+            ),
+            None,
+        )
+        if witness is None:
+            return None
+        proofs = {id(item.observation): item for item in batch._proofs}
+        original = proofs.get(id(observation))
+        prior = proofs.get(id(witness.predecessor))
+        registry = view._registry
+        cursor = batch.cursor
+        if (
+            original is None
+            or prior is None
+            or original.position != prior.position
+            or original.end != prior.end
+            or registry is None
+            or cursor is None
+            or type(cursor.checkpoint) is not SourceCheckpoint
+            or not original.position.ordinal
+            <= witness.predecessor_ordinal
+            < witness.later_ordinal
+            <= cursor.checkpoint.provider.ordinal
+        ):
+            return None
+        usage = observation.usage
+        before = witness.predecessor.usage
+        if (
+            type(usage) is not UsageObservation
+            or type(before) is not UsageObservation
+            or usage.boundary != before.boundary
+            or usage.observed_at != before.observed_at
+            or observation.time_basis is not witness.predecessor.time_basis
+            or observation.key != witness.predecessor.key
+        ):
+            return None
+
+        evidence = self.registry.source_evidence()
+        source = batch._locator._source
+        if (
+            type(source) is not CandidateSource
+            or type(source._ledger) is not _ServiceEvidence
+            or source._ledger.key_id != evidence.key_id
+        ):
+            raise LedgerError("Claude revision source key changed")
+        evidence.validate_source_ref(witness.prefix_ref)
+        if (
+            _claude_revision_material(evidence, witness.predecessor)
+            != witness.predecessor_material
+            or _claude_revision_material(evidence, observation)
+            != witness.successor_material
+        ):
+            raise LedgerError("Claude revision material changed after the native read")
+
+        route = resolve_route(observation, registry, view)
+        if (
+            route.status is not RouteStatus.ROUTED
+            or route.project_id is None
+            or route != resolve_route(witness.predecessor, registry, view)
+            or not self._revision_capture_chain(
+                batch, observation, witness, original.position, route.project_id
+            )
+        ):
+            return None
+        later = replace(original.position, ordinal=witness.later_ordinal)
+        if self.view(batch, _confirm_publication=True) != view:
+            raise LedgerError("Claude revision scope changed during proof")
+        return _VerifiedRevision(
+            observation, witness, route, original.position, later, batch, self.registry
+        )
+
+    def _revision_capture_chain(
+        self,
+        batch: VerifiedScopeBatch,
+        observation: NativeObservation,
+        witness: _NativeRevisionWitness,
+        original: ScopePosition,
+        owner: UUID,
+    ) -> bool:
+        edges = {id(candidate): edge for candidate, edge in batch._revision_witnesses}
+        while True:
+            before, after = witness.predecessor.usage, observation.usage
+            if (
+                type(before) is not UsageObservation
+                or type(after) is not UsageObservation
+                or not original.ordinal
+                <= witness.predecessor_ordinal
+                < witness.later_ordinal
+            ):
+                return False
+            start = (
+                witness.predecessor_ordinal
+                if before.tokens != after.tokens
+                else witness.later_ordinal
+            )
+            span = replace(original, ordinal=start)
+            if owner not in self._eligible(
+                batch._admitted, span, witness.later_ordinal + 1
+            ):
+                return False
+            contributors = witness.terminal_contributor_spans
+            if witness.kind is not _ClaudeRevisionKind.ASSISTANT and not contributors:
+                return False
+            if any(
+                not 0 <= start < end <= witness.later_ordinal
+                or owner
+                not in self._eligible(
+                    batch._admitted, replace(original, ordinal=start), end
+                )
+                for start, end in contributors
+            ):
+                return False
+            if witness.predecessor_ordinal == original.ordinal:
+                return True
+            # Terminal evidence can leave counters unchanged. Prove that those
+            # counters themselves came through eligible native predecessor edges.
+            observation = witness.predecessor
+            prior = edges.get(id(observation))
+            if prior is None or prior.later_ordinal != witness.predecessor_ordinal:
+                return False
+            witness = prior
 
     def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
         self.registry.lease
@@ -1425,13 +1580,15 @@ class ScopeState:
         self._authorized.pop(command.command_id, None)
         return hold
 
-    def view(self, *batches: VerifiedScopeBatch) -> ScopeView:
-        state = self._snapshot()
+    def view(
+        self, *batches: VerifiedScopeBatch, _confirm_publication: bool = False
+    ) -> ScopeView:
+        state = self._snapshot(confirm=_confirm_publication)
         registry = None
         if batches:
             for batch in batches:
                 self._recheck_batch(batch)
-            registry = self.registry.view()
+            registry = self.registry.view(_confirm_publication=_confirm_publication)
         view = ScopeView(
             state.events,
             state.holds,
