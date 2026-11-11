@@ -20,24 +20,34 @@ describe behavior. Final command spelling belongs to leaf refinement.
 
 | Agent request | Governed operation |
 | --- | --- |
-| Create a branch-backed Backlog story | Create or reconcile the permanent issue identity, establish the exact parent ref, create the origin working branch from that parent, open its draft PR, and record the linked identities. The story remains in Backlog. |
+| Create a branch-backed Backlog story | Create or reconcile the permanent issue identity, resolve the explicitly declared literal delivery target, create the origin working branch from that target, open its draft PR, and record the linked identities. The story remains in Backlog. |
 | Pick up or resume work | Bind the story, branch, draft PR and authorized worktree. Reuse the existing worktree ownership and lifecycle rules. |
-| Push or refresh a story branch | Resolve its bound remote and ref. Push only that story branch through the authorized route and honor its target policy if it also receives merges. Refresh against its actual parent and record the resulting head and CI identity. |
+| Push or refresh a story branch | Resolve its bound remote and ref. Push only that story branch through the authorized route and honor its target policy if it also receives merges. Refresh against its actual declared target and record the resulting head and CI identity. |
 | Mark the PR ready | Resolve the actual PR, target, head and lifecycle state. Order broker dispatch against the live flag and competing requests for the exact PR, head and target. While held, dispatch new default-target promotion only for the nominated repair. Non-default targets follow their own policy. |
-| Merge the PR | Apply the declared parent's review, CI and exact-delivery policy. Require a qualified host route for the literal target, reviewed head, applicable base and tested result. For a default-target PR, also enforce the live line version at mutation. While held, allow only the exact full-passing, reviewed repair binding. |
+| Merge the PR | Apply the declared target's review, CI and exact-delivery policy. Require a qualified host route for the literal target, reviewed head, applicable base and tested result. For a default-target PR, also enforce the live line version at mutation. While held, allow only the exact full-passing, reviewed repair binding. |
 | Abandon a story | Record abandonment, close the linked PR, retire its exact working branch, and remove its owned worktree after safe disposition of local work. Record each verified outcome. |
+| Retire delivered work | After verified delivery and required completion evidence, fence and retire the exact source ref and worktree when all dependents and outstanding actions are resolved. Preserve the merged PR and delivery receipts. |
+| Observe PR and CI | Read the bound PR's state and target, review state and threads, candidate checks, and authorized run logs or artifacts. Use scoped typed results with exact check/run/head identities and redact secrets or unrelated results under policy. |
 | Discover or inspect | List available operations and explain their usage, arguments, applicable policy, side effects, status, and next permitted action. Support normal CLI help and a versioned machine-readable catalog through the same command registration. |
 
 Every **managed working branch** has a draft PR on provisioning,
 including a tracked epic integration branch. The contract applies to
 branches used to deliver stories, features or epics. The default branch,
 planning branch, authority refs and temporary fixtures have their own
-roles. A child story uses its declared feature or epic parent branch as
-the PR base. A missing or unbound parent blocks provisioning. The
-record stores three distinct relationships. Backlog parentage and
+roles. Record three distinct relationships. Backlog parentage and
 required scope belong to the story graph. The resolved integration
-resource owner and incarnation identify the shared working ref.
-The literal delivery target determines each PR base.
+resource owner and incarnation identify any shared working ref.
+The declared literal delivery target determines each PR base.
+
+A component story under a branch-backed feature or epic resolves its
+declared integration owner and incarnation to the exact parent ref.
+A story under a pure aggregate or with no Backlog parent explicitly
+declares the protected default branch or another authorized literal
+target at graduation. For an existing graduated story, require an
+explicit authorized target declaration recorded in the same published
+binding before managed provisioning. Use the anchored repository
+and exact ref in either case. A missing or unbound declared delivery target leaves
+provisioning pending. A pure aggregate supplies no implied target.
 
 A branch-backed epic explicitly designates an ordinary story in its
 required C62 scope as the integration delivery owner. That story has
@@ -94,8 +104,19 @@ For GitHub, first test whether the host accepts an immediate draft when
 the new branch starts at the same commit as its parent. If it requires
 ahead history, qualify an explicitly authorized, content-free bootstrap
 commit as the creation mechanism. Check draft creation, CI behavior,
-and the absence of source changes. Keep the bootstrap result distinct
-from validation of later work. Until the route is proven, a provider
+and the absence of source changes. If qualified, record the bootstrap
+as a typed provisioning artifact with its OID, parent OID, unchanged
+tree, trusted actor or service role, resource incarnation and host
+receipt. Freeze the initial base in the provisioning read-set and
+verify the initial working ref at the recorded bootstrap OID when
+this route is used. Keep bootstrap CI distinct from later work
+validation. Pin ordinary attempt source baselines at or after that
+verified bootstrap. Preserve the exact upstream baseline separately
+for composed-source proof. Map the bootstrap, or its explicitly
+verified history rewrite or omission, as a content-free artifact in
+composed-source and delivery evidence. An empty unrecorded commit
+does not qualify as source or explained provisioning history.
+Until the route is proven, a provider
 refusal leaves a resumable provisioning record. Report the issue and
 branch state and the missing draft explicitly.
 [GitHub draft PR API](https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request).
@@ -109,8 +130,9 @@ slot for permanent story, repository and managed role, with exclusive
 ownership of the literal host resources. One current or unresolved
 incarnation occupies the slot. Competing operation and incarnation
 IDs must resolve that reservation. Verify shared publication before
-any branch or draft dispatch. Freeze the declared parent incarnation, literal repository
-and ref, and initial source OID in the provisioning read-set.
+any branch or draft dispatch. Freeze the declared literal target repository, ref and incarnation
+where applicable, plus the initial base and source OIDs in the
+provisioning read-set.
 Verify the initial source and recheck the binding at each stage.
 Reconcile old intent before admitting explicit reparent or replacement.
 
@@ -171,11 +193,17 @@ extension performs scoped host calls through a trusted process outside
 the managed agent's tool and credential boundary. The service
 authenticates the caller and binds the operation to the current
 resource incarnation, applicable binding generation, published
-operation claim, policy and anchored repository and refs. It derives provider destinations from that binding.
-Caller arguments, a story-controlled config, or a stale session
+operation claim, policy and anchored repository and refs. The runtime attests the session identity outside the
+agent workspace. Broker admission derives the authorized current
+story and scope from that non-transferable identity. It derives
+provider destinations from that binding. Caller arguments, a story-controlled config, or a stale session
 cannot select another repository, base, action, or credential.
 The agent receives the decision and receipt without a provider
-token or a generic HTTP/GitHub proxy. The runtime removes direct
+token or a generic HTTP/GitHub proxy. Read-only observation uses
+the same authenticated scope and allowlisted result types. Resolve
+the PR, check and review resources from the binding. Filter returned
+logs and artifacts according to data access policy. Observation
+does not admit a target action. The runtime removes direct
 provider tools and credentials from the agent and restricts direct
 provider API/network routes to enforce the user's requirement, including
 anonymous calls to public APIs. Feature pushes remain available through
@@ -257,19 +285,41 @@ They do not gain a separate provider authorization path.
 ## Retirement
 
 Journal abandonment and pending cleanup in the Core terminal
-disposition transaction. Place a durable retirement fence on the
+disposition transaction. After verified delivery and required C79
+completion evidence, publish a separate terminal retirement claim
+for the exact delivered incarnation. Preserve its merged PR and
+delivery receipts, including the source mapping. A pending retirement
+does not invalidate verified delivery. Retain the ref and worktree
+until retirement conditions are satisfied. Place a durable retirement fence on the
 exact parent-resource incarnation in the same authority order that
 admits child provisioning, reparenting and retargeting. An admitted
 dependent that wins keeps the parent ref until resolved. If retirement
 wins, reject subsequent dependent admissions. Reconcile already
 dispatched or ambiguous dependent writes, and require control or
 proof excluding new dependents through every applicable host route
-until deletion completes. An uncontrolled route holds cleanup even
-when the parent head stays unchanged.
+until deletion completes. Require dependent PRs to be terminal or
+explicitly moved through governed retarget before deleting a
+delivered or abandoned parent ref. An uncontrolled route holds
+cleanup even when the parent head stays unchanged.
+
+Qualify the effects of GitHub automatic head deletion, manual and
+provider/API deletion, host-driven base changes and host-driven PR
+closure. Before dispatching a managed merge, prove the source ref
+cannot be deleted automatically outside the retirement fence. Hold
+that route if the current host configuration or qualified ref controls
+cannot establish the boundary. Before explicit deletion, verify the
+effective configuration, fence and dependents. If external host
+retarget or closure is observed, reconcile the actual state, invalidate
+prior ready/CI/merge evidence, hold further writes until reconciled,
+and require verified draft and fresh admission and CI before a
+retargeted PR can return to the workflow.
+[GitHub branch deletion](https://docs.github.com/en/pull-requests/how-tos/commit-changes/managing-branches-within-your-repository)
+· [Automatic deletion settings](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-the-automatic-deletion-of-branches).
 
 Fence the current working session and reconcile already-dispatched
 effects before retirement. Use the exact terminal cleanup claim to
-close its linked PR and conditionally delete its source ref. Require
+close its linked PR if still open, preserve an already merged
+PR, and conditionally delete the source ref. Require
 expected-OID deletion or a proven exclusive writer for the deletion
 interval. A changed tip or unqualified deletion predicate holds
 cleanup. Quiesce the owned worktree and use its owning manager to
@@ -285,8 +335,12 @@ cannot create delivered status or recreate retired resources.
    against C13 provider contracts, C16 bindings, C20/C22 identity
    and graduation, C39–C41 delivery, C43 action recovery, C62 epic
    aggregation, C76 source eligibility, and the installed CLI ledger.
-   Refine the designated integration source guard as a bounded Core
-   leaf before hosted integration delivery. Test one branch-backed
+   Refine C20/C22 to publish the literal target at graduation and the
+   explicit binding backfill for earlier stories. Extend C43 and C79
+   to publish terminal retirement only after verified delivery and
+   required completion evidence. Refine the designated integration
+   source guard as a bounded Core leaf before hosted integration
+   delivery. Test one branch-backed
    story identity, exact parent, replacement generations, each failure
    point, duplicate callers, and recovery from lost acknowledgments.
 2. **GitHub adapter and runtime isolation.** Qualify draft provisioning
@@ -294,8 +348,10 @@ cannot create delivered status or recreate retired resources.
    agent cannot call the provider directly, while constrained AITM
    operations access only their authorized targets. Qualify
    non-default delivery independently, including refs with both working
-   and target roles. Own the ready/retarget admission and reconciliation
-   qualification in this step. An unsupported route confirms denial
+   and target roles. Own ready/retarget admission and reconciliation,
+   automatic deletion and host-driven base and closure qualification,
+   runtime-attested caller identity, and scoped PR and CI observation
+   for the same managed boundary. An unsupported route confirms denial
    only. Default-target merge qualification belongs to step 3.
 3. **Delivery integration.** #133 owns selected CI, full fallback,
    recovery and post-release refresh. #158 owns default-target
@@ -308,8 +364,9 @@ cannot create delivered status or recreate retired resources.
    authorized pickup. Existing #103 and production protections
    require their own authorization for any change.
 4. **Guidance and acceptance.** Verify each exposed operation has
-   current CLI help and a machine-readable entry. Prove skill/MCP
-   routing invokes the same commands and respects the runtime
+   current CLI help and a machine-readable entry, including read-only
+   PR, review and CI observation. Prove skill/MCP routing invokes the
+   same commands and respects the runtime
    restriction. Treat new or changed Core leaves, credentials,
    hosted probes, and cutover as separate reviewed work.
 
@@ -324,15 +381,16 @@ hosted route record either the required positive outcome or a reviewed
 unavailable disposition. The latter leaves the corresponding
 capability disabled and supplies denial evidence only.
 
-| Fixture and prerequisite | Entry point and required result | Retained evidence |
-| --- | --- | --- |
-| Deterministic Core store, restart and concurrent callers | Provision and recover at each effect boundary. Race different operation and incarnation IDs for one permanent story slot. One branch and draft survive rebind. Deny stale mutation and same-ref, same-OID replacement while an old effect can still land. Hold foreign collisions and unresolved dispatch. | Published claims, dispatch counts, result ownership, restart and rebind trace. |
-| Deterministic parent retirement fixture, then managed temporary AITM parent | Race child provisioning, reparent and retarget against retirement with unchanged parent OID. Exercise both winners, an ambiguous admitted write and an uncontrolled host route. Verify retained scrap source is recoverable before deletion and old cleanup cannot touch replacement. | Ordered admissions, dependent and ref readback, source-retention and cleanup receipts. |
-| Temporary AITM parent and working refs, qualified adapter credential | Provision an actual draft, including any required bootstrap. Push a later change and show CI for the actual target. | Draft ID, exact head and base, source diff, bootstrap disposition and actual CI run. |
-| Installed CLI and contained runtime with trusted broker | Deny direct Git and API calls, including anonymous routes. Prove broker rejects unauthorized repository, ref, action and stale generation. An authorized feature push succeeds. | Runtime route and credential inventory, observed denies, broker receipts and host readback. |
-| Temporary targets and step 2 managed ready/retarget qualification | Race a hold, push and retarget against ready dispatch. Exercise both an unsent loser and a previously sent transition finishing late. Reconcile an ambiguous result. Retarget an already-ready non-default PR only after verified redraft, with positive and denied cases and lost responses. Prove fresh target-specific admission and CI. | Admission order, draft and target readback, reconciliation and independent merge denial. |
-| Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared parent and deny a stale base. Reject a generic owner push of the same child change to its governed parent ref. Prove approved refresh and permitted direct work under their respective policies. Reject self-target, premature epic close and abandoned-owner completion. Verify pure aggregate behavior. | Target CI, exact delivery and refresh evidence, graph/terminal disposition and observed denials. |
-| Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Verify ordinary stories retain their existing guard. Prove a nested non-default integration against an upstream with a different baseline from default. Deny default or sibling substitution. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
-| #158 temporary default stand-in and synthetic qualification inputs | Exercise host merge ordering and exactness per #158. Inject a passing merge qualification with managed readiness unavailable and verify that Core holds managed repair activation. | Separate #158 host receipt and Core capability/refusal result, with synthetic inputs identified. |
-| End-to-end temporary default stand-in, qualified #158 and ready routes, delivered #133 T34 and T36–T40 | Exercise actual scheduled failure, ordinary denial, exact repair, full passing recovery on repaired target, reopening and newly admitted post-release CI. Reject a same-tuple result admitted before release and completed afterward. Complete a separately reviewed epic integration delivery. | Trusted actual run and shard IDs, exact recovery and release records, post-release CI, review and host receipts. |
-| Installed distribution with CLI, skill and MCP | Enumerate operation and argument schemas, invoke each available operation through supported interfaces, and compare admission and typed results. | Catalog/version, actual help and dispatch traces, capability and unsupported outputs. |
+| Step | Fixture and prerequisite | Entry point and required result | Retained evidence |
+| --- | --- | --- | --- |
+| 1 | Deterministic Core store, restart and concurrent callers | Provision and recover at each effect boundary. Race different operation and incarnation IDs for one permanent story slot. One branch and draft survive rebind. Deny stale mutation and same-ref, same-OID replacement while an old effect can still land. Hold foreign collisions and unresolved dispatch. | Published claims, dispatch counts, result ownership, restart and rebind trace. |
+| 1, 2 | Deterministic parent retirement fixture, then managed temporary AITM parent | Race child provisioning, reparent and retarget against retirement with unchanged parent OID. Exercise both winners, an ambiguous admitted write and an uncontrolled host route. Verify retained scrap source is recoverable before deletion and old cleanup cannot touch replacement. | Ordered admissions, dependent and ref readback, source-retention and cleanup receipts. |
+| 2 | Temporary AITM parent and working refs, qualified adapter credential | Provision actual drafts for an explicitly default-targeted ordinary story under a pure aggregate for a story with no Backlog parent and an explicit target, and for a bound non-default parent. Keep missing and unbound targets pending. Deny incorrect substitution and implicit default fallback. Verify any bootstrap identity and unchanged tree. Push a later change and show CI for the actual target. | Draft ID, exact head and base, source diff, typed bootstrap receipt and actual CI run. |
+| 2 | Temporary delivered ordinary and integration refs, dependent PRs and qualified deletion controls | Exercise enabled and disabled automatic head deletion. Hold managed merge if automatic deletion can bypass retirement. After verified delivery, hold retirement while a dependent is open. Exercise controlled cleanup and reconcile a fixture host-triggered base change or closure, with no carried-over admission or CI and a verified draft before re-entry. | Configuration and provider readback, retained delivered receipts, dependent state and fresh-authorization checks. |
+| 2 | Installed CLI and contained runtime with trusted broker | Deny direct Git and API calls, including anonymous routes. Prove broker rejects unauthorized repository, ref, action and stale generation. Reject push, readiness, retarget, merge and abandonment from another current story session. Reject a workspace-copied identity artifact as authentication. Read authorized PR state, review feedback and CI evidence through the broker and reject another story's scoped data. An authorized feature push succeeds. | Runtime route and credential inventory, observed denies, broker receipts and host readback. |
+| 2 | Temporary targets and step 2 managed ready/retarget qualification | Race a hold, push and retarget against ready dispatch. Exercise both an unsent loser and a previously sent transition finishing late. Reconcile an ambiguous result. Retarget an already-ready non-default PR only after verified redraft, with positive and denied cases and lost responses. Prove fresh target-specific admission and CI. | Admission order, draft and target readback, reconciliation and independent merge denial. |
+| 2 | Temporary non-default parent, qualified C39–C41 route, trunk hold | Merge an independently reviewed child into the declared parent and deny a stale base. Reject a generic owner push of the same child change to its governed parent ref. Prove approved refresh and permitted direct work under their respective policies. Reject self-target, premature epic close and abandoned-owner completion. Verify pure aggregate behavior. | Target CI, exact delivery and refresh evidence, graph/terminal disposition and observed denials. |
+| 1 | Deterministic Core integration guard with verified child deliveries | Exercise the real Develop-exit guard for a declared child-only integration attempt. Accept an exact, nonempty, fully mapped composed change. Reject missing, stale, unrelated, empty or unexplained source. Accept recorded content-free bootstrap history as explained. Reject unrecorded or mismatching empty history and an ordinary attempt baseline before its bootstrap. Verify ordinary stories retain their existing guard. Prove a nested non-default integration against an upstream with a different baseline from default. Deny default or sibling substitution. Require the integration attempt's own Test and Review before C41. | Source mapping and receipts, guard result, current exact candidate and negative traces. |
+| 3 | #158 temporary default stand-in and synthetic qualification inputs | Exercise host merge ordering and exactness per #158. Inject a passing merge qualification with managed readiness unavailable and verify that Core holds managed repair activation. | Separate #158 host receipt and Core capability/refusal result, with synthetic inputs identified. |
+| 3 | End-to-end temporary default stand-in, qualified #158 and ready routes, delivered #133 T34 and T36–T40 | Exercise actual scheduled failure, ordinary denial, exact repair, full passing recovery on repaired target, reopening and newly admitted post-release CI. Reject a same-tuple result admitted before release and completed afterward. Complete a separately reviewed epic integration delivery. | Trusted actual run and shard IDs, exact recovery and release records, post-release CI, review and host receipts. |
+| 4 | Installed distribution with CLI, skill and MCP | Enumerate operation and argument schemas, invoke each available operation through supported interfaces, and compare admission and typed results. | Catalog/version, actual help and dispatch traces, capability and unsupported outputs. |
