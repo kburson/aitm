@@ -39,3 +39,9 @@ The fresh locked full gate again passed 970 product and CLI, 182 helpers, Ruff, 
 The [independent exact source verdict](post-ci-source-review.md) passed replacement head `ae0e3a774e242af35210e57eeee499b789214afe`, tree `d34be057faf72d4c157c0dbf4e43003ccf40612d` and the literal trunk base. The tested changed-material fixture uses the existing real Codex Desktop `NativeJournalFixture`, even though the reviewer described that fixture as Claude in a nonblocking note. The restored classification applies uniformly. Exact recorded first material stays disputed and unrecorded material stays held. The earlier source HOLD and signed run are separately retained.
 
 The first-claim payload/digest consistency check is intentional fail-closed hardening across the existing supported surfaces. The v1-layout initial raw-prefix limit is documented in the PR and remains explicitly tested. Native GitHub review is absent. The exact independent verdict is off-platform.
+
+### Verified delivery
+
+[PR #206](https://github.com/kburson/aitm/pull/206) merged into literal trunk at `2026-11-11T01:36:15Z` as `5324a80bad7730b2bdb4a2b87acf00f7171305c0`. Fetched trunk contains the merge with ordered parents `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3` and `ae0e3a774e242af35210e57eeee499b789214afe`, exact tree `d34be057faf72d4c157c0dbf4e43003ccf40612d`, candidate ancestry and zero source diff. All six required checks and the exact off-platform verdict passed. Branch rules permitted an ordinary merge with zero required native approvals.
+
+The original [SQLite migration author](../retro/2026-11-10-201-store-migration-implementer-retrospective.md) and [journal adjudication implementer](../retro/2026-11-10-201-journal-adjudication-implementer-retrospective.md) personally signed. Both signatures and the [fresh native dependency readback](close-dependency-readback.json) were verified at `2026-11-11T01:38:45+00:00`, clearing the final Close prerequisites.
