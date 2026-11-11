@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 227
 title: "[#181 C01] Pin producer capabilities and shared acceptance fixtures"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/227"
 parent: 181
 children: []
 blocking: []
 blocked-by: [193]
 created: "2026-11-11T14:02:13Z"
-updated: "2026-11-11T14:15:48Z"
+updated: "2026-11-11T14:15:58Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.25, "size": "S"}
 priority: "P1"
@@ -45,3 +45,5 @@ This child qualifies evidence without changing product code, metric fields, moni
 [Evidence](attachments/qualification.md) · [Machine readback](attachments/qualification.json) · [Shared fixtures](attachments/shared-fixtures.json)
 
 [Independent qualification review](plan/reviews/qualification-review.md)
+
+[Qualification sign-off](retro/2026-11-11-227-qualification-signoff.md)
