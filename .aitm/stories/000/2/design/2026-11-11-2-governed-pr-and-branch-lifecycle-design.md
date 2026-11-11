@@ -26,8 +26,13 @@ independent capability qualification.
   incarnation. Journal a separate broker dispatch claim for each
   external effect. Recover ambiguous outcomes with positive ownership
   evidence, and require proven safe replay before resending.
-- Use the declared feature or epic parent as the child PR base. A
-  missing parent is an unavailable binding. A branch-backed epic
+- Every managed working branch declares a literal delivery target
+  independently of Backlog parentage. A child of a branch-backed
+  feature or epic resolves the declared parent resource to its exact
+  ref. A story under a pure aggregate or with no Backlog parent
+  explicitly declares the default branch or another authorized literal
+  target at graduation. A missing or unbound delivery target leaves
+  provisioning pending. A branch-backed epic
   explicitly designates an ordinary integration delivery story to own
   the shared branch and its upstream draft. Declare the Backlog
   relationship, integration resource owner and literal delivery target
@@ -42,12 +47,20 @@ independent capability qualification.
 - Open a draft PR during provisioning of every managed working branch.
   Qualify an immediate draft on GitHub when head starts at the same
   commit as its parent. If the host needs ahead history, qualify a
-  content-free bootstrap commit and keep its CI separate from work
-  validation. A provider refusal leaves provisioning pending.
+  content-free bootstrap commit. Record the OID, parent OID, equal
+  tree, trusted service role and incarnation as a provisioning
+  artifact. Pin ordinary attempt source baselines at or after the
+  verified bootstrap and account for that artifact explicitly in
+  composed source and delivery mappings. Its CI provides only
+  provisioning evidence. A provider refusal leaves provisioning
+  pending.
 - The agent can query installed operations through help and a versioned
   machine-readable catalog. Each operation identifies permitted
   arguments, preconditions, side effects, result and next action.
-  Expose the same operations through the skill and MCP.
+  Expose the same operations through the skill and MCP. Governed
+  read-only observation returns the authorized PR state, review
+  threads, check results and allowed logs or artifacts. Bind those
+  reads to the same scoped identity and capability catalog.
 - Abandonment fences the current resource incarnation and journals
   terminal cleanup authority. Order the retirement fence with
   dependent admission, including parent selection and PR retargeting.
@@ -56,13 +69,27 @@ independent capability qualification.
   owning manager to remove its worktree after safe disposition of
   local changes. Scrap requires a verified durable source-retention
   receipt. Refactor invalidates prior evidence when applicable.
+- After verified delivery and required completion evidence, publish a
+  terminal retirement action for the exact delivered incarnation.
+  Preserve the merged PR and delivery receipts. Retain the ref and
+  worktree until applicable dependents, outstanding actions and local
+  source are safely resolved. Use the same retirement fence for an
+  ordinary or integration delivery. Qualify GitHub automatic deletion
+  and host-triggered PR base changes or closures. Retain the ref when
+  host deletion cannot be controlled. If that can occur on merge,
+  hold that managed merge before dispatch. Reconcile external base
+  changes as retargets, invalidate earlier admission and CI, and
+  require verified draft and fresh target evidence before re-entry.
+  [GitHub branch deletion](https://docs.github.com/en/pull-requests/how-tos/commit-changes/managing-branches-within-your-repository)
+  · [Automatic deletion settings](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-the-automatic-deletion-of-branches).
 
 ## Authority and delivery
 
 A trusted service admits each effect against durable published state,
-the authenticated principal or service role, the exact operation and
+a runtime-attested principal or service role, the exact operation and
 resource incarnation, effective policy, and anchored repository and
-refs. An incarnation survives ordinary session rebind. Current-session
+refs. Runtime identity stays outside the workspace and cannot be
+selected or transferred by the agent. An incarnation survives ordinary session rebind. Current-session
 mutations also require the current attempt and C16 binding generation.
 Provisioning and terminal cleanup use narrowly scoped service claims.
 Bind literal host resources exclusively to one incarnation. Terminally
@@ -70,8 +97,9 @@ reconcile outstanding host writes before reuse, unless qualified host
 isolation prevents them reaching the replacement. Credentials stay
 outside agent workspaces.
 Managed mode requires qualified tool and network isolation for direct
-provider calls, including anonymous API routes. Unsupported isolation
-leaves managed provider operations unavailable. Local Core and
+provider calls, including anonymous API routes. Governed observation
+provides scoped data while preserving this boundary. Unsupported
+isolation leaves managed provider operations unavailable. Local Core and
 supported observation remain available.
 
 On a trunk-bound ready or merge request, the service reads the live
@@ -84,8 +112,9 @@ further ready or retarget operations. Retarget requires a verified
 draft and fresh admission for the new target. While held, the
 nominated repair may seek review. Only the exact independently reviewed repair
 with full passing candidate proof is eligible to merge. Feature pushes
-and non-default merges continue through their own policies. Require
-exact parent delivery evidence on every managed merge. Default-branch
+and non-default merges continue through their own policies. Apply
+the declared target's exact C39–C41 delivery policy on every managed
+merge. Default-branch
 merge authorization also requires the #158 host-qualified flag, head,
 base and tree boundary. Opening a draft does not authorize a merge.
 
@@ -97,9 +126,12 @@ product activation, protected-branch change or #159 pickup.
 ## Acceptance
 
 Demonstrate exactly one linked draft through lost responses and repeated
-calls, correct parent selection, supported draft CI, and cleanup with
-concurrent or stale operations. Demonstrate that a managed agent cannot
-call the provider directly or redirect the trusted service. Show fresh
+calls, correct explicit targets including trunk from a pure aggregate,
+supported draft CI, and cleanup after delivery or abandonment with
+concurrent or stale operations. Show the composed-source guard and
+durable scrap source recovery. Demonstrate scoped CI and review
+observation and deny direct calls or cross-story access to another
+live incarnation. Show fresh
 flag readback, ordinary trunk denial during a hold, the exact repair
 exception, and independent non-default integration. Verify that the
 runtime's help and MCP catalog correspond to available governed actions.
