@@ -1,7 +1,7 @@
 """Writer-bound private routing claims and native replay checkpoints."""
 
 import sqlite3
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from hashlib import sha256
 from uuid import UUID
@@ -9,7 +9,7 @@ from weakref import WeakValueDictionary
 
 from ._monitor_journal_store import JournalStore
 from .ledger import ConflictError, LedgerError
-from .monitor_registry import Registry, RegistryView
+from .monitor_registry import Registry, RegistryView, _ServiceEvidence
 from .monitor_scope import (
     HandoffStatus,
     HoldState,
@@ -28,12 +28,18 @@ from .monitor_scope import (
     _stream as _scope_stream,
 )
 from .monitor_types import NativeSurface, ObservationTimeBasis
-from .sources.adapter import NativeObservation, SourceLocator, StreamCursor
-from .sources.scan import CandidateSource
+from .sources.adapter import (
+    NativeObservation,
+    SourceLocator,
+    StreamCursor,
+    _claude_revision_material,
+)
+from .sources.scan import CandidateSource, _capture_position, _CaptureDiscontinuity
 from .types import (
     Eligibility,
     SourceBoundary,
     SourceCheckpoint,
+    SourceCursor,
     SourceRef,
     UsageObservation,
     _decode,
@@ -92,6 +98,28 @@ class _ClaimPayload:
 
 
 @dataclass(frozen=True, slots=True)
+class _RevisionPayload:
+    usage: UsageObservation
+    revision: int
+    prefix_ref: SourceRef
+    locator_ref: SourceRef
+    incarnation_ref: SourceRef
+
+    def __post_init__(self) -> None:
+        if type(self.revision) is not int or self.revision < 2:
+            raise ValueError("Expected a successor journal revision")
+
+
+@dataclass(frozen=True, slots=True)
+class _StoredRevision:
+    sequence: int
+    ordinal: int
+    material: SourceRef
+    predecessor: SourceRef
+    payload: _RevisionPayload
+
+
+@dataclass(frozen=True, slots=True)
 class PendingClaim:
     key: SourceRef
     project_id: UUID
@@ -100,6 +128,7 @@ class PendingClaim:
     time_basis: ObservationTimeBasis
     evidence: ClaimEvidence
     sequence: int
+    revision: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,6 +224,91 @@ def _evidence(
         epoch.generation,
         epoch.boundary_ref,
     )
+
+
+def _claim_digest(material: _UsageMaterial) -> str:
+    return sha256(_encode(material, _UsageMaterial).encode()).hexdigest()
+
+
+def _stored_claim(data: bytes, digest: str) -> _ClaimPayload:
+    claim = _decode(data, _ClaimPayload)
+    if _claim_digest(claim.material) != digest:
+        raise LedgerError("Stored first claim material changed")
+    return claim
+
+
+def _stored_revision(
+    row: tuple, key: SourceRef, evidence: _ServiceEvidence
+) -> _StoredRevision:
+    sequence, ordinal, material, predecessor, data = row
+    _positive(sequence)
+    _nonnegative(ordinal)
+    material_ref, predecessor_ref = SourceRef(material), SourceRef(predecessor)
+    evidence.validate_source_ref(material_ref)
+    evidence.validate_source_ref(predecessor_ref)
+    payload = _decode(data, _RevisionPayload, validate_ref=evidence.validate_source_ref)
+    observation = NativeObservation(
+        key,
+        payload.revision,
+        payload.usage,
+        NativeSurface.CLAUDE_CODE_MACOS,
+        ObservationTimeBasis.NATIVE_USAGE_EVENT,
+        None,
+    )
+    if material_ref != _claude_revision_material(evidence, observation):
+        raise LedgerError("Stored journal revision material changed")
+    return _StoredRevision(sequence, ordinal, material_ref, predecessor_ref, payload)
+
+
+def _revision_head(
+    connection: sqlite3.Connection,
+    key: SourceRef,
+    sequence: int,
+    evidence: _ServiceEvidence,
+) -> _StoredRevision | None:
+    row = connection.execute(
+        "SELECT sequence,later_ordinal,material,predecessor,payload"
+        " FROM claim_revisions WHERE key = ? AND sequence <= ?"
+        " ORDER BY sequence DESC, later_ordinal DESC LIMIT 1",
+        (key.value, sequence),
+    ).fetchone()
+    return None if row is None else _stored_revision(row, key, evidence)
+
+
+def _physical_stream(cursor: SourceCursor) -> tuple[SourceRef, SourceRef, SourceRef]:
+    return cursor.source_ref, cursor.locator_ref, cursor.incarnation_ref
+
+
+def _original_capture(
+    batch: VerifiedScopeBatch,
+    owner: UUID,
+    original: ClaimEvidence,
+    registry: RegistryView,
+) -> bool:
+    epochs = tuple(
+        epoch
+        for epoch in registry.epochs
+        if epoch.project_id == owner
+        and epoch.source_id == original.source_id
+        and epoch.stream_ref == original.stream_ref
+        and epoch.generation == original.capture_generation
+        and epoch.boundary_ref == original.capture_boundary
+        and epoch.enabled
+        and epoch.ordinal <= original.start
+    )
+    cursor = batch._native_cursor
+    source = batch._locator._source
+    if len(epochs) != 1 or cursor is None or type(source) is not CandidateSource:
+        return False
+    (epoch,) = epochs
+    historical = epoch.position or epoch.observed.checkpoint.cursor
+    if _physical_stream(cursor) != _physical_stream(historical):
+        return False
+    try:
+        _capture_position(source, historical, fixed=historical)
+    except (_CaptureDiscontinuity, OSError, ValueError):
+        return False
+    return True
 
 
 class RoutingJournal:
@@ -392,11 +506,10 @@ class RoutingJournal:
         evidence = self._store.evidence
         evidence.validate_source_ref(key)
         existing = connection.execute(
-            "SELECT project, digest, sequence FROM claims WHERE key = ?", (key.value,)
+            "SELECT project,digest,payload,sequence FROM claims WHERE key = ?",
+            (key.value,),
         ).fetchone()
-        if observation.revision != 1 and (
-            existing is None or existing[0] == str(project)
-        ):
+        if observation.revision != 1 and existing is None:
             return ClaimDisposition(ClaimStatus.HELD, key, project, _tip(connection))
         _encode(
             observation.usage,
@@ -406,7 +519,7 @@ class RoutingJournal:
         material = _UsageMaterial(
             observation.usage, candidate.route.scope, observation.time_basis
         )
-        digest = sha256(_encode(material, _UsageMaterial).encode()).hexdigest()
+        digest = _claim_digest(material)
         position = _evidence(proof, project, registry)
         location = _encode(
             position, ClaimEvidence, validate_ref=evidence.validate_source_ref
@@ -421,7 +534,8 @@ class RoutingJournal:
             )
             return ClaimDisposition(ClaimStatus.PENDING, key, project, sequence)
 
-        old_project, old_digest, old_sequence = existing
+        old_project, old_digest, old_payload, old_sequence = existing
+        first = _stored_claim(old_payload, old_digest)
         if str(project) != old_project:
             params = (key.value, str(project), digest, location.encode())
             dispute = connection.execute(
@@ -441,14 +555,131 @@ class RoutingJournal:
                 ClaimStatus.DISPUTED, key, UUID(old_project), sequence
             )
 
-        if digest != old_digest:
-            return ClaimDisposition(ClaimStatus.HELD, key, project, old_sequence)
         disputed = connection.execute(
             "SELECT min(sequence) FROM disputes WHERE key = ?", (key.value,)
         ).fetchone()[0]
-        if disputed is not None:
-            return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
-        return ClaimDisposition(ClaimStatus.REPLAY, key, project, old_sequence)
+        if observation.revision == 1 and digest == old_digest:
+            if disputed is not None:
+                return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
+            return ClaimDisposition(ClaimStatus.REPLAY, key, project, old_sequence)
+        held = ClaimDisposition(ClaimStatus.HELD, key, project, old_sequence)
+        if (
+            disputed is not None
+            or observation.revision == 1
+            or observation.native_surface is not NativeSurface.CLAUDE_CODE_MACOS
+        ):
+            return held
+        return self._reserve_revision(
+            connection, candidate, position, registry, sequence, first, held
+        )
+
+    def _reserve_revision(
+        self,
+        connection: sqlite3.Connection,
+        candidate: RoutedRevision,
+        position: ClaimEvidence,
+        registry: RegistryView,
+        sequence: int,
+        first: _ClaimPayload,
+        held: ClaimDisposition,
+    ) -> ClaimDisposition:
+        observation = candidate.observation
+        key, owner = held.key, held.project_id
+        original = first.evidence
+        if (
+            candidate.route.scope != first.material.scope
+            or observation.time_basis is not first.material.time_basis
+            or observation.usage.observed_at != first.material.usage.observed_at
+            or (
+                position.surface,
+                position.session_ref,
+                position.stream_ref,
+                position.start,
+                position.end,
+            )
+            != (
+                original.surface,
+                original.session_ref,
+                original.stream_ref,
+                original.start,
+                original.end,
+            )
+        ):
+            return held
+        batch = candidate._read.batch
+        proof = self._scopes.verified_revision(batch, observation)
+        if proof is None or proof.route != candidate.route:
+            return held
+        witness = proof.witness
+        evidence = self._store.evidence
+        known = connection.execute(
+            "SELECT sequence,later_ordinal,material,predecessor,payload"
+            " FROM claim_revisions WHERE key = ? AND material = ?",
+            (key.value, witness.successor_material.value),
+        ).fetchone()
+        if known is not None:
+            prior = _stored_revision(known, key, evidence)
+            if (
+                prior.predecessor == witness.predecessor_material
+                and prior.ordinal == witness.later_ordinal
+                and prior.payload.prefix_ref == witness.prefix_ref
+            ):
+                return ClaimDisposition(ClaimStatus.REPLAY, key, owner, prior.sequence)
+            return held
+
+        if position != original or not _original_capture(
+            batch, owner, original, registry
+        ):
+            return held
+        cursor = batch._native_cursor
+        assert cursor is not None
+        latest = _revision_head(connection, key, sequence, evidence)
+        if latest is None:
+            genesis = replace(observation, revision=1, usage=first.material.usage)
+            if witness.predecessor_material != _claude_revision_material(
+                evidence, genesis
+            ):
+                return held
+        else:
+            if (
+                witness.predecessor_material != latest.material
+                or witness.predecessor_ordinal != latest.ordinal
+                or (cursor.locator_ref, cursor.incarnation_ref)
+                != (latest.payload.locator_ref, latest.payload.incarnation_ref)
+            ):
+                return held
+            predecessor = self._scopes.verified_revision(batch, witness.predecessor)
+            if (
+                predecessor is None
+                or predecessor.witness.prefix_ref != latest.payload.prefix_ref
+            ):
+                return held
+
+        assert type(observation.usage) is UsageObservation
+        payload = _RevisionPayload(
+            observation.usage,
+            observation.revision,
+            witness.prefix_ref,
+            cursor.locator_ref,
+            cursor.incarnation_ref,
+        )
+        data = _encode(
+            payload, _RevisionPayload, validate_ref=evidence.validate_source_ref
+        ).encode()
+        self._record_sequence(connection, sequence)
+        connection.execute(
+            "INSERT INTO claim_revisions(key,sequence,later_ordinal,material,predecessor,payload)"
+            " VALUES (?,?,?,?,?,?)",
+            (
+                key.value,
+                sequence,
+                witness.later_ordinal,
+                witness.successor_material.value,
+                witness.predecessor_material.value,
+                data,
+            ),
+        )
+        return ClaimDisposition(ClaimStatus.PENDING, key, owner, sequence)
 
     def _write_progress(
         self, connection: sqlite3.Connection, read: _Read, sequence: int
@@ -535,12 +766,12 @@ class RoutingJournal:
                 raise ValueError("Journal sequence is unavailable")
             claims = []
             evidence = self._store.evidence
-            for key, project, raw, written in connection.execute(
-                "SELECT key, project, payload, sequence FROM claims"
+            for key, project, raw, digest, written in connection.execute(
+                "SELECT key,project,payload,digest,sequence FROM claims"
                 " WHERE sequence <= ? ORDER BY sequence, key",
                 (limit,),
             ):
-                payload = _decode(raw, _ClaimPayload)
+                payload = _stored_claim(raw, digest)
                 observation_key = SourceRef(key)
                 evidence.validate_source_ref(observation_key)
                 _encode(
@@ -553,15 +784,19 @@ class RoutingJournal:
                     UsageObservation,
                     validate_ref=evidence.validate_source_ref,
                 )
+                revision = _revision_head(connection, observation_key, limit, evidence)
                 claims.append(
                     PendingClaim(
                         observation_key,
                         UUID(project),
-                        payload.material.usage,
+                        payload.material.usage
+                        if revision is None
+                        else revision.payload.usage,
                         payload.material.scope,
                         payload.material.time_basis,
                         payload.evidence,
-                        written,
+                        written if revision is None else revision.sequence,
+                        1 if revision is None else revision.payload.revision,
                     )
                 )
             disputes = []

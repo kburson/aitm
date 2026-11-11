@@ -31,7 +31,8 @@ _STORE = "routing-journal-v1"
 _DATABASE = "journal.sqlite3"
 _FILES = (_DATABASE, f"{_DATABASE}-wal", f"{_DATABASE}-shm")
 _APPLICATION_ID = 0x4149544A  # AITJ
-_SCHEMA_VERSION = 1
+_LEGACY_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 _SCHEMA = """
 CREATE TABLE identity (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -66,31 +67,57 @@ CREATE TABLE progress (
     PRIMARY KEY (source, surface, stream, locator, incarnation, sequence)
 ) STRICT;
 """
+_REVISION_SCHEMA = """
+CREATE TABLE claim_revisions (
+    key TEXT NOT NULL REFERENCES claims(key),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    later_ordinal INTEGER NOT NULL,
+    material TEXT NOT NULL,
+    predecessor TEXT NOT NULL,
+    payload BLOB NOT NULL,
+    PRIMARY KEY (key, sequence, later_ordinal),
+    UNIQUE (key, material)
+) STRICT;
+"""
 
 
 @cache
-def _supported_schema() -> tuple[tuple[str, str, str, str | None], ...]:
+def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], ...]:
     with closing(sqlite3.connect(":memory:")) as conn:
         conn.executescript(_SCHEMA)
+        if version == _SCHEMA_VERSION:
+            conn.execute(_REVISION_SCHEMA)
         return _schema_objects(conn)
 
 
-def _validate_identity(conn: sqlite3.Connection, key_id: str) -> None:
+def _validate_identity(
+    conn: sqlite3.Connection, key_id: str, *, version: int | None = _SCHEMA_VERSION
+) -> int:
     try:
         if conn.execute("PRAGMA application_id").fetchone() != (_APPLICATION_ID,):
             raise LedgerError("Unrecognized routing journal application")
-        if conn.execute("PRAGMA user_version").fetchone() != (_SCHEMA_VERSION,):
+        stored = conn.execute("PRAGMA user_version").fetchone()
+        if stored not in {(_LEGACY_SCHEMA_VERSION,), (_SCHEMA_VERSION,)} or (
+            version is not None and stored != (version,)
+        ):
             raise LedgerError("Unsupported routing journal schema version")
+        stored_version = stored[0]
         if conn.execute("PRAGMA journal_mode").fetchone() != ("wal",):
             raise LedgerError("Routing journal requires WAL")
-        if _schema_objects(conn) != _supported_schema():
+        if _schema_objects(conn) != _supported_schema(stored_version):
             raise LedgerError("Invalid routing journal table schema")
         if conn.execute("SELECT singleton, key_id FROM identity").fetchall() != [
             (1, key_id)
         ]:
             raise LedgerError("Routing journal source key identity mismatch")
+        return stored_version
     except sqlite3.Error:
         raise LedgerError("Invalid routing journal database") from None
+
+
+def _validate_foreign_keys(conn: sqlite3.Connection) -> None:
+    if conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
+        raise LedgerError("Invalid routing journal foreign key references")
 
 
 def _file_identity(path: Path) -> tuple[int, int]:
@@ -166,6 +193,7 @@ def _initialize_database(staging: _PinnedPath, key_id: str) -> _StoreIdentity:
             raise LedgerError("Staged routing journal database changed")
         conn.execute("PRAGMA journal_mode=WAL")
         conn.executescript("BEGIN IMMEDIATE;\n" + _SCHEMA)
+        conn.execute(_REVISION_SCHEMA)
         conn.execute(f"PRAGMA application_id = {_APPLICATION_ID}")
         conn.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
         conn.execute("INSERT INTO identity VALUES (1, ?)", (key_id,))
@@ -201,9 +229,13 @@ class JournalStore:
                 self._identity = _StoreIdentity.capture(directory)
                 if published is not None:
                     published.check(directory)
-                with self._transaction(root, directory, write=False):
+                with self._pinned_transaction(root, directory, write=False) as conn:
+                    expected = _SCHEMA_VERSION if published is not None else None
+                    version = _validate_identity(conn, key_id, version=expected)
                     if published is None:
                         self._evidence = self._read_evidence(root)
+                if version == _LEGACY_SCHEMA_VERSION:
+                    self._upgrade_v1(root, directory)
                 # Confirm a validated store even if a prior publisher lost its sync.
                 try:
                     os.fsync(root.fd)
@@ -279,17 +311,27 @@ class JournalStore:
             return self._evidence
 
     @contextmanager
-    def _transaction(
+    def _pinned_transaction(
         self, root: _PinnedPath, directory: _PinnedPath, *, write: bool
     ) -> Iterator[sqlite3.Connection]:
         self._check_store(root, directory)
         with _open(directory.path / _DATABASE, write=write) as conn, conn:
             self._check_store(root, directory)
             conn.execute("BEGIN IMMEDIATE" if write else "BEGIN")
-            _validate_identity(conn, self._key_id)
             yield conn
-            _validate_identity(conn, self._key_id)
             self._check_store(root, directory)
+
+    def _upgrade_v1(self, root: _PinnedPath, directory: _PinnedPath) -> None:
+        try:
+            with self._pinned_transaction(root, directory, write=True) as conn:
+                _validate_identity(conn, self._key_id, version=_LEGACY_SCHEMA_VERSION)
+                _validate_foreign_keys(conn)
+                conn.execute(_REVISION_SCHEMA)
+                conn.execute(f"PRAGMA user_version = {_SCHEMA_VERSION}")
+                _validate_identity(conn, self._key_id)
+                _validate_foreign_keys(conn)
+        except sqlite3.Error:
+            raise LedgerError("Unable to upgrade private routing journal") from None
 
     @contextmanager
     def transaction(self, *, write: bool = False) -> Iterator[sqlite3.Connection]:
@@ -297,6 +339,8 @@ class JournalStore:
         with (
             _pin_directory(self._writer.root) as root,
             _pin_directory(root.path / _STORE) as directory,
-            self._transaction(root, directory, write=write) as conn,
+            self._pinned_transaction(root, directory, write=write) as conn,
         ):
+            _validate_identity(conn, self._key_id)
             yield conn
+            _validate_identity(conn, self._key_id)
