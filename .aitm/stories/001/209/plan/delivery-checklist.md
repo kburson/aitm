@@ -53,3 +53,7 @@ A controlled local probe reproduced the fixed-scope refusal and the exact captur
 The [current gate receipt](current-signed-gate-hold.json) preserves the corrected candidate, literal base and native failure. #209 remains in Test with PR #231 open. The source recovery remains unused and depends on an authenticated pass for the exact corrected head and current literal trunk. #210 still requires #209. [Partial Actual through hosted recovery](../attachments/timing/retest-actual-readback-input.json)
 
 Attempt 3 ended in failure. The candidate job was canceled, evidence collection failed, and signing was skipped. [Terminal hosted receipt](corrected-hosted-failed-a3.json) · [Project 24 Test and partial Actual readback](project-held-readback.json)
+
+### Hosted capture fixture recovery
+
+The owner authorized an operational fix to the hosted capture failure. Both native Python lanes now use separate, freshly created runner fixture directories. The deterministic scratch reproduction failed under shared-directory metadata churn and passed with the same churn and isolated fixture placement. Source custody, coverage thresholds, test selection, and signing are preserved. The [independent workflow-control review](hosted-capture-isolation-review.md) passed the exact new head and tree. [Fresh hosted run](https://github.com/kburson/aitm/actions/runs/43059217996) is validating this exact pair. The remaining independent product/source review follows the signed pass.

@@ -1,0 +1,9 @@
+# #209 independent hosted workflow-control review
+
+**PASS** for literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1e73249612`, head `d1916b81fc05417c6ff709beb59890d22369243b`, tree `6bad3235d96230997930b513328dc7faf4e78ef1`.
+
+Independent Codex reviewer `capture_workflow_review` inspected the exact workflow and package-test controls. The previously validated corrected candidate `941542dd9695e6f1a330c8b020f6384cbed0a427` differs only in the workflow. The review found that both job invocations retain test roots and selection, the observer, artifact custody, policy, gate and verifier blobs, the raw 90 percent floors, and signing. Existing test IDs and parametrizations remain, with two version arrays appending version 3. The retained Claude cold-read case has a stronger diagnostic assertion. One nonblocking detail is that the rollback fault injection asserts the new table before interruption. Existing content-table emptiness and row preservation are asserted in the migration and rollback suite.
+
+The hosted failure log places the inherited test fixture in macOS's shared system temporary tree. A local controlled experiment changed an unrelated entry in a disposable shared temporary root during the native capture read. With pytest's default fixture placement the capture refused at the frontier. The same test passed under the same shared-root metadata churn with an isolated fixture root. The exact hosted writer of the metadata change is unverified.
+
+The workflow uses a fresh, private runner directory for each native Python lane, outside the evidence and coverage output directories. Normalizing away the two directory setup lines and the two `--basetemp` arguments reproduces the previous workflow byte-for-byte. Actionlint passed. The owner authorized this hosted fixture repair while preserving the existing acceptance gates. Product semantics, source re-acceptance, signed-run verification and merge disposition remain separate gates.
