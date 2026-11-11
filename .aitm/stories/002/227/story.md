@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 227
 title: "[#181 C01] Pin producer capabilities and shared acceptance fixtures"
 kind: "story"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/227"
 parent: 181
 children: []
 blocking: []
 blocked-by: [193]
 created: "2026-11-11T14:02:13Z"
-updated: "2026-11-11T14:03:54Z"
+updated: "2026-11-11T14:05:35Z"
 last-branch: "planning"
 estimate: null
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-227-c01-qualification-design.md"], "plan": [], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 181, "key": "C01", "path": ".aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md", "publication": "20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b", "raw-sha256": "b3bec939fd3012c17f2a8d303d5189de974cbe50da8c8cfb1d7d7deb14e4b4f2", "section-sha256": "f1812b0aa479c657dad43304f26ab696f09bb79d0e4a8c603def4aa169bea9aa"}
@@ -33,3 +33,7 @@ Proposed implementation effort 2.25 agent-hours. Priority P1. Delivered A/B hand
 - [ ] Record exact tests, observed outcomes and open upstream dependencies on planning.
 
 This child qualifies evidence without changing product code, metric fields, monitor state or projection authority.
+
+## Reviewed pickup
+
+[Design](design/2026-11-11-227-c01-qualification-design.md)

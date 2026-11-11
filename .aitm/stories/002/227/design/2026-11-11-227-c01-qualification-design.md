@@ -1,0 +1,9 @@
+# #227 read-only qualification design
+
+C01 freezes a reproducible qualification baseline for the downstream Core timing, board projection and viewer work. It follows the delivered #193 handoff and the [accepted #181 Slice C plan](https://github.com/kburson/aitm/blob/20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b/.aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md#c01-freeze-input-and-parity-evidence).
+
+Use two immutable historical planning inputs with their original UTC cutoffs, the exact delivered dashboard source, and a separately identified current capability readback. Retain commit, source and receipt digests, metric schema, exact Project mappings, observed durations and coverage. Document usage source, publication, window, cutoff and rate identity only when independently verified. The two historical views have no usage selector. Distinguish the installed legacy CLI, landed monitor source and future production report route.
+
+Publish portable sanitized fixtures with explicit inputs and expected outputs for additive agent effort, calendar elapsed, the union of parallel work, owner wait, tool inclusion, missing usage and unauthenticated evidence. Reuse the delivered tests as executable checks where their contracts support the case. Identify any future native admission check as a downstream acceptance target. Capture exact byte parity, outputs and residual gaps in an evidence receipt on planning.
+
+#227 owns planning artifacts and disposable local verification outputs. The operator's numeric Project fields, provider state and runtime packages are outside its write scope. Core owns qualified activity and timing/usage ingress, #100 owns qualified scope/pricing and fenced reports, M2 owns board publication, and M6 owns hosted read-only viewing. A passing C01 qualifies these frozen examples for reuse. Automatic Actual, Cost and production projection require their respective upstream gates.
