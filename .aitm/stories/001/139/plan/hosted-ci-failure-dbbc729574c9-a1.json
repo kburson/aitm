@@ -1,0 +1,93 @@
+{
+  "attempt": 1,
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "base_failure": {
+    "actual_hosted_trigger": "unverified",
+    "case": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_decoder_rejects_malformed_or_unowned_shape[unknown]",
+    "errors": 1,
+    "fixture_and_capture_implementation_match_candidate": true,
+    "observed_refusal": "BoundaryUnavailable: Native capture position is unavailable",
+    "passed": 1069,
+    "path": "NativeScopeFixture -> Registry.verify_boundary -> Registry._native_delta -> _capture_position",
+    "raw_log_sha256": "1eb2aba4d424f0142cb8e32c77fd94103b54a74e559434b9ff0f25f4d473feec",
+    "stage": "fixture setup"
+  },
+  "conclusion": "failure",
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "jobs": [
+    {
+      "conclusion": "failure",
+      "id": 130653381027,
+      "name": "python-base"
+    },
+    {
+      "conclusion": "success",
+      "id": 130653381553,
+      "name": "python"
+    },
+    {
+      "conclusion": "success",
+      "id": 130653381867,
+      "name": "quality"
+    },
+    {
+      "conclusion": "success",
+      "id": 130653382302,
+      "name": "file-checks"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130657650978,
+      "name": "collect-evidence"
+    },
+    {
+      "conclusion": "skipped",
+      "id": 130657727911,
+      "name": "aitm-ci"
+    }
+  ],
+  "local_exact_base_targeted": {
+    "case_included": true,
+    "failed": 0,
+    "log_sha256": "754932ffeb87cd116f46b766f3be63d1066f786895dd07fe9de629f6d2c54f68",
+    "passed": 29
+  },
+  "pr": 197,
+  "related_209_controlled_local_probe": "Ancestor-directory metadata drift reproduced custody refusal in #209. Hosted logs lack the underlying exception and cannot establish the hosted trigger.",
+  "related_209_observations": [
+    {
+      "attempt": 2,
+      "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+      "case": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_decoder_rejects_malformed_or_unowned_shape[outcome]",
+      "issue": 209,
+      "observed_refusal": "Native capture frontier is unavailable",
+      "pr": 231,
+      "raw_log_sha256": "6adb2d498e9627aaa22309017a16a9a69e24ec27a06b6eefe92192ed6a93e9b0",
+      "repository": "kburson/aitm",
+      "run_id": 43051863613,
+      "same_fixture_setup_family": true,
+      "same_observed_fixed_position_refusal": false
+    },
+    {
+      "attempt": 3,
+      "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+      "case": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_decoder_rejects_malformed_or_unowned_shape[same-prefix]",
+      "issue": 209,
+      "observed_refusal": "Native capture position is unavailable",
+      "pr": 231,
+      "raw_log_sha256": "42ab090b3b6b33e76751c660504706ea13331fefeec4d0c97b7f5c207dbd1fcc",
+      "repository": "kburson/aitm",
+      "run_id": 43051863613,
+      "same_fixture_setup_family": true,
+      "same_observed_fixed_position_refusal": true
+    }
+  ],
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/43058239273/attempts/1",
+  "run_id": 43058239273,
+  "signed_pr_evidence_available": false,
+  "status": "completed",
+  "story": 139,
+  "tested": "59a03a1942401d2f462c11e548ad74b1d73beeaf",
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7"
+}

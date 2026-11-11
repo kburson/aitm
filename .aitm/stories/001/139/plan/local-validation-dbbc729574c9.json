@@ -1,0 +1,57 @@
+{
+  "advisory_obligations": 1253,
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "candidate_and_target_collect_only_evidence_identical": {
+    "ci-helpers": 182,
+    "product-cli": 1071
+  },
+  "exact_head_clean_before_and_after": true,
+  "focused": {
+    "failed": 0,
+    "log_sha256": "8a29806ba1fff9012489f78a6864a14171f2b413dd067f438ad9f0f85102438f",
+    "passed": 47,
+    "seconds": 0.07
+  },
+  "full": {
+    "failed": 0,
+    "log_sha256": "7f5a6f8f7c0f06252f0ca2dedbb1ca62410f3de3cf58ca7f24e0d41921b920b7",
+    "passed": 1448,
+    "seconds": 230.69,
+    "subtests_passed": 84
+  },
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "neighboring": {
+    "failed": 0,
+    "log_sha256": "adf6c065afc737e01da64907615960f18139331f73cb0cbd4141420e7d8da7f5",
+    "passed": 87,
+    "seconds": 28.05
+  },
+  "owned_sources_byte_identical_after_target_refresh": true,
+  "prior_advisory_obligations_unchanged": 1178,
+  "prior_head": "a5fdd76f7e682e2a9ff547db900a9c82ac502fc1",
+  "quality": {
+    "actionlint": {
+      "log_sha256": "79abfe37357bcf8b27179f3b383ddb52fc4f9484c1a44fcf69571bea2bc868af",
+      "status": "pass"
+    },
+    "ruff": {
+      "log_sha256": "12303cb9e9ef21067b28b4d26d6f7f7e5bb9115d842abf50fc2151184dca3fb6",
+      "status": "pass"
+    },
+    "tracked_file_checks": {
+      "log_sha256": "9b1003b2a93f875e5011de8f53ef1b56d4dc25bbaa1b873955d141a991b4cd37",
+      "status": "pass"
+    }
+  },
+  "sanitized_reconciliation_sha256": "710cf997e05d098547b18df28fbc238e3f1831e92a065626d8e5f1fed2cb7dc9",
+  "source_diff_sha256": "44a09b2391b8154c1242672b47431470b15154317dc9af04603160fad732b18e",
+  "status": "pass",
+  "story": 139,
+  "toolchain": {
+    "actionlint": "1.7.12",
+    "file_checks_node": "24.22.2",
+    "python": "3.13.9",
+    "uv": "0.10.6"
+  },
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7"
+}

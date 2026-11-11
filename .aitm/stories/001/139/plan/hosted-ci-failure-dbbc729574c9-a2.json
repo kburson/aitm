@@ -1,0 +1,87 @@
+{
+  "attempt": 2,
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "base_artifact": {
+    "base_json_sha256": "4e0f12f85e3ed64f485b2226f3715e6ffa25e059eb7dec6640b0ec3852e27e75",
+    "digest": "sha256:3beb54c1db4ad74ca97514784cae868bc59ce79c03a1beb940a446fd0118f2ae",
+    "exact_raw_pytest_observation_matches_local_baseline": true,
+    "failed": 0,
+    "id": 13873930744,
+    "passed": 1070
+  },
+  "candidate_failure": {
+    "actual_hosted_trigger": "unverified",
+    "case": "packages/aitm-usage/tests/test_codex.py::test_stale_quota_counter_cannot_separate_unmeasured_exclusion[True-eligible]",
+    "expected_token_totals": [
+      9
+    ],
+    "failed": 1,
+    "observed_token_totals": [],
+    "passed": 1070,
+    "product_tree_and_test_match_literal_base": true,
+    "raw_log_sha256": "2629d9bd6093d0256eceba17f9eab49d2c9c34c62fc0040fcc0784dba9566634",
+    "same_observed_refusal_as_attempt_1": false,
+    "stage": "test assertion"
+  },
+  "conclusion": "failure",
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "jobs": [
+    {
+      "conclusion": "success",
+      "id": 130657999946,
+      "name": "python-base"
+    },
+    {
+      "conclusion": "success",
+      "id": 130657999951,
+      "name": "quality"
+    },
+    {
+      "conclusion": "success",
+      "id": 130657999999,
+      "name": "file-checks"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130658000025,
+      "name": "python"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130662216278,
+      "name": "collect-evidence"
+    },
+    {
+      "conclusion": "skipped",
+      "id": 130662295195,
+      "name": "aitm-ci"
+    }
+  ],
+  "local_targeted": {
+    "base": {
+      "failed": 0,
+      "log_sha256": "fcf1b724974cf94fa115ce0fb713838bcca3f4efcc521650b415b044cd6ff440",
+      "passed": 4
+    },
+    "candidate": {
+      "failed": 0,
+      "log_sha256": "ba687f67e739d608d0c2920e1525f9fa9c54bbaf5dbf028d4955aed5701ab533",
+      "passed": 4
+    }
+  },
+  "pr": 197,
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/43058239273/attempts/2",
+  "run_id": 43058239273,
+  "signed_pr_evidence_available": false,
+  "status": "completed",
+  "story": 139,
+  "tested": "59a03a1942401d2f462c11e548ad74b1d73beeaf",
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "trusted_verifier": {
+    "owner_disposition_reached": false,
+    "reason": "selected attempt is not complete and successful",
+    "receipt_sha256": "7364b3017b8f8ab2783c99deb4a5e6ce4e741b9005cd6c8116e88980fe7d59e3",
+    "status": "hold"
+  }
+}

@@ -156,3 +156,50 @@ The [trusted #103 verifier](verifier-hold-a5fdd76f7e68.json) requires
 the first explicit owner disposition for the three new files under
 `tools/ci` on tested tree `7709cca894edba3e40e4b193a091e3077e4d5534`.
 The story remains in Test pending that disposition.
+
+## Refresh onto b0f8ac7
+
+[PR #197](https://github.com/kburson/aitm/pull/197) was refreshed onto
+literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. Its head is
+`dbbc729574c9b078658af310b2efa2945020224f` and GitHub tested
+`59a03a1942401d2f462c11e548ad74b1d73beeaf` with that base and head as ordered parents.
+The tested tree is `7d93353e06c8177c19bc1f918217e2f8ccf75da7`.
+
+The three #139-owned files remained byte-identical. The
+[inventory reconciliation](inventory-reconciliation-dbbc729574c9.json)
+matched the exact local and hosted trunk push's 1,071 product and CLI
+IDs. The 75 additions fit the existing monitor-scope module rule.
+There are zero removals, the 182 helper IDs are unchanged, and the
+advisory inventory has 1,253 obligations. The
+[locked local receipt](local-validation-dbbc729574c9.json) records
+1,448 passing tests and 84 subtests, with Ruff, actionlint and
+tracked-file checks passing.
+The [local product and CLI replay](local-product-coverage-dbbc729574c9.json)
+also passed all 1,071 cases and verified both required child labels.
+
+
+[Hosted attempt 1](hosted-ci-failure-dbbc729574c9-a1.json) recorded the
+literal trunk fixture setup failure. The candidate Python suite
+passed. The exact failing source was inherited, and the target push
+and isolated local reproduction passed. [Attempt 2](hosted-ci-failure-dbbc729574c9-a2.json)
+passed the trunk lane and failed one unchanged candidate test after
+restart and append. All four isolated test variants passed locally
+on the exact base and candidate. Both failed attempts remain part
+of the evidence.
+
+[Attempt 3](https://github.com/kburson/aitm/actions/runs/43058239273/attempts/3) passed all six jobs. The
+[diagnostic receipt](hosted-artifact-diagnostic-dbbc729574c9-a3.json) independently verifies the
+signed artifact, 1,071 candidate and 1,070 base outcomes, and both
+coverage floors. The [independent source review](source-review-attempt-5.md)
+accepted the exact source without new findings.
+
+[Reviewer confirmation of the CI identity and verifier discrepancy](source-review-attempt-5-ci-confirmation.md).
+
+The [trusted #103 verifier](verifier-hold-dbbc729574c9-a3.json) held before
+owner disposition. GitHub reports original run creation
+`2026-11-11T16:25:48Z` and rerun creation `2026-11-11T16:42:30Z`.
+The delivered verifier requires them to match. A fresh event on the
+same PR is the #103-documented recovery. PR #197 remains open and
+#139 remains in Test.
+
+[Exact owner disposition scope](owner-disposition-scope-dbbc729574c9.json).

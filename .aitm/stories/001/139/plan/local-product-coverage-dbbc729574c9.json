@@ -1,0 +1,23 @@
+{
+  "deselected": 0,
+  "exact_candidate_product_ids_match": true,
+  "failed": 0,
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "log_sha256": "71b268a3790433594b298694dff6ad14da3926b3c65411a9146a8e7651d2905a",
+  "passed": 1071,
+  "product_coverage_lines": {
+    "covered_lines": 10655,
+    "num_statements": 11604
+  },
+  "product_coverage_sha256": "528f7de1578e68890b4260a074e925560d58b8cbdbc82e07d846cec48b90c315",
+  "pytest_evidence_sha256": "300eab8a2ba76a1962b9ff7289ab697589c12da283931448d92d1733cfbecefd",
+  "repository": "kburson/aitm",
+  "required_child_labels": [
+    "cli-help",
+    "service-one-shot"
+  ],
+  "role": "local exact-candidate product and CLI coverage replay",
+  "seconds": 260.7,
+  "story": 139,
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7"
+}

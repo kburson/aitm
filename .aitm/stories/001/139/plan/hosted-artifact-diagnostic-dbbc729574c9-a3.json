@@ -1,0 +1,93 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_inventory.py": "fbe0e5e91472c15e36eb15ddf2e5c156902c8f7d",
+    "tools/ci/tia/inventory.py": "2f542dcdb9e6518c637d445fce673377d3dd34af",
+    "tools/ci/tia/suites.json": "e0d88968b23412c0f5594149d87e643554a0e9af"
+  },
+  "artifact": {
+    "archive_digest": "sha256:b1ae8d1c86f1384ae7b1300a19e6c3fc2605c3725cc70a3a0997a5d0074098c2",
+    "id": 13874037440,
+    "subject_digest": "6305f2154c7f9724b95fce802e13048d59b43b7727bd459d8d43204391c95ab7"
+  },
+  "attempt": 3,
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "base_nodes_match_candidate_without_cli": true,
+  "boundary": "source review and exact-tree disposition recorded separately",
+  "candidate_node_ids_sha256": "ba9ff34099d43fcdf23e99ad452a7aa7724c02edbcb1ed84aedde9d94386ada6",
+  "candidate_nodes_match_exact_trunk_push": true,
+  "controls": {
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "96424d880798d78e1eae93fba4d748d4fe985792"
+  },
+  "coverage": {
+    "helpers": {
+      "covered_lines": 778,
+      "num_statements": 821
+    },
+    "product": {
+      "covered_lines": 10655,
+      "num_statements": 11604
+    }
+  },
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "jobs": {
+    "aitm-ci": 130667537799,
+    "collect-evidence": 130667401182,
+    "file-checks": 130663105346,
+    "python": 130663105319,
+    "python-base": 130663105348,
+    "quality": 130663104955
+  },
+  "pr": 197,
+  "raw_archives": {
+    "base": {
+      "id": 13874360835,
+      "sha256": "sha256:08a23ffc9ef8e784a02fdd4412cf51f8ad713689017a164a1bfc0793ae07a80b"
+    },
+    "collector": {
+      "id": 13874810086,
+      "sha256": "sha256:5485e60f1a7720618a4a66dfb9eaeb07e3749ec0d535fb46c06814377e843c77"
+    },
+    "python": {
+      "id": 13874032432,
+      "sha256": "sha256:e326599e7febd1431e227ed6791d0c7b101bc76fa9e20db2cb575df3ae9c863b"
+    }
+  },
+  "raw_replay": {
+    "baseline_tests": 1070,
+    "coverage": {
+      "helpers": {
+        "covered_lines": 778,
+        "num_statements": 821
+      },
+      "product": {
+        "covered_lines": 10655,
+        "num_statements": 11604
+      }
+    },
+    "failures": [],
+    "passed": true,
+    "tests": 1071
+  },
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/43058239273/attempts/3",
+  "run_id": 43058239273,
+  "status": "authenticated-hosted-jobs-and-artifacts-replayed-verifier-held",
+  "story": 139,
+  "suite": 116603413479,
+  "tested": "59a03a1942401d2f462c11e548ad74b1d73beeaf",
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "trusted_verifier": {
+    "attempt_record_created_at": "2026-11-11T16:42:30Z",
+    "attempt_started_at": "2026-11-11T16:42:28Z",
+    "canonical_run_created_at": "2026-11-11T16:25:48Z",
+    "owner_disposition_reached": false,
+    "reason": "selected attempt identity or outcome disagrees",
+    "status": "hold"
+  },
+  "workflow_id": 412848571
+}
