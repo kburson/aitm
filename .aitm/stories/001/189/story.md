@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 189
 title: "[#181 A04] Resolve a pinned usage report"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/189"
 parent: 181
 children: []
 blocking: [190]
 blocked-by: [186]
 created: "2026-11-10T21:02:17Z"
-updated: "2026-11-11T03:50:30Z"
+updated: "2026-11-11T03:56:43Z"
 last-branch: "codex/aitm-189-usage-view"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
