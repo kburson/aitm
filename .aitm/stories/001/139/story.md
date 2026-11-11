@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 139
 title: "[#133 T02] Classify the pytest inventory"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/139"
 parent: 133
 children: []
 blocking: [141, 142, 144, 147, 148]
 blocked-by: [138]
 created: "2026-11-10T16:50:59Z"
-updated: "2026-11-10T22:49:54Z"
+updated: "2026-11-11T02:14:48Z"
 last-branch: "codex/aitm-139-inventory"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
