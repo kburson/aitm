@@ -53,7 +53,7 @@ unset AITM_CI_CHILD_EVIDENCE AITM_CI_PYTEST_EVIDENCE
 gh_asset=gh_2.97.0_macOS_arm64.zip
 curl --fail --silent --show-error --location --retry 3 \
   "https://github.com/cli/cli/releases/download/v2.97.0/$gh_asset" -o "$out/$gh_asset"
-(cd "$out" && printf '%s\n' a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e "$gh_asset" | shasum -a 256 -c -)
+(cd "$out" && printf '%s  %s\n' a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e "$gh_asset" | shasum -a 256 -c -)
 unzip -q "$out/$gh_asset" -d "$out"
 export PATH="$out/gh_2.97.0_macOS_arm64/bin:$PATH"
 printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' \
