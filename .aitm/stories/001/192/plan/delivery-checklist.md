@@ -71,3 +71,36 @@ For B02, use `browser/offline-browser-proof.mjs` and `browser/probe.js`. The bro
 Read-only pickup preparation, as planning contributor, was observed in the half-open UTC window `2026-11-11T04:35:08Z` to `2026-11-11T04:35:52Z`. Implementation and first-candidate verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:44:20Z` to `2026-11-11T04:56:20Z`. Correction and verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:56:58Z` to `2026-11-11T05:00:14Z`. Waiting between assignments, coordinator work and hosted verification are outside these checkpoints.
 
 [Hosted candidate 2](https://github.com/kburson/aitm/actions/runs/42963296649) had a trusted-base test failure after checkout. [Job 130334752180](https://github.com/kburson/aitm/actions/runs/42963296649/job/130334752180) observed two failures and one setup error in existing Usage Monitor stream capture tests. The same three tests passed locally on exact frozen trunk and the renderer candidate (3/3 each). [The frozen trunk commit's hosted push CI](https://github.com/kburson/aitm/actions/runs/42962469041) passed its product suite. The renderer diff contains only three dashboard files. The next first-attempt retry preserves the identical source tree and the existing signed gate.
+
+## Candidate 3
+
+[Source PR #221](https://github.com/kburson/aitm/pull/221) targets trunk base `aa7dff45156919bcbe34d0489335949259bc584a`. Exact head `96d9788f36f6be71315a5014bc2e9412fae6692c` and tree `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
+
+- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42963929800), delivered verifier and independent source review.
+
+# #192 renderer candidate verification
+
+Corrected candidate `ce2a18a5f5579bae7ef0776a2a498ee62576972c`, tree `495e249403367bee985eeb4986890bced64f0075`, pickup base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. The clean diff contains `tools/story_dashboard/render.py`, `tools/story_dashboard/dashboard.html`, and `tools/story_dashboard/tests/test_render.py`.
+
+The focused tests ran red before implementation. Additional red tests caught missing schema-field checks for usage and progress clocks and noncanonical or absent contribution story IDs. The exact candidate on CPython 3.13.9 passed 5 renderer tests, all 61 dashboard tests, Ruff lint and format, whitespace checks, and Node syntax checks for the inline script and browser probe. The renderer tests verify safe evidence links, literal hostile text, alias rejection, preserved prior output on invalid input, and output determinism. Exact output is in `reviewed-candidate.log`.
+
+Independent precheck found unknown nested fields copied to the HTML and malformed detail values reaching DOM rendering. The correction validates the complete A05 display schema before copying data, with text or null required for evidence labels and reasons. Four nested raw export canaries and four malformed detail cases reproduced red and pass green. See `display-schema-red.log` and `display-schema-green.log`. Genuine A05 values, literal hostile text and approved evidence destinations retain the same valid output.
+
+## Offline browser proof
+
+Chrome loaded each local file under an isolated profile with offline network emulation. The harness waited for the target navigation loader and the initialized DOM. Both fixtures passed at 1280 and 390 CSS pixels. All four runs observed zero automatic HTTP(S) or WebSocket requests and no page exceptions. The narrow layout keeps table scrolling inside a labelled region. The files are in the private `192/browser/` scratch folder, outside the checkout.
+
+| Fixture | Source and local output | Verified result |
+| --- | --- | --- |
+| Real A05 | Historical planning pin `17761cc1928fd916cf32a9c078d4a742bfcb32b8`, as-of `2026-11-10T21:00:00Z`, `browser/reviewed/real/dashboard.html` | 169 stories, three combined filters, native child and epic drilldowns, legacy basis and watermark, Unknown Cost. #111 shows 0.6074 h and 36m 26.725s Actual, 12m 54s implementation elapsed, Unknown all-phase elapsed, and evidence-through `2026-11-10T19:35:05Z`. |
+| Adversarial A05-shaped display fixture | A05 producer snapshot with untrusted display text and evidence destinations, `browser/reviewed/hostile/dashboard.html` | Literal text, inert invalid destinations, valid progress, estimate, direct/descendant timing and Cost links, combined filters and empty result, pending owner wait, exact `$0.00125` Cost and independent timing and usage watermarks. |
+
+Exact HTML SHA-256 for real output is `1da066aaff343b8ae4c04cec74a1f291765e607d8117045b4590080ac552bdd2`; the real snapshot SHA-256 is `37c1e66336e4cf7505d8232533f1ab679b6c293d261a1c96a2cd2259cf6ff9a3`. The adversarial HTML SHA-256 is `bd53b835d2f243ea0119533af688795048aec67f4a7ec92247daeb6ee7f2bb0a` and its snapshot SHA-256 is `e4873449384a7310ab80eaac6916366b95e0ea2d16e68a6b754aca31d4dd2935`. Both HTML outputs were regenerated byte-for-byte from the committed renderer. The four Chrome logs are under `browser/reviewed/`. The visual captures are `browser/historical-desktop.png` and `browser/historical-narrow.png`.
+
+For B02, use `browser/offline-browser-proof.mjs` and `browser/probe.js`. The browser is ready when `document.documentElement.dataset.ready === "true"`. Filter with `#epic-filter`, `#state-filter` and `#coverage-filter` via a change event, then find `.story-row:not([hidden])[data-story-id="111"]`. The exact human-readable duration is `[data-field="actual"] [data-field="exact-duration"]`. Open `[data-detail-for="111"] details.story-detail > summary` and wait for `[data-measure="direct_actual"]`. Each measure has `[data-field="evidence-through"]` and `[data-field="basis"]`. The separate `implementation_elapsed` and `all_phase_elapsed` measures retain their original scope. The historical probe also handles a larger post-capture view while checking the #100 and #111 historical rows.
+
+## Implementer checkpoints
+
+Read-only pickup preparation, as planning contributor, was observed in the half-open UTC window `2026-11-11T04:35:08Z` to `2026-11-11T04:35:52Z`. Implementation and first-candidate verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:44:20Z` to `2026-11-11T04:56:20Z`. Correction and verification, as implementer, were observed in the partial half-open UTC window `2026-11-11T04:56:58Z` to `2026-11-11T05:00:14Z`. Waiting between assignments, coordinator work and hosted verification are outside these checkpoints.
+
+The exact renderer tree remained `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` after the two hosted retries. The second run's candidate Python lane passed the full product suite. Its trusted-base job separately failed in existing monitor tests. The frozen base's hosted push suite and the three focused tests on both local checkouts passed. Both prior runs remain linked in the delivery history.
