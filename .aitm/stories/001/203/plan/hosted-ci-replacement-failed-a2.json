@@ -1,0 +1,42 @@
+{
+  "head": "563fa19aa1e2590c9be72c721306f32df4a47872",
+  "attempt": 2,
+  "status": "completed",
+  "conclusion": "failure",
+  "jobs": [
+    {
+      "name": "python-base",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "quality",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "python",
+      "conclusion": "failure",
+      "failedSteps": [
+        "Run serial behavior suite and retain exact coverage"
+      ]
+    },
+    {
+      "name": "file-checks",
+      "conclusion": "success",
+      "failedSteps": []
+    },
+    {
+      "name": "collect-evidence",
+      "conclusion": "failure",
+      "failedSteps": [
+        "Check every required dependency and its checkout and artifact custody"
+      ]
+    },
+    {
+      "name": "aitm-ci",
+      "conclusion": "skipped",
+      "failedSteps": []
+    }
+  ]
+}
