@@ -77,7 +77,7 @@ Read-only pickup preparation, as planning contributor, was observed in the half-
 [Source PR #221](https://github.com/kburson/aitm/pull/221) targets trunk base `aa7dff45156919bcbe34d0489335949259bc584a`. Exact head `96d9788f36f6be71315a5014bc2e9412fae6692c` and tree `75c3e40316fc49821a0f174565d6d26fe0bdc2cd` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
 - [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42963929800/attempts/1) and [delivered verifier](hosted-verification-3.json) passed.
-- [ ] Independent source review.
+- [x] [Independent source review](post-ci-source-review.md) accepted the exact signed tree. Off-platform review, with native approval absent.
 
 # #192 renderer candidate verification
 
