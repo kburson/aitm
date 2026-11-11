@@ -75,3 +75,9 @@ The [exact local test inventory](isolated-local-test-inventory.json) records 1,0
 ### Fourth isolated hosted attempt
 
 On [run 43059217996 attempt 4](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/4), the literal baseline passed with private fixtures again. The candidate logged progress through 98 percent with no reported test failure. GitHub annotated that the job exceeded the existing eight-minute maximum, and canceled it before evidence publication. The [terminal receipt](isolated-hosted-a4-terminal.json) records failed collection and a skipped final gate. The fifth attempt is an unchanged whole-workflow retry.
+
+### Current signed gate hold after capture recovery
+
+On [run 43059217996 attempt 5](https://github.com/kburson/aitm/actions/runs/43059217996/attempts/5), the exact literal baseline, file checks and quality passed. GitHub canceled the candidate after fifteen minutes in the queue with no steps run. [Terminal check readback](isolated-hosted-a5-terminal.json) and [runner annotations](isolated-hosted-a5-runner.json) establish the candidate runner acquisition failure. Earlier isolated attempt 2 passed both complete candidate test suites and installed wheel verification before upload was canceled. The exact signed gate remains held on one complete hosted attempt.
+
+The fixture isolation and independent workflow-control audit stand. The existing eight-minute maximum, all test and coverage requirements, artifact custody and signing apply. The one remaining authorized exact source review is unused. #209 remains Test. #210 at Rank 228.2 follows verified #209 delivery and Close. [Cumulative Actual evidence](../attachments/timing/capture-final-hold-actual-readback-input.json) measures partial coordinator engagement.
