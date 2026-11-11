@@ -93,3 +93,9 @@ The incoming paths `tools/story_dashboard/snapshot.py` and `tools/story_dashboar
 ### Current hosted attempt 1 failed before attestation
 
 [Hosted attempt 1](https://github.com/kburson/aitm/actions/runs/42961757503/attempts/1) passed the literal baseline, quality and file checks. The candidate Python job had 1,068 passing tests, two failures and one setup error. The inherited Claude dispose receipt case found no linked receipt. The #203 expired-GAP replay and resolved setup cases received no discovery locator. Evidence collection refused and attestation was skipped. [Native failure receipt](hosted-ci-current-failed-a1.json). The host-side triggers remain unverified. Retain this outcome and perform one full identical head/base retry without changing tests or gates.
+
+### Held at the current literal trunk gate
+
+The exact retry guard checked remote trunk before dispatch and observed [PR #220](https://github.com/kburson/aitm/pull/220) had advanced it to `aa7dff45156919bcbe34d0489335949259bc584a`. The fresh live [merge-gate receipt](current-merge-gate-hold.json) shows PR #211 still open at `d0d34c727ab0044bd89c6d06e14583129c6d7b4a`, pinned in the last Test receipts to `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. The announced retry did not start. The exact old hosted failure, earlier passes and independent R1/R2 source verdicts remain retained. No current signed pass and independent source acceptance apply to the new live literal trunk.
+
+Leave #203 in Test. The next pickup requires a fresh exact candidate against current trunk, clean authenticated hosted evidence and review-specific authorization for another paid independent exact source review under the owner's standing limit. The verified native #119 graph remains intact, including #203, #209, #210 and #204.

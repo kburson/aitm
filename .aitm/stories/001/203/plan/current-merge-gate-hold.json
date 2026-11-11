@@ -1,0 +1,24 @@
+{
+  "liveTrunk": "aa7dff45156919bcbe34d0489335949259bc584a",
+  "pinnedCandidateBase": "5cc77ab5f66e98d9d2777d7816f662e71a8804e9",
+  "liveTrunkTree": "cb00e4153a717fa718a0df7fe63e30f87f5b9938",
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "5cc77ab5f66e98d9d2777d7816f662e71a8804e9",
+    "headRefOid": "d0d34c727ab0044bd89c6d06e14583129c6d7b4a",
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/211"
+  },
+  "issue119BlockedBy": [
+    118,
+    199,
+    201,
+    202,
+    203,
+    204,
+    209,
+    210
+  ],
+  "retryStarted": false,
+  "reason": "Current literal trunk changed before retry."
+}
