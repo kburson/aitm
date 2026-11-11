@@ -161,3 +161,19 @@ UUID. Both stopped targets stayed fixed. The trial removed the
 temporary rules and refs and verified the production protections.
 The exact-base and exclusive-writer guarantees remain open. #158 stays
 in Planning and #159 remains blocked.
+
+## Exact-base and merge-writer boundary trial
+
+[Trial report](plan/2026-11-11-158-merge-boundary-trial.md) ·
+[Measurement receipt](attachments/2026-11-11-158-merge-boundary-trial.json).
+
+GitHub's head-conditioned async merge accepted a moved base with
+an identical head and tree. Strict status checks rejected the stale
+test-merge status and accepted a head-only status. The exact-target
+PR-only exception allowed the named user's explicit PR merge and
+denied direct ref writes. The connector and CLI resolved to the same
+GitHub user. Distinct-writer enforcement and the interval after the
+final host update check remain unqualified. Both temporary rules
+and all test refs were removed. Production protections matched
+their pre-trial readbacks. #158 stays in Planning and #159 remains
+blocked.
