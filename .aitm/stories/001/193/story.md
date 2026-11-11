@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 193
 title: "[#181 B02] Qualify and hand off the local dashboard"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/193"
 parent: 181
 children: []
 blocking: []
 blocked-by: [191, 192]
 created: "2026-11-10T21:02:23Z"
-updated: "2026-11-11T05:30:06Z"
-last-branch: "codex/aitm-193-dashboard-handoff"
+updated: "2026-11-11T05:32:34Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 2.25, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #191, #192. The proposed estimate is 2.25 implementation a
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `bc8063b66522ed3a27c95d1bb0546f1e73249612` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/222) · [Signed CI](plan/hosted-verification-2.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)

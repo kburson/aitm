@@ -3,8 +3,8 @@
 Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordinating Codex agent. Target trunk. Pickup base `fec3d8f685fd1d133bb9797d47c02552805e6bc1`. Predecessors #191, #192 are delivered. File ownership is defined by the exact pickup.
 
 - [x] [Design, Plan and JIT](jit.md) and [independent acceptance](jit-review.md).
-- [ ] Local verification, applicable hosted CI and independent source acceptance.
-- [ ] Verified merge, implementing-agent sign-off, and issue/Project closure.
+- [x] Local verification, applicable hosted CI and independent source acceptance.
+- [x] Verified merge, implementing-agent sign-off, and issue/Project closure.
 
 ## Candidate 1
 
@@ -50,3 +50,7 @@ The later view contains receipt SHA-256 `8d3bf226f4e47fac1153dad67b4ecae5fdbabb2
 The independent operator reproduced all six pinned artifact digests and all four offline checks. Their clean shell resolved the original generic Python launcher to Python 2.7. The corrected quick start defaults to `python3.13`, checks the chosen executable, and supports an explicit `PYTHON_BIN` override. The exact corrected default shell block built a fresh view on the separate clean reader using Python 3.13.1.
 
 The signed candidate matches tested merge `fe7ed1b43a11d297ae4f5ba92ab6ca6739ee8aa1`, with the ordered base/head parents and the exact tree above.
+
+## Verified delivery
+
+[PR #222](https://github.com/kburson/aitm/pull/222) merged to trunk at `2026-11-11T05:32:18Z` as `bc8063b66522ed3a27c95d1bb0546f1e73249612`. The exact reviewed tree `e87d9baa14c08a903ee34f1b0a8ded958d10a015` is reachable from remote trunk `bc8063b66522ed3a27c95d1bb0546f1e73249612`. Ordered merge parents `fec3d8f685fd1d133bb9797d47c02552805e6bc1` and `81a16c8b7a7d55e2e3b1f78e7575f947a3a0e989` match the tested candidate. [Implementing-agent sign-off](../retro/2026-11-10-implementer-signoff.md) passed at `2026-11-11T05:32:24Z`. The issue closed Completed at `2026-11-11T05:32:27Z` and the project item read back Done.
