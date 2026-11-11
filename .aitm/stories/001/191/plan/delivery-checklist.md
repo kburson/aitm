@@ -26,3 +26,5 @@ The baseline at planning `a23893955d7cedb68aabf3b216553b83c48472f2` and UTC cuto
 | First interruption and resume | Blank | Pending verification | Blank |
 | Second interruption and resume | 0.0014 h | Pending verification | Blank |
 | Final and independent readback | 0.0014 h | Partial. Verified #191 pilot through 2026-11-11T04:43:35.855000Z. | Blank |
+
+Candidate 1 was superseded before Review. The two reproducibility fixes are explicit ties-to-even rounding and revalidation of the exact snapshot, scope and board identity on resume. Its [hosted run](https://github.com/kburson/aitm/actions/runs/42961437891) carries no merge authority.
