@@ -27,3 +27,9 @@ Trusted raw replay retained the 1,070 hosted package baseline IDs, passed all 1,
 ### Independent source HOLD
 
 The [independent exact source verdict](post-ci-source-review-held-r1.md) held the signed candidate on test proof for the copied-scope refusal, durable creation of the v3 native data fixture, and a replay after the real legacy disposition. Return to Develop for test-only corrections. The prior signed run and exact tested tree remain retained.
+
+### Corrected exact Test
+
+The copied-scope control reached the actual revision guard. The same inputs with only the scope matched reached witness verification. The original held copy still used the real admitted route and left both cursors and the view unchanged. The v3 fixture commits and independently reads back version 3 and absent v4 table, then reads version 4 after reopening. The late-overlap case asserts scope bytes and cursor around recording and specifically refuses replay after the real legacy resolution. The original missing-quota scenario remains and a separate explicit rate-event case confirms exact source and scope. The targeted gate passed seven tests.
+
+[PR #231](https://github.com/kburson/aitm/pull/231) read back corrected head `941542dd9695e6f1a330c8b020f6384cbed0a427`, tree `2cb1397f7b0e8d647934f5e9d46c84b693930cef` and literal trunk `b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5`. The [exact local gate](corrected-local-test-inventory.json) passed 1,102 product and CLI tests and 182 helpers, retaining all baseline IDs. Raw coverage passed at 10,730/11,681 product and 778/821 helper lines. Only the journal test file differs from the earlier signed candidate. The current exact pair requires new signed hosted evidence and independent re-acceptance.
