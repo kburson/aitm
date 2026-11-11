@@ -25,3 +25,9 @@ The v1-layout first claim authenticates the historical capture prefix and exact 
 ### Independent source HOLD and return to Develop
 
 The [first exact independent source review](post-ci-source-review-held-r1.md) held the successful hosted candidate for changed behavior on an already disputed first-owner key. The current candidate returned DISPUTED for same-owner changed and unrecorded material. Prior behavior returned HELD for that material. Both statuses already keep the cursor replayable, but the unplanned disposition change must be removed. Exact recorded first material remains DISPUTED. Add a real native fixture for changed material on the existing disputed key and retain the [first signed CI receipt](hosted-ci-receipt.json).
+
+## Replacement Test checkpoint
+
+[PR #206](https://github.com/kburson/aitm/pull/206) read back replacement head `ae0e3a774e242af35210e57eeee499b789214afe`, tree `d34be057faf72d4c157c0dbf4e43003ccf40612d` and the unchanged literal trunk `2eebb3b7f6b262d3ed4951ffde0cbcb5d3a5ade3`. [Hosted run 42938964526](https://github.com/kburson/aitm/actions/runs/42938964526) is pending. The changed material on the actual disputed key returned DISPUTED in RED and now returns HELD. Exact recorded first material still returns DISPUTED. Neither cursor nor view changed, and all 24 related journal tests passed. Only that classification and its fixture differ from the earlier published candidate.
+
+The fresh locked full gate again passed 970 product and CLI, 182 helpers, Ruff, whitespace and raw coverage of 10,360/11,301 product and 778/821 helper lines. All 948 local baseline IDs remain. No schema, gate controls or routing producer changed in the replacement.
