@@ -1,0 +1,32 @@
+{
+  "v1": {
+    "commit": "1452999b2f0f5a90161e39862458029c0084772c",
+    "source_sha256": "88688af92365577a7f1565290b216d599d9ee1abbe802d06585b4c3353af4a58",
+    "refusal": "Unsupported routing journal schema version",
+    "storage_sha256_unchanged": {
+      "journal.sqlite3": "2698555e8990b1a2cfc29561533c62ae3eb231c4164fef2b6b1b1a33f6e590b1",
+      "journal.sqlite3-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb",
+      "journal.sqlite3-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "v2": {
+    "commit": "5324a80bad7730b2bdb4a2b87acf00f7171305c0",
+    "source_sha256": "cee323eb5056c18b16a84d20b7234a36f093a8545ad9c0e1d5d2af8dfa14d38a",
+    "refusal": "Unsupported routing journal schema version",
+    "storage_sha256_unchanged": {
+      "journal.sqlite3": "c2707f46899ea4ff4b9ef5b9ad01592a9ea34cf086983686c361a8795dae7352",
+      "journal.sqlite3-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb",
+      "journal.sqlite3-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "v3": {
+    "commit": "1282538954dc5a7e7f7b27da4e3ab096892e3add",
+    "source_sha256": "69356e0b124847ae9b0cdceee5aae0cef91f302b1eacb4a59fe7e1f5d3b27ccd",
+    "refusal": "Unsupported routing journal schema version",
+    "storage_sha256_unchanged": {
+      "journal.sqlite3": "e67091ba17c501554f9c5c1fc71c40595ab2df816837e85d1bc9432451065850",
+      "journal.sqlite3-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb",
+      "journal.sqlite3-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

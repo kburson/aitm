@@ -1,0 +1,29 @@
+{
+  "story": 209,
+  "sources": [
+    {
+      "path": "full-auto-refine-1-209.json",
+      "sha256": "b2ccc5cd967cc3950380cdd585b0a1e780001cf184a34d96fe55c45061707677"
+    },
+    {
+      "path": "full-auto-jit-1-209.json",
+      "sha256": "86def105bb0bb73257156b677e78ffa51258c34eb6c6f27f8cee21db4fe8a939"
+    },
+    {
+      "path": "full-auto-develop-1-209.json",
+      "sha256": "75cfa95e8231578969cf320cba262d938a04598ab2963987347fdd330435087e"
+    }
+  ],
+  "observation_count": 123,
+  "milliseconds": 963825,
+  "actual_hours": "0.2677",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-11T15:21:33.849Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union; current dashboard requires bucket 002 for story 209"
+}
