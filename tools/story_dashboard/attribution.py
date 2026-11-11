@@ -323,14 +323,23 @@ def _admit_v1(tree: PlanningTree) -> tuple[list[TimingObservation], list[TimingG
             claim = receipt.registration
             held.add((claim.project, claim.story, claim.sha256))
             held.add((claim.project, claim.story, receipt.supersedes))
-    observations, gaps = [], []
+    rows = []
+    held_assignments = set()
     for receipt in receipts:
         claim = receipt.registration
-        rows = _v1(receipt, tree.stories[claim.story].path)
+        normalized = _v1(receipt, tree.stories[claim.story].path)
+        rows.extend(normalized)
         if (claim.project, claim.story, claim.sha256) in held:
-            gaps.extend(_gap(row, "unsupported-revision") for row in rows)
+            held_assignments.update(
+                (row.scope.story, row.identity) for row in normalized
+            )
+
+    observations, gaps = [], []
+    for row in rows:
+        if (row.scope.story, row.identity) in held_assignments:
+            gaps.append(_gap(row, "unsupported-revision"))
         else:
-            observations.extend(rows)
+            observations.append(row)
     return observations, gaps
 
 
@@ -429,10 +438,13 @@ def _split_conflicts(
     for row in observations:
         if not _positive_turn(row):
             retained.append(row)
-            if row.kind == "missing" or (
-                row.kind not in _BOUNDARY_KINDS
-                and (row.start_ms is None or row.end_ms is None)
-                and row.kind != "pending-wait"
+            if (
+                row.kind == "missing"
+                or (row.start_ms is None and row.end_ms is None)
+                or (
+                    row.kind not in _BOUNDARY_KINDS | {"pending-wait"}
+                    and (row.start_ms is None or row.end_ms is None)
+                )
             ):
                 gaps.append(_gap(row, "missing-evidence"))
             continue

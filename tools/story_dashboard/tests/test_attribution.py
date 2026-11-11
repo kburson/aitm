@@ -263,6 +263,48 @@ class TimingAttribution(unittest.TestCase):
             },
         )
 
+    def test_unavailable_boundary_gets_a_gap_but_one_ended_boundary_remains_valid(self):
+        self.receipt(
+            186,
+            "boundaries",
+            [
+                observation("request", 0, None, kind="owner-request"),
+                observation(
+                    "response",
+                    None,
+                    None,
+                    kind="owner-response",
+                    coverage="unknown",
+                    missing_reason="lost-response",
+                ),
+            ],
+        )
+        facts = attribution.resolve_timing(self.load())
+        self.assertEqual(
+            {o.kind for o in facts.observations}, {"owner-request", "owner-response"}
+        )
+        self.assertEqual(
+            [(g.story, g.identity[-1], g.code) for g in facts.gaps],
+            [(186, "response", "missing-evidence")],
+        )
+
+    def test_replay_cannot_revive_an_identity_held_for_supersession(self):
+        original = observation("revised", 0, 10)
+        target = self.receipt(186, "target", [original])
+        self.receipt(186, "replay", [original, observation("unrelated", 11, 15)])
+        self.receipt(
+            186, "revision", [original | {"end_utc": utc(9)}], supersedes=target
+        )
+        self.receipt(187, "foreign", [original])
+        facts = attribution.resolve_timing(self.load())
+        self.assertEqual(
+            {(o.scope.story, o.identity[-1]) for o in facts.observations},
+            {(186, "unrelated"), (187, "revised")},
+        )
+        self.assertTrue(
+            all(g.story == 186 and g.code == "unsupported-revision" for g in facts.gaps)
+        )
+
     def test_legacy_admission_and_overlap_preserve_unaffected_direct_evidence(self):
         seed = fixture.raw(
             {
