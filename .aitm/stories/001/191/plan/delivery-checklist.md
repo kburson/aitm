@@ -28,3 +28,24 @@ The baseline at planning `a23893955d7cedb68aabf3b216553b83c48472f2` and UTC cuto
 | Final and independent readback | 0.0014 h | Partial. Verified #191 pilot through 2026-11-11T04:43:35.855000Z. | Blank |
 
 Candidate 1 was superseded before Review. The two reproducibility fixes are explicit ties-to-even rounding and revalidation of the exact snapshot, scope and board identity on resume. Its [hosted run](https://github.com/kburson/aitm/actions/runs/42961437891) carries no merge authority.
+
+## Candidate 2
+
+[Source PR #220](https://github.com/kburson/aitm/pull/220) targets trunk base `5cc77ab5f66e98d9d2777d7816f662e71a8804e9`. Exact head `b7688fc1d08289f5853d09beb924fa5d11d136da` and tree `cb00e4153a717fa718a0df7fe63e30f87f5b9938` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
+
+- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42961639074), delivered verifier and independent source review.
+
+## Live capture and board readback
+
+The published pilot at planning `527dce9bd7847181a67dc23c6bb2c9844f15c87f` registered exactly one immutable #191 receipt. [Exact receipt](https://github.com/kburson/aitm/blob/527dce9bd7847181a67dc23c6bb2c9844f15c87f/.aitm/stories/001/191/attachments/timing/live-pilot-a06-191.json) SHA-256 `8d3bf226f4e47fac1153dad67b4ecae5fdbabb24ccbc73ebaf8ed9ae7d13076c`. Its exact replay was a no-op at the same planning commit. The recorded turn and its nested tool run are separately bounded in the receipt. The safe checkpoint source binds the switch to #192. #192 work stayed outside #191. An explicit owner request was observed and its response was not available at pilot publication. The pilot retains the missing-response gap and Owner wait Unknown.
+
+The baseline at planning `a23893955d7cedb68aabf3b216553b83c48472f2` and UTC cutoff `2026-11-11T04:43:31.905Z` has Unknown Actual and snapshot digest `72888c5ffdc7cc6e00ee2b8da6d006d6de73b59cb3e8a3738d7e71181ee21478`. A separate clean reader rebuilt the later pin at `2026-11-11T04:45:27Z`, snapshot digest `94a2c286b3de1bce4e49eb38cc1b35128ce470de83c644e65f843809a33f6fe9` and validation digest `80a1adbe65515b073b01aa49bf02c5e2982b93a8af32f75527fdff724afa7803`. The later snapshot shows one #191 contribution of 4891 ms. The nested 3896 ms tool interval is counted once inside that value. Actual coverage is Partial through `2026-11-11T04:43:35.855Z`. Calibration is ineligible. Cost is Unknown.
+
+[AITM-PY board](https://github.com/users/kburson/projects/24) readback at the verified item for #191, using the bound later snapshot. The first interruption stopped after the interim marker, and the second after writing Actual. Each resume rechecked issue identity, scoped planning inputs, the exact snapshot and validation binding, and all three field values.
+
+| Readback | Actual | Actual coverage | Cost |
+| --- | --- | --- | --- |
+| Original | Blank | Blank | Blank |
+| First interruption and resume | Blank | Pending verification | Blank |
+| Second interruption and resume | 0.0014 h | Pending verification | Blank |
+| Final and independent readback | 0.0014 h | Partial. Verified #191 pilot through 2026-11-11T04:43:35.855000Z. | Blank |
