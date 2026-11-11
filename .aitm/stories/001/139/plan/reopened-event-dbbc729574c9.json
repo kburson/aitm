@@ -1,0 +1,23 @@
+{
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "canonical_run_and_first_attempt_creation_time_agree": true,
+  "check_suite_id": 116615977198,
+  "event": "pull_request.reopened",
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "pr": 197,
+  "pr_state_after": "open",
+  "previous_attempt": 3,
+  "previous_attempt_signed_evidence_sha256": "052d7bdc9826cb9d141a2c63992774f7581743300823615d943928addf2b7645",
+  "previous_attempt_trusted_verifier_hold_sha256": "e33097a08872f055f19447221e0626e13e9df4d3f01ec4b53ea88e60d487d9c7",
+  "previous_run_id": 43058239273,
+  "previous_tested_commit": "59a03a1942401d2f462c11e548ad74b1d73beeaf",
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/43062845686/attempts/1",
+  "run_attempt": 1,
+  "run_id": 43062845686,
+  "story": 139,
+  "target": "trunk",
+  "tested_commit": "cddd5d3d830769f48850a67479952df15fc18e76",
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "workflow_id": 412848571
+}

@@ -1,0 +1,94 @@
+{
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "base_failure": {
+    "actual_hosted_trigger": "unverified",
+    "case": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_decoder_rejects_malformed_or_unowned_shape[mixed]",
+    "errors": 1,
+    "observed_refusal": "BoundaryUnavailable: Native capture position is unavailable",
+    "passed": 1069,
+    "path": "NativeScopeFixture -> Registry.verify_boundary -> Registry._native_delta -> _capture_position",
+    "raw_log_sha256": "bd6eed64afc532931e4425c2d14ca6e85e38adc8a09f007868c3485ce49df95b",
+    "same_fixed_position_refusal_as_original_pr_attempt_1_and_209_attempt_3": true,
+    "stage": "fixture setup"
+  },
+  "conclusion": "failure",
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "jobs": [
+    {
+      "conclusion": "success",
+      "id": 130669770386,
+      "name": "python"
+    },
+    {
+      "conclusion": "success",
+      "id": 130669770750,
+      "name": "file-checks"
+    },
+    {
+      "conclusion": "success",
+      "id": 130669770940,
+      "name": "quality"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130669771028,
+      "name": "python-base"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130677435298,
+      "name": "collect-evidence"
+    },
+    {
+      "conclusion": "skipped",
+      "id": 130677509998,
+      "name": "aitm-ci"
+    }
+  ],
+  "live_pr_state": "open",
+  "live_story_status": "Test",
+  "local_earlier_exact_base_case": {
+    "log_sha256": "a680199a9f8bbdbbd86292be80e8651989af9b8056faf49a849e492611c62f2e",
+    "observed_refusal": "BoundaryUnavailable: Native capture frontier is unavailable",
+    "stage": "fixture setup at frontier creation",
+    "trigger": "unverified"
+  },
+  "local_serial_exact_case": {
+    "base": {
+      "failed": 0,
+      "log_sha256": "0d70d5e3025d41820ee8d7865e5ffaa062debd9f4fd30ca4b26f7820dfb180f9",
+      "passed": 1
+    },
+    "candidate": {
+      "failed": 0,
+      "log_sha256": "0c33791aa03cbc8826ba04efd1b062adb3baa875c47625e4de7090bd753d7635",
+      "passed": 1
+    }
+  },
+  "pr": 197,
+  "prior_signed_replay": {
+    "receipt_sha256": "052d7bdc9826cb9d141a2c63992774f7581743300823615d943928addf2b7645",
+    "run_attempt": 3,
+    "run_id": 43058239273,
+    "tested_commit": "59a03a1942401d2f462c11e548ad74b1d73beeaf",
+    "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+    "trusted_verifier_reason": "selected attempt identity or outcome disagrees",
+    "trusted_verifier_status": "hold"
+  },
+  "repository": "kburson/aitm",
+  "run": "https://github.com/kburson/aitm/actions/runs/43062845686/attempts/1",
+  "run_attempt": 1,
+  "run_id": 43062845686,
+  "signed_pr_evidence_available": false,
+  "status": "completed",
+  "story": 139,
+  "target": "trunk",
+  "tested_commit": "cddd5d3d830769f48850a67479952df15fc18e76",
+  "tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "trusted_verifier": {
+    "owner_disposition_reached": false,
+    "reason": "selected attempt is not complete and successful",
+    "receipt_sha256": "1daf8aee1e1fc6f58b4ae5ed3729adc01072d030338766eee72d225b676647be",
+    "status": "hold"
+  }
+}

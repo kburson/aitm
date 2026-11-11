@@ -1,0 +1,31 @@
+{
+  "additive_gate_classified_paths": {
+    "tools/ci/tests/test_tia_inventory.py": "fbe0e5e91472c15e36eb15ddf2e5c156902c8f7d",
+    "tools/ci/tia/inventory.py": "2f542dcdb9e6518c637d445fce673377d3dd34af",
+    "tools/ci/tia/suites.json": "e0d88968b23412c0f5594149d87e643554a0e9af"
+  },
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "current_trusted_verifier_reason": "selected attempt is not complete and successful",
+  "current_trusted_verifier_status": "hold",
+  "exact_tested_tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "existing_controls_matching_literal_target": {
+    "configuration": "8768e767deb75abaa0616da83e84de5d3df84508",
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "dcd6d66d140d4efe412193beb5bd2332db3d3e0e",
+    "observer": "839b73cdcc1e44f45af78bcebdbf53e9adfeee67",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "2f5796f589d8ed8ab32d6251969f47ee81ad3942",
+    "workflow": "96424d880798d78e1eae93fba4d748d4fe985792"
+  },
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "hosted_run_attempt": 1,
+  "hosted_run_id": 43062845686,
+  "owner_disposition": "pending",
+  "owner_disposition_reached": false,
+  "policy_story": 103,
+  "pr": 197,
+  "repository": "kburson/aitm",
+  "requested_owner_decision": "Approve the three additive TIA advisory inventory files under the existing #103 gate-control disposition rule for this exact tested tree.",
+  "story": 139,
+  "tested_commit": "cddd5d3d830769f48850a67479952df15fc18e76"
+}

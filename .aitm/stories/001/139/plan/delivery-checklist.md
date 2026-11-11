@@ -203,3 +203,29 @@ same PR is the #103-documented recovery. PR #197 remains open and
 #139 remains in Test.
 
 [Exact owner disposition scope](owner-disposition-scope-dbbc729574c9.json).
+
+## Fresh canonical PR event
+
+[PR #197](https://github.com/kburson/aitm/pull/197) was reopened using
+the [existing #103 procedure](../../103/design/github-ci-quality-gates-design.md).
+[Readback](reopened-event-dbbc729574c9.json) confirms an open PR with the
+same head and literal base. GitHub generated test merge
+`cddd5d3d830769f48850a67479952df15fc18e76` with the same ordered parents and reviewed
+tree `7d93353e06c8177c19bc1f918217e2f8ccf75da7`. The original run and its exact evidence
+remain above.
+
+The [fresh first attempt](https://github.com/kburson/aitm/actions/runs/43062845686/attempts/1) has a terminal
+[hosted receipt](hosted-ci-hold-dbbc729574c9-reopened.json). The candidate Python, quality and
+file checks passed. The [candidate receipt](candidate-python-receipt-dbbc729574c9-reopened.json)
+verified all 1,071 outcomes. Literal trunk failed during setup of
+`test_v2_decoder_rejects_malformed_or_unowned_shape[mixed]` with
+`Native capture position is unavailable`. Evidence collection failed
+and signing was skipped. The
+[trusted #103 verifier](verifier-hold-dbbc729574c9-reopened.json) reported
+`selected attempt is not complete and successful`. The proposed disposition is tied to the unchanged
+tree. It cannot clear the current evidence hold. The story remains
+in Test and the PR remains open.
+
+[Independent identity confirmation](source-review-attempt-5-reopened-ci-confirmation.md).
+
+[Exact #103 owner disposition scope](owner-disposition-scope-dbbc729574c9-reopened.json).

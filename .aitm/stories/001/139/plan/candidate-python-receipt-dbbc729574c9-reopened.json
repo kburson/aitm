@@ -1,0 +1,26 @@
+{
+  "archive_sha256": "48caaad6d3f169a964f904ced111e990961ca6a42e1326ae47184d3ee33b84bd",
+  "artifact_id": 13876185439,
+  "attempt": 1,
+  "candidate_nodes": 1071,
+  "coverage_lines": {
+    "helper": [
+      778,
+      821
+    ],
+    "product": [
+      10655,
+      11604
+    ]
+  },
+  "failed": 0,
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "job_id": 130669770386,
+  "required_children": [
+    "cli-help",
+    "service-one-shot"
+  ],
+  "run_id": 43062845686,
+  "same_ordered_nodes_and_reports_as_exact_local_coverage": true,
+  "tested_commit": "cddd5d3d830769f48850a67479952df15fc18e76"
+}
