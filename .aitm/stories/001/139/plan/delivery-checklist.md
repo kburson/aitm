@@ -252,3 +252,19 @@ head passed twice in separate pytest processes. Keep unit cases isolated,
 with independent fixtures and repeatable inputs. Integration cases may use
 internal components together and mock external services. Reserve live
 provider and cross-system connections for end-to-end validation.
+
+## Revalidation of the approved tree
+
+[Canonical attempt 2](https://github.com/kburson/aitm/actions/runs/43062845686/attempts/2)
+retained the approved tree, base, head, and test merge. The [terminal
+receipt](revalidation-hold-7d93353e06c8-a2.json) records 1,068 passing
+base tests and two setup errors in the native capture fixtures. Both
+failing cases passed in isolated local runs on the exact base and head.
+The affected test modules and `monitor_registry.py` are identical on
+those revisions. The hosted trigger remains unconfirmed.
+
+The candidate Python lane exceeded its eight-minute job limit. Quality
+and file checks passed. Evidence collection failed and signing was skipped.
+The deployed verifier and a diagnostic run of the patched verifier both
+held on the latest attempt's unsuccessful outcome. The earlier signed
+attempt remains historical. PR #197 stays open and #139 remains in Test.

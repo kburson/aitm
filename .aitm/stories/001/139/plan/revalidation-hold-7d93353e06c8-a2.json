@@ -1,0 +1,71 @@
+{
+  "base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "base_test_summary": {
+    "passed": 1068,
+    "setup_errors": {
+      "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_rewritten_common_prefix_cannot_create_a_content_dispute": "BoundaryUnavailable: Native capture position is unavailable",
+      "packages/aitm-usage/tests/test_monitor_scope.py::test_issued_route_disposition_requires_current_evidence[later-usage]": "BoundaryUnavailable: Native capture frontier is unavailable"
+    }
+  },
+  "candidate_python_annotation": "The job has exceeded the maximum execution time of 8m0s",
+  "check_suite_id": 116615977198,
+  "conclusion": "failure",
+  "head": "dbbc729574c9b078658af310b2efa2945020224f",
+  "isolated_local_replay": {
+    "base": "2 passed",
+    "head": "2 passed"
+  },
+  "jobs": [
+    {
+      "conclusion": "cancelled",
+      "id": 130725314269,
+      "name": "python"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130725314725,
+      "name": "python-base"
+    },
+    {
+      "conclusion": "success",
+      "id": 130725314925,
+      "name": "file-checks"
+    },
+    {
+      "conclusion": "success",
+      "id": 130725315008,
+      "name": "quality"
+    },
+    {
+      "conclusion": "failure",
+      "id": 130729885922,
+      "name": "collect-evidence"
+    },
+    {
+      "conclusion": "skipped",
+      "id": 130729958669,
+      "name": "aitm-ci"
+    }
+  ],
+  "patched_verifier_diagnostic": {
+    "reason": "selected attempt is not complete and successful",
+    "scope": "diagnostic only",
+    "status": "hold",
+    "verifier_revision": "64df4e773fe0bdfb52d2854b55ad40535758e6d3"
+  },
+  "pr": 197,
+  "repository": "kburson/aitm",
+  "run_attempt": 2,
+  "run_id": 43062845686,
+  "run_url": "https://github.com/kburson/aitm/actions/runs/43062845686/attempts/2",
+  "status": "completed",
+  "target": "trunk",
+  "tested_commit": "cddd5d3d830769f48850a67479952df15fc18e76",
+  "tested_tree": "7d93353e06c8177c19bc1f918217e2f8ccf75da7",
+  "trusted_verifier": {
+    "reason": "selected attempt is not complete and successful",
+    "status": "hold",
+    "verified_at": "2026-11-11T18:41:31.395189+00:00"
+  },
+  "workflow_id": 412848571
+}
