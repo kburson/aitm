@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 227
 title: "[#181 C01] Pin producer capabilities and shared acceptance fixtures"
 kind: "story"
-state: "test"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/227"
 parent: 181
 children: []
 blocking: []
 blocked-by: [193]
 created: "2026-11-11T14:02:13Z"
-updated: "2026-11-11T14:10:08Z"
+updated: "2026-11-11T14:12:20Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2.25, "size": "S"}
 priority: "P1"
