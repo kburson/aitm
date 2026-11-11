@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 188
 title: "[#181 A03] Compute workflow timing and epic totals"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/188"
 parent: 181
 children: []
 blocking: [190]
 blocked-by: [187]
 created: "2026-11-10T21:02:16Z"
-updated: "2026-11-11T04:12:06Z"
+updated: "2026-11-11T04:17:51Z"
 last-branch: "codex/aitm-188-timing-rollups"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"

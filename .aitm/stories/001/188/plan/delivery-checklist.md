@@ -12,8 +12,11 @@ Attempt 1. Implementer is the assigned Codex agent. Closure owner is the coordin
 
 [Source PR #213](https://github.com/kburson/aitm/pull/213) targets trunk base `f7646bc4da35173e9b0e468e4810b4e9265b0f47`. Exact head `f557062c55dafb02990b02480d88213163eac094` and tree `0df8ed8cfebd9b597d20e6c4851f060cfada0618` contain only the reviewed story paths. Focused dashboard tests, the full dashboard suite, Ruff, and whitespace checks passed on the clean checkout.
 
-- [ ] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42957581045), delivered verifier and independent source review.
+- [x] [Hosted CI](https://github.com/kburson/aitm/actions/runs/42957581045/attempts/1) and [delivered verifier](hosted-verification-2.json) passed.
+- [ ] Independent source review.
 
 Exact local proof retained historical and current planning pins, all ten direct and inclusive legacy totals, 114 seed intervals with no same-actor overlap, the seed's watermark, and #111's 774000 ms implementation elapsed with all-phase Unknown. An independent preliminary check found unresolved wait scope, stale attempts and ambiguous endpoints, gaps from held work affecting independent timing measures, and missing all-phase age for open planning states. The author reproduced and corrected each case, and added regression coverage before this candidate.
 
 An additional review regression covers tied implementation starts in distinct attempts and requires Unknown when no authoritative Develop selects one. A valid authoritative Develop continues to pair its own Done. Both planning pins retain exact historical parity after this correction.
+
+The signed candidate matches tested merge `24239fc92359801b53d157361f8510cc0a29dd3a`, with the ordered base/head parents and the exact tree above.
