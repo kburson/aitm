@@ -272,3 +272,14 @@ attempt remains historical. PR #197 stays open and #139 remains in Test.
 [Runtime and fixture diagnosis](2026-11-11-139-ci-runtime-diagnosis.md)
 records the hosted timeout, the reproduced capture failures, and the
 local serial-versus-worker comparison for this exact tree.
+
+## Owner-directed hold before a new #197 run
+
+Keep #197 on hold until private fixture roots are delivered for both
+Python lanes and separate hosted qualification passes under the existing
+eight-minute job limit. The hosted proof covers the complete candidate
+Python job through wheel smoke and artifact publication, a passing
+isolated base lane, and the exact-attempt signed gate. After both
+prerequisites pass, refresh #197 to current trunk and perform its own
+required validation. Retain the failed attempts and exact-tree owner
+disposition as evidence. #139 stays in Test while the hold is active.

@@ -32,6 +32,35 @@ Recheck it at the leaf's own refinement and JIT. The parent plan
 defines this leaf's boundaries. Its own applicable design, plan, JIT,
 dependency proof, and implementation authority govern pickup.
 
+## Qualification amendment
+
+Apply the [#133 execution and selection amendment](../133/plan/2026-11-11-133-test-execution-and-advisory-selection.md).
+Add the following comparisons to the existing qualification report.
+
+- [ ] Compare the local serial reference with `pytest-xdist` using
+  `max(1, floor(0.8 × available_cores))` workers for eligible Python tests.
+  Record available cores, worker count, elapsed time, fixture isolation,
+  test IDs and outcomes, line and branch coverage, and required child
+  coverage. Exercise the one-worker floor and integer rounding.
+- [ ] Run hosted shards as distinct jobs on separate ephemeral instances.
+  Compare full serial, full sharded, and selected runs on the same
+  candidate and compatible runner scopes. Record per-job setup and
+  execution, total elapsed time, queue time, p50/p95, and runner cost.
+  Preserve the 3/6/10-minute envelopes and require complete same-attempt
+  inventory, outcomes, coverage, and child evidence.
+- [ ] Compare `pytest-testmon` suggestions and any ordering benefit with
+  the trusted selector and full-run results. Report added candidates,
+  missed impacts, extra tests, cache/collection overhead, and net time
+  saved. Include a Python edit, a non-code fixture or configuration
+  change, and missing or incompatible history. Show that uncertain
+  impact still runs the full applicable suite even when testmon suggests
+  no tests. The report grants testmon no gate authority.
+
+Use the existing #172 estimate and predecessors for planning. Recheck the
+qualification recipe and estimate at refinement before dispatch. The
+[#197 hold](../139/plan/delivery-checklist.md) and #159's blockers apply
+independently of this qualification work.
+
 ## Accepted plan excerpt
 
 ### T35. Measure selection and sharding qualification — 3h, P2, T06/T34

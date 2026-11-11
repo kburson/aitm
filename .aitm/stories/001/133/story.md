@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -48,6 +48,16 @@ continue under their normal target rules.
 
 The original exact reviews below retain their historical scope.
 Changed leaves require replan and review before pickup. #159 stays blocked.
+
+## Test execution and advisory selection amendment
+
+Use `pytest-xdist` with 80% of available cores for eligible local Python
+TIA tests. Run hosted shards on separate ephemeral instances. Evaluate
+`pytest-testmon` as advisory evidence in [#172](../172/story.md). Keep the
+full-suite fallback for uncertain impact and the [#197 delivery hold](../139/plan/delivery-checklist.md).
+
+[Design amendment](design/2026-11-11-133-test-execution-and-advisory-selection-design.md)
+· [Implementation plan amendment](plan/2026-11-11-133-test-execution-and-advisory-selection.md).
 
 ## Design review
 
