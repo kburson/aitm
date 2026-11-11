@@ -1,0 +1,1831 @@
+{
+  "159_blockers": {
+    "157": "open",
+    "158": "open"
+  },
+  "actor": {
+    "collaborators": [
+      "kburson"
+    ],
+    "id": 1082467,
+    "login": "kburson"
+  },
+  "automation_preflight": {
+    "account_installed_app_labels": [
+      "ChatGPT Codex Connector",
+      "Claude"
+    ],
+    "active_workflows": [
+      ".github/workflows/ci.yml"
+    ],
+    "app_configuration_readback": "Installed app list observed. Claude installation detail timed out. Prior temporary-ref trial recorded no scheduled Claude tasks or fixture session attachments. Current PR created without agent attachment or auto-merge.",
+    "deviation": "The Claude installation detail timed out. The driver continued after reading the active workflow, repository webhooks, installed-app labels and prior trial context. This did not meet the JIT requirement to exclude possible out-of-scope external app actions before mutation. Terminal no-activity observations are separate and do not complete that preflight.",
+    "disposition": "partial; current external-app scoping was not verified before fixture writes",
+    "fixture_tree": "one marker file, no workflows",
+    "known_pr_events": [
+      "opened",
+      "synchronize",
+      "reopened"
+    ],
+    "production_push_filter": "trunk",
+    "read_only_retry": "Initial effective planning rules read returned no HTTP response. A later authenticated read succeeded before fixture creation. No write had been dispatched on the first invocation.",
+    "repository_webhooks": 0,
+    "trunk": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+    "workflow_sha256": "cf79e3cf30d497fc06a271a45a4ddcfb720bfd57e97a2e4c89ad4d8d967760ec"
+  },
+  "cleanup": {
+    "fixture_refs_after": {
+      "flag": null,
+      "head": null,
+      "objects": null,
+      "target": null
+    },
+    "fixture_ruleset_absent": true,
+    "post_blockers": {
+      "157": "open",
+      "158": "open"
+    },
+    "pr_closed_and_merged": true,
+    "production_snapshots_match": true,
+    "status": "verified"
+  },
+  "disposition": "unqualified for production: positive bounded atomic-ref and PR-only fixture behavior; exact PR authorization and independent writer/reviewer/check roles unproved",
+  "fixture": {
+    "creation": {
+      "error": "",
+      "exit": 0,
+      "readback": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "af2feea41f30bf44492a4905eb074142000d9000"
+      },
+      "response": "To github.com:kburson/aitm.git\n*\taf2feea41f30bf44492a4905eb074142000d9000:refs/heads/codex/158-atomic-b0f8ac7-target\t[new branch]\n*\t6f43cd7da9a08e5565b2f7fc3bed935928c634e2:refs/heads/codex/158-atomic-b0f8ac7-head\t[new branch]\n*\ted84bb65a87858f09981f00da681bed37b983520:refs/heads/codex/158-atomic-b0f8ac7-flag\t[new branch]\n*\t0bef05fcebd446b434d5505b1c9111ff74e22409:refs/heads/codex/158-atomic-b0f8ac7-objects\t[new branch]\nDone\n"
+    },
+    "deletion": {
+      "error": "",
+      "exit": 0,
+      "response": "To github.com:kburson/aitm.git\n-\t:refs/heads/codex/158-atomic-b0f8ac7-flag\t[deleted]\n-\t:refs/heads/codex/158-atomic-b0f8ac7-head\t[deleted]\n-\t:refs/heads/codex/158-atomic-b0f8ac7-objects\t[deleted]\n-\t:refs/heads/codex/158-atomic-b0f8ac7-target\t[deleted]\nDone\n"
+    },
+    "initial": {
+      "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+      "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+      "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+      "target": "af2feea41f30bf44492a4905eb074142000d9000"
+    },
+    "objects": {
+      "B0": {
+        "oid": "af2feea41f30bf44492a4905eb074142000d9000",
+        "parents": [
+          "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "B1": {
+        "oid": "edc76a9b96421559614894d6378e359ed100108b",
+        "parents": [
+          "af2feea41f30bf44492a4905eb074142000d9000"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "F0": {
+        "oid": "ed84bb65a87858f09981f00da681bed37b983520",
+        "parents": [
+          "af2feea41f30bf44492a4905eb074142000d9000"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "FG": {
+        "oid": "53c2ef635e13db7cc92e8af853b002ac4822ea49",
+        "parents": [
+          "3fe17178e96539d2c874d206170c1c180d29a609"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "FH1": {
+        "oid": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "parents": [
+          "6104387642c9f3177e4ec6a825d94f064902e437"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "FO1": {
+        "oid": "6104387642c9f3177e4ec6a825d94f064902e437",
+        "parents": [
+          "ed84bb65a87858f09981f00da681bed37b983520"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "FO2": {
+        "oid": "4a27d5c99d0bf97f75def7c23254d1fccceae7f0",
+        "parents": [
+          "9799015bf7f99c2edf8fec37393b624e8f6d15f8"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "H0": {
+        "oid": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "parents": [
+          "edc76a9b96421559614894d6378e359ed100108b"
+        ],
+        "tree": "0397f8cbb297abe6738549d9b29acec51f42f6db"
+      },
+      "H1": {
+        "oid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "parents": [
+          "6f43cd7da9a08e5565b2f7fc3bed935928c634e2"
+        ],
+        "tree": "23817501b80d83c9e1aff57cb74252cc147819c6"
+      },
+      "H2": {
+        "oid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "parents": [
+          "039338bcfc14694377e1346ecb3c0747ac50cbcb"
+        ],
+        "tree": "b8acf66c97d18031bf5e06f32d23463661726455"
+      },
+      "H3": {
+        "oid": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+        "parents": [
+          "bc5b7435db053ee2f36ddc13cd77a18b06963120"
+        ],
+        "tree": "e53d00bc7507e47add7be1fda0ee1aed694bd1e6"
+      },
+      "M0": {
+        "oid": "ca3290360871d59138f699e9590618a340f35b8c",
+        "parents": [
+          "af2feea41f30bf44492a4905eb074142000d9000",
+          "6f43cd7da9a08e5565b2f7fc3bed935928c634e2"
+        ],
+        "tree": "0397f8cbb297abe6738549d9b29acec51f42f6db"
+      },
+      "M1": {
+        "oid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+        "parents": [
+          "edc76a9b96421559614894d6378e359ed100108b",
+          "039338bcfc14694377e1346ecb3c0747ac50cbcb"
+        ],
+        "tree": "23817501b80d83c9e1aff57cb74252cc147819c6"
+      },
+      "M2": {
+        "oid": "b4edf7ca2f3fe6a647ff6a6dc4f96171ddd7c347",
+        "parents": [
+          "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+          "bc5b7435db053ee2f36ddc13cd77a18b06963120"
+        ],
+        "tree": "b8acf66c97d18031bf5e06f32d23463661726455"
+      },
+      "M3a": {
+        "oid": "595fab23785db4c7e063fb452a2727f943362a2d",
+        "parents": [
+          "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+          "877d2608e7fb751fb65dba7cee5f29d38a4e21a0"
+        ],
+        "tree": "e53d00bc7507e47add7be1fda0ee1aed694bd1e6"
+      },
+      "M3b": {
+        "oid": "425450f81c3d6cf8fb6bde39075ee74085ae9068",
+        "parents": [
+          "b4edf7ca2f3fe6a647ff6a6dc4f96171ddd7c347",
+          "877d2608e7fb751fb65dba7cee5f29d38a4e21a0"
+        ],
+        "tree": "e53d00bc7507e47add7be1fda0ee1aed694bd1e6"
+      },
+      "R0": {
+        "oid": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+        "parents": [
+          "9799015bf7f99c2edf8fec37393b624e8f6d15f8"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "RH": {
+        "oid": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+        "parents": [
+          "25811b279757657a2c17ab3ec9176bbd97c1a8b1"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "RO": {
+        "oid": "3fe17178e96539d2c874d206170c1c180d29a609",
+        "parents": [
+          "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+          "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      },
+      "carrier": {
+        "oid": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "parents": [
+          "ca3290360871d59138f699e9590618a340f35b8c",
+          "595fab23785db4c7e063fb452a2727f943362a2d",
+          "425450f81c3d6cf8fb6bde39075ee74085ae9068",
+          "4a27d5c99d0bf97f75def7c23254d1fccceae7f0",
+          "53c2ef635e13db7cc92e8af853b002ac4822ea49"
+        ],
+        "tree": "b1ca1ce57e67d0783ca6c8974376246503474e6d"
+      }
+    },
+    "observed_automation": {
+      "comments": 0,
+      "head_check_runs": 0,
+      "reviews": 0,
+      "workflow_runs": 0
+    },
+    "pr_after": {
+      "draft": false,
+      "html_url": "https://github.com/kburson/aitm/pull/243",
+      "mergeable": null,
+      "mergeable_state": "unknown",
+      "merged": false,
+      "number": 243,
+      "state": "open"
+    },
+    "pr_before": {
+      "auto_merge": null,
+      "base": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+      "draft": false,
+      "head": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+      "html_url": "https://github.com/kburson/aitm/pull/243",
+      "mergeable": true,
+      "mergeable_state": "clean",
+      "merged": false,
+      "node_id": "PR_kwDOVnNyI88AAAABObTL0w",
+      "number": 243,
+      "state": "open"
+    },
+    "pr_terminal": {
+      "auto_merge": null,
+      "html_url": "https://github.com/kburson/aitm/pull/243",
+      "merge_commit_sha": "595fab23785db4c7e063fb452a2727f943362a2d",
+      "merged": true,
+      "merged_at": "2026-11-11T16:34:18Z",
+      "merged_by": "kburson",
+      "number": 243,
+      "state": "closed"
+    },
+    "rule": {
+      "definition": {
+        "_links": {
+          "html": {
+            "href": "https://github.com/kburson/aitm/rules/27046475"
+          },
+          "self": {
+            "href": "https://api.github.com/repos/kburson/aitm/rulesets/27046475"
+          }
+        },
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/codex/158-atomic-b0f8ac7-target"
+            ]
+          }
+        },
+        "created_at": "2026-11-11T10:34:05.314-06:00",
+        "current_user_can_bypass": "never",
+        "enforcement": "active",
+        "id": 27046475,
+        "name": "#158 atomic qualification codex/158-atomic-b0f8ac7-",
+        "node_id": "RRS_lACqUmVwb3NpdG9yec5Wc3IjzgGcsks",
+        "rules": [
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "type": "pull_request"
+          }
+        ],
+        "source": "kburson/aitm",
+        "source_type": "Repository",
+        "target": "branch",
+        "updated_at": "2026-11-11T10:34:05.342-06:00"
+      },
+      "effective": [
+        {
+          "parameters": {
+            "allowed_merge_methods": [
+              "merge",
+              "squash",
+              "rebase"
+            ],
+            "dismiss_stale_reviews_on_push": false,
+            "require_code_owner_review": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 0,
+            "required_review_thread_resolution": false,
+            "required_reviewers": []
+          },
+          "ruleset_id": 27046475,
+          "ruleset_source": "kburson/aitm",
+          "ruleset_source_type": "Repository",
+          "type": "pull_request"
+        }
+      ],
+      "id": 27046475
+    },
+    "rule_suite": {
+      "actor_name": "kburson",
+      "after_sha": "595fab23785db4c7e063fb452a2727f943362a2d",
+      "before_sha": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+      "id": 5050237373,
+      "ref": "refs/heads/codex/158-atomic-b0f8ac7-target",
+      "result": "pass",
+      "rule_evaluations": [
+        {
+          "enforcement": "deleted ruleset",
+          "result": "pass",
+          "rule_source": {
+            "type": "ruleset"
+          },
+          "rule_type": "pull_request"
+        }
+      ]
+    }
+  },
+  "fixture_refs": {
+    "flag": "refs/heads/codex/158-atomic-b0f8ac7-flag",
+    "head": "refs/heads/codex/158-atomic-b0f8ac7-head",
+    "objects": "refs/heads/codex/158-atomic-b0f8ac7-objects",
+    "target": "refs/heads/codex/158-atomic-b0f8ac7-target"
+  },
+  "jit_sha256": "21f934521af0608a091018a50b52905b0a2e600b863d9095a59337e37bfb9f80",
+  "operations": [
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "advance-base",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-base",
+            "refUpdates": [
+              {
+                "afterOid": "edc76a9b96421559614894d6378e359ed100108b",
+                "beforeOid": "af2feea41f30bf44492a4905eb074142000d9000",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7C2:11B469:12F5BBA:3B472A1:6AF498E1",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-base"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "gh: Something went wrong while executing your query on 2026-11-11T16:33:40Z. Please include `C7CC:13BAFC:123E74D:395836C:6AF498E3` when reporting this issue.",
+      "exit": 1,
+      "http": 200,
+      "label": "stale-base",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-stale-base",
+            "refUpdates": [
+              {
+                "afterOid": "ca3290360871d59138f699e9590618a340f35b8c",
+                "beforeOid": "af2feea41f30bf44492a4905eb074142000d9000",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+                "beforeOid": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "6104387642c9f3177e4ec6a825d94f064902e437",
+                "beforeOid": "ed84bb65a87858f09981f00da681bed37b983520",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7CC:13BAFC:123E74D:395836C:6AF498E3",
+      "response": {
+        "errors": [
+          {
+            "message": "Something went wrong while executing your query on 2026-11-11T16:33:40Z. Please include `C7CC:13BAFC:123E74D:395836C:6AF498E3` when reporting this issue."
+          }
+        ]
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "gh: Something went wrong while executing your query on 2026-11-11T16:33:43Z. Please include `C7D5:144B98:11E0272:3831EC8:6AF498E6` when reporting this issue.",
+      "exit": 1,
+      "http": 200,
+      "label": "stale-head",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-stale-head",
+            "refUpdates": [
+              {
+                "afterOid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+                "beforeOid": "edc76a9b96421559614894d6378e359ed100108b",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "beforeOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "6104387642c9f3177e4ec6a825d94f064902e437",
+                "beforeOid": "ed84bb65a87858f09981f00da681bed37b983520",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7D5:144B98:11E0272:3831EC8:6AF498E6",
+      "response": {
+        "errors": [
+          {
+            "message": "Something went wrong while executing your query on 2026-11-11T16:33:43Z. Please include `C7D5:144B98:11E0272:3831EC8:6AF498E6` when reporting this issue."
+          }
+        ]
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "advance-head",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-head",
+            "refUpdates": [
+              {
+                "afterOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "beforeOid": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7DA:205F8:11FA26F:3873145:6AF498E8",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-head"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "exact-positive",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-exact-positive",
+            "refUpdates": [
+              {
+                "afterOid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+                "beforeOid": "edc76a9b96421559614894d6378e359ed100108b",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "beforeOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "6104387642c9f3177e4ec6a825d94f064902e437",
+                "beforeOid": "ed84bb65a87858f09981f00da681bed37b983520",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7E1:C46E0:12367D7:391C7C7:6AF498EA",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-exact-positive"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "gh: Something went wrong while executing your query on 2026-11-11T16:33:50Z. Please include `C7E9:1BCB13:136022A:3CC105B:6AF498ED` when reporting this issue.",
+      "exit": 1,
+      "http": 200,
+      "label": "stale-hold-after-merge",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-stale-hold-after-merge",
+            "refUpdates": [
+              {
+                "afterOid": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+                "beforeOid": "ed84bb65a87858f09981f00da681bed37b983520",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7E9:1BCB13:136022A:3CC105B:6AF498ED",
+      "response": {
+        "errors": [
+          {
+            "message": "Something went wrong while executing your query on 2026-11-11T16:33:50Z. Please include `C7E9:1BCB13:136022A:3CC105B:6AF498ED` when reporting this issue."
+          }
+        ]
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "hold-after-merge",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-hold-after-merge",
+            "refUpdates": [
+              {
+                "afterOid": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+                "beforeOid": "6104387642c9f3177e4ec6a825d94f064902e437",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7ED:70693:119AA67:3744C9C:6AF498EF",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-hold-after-merge"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "advance-next-head",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-next-head",
+            "refUpdates": [
+              {
+                "afterOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "beforeOid": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C7FD:22157E:122E703:3916FB1:6AF498F1",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-next-head"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "gh: Something went wrong while executing your query on 2026-11-11T16:33:57Z. Please include `C80C:229D42:12B0358:3A9893A:6AF498F4` when reporting this issue.",
+      "exit": 1,
+      "http": 200,
+      "label": "stale-ordinary-after-hold",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-stale-ordinary-after-hold",
+            "refUpdates": [
+              {
+                "afterOid": "b4edf7ca2f3fe6a647ff6a6dc4f96171ddd7c347",
+                "beforeOid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "beforeOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "4a27d5c99d0bf97f75def7c23254d1fccceae7f0",
+                "beforeOid": "6104387642c9f3177e4ec6a825d94f064902e437",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C80C:229D42:12B0358:3A9893A:6AF498F4",
+      "response": {
+        "errors": [
+          {
+            "message": "Something went wrong while executing your query on 2026-11-11T16:33:57Z. Please include `C80C:229D42:12B0358:3A9893A:6AF498F4` when reporting this issue."
+          }
+        ]
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "prepare-competing-dispatch",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-prepare-competing-dispatch",
+            "refUpdates": [
+              {
+                "afterOid": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+                "beforeOid": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C812:17777F:1347D3E:3C478F4:6AF498F6",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-prepare-competing-dispatch"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "race-hold",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-race-hold",
+            "refUpdates": [
+              {
+                "afterOid": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+                "beforeOid": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C817:2B7DF3:112EFC5:35F4E4B:6AF498F8",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-race-hold"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "gh: Something went wrong while executing your query on 2026-11-11T16:34:01Z. Please include `C818:7CCF9:11D8BAA:3806722:6AF498F8` when reporting this issue.",
+      "exit": 1,
+      "http": 200,
+      "label": "race-ordinary",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-race-ordinary",
+            "refUpdates": [
+              {
+                "afterOid": "b4edf7ca2f3fe6a647ff6a6dc4f96171ddd7c347",
+                "beforeOid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "beforeOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "3fe17178e96539d2c874d206170c1c180d29a609",
+                "beforeOid": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C818:7CCF9:11D8BAA:3806722:6AF498F8",
+      "response": {
+        "errors": [
+          {
+            "message": "Something went wrong while executing your query on 2026-11-11T16:34:01Z. Please include `C818:7CCF9:11D8BAA:3806722:6AF498F8` when reporting this issue."
+          }
+        ]
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "advance-pr-fixture-head",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-pr-fixture-head",
+            "refUpdates": [
+              {
+                "afterOid": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+                "beforeOid": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C81D:17777F:134A77E:3C4FEC7:6AF498FB",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-advance-pr-fixture-head"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "repos/kburson/aitm/rulesets",
+      "error": "",
+      "exit": 0,
+      "http": 201,
+      "label": "create-fixture-rule",
+      "method": "POST",
+      "request": {
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/codex/158-atomic-b0f8ac7-target"
+            ]
+          }
+        },
+        "enforcement": "active",
+        "name": "#158 atomic qualification codex/158-atomic-b0f8ac7-",
+        "rules": [
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "type": "pull_request"
+          }
+        ],
+        "target": "branch"
+      },
+      "request_id": "C821:1ADCF7:10BA22D:3488F5A:6AF498FD",
+      "response": {
+        "bypass_actors": [],
+        "conditions": {
+          "ref_name": {
+            "exclude": [],
+            "include": [
+              "refs/heads/codex/158-atomic-b0f8ac7-target"
+            ]
+          }
+        },
+        "enforcement": "active",
+        "id": 27046475,
+        "name": "#158 atomic qualification codex/158-atomic-b0f8ac7-",
+        "rules": [
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "type": "pull_request"
+          }
+        ],
+        "target": "branch"
+      }
+    },
+    {
+      "endpoint": "repos/kburson/aitm/pulls",
+      "error": "",
+      "exit": 0,
+      "http": 201,
+      "label": "create-fixture-pr",
+      "method": "POST",
+      "request": {
+        "base": "codex/158-atomic-b0f8ac7-target",
+        "body": "Temporary synthetic #158 proof. Fixture refs only. The fixture tree has no workflows or product code.",
+        "draft": false,
+        "head": "codex/158-atomic-b0f8ac7-head",
+        "title": "[#158 fixture] Atomic PR rule qualification"
+      },
+      "request_id": "C82E:321CDE:1282700:3A31E1D:6AF49900",
+      "response": {
+        "auto_merge": null,
+        "base": {
+          "ref": "codex/158-atomic-b0f8ac7-target",
+          "sha": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+        },
+        "draft": false,
+        "head": {
+          "ref": "codex/158-atomic-b0f8ac7-head",
+          "sha": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0"
+        },
+        "html_url": "https://github.com/kburson/aitm/pull/243",
+        "node_id": "PR_kwDOVnNyI88AAAABObTL0w",
+        "number": 243,
+        "state": "open"
+      }
+    },
+    {
+      "endpoint": "graphql",
+      "error": "",
+      "exit": 0,
+      "http": 200,
+      "label": "protected-candidate",
+      "method": "POST",
+      "request": {
+        "query": "mutation($input:UpdateRefsInput!){\n  updateRefs(input:$input){clientMutationId}\n}",
+        "variables": {
+          "input": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-protected-candidate",
+            "refUpdates": [
+              {
+                "afterOid": "595fab23785db4c7e063fb452a2727f943362a2d",
+                "beforeOid": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-target"
+              },
+              {
+                "afterOid": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+                "beforeOid": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-head"
+              },
+              {
+                "afterOid": "53c2ef635e13db7cc92e8af853b002ac4822ea49",
+                "beforeOid": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+                "force": false,
+                "name": "refs/heads/codex/158-atomic-b0f8ac7-flag"
+              }
+            ],
+            "repositoryId": "R_kgDOVnNyIw"
+          }
+        }
+      },
+      "request_id": "C844:230F38:120135B:38B942D:6AF49907",
+      "response": {
+        "data": {
+          "updateRefs": {
+            "clientMutationId": "codex/158-atomic-b0f8ac7-protected-candidate"
+          }
+        }
+      }
+    },
+    {
+      "endpoint": "repos/kburson/aitm/rulesets/27046475",
+      "error": "",
+      "exit": 0,
+      "http": 204,
+      "label": "delete-fixture-rule",
+      "method": "DELETE",
+      "request": null,
+      "request_id": "C84C:1005CA:12699C3:39D2897:6AF4990C",
+      "response": null
+    }
+  ],
+  "outcomes": {
+    "advance-base": {
+      "after": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "before": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "af2feea41f30bf44492a4905eb074142000d9000"
+      },
+      "success": true
+    },
+    "advance-head": {
+      "after": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "before": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "success": true
+    },
+    "advance-next-head": {
+      "after": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": true
+    },
+    "advance-pr-fixture-head": {
+      "after": {
+        "flag": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+        "head": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": true
+    },
+    "competing-dispatch": {
+      "after": {
+        "flag": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "hold_success": true,
+      "ordinary_success": false
+    },
+    "exact-positive": {
+      "after": {
+        "flag": "6104387642c9f3177e4ec6a825d94f064902e437",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "success": true
+    },
+    "hold-after-merge": {
+      "after": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "6104387642c9f3177e4ec6a825d94f064902e437",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": true
+    },
+    "prepare-competing-dispatch": {
+      "after": {
+        "flag": "25811b279757657a2c17ab3ec9176bbd97c1a8b1",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": true
+    },
+    "protected-candidate": {
+      "after": {
+        "flag": "53c2ef635e13db7cc92e8af853b002ac4822ea49",
+        "head": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "595fab23785db4c7e063fb452a2727f943362a2d"
+      },
+      "before": {
+        "flag": "962c0ad8a55b7d9b2e14a46f54ec5ab8d2ab0e21",
+        "head": "877d2608e7fb751fb65dba7cee5f29d38a4e21a0",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": true
+    },
+    "stale-base": {
+      "after": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "before": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "success": false
+    },
+    "stale-head": {
+      "after": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "before": {
+        "flag": "ed84bb65a87858f09981f00da681bed37b983520",
+        "head": "6f43cd7da9a08e5565b2f7fc3bed935928c634e2",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "edc76a9b96421559614894d6378e359ed100108b"
+      },
+      "success": false
+    },
+    "stale-hold-after-merge": {
+      "after": {
+        "flag": "6104387642c9f3177e4ec6a825d94f064902e437",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "6104387642c9f3177e4ec6a825d94f064902e437",
+        "head": "039338bcfc14694377e1346ecb3c0747ac50cbcb",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": false
+    },
+    "stale-ordinary-after-hold": {
+      "after": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "before": {
+        "flag": "9799015bf7f99c2edf8fec37393b624e8f6d15f8",
+        "head": "bc5b7435db053ee2f36ddc13cd77a18b06963120",
+        "objects": "0bef05fcebd446b434d5505b1c9111ff74e22409",
+        "target": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8"
+      },
+      "success": false
+    }
+  },
+  "repository": {
+    "id": 1450406435,
+    "name": "kburson/aitm",
+    "node_id": "R_kgDOVnNyIw"
+  },
+  "schema": "aitm.tia.merge-fence-temporary-trial/v1",
+  "snapshots": {
+    "after": {
+      "classic": {
+        "planning": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        },
+        "trunk": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        }
+      },
+      "definitions": {
+        "planning": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/planning"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821812,
+          "name": "aitm: protect planning",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        "trunk": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/trunk"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821811,
+          "name": "aitm: protect trunk",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "parameters": {
+                "allowed_merge_methods": [
+                  "merge",
+                  "squash",
+                  "rebase"
+                ],
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_extra_approval_for_unattributed_changes": true,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": false,
+                "required_reviewers": []
+              },
+              "type": "pull_request"
+            }
+          ],
+          "target": "branch"
+        }
+      },
+      "effective": {
+        "planning": [
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "required_linear_history"
+          }
+        ],
+        "trunk": [
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "pull_request"
+          }
+        ]
+      },
+      "settings": {
+        "allow_auto_merge": false,
+        "allow_merge_commit": true,
+        "allow_rebase_merge": true,
+        "allow_squash_merge": true,
+        "delete_branch_on_merge": false
+      }
+    },
+    "before": {
+      "classic": {
+        "planning": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        },
+        "trunk": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        }
+      },
+      "definitions": {
+        "planning": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/planning"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821812,
+          "name": "aitm: protect planning",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        "trunk": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/trunk"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821811,
+          "name": "aitm: protect trunk",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "parameters": {
+                "allowed_merge_methods": [
+                  "merge",
+                  "squash",
+                  "rebase"
+                ],
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_extra_approval_for_unattributed_changes": true,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": false,
+                "required_reviewers": []
+              },
+              "type": "pull_request"
+            }
+          ],
+          "target": "branch"
+        }
+      },
+      "effective": {
+        "planning": [
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "required_linear_history"
+          }
+        ],
+        "trunk": [
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "pull_request"
+          }
+        ]
+      },
+      "settings": {
+        "allow_auto_merge": false,
+        "allow_merge_commit": true,
+        "allow_rebase_merge": true,
+        "allow_squash_merge": true,
+        "delete_branch_on_merge": false
+      }
+    },
+    "before-protected-candidate": {
+      "classic": {
+        "planning": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        },
+        "trunk": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        }
+      },
+      "definitions": {
+        "planning": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/planning"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821812,
+          "name": "aitm: protect planning",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        "trunk": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/trunk"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821811,
+          "name": "aitm: protect trunk",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "parameters": {
+                "allowed_merge_methods": [
+                  "merge",
+                  "squash",
+                  "rebase"
+                ],
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_extra_approval_for_unattributed_changes": true,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": false,
+                "required_reviewers": []
+              },
+              "type": "pull_request"
+            }
+          ],
+          "target": "branch"
+        }
+      },
+      "effective": {
+        "planning": [
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "required_linear_history"
+          }
+        ],
+        "trunk": [
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "pull_request"
+          }
+        ]
+      },
+      "settings": {
+        "allow_auto_merge": false,
+        "allow_merge_commit": true,
+        "allow_rebase_merge": true,
+        "allow_squash_merge": true,
+        "delete_branch_on_merge": false
+      }
+    },
+    "fixture-rule-active": {
+      "classic": {
+        "planning": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        },
+        "trunk": {
+          "data": {
+            "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+            "message": "Branch not protected",
+            "status": "404"
+          },
+          "status": 404
+        }
+      },
+      "definitions": {
+        "planning": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/planning"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821812,
+          "name": "aitm: protect planning",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "type": "required_linear_history"
+            }
+          ],
+          "target": "branch"
+        },
+        "trunk": {
+          "bypass_actors": [],
+          "conditions": {
+            "ref_name": {
+              "exclude": [],
+              "include": [
+                "refs/heads/trunk"
+              ]
+            }
+          },
+          "enforcement": "active",
+          "id": 26821811,
+          "name": "aitm: protect trunk",
+          "rules": [
+            {
+              "type": "deletion"
+            },
+            {
+              "type": "non_fast_forward"
+            },
+            {
+              "parameters": {
+                "allowed_merge_methods": [
+                  "merge",
+                  "squash",
+                  "rebase"
+                ],
+                "dismiss_stale_reviews_on_push": false,
+                "require_code_owner_review": false,
+                "require_extra_approval_for_unattributed_changes": true,
+                "require_last_push_approval": false,
+                "required_approving_review_count": 0,
+                "required_review_thread_resolution": false,
+                "required_reviewers": []
+              },
+              "type": "pull_request"
+            }
+          ],
+          "target": "branch"
+        }
+      },
+      "effective": {
+        "planning": [
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "ruleset_id": 26821812,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "required_linear_history"
+          }
+        ],
+        "trunk": [
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "deletion"
+          },
+          {
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "non_fast_forward"
+          },
+          {
+            "parameters": {
+              "allowed_merge_methods": [
+                "merge",
+                "squash",
+                "rebase"
+              ],
+              "dismiss_stale_reviews_on_push": false,
+              "require_code_owner_review": false,
+              "require_extra_approval_for_unattributed_changes": true,
+              "require_last_push_approval": false,
+              "required_approving_review_count": 0,
+              "required_review_thread_resolution": false,
+              "required_reviewers": []
+            },
+            "ruleset_id": 26821811,
+            "ruleset_source": "kburson/aitm",
+            "ruleset_source_type": "Repository",
+            "type": "pull_request"
+          }
+        ]
+      },
+      "settings": {
+        "allow_auto_merge": false,
+        "allow_merge_commit": true,
+        "allow_rebase_merge": true,
+        "allow_squash_merge": true,
+        "delete_branch_on_merge": false
+      }
+    }
+  },
+  "trunk_object_anchor": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5"
+}

@@ -10,12 +10,12 @@ children: []
 blocking: [159]
 blocked-by: []
 created: "2026-11-10T16:51:45Z"
-updated: "2026-11-10T22:29:00Z"
+updated: "2026-11-11T16:39:11Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md", "plan/2026-11-11-158-merge-only-qualification.md"], "attachments": ["attachments/github-merge-fence-spike.md", "attachments/github-merge-fence-rules.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-10-158-qualify-github-merge-fence-design.md"], "plan": ["plan/2026-11-10-158-qualify-github-merge-fence.md", "plan/2026-11-10-158-jit.md", "plan/reviews/spr-2026-11-10-jit/review-manifest.md", "plan/2026-11-11-158-merge-only-qualification.md", "plan/2026-11-11-158-merge-only-jit.md", "plan/2026-11-11-158-atomic-ref-trial.md", "plan/reviews/spr-2026-11-11-merge-only-jit/review-manifest.md", "plan/reviews/2026-11-11-158-atomic-ref-trial-review.md"], "attachments": ["attachments/github-merge-fence-spike.md", "attachments/github-merge-fence-rules.json", "attachments/2026-11-11-158-atomic-ref-trial.json"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T21", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "4c57ac72e211b052a8b7ffee538b492427775b5dc3f365a1640c80f72ac54742"}
@@ -190,3 +190,22 @@ final host update check remain unqualified. Both temporary rules
 and all test refs were removed. Production protections matched
 their pre-trial readbacks. #158 stays in Planning and #159 remains
 blocked.
+
+## Atomic ref transaction trial
+
+[Revised JIT](plan/2026-11-11-158-merge-only-jit.md) ·
+[Independent JIT SPR](plan/reviews/spr-2026-11-11-merge-only-jit/review-manifest.md) ·
+[Trial report](plan/2026-11-11-158-atomic-ref-trial.md) ·
+[Measurement receipt](attachments/2026-11-11-158-atomic-ref-trial.json) ·
+[Independent trial review](plan/reviews/2026-11-11-158-atomic-ref-trial-review.md).
+
+The owner-authorized run used only four temporary AITM refs and one
+exact-target fixture rule. It observed the expected atomic results
+and a protected fixture update followed by PR recognition. Exact PR
+authorization and independent writer, reviewer and check roles remain
+unqualified. External-app event scope remained unverified at dispatch,
+a deviation from JIT preflight. Terminal readback found no app or
+workflow activity on the fixture. Temporary refs and the fixture rule
+were removed, production protections matched, and the original
+measurements were retained. #158 remains in Planning and #159 remains
+blocked by #157 and #158.

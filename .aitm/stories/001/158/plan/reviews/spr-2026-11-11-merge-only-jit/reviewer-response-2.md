@@ -1,0 +1,12 @@
+# #158 JIT manual SPR, round 2
+
+**Decision** APPROVE the bounded same-repository fixture trial. F1–F4 are closed. There is no residual blocker in the reviewed procedure. This is a manual review by a separate Codex agent. Hosted measurements and production qualification remain separate decisions.
+
+**Exact input** `/tmp/aitm-158-atomic-trial/2026-11-11-158-merge-only-jit.md`, actual SHA-256 `21f934521af0608a091018a50b52905b0a2e600b863d9095a59337e37bfb9f80`. Read all 104 lines against the prior review and the qualification, parent design and prior trial context.
+
+- **F1 · P1 · Closed.** Lines 61–75 specify the stale-base ancestry and make all stale-head entries forward-valid. The stale head is an already-published descendant while the live ref remains at its ancestor. Advancing only that ref makes the identical request the positive control. The deterministic stale-flag tests also require forward-valid requests and terminal readback.
+- **F2 · P1 · Closed.** Lines 60–68, 76 and 89–97 define one recorded preflight tuple, distinct requests and intended flag OIDs, exact winner tuples, and both terminal results before more mutation. Two refusals are inconclusive. A mixed tuple fails. Ambiguity retains the fixture and its coordinator as custodian. Client order supplies no provider timing checkpoint.
+- **F3 · P1 · Closed.** Lines 19–39 and 51–60 pin the repository and refs, require trigger preflight before any fixture write, exclude automated merge dispatch, and constrain the only protection write. Apply the active-rule production protection readback as the comparison against baseline before submitting the protected candidate. Retain the identified PR and ruleset, and use the owned-only terminal teardown in lines 89–97.
+- **F4 · P2 · Closed.** Lines 33–37 and 77–85 name the active `pull_request` rule, require zero approvals and an empty bypass list, pin a ready and mergeable fixture PR, and demand rule attribution for a denial. Zero approvals and no bypass govern the copied fixture rule. If another copied parameter prevents a mergeable fixture PR, the gate stage can report a bounded refusal. An allowed result requires transaction and PR readbacks. PR state alone supplies no exact authorization proof.
+
+One hosted principal leaves exclusive writers, independent review and trusted check publishing unqualified. The same-objects PR association, exact repair and release, and post-release refresh remain governed by the qualification plan. Preserve #158 in Planning and #159 blocked. The measured receipt requires its own review.
