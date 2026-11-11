@@ -19,11 +19,15 @@ _GRAPH_GAPS = {
     "ancestry-cycle",
 }
 _EVENT_GAPS = {"invalid-event", "future-event", "invalid-journal", "missing-journal"}
-_OPEN_STATES = {
-    "draft",
-    "refine",
-    "plan",
-    "ready-for-dev",
+_WORK_ONLY_GAPS = {
+    "cross-story-overlap",
+    "legacy-overlap",
+    "legacy-story-missing",
+    "invalid-legacy-seed",
+    "legacy-conflict",
+    "legacy-blob",
+}
+_IMPLEMENTATION_STATES = {
     "develop",
     "test",
     "review",
@@ -32,7 +36,23 @@ _OPEN_STATES = {
     "blocked",
     "on-hold",
 }
-_RESET_STATES = {"backlog", "ready-for-plan", "plan", "ready-for-dev", "cancelled"}
+_OPEN_STATES = _IMPLEMENTATION_STATES | {
+    "draft",
+    "backlog",
+    "refine",
+    "ready-for-plan",
+    "plan",
+    "ready-for-dev",
+}
+_RESET_STATES = {
+    "draft",
+    "backlog",
+    "refine",
+    "ready-for-plan",
+    "plan",
+    "ready-for-dev",
+    "cancelled",
+}
 
 
 @dataclass(frozen=True)
@@ -218,15 +238,20 @@ def _boundary(row: TimingObservation, cutoff: int) -> int | None:
     return None
 
 
-def _applies(exclusion: TimingScope, work: TimingScope) -> bool:
-    return all(
-        cut is None or cut == active
-        for cut, active in (
-            (exclusion.phase, work.phase),
-            (exclusion.role, work.role),
-            (exclusion.attempt, work.attempt),
-        )
+def _exclusion_matches(exclusion: TimingScope, work: TimingScope) -> bool | None:
+    pairs = (
+        (exclusion.phase, work.phase),
+        (exclusion.role, work.role),
+        (exclusion.attempt, work.attempt),
     )
+    if any(
+        cut is not None and active is not None and cut != active
+        for cut, active in pairs
+    ):
+        return False
+    if any(cut is not None and active is None for cut, active in pairs):
+        return None
+    return True
 
 
 def _scope_order(scope: TimingScope) -> tuple[int, str, str, str, str, str]:
@@ -424,19 +449,26 @@ def _fold_actor(
             continue
         work.measured = True
         for missing in uncertain:
-            if _applies(missing.scope, row.scope) and _may_overlap(
-                missing, span, cutoff
-            ):
+            if _exclusion_matches(
+                missing.scope, row.scope
+            ) is not False and _may_overlap(missing, span, cutoff):
                 work.evidence.observe(missing, as_of)
                 work.evidence.reasons.add("unresolved-work-exclusion")
         cuts = []
         for scope, cut, sources in exclusions:
-            if _applies(scope, row.scope) and _intersects(span, cut):
+            if not _intersects(span, cut):
+                continue
+            matches = _exclusion_matches(scope, row.scope)
+            if matches is False:
+                continue
+            for source in sources:
+                work.evidence.observe(source, as_of)
+                if source.kind == "pending-wait":
+                    work.evidence.reasons.add("pending-owner-response")
+            if matches is None:
+                work.evidence.reasons.add("unresolved-work-exclusion-scope")
+            else:
                 cuts.append((max(span[0], cut[0]), min(span[1], cut[1])))
-                for source in sources:
-                    work.evidence.observe(source, as_of)
-                    if source.kind == "pending-wait":
-                        work.evidence.reasons.add("pending-owner-response")
         for left, right in _subtract(span, cuts):
             work.basis.add(row.basis)
             changes[left].append((index, True))
@@ -538,9 +570,11 @@ def _workflow_marks(
     )
 
 
-def _state_marks(events: list[Event]) -> tuple[_Mark | None, _Mark | None, int | None]:
+def _state_marks(
+    events: list[Event],
+) -> tuple[_Mark | None, _Mark | None, int | None, int | None]:
     start = done = None
-    reopened = None
+    reopened = reset = None
     for event in events:
         if event.kind != "core.state.entered":
             continue
@@ -548,9 +582,10 @@ def _state_marks(events: list[Event]) -> tuple[_Mark | None, _Mark | None, int |
         if not isinstance(state, str) or state not in STATES:
             continue
         if done is not None and state != "done":
-            reopened = _millis(event.timestamp)
+            reopened = reset = _millis(event.timestamp)
             start = done = None
         if state in _RESET_STATES:
+            reset = _millis(event.timestamp)
             start = None
         elif state == "develop":
             mark = _event_mark(event, "workflow-develop")
@@ -562,13 +597,13 @@ def _state_marks(events: list[Event]) -> tuple[_Mark | None, _Mark | None, int |
                 start = mark
         elif state == "done" and done is None:
             done = _event_mark(event, "workflow-done")
-    return start, done, reopened
+    return start, done, reopened, reset
 
 
 def _elapsed_pair(
     start: _Mark | None,
     finish: _Mark | None,
-    state: str | None,
+    open_scope: bool,
     as_of: datetime,
     evidence: _Evidence,
     *,
@@ -591,7 +626,7 @@ def _elapsed_pair(
             elapsed.reasons.add("incompatible-elapsed-boundaries")
         else:
             value = finish.ms - start.ms
-    elif state in _OPEN_STATES:
+    elif open_scope:
         age_value = _millis(as_of) - start.ms
         elapsed.reasons.add("open-elapsed-scope")
     else:
@@ -608,35 +643,63 @@ class _Workflow:
     completed_attempt: tuple[_Mark, _Mark] | None
 
 
+def _coalesce_marks(
+    marks: list[_Mark],
+    evidence: _Evidence,
+    conflict_reason: str,
+) -> tuple[_Mark | None, bool]:
+    if not marks:
+        return None, False
+    merged = _Evidence()
+    for mark in marks:
+        merged.absorb(mark.evidence)
+    if len({mark.ms for mark in marks}) > 1:
+        evidence.absorb(merged)
+        evidence.reasons.add(conflict_reason)
+        return None, True
+    return _Mark(marks[0].ms, marks[0].attempt, merged), False
+
+
 def _implementation_marks(
     develop: _Mark | None,
     done: _Mark | None,
     starts: list[_Mark],
     finishes: list[_Mark],
-    state: str | None,
-) -> tuple[_Mark | None, _Mark | None]:
+    open_scope: bool,
+    evidence: _Evidence,
+) -> tuple[_Mark | None, _Mark | None, bool]:
     explicit_start = starts[-1] if starts else None
     if explicit_start is not None and (
         develop is None
         or explicit_start.ms >= develop.ms
         and explicit_start.attempt != develop.attempt
     ):
-        develop = explicit_start
+        develop, conflict = _coalesce_marks(
+            [mark for mark in starts if mark.attempt == explicit_start.attempt],
+            evidence,
+            "conflicting-implementation-start",
+        )
+        if conflict:
+            return None, None, True
     if develop is None:
-        return None, done or (finishes[-1] if finishes else None)
-    if done is not None and done.ms >= develop.ms and done.attempt == develop.attempt:
-        return develop, done
-    compatible = next(
-        (
+        return None, done or (finishes[-1] if finishes else None), False
+
+    finish, conflict = _coalesce_marks(
+        [
             mark
             for mark in finishes
             if mark.ms >= develop.ms and mark.attempt == develop.attempt
-        ),
-        None,
+        ],
+        evidence,
+        "conflicting-implementation-finish",
     )
-    if compatible is not None or state in _OPEN_STATES:
-        return develop, compatible
-    return develop, done or (finishes[-1] if finishes else None)
+    if conflict:
+        return develop, None, True
+    if done is not None and done.ms >= develop.ms and done.attempt == develop.attempt:
+        return develop, done, False
+    if finish is not None or open_scope:
+        return develop, finish, False
+    return develop, done or (finishes[-1] if finishes else None), False
 
 
 def _workflow(
@@ -647,7 +710,7 @@ def _workflow(
     event_gaps: _Evidence,
 ) -> _Workflow:
     state = tree.stories[story].state
-    develop, done, reopened = _state_marks(events)
+    develop, done, reopened, reset = _state_marks(events)
     all_starts, all_finishes, all_gaps = _workflow_marks(rows, "all-phase", tree.as_of)
     impl_starts, impl_finishes, impl_gaps = _workflow_marks(
         rows, "implement", tree.as_of
@@ -662,22 +725,24 @@ def _workflow(
     )
     if reopened is not None:
         all_finishes = [mark for mark in all_finishes if mark.ms >= reopened]
-        impl_starts = [mark for mark in impl_starts if mark.ms >= reopened]
-        impl_finishes = [mark for mark in impl_finishes if mark.ms >= reopened]
+    if reset is not None:
+        impl_starts = [mark for mark in impl_starts if mark.ms > reset]
+        impl_finishes = [mark for mark in impl_finishes if mark.ms > reset]
     all_elapsed, all_age = _elapsed_pair(
         all_starts[0] if all_starts else None,
         max(all_finishes, key=lambda mark: mark.ms, default=done),
-        state,
+        state in _OPEN_STATES,
         tree.as_of,
         all_gaps,
     )
-    develop, done = _implementation_marks(
-        develop, done, impl_starts, impl_finishes, state
+    implementation_open = state in _IMPLEMENTATION_STATES
+    develop, done, conflict = _implementation_marks(
+        develop, done, impl_starts, impl_finishes, implementation_open, impl_gaps
     )
     impl_elapsed, impl_age = _elapsed_pair(
         develop,
         done,
-        state,
+        implementation_open and not conflict,
         tree.as_of,
         impl_gaps,
         check_attempt=True,
@@ -813,13 +878,13 @@ def _gap_evidence(
             continue
         if gap.code in _GRAPH_GAPS:
             targets = (graph,)
+        elif gap.code in _WORK_ONLY_GAPS:
+            targets = (work,)
         elif gap.code in _EVENT_GAPS:
             targets = (work, wait, workflow)
         elif gap.code in {"invalid-state", "unbound-draft-event"}:
             targets = (workflow,)
-        elif (
-            "receipt" in gap.code or "registration" in gap.code or "legacy" in gap.code
-        ):
+        elif "receipt" in gap.code or "registration" in gap.code:
             targets = (work, wait, workflow)
         else:
             targets = ()
@@ -828,7 +893,9 @@ def _gap_evidence(
             target[gap.story].sources.add(EvidenceReference(gap.source))
     for gap in facts.gaps:
         kind = kinds.get((gap.story, gap.identity))
-        if kind in _WAIT_KINDS:
+        if gap.code in _WORK_ONLY_GAPS:
+            targets = (work,)
+        elif kind in _WAIT_KINDS:
             targets = (wait,)
         elif kind in _WORKFLOW_KINDS:
             targets = (workflow,)

@@ -395,6 +395,109 @@ class TimingMetrics(unittest.TestCase):
         self.assertEqual(delivered.implementation_elapsed.milliseconds, 900_000)
         self.assertIsNone(delivered.implementation_age.milliseconds)
 
+    def test_known_wait_phase_against_unknown_work_phase_marks_partial(self):
+        row = project(
+            tree(),
+            observation("work", 5, 25, phase=None),
+            observation("wait", 10, 20, kind="owner-wait"),
+        )[186]
+        self.assertEqual(row.actual.milliseconds, 1_200_000)
+        self.assertEqual(row.actual.coverage, "partial")
+        self.assertIn("unresolved-work-exclusion-scope", row.actual.reasons)
+        self.assertEqual(row.owner_wait.milliseconds, 600_000)
+        self.assertEqual(row.owner_wait.coverage, "complete")
+
+    def test_plan_reset_does_not_resurrect_implementation_age(self):
+        row = project(
+            tree(
+                states={186: "plan"},
+                events=(
+                    event(186, 10, "develop", attempt="attempt-a"),
+                    event(186, 20, "plan", **{"from": "develop"}),
+                ),
+            ),
+            observation("old-start", 10, None, kind="workflow-start"),
+            observation("kickoff", 1, None, kind="workflow-start", phase="all-phase"),
+        )[186]
+        self.assertIsNone(row.implementation_age.milliseconds)
+        self.assertIsNone(row.implementation_elapsed.milliseconds)
+        self.assertEqual(row.all_phase_age.milliseconds, 14_340_000)
+
+    def test_backlog_and_ready_for_plan_can_have_all_phase_age(self):
+        for state in ("backlog", "ready-for-plan"):
+            with self.subTest(state=state):
+                row = project(
+                    tree(states={186: state}),
+                    observation(
+                        "kickoff", 10, None, kind="workflow-start", phase="all-phase"
+                    ),
+                    observation("old-start", 20, None, kind="workflow-start"),
+                )[186]
+                self.assertEqual(row.all_phase_age.milliseconds, 13_800_000)
+                self.assertIsNone(row.implementation_age.milliseconds)
+
+    def test_conflicting_same_attempt_delivery_boundaries_remain_unknown(self):
+        start = observation("start", 10, None, kind="workflow-start")
+        first = observation("delivery-a", None, 20, kind="workflow-delivered")
+        second = observation("delivery-b", None, 25, kind="workflow-delivered")
+        conflict = project(tree(), start, first, second)[186]
+        self.assertIsNone(conflict.implementation_elapsed.milliseconds)
+        self.assertIsNone(conflict.implementation_age.milliseconds)
+        self.assertIn(
+            "conflicting-implementation-finish", conflict.implementation_elapsed.reasons
+        )
+        self.assertEqual(
+            {ref.source_ref for ref in conflict.implementation_elapsed.sources},
+            {"manual:start", "manual:delivery-a", "manual:delivery-b"},
+        )
+
+        corroborated = project(
+            tree(), start, first, replace(second, end_ms=millis(20))
+        )[186]
+        self.assertEqual(corroborated.implementation_elapsed.milliseconds, 600_000)
+        self.assertEqual(corroborated.implementation_elapsed.coverage, "complete")
+
+    def test_conflicting_same_attempt_starts_remain_unknown(self):
+        row = project(
+            tree(),
+            observation("start-a", 10, None, kind="workflow-start"),
+            observation("start-b", 12, None, kind="workflow-start"),
+            observation("delivery", None, 20, kind="workflow-delivered"),
+        )[186]
+        self.assertIsNone(row.implementation_elapsed.milliseconds)
+        self.assertIsNone(row.implementation_age.milliseconds)
+        self.assertIn(
+            "conflicting-implementation-start", row.implementation_elapsed.reasons
+        )
+
+    def test_wholly_held_turn_gap_does_not_change_independent_coverage(self):
+        held = observation("held", 10, 20)
+        for code in ("cross-story-overlap", "legacy-overlap"):
+            with self.subTest(code=code):
+                gap = TimingGap(
+                    186,
+                    code,
+                    held.scope,
+                    held.identity,
+                    held.start_ms,
+                    held.end_ms,
+                    held.sources,
+                )
+                row = project(
+                    tree(
+                        states={186: "done"},
+                        events=(event(186, 5, "develop"), event(186, 25, "done")),
+                    ),
+                    observation("wait", 8, 9, kind="owner-wait"),
+                    gaps=(gap,),
+                )[186]
+                self.assertIsNone(row.actual.milliseconds)
+                self.assertIn(code, row.actual.reasons)
+                self.assertEqual(row.owner_wait.milliseconds, 60_000)
+                self.assertEqual(row.owner_wait.coverage, "complete")
+                self.assertEqual(row.implementation_elapsed.milliseconds, 1_200_000)
+                self.assertEqual(row.implementation_elapsed.coverage, "complete")
+
     def test_coverage_keeps_attribution_and_ancestry_gaps(self):
         work = observation("work", 5, 15)
         held = TimingGap(
