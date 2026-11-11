@@ -805,10 +805,15 @@ def claude_scope(native):
     return ClaudeScopeFixture(native)
 
 
-@pytest.mark.parametrize("same_project", [False, True], ids=["handoff", "mark"])
-def test_late_claude_revision_keeps_its_original_native_scope(
-    claude_scope, same_project
-):
+def test_late_claude_revision_keeps_its_original_native_scope(claude_scope):
+    _assert_late_claude_revision_preserves_scope(claude_scope, same_project=False)
+
+
+def test_late_claude_revision_keeps_original_scope_after_ordinary_mark(claude_scope):
+    _assert_late_claude_revision_preserves_scope(claude_scope, same_project=True)
+
+
+def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
     from test_claude import AFTER as CLAUDE_AFTER
     from test_claude import SESSION as CLAUDE_SESSION
     from test_claude import _native_tool_turn
