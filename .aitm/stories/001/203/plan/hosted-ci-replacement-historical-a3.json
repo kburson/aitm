@@ -1,0 +1,32 @@
+{
+  "head": "563fa19aa1e2590c9be72c721306f32df4a47872",
+  "attempt": 3,
+  "status": "completed",
+  "conclusion": "success",
+  "jobs": [
+    {
+      "name": "file-checks",
+      "conclusion": "success"
+    },
+    {
+      "name": "python",
+      "conclusion": "success"
+    },
+    {
+      "name": "python-base",
+      "conclusion": "success"
+    },
+    {
+      "name": "quality",
+      "conclusion": "success"
+    },
+    {
+      "name": "collect-evidence",
+      "conclusion": "success"
+    },
+    {
+      "name": "aitm-ci",
+      "conclusion": "success"
+    }
+  ]
+}
