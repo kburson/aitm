@@ -1,0 +1,300 @@
+{
+  "hosted": {
+    "attempt": 1,
+    "conclusion": "success",
+    "harness": "714b97972e5247ae021aeab8428669f6512442d6",
+    "lanes": {
+      "full-2": {
+        "artifact_digest": "sha256:4a17ab82f1aa0676b20994947099e7e64ee9eb0f18de9ccd1a111170523efc28",
+        "artifact_id": 13890885413,
+        "comparison": {
+          "actual_inventory_size": 1071,
+          "expected_inventory_size": 1071,
+          "helper_coverage": {
+            "delta": {},
+            "files": 4,
+            "totals": {
+              "covered_branches": 231,
+              "covered_lines": 778,
+              "num_branches": 262,
+              "num_statements": 821
+            }
+          },
+          "helper_tests": 182,
+          "inventory_extra": [],
+          "inventory_missing": [],
+          "mode": "full",
+          "passed": true,
+          "phase_outcomes_match": true,
+          "phase_reports": 3213,
+          "product_coverage": {
+            "delta": {},
+            "files": 29,
+            "totals": {
+              "covered_branches": 3079,
+              "covered_lines": 10655,
+              "num_branches": 3816,
+              "num_statements": 11604
+            }
+          },
+          "serial_inventory_size": 1071,
+          "subprocess_covered_lines": {
+            "cli-help": 4151,
+            "service-one-shot": 6318
+          },
+          "subprocess_matches": true,
+          "timings": {
+            "available_cpus": 3,
+            "helper_seconds": 31,
+            "image": "20261102.0473.1",
+            "mode": "full",
+            "product_seconds": 262,
+            "script_seconds": 302,
+            "setup_seconds": 7,
+            "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+            "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+            "wheel_seconds": 2,
+            "workers": 2
+          }
+        },
+        "conclusion": "success",
+        "job_id": 130777188441,
+        "job_seconds": 322
+      },
+      "full-3": {
+        "artifact_digest": "sha256:26677a6d04cc7bbfef1c39feef82ad9da7a3f636dbce40dd492d709280299620",
+        "artifact_id": 13889932893,
+        "comparison": {
+          "actual_inventory_size": 1071,
+          "expected_inventory_size": 1071,
+          "helper_coverage": {
+            "delta": {},
+            "files": 4,
+            "totals": {
+              "covered_branches": 231,
+              "covered_lines": 778,
+              "num_branches": 262,
+              "num_statements": 821
+            }
+          },
+          "helper_tests": 182,
+          "inventory_extra": [],
+          "inventory_missing": [],
+          "mode": "full",
+          "passed": true,
+          "phase_outcomes_match": true,
+          "phase_reports": 3213,
+          "product_coverage": {
+            "delta": {},
+            "files": 29,
+            "totals": {
+              "covered_branches": 3079,
+              "covered_lines": 10655,
+              "num_branches": 3816,
+              "num_statements": 11604
+            }
+          },
+          "serial_inventory_size": 1071,
+          "subprocess_covered_lines": {
+            "cli-help": 4151,
+            "service-one-shot": 6318
+          },
+          "subprocess_matches": true,
+          "timings": {
+            "available_cpus": 3,
+            "helper_seconds": 20,
+            "image": "20261102.0473.1",
+            "mode": "full",
+            "product_seconds": 140,
+            "script_seconds": 165,
+            "setup_seconds": 4,
+            "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+            "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+            "wheel_seconds": 1,
+            "workers": 3
+          }
+        },
+        "conclusion": "success",
+        "job_id": 130777188618,
+        "job_seconds": 179
+      },
+      "selected-3": {
+        "artifact_digest": "sha256:1458afc86e1f7efefdd7711ac2c7b06a87132d91550337ed92f96e98568cc2d7",
+        "artifact_id": 13889528041,
+        "comparison": {
+          "actual_inventory_size": 68,
+          "expected_inventory_size": 68,
+          "helper_coverage": {
+            "delta": {},
+            "files": 4,
+            "totals": {
+              "covered_branches": 231,
+              "covered_lines": 778,
+              "num_branches": 262,
+              "num_statements": 821
+            }
+          },
+          "helper_tests": 182,
+          "inventory_extra": [],
+          "inventory_missing": [],
+          "mode": "selected",
+          "passed": true,
+          "phase_outcomes_match": true,
+          "phase_reports": 204,
+          "product_coverage": {
+            "delta": {},
+            "files": 29,
+            "totals": {
+              "covered_branches": 869,
+              "covered_lines": 5392,
+              "num_branches": 3816,
+              "num_statements": 11604
+            }
+          },
+          "serial_inventory_size": 1071,
+          "subprocess_covered_lines": {
+            "cli-help": 4151,
+            "service-one-shot": 6318
+          },
+          "subprocess_matches": true,
+          "timings": {
+            "available_cpus": 3,
+            "helper_seconds": 28,
+            "image": "20261102.0473.1",
+            "mode": "selected",
+            "product_seconds": 11,
+            "script_seconds": 48,
+            "setup_seconds": 7,
+            "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+            "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+            "wheel_seconds": 2,
+            "workers": 3
+          }
+        },
+        "conclusion": "success",
+        "job_id": 130777188075,
+        "job_seconds": 65
+      }
+    },
+    "run": 43093752137,
+    "url": "https://github.com/kburson/aitm/actions/runs/43093752137/attempts/1"
+  },
+  "local": {
+    "full": {
+      "comparison": {
+        "actual_inventory_size": 1071,
+        "expected_inventory_size": 1071,
+        "helper_coverage": {
+          "delta": {},
+          "files": 4,
+          "totals": {
+            "covered_branches": 231,
+            "covered_lines": 778,
+            "num_branches": 262,
+            "num_statements": 821
+          }
+        },
+        "helper_tests": 182,
+        "inventory_extra": [],
+        "inventory_missing": [],
+        "mode": "full",
+        "passed": true,
+        "phase_outcomes_match": true,
+        "phase_reports": 3213,
+        "product_coverage": {
+          "delta": {},
+          "files": 29,
+          "totals": {
+            "covered_branches": 3079,
+            "covered_lines": 10655,
+            "num_branches": 3816,
+            "num_statements": 11604
+          }
+        },
+        "serial_inventory_size": 1071,
+        "subprocess_covered_lines": {
+          "cli-help": 4151,
+          "service-one-shot": 6318
+        },
+        "subprocess_matches": true,
+        "timings": {
+          "available_cpus": 10,
+          "helper_seconds": 17,
+          "image": "local",
+          "mode": "full",
+          "product_seconds": 55,
+          "script_seconds": 73,
+          "setup_seconds": 0,
+          "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+          "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+          "wheel_seconds": 1,
+          "workers": 8
+        }
+      },
+      "elapsed_seconds": 73.14
+    },
+    "selected": {
+      "comparison": {
+        "actual_inventory_size": 68,
+        "expected_inventory_size": 68,
+        "helper_coverage": {
+          "delta": {},
+          "files": 4,
+          "totals": {
+            "covered_branches": 231,
+            "covered_lines": 778,
+            "num_branches": 262,
+            "num_statements": 821
+          }
+        },
+        "helper_tests": 182,
+        "inventory_extra": [],
+        "inventory_missing": [],
+        "mode": "selected",
+        "passed": true,
+        "phase_outcomes_match": true,
+        "phase_reports": 204,
+        "product_coverage": {
+          "delta": {},
+          "files": 29,
+          "totals": {
+            "covered_branches": 869,
+            "covered_lines": 5392,
+            "num_branches": 3816,
+            "num_statements": 11604
+          }
+        },
+        "serial_inventory_size": 1071,
+        "subprocess_covered_lines": {
+          "cli-help": 4151,
+          "service-one-shot": 6318
+        },
+        "subprocess_matches": true,
+        "timings": {
+          "available_cpus": 10,
+          "helper_seconds": 18,
+          "image": "local",
+          "mode": "selected",
+          "product_seconds": 4,
+          "script_seconds": 24,
+          "setup_seconds": 1,
+          "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+          "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f",
+          "wheel_seconds": 1,
+          "workers": 8
+        }
+      },
+      "elapsed_seconds": 23.22
+    }
+  },
+  "qualification_job_limit_seconds": 480,
+  "serial_reference": {
+    "artifact_digest": "sha256:3e8b2b4dbdff3afa1bdd29817230f0a78c2b16fb1e513b9d4402798da044c6bf",
+    "artifact_id": 13889085192,
+    "attempt": 1,
+    "python_seconds": 445,
+    "run": 43088954749,
+    "source": "2dd98bb7f5029188cf693e7c1317dd5fc0675e2b",
+    "tree": "35ad17ad3121728482ba9acdfcdd8e724c56289f"
+  }
+}

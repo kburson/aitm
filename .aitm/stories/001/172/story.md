@@ -64,6 +64,9 @@ independently of this qualification work.
 [Local testmon advisory trial](attachments/2026-11-11-172-testmon-advisory-trial.md)
 records a Python dependency cluster and a missed data-file regression.
 
+[Parallel Python hosted qualification](attachments/2026-11-11-172-parallel-python-hosted-qualification.md)
+records exact serial parity and the measured local and hosted execution times.
+
 ## Accepted plan excerpt
 
 ### T35. Measure selection and sharding qualification — 3h, P2, T06/T34
