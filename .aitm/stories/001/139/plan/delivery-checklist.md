@@ -75,3 +75,21 @@ denominator and runner inputs are unchanged. #103's first owner
 disposition for this change is pending on exact tested tree
 `13f338628918c14f41b56f0c1ef52649b126fc41`. No prior disposition applies to the new #139 files.
 The source verdict is retained while the Project remains in Test.
+
+### Trunk advanced through #201
+
+Literal trunk advanced to `5324a80bad7730b2bdb4a2b87acf00f7171305c0`.
+The [prior verdict](source-review-attempt-2.md) applies to its
+recorded base and candidate. An [independently reviewed JIT delta](2026-11-10-139-jit-trunk-5324a80.md)
+adds two explicit journal module rules. The [review](reviews/spr-2026-11-10-trunk-5324a80.md)
+accepts the scope conditional on a successful hosted baseline.
+
+The [first trunk attempt](https://github.com/kburson/aitm/actions/runs/42940157251/attempts/1)
+failed in `test_queued_claude_disable_uses_the_physical_tail[abandoned]`.
+The four variants passed in isolation on exact trunk. The full local
+product and CLI suite passed all 970 tests. Two collect-only components
+reproduced the 970 product and CLI IDs and the unchanged 182 helper IDs
+on the shared snapshot
+`ae49cc4f00ed734485b003ce3dbf2a717e37eadc553025209548bb5f9e376a58`.
+[Hosted attempt 2](https://github.com/kburson/aitm/actions/runs/42940157251/attempts/2)
+is the bounded exact-trunk retry.
