@@ -1,0 +1,15 @@
+{
+  "literal_base": "bc8063b66522ed3a27c95d1bb0546f1e73249612",
+  "literal_tree": "e87d9baa14c08a903ee34f1b0a8ded958d10a015",
+  "head": "8d8cb2874aefba1898dc7b73c5695c4e7b0cd611",
+  "reviewed_tree": "6b684109b1d85d98ba01563fb034a2d3040ddc5d",
+  "run": "https://github.com/kburson/aitm/actions/runs/43022297444/attempts/1",
+  "hosted_package_baseline_count": 995,
+  "local_baseline_count": 996,
+  "local_extra_fixed_controls": [
+    "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+  ],
+  "hosted_only_baseline_ids": [],
+  "hosted_and_local_candidate_sets_equal": true,
+  "candidate_count": 1071
+}
