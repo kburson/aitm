@@ -10,12 +10,12 @@ children: [186, 187, 188, 189, 190, 191, 192, 193]
 blocking: []
 blocked-by: []
 created: "2026-11-10T19:31:49Z"
-updated: "2026-11-11T05:33:43Z"
+updated: "2026-11-11T12:51:45Z"
 last-branch: "planning"
 estimate: {"agent-hours": 26.0, "size": "Feature", "scope": "A and B only"}
 priority: "P1"
 origin: ".aitm/stories/000/2/design/core-design.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md", "attachments/2026-11-10-local-dashboard-handoff.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/story-timing-dashboard-design.md"], "plan": ["plan/story-timing-dashboard-implementation-plan.md", "plan/refinement.md", "plan/leaf-stories.md", "plan/leaf-issue-receipt.json", "plan/2026-11-11-181-slice-c-refinement.md", "plan/2026-11-11-181-slice-c-implementation-plan.md"], "attachments": ["attachments/2026-11-10-actual-backfill.md", "attachments/2026-11-10-actual-backfill.json", "attachments/timing-and-usage-coordination.md", "attachments/2026-11-10-local-dashboard-handoff.md"]}
 expansions: []
 trips: []
 ---
@@ -68,3 +68,9 @@ Reuse the eligible activity and implementation clock in #28, qualified review ti
 ## Local dashboard handoff
 
 [Delivered A/B evidence and timing readback](attachments/2026-11-10-local-dashboard-handoff.md)
+
+## Slice C refinement and plan review
+
+[Current capability and dependency readback](plan/2026-11-11-181-slice-c-refinement.md) · [Reviewed Slice C plan](plan/2026-11-11-181-slice-c-implementation-plan.md) · [Plan review](plan/reviews/2026-11-11-181-slice-c-review.md).
+
+Slice C has a conditional plan for automatic Actual and Cost and a preliminary **21.25 h** integration estimate. The existing manual Actual and offline dashboard use verified planning receipts. Automatic Actual needs Core's pinned read and qualified activity, legacy adoption where applicable, and the supported GitHub writer. Automatic Cost separately needs monitor M13/M14 and the compatible Core C44 receiver. Hosted viewing uses master #1 M6. The plan records the precise open dependencies and capability gates. Slice C remains at the planning checkpoint.
