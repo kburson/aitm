@@ -25,3 +25,11 @@ The candidate uses a real admitted chronological terminal and sealed current req
 The [first independent exact source verdict](post-ci-source-review-held-r1.md) held the authenticated candidate on explicit empty-span coverage, two invalidation fixtures and baseline identity evidence. The accepted typed AffectedScope already refuses an empty half-open span before any v2 record is admitted. Add a named malformed snapshot control. Replace the expiry fixture with an issued GAP token and the legacy disposal fixture with an independently verified earlier in-span receipt on the same append-only physical source. Pin the actual errors and add initial refusal after a real legacy resolution.
 
 The [baseline ID reconciliation](baseline-id-reconciliation.json) confirms the exact hosted base and tree and compares actual IDs. The only local-only baseline control is `tools/ci/tests/test_cli_evidence.py::test_usage_console_help`. The 1,069 candidate IDs were identical on both runs. The [first authenticated run](hosted-ci-receipt.json) remains retained. Return to Develop for these targeted controls before a fresh exact gate.
+
+## Replacement Test checkpoint
+
+[PR #211](https://github.com/kburson/aitm/pull/211) read back exact replacement head `563fa19aa1e2590c9be72c721306f32df4a47872`, tree `e305c76f3e20cfa7d3b0d7e2088653077988e0fe` and literal trunk `e4701f2e89d34f93f13d717199254b66aa3f0457`. The replacement changes only the scope tests. The typed `AffectedScope.__post_init__` already rejects `end <= start` while the v2 hold is decoded. The new empty-span control proves that refusal with the file intact.
+
+The issued GAP token changes from its recorded HELD target after real expiry and reaches the explicit stale-token refusal. The RESOLVED expiry control reaches its separate deadline gate. The legacy disposition uses a separately authorized receipt already present in the original fixed span, leaves every transcript byte intact and reaches the explicit legacy-resolution refusal on both require and first issuance. The targeted gate passed 11 cases.
+
+The replacement locked gate passed 1,071 product and CLI tests, 182 helpers, Ruff, whitespace and raw 10,655/11,604 product and 778/821 helper lines. All 996 local baseline IDs remain. The first hosted evidence and independent HOLD remain separately retained.

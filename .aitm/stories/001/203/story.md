@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 203
 title: "[M08b4a] Verified native disposition proof"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/203"
 parent: 100
 children: []
 blocking: [119, 204, 209]
 blocked-by: [202]
 created: "2026-11-10T23:50:13Z"
-updated: "2026-11-11T03:31:54+00:00"
+updated: "2026-11-11T03:38:31+00:00"
 last-branch: "codex/aitm-203-native-disposition-proof"
 estimate: {"agent-hours": 3.85, "size": "M"}
 priority: null
