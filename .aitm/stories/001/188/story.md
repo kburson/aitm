@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 188
 title: "[#181 A03] Compute workflow timing and epic totals"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/188"
 parent: 181
 children: []
 blocking: [190]
 blocked-by: [187]
 created: "2026-11-10T21:02:16Z"
-updated: "2026-11-11T04:17:51Z"
-last-branch: "codex/aitm-188-timing-rollups"
+updated: "2026-11-11T04:22:12Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3.75, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/181/plan/story-timing-dashboard-implementation-plan.md"
@@ -38,3 +38,9 @@ Required predecessors #187. The proposed estimate is 3.75 implementation agent-h
 ## Delivery evidence
 
 [Reviewed pickup](plan/jit.md) · [Independent pickup review](plan/jit-review.md) · [Delivery checklist](plan/delivery-checklist.md)
+
+## Delivered
+
+Verified source `72ca2d2535248844b164014d7817bffec0e9fb7e` landed on trunk. GitHub Closed Completed and AITM-PY Done were verified.
+
+[Source PR](https://github.com/kburson/aitm/pull/213) · [Signed CI](plan/hosted-verification-2.json) · [Source review](plan/post-ci-source-review.md) · [Implementing-agent sign-off](retro/2026-11-10-implementer-signoff.md)
