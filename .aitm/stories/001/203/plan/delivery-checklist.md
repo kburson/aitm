@@ -19,3 +19,9 @@ The candidate uses a real admitted chronological terminal and sealed current req
 ## Review checkpoint
 
 [All six required checks](https://github.com/kburson/aitm/actions/runs/42951909558/attempts/1) passed on exact head `3359eda7ebf21db2267e2faf3436f72c4bf9a7d6`. The [authenticated receipt](hosted-ci-receipt.json) records tested merge `b17c55aa53b596520208d4f528a6435f475d962f`, tree `0354543e89d0557b1e8949682af2844615d8c0b0`, artifact `13826255038` and signed subject SHA-256 `3cfcd344dfccb42c9133d939aeffcd13f640a986f7a110dde867cfca79051061`. The trusted raw replay retained all 995 hosted baseline package IDs and passed all 1069 candidate tests and both coverage floors. The extra local baseline ID is the fixed CLI control. Independent exact source review is pending.
+
+### Independent source HOLD and return to Develop
+
+The [first independent exact source verdict](post-ci-source-review-held-r1.md) held the authenticated candidate on explicit empty-span coverage, two invalidation fixtures and baseline identity evidence. The accepted typed AffectedScope already refuses an empty half-open span before any v2 record is admitted. Add a named malformed snapshot control. Replace the expiry fixture with an issued GAP token and the legacy disposal fixture with an independently verified earlier in-span receipt on the same append-only physical source. Pin the actual errors and add initial refusal after a real legacy resolution.
+
+The [baseline ID reconciliation](baseline-id-reconciliation.json) confirms the exact hosted base and tree and compares actual IDs. The only local-only baseline control is `tools/ci/tests/test_cli_evidence.py::test_usage_console_help`. The 1,069 candidate IDs were identical on both runs. The [first authenticated run](hosted-ci-receipt.json) remains retained. Return to Develop for these targeted controls before a fresh exact gate.

@@ -1,0 +1,12 @@
+{
+  "literal_base": "e4701f2e89d34f93f13d717199254b66aa3f0457",
+  "literal_tree": "f62fbd48047f73baf52f65f86b33d475328b2f1f",
+  "hosted_package_baseline_count": 995,
+  "local_baseline_count": 996,
+  "local_extra_fixed_controls": [
+    "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+  ],
+  "hosted_only_baseline_ids": [],
+  "hosted_and_local_candidate_sets_equal": true,
+  "candidate_count": 1069
+}
