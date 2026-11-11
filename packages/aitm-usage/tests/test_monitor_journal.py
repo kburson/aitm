@@ -1089,3 +1089,491 @@ def test_journal_refuses_mismatched_v1_first_claim_payload(native):
             journal.reserve(same, replay.progress)
         with pytest.raises(LedgerError, match="Stored first claim material changed"):
             journal.as_of()
+
+
+def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=False):
+    root_path = native.root.path.with_name(f"claude-archive-{source_id.int}")
+    root_path.mkdir()
+    path = root_path / "claude.jsonl"
+    root = replace(native.root, path=root_path)
+    if relocate:
+        native.path.rename(path)
+    write(path, rows[:1])
+    writer.approve_source(
+        SourceApprovalRequest(
+            source_id,
+            "claude",
+            "claude-code-macos",
+            "Darwin",
+            "arm64",
+            "2.1.318",
+            1,
+            str(root_path),
+        )
+    )
+
+    def locate():
+        (locator,) = native.native.adapter.discover(root)
+        return locator
+
+    armed = [
+        (change, writer.capture_frontier(change, locate()))
+        for project in projects
+        for change in (CaptureChange(project, source_id, True),)
+    ]
+    write(path, rows[1:3], append=True)
+    for change, frontier in armed:
+        proof = writer.verify_boundary(change, locate(), frontier)
+        writer.set_permission(change, proof)
+    write(path, rows[3:], append=True)
+    return path, locate
+
+
+def _common_claude_revision(native, writer):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native.approve(writer)
+    ordinal = native.append(native.request(3, stop=None))
+    journal = RoutingJournal(writer, ScopeState(writer))
+    journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
+    native.append(native.request(3, counts=claude_usage(output=6), stop=None))
+    prepared = journal.prepare(native.source_id, native.locator())
+    _, common = _claude_candidates(prepared, ordinal)
+    assert journal.reserve(common, prepared.progress).status == "pending"
+    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    return journal, ordinal, rows
+
+
+@pytest.mark.parametrize("descendant", [False, True], ids=["head-child", "later-head"])
+def test_verified_claude_branches_record_one_durable_content_dispute(
+    journal_claude, descendant, monkeypatch
+):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    registry = native.native.registry
+    source_id, exact_source = UUID(int=7), UUID(int=8)
+    with registry.writer() as writer:
+        journal, ordinal, prefix = _common_claude_revision(native, writer)
+        archive_path, locate = _claude_archive(native, writer, prefix, source_id)
+        before = journal.as_of()
+        stale = journal.prepare(source_id, locate())
+        assert all(item.status == "replay" for item in journal.reserve_batch(stale))
+        assert journal.as_of() == before
+
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        write(
+            archive_path,
+            [native.request(3, counts=claude_usage(output=8))],
+            append=True,
+        )
+        live = journal.prepare(native.source_id, native.locator())
+        rival = journal.prepare(source_id, locate())
+        _, live_common, accepted = _claude_candidates(live, ordinal)
+        _, rival_common, contender = _claude_candidates(rival, ordinal)
+        live_proof = journal._scopes.verified_revision(
+            live._read.batch, live_common.observation
+        )
+        rival_proof = journal._scopes.verified_revision(
+            rival._read.batch, rival_common.observation
+        )
+        assert live_proof.witness.prefix_ref == rival_proof.witness.prefix_ref
+        assert (
+            live._read.batch._native_cursor.incarnation_ref
+            != rival._read.batch._native_cursor.incarnation_ref
+        )
+        assert contender.observation.usage != accepted.observation.usage
+        assert journal._scopes.verified_revision(
+            rival._read.batch, contender.observation
+        )
+        assert journal.reserve(contender, rival.progress).status == "held"
+        assert journal.as_of() == before
+        assert journal.reserve(accepted, live.progress).status == "pending"
+
+        exact_rows = [
+            json.loads(line) for line in native.path.read_bytes().splitlines()
+        ]
+        _, exact_locate = _claude_archive(native, writer, exact_rows, exact_source)
+        exact = journal.prepare(exact_source, exact_locate())
+        _, _, copy = _claude_candidates(exact, ordinal)
+        assert journal.reserve(copy, exact.progress).status == "replay"
+
+        if descendant:
+            native.append(native.request(3, counts=claude_usage(output=9)))
+            latest = journal.prepare(native.source_id, native.locator())
+            *_, fourth = _claude_candidates(latest, ordinal)
+            assert journal.reserve(fourth, latest.progress).status == "pending"
+            equal_source = UUID(int=9)
+            _, equal_locate = _claude_archive(
+                native,
+                writer,
+                [*prefix, native.request(3, counts=claude_usage(output=9))],
+                equal_source,
+            )
+            equal = journal.prepare(equal_source, equal_locate())
+            *_, equal_usage = _claude_candidates(equal, ordinal)
+            assert equal_usage.observation.usage == fourth.observation.usage
+            assert equal_usage.observation.revision != fourth.observation.revision
+            assert journal._scopes.verified_revision(
+                equal._read.batch, equal_usage.observation
+            )
+            before_equal = journal.as_of()
+            assert journal.reserve(equal_usage, equal.progress).status == "held"
+            assert journal.as_of() == before_equal
+        saved = journal.as_of()
+        rival = journal.prepare(source_id, locate())
+        *_, contender = _claude_candidates(rival, ordinal)
+        fresh = journal._fresh_view
+        checked = False
+
+        def reject_final(read):
+            nonlocal checked
+            if checked:
+                raise LedgerError("injected content dispute final custody failure")
+            checked = True
+            return fresh(read)
+
+        with monkeypatch.context() as fault:
+            fault.setattr(journal, "_fresh_view", reject_final)
+            with pytest.raises(
+                LedgerError, match="injected content dispute final custody"
+            ):
+                journal.reserve(contender, rival.progress)
+        assert journal.as_of() == saved
+        outcome = journal.reserve(contender, rival.progress)
+        assert outcome.status == "disputed" and outcome.project_id == A
+        disputed = journal.as_of()
+        assert disputed.claims == saved.claims
+        (record,) = disputed.content_disputes
+        assert record.key == contender.observation.key and record.project_id == A
+        assert record.sequence == outcome.sequence == saved.sequence + 1
+        assert record.common == rival_proof.witness.successor_material
+        assert record.accepted.origin.source_id == native.source_id
+        assert record.contender.origin.source_id == source_id
+        assert record.accepted.incarnation_ref != record.contender.incarnation_ref
+        assert journal.as_of(saved.sequence) == saved
+        assert journal.cursor_for(native.source_id, native.locator()) is None
+        assert journal.cursor_for(source_id, locate()) is None
+
+        foreign_source = UUID(int=10)
+        rival_rows = [
+            json.loads(line) for line in archive_path.read_bytes().splitlines()
+        ]
+        _, foreign_locate = _claude_archive(native, writer, rival_rows, foreign_source)
+        foreign = journal.prepare(foreign_source, foreign_locate())
+        *_, same_rival = _claude_candidates(foreign, ordinal)
+        assert same_rival.observation.usage == contender.observation.usage
+        assert journal._scopes.verified_revision(
+            foreign._read.batch, same_rival.observation
+        )
+        assert journal.reserve(same_rival, foreign.progress).status == "held"
+        assert journal.as_of() == disputed
+
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        live = journal.prepare(native.source_id, native.locator())
+        outcomes = [
+            journal.reserve(candidate, live.progress).status
+            for candidate in _claude_candidates(live, ordinal)
+        ]
+        assert outcomes == ["held", "held", "disputed"] + (
+            ["held"] if descendant else []
+        )
+        rival = journal.prepare(source_id, locate())
+        assert [
+            journal.reserve(candidate, rival.progress).status
+            for candidate in _claude_candidates(rival, ordinal)
+        ] == ["held", "held", "disputed"]
+        exact = journal.prepare(exact_source, exact_locate())
+        assert (
+            journal.reserve(
+                _claude_candidates(exact, ordinal)[-1], exact.progress
+            ).status
+            == "disputed"
+        )
+        assert journal.as_of() == disputed
+        assert journal.as_of(saved.sequence) == saved
+        if not descendant:
+            from aitm_usage.monitor_journal import _ContentDisputePayload
+            from aitm_usage.types import _decode, _encode
+
+            with journal._store.transaction(write=True) as connection:
+                (raw,) = connection.execute(
+                    "SELECT payload FROM content_disputes WHERE key = ?",
+                    (record.key.value,),
+                ).fetchone()
+                payload = _decode(raw, _ContentDisputePayload)
+                altered = replace(
+                    payload,
+                    accepted=replace(
+                        payload.accepted, prefix_ref=record.contender.prefix_ref
+                    ),
+                )
+                connection.execute(
+                    "UPDATE content_disputes SET payload = ? WHERE key = ?",
+                    (
+                        _encode(altered, _ContentDisputePayload).encode(),
+                        record.key.value,
+                    ),
+                )
+            with pytest.raises(LedgerError, match="Stored content dispute"):
+                journal.as_of()
+            assert journal.as_of(saved.sequence) == saved
+
+
+def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_claude):
+    from test_claude import usage as claude_usage
+    from test_claude import user as claude_user
+
+    native = journal_claude
+    registry = native.native.registry
+    source_id = UUID(int=7)
+    with registry.writer() as writer:
+        native.approve(writer)
+        padding = native.append(claude_user(native.anchor))
+        ordinal = native.append(native.request(3, stop=None))
+        from aitm_usage.monitor_journal import RoutingJournal
+
+        journal = RoutingJournal(writer, ScopeState(writer))
+        journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
+        native.append(native.request(3, counts=claude_usage(output=6), stop=None))
+        current = journal.prepare(native.source_id, native.locator())
+        _, common = _claude_candidates(current, ordinal)
+        assert journal.reserve(common, current.progress).status == "pending"
+        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        archive_path, locate = _claude_archive(native, writer, prefix, source_id)
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        assert (
+            journal.reserve(_claude_candidates(live, ordinal)[-1], live.progress).status
+            == "pending"
+        )
+        changed = [json.loads(line) for line in archive_path.read_bytes().splitlines()]
+        changed[padding]["message"]["content"] = (
+            "changed raw prefix, equal normalized counters"
+        )
+        write(archive_path, changed)
+        write(
+            archive_path,
+            [native.request(3, counts=claude_usage(output=8))],
+            append=True,
+        )
+        rival = journal.prepare(source_id, locate())
+        _, archived_common, contender = _claude_candidates(rival, ordinal)
+        original_proof = journal._scopes.verified_revision(
+            live._read.batch, _claude_candidates(live, ordinal)[1].observation
+        )
+        archived_proof = journal._scopes.verified_revision(
+            rival._read.batch, archived_common.observation
+        )
+        assert (
+            original_proof.witness.successor_material
+            == archived_proof.witness.successor_material
+        )
+        assert original_proof.witness.prefix_ref != archived_proof.witness.prefix_ref
+        assert journal._scopes.verified_revision(
+            rival._read.batch, contender.observation
+        )
+        assert journal.reserve(contender, rival.progress).status == "held"
+        assert journal.as_of().content_disputes == ()
+
+
+@pytest.mark.parametrize("ownership_first", [True, False], ids=["before", "after"])
+def test_claude_content_and_ownership_disputes_remain_separate(
+    journal_claude, ownership_first
+):
+    from test_claude import usage as claude_usage
+
+    native = journal_claude
+    source_id, other_source = UUID(int=7), UUID(int=8)
+    with native.native.registry.writer() as writer:
+        journal, ordinal, prefix = _common_claude_revision(native, writer)
+        _, locate = _claude_archive(
+            native,
+            writer,
+            [*prefix, native.request(3, counts=claude_usage(output=8))],
+            source_id,
+        )
+        other_rows = [
+            {**row, "cwd": str(native.native.anchors[B])}
+            for row in prefix[: ordinal + 1]
+        ]
+        _, other_locate = _claude_archive(
+            native, writer, other_rows, other_source, projects=(B,)
+        )
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        original, _, accepted = _claude_candidates(live, ordinal)
+        assert journal.reserve(accepted, live.progress).status == "pending"
+        saved = journal.as_of()
+        other = journal.prepare(other_source, other_locate())
+        (foreign,) = _claude_candidates(other, ordinal)
+        assert foreign.route.project_id == B
+        assert foreign.observation.key == original.observation.key
+        rival = journal.prepare(source_id, locate())
+        *_, contender = _claude_candidates(rival, ordinal)
+        assert contender.route.project_id == A
+        assert journal._scopes.verified_revision(
+            rival._read.batch, contender.observation
+        )
+
+        if ownership_first:
+            ownership = journal.reserve(foreign, other.progress)
+            assert journal.reserve(contender, rival.progress).status == "held"
+        else:
+            assert journal.reserve(contender, rival.progress).status == "disputed"
+            ownership = journal.reserve(foreign, other.progress)
+        assert ownership.status == "disputed" and ownership.project_id == A
+        assert journal.reserve(original, live.progress) == ownership
+        current = journal.as_of()
+        assert current.claims == saved.claims
+        (record,) = current.disputes
+        assert record.contender == B and record.sequence == ownership.sequence
+        assert len(current.content_disputes) == int(not ownership_first)
+        assert journal.cursor_for(source_id, locate()) is None
+        assert journal.cursor_for(other_source, other_locate()) is None
+
+
+def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_claude
+    source_id = UUID(int=7)
+    with native.native.registry.writer() as writer:
+        native.approve(writer)
+        ordinal = native.append(native.request(3, stop=None))
+        journal = RoutingJournal(writer, ScopeState(writer))
+        journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
+        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        _, locate = _claude_archive(
+            native,
+            writer,
+            [*prefix, native.request(3, counts=claude_usage(output=8))],
+            source_id,
+        )
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        _, accepted = _claude_candidates(live, ordinal)
+        assert journal.reserve(accepted, live.progress).status == "pending"
+        saved = journal.as_of()
+        rival = journal.prepare(source_id, locate())
+        _, contender = _claude_candidates(rival, ordinal)
+        assert journal._scopes.verified_revision(
+            rival._read.batch, contender.observation
+        )
+        assert journal.reserve(contender, rival.progress).status == "held"
+        assert journal.as_of() == saved
+
+
+def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import _distinct_accepted_child
+
+    native = journal_claude
+    source_id = UUID(int=7)
+    with native.native.registry.writer() as writer:
+        journal, ordinal, prefix = _common_claude_revision(native, writer)
+        _, locate = _claude_archive(
+            native,
+            writer,
+            [*prefix, native.request(3, counts=claude_usage(output=6), stop=None)],
+            source_id,
+        )
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        _, common, accepted = _claude_candidates(live, ordinal)
+        assert journal.reserve(accepted, live.progress).status == "pending"
+        saved = journal.as_of()
+        repeat = journal.prepare(source_id, locate())
+        _, repeated_common = _claude_candidates(repeat, ordinal)
+        assert repeated_common.observation.usage == common.observation.usage
+        assert journal.reserve(repeated_common, repeat.progress).status == "replay"
+        proof = journal._scopes.verified_revision(live._read.batch, common.observation)
+        with journal._store.transaction() as connection:
+            assert (
+                _distinct_accepted_child(
+                    connection,
+                    common.observation.key,
+                    proof.witness.successor_material,
+                    common.observation.usage,
+                    journal._store.evidence,
+                )
+                is None
+            )
+        assert journal.as_of() == saved
+
+
+@pytest.mark.parametrize("control", ["equal-child", "disabled", "relocated"])
+def test_claude_conflict_requires_distinct_usage_and_current_independent_custody(
+    journal_claude, control
+):
+    from test_claude import usage as claude_usage
+    from test_claude import user as claude_user
+
+    native = journal_claude
+    source_id = UUID(int=7)
+    with native.native.registry.writer() as writer:
+        journal, ordinal, prefix = _common_claude_revision(native, writer)
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        _, _, accepted = _claude_candidates(live, ordinal)
+        accepted_proof = journal._scopes.verified_revision(
+            live._read.batch, accepted.observation
+        )
+        assert journal.reserve(accepted, live.progress).status == "pending"
+        saved = journal.as_of()
+        archive_path, locate = _claude_archive(
+            native, writer, prefix, source_id, relocate=control == "relocated"
+        )
+        if control == "equal-child":
+            write(archive_path, [claude_user(native.anchor)], append=True)
+        if control == "disabled":
+            disable = CaptureChange(A, source_id, False)
+            frontier = writer.capture_frontier(disable, locate())
+            write(archive_path, [native.request(4)], append=True)
+            writer.set_permission(
+                disable, writer.verify_boundary(disable, locate(), frontier)
+            )
+        output = 7 if control == "equal-child" else 8
+        write(
+            archive_path,
+            [native.request(3, counts=claude_usage(output=output))],
+            append=True,
+        )
+        if control == "disabled":
+            enable = CaptureChange(A, source_id, True)
+            frontier = writer.capture_frontier(enable, locate())
+            write(archive_path, [native.request(5)], append=True)
+            writer.set_permission(
+                enable, writer.verify_boundary(enable, locate(), frontier)
+            )
+        rival = journal.prepare(source_id, locate())
+        _, _, contender = _claude_candidates(rival, ordinal)
+        proof = journal._scopes.verified_revision(
+            rival._read.batch, contender.observation
+        )
+        if control == "disabled":
+            assert proof is None
+        else:
+            assert proof is not None
+            assert (
+                proof.witness.predecessor_material
+                == accepted_proof.witness.predecessor_material
+            )
+            assert proof.witness.prefix_ref != accepted_proof.witness.prefix_ref
+        if control == "equal-child":
+            assert contender.observation.usage == accepted.observation.usage
+        if control == "relocated":
+            original_cursor = live._read.batch._native_cursor
+            rival_cursor = rival._read.batch._native_cursor
+            assert original_cursor.locator_ref != rival_cursor.locator_ref
+            assert original_cursor.incarnation_ref == rival_cursor.incarnation_ref
+        assert journal.reserve(contender, rival.progress).status == "held"
+        assert journal.as_of() == saved
