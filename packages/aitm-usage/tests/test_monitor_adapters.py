@@ -4,6 +4,7 @@ import json
 import shlex
 from dataclasses import replace
 from datetime import timedelta
+from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
@@ -39,6 +40,7 @@ from aitm_usage.types import (
     BoundaryKind,
     DiagnosticCode,
     LedgerView,
+    ProcessingTier,
     Revision,
     _decode,
     _encode,
@@ -485,6 +487,450 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, source):
     ]
 
 
+@pytest.mark.parametrize("terminal_kind", ["result", "cost-state"])
+def test_claude_revision_witnesses_bind_each_committing_row(
+    monkeypatch, source, terminal_kind
+):
+    module, adapter, root = _adapter(monkeypatch, source)
+    key, directory, checkout = source
+    path = directory / "revisions.jsonl"
+    models = {MODEL: model_counts(8, 4, 10, 6, 8)}
+    terminal = (
+        claude_row(
+            "result", checkout, subtype="success", is_error=False, modelUsage=models
+        )
+        if terminal_kind == "result"
+        else cost(**models)
+    )
+    rows = [
+        user(checkout),
+        request(checkout, counts=claude_usage(2), stop=None),
+        request(checkout, req="req-second", msg="msg-second"),
+        request(checkout, counts=claude_usage(3), stop=None),
+        request(checkout),
+        terminal,
+    ]
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    assert [
+        (item.usage.boundary.ordinal, item.revision) for item in legacy.observations
+    ] == [(1, 1), (2, 1), (1, 2), (1, 3), (1, 4), (2, 2)]
+
+    witnesses = []
+    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    assert _encode(batch, module.AdapterBatch) == _encode(legacy, module.AdapterBatch)
+    assert [
+        (
+            observation.usage.boundary.ordinal,
+            witness.predecessor_ordinal,
+            witness.later_ordinal,
+            witness.kind,
+        )
+        for observation, witness in witnesses
+    ] == [
+        (1, 1, 3, "assistant"),
+        (1, 3, 4, "assistant"),
+        (1, 4, 5, terminal_kind),
+        (2, 2, 5, terminal_kind),
+    ]
+    native_lines = path.read_bytes().splitlines(keepends=True)
+    for (observation, witness), (prior_index, current_index) in zip(
+        witnesses, [(0, 2), (2, 3), (3, 4), (1, 5)], strict=True
+    ):
+        assert witness.predecessor is batch.observations[prior_index]
+        assert observation is batch.observations[current_index]
+        assert witness.predecessor_material == key.pseudonymize(
+            "claude-revision-material",
+            _encode(
+                Revision(
+                    witness.predecessor.key,
+                    witness.predecessor.revision,
+                    witness.predecessor.usage,
+                ),
+                Revision,
+            ),
+        )
+        assert witness.predecessor_material != witness.successor_material
+        row_prefix = sha256(b"".join(native_lines[: witness.later_ordinal + 1]))
+        stream = observation.usage.boundary.stream_ref.value
+        assert witness.prefix_ref == key.pseudonymize(
+            "claude-revision-prefix",
+            f"{stream}:{witness.later_ordinal}:{row_prefix.hexdigest()}",
+        )
+    assert witnesses[-2][1].prefix_ref == witnesses[-1][1].prefix_ref
+    assert [proof.terminal_contributor_spans for _, proof in witnesses] == [
+        (),
+        (),
+        ((1, 5), (2, 3)),
+        ((1, 5), (2, 3)),
+    ]
+    assert len({proof.prefix_ref for _, proof in witnesses}) == 3
+    assert "req-first" not in repr(witnesses)
+
+    archive = directory.parent / "archive-private"
+    archive.mkdir()
+    (archive / path.name).write_bytes(path.read_bytes())
+    (archived,) = adapter.discover(replace(root, path=archive))
+    copied_witnesses = []
+    copied = adapter.read_delta(archived, None, _revision_witnesses=copied_witnesses)
+    assert copied_witnesses == witnesses
+    assert (
+        copied.cursor.checkpoint.cursor.locator_ref
+        != batch.cursor.checkpoint.cursor.locator_ref
+    )
+
+
+def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
+    monkeypatch, source
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    _write(
+        directory / "terminal.jsonl",
+        [
+            user(checkout),
+            request(checkout, stop=None),
+            request(checkout, req="req-second", msg="msg-second"),
+            request(checkout),
+            user(checkout),
+            cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
+        ],
+    )
+    (locator,) = adapter.discover(root)
+    witnesses = []
+    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    assert [item.revision for item in batch.observations] == [1, 1, 2, 2]
+    (_, first), (_, second) = witnesses
+    assert first.predecessor_ordinal == 1
+    assert first.later_ordinal == second.later_ordinal == 5
+    assert (
+        first.terminal_contributor_spans
+        == second.terminal_contributor_spans
+        == (
+            (1, 4),
+            (2, 3),
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "linkage",
+    [
+        "linked",
+        "foreign",
+        "missing",
+        "late-repaired",
+        "foreign-after-link",
+        "same-after-reset",
+        "foreign-after-reset",
+        "missing-after-reset",
+        "unverified-at-origin",
+    ],
+)
+def test_claude_terminal_witness_requires_verified_nested_contributor(
+    monkeypatch, source, linkage
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    tool_id = "toolu-terminal-agent"
+
+    def child(parent, output=8):
+        return request(
+            checkout,
+            req="req-terminal-child",
+            msg="msg-terminal-child",
+            counts=claude_usage(output),
+            isSidechain=True,
+            parent_tool_use_id=parent,
+        )
+
+    reset_updates = {
+        "same-after-reset": tool_id,
+        "foreign-after-reset": "toolu-unrelated",
+        "missing-after-reset": None,
+    }
+    first_parent = {
+        "linked": tool_id,
+        "missing": None,
+        "foreign-after-link": tool_id,
+        "unverified-at-origin": tool_id,
+    } | dict.fromkeys(reset_updates, tool_id)
+    rows = [
+        user(checkout),
+        request(
+            checkout,
+            uuid=str(UUID(int=0x230)),
+            stop="tool_use",
+            isSidechain=False,
+            content=[
+                {
+                    "type": "tool_use",
+                    "id": tool_id,
+                    "name": "Agent",
+                    "input": {"prompt": "private"},
+                }
+            ],
+        ),
+    ]
+    if linkage == "unverified-at-origin":
+        rows.append(user(checkout))
+    rows.append(child(first_parent.get(linkage, "toolu-unrelated")))
+    if linkage in reset_updates:
+        rows.append(user(checkout))
+    child_output = 8
+    updates = {
+        "late-repaired": tool_id,
+        "foreign-after-link": "toolu-unrelated",
+    } | reset_updates
+    if linkage in updates:
+        child_output = 9
+        rows.append(child(updates[linkage], child_output))
+    rows.append(
+        claude_row(
+            "result",
+            checkout,
+            subtype="success",
+            is_error=False,
+            modelUsage={MODEL: model_counts(4 + child_output, 4, 10, 6, 8)},
+        )
+    )
+    _write(directory / "terminal-agent.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    assert legacy.cursor is not None
+    completed = [
+        item
+        for item in legacy.observations
+        if item.usage.availability is Availability.COMPLETE
+    ]
+    assert [item.usage.tokens.output_tokens for item in completed] == [4, child_output]
+    assert (
+        DiagnosticCode.OVERLAP_UNVERIFIED in {d.code for d in legacy.diagnostics}
+    ) is (linkage in {"foreign", "missing", "late-repaired", "foreign-after-link"})
+
+    witnesses = []
+    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    assert batch == legacy
+    if linkage in {"linked", "same-after-reset"}:
+        ((successor, witness),) = witnesses
+        assert successor.usage.tokens.output_tokens == 4
+        child_end = 5 if linkage == "same-after-reset" else 3
+        assert witness.terminal_contributor_spans == ((1, 2), (2, child_end))
+    else:
+        assert witnesses == []
+
+
+def test_claude_terminal_witness_holds_nonzero_excluded_baseline(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    before = CUTOFF - timedelta(seconds=1)
+    _write(
+        directory / "excluded.jsonl",
+        [
+            user(checkout, before),
+            request(checkout, time=before),
+            request(checkout, req="req-in-window", msg="msg-in-window"),
+            cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
+        ],
+    )
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    assert [item.usage.availability for item in legacy.observations] == [
+        Availability.PARTIAL,
+        Availability.COMPLETE,
+    ]
+
+    witnesses = []
+    assert adapter.read_delta(locator, None, _revision_witnesses=witnesses) == legacy
+    assert witnesses == []
+
+
+def test_claude_terminal_witness_holds_contributor_from_prior_read(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source)
+    key, directory, checkout = source
+    path = directory / "resumed-terminal.jsonl"
+    prior_rows = [user(checkout), request(checkout)]
+    _write(path, prior_rows)
+    (locator,) = adapter.discover(root)
+    first = adapter.read_delta(locator, None)
+    _write(
+        path,
+        [
+            *prior_rows,
+            request(checkout, req="req-in-window", msg="msg-in-window"),
+            cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
+        ],
+    )
+    (reopened,) = adapter.discover(
+        replace(root, evidence=Evidence(key, _committed_view(first)))
+    )
+    legacy = adapter.read_delta(reopened, first.cursor)
+    assert [item.usage.availability for item in legacy.observations] == [
+        Availability.PARTIAL,
+        Availability.COMPLETE,
+        Availability.COMPLETE,
+    ]
+
+    witnesses = []
+    assert (
+        adapter.read_delta(reopened, first.cursor, _revision_witnesses=witnesses)
+        == legacy
+    )
+    assert witnesses == []
+
+
+@pytest.mark.parametrize("regression", [False, True])
+def test_claude_processing_invalidation_requires_accepted_counts(
+    monkeypatch, source, regression
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    rows = [
+        user(checkout),
+        request(checkout, counts=claude_usage(3), stop=None),
+        request(
+            checkout, counts=claude_usage(2 if regression else 3) | {"speed": "fast"}
+        ),
+        request(checkout, counts=claude_usage(4)),
+    ]
+    _write(directory / "tier.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    assert legacy.observations[0].usage.processing_tier is ProcessingTier.STANDARD
+    assert legacy.observations[1].usage.processing_tier is None
+    assert (
+        DiagnosticCode.COUNTER_REGRESSION in {d.code for d in legacy.diagnostics}
+    ) is regression
+
+    witnesses = []
+    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    assert batch == legacy
+    if regression:
+        assert witnesses == []
+    else:
+        (observation, proof), *rest = witnesses
+        assert observation is batch.observations[1]
+        assert proof.predecessor is batch.observations[0]
+        assert proof.kind == "assistant"
+
+
+def test_claude_revision_witness_requires_predecessor_in_fixed_read(
+    monkeypatch, source
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    key, directory, checkout = source
+    path = directory / "resumed.jsonl"
+    rows = _rows(CLAUDE_FIXTURE, checkout)
+    _write(path, rows[:2])
+    (locator,) = adapter.discover(root)
+    first = adapter.read_delta(locator, None)
+    _write(path, rows)
+    (reopened,) = adapter.discover(
+        replace(root, evidence=Evidence(key, _committed_view(first)))
+    )
+    witnesses = []
+    resumed = adapter.read_delta(reopened, first.cursor, _revision_witnesses=witnesses)
+    assert [item.revision for item in resumed.observations] == [2]
+    assert witnesses == []
+
+
+def test_claude_revision_witnesses_follow_the_fixed_capture_frontier(
+    monkeypatch, source
+):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    path = directory / "frontier.jsonl"
+    rows = [
+        user(checkout),
+        request(checkout, counts=claude_usage(3), stop=None),
+        request(checkout),
+    ]
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    limit = _capture_position(locator._source, None).cursor
+    _write(path, [*rows, cost(**{MODEL: model_counts()})])
+    fixed = adapter.read_delta(locator, None, _capture_limit=limit)
+    assert fixed.cursor.checkpoint.cursor == limit
+    assert all(
+        item.usage.availability is Availability.PARTIAL for item in fixed.observations
+    )
+
+    witnesses = []
+    bounded = adapter.read_delta(
+        locator, None, _capture_limit=limit, _revision_witnesses=witnesses
+    )
+    assert bounded == fixed
+    ((observation, witness),) = witnesses
+    assert observation is bounded.observations[-1]
+    assert (witness.kind, witness.later_ordinal) == ("assistant", 2)
+
+
+def test_claude_revision_witnesses_withheld_after_failed_rescan(
+    monkeypatch, source, tmp_path
+):
+    module, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    foreign = tmp_path / "foreign-private"
+    foreign.mkdir()
+    path = directory / "rescan.jsonl"
+    command = shlex.join(
+        [
+            "aitm-usage",
+            "--project",
+            "/private/tmp/declared-project",
+            "scope",
+            "mark",
+            "--marker",
+            "/private/tmp/marker",
+            "--session-id",
+            user(checkout)["sessionId"],
+            "--json",
+        ]
+    )
+    rows = [
+        user(checkout),
+        request(
+            checkout,
+            req="req-prefix",
+            msg="msg-prefix",
+            counts=claude_usage(3),
+            stop=None,
+        ),
+        request(checkout, req="req-prefix", msg="msg-prefix"),
+        user(foreign),
+        *_native_tool_turn(
+            foreign,
+            command,
+            json.dumps({"command_id": str(COMMAND), "status": "queued"}),
+        ),
+    ]
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    lookahead = adapter.read_delta(locator, None)
+    assert [item.revision for item in lookahead.observations] == [1, 2]
+    boundary = _receipt_request(lookahead)
+
+    scan = module.scan
+
+    def change_before_rescan(candidate, *args, **kwargs):
+        if candidate._enrollments:
+            rows[2] = request(
+                checkout, req="req-prefix", msg="msg-prefix", counts=claude_usage(6)
+            )
+            _write(path, rows)
+        return scan(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(module, "scan", change_before_rescan)
+    witnesses = []
+    failed = adapter.read_delta(
+        locator, None, _scope_boundaries=(boundary,), _revision_witnesses=witnesses
+    )
+    assert not failed.observations and failed.cursor is None
+    assert not witnesses
+    assert DiagnosticCode.BOUNDARY_UNVERIFIED in {d.code for d in failed.diagnostics}
+
+
 def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
@@ -717,6 +1163,48 @@ def _restart_rows(case, checkout):
         ),
     ]
     return rows, {1}
+
+
+def test_claude_aggregate_retraction_has_no_revision_witness(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    path = directory / "nested.jsonl"
+    rows, _ = _restart_rows("nested", checkout)
+    _write(path, [*rows[:2], rows[-1], *rows[2:-1]])
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    (retracted,) = [
+        item
+        for item in legacy.observations
+        if item.usage.availability is Availability.UNKNOWN
+    ]
+    assert retracted.revision == 2
+    assert DiagnosticCode.OVERLAP_UNVERIFIED in {d.code for d in legacy.diagnostics}
+
+    witnesses = []
+    assert adapter.read_delta(locator, None, _revision_witnesses=witnesses) == legacy
+    assert witnesses == []
+
+
+def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    _write(
+        directory / "message.jsonl",
+        [
+            user(checkout),
+            request(checkout, stop=None),
+            request(checkout, msg="msg-foreign", counts=claude_usage(5)),
+        ],
+    )
+    (locator,) = adapter.discover(root)
+    legacy = adapter.read_delta(locator, None)
+    assert [item.revision for item in legacy.observations] == [1]
+    assert DiagnosticCode.IDENTITY_CONFLICT in {d.code for d in legacy.diagnostics}
+
+    witnesses = []
+    assert adapter.read_delta(locator, None, _revision_witnesses=witnesses) == legacy
+    assert witnesses == []
 
 
 @pytest.mark.parametrize("case", ["desktop", "streamed", "nested", "receipt"])
