@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 158
 title: "[#133 T21] Qualify the GitHub merge fence"
 kind: "spike"
-state: "plan"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/158"
 parent: 133
 children: []
 blocking: [159]
 blocked-by: []
 created: "2026-11-10T16:51:45Z"
-updated: "2026-11-12T01:06:19Z"
+updated: "2026-11-12T03:09:23Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -32,7 +32,15 @@ Recheck it at the leaf's own refinement and JIT. The parent plan
 defines this leaf's boundaries. Its own applicable design, plan, JIT,
 dependency proof, and implementation authority govern pickup.
 
-## Current merge-only qualification scope
+## Completion sign-off
+
+Completed as a research spike with an evidence-backed refusal. The native merge route accepted a moved base. The atomic ref update enforced the measured base, head and stop flag conditions. Specific PR authorization and independent role enforcement remain open production qualification requirements under [#133's design evidence](../133/attachments/2026-11-11-merge-fence-design-evidence.md).
+
+[Reviewed disposition](plan/2026-11-11-158-merge-only-disposition.md) · [Independent review](plan/reviews/2026-11-11-158-merge-only-disposition-review.md) · [Teardown readback](attachments/2026-11-11-158-merge-only-disposition.json).
+
+GitHub closed the issue as Completed at `2026-11-12T03:08:32Z`. AITM-PY Backlog read back Done. Codex signed the closeout as closure coordinator. Active implementation time is Unknown. The entries below retain the trial's historical scope and status.
+
+## Reviewed merge-only qualification scope
 
 [Revised #158 plan](plan/2026-11-11-158-merge-only-qualification.md)
 · [#133 design amendment](../133/design/2026-11-11-133-merge-only-stop-the-line-design.md).
