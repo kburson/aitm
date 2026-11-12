@@ -1,0 +1,52 @@
+{
+  "literal_base": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+  "head": "ede095d8ce46d6d1dc5138a849259cfc74e34787",
+  "tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+    "headRefOid": "ede095d8ce46d6d1dc5138a849259cfc74e34787",
+    "isDraft": false,
+    "mergeStateStatus": "CLEAN",
+    "mergeable": "MERGEABLE",
+    "number": 266,
+    "reviewDecision": "",
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/266"
+  },
+  "epic": 100,
+  "blocked_by": [
+    {
+      "number": 209,
+      "state": "closed",
+      "state_reason": "completed"
+    }
+  ],
+  "blocking": [
+    {
+      "number": 204,
+      "state": "open"
+    },
+    {
+      "number": 119,
+      "state": "open"
+    }
+  ],
+  "successor_prerequisites": {
+    "204": [
+      203,
+      210
+    ],
+    "119": [
+      118,
+      199,
+      201,
+      202,
+      203,
+      204,
+      209,
+      210
+    ]
+  },
+  "required_native_approvals": 0
+}
