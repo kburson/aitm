@@ -10,7 +10,7 @@ children: []
 blocking: [149]
 blocked-by: [139]
 created: "2026-11-10T16:51:21Z"
-updated: "2026-11-12T20:02:44Z"
+updated: "2026-11-12T20:20:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
@@ -51,3 +51,7 @@ dependency proof, and implementation authority govern pickup.
 ## Current scope
 
 Deliver advisory shard assignments from the supplied versioned T02 inventory and exact keys. Validate lanes and isolation groups, and prove a stable, exact disjoint union. [Current replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md).
+
+## Pickup order
+
+Rank 60 pickup is blocked by owner sequencing until Rank 50 #146 is resolved. [Rank order](../../001/133/plan/2026-11-12-133-rank-order.md).

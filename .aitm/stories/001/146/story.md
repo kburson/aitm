@@ -10,7 +10,7 @@ children: []
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-12T20:02:44Z"
+updated: "2026-11-12T20:20:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -52,3 +52,7 @@ qualified T07 execution adapter.
 ## Qualification hold
 
 Backlog / BLOCKED. #144 and #145 ended without qualifying collection and execution. A qualified replacement is required. [Current replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md).
+
+## Pickup order
+
+Rank 50 is the next unresolved story. Its trusted collection and execution qualification hold remains active. [Rank order](../../001/133/plan/2026-11-12-133-rank-order.md).
