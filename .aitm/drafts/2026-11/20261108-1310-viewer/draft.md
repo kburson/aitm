@@ -35,3 +35,5 @@ Preliminary integration estimate 3.00 h. Carry this intake into the milestone's 
 [Reviewed requirements](https://github.com/kburson/aitm/blob/20ae85e8e38fd3417e1ec0acd6e4e9f99b5cb22b/.aitm/stories/001/181/plan/2026-11-11-181-slice-c-implementation-plan.md#c06-prove-viewer-and-board-parity) · [Shared qualification evidence](https://github.com/kburson/aitm/blob/c794b1b0be8b7bb67ba7bb1d530fe8a80296f95b/.aitm/stories/002/227/attachments/qualification.md)
 
 [Coverage audit and hosted preview design](attachments/2026-11-11-1-hosted-dashboard-coverage-design.md)
+
+[Read-only preview refinement](attachments/2026-11-11-1-m6-read-only-preview-refinement.md) · [Implementation plan](attachments/2026-11-11-1-m6-read-only-preview-plan.md) · [#139 timing pilot](attachments/2026-11-11-139-m6-timing-pilot.md)

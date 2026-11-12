@@ -1,0 +1,80 @@
+{
+  "schema": "aitm.m6-preview-metric-verification/v1",
+  "repository": "kburson/aitm",
+  "project": "aitm",
+  "metric_scopes": {
+    "actual": "inclusive-story",
+    "working_wall": "inclusive-story"
+  },
+  "story": 139,
+  "before_pin": "5aa53d3c9a1dfb2c49a91cac45aadb37a1d5088d",
+  "after_pin": "374ca84f9707e95e30a81f6bb5a24ad226dfdcd5",
+  "snapshot_sha256": "34ffb031c5ff06dec2197cea8b7e227225267a29b4a57712aac0e223e78f0d82",
+  "as_of_utc": "2026-11-12T00:17:40Z",
+  "verified_at_utc": "2026-11-12T00:17:47.654Z",
+  "receipt_sha256": "0250265406729cc7d5fba6f319e9db8db6baeb8075608b787861b57f3398e15c",
+  "receipt_path": ".aitm/stories/001/139/attachments/timing/m6-live-readback-20261112t001457947z-139.json",
+  "before_actual": {
+    "coverage": "unknown",
+    "milliseconds": null,
+    "evidence_through_utc": null,
+    "reasons": [
+      "missing-work-evidence"
+    ]
+  },
+  "timing": {
+    "actual": {
+      "coverage": "partial",
+      "milliseconds": 1208,
+      "evidence_through_utc": "2026-11-12T00:14:59.155000Z",
+      "reasons": [
+        "incomplete-observation"
+      ]
+    },
+    "owner_wait": {
+      "coverage": "unknown",
+      "milliseconds": null,
+      "evidence_through_utc": null,
+      "reasons": [
+        "missing-owner-wait-evidence"
+      ]
+    },
+    "all_phase_elapsed": {
+      "coverage": "unknown",
+      "milliseconds": null,
+      "evidence_through_utc": null,
+      "reasons": [
+        "missing-elapsed-start"
+      ]
+    },
+    "implementation_elapsed": {
+      "coverage": "unknown",
+      "milliseconds": null,
+      "evidence_through_utc": "2026-11-10T22:01:33Z",
+      "reasons": [
+        "open-elapsed-scope"
+      ]
+    },
+    "working_wall": {
+      "coverage": "partial",
+      "milliseconds": 1208,
+      "evidence_through_utc": "2026-11-12T00:14:59.155000Z",
+      "reasons": [
+        "incomplete-observation"
+      ]
+    }
+  },
+  "cost": {
+    "coverage": "unknown",
+    "priced_usd": null,
+    "evidence_through_utc": null
+  },
+  "cost_reasons": [
+    "usage-report-not-selected"
+  ],
+  "verified_metrics": [
+    "actual",
+    "working_wall"
+  ],
+  "verification_basis": "Fresh-clone digest, registration, pinned fold and value/coverage readback. This verifies admission of the bounded observation."
+}
