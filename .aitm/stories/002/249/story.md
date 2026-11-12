@@ -32,6 +32,6 @@ Formal M6 after M1 release #72. An early bootstrap requires separately recorded 
 
 - [ ] Rebuild from the exact Git planning pin and cutoff with the shipped reader. Verify snapshot and validation bytes and produce a versioned allowlisted view with source and build provenance.
 - [ ] Map Unknown, Partial, verified zero, empty reasons, and source admission. Enforce visibility profile, approved values, restricted descendant rollups, and pricing basis. Record evidence through separately from last verified.
-- [ ] Trust only pinned operator verification blobs bound to the exact metric, scope and digest. Reproduce #139, count the tool once, preserve Unknown for unchecked metrics and report #209 only in the input audit. Reject forged, transplanted or future evidence.
+- [ ] Trust only pinned operator verification blobs bound to the exact metric, scope and digest. Reproduce the single #139 1,208 ms contribution and exact Actual and working wall verification timestamps. Preserve each source value, coverage, reason and evidence-through time, and leave last verified null without matching verification. Report #209 only in the input audit. Reject forged, transplanted or future evidence.
 
 Require an independently reviewed and accepted item-specific JIT implementation plan at pickup. Recheck source, prerequisites, scope, file ownership and estimate then.

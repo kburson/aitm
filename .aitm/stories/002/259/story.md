@@ -26,7 +26,7 @@ trips: []
 
 Proposed implementation estimate **3.5 agent-hours**. Internal predecessors: #252, #258.
 
-Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope.
+Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. Resolve #100 completion accounting for the post-Core #230 follow-up with the owner first.
 
 ## Acceptance criteria
 

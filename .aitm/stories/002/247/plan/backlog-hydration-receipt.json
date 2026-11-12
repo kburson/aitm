@@ -180,8 +180,9 @@
         259
       ],
       "blocking": [],
-      "estimate": 2.75,
+      "estimate": 3.5,
       "project_status": "Backlog"
     }
-  ]
+  ],
+  "estimate_basis": "preliminary issue-body and story-record estimates; board Estimate remains unset until accepted item JIT"
 }

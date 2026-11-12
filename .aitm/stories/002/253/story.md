@@ -30,7 +30,7 @@ Released workflow and event export with pinned source scope.
 
 ## Acceptance criteria
 
-- [ ] Show state history, transitions, cycle and lead time and flow cohorts for the selected project and period.
+- [ ] Show cumulative flow, cycle time per state, lead time, transition paths and loopbacks for the selected project and period.
 - [ ] Distinguish open intervals, phase changes, rework, missing events and scope exclusions. Do not infer duration or state from unverified timing.
 - [ ] Prove deterministic ordering, open and completed paths, multiple attempts, empty results and missing history.
 

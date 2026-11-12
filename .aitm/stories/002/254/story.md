@@ -30,7 +30,7 @@ Released safe document and outcome references; display missing or unapproved con
 
 ## Acceptance criteria
 
-- [ ] Expose sourced design and plan summaries, bumps, lessons, retrospectives and advisory confidence from supported read-only exports.
+- [ ] Expose sourced design and plan summaries, fixed links to the approved full design and plan documents, bumps, lessons, retrospectives and advisory confidence from supported read-only exports.
 - [ ] Use approved summary values and fixed provenance links, enforce visibility scope and handle unapproved or absent material without exposing private content.
 - [ ] Test hostile or unavailable document inputs, revision provenance, current versus historical artifacts and accessible disclosure.
 

@@ -1,7 +1,7 @@
 ---
 schema: "aitm.story/v0"
 id: 258
-title: "[M6 V10] Qualify authorized real-data hosting and issue links"
+title: "[M6 V10] Qualify real-data GitHub Pages hosting and issue links"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/258"
@@ -20,17 +20,17 @@ expansions: []
 trips: []
 ---
 
-# [M6 V10] Qualify authorized real-data hosting and issue links
+# [M6 V10] Qualify real-data GitHub Pages hosting and issue links
 
 [GitHub issue #258](https://github.com/kburson/aitm/issues/258) · [M6 #247](../247/story.md) · [Decomposition section](../247/plan/2026-11-11-247-m6-viewer-decomposition.md#v10-258)
 
 Proposed implementation estimate **3.5 agent-hours**. Internal predecessors: #256.
 
-Delivered M2 hosted issue-link contract, authorized audience/host/route and current refresh target. Board parity remains V11 and V12.
+Delivered M2 hosted issue-link contract, authorized GitHub Pages audience/route and current refresh target. Board parity remains V11 and V12.
 
 ## Acceptance criteria
 
-- [ ] Publish only the approved view to the selected static target, prove allowlisted data, link authority, permissions and authorized browser readback for the published pin and digest.
+- [ ] Publish only the approved view to the authorized GitHub Pages route for approved public data. Prove allowlisted data, link authority, permissions and authorized browser readback for the published pin and digest. For a restricted audience, qualify an authenticated route after a reviewed routing decision. An alternate formal public target requires a reviewed change to the M6 scope.
 - [ ] Exercise recurring or dispatched refresh, stale indicators, last-known-good recovery and independent verification of origins and alternate access routes.
 - [ ] Qualify on the approved scope; verify restricted or public policy as applicable and keep the local viewer available.
 

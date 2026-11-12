@@ -30,7 +30,7 @@ Released Core story and hierarchy export through V03.
 
 ## Acceptance criteria
 
-- [ ] Render progress, state and parent/child navigation from the exported story graph. Support project/epic, lifecycle and coverage filters.
+- [ ] Render a board-style progress view, state and parent/child navigation from the exported story graph. Support project/epic, lifecycle and coverage filters. Distinguish a current local index view from a hosted snapshot and expose its freshness.
 - [ ] Use an explicit empty, partial, orphaned or held view when ancestry or source evidence is missing. Filter and navigate consistently at desktop and narrow widths.
 - [ ] Prove linked story identity, no leakage through excluded descendants, readable details, accessible keyboard navigation and no state changes from the viewer.
 
