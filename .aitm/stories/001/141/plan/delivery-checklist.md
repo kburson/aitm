@@ -64,3 +64,7 @@ head, base or validation inputs require applicable fresh proof.
 ## Formal independent PR review
 
 [Off-platform SAR](reviews/141-formal-sar-r1.md) records **changes-requested** on head `be8f5bff9311655fb788e597c69069c23609a341`, tested tree `ed4ea486732346bfaaf7d518bc91b4d13b555fd5`, after the exact trusted verifier passed.
+
+## Formal independent PR review
+
+[Off-platform SAR](reviews/141-formal-sar-r2.md) records **accepted** on head `8a4d9d5ee81a98596b893c03f43b383fa3acab22`, tested tree `f2c045b29ed4c8f99ba8056de459d17ff340f4d3`, after the exact trusted verifier passed.
