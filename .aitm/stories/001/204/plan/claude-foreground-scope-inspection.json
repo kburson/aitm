@@ -1,0 +1,106 @@
+{
+  "schema": "aitm.claude-folded-scope-inspection/v1",
+  "purpose": "Diagnostic scope projection with the locator filter isolated. No issued proofs, enrolled epochs or journal mutation.",
+  "no_hook_capture": {
+    "parent": {
+      "evidence": [],
+      "enrolled_epochs": 0,
+      "diagnostics": []
+    },
+    "child": {
+      "evidence": [
+        {
+          "isolated_reference_diagnostic_only": true,
+          "candidates": [
+            {
+              "start": 10,
+              "end": 11,
+              "checkout_verified": false,
+              "eligible": false
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "checkout_verified": false,
+              "eligible": false
+            }
+          ]
+        }
+      ],
+      "enrolled_epochs": 0,
+      "diagnostics": [
+        "coverage-gap",
+        "unreconciled-usage",
+        "unreconciled-usage"
+      ]
+    }
+  },
+  "structured_scratch_start_control": {
+    "parent": {
+      "evidence": [
+        {
+          "isolated_reference_diagnostic_only": false,
+          "candidates": [
+            {
+              "start": 23,
+              "end": 24,
+              "checkout_verified": true,
+              "eligible": false
+            },
+            {
+              "start": 31,
+              "end": 32,
+              "checkout_verified": true,
+              "eligible": false
+            }
+          ]
+        },
+        {
+          "isolated_reference_diagnostic_only": true,
+          "candidates": [
+            {
+              "start": 25,
+              "end": 26,
+              "checkout_verified": false,
+              "eligible": false
+            }
+          ]
+        }
+      ],
+      "enrolled_epochs": 0,
+      "diagnostics": [
+        "overlap-unverified",
+        "unreconciled-usage",
+        "coverage-gap",
+        "unreconciled-usage"
+      ]
+    },
+    "child": {
+      "evidence": [
+        {
+          "isolated_reference_diagnostic_only": true,
+          "candidates": [
+            {
+              "start": 10,
+              "end": 11,
+              "checkout_verified": false,
+              "eligible": false
+            },
+            {
+              "start": 17,
+              "end": 18,
+              "checkout_verified": false,
+              "eligible": false
+            }
+          ]
+        }
+      ],
+      "enrolled_epochs": 0,
+      "diagnostics": [
+        "coverage-gap",
+        "unreconciled-usage",
+        "unreconciled-usage"
+      ]
+    }
+  }
+}

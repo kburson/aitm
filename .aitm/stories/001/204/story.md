@@ -45,3 +45,7 @@ The pinned foreground Claude Agent completed, but its aggregate does not attest 
 ### Exact child membership independently verified
 
 The pinned foreground Agent included the final metered child response in `toolUseResult.usage`. The earlier metered request remains independently accounted. Independent Refine passed the native producer proof. The scope writer still requires proof of the original eligible owner and span before the journal can reserve a folded intent. [Native proof and review](plan/2026-11-12-204-folded-membership-refine-pass.md).
+
+### Independent JIT held on original scope authority
+
+The original eligible owner and span for the selected child and covering aggregate could not be issued through the current monitor. The child-only diagnostic confirmed no verified checkout even with the stream filter isolated. #204 remains open in Refine at Rank 229 and directly blocks #119. [Exact JIT disposition and scope inspection](plan/2026-11-12-204-folded-intent-jit-hold.md).
