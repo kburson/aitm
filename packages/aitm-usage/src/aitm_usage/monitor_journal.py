@@ -1,9 +1,11 @@
 """Writer-bound private routing claims and native replay checkpoints."""
 
+import re
 import sqlite3
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from hashlib import sha256
+from itertools import chain
 from uuid import UUID
 from weakref import WeakValueDictionary
 
@@ -19,8 +21,10 @@ from .monitor_scope import (
     ScopePosition,
     ScopeState,
     ScopeView,
+    VerifiedRouteDisposition,
     VerifiedScopeBatch,
     _ObservationProof,
+    _RouteDispositionRecord,
     _timeline,
     resolve_route,
 )
@@ -37,7 +41,9 @@ from .sources.adapter import (
 )
 from .sources.scan import CandidateSource, _capture_position, _CaptureDiscontinuity
 from .types import (
+    BoundaryKind,
     Eligibility,
+    Provider,
     SourceBoundary,
     SourceCheckpoint,
     SourceCursor,
@@ -50,6 +56,10 @@ from .types import (
 )
 
 _Stream = tuple[str, str, str, str, str]
+_DISPOSITION_ROWS = (
+    "SELECT d.command,d.hold,d.sequence,c.sequence,d.payload"
+    " FROM route_dispositions d LEFT JOIN commits c ON c.sequence=d.sequence"
+)
 
 
 class ClaimStatus(StrEnum):
@@ -171,11 +181,34 @@ class ContentDispute:
 
 
 @dataclass(frozen=True, slots=True)
+class _JournalDispositionPayload:
+    project_id: UUID
+    position: ScopePosition
+    start: int
+    end: int
+    hold_digest: str
+    record: _RouteDispositionRecord
+
+
+@dataclass(frozen=True, slots=True)
+class JournalChange:
+    sequence: int
+    disposition: _JournalDispositionPayload
+
+
+@dataclass(frozen=True, slots=True)
+class JournalChangeProjection:
+    change: JournalChange
+    affected: tuple[SourceRef, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class JournalView:
     sequence: int
     claims: tuple[PendingClaim, ...]
     disputes: tuple[OwnershipDispute, ...]
     content_disputes: tuple[ContentDispute, ...] = ()
+    dispositions: tuple[JournalChangeProjection, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -361,6 +394,105 @@ def _claim_span(origin: ClaimEvidence) -> tuple:
         origin.stream_ref,
         origin.start,
         origin.end,
+    )
+
+
+def _stored_disposition(
+    row: tuple[str, str, int, int | None, bytes], evidence: _ServiceEvidence
+) -> JournalChange:
+    command, hold, sequence, commit, raw = row
+    try:
+        _positive(sequence)
+        payload = _decode(
+            raw, _JournalDispositionPayload, validate_ref=evidence.validate_source_ref
+        )
+        _nonnegative(payload.start)
+        _nonnegative(payload.end)
+    except (TypeError, ValueError):
+        raise LedgerError("Invalid stored routing journal disposition") from None
+    record, position = payload.record, payload.position
+    boundary = record.boundary
+    if (
+        sequence != commit
+        or (command, hold) != (str(record.command_id), str(record.hold_id))
+        or record.command_id == record.hold_id
+        or payload.start >= payload.end
+        or not all(
+            re.fullmatch(r"[0-9a-f]{64}", digest)
+            for digest in (
+                payload.hold_digest,
+                record.command_digest,
+                record.request_digest,
+            )
+        )
+        or position.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+        or boundary.provider is not Provider.CODEX
+        or boundary.kind is not BoundaryKind.TURN
+        or (boundary.session_ref, boundary.stream_ref)
+        != (position.session_ref, position.stream_ref)
+        or boundary.ordinal <= position.ordinal
+        or boundary.ordinal < payload.end
+        or boundary.receipt_ref != evidence.pseudonymize("scope-receipt", command)
+        or record.prefix.source_ref != position.stream_ref
+        or record.prefix.offset <= 0
+        or record.hold_state not in (HoldState.HELD, HoldState.GAP)
+        or record.outcome not in (HoldState.GAP, HoldState.RESOLVED)
+        or (
+            record.outcome is HoldState.RESOLVED
+            and record.hold_state is not HoldState.HELD
+        )
+        or _encode(
+            payload,
+            _JournalDispositionPayload,
+            validate_ref=evidence.validate_source_ref,
+        ).encode("utf-8")
+        != raw
+    ):
+        raise LedgerError("Invalid stored routing journal disposition")
+    return JournalChange(sequence, payload)
+
+
+def _affected_disposition_keys(
+    payload: _JournalDispositionPayload,
+    claims: list[PendingClaim],
+    disputes: list[OwnershipDispute],
+    content_disputes: list[ContentDispute],
+) -> tuple[SourceRef, ...]:
+    position = payload.position
+    target = (
+        payload.project_id,
+        position.source_id,
+        position.surface,
+        position.session_ref,
+        position.stream_ref,
+    )
+    origins = chain(
+        ((claim.key, claim.project_id, claim.evidence) for claim in claims),
+        ((dispute.key, dispute.contender, dispute.evidence) for dispute in disputes),
+        (
+            (dispute.key, dispute.project_id, edge.origin)
+            for dispute in content_disputes
+            for edge in (dispute.accepted, dispute.contender)
+        ),
+    )
+    return tuple(
+        sorted(
+            {
+                key
+                for key, project_id, origin in origins
+                if (
+                    project_id,
+                    origin.source_id,
+                    origin.surface,
+                    origin.session_ref,
+                    origin.stream_ref,
+                )
+                == target
+                and origin.start < payload.end
+                and payload.start < origin.end
+            },
+            key=lambda key: key.value,
+        )
     )
 
 
@@ -976,6 +1108,58 @@ class RoutingJournal:
             raise LedgerError("Journal batch was not issued by this writer")
         return self._reserve(prepared._read, prepared.candidates)
 
+    def record_disposition(self, change: VerifiedRouteDisposition) -> JournalChange:
+        """Record a current proposal while leaving routing and progress intact."""
+        with self._store.transaction(write=True) as connection:
+            record = self._scopes.require_route_disposition(change)
+            hold = change.hold
+            if (record.hold_id, record.hold_state) != (hold.command_id, hold.state):
+                raise LedgerError("Verified journal disposition changed its hold")
+            payload = _JournalDispositionPayload(
+                hold.project_id,
+                hold.position,
+                hold.affected.start,
+                hold.affected.end,
+                hold.command_digest,
+                record,
+            )
+            evidence = self._store.evidence
+            command, hold_id = str(record.command_id), str(record.hold_id)
+            row = connection.execute(
+                _DISPOSITION_ROWS + " WHERE d.command = ?", (command,)
+            ).fetchone()
+            if row is not None:
+                written = _stored_disposition(row, evidence)
+                if written.disposition != payload:
+                    raise ConflictError("Journal disposition command changed")
+            else:
+                if (
+                    connection.execute(
+                        "SELECT 1 FROM route_dispositions WHERE hold = ?", (hold_id,)
+                    ).fetchone()
+                    is not None
+                ):
+                    raise ConflictError(
+                        "Journal hold already has a recorded disposition"
+                    )
+                sequence = _tip(connection) + 1
+                raw = _encode(
+                    payload,
+                    _JournalDispositionPayload,
+                    validate_ref=evidence.validate_source_ref,
+                ).encode("utf-8")
+                self._record_sequence(connection, sequence)
+                connection.execute(
+                    "INSERT INTO route_dispositions VALUES (?, ?, ?, ?)",
+                    (command, hold_id, sequence, raw),
+                )
+                written = JournalChange(sequence, payload)
+            # The scope check releases the inbox lock before SQLite commits.
+            # The durable row records historical evidence for a proposal.
+            if self._scopes.require_route_disposition(change) != record:
+                raise LedgerError("Verified journal disposition changed before commit")
+            return written
+
     def as_of(self, sequence: int | None = None) -> JournalView:
         """Read immutable first claims and disputes at a private journal sequence."""
         with self._store.transaction() as connection:
@@ -1065,6 +1249,21 @@ class RoutingJournal:
                         written,
                     )
                 )
+            dispositions = []
+            for row in connection.execute(
+                _DISPOSITION_ROWS
+                + " WHERE d.sequence <= ? ORDER BY d.sequence, d.command",
+                (limit,),
+            ):
+                change = _stored_disposition(row, evidence)
+                affected = _affected_disposition_keys(
+                    change.disposition, claims, disputes, content_disputes
+                )
+                dispositions.append(JournalChangeProjection(change, affected))
             return JournalView(
-                limit, tuple(claims), tuple(disputes), tuple(content_disputes)
+                limit,
+                tuple(claims),
+                tuple(disputes),
+                tuple(content_disputes),
+                tuple(dispositions),
             )
