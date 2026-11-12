@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 144
 title: "[#133 T07] Qualify trusted pytest observation"
 kind: "spike"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/144"
 parent: 133
 children: []
 blocking: [145, 146]
 blocked-by: [139]
 created: "2026-11-10T16:51:12Z"
-updated: "2026-11-12T02:05:01Z"
+updated: "2026-11-12T02:08:30Z"
 last-branch: "codex/aitm-wave30-144"
 estimate: {"agent-hours": 0.75, "size": "S"}
 priority: "P1"
