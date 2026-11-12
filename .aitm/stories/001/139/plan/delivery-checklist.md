@@ -20,8 +20,8 @@ owner requested progression through Done after independent JIT.
   preserves 867 product and CLI plus 182 helper IDs in the full local
   advisory union. The [frozen local validation](frozen-local-validation.json)
   preserves earlier results and the transient initial full-run failures.
-- [ ] Verify hosted #103 attempt and exact tested source. [CI run](https://github.com/kburson/aitm/actions/runs/42915266772)
-- [ ] Retain independent exact-source review and required #103 disposition.
+- [x] Verify hosted #103 attempt and exact tested source. [CI run](https://github.com/kburson/aitm/actions/runs/42915266772)
+- [x] Retain independent exact-source review and required #103 disposition.
 - [ ] Verify trunk delivery and original implementer sign-off, then Close.
 
 ### First exact source candidate
@@ -321,3 +321,7 @@ used two scratch copies of this exact source tree. It grouped three
 Python-edit suggestions under the existing `grok-pricing` unit policy
 and reproduced a rate-card JSON regression missed by testmon selection.
 Full-suite fallback and the reviewed suite policy continue to govern.
+
+## Final candidate on the verified #244 trunk
+
+Fresh signed CI, exact owner disposition and independent acceptance are recorded in the [final delivery evidence](2026-11-11-139-final-delivery.md).

@@ -1,0 +1,203 @@
+{
+  "final-full-advisory": {
+    "binding_kind": "local_advisory",
+    "capability_groups": {
+      "apfs": 8,
+      "native-acl": 1,
+      "none": 1258
+    },
+    "content_digest": "2caedbd733e28c9107bc6341b2c36b4d11ded1c9046dadc30925ffad47d5b680",
+    "dispositions": {
+      "collected": 1267
+    },
+    "exact_product_push_set_match": true,
+    "inventory_sha256": "6fed391f7f9f3c6996d086586d24e8045a12bf717b08020d45daf8d08695f0d5",
+    "isolation_totals": {
+      "ci-helper-serial": 196,
+      "grok-pricing": 4,
+      "native-process-state": 785,
+      "system-process": 3,
+      "test_accounting": 35,
+      "test_claude": 88,
+      "test_grok": 33,
+      "test_grok_pricing": 1,
+      "test_monitor_adapters": 46,
+      "test_scan": 76
+    },
+    "mandatory_count": 7,
+    "node_ids_sha256": "3bbb92ba04984c70ba086da217b116ba15c85f99de84ce35cf3ac886f8381d63",
+    "obligation_key_sha256": "ada4846897794f27c05d4eaf3783f1fca656e087af5d28c45bbdf87bc88682c8",
+    "obligations": 1267,
+    "optional_skip_allowance_count": 1,
+    "owner_totals": {
+      "aitm-usage": 1071,
+      "ci-tools": 196
+    },
+    "required_child_labels": [
+      "cli-help",
+      "service-one-shot"
+    ],
+    "scope_status": "complete_workload",
+    "scopes": [
+      {
+        "capabilities": [
+          "apfs",
+          "darwin",
+          "native-acl"
+        ],
+        "controls": {
+          "configuration": "b17bd04fd19cc8117e41a405911c6b9720077274",
+          "file_checks": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "e8fd821fd0ced62aed3c39d70b378143a10f6c67"
+        },
+        "node_ids_sha256": "383cb5c82c62584766dbd5e9e29990bb37742ea15840a0aa2d4c5222bda532ec",
+        "nodes": 196,
+        "observer": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+        "platform_scope": "darwin-apfs",
+        "profile": "ci-helpers",
+        "receipt_sha256": "553934e17c7018cb50d676dc422fc9083228aadd6c3092daf7272fbe78fa25a7",
+        "runner": {
+          "filesystem": "apfs",
+          "name": "local-darwin",
+          "os": "Darwin",
+          "profile": "darwin-apfs",
+          "python": "3.13.9",
+          "uv": "0.10.6"
+        }
+      },
+      {
+        "capabilities": [
+          "apfs",
+          "darwin",
+          "native-acl"
+        ],
+        "controls": {
+          "configuration": "b17bd04fd19cc8117e41a405911c6b9720077274",
+          "file_checks": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "e8fd821fd0ced62aed3c39d70b378143a10f6c67"
+        },
+        "node_ids_sha256": "ba9ff34099d43fcdf23e99ad452a7aa7724c02edbcb1ed84aedde9d94386ada6",
+        "nodes": 1071,
+        "observer": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+        "platform_scope": "darwin-apfs",
+        "profile": "product-cli",
+        "receipt_sha256": "bfe0295db235600bfa75b2ed5c9577795ba1da5d02539e1675ebb29f2b440f22",
+        "runner": {
+          "filesystem": "apfs",
+          "name": "local-darwin",
+          "os": "Darwin",
+          "profile": "darwin-apfs",
+          "python": "3.13.9",
+          "uv": "0.10.6"
+        }
+      }
+    ],
+    "suite_totals": {
+      "integration": 1260,
+      "system": 3,
+      "unit": 4
+    },
+    "workload": "full"
+  },
+  "source": {
+    "base": "64e0a214ab926dafbc5e0aa9477f7bfb779dc7b9",
+    "head": "a81b916777208c86d8cd40cea4a9b3c77c704d54",
+    "tree": "8028f12297fbb3ce6012ad238e2242cfd2f2e839"
+  },
+  "trunk-product-comparison": {
+    "binding_kind": "local_advisory",
+    "capability_groups": {
+      "apfs": 8,
+      "native-acl": 1,
+      "none": 1062
+    },
+    "content_digest": "9d28ffb2aa2b6fd2196dc591076d92406eddbe1726de334d1d493025601334de",
+    "dispositions": {
+      "collected": 1071
+    },
+    "inventory_sha256": "d4c39ab3dafaa8f133502e6d643b288fd6833720c104e2fb27636dc42c6f9b82",
+    "isolation_totals": {
+      "grok-pricing": 4,
+      "native-process-state": 785,
+      "system-process": 3,
+      "test_accounting": 35,
+      "test_claude": 88,
+      "test_grok": 33,
+      "test_grok_pricing": 1,
+      "test_monitor_adapters": 46,
+      "test_scan": 76
+    },
+    "mandatory_count": 7,
+    "node_ids_sha256": "ba9ff34099d43fcdf23e99ad452a7aa7724c02edbcb1ed84aedde9d94386ada6",
+    "obligation_key_sha256": "00632694f550d27603ea59c52d8a42b0fef94a21a231b8d5c173be4f05d94794",
+    "obligations": 1071,
+    "optional_skip_allowance_count": 1,
+    "owner_totals": {
+      "aitm-usage": 1071
+    },
+    "required_child_labels": [
+      "cli-help",
+      "service-one-shot"
+    ],
+    "scope_status": "comparison_component",
+    "scopes": [
+      {
+        "capabilities": [
+          "apfs",
+          "darwin",
+          "native-acl"
+        ],
+        "controls": {
+          "configuration": "b17bd04fd19cc8117e41a405911c6b9720077274",
+          "file_checks": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "e8fd821fd0ced62aed3c39d70b378143a10f6c67"
+        },
+        "node_ids_sha256": "ba9ff34099d43fcdf23e99ad452a7aa7724c02edbcb1ed84aedde9d94386ada6",
+        "nodes": 1071,
+        "observer": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+        "platform_scope": "darwin-apfs",
+        "profile": "product-cli",
+        "receipt_sha256": "dc0520781495ca7cf0b330f3026d5514da0fe5b7b9f2b6548d51306a2fc3c3fa",
+        "runner": {
+          "filesystem": "apfs",
+          "image": "macos26:20261102.0473.1",
+          "name": "macos-26",
+          "os": "Darwin",
+          "profile": "darwin-apfs",
+          "python": "3.13.9",
+          "uv": "0.10.6",
+          "xcode": "Xcode 26.6\nBuild version 17F113"
+        },
+        "source_reference": {
+          "kind": "ci103_current_replay",
+          "receipt_sha256": "dc0520781495ca7cf0b330f3026d5514da0fe5b7b9f2b6548d51306a2fc3c3fa",
+          "role": "trunk_push",
+          "run_attempt": 1,
+          "run_id": 43127272259,
+          "tree": "7234a795384c8f5b21fb2b0b27cc9490084044a9"
+        }
+      }
+    ],
+    "suite_totals": {
+      "integration": 1064,
+      "system": 3,
+      "unit": 4
+    },
+    "workload": "compare-product-cli"
+  }
+}
