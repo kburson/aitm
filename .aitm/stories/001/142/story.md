@@ -10,12 +10,12 @@ children: []
 blocking: [143, 151, 163]
 blocked-by: [139, 141]
 created: "2026-11-10T16:51:07Z"
-updated: "2026-11-12T12:56:30Z"
+updated: "2026-11-12T13:02:14Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-142-select-test-impact-design.md", "design/reviews/sar-2026-11-12-wave40-design/review-manifest.md"], "plan": ["plan/2026-11-12-142-refinement.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-142-select-test-impact-design.md", "design/reviews/sar-2026-11-12-wave40-design/review-manifest.md"], "plan": ["plan/2026-11-12-142-refinement.md", "plan/2026-11-12-142-select-test-impact.md", "plan/2026-11-12-142-jit.md", "plan/reviews/sar-2026-11-12-wave40-jit/review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T05", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "d27a66d5f7cd624d32983cd6a733b14cfba0d53f4adf85b566bdb34d06ade416"}
@@ -64,3 +64,9 @@ dependency proof, and implementation authority govern pickup.
 - [Design](design/2026-11-12-142-select-test-impact-design.md) · SHA-256 `849e2eb8f742ee79a241703f311f50e4efb325cba300d92d25657a2c2e71ae98`
 - [Refinement](plan/2026-11-12-142-refinement.md) · SHA-256 `1e59e88020b404501d85775d61a6209e8cb1e0f0b767addc3e6eddb5e1929ce9`
 - [Independent review](design/reviews/sar-2026-11-12-wave40-design/review-manifest.md)
+
+## Wave 40 Plan and JIT
+
+- [Plan](plan/2026-11-12-142-select-test-impact.md) · SHA-256 `2d9d2d9105c9ff0b883815138251c3455b766768f5834ef1680fd9dd7411747b`
+- [Jit](plan/2026-11-12-142-jit.md) · SHA-256 `de66a1bfafcad9d82575d5717851d5c96be8245fd92b060c031dfee111b3ee59`
+- [Independent review](plan/reviews/sar-2026-11-12-wave40-jit/review-manifest.md)
