@@ -10,12 +10,12 @@ children: []
 blocking: [149]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:19Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T01:58:45Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-147-bind-gate-changes-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-147-refinement.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T10", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "49891b6867d122424f43f5b34fd4337a2cb5dc93c6325696b48d4f868f5ec76d"}
@@ -53,3 +53,9 @@ and `applicable_inventory(reference, target, dispositions) -> Inventory`.
 ## Wave 3 refinement draft
 
 Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-147-refinement-draft.md).
+
+## Wave 30 leaf design and refinement
+
+- [Design](design/2026-11-11-147-bind-gate-changes-design.md) · SHA-256 `b4df3f9233e71f90627fee92f4031664122560739a63c2810310863611660746`
+- [Refinement](plan/2026-11-11-147-refinement.md) · SHA-256 `db9524f3e5b595c4e4bfee2d537728eca3831c341cd1f43f4f2bf41dea08aeba`
+- [Independent review](design/reviews/spr-2026-11-11-wave30-design/review-manifest.md)
