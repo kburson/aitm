@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 141
 title: "[#133 T04] Derive Python and package edges"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/141"
 parent: 133
 children: []
 blocking: [142]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:04Z"
-updated: "2026-11-12T02:05:44Z"
+updated: "2026-11-12T02:22:13Z"
 last-branch: "codex/aitm-wave30-141"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/derive-python-package-edges-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-141-refinement.md", "plan/2026-11-11-141-python-package-edges.md", "plan/2026-11-11-141-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/derive-python-package-edges-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-141-refinement.md", "plan/2026-11-11-141-python-package-edges.md", "plan/2026-11-11-141-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md", "plan/2026-11-11-141-local-validation.md", "plan/delivery-checklist.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T04", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "8834c6ab0466869c48e118e34b3064ff1ef86a362aaecc5e4db66a6f6c0b6165"}
@@ -63,3 +63,9 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 - [Plan](plan/2026-11-11-141-python-package-edges.md) · SHA-256 `ba033428548e17f629e8f5b161a85b64b7980ebd74a05f2baba530e533e86944`
 - [Jit](plan/2026-11-11-141-jit.md) · SHA-256 `445e6838ac835c1ed61f75209c5e5ebec0d43e1c159a220b5f993c8147533e1c`
 - [Independent review](plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md)
+
+## Wave 30 candidate validation
+
+[Source PR](https://github.com/kburson/aitm/pull/262) · [Local validation](plan/2026-11-11-141-local-validation.md) · [Delivery checklist](plan/delivery-checklist.md).
+
+Attempt 1 head `be8f5bff9311655fb788e597c69069c23609a341`, branch tree `ed4ea486732346bfaaf7d518bc91b4d13b555fd5`, target base `71aa5c880fc6a1db1cf676dfc663373f02ef7b16`. Hosted exact-candidate verification and independent review are pending.
