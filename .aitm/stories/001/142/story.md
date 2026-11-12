@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 142
 title: "[#133 T05] Select and explain test impact"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/142"
 parent: 133
 children: []
 blocking: [143, 151, 163]
 blocked-by: [139, 141]
 created: "2026-11-10T16:51:07Z"
-updated: "2026-11-12T13:02:20Z"
+updated: "2026-11-12T14:07:32Z"
 last-branch: "codex/aitm-wave40-142"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-142-select-test-impact-design.md", "design/reviews/sar-2026-11-12-wave40-design/review-manifest.md"], "plan": ["plan/2026-11-12-142-refinement.md", "plan/2026-11-12-142-select-test-impact.md", "plan/2026-11-12-142-jit.md", "plan/reviews/sar-2026-11-12-wave40-jit/review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-142-select-test-impact-design.md", "design/reviews/sar-2026-11-12-wave40-design/review-manifest.md"], "plan": ["plan/2026-11-12-142-refinement.md", "plan/2026-11-12-142-select-test-impact.md", "plan/2026-11-12-142-jit.md", "plan/reviews/sar-2026-11-12-wave40-jit/review-manifest.md", "plan/142-local-validation-4e752acaf311.md", "plan/delivery-checklist.md", "plan/142-focused-nodeids.txt"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T05", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "d27a66d5f7cd624d32983cd6a733b14cfba0d53f4adf85b566bdb34d06ade416"}
@@ -70,3 +70,9 @@ dependency proof, and implementation authority govern pickup.
 - [Plan](plan/2026-11-12-142-select-test-impact.md) · SHA-256 `2d9d2d9105c9ff0b883815138251c3455b766768f5834ef1680fd9dd7411747b`
 - [Jit](plan/2026-11-12-142-jit.md) · SHA-256 `de66a1bfafcad9d82575d5717851d5c96be8245fd92b060c031dfee111b3ee59`
 - [Independent review](plan/reviews/sar-2026-11-12-wave40-jit/review-manifest.md)
+
+## Wave 40 candidate validation
+
+[Source PR](https://github.com/kburson/aitm/pull/263) · [Local validation](plan/142-local-validation-4e752acaf311.md) · [Delivery checklist](plan/delivery-checklist.md).
+
+Attempt 1 head `4e752acaf311c42c4173fc532977502b88ba398a`, branch tree `61eeabeed1362d5c39188dd6aade2b6549515b01`, target base `011342493399ed6e8a12ba0e9c2a4a1e9efaf294`. Hosted exact-candidate verification and independent review are pending.
