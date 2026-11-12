@@ -4,6 +4,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 CI_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = CI_ROOT.parents[1]
 
@@ -116,7 +118,8 @@ def pytest_runtest_makereport(item, call):
     ]
 
 
-def test_candidate_records_both_normally_exiting_subprocesses(tmp_path):
+@pytest.mark.parametrize("workers", [0, 2], ids=["serial", "parallel"])
+def test_candidate_records_both_normally_exiting_subprocesses(tmp_path, workers):
     cli = "tools/ci/tests/test_cli_evidence.py"
     service = (
         "packages/aitm-usage/tests/test_service.py"
@@ -124,6 +127,7 @@ def test_candidate_records_both_normally_exiting_subprocesses(tmp_path):
     )
     result, evidence = run_observed(
         tmp_path,
+        *(["-p", "xdist.plugin", "-n", str(workers)] if workers else []),
         "--rootdir",
         str(REPO_ROOT),
         cli,
@@ -134,9 +138,70 @@ def test_candidate_records_both_normally_exiting_subprocesses(tmp_path):
     assert result.returncode == evidence["exit_code"] == 0, (
         result.stdout + result.stderr
     )
+    if workers:
+        assert {item.name for item in tmp_path.glob("evidence-gw*.json")} == {
+            "evidence-gw0.json",
+            "evidence-gw1.json",
+        }
+        from pytest_evidence import reconcile_workers
+
+        evidence = reconcile_workers(tmp_path / "evidence.json", workers)
     assert evidence["collected"] == [f"{cli}::test_usage_console_help", service]
     children = evidence["children"]
     assert {child["label"] for child in children} == {"cli-help", "service-one-shot"}
     assert len(children) == len({child["pid"] for child in children}) == 2
     assert all(type(child["pid"]) is int and child["pid"] > 0 for child in children)
     assert all(child["returncode"] == 0 for child in children)
+
+
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [
+        ("missing", "worker receipts"),
+        ("extra", "worker receipts"),
+        ("collection", "worker inventory"),
+        ("deselection", "worker inventory"),
+        ("failed", "worker inventory"),
+        ("phase", "phase reports"),
+        ("controller", "controller evidence"),
+    ],
+)
+def test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence(
+    tmp_path, fault, message
+):
+    from pytest_evidence import reconcile_workers
+
+    node = "test_example.py::test_value"
+    report = {"nodeid": node, "when": "call", "outcome": "passed"}
+    controller = {
+        "schema": "aitm.pytest-evidence/v1",
+        "exit_code": 0,
+        "collected": [],
+        "deselected": [],
+        "reports": [report],
+        "children": [],
+    }
+    worker = dict(controller, collected=[node])
+    records = {
+        "evidence.json": controller,
+        "evidence-gw0.json": worker.copy(),
+        "evidence-gw1.json": dict(worker, reports=[]),
+    }
+    if fault == "missing":
+        del records["evidence-gw1.json"]
+    elif fault == "extra":
+        records["evidence-gw2.json"] = worker
+    elif fault == "collection":
+        records["evidence-gw1.json"]["collected"] = ["test_other.py::test_value"]
+    elif fault == "deselection":
+        records["evidence-gw1.json"]["deselected"] = [node]
+    elif fault == "failed":
+        records["evidence-gw1.json"]["exit_code"] = 1
+    elif fault == "phase":
+        records["evidence-gw1.json"]["reports"] = [report]
+    else:
+        controller["collected"] = [node]
+    for filename, evidence in records.items():
+        (tmp_path / filename).write_text(json.dumps(evidence), encoding="utf-8")
+    with pytest.raises(ValueError, match=message):
+        reconcile_workers(tmp_path / "evidence.json", 2)

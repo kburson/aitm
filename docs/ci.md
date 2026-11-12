@@ -1,6 +1,6 @@
 # Repository CI
 
-Ordinary same-repository PRs use a temporary merge from GitHub and the stable `aitm-ci` job. Trunk pushes verify their own tree and do not satisfy a PR gate. The Python suite runs serially on a qualified Darwin APFS runner. The workflow reports a pass only when all its applicable jobs pass.
+Ordinary same-repository PRs use a temporary merge from GitHub and the stable `aitm-ci` job. Trunk pushes verify their own tree and do not satisfy a PR gate. The candidate and trunk Python jobs run the full product and CLI suite with three pytest-xdist workers on a qualified Darwin APFS runner. The literal-base lane runs serially. The workflow reports a pass only when all its applicable jobs pass.
 
 The collector and CI helpers each have an unrounded 90% line floor. Coverage includes unimported production code, records branch coverage separately, and measures normally exiting CLI and service child processes before combining raw shards. Tests added for coverage must verify a behavior, an invariant or a failure/recovery outcome.
 

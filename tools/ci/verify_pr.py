@@ -400,16 +400,27 @@ def read_attempt(github, pull, workflow, selected):
         record["id"] == run
         and record["run_attempt"] == attempt
         and record["check_suite_id"] == selected["check_suite_id"]
-        and record["created_at"] == selected["created_at"]
         and matches_pull(record, pull)
         and successful(record),
         "selected attempt identity or outcome disagrees",
     )
+    run_created = timestamp(selected["created_at"])
     started = timestamp(record["run_started_at"])
-    require(
-        started >= timestamp(selected["created_at"]),
-        "selected attempt start predates run",
-    )
+    require(started >= run_created, "selected attempt start predates run")
+    if attempt == 1:
+        require(
+            record["created_at"] == selected["created_at"],
+            "first attempt creation disagrees with canonical run",
+        )
+    else:
+        # GitHub can persist a rerun record after recording its start. Job and
+        # signature freshness still use the attempt's reported start time.
+        require(
+            run_created
+            <= timestamp(record["created_at"])
+            <= timestamp(record["updated_at"]),
+            "selected rerun creation falls outside the run and attempt update times",
+        )
     suite = github.document(f"check-suites/{selected['check_suite_id']}")
     require(
         suite["id"] == selected["check_suite_id"]
