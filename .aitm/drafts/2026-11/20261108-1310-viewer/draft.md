@@ -37,3 +37,5 @@ Preliminary integration estimate 3.00 h. Carry this intake into the milestone's 
 [Coverage audit and hosted preview design](attachments/2026-11-11-1-hosted-dashboard-coverage-design.md)
 
 [Read-only preview refinement](attachments/2026-11-11-1-m6-read-only-preview-refinement.md) · [Implementation plan](attachments/2026-11-11-1-m6-read-only-preview-plan.md) · [#139 timing pilot](attachments/2026-11-11-139-m6-timing-pilot.md)
+
+[Independent refinement and Plan review](attachments/2026-11-11-1-m6-read-only-preview-plan-review.md)
