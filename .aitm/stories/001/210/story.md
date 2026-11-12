@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 210
 title: "[M08b4c] Verified paired disposition settlement"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
 blocking: [119, 204]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
-updated: "2026-11-12T16:10:54+00:00"
+updated: "2026-11-12T16:20:55+00:00"
 last-branch: "codex/aitm-210-native-quota-recovery"
 estimate: {"agent-hours": 4.4, "size": "M"}
 priority: null
@@ -69,3 +69,10 @@ The hosted run and independent exact source review remain separate gates. Projec
 Independent exact source review is active. Delivery and Close remain pending.
 
 The independent [exact source review](plan/settlement-source-review.md) passed on its first attempt. The [scope reconciliation](plan/2026-11-12-210-settlement-scope-disposition.md) confirms the accepted positive and retained unsupported cases and links the approved completion anchor. [Partial Review Actual](attachments/timing/paired-settlement-review-actual.json) is 0.6845 hours.
+
+
+## Verified delivery and Close
+
+[PR #266](https://github.com/kburson/aitm/pull/266) delivered merge `766504a02aaeb9dda339d588172dd7d5bdbd2b3f` to literal trunk. Ordered parents and exact signed tree were verified with zero diff from the accepted candidate. [Delivery](plan/settlement-verified-delivery.json) · [Final signature](plan/settlement-premerge-signature.json) · [Implementer retrospective](retro/2026-11-12-210-implementer-retrospective.md).
+
+The [native Close readback](plan/settlement-native-close.json) verified Closed Completed and Project Done, Rank 228.2, Size M, Start 2026-11-12, Estimate 4.4 hours and Actual 0.6914 hours partial. Both #204 prerequisites are now closed. #119 still depends on the open #204. [Partial Close Actual](attachments/timing/paired-settlement-close-actual.json).

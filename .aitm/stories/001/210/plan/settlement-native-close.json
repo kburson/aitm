@@ -1,0 +1,79 @@
+{
+  "issue": {
+    "closedAt": "2026-11-12T16:20:14Z",
+    "number": 210,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/210"
+  },
+  "board": {
+    "actual": 0.6914,
+    "coverage": "Partial. Bounded coordinator progress through verified delivery and Close checkpoint.",
+    "estimate": 4.4,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHsdck",
+    "issue": 210,
+    "rank": 228.2,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-12",
+    "status": "Done"
+  },
+  "successor_prerequisites": {
+    "204": [
+      {
+        "number": 203,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 210,
+        "state": "closed",
+        "state_reason": "completed"
+      }
+    ],
+    "119": [
+      {
+        "number": 118,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 199,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 201,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 202,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 203,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 204,
+        "state": "open",
+        "state_reason": null
+      },
+      {
+        "number": 209,
+        "state": "closed",
+        "state_reason": "completed"
+      },
+      {
+        "number": 210,
+        "state": "closed",
+        "state_reason": "completed"
+      }
+    ]
+  },
+  "verified_delivery": "settlement-verified-delivery.json",
+  "implementer_signoff": "../retro/2026-11-12-210-implementer-retrospective.md"
+}
