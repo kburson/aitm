@@ -1,0 +1,19 @@
+{
+  "base": "64e0a214ab926dafbc5e0aa9477f7bfb779dc7b9",
+  "focused_classifier_tests_on_trunk": 47,
+  "head": "a81b916777208c86d8cd40cea4a9b3c77c704d54",
+  "merge": "56266ed30bbc572b7e56bc64777e802be264c23f",
+  "merged_at": "2026-11-12T00:42:26Z",
+  "method": "merge commit",
+  "pr": 197,
+  "pr_run": "https://github.com/kburson/aitm/actions/runs/43128144723/attempts/1",
+  "review_record": "plan/2026-11-11-139-final-delivery.md",
+  "story": 139,
+  "target": "trunk",
+  "tested": "c9518f4bb71acbb74b393e9c9bbca9dbc88a9bf5",
+  "tree": "8028f12297fbb3ce6012ad238e2242cfd2f2e839",
+  "tree_and_ordered_parents_verified": true,
+  "trunk_completed_at": "2026-11-12T00:46:02Z",
+  "trunk_python_receipt": "plan/final-trunk-python.json",
+  "trunk_run": "https://github.com/kburson/aitm/actions/runs/43129241922/attempts/1"
+}

@@ -1,0 +1,49 @@
+{
+  "run": 43129241922,
+  "attempt": 1,
+  "head": "56266ed30bbc572b7e56bc64777e802be264c23f",
+  "event": "push",
+  "url": "https://github.com/kburson/aitm/actions/runs/43129241922/attempts/1",
+  "python_job": 130888979083,
+  "python_seconds": 198,
+  "job_limit_seconds": 480,
+  "jobs": {
+    "python": "success",
+    "file-checks": "success",
+    "quality": "success",
+    "python-base": "skipped",
+    "collect-evidence": "success",
+    "aitm-ci": "skipped"
+  },
+  "python_artifact": 13904841491,
+  "python_archive_digest": "sha256:c5ef0147811d9df11fac65b28a18c239f3ff95b88c69341231c8a4b3c2928a75",
+  "product_and_cli_tests": 1071,
+  "helper_tests": 196,
+  "phase_reports": 3213,
+  "serial_product_inventory_outcomes_and_line_branch_parity": true,
+  "subprocess_covered_lines": {
+    "service-one-shot": 6318,
+    "cli-help": 4151
+  },
+  "coverage": {
+    "product": {
+      "covered_lines": 10655,
+      "num_statements": 11604,
+      "covered_branches": 3079,
+      "num_branches": 3816
+    },
+    "helpers": {
+      "covered_lines": 806,
+      "num_statements": 849,
+      "covered_branches": 243,
+      "num_branches": 274
+    }
+  },
+  "timings": {
+    "setup": 4,
+    "test": 176,
+    "cache": "warm",
+    "total": 181
+  },
+  "wheel_digest": "0e06548d0ec181534cbd9b6179b1b86fbc98a2da78664d4cd34bed8e8924c381"
+}
