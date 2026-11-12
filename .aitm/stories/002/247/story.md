@@ -47,3 +47,7 @@ All items are in Backlog. Each needs its own reviewed and accepted JIT implement
 - [V13 #260 Qualify M6 release and publish the viewer tutorial](../260/story.md)
 
 [Full decomposition review](plan/reviews/2026-11-11-247-m6-decomposition-acceptance.md) · [Backlog readback](plan/backlog-hydration-receipt.json)
+
+## Cost integration dependency update
+
+[The reviewed #230 replan](../230/plan/2026-11-11-230-cost-dependency-replan.md) resolves the prior #100 completion-accounting hold. #259 retains its qualified #230 and M2 gates. #260 retains #259 and its other accepted prerequisites.

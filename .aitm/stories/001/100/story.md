@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 209, 210, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137, 230]
-blocking: []
+children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 209, 210, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-11T14:41:24Z"
+updated: "2026-11-12T01:09:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -82,4 +82,4 @@ The independently reviewed M08b split narrows [#199](../199/story.md) to the wri
 
 ## Production Cost qualification from #181
 
-[#230 Fenced story Cost and Core ingress](../../002/230/story.md) qualifies the existing #123/#124 publication and export against Core #51 for the dashboard use case. The producers and receiver retain their contract ownership. #230 owns the compatibility proof after those prerequisites.
+Monitor completion includes #123 fenced reports and #124 versioned exports with approved receiver-fixture qualification. [#230](../../002/230/story.md) moved to Core #2 for the live integration check, after #51. [Dependency replan](../../002/230/plan/2026-11-11-230-cost-dependency-replan.md).

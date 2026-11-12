@@ -26,7 +26,7 @@ trips: []
 
 Proposed implementation estimate **3.5 agent-hours**. Internal predecessors: #252, #258.
 
-Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. Resolve #100 completion accounting for the post-Core #230 follow-up with the owner first.
+Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. [The reviewed replan](../230/plan/2026-11-11-230-cost-dependency-replan.md) resolves the former completion-accounting hold. #230 now belongs to Core #2 and still waits for #51, #123 and #124.
 
 ## Acceptance criteria
 

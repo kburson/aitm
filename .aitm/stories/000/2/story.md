@@ -6,11 +6,11 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
-children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242]
+children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 230]
 blocking: []
-blocked-by: []
+blocked-by: [100, 133]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-11T16:02:43Z"
+updated: "2026-11-12T01:09:16Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: 297.25, size: XL }
@@ -48,7 +48,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Dependencies
 
-- **Parent:** [#1](../1/story.md) · **Blocking:** none · **Blocked by:** none
+- **Parent:** [#1](../1/story.md) · **Blocking:** none · **Blocked by:** [#100](../../001/100/story.md), [#133](../../001/133/story.md)
 
 <details><summary>State history (generated from events.jsonl)</summary>
 
@@ -86,3 +86,7 @@ Design published `3702cfde855e7a2345e12439f19cc2ee9ebe7291`; current plan publis
 The [reviewed amendment](plan/2026-11-11-2-governed-pr-and-branch-lifecycle.md) and [review collateral](plan/reviews/governed-pr-lifecycle/review-cycle.md) were published at `8939d9fff17599fe644604b5b267625b4bc5621f`. The [child reconciliation](plan/2026-11-11-2-governed-pr-lifecycle-reconciliation.md) records the new Core leaves, retained IDs, updated estimates, and native dependency readback.
 
 The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 and #229 retain their separate 7.5 h preliminary post-release scope. The GitHub and harness qualifications have separate package handoffs. #159 remains blocked by #157 and #158. Epic and leaf lifecycle authority remains at the existing planning boundary.
+
+## Usage Monitor Cost integration
+
+[#230](../../002/230/story.md) qualifies the delivered #123/#124 monitor producer against the Core #51 receiver. It carries a separate preliminary 3.25 h estimate outside the existing M1 release scope. The existing #100 and #133 blockers apply to every Core child. [Dependency replan](../../002/230/plan/2026-11-11-230-cost-dependency-replan.md).

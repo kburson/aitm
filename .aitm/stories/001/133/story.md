@@ -7,7 +7,7 @@ state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
 children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178]
-blocking: []
+blocking: [2]
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
 updated: "2026-11-10T18:38:22Z"
