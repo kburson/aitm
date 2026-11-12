@@ -1,0 +1,20 @@
+{
+  "story": 141,
+  "repository": "kburson/aitm",
+  "pr": 262,
+  "base": "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+  "head": "be8f5bff9311655fb788e597c69069c23609a341",
+  "tested_merge": "95f6ebe25c6cca5c67efdc509a617842b729f276",
+  "tested_tree": "ed4ea486732346bfaaf7d518bc91b4d13b555fd5",
+  "run_id": 43140853744,
+  "run_attempt": 1,
+  "observed_at": "2026-11-12T03:20:53Z",
+  "disposition": "approved",
+  "decision_by": "Codex Wave 30 coordinator on behalf of kburson",
+  "authority": "Owner explicitly directed standing evidence-based gate decisions and independent agent review on passing data",
+  "scope": [
+    "tools/ci/tia/python_graph.py",
+    "tools/ci/tests/test_tia_python_graph.py"
+  ],
+  "basis": "Authenticated current six-job CI and signed artifact; exact additive two-file scope, inherited #103 workflow and controls intact, approved story design and plan. Formal independent PR review remains a separate delivery gate."
+}
