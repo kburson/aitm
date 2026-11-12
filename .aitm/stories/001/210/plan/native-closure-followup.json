@@ -1,0 +1,271 @@
+{
+  "literal_base": "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+  "literal_tree": "b4a757f106b89086a24d0e909bc259d7b5b93c88",
+  "state": "no_qualified_no_later_usage_carrier",
+  "exact_installed_schema_generator": "codex-cli 0.167.0-alpha.3.2",
+  "official_app_server_docs": "https://learn.chatgpt.com/docs/app-server#turn-events",
+  "generated_schemas": {
+    "TurnCompletedNotification": {
+      "sha256": "00b691508bb0187ecc5f080bb1608add7137672698daed6922967ad90bcb16e1",
+      "notification_properties": [
+        "threadId",
+        "turn"
+      ],
+      "definitions": {
+        "Turn": [
+          "completedAt",
+          "durationMs",
+          "error",
+          "id",
+          "items",
+          "itemsView",
+          "rootTurnId",
+          "startedAt",
+          "status"
+        ]
+      }
+    },
+    "ThreadTokenUsageUpdatedNotification": {
+      "sha256": "aba4f6c7e4a19b2b842c08ee793b57000c07dafd57b922ad0d8e7c76609108c2",
+      "notification_properties": [
+        "threadId",
+        "tokenUsage",
+        "turnId"
+      ],
+      "definitions": {
+        "ThreadTokenUsage": [
+          "last",
+          "modelContextWindow",
+          "total"
+        ],
+        "TokenUsageBreakdown": [
+          "cacheWriteInputTokens",
+          "cachedInputTokens",
+          "inputTokens",
+          "outputTokens",
+          "reasoningOutputTokens",
+          "totalTokens"
+        ]
+      }
+    }
+  },
+  "sanitized_native_event_sample": {
+    "scope": "one current Codex desktop chat, closed native turns only",
+    "metadata": {
+      "cli_version": "0.167.0-alpha.3.2",
+      "originator": "Codex Desktop"
+    },
+    "event_shapes": {
+      "task_complete": [
+        {
+          "keys": [
+            "completed_at",
+            "duration_ms",
+            "last_agent_message",
+            "root_turn_id",
+            "started_at",
+            "time_to_first_token_ms",
+            "turn_id",
+            "type"
+          ],
+          "count": 8
+        }
+      ],
+      "task_started": [
+        {
+          "keys": [
+            "collaboration_mode_kind",
+            "model_context_window",
+            "root_turn_id",
+            "started_at",
+            "turn_attribution",
+            "turn_id",
+            "type"
+          ],
+          "count": 10
+        }
+      ],
+      "token_count": [
+        {
+          "keys": [
+            "info",
+            "rate_limits",
+            "type"
+          ],
+          "count": 3335
+        }
+      ],
+      "turn_aborted": [
+        {
+          "keys": [
+            "completed_at",
+            "duration_ms",
+            "reason",
+            "root_turn_id",
+            "started_at",
+            "turn_id",
+            "type"
+          ],
+          "count": 1
+        }
+      ]
+    },
+    "closed_turn_observations": [
+      {
+        "event": "task_complete",
+        "token_usage_record_observed": true,
+        "counter_with_info_observed": true,
+        "count": 8
+      },
+      {
+        "event": "turn_aborted",
+        "token_usage_record_observed": true,
+        "counter_with_info_observed": true,
+        "count": 1
+      }
+    ]
+  },
+  "sanitized_native_cumulative_counters": {
+    "usage_snapshots": 3337,
+    "same_cumulative_vector_as_preceding_snapshot": 19
+  },
+  "public_reader_controls": [
+    {
+      "diagnostics": [
+        "coverage-gap"
+      ],
+      "earlier_usage_in_current_projection": [
+        3,
+        8,
+        13,
+        18,
+        23,
+        29,
+        32,
+        37,
+        43,
+        46,
+        51,
+        57
+      ],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": true,
+      "later_usage": [],
+      "mode": "timed_completion",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    },
+    {
+      "diagnostics": [
+        "coverage-gap",
+        "boundary-unverified"
+      ],
+      "earlier_usage_in_current_projection": [],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": false,
+      "later_usage": [],
+      "mode": "timed_abort",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    },
+    {
+      "diagnostics": [
+        "coverage-gap"
+      ],
+      "earlier_usage_in_current_projection": [
+        3,
+        8,
+        13,
+        18,
+        23,
+        29,
+        32,
+        37,
+        43,
+        46,
+        51,
+        57
+      ],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": true,
+      "later_usage": [],
+      "mode": "repeated_cumulative_counter",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    },
+    {
+      "diagnostics": [],
+      "earlier_usage_in_current_projection": [
+        3,
+        8,
+        13,
+        18,
+        23,
+        29,
+        32,
+        37,
+        43,
+        46,
+        51,
+        57
+      ],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": true,
+      "later_usage": [
+        63
+      ],
+      "mode": "later_usage",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    }
+  ],
+  "control_tests_passed": 4
+}

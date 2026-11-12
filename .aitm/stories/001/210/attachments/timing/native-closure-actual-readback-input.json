@@ -1,0 +1,25 @@
+{
+  "story": 210,
+  "sources": [
+    {
+      "path": "full-auto-refine-1-210.json",
+      "sha256": "c05882c483a12d055af51fdd519b4883e046d71d015e8aac9bce6e91d944b409"
+    },
+    {
+      "path": "full-auto-native-closure-1-210.json",
+      "sha256": "30807975bf83ff038dbe74a11ff71d0ac214eda070bf070ea7bf22a209b3c10e"
+    }
+  ],
+  "observation_count": 28,
+  "milliseconds": 148093,
+  "actual_hours": "0.0411",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-12T03:11:18.978Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union of the published #210 receipt"
+}
