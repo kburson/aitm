@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 144
 title: "[#133 T07] Qualify trusted pytest observation"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/144"
 parent: 133
 children: []
 blocking: [145, 146]
 blocked-by: [139]
 created: "2026-11-10T16:51:12Z"
-updated: "2026-11-12T11:58:08Z"
+updated: "2026-11-12T12:48:17Z"
 last-branch: "codex/aitm-wave30-144"
 estimate: {"agent-hours": 0.75, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-144-trusted-pytest-observation-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-144-refinement.md", "plan/2026-11-11-144-refusal-delivery-plan.md", "plan/2026-11-11-144-refusal-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md", "plan/2026-11-11-144-refusal-documentary-validation.md", "plan/reviews/2026-11-11-144-refusal-report-review.md", "plan/2026-11-12-144-terminal-refusal.md"], "attachments": ["attachments/2026-11-11-144-trusted-pytest-observation-refusal.md"]}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-144-trusted-pytest-observation-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-144-refinement.md", "plan/2026-11-11-144-refusal-delivery-plan.md", "plan/2026-11-11-144-refusal-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md", "plan/2026-11-11-144-refusal-documentary-validation.md", "plan/reviews/2026-11-11-144-refusal-report-review.md", "plan/2026-11-12-144-terminal-refusal.md", "plan/closure-receipt.json"], "attachments": ["attachments/2026-11-11-144-trusted-pytest-observation-refusal.md"]}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T07", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "638dc7c738badde978b3799404e9210cef3c1a5798f1f0591fd6274ef0dee1ad"}
@@ -77,7 +77,7 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 
 [Refusal](attachments/2026-11-11-144-trusted-pytest-observation-refusal.md) · [Documentary validation](plan/2026-11-11-144-refusal-documentary-validation.md) · [Independent acceptance](plan/reviews/2026-11-11-144-refusal-report-review.md).
 
-All six trial cases remain unrun. Both modes remain unqualified. #144 stays open and holds #145 and #146 pending verified authorization and independent observation capability.
+All six trial cases remain unrun. Both modes remain unqualified. The initial Wave 30 disposition held #144 open pending verified authorization and independent observation capability.
 
 ### Implementer sign-off
 
@@ -86,3 +86,7 @@ All six trial cases remain unrun. Both modes remain unqualified. #144 stays open
 ## Owner-directed terminal refusal
 
 [Closure disposition](plan/2026-11-12-144-terminal-refusal.md) supersedes the earlier open-issue instruction for this attempt and preserves the capability hold on #145 and #146.
+
+### Verified closure
+
+[Closure receipt](plan/closure-receipt.json) records GitHub Closed as not planned, Project Done / Discarded, and the continuing qualification hold on #145 and #146.

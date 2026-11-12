@@ -1,0 +1,85 @@
+{
+  "issue": {
+    "closedAt": "2026-11-12T12:48:11Z",
+    "number": 144,
+    "state": "CLOSED",
+    "stateReason": "NOT_PLANNED",
+    "url": "https://github.com/kburson/aitm/issues/144"
+  },
+  "board": [
+    {
+      "content": {
+        "number": 144,
+        "state": "CLOSED",
+        "stateReason": "NOT_PLANNED"
+      },
+      "disposition": {
+        "name": "Discarded"
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkcwU",
+      "status": {
+        "name": "Done"
+      }
+    },
+    {
+      "content": {
+        "number": 145,
+        "state": "OPEN",
+        "stateReason": null
+      },
+      "disposition": {
+        "name": "BLOCKED"
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkcTA",
+      "status": {
+        "name": "Backlog"
+      }
+    },
+    {
+      "content": {
+        "number": 146,
+        "state": "OPEN",
+        "stateReason": null
+      },
+      "disposition": {
+        "name": "BLOCKED"
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkcWk",
+      "status": {
+        "name": "Backlog"
+      }
+    }
+  ],
+  "observed_at": "2026-11-12T12:48:17Z",
+  "owner_decision_publication": "21dcca4e21657990508a900e6449be280fba8c18",
+  "terminal_disposition": "abandoned",
+  "qualification": "unqualified",
+  "documentary_deliverable": "accepted and signed",
+  "report_publication": "31ba71477eb5b79324dd6a3e1d9aa69cb9f9eeea",
+  "signoff_publication": "449f2ff0a8be6f43cea06641ee6d3da95c48326b",
+  "qualification_hold": [
+    145,
+    146
+  ],
+  "dependencies": {
+    "145": [
+      {
+        "number": 144,
+        "state": "closed",
+        "state_reason": "not_planned"
+      }
+    ],
+    "146": [
+      {
+        "number": 144,
+        "state": "closed",
+        "state_reason": "not_planned"
+      },
+      {
+        "number": 145,
+        "state": "open",
+        "state_reason": null
+      }
+    ]
+  }
+}
