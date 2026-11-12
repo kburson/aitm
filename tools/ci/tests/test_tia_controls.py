@@ -351,9 +351,8 @@ def lineage():
             "run_attempt": 1,
         },
     }
-    inventory = _project(
-        _collection("product-cli", "ci-helpers", binding=collection_binding), "full"
-    )
+    collection = _collection("product-cli", "ci-helpers", binding=collection_binding)
+    inventory = _project(collection, "full")
     document = json.loads(inventory)
     scopes = document["scopes"]
     owners = {"ci-helpers": "ci-tools", "product-cli": "aitm-usage"}
@@ -382,17 +381,25 @@ def lineage():
         and not row["required_capabilities"]
         and row["optional_skip_reason"] is None
     )
-    added = {
-        **ordinary,
-        "nodeid": ordinary["nodeid"].partition("::")[0] + "::test_new_case",
-    }
-    resulting = order_rows([*original, added])
+    nodeid = ordinary["nodeid"].partition("::")[0] + "::test_new_case"
+    product_scope = next(
+        scope for scope in collection["scopes"] if scope["profile"] == "product-cli"
+    )
+    product_scope["items"].append({"nodeid": nodeid, "disposition": "collected"})
+    resulting = json.loads(_project(collection, "full"))["obligations"]
+    added = next(row for row in resulting if row["nodeid"] == nodeid)
     final = point_for("c" * 40, "2" * 40, resulting, suite_policy, ci_policy)
     reference = QualifiedReference(
         inventory, sha256(inventory).hexdigest(), "collector-A", first, lanes
     )
     target = InventoryTarget(
-        "kburson/aitm", _TARGET, "full", lanes, final, (first, unchanged, final)
+        "kburson/aitm",
+        _TARGET,
+        "full",
+        lanes,
+        final,
+        (first, unchanged, final),
+        (SuitePolicy(_SUITES.read_bytes(), _CI103.read_bytes(), "full"),),
     )
     steps = (
         step_for(target, first, unchanged, (), review=False),
@@ -769,3 +776,136 @@ def test_full_control_scope_checks_every_reviewed_profile_platform_pair(repo):
     assert disposition.full_required and disposition.hold_reason == "missing_approval"
     qualified = qualify_controls(base, complete, approvals_for(disposition.binding))
     assert qualified.full_required and qualified.hold_reason is None
+
+
+@pytest.mark.parametrize("kind", ["unregistered-module", "suite", "isolation-group"])
+def test_reviewed_addition_must_match_successor_policy(lineage, kind):
+    reference, target, steps, rows = lineage
+    step = steps[1]
+    original = json.loads(step.deltas[0].after)
+    if kind == "unregistered-module":
+        forged = {
+            **original,
+            "nodeid": "packages/aitm-usage/tests/test_unregistered.py::test_new_case",
+        }
+    elif kind == "suite":
+        wrong_suite = "unit" if original["suite"] != "unit" else "system"
+        forged = {**original, "suite": wrong_suite}
+    else:
+        forged = {**original, "isolation_group": "unapproved-group"}
+    successor = replace(
+        step.after,
+        obligations_sha256=sha256(
+            canonical(order_rows([row for row in rows if row != original] + [forged]))
+        ).hexdigest(),
+    )
+    target = replace(target, point=successor, path=(*target.path[:-1], successor))
+    reviewed = step_for(
+        target, step.before, successor, (delta_for(None, forged),), review=True
+    )
+    with pytest.raises(InventoryHold, match="policy_obligation_mismatch"):
+        applicable_inventory(reference, target, (steps[0], reviewed))
+
+
+def test_anchor_requires_every_policy_helper_target_even_without_replay(lineage):
+    reference, target, _, _ = lineage
+    document = json.loads(reference.inventory)
+    missing = next(
+        row for row in document["obligations"] if row["profile"] == "ci-helpers"
+    )
+    document["obligations"].remove(missing)
+    raw = canonical(document)
+    anchor = replace(
+        reference.anchor,
+        obligations_sha256=sha256(canonical(document["obligations"])).hexdigest(),
+    )
+    reference = replace(
+        reference, inventory=raw, expected_sha256=sha256(raw).hexdigest(), anchor=anchor
+    )
+    target = replace(target, point=anchor, path=(anchor,))
+    with pytest.raises(InventoryHold, match="policy_obligation_mismatch"):
+        applicable_inventory(reference, target, ())
+
+
+@pytest.mark.parametrize("policy_gap", ["absent", "wrong-bytes", "wrong-workload"])
+def test_replay_holds_when_exact_point_policy_is_unavailable(lineage, policy_gap):
+    reference, target, steps, _ = lineage
+    policy = target.policies[0]
+    if policy_gap == "absent":
+        policies = ()
+    elif policy_gap == "wrong-bytes":
+        policies = (replace(policy, ci103=policy.ci103 + b"\n"),)
+    else:
+        policies = (replace(policy, workload="compare-product-cli"),)
+    with pytest.raises(InventoryHold, match="unbound_replay_policy"):
+        applicable_inventory(reference, replace(target, policies=policies), steps)
+
+
+def test_successor_reconciles_policy_metadata_at_each_reviewed_revision(lineage):
+    reference, target, steps, _ = lineage
+    policy = target.policies[0]
+    reference_document = json.loads(reference.inventory)
+    original = reference_document["obligations"]
+    before = next(
+        row
+        for row in original
+        if row["profile"] == "product-cli" and not row["mandatory"]
+    )
+    policy_document = json.loads(policy.suites)
+    override = next(
+        (
+            row
+            for row in policy_document["overrides"]
+            if row["selector"] == before["nodeid"]
+        ),
+        None,
+    )
+    if override is None:
+        override = {"selector": before["nodeid"]}
+        policy_document["overrides"].append(override)
+    override["isolation_group"] = "reviewed-replacement"
+    raw = canonical(policy_document)
+    successor_policy = replace(policy, suites=raw)
+    projected = json.loads(
+        _project(
+            _collection(
+                "product-cli", "ci-helpers", binding=reference_document["binding"]
+            ),
+            "full",
+            suites=policy_document,
+        )
+    )
+    after = next(
+        row for row in projected["obligations"] if row_key(row) == row_key(before)
+    )
+    assert after["isolation_group"] == "reviewed-replacement"
+    target = replace(target, policies=(policy, successor_policy))
+    for candidate_row, accepted in (
+        (after, True),
+        ({**after, "isolation_group": "forged"}, False),
+    ):
+        rows = order_rows(
+            [row for row in original if row_key(row) != row_key(before)]
+            + [candidate_row]
+        )
+        point = replace(
+            target.point,
+            suite_policy_sha256=sha256(raw).hexdigest(),
+            obligations_sha256=sha256(canonical(rows)).hexdigest(),
+        )
+        candidate = replace(target, point=point, path=(*target.path[:-1], point))
+        reviewed = step_for(
+            candidate,
+            steps[1].before,
+            point,
+            (delta_for(before, candidate_row),),
+            review=True,
+        )
+        if accepted:
+            result = json.loads(
+                applicable_inventory(reference, candidate, (steps[0], reviewed))
+            )
+            assert result["obligations"] == projected["obligations"]
+        else:
+            with pytest.raises(InventoryHold, match="policy_obligation_mismatch"):
+                applicable_inventory(reference, candidate, (steps[0], reviewed))

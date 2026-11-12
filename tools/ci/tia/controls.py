@@ -6,7 +6,7 @@ import re
 from dataclasses import asdict, dataclass, is_dataclass, replace
 from hashlib import sha256
 
-from tia.inventory import Inventory, SuitePolicy, _git_ref, _node, _policy
+from tia.inventory import Inventory, SuitePolicy, _git_ref, _node, _obligations, _policy
 from tia.snapshot import Entry, GitEndpoint, HostedBinding, HostedProvenance, Snapshot
 from verify_pr import CI_CONFIG_NAMES, gate_controls
 
@@ -333,27 +333,13 @@ def _approval_hold(approvals: ControlApprovals, binding: ControlBinding) -> str 
     return None
 
 
-def _control_scope(candidate: ControlCandidate) -> Scope:
-    scope = candidate.scope
-    policy = candidate.suite_policy
-    if (
-        not isinstance(scope, Scope)
-        or not _text(scope.workload)
-        or not isinstance(policy, SuitePolicy)
-        or policy.workload != scope.workload
-        or not isinstance(policy.suites, bytes)
-        or not isinstance(policy.ci103, bytes)
-        or sha256(policy.suites).hexdigest() != scope.suite_policy_sha256
-        or sha256(policy.ci103).hexdigest() != scope.ci103_policy_sha256
-    ):
-        raise ValueError("missing or mismatched reviewed control policy")
-    lanes = _lanes(scope.lanes)
+def _policy_for_lanes(policy: SuitePolicy, lanes: tuple[Lane, ...]):
     rules = _policy(policy)
-    workload = rules.workloads.get(scope.workload)
+    workload = rules.workloads.get(policy.workload)
     if workload is None or {(lane.profile, lane.platform_scope) for lane in lanes} != {
         tuple(pair) for pair in workload["required_pairs"]
     }:
-        raise ValueError("incomplete control workload")
+        raise ValueError("incomplete policy workload")
     for lane in lanes:
         profile = rules.profiles[lane.profile]
         identity = dict(lane.runner)
@@ -372,7 +358,26 @@ def _control_scope(candidate: ControlCandidate) -> Scope:
                 <= set(runner["capabilities"])
             )
         ):
-            raise ValueError("incompatible control scope lane")
+            raise ValueError("incompatible policy scope lane")
+    return rules
+
+
+def _control_scope(candidate: ControlCandidate) -> Scope:
+    scope = candidate.scope
+    policy = candidate.suite_policy
+    if (
+        not isinstance(scope, Scope)
+        or not _text(scope.workload)
+        or not isinstance(policy, SuitePolicy)
+        or policy.workload != scope.workload
+        or not isinstance(policy.suites, bytes)
+        or not isinstance(policy.ci103, bytes)
+        or sha256(policy.suites).hexdigest() != scope.suite_policy_sha256
+        or sha256(policy.ci103).hexdigest() != scope.ci103_policy_sha256
+    ):
+        raise ValueError("missing or mismatched reviewed control policy")
+    lanes = _lanes(scope.lanes)
+    _policy_for_lanes(policy, lanes)
     return replace(scope, lanes=lanes)
 
 
@@ -447,12 +452,15 @@ class QualifiedReference:
 
 @dataclass(frozen=True)
 class InventoryTarget:
+    """An independently verified path and reviewed policies for its points."""
+
     repository: str
     target_ref: str
     workload: str
     lanes: tuple[Lane, ...]
     point: InventoryPoint
     path: tuple[InventoryPoint, ...]
+    policies: tuple[SuitePolicy, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -626,14 +634,6 @@ def _validate_row(row: dict, lanes: dict[tuple[str, str], Lane]) -> None:
 
 def _ordered_rows(rows: dict) -> list[dict]:
     return [rows[key] for key in sorted(rows)]
-
-
-def _helper_sources(rows) -> set[tuple[str, str, str]]:
-    return {
-        (*_lane_key(row), row["nodeid"].partition("::")[0])
-        for row in rows
-        if row["profile"] == "ci-helpers"
-    }
 
 
 def _validate_reference(
@@ -818,24 +818,75 @@ def _preserve_required_row(before, after) -> None:
     _require(protected, "weakened_required_obligation")
 
 
-def _apply_deltas(rows: dict, changes: list[dict], allow_policy_change: bool) -> None:
+def _apply_deltas(rows: dict, changes: list[dict]) -> None:
     for change in changes:
         before, after = change["before"], change["after"]
         key = _row_key(before if before is not None else after)
         _require(rows.get(key) == before, "delta_predecessor_mismatch")
         _preserve_required_row(before, after)
-        if before is not None and after is not None and not allow_policy_change:
-            _require(
-                all(
-                    before[field] == after[field]
-                    for field in _ROW_FIELDS - {"disposition"}
-                ),
-                "unbound_obligation_policy_change",
-            )
         if after is None:
             del rows[key]
         else:
             rows[key] = after
+
+
+def _point_policy(point: InventoryPoint) -> tuple[str, str]:
+    return point.suite_policy_sha256, point.ci103_policy_sha256
+
+
+def _replay_policy_rules(target: InventoryTarget, lanes: tuple[Lane, ...]) -> dict:
+    required = {_point_policy(point) for point in target.path}
+    resolved = {}
+    reason = "unbound_replay_policy"
+    _require(isinstance(target.policies, tuple), reason)
+    for policy in target.policies:
+        _require(
+            isinstance(policy, SuitePolicy)
+            and policy.workload == target.workload
+            and isinstance(policy.suites, bytes)
+            and isinstance(policy.ci103, bytes),
+            reason,
+        )
+        key = (sha256(policy.suites).hexdigest(), sha256(policy.ci103).hexdigest())
+        _require(key in required and key not in resolved, reason)
+        try:
+            resolved[key] = _policy_for_lanes(policy, lanes)
+        except ValueError as error:
+            raise InventoryHold(reason) from error
+    _require(resolved.keys() == required, reason)
+    return resolved
+
+
+def _reconcile_policy_rows(
+    rows: dict, lanes: dict[tuple[str, str], Lane], rules
+) -> None:
+    items = {key: [] for key in lanes}
+    for row in rows.values():
+        item = {"nodeid": row["nodeid"], "disposition": row["disposition"]}
+        if row["disposition"] == "allowed_skip":
+            item["reason"] = row["optional_skip_reason"]
+        items[_lane_key(row)].append(item)
+    reason = "policy_obligation_mismatch"
+    for key, lane in lanes.items():
+        # T02 projects a complete lane at a time. These inputs model the
+        # obligation rows for policy reconciliation and supply no collection evidence.
+        scope = {
+            "profile": lane.profile,
+            "platform_scope": lane.platform_scope,
+            "exit_code": 0,
+            "complete": True,
+            "deselected": [],
+            "items": items[key],
+        }
+        try:
+            expected = list(
+                _obligations(
+                    scope, rules.profiles[lane.profile], set(lane.capabilities), rules
+                )
+            )
+        except ValueError as error:
+            raise InventoryHold(reason) from error
+        _require(all(rows.get(_row_key(row)) == row for row in expected), reason)
 
 
 def applicable_inventory(
@@ -845,8 +896,9 @@ def applicable_inventory(
 ) -> Inventory:
     """Replay exact reviewed history over a qualified full collection.
 
-    The caller verifies the independent anchor, protected-target path, and
-    delivery and review evidence. This checks their exact binding and preserves
+    The caller verifies the independent anchor, protected-target path,
+    policies, and delivery and review evidence. This checks their exact binding
+    and reconciles each point against its reviewed policy while preserving
     original collection provenance. A hold returns no partial inventory.
     """
     _require(
@@ -876,8 +928,9 @@ def applicable_inventory(
         and len(dispositions) == len(target.path) - 1,
         "unverified_history_path",
     )
+    policy_rules = _replay_policy_rules(target, canonical_lanes)
     document, rows = _validate_reference(reference, target, lanes)
-    required_helpers = _helper_sources(rows.values())
+    _reconcile_policy_rows(rows, lanes, policy_rules[_point_policy(reference.anchor)])
     history = []
     seen_evidence = set()
     for before, after, step in zip(
@@ -902,22 +955,21 @@ def applicable_inventory(
         _match_step_evidence(
             step.delivery, binding, seen_evidence, "unverified_delivery"
         )
-        policy_changed = (
-            before.suite_policy_sha256 != after.suite_policy_sha256
-            or before.ci103_policy_sha256 != after.ci103_policy_sha256
-        )
+        before_policy, after_policy = _point_policy(before), _point_policy(after)
+        policy_changed = before_policy != after_policy
         if changes or policy_changed or step.review is not None:
             _match_step_evidence(
                 step.review, binding, seen_evidence, "unverified_inventory_review"
             )
-        _apply_deltas(rows, changes, policy_changed)
-        helper_sources = _helper_sources(rows.values())
-        _require(required_helpers <= helper_sources, "missing_required_helper")
+        before_rules = policy_rules[before_policy]
+        after_rules = policy_rules[after_policy]
         _require(
-            policy_changed or required_helpers == helper_sources,
-            "unbound_helper_policy_change",
+            set(before_rules.profiles["ci-helpers"]["targets"])
+            <= set(after_rules.profiles["ci-helpers"]["targets"]),
+            "missing_required_helper",
         )
-        required_helpers = helper_sources
+        _apply_deltas(rows, changes)
+        _reconcile_policy_rows(rows, lanes, after_rules)
         _require(
             {_lane_key(row) for row in rows.values()} == lanes.keys(),
             "missing_required_lane",
