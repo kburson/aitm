@@ -1,0 +1,21 @@
+# Stop the Line design constraints from #158
+
+Use this evidence when refining the default-branch merge, repair and recovery stories under [#133](../story.md). The [accepted spike design](../../158/design/2026-11-10-158-qualify-github-merge-fence-design.md#receipt-and-dependency-disposition) allowed a qualified route or an evidence-backed refusal. [#158's final disposition](../../158/plan/2026-11-11-158-merge-only-disposition.md) records a refusal for the tested routes. Any story relying on a production merge route requires a positive, independently reviewed hosted qualification receipt.
+
+## Bind admission to the exact base, head and tested tree
+
+The synchronous REST request refused a stale head with HTTP 409. When the base advanced and the head stayed fixed, it returned HTTP 200 and landed a merge with the moved base as first parent. An asynchronous trial in AITM reproduced that result. The resulting tree was identical in each moved-base case. Require the authorized base, head and tested tree at the target write. If the base moves, invalidate the old admission and obtain proof for the new candidate. [REST trial and landed objects](../../158/attachments/github-merge-fence-spike.md#m09-supplemental-control--stale-base-accepted) · [Independent REST evidence review](../../158/plan/reviews/spr-2026-11-10-endpoint-evidence.md) · [Async trial and strict-check controls](../../158/plan/2026-11-11-158-merge-boundary-trial.md#exact-base)
+
+## Verify what CI actually tested
+
+After the base moved, the strict required check rejected a passing status on the old test merge. With the same strict rule active, a passing status on the unchanged PR head allowed the merge while the current test merge lacked a passing status in that context. Bind trusted CI evidence to the exact candidate it exercised, including the target, base, head and tested tree. After release, require evidence admitted for the new release generation under the [#133 merge-only plan](../plan/2026-11-11-133-merge-only-stop-the-line.md). [Strict-check fixture results](../../158/plan/2026-11-11-158-merge-boundary-trial.md#exact-base)
+
+## Enforce the hold when GitHub writes the target
+
+GitHub's atomic ref transaction advanced the target and flag together when all expectations matched. A stale base, head or flag left all refs intact in the controlled cases. In one competing dispatch, the hold advanced the flag and the stale merge left the target fixed. Require the stop flag version to fence the target write. Keep an unresolved write fenced until authoritative readback establishes whether it landed and how it orders with the hold. The fixture demonstrated one hold winner. The opposite concurrent outcome, lost responses and the interval after GitHub's final update check remain unqualified. [Atomic trial and receipt](../../158/plan/2026-11-11-158-atomic-ref-trial.md) · [Independent review of the controls](../../158/plan/reviews/2026-11-11-158-atomic-ref-trial-review.md#evidence-assessment)
+
+## Bind authorization to the specific PR and separate the roles
+
+The protected fixture rule recorded a pass for the ref update. GitHub showed the fixture PR open immediately after the write and marked it merged later. The mutation and rule records identify the ref update but carry no PR identity as an authorization input. The fixture used one write-capable identity and zero required approvals. Qualify the binding to the nominated PR at mutation even when another PR has the same Git objects. Show that the merge writer cannot grant its own independent review or publish trusted CI proof, and that other write-capable actors cannot update the protected target outside the qualified route. [Protected fixture and role limits](../../158/plan/2026-11-11-158-atomic-ref-trial.md) · [Final disposition and independent review](../../158/plan/reviews/2026-11-11-158-merge-only-disposition-review.md)
+
+The atomic trial proceeded after the external app preflight timed out. Terminal readback verified fixture teardown and matching production protections. The reviewed record preserves the preflight deviation and identifies the unrun repair, release and post-release cases. [Final disposition](../../158/plan/2026-11-11-158-merge-only-disposition.md) · [Teardown readback](../../158/attachments/2026-11-11-158-merge-only-disposition.json)

@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -47,7 +47,10 @@ continue under their normal target rules.
 · [#158 hosted qualification plan](../158/plan/2026-11-11-158-merge-only-qualification.md).
 
 The original exact reviews below retain their historical scope.
-Changed leaves require replan and review before pickup. #159 stays blocked.
+Changed leaves require replan and review before pickup. Use the
+[design constraints and evidence from the #158 spike](attachments/2026-11-11-merge-fence-design-evidence.md)
+when refining the later merge and recovery stories. A positive hosted
+qualification receipt is required before any story relies on the merge route.
 
 ## Test execution and advisory selection amendment
 
@@ -112,5 +115,4 @@ The [spike record](../158/story.md#one-time-repository-authorization)
 and teardown receipt record its use and deletion. The owner declined
 continual use of disposable repositories. Any follow-on qualification
 or rehearsal that depends on another disposable GitHub repository
-requires a revised plan before pickup. #159 remains gated on qualified
-merge evidence.
+requires a revised plan before pickup.
