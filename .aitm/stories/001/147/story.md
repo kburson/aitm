@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 147
 title: "[#133 T10] Bind gate changes and inventory dispositions"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/147"
 parent: 133
 children: []
 blocking: [149]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:19Z"
-updated: "2026-11-12T03:48:29Z"
+updated: "2026-11-12T03:48:36Z"
 last-branch: "codex/aitm-wave30-147"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
