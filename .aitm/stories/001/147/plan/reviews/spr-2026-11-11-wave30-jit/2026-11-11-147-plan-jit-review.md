@@ -1,0 +1,18 @@
+# #147 independent plan and JIT review
+
+Reviewed 2026-11-12 02:05 UTC by Codex / story144, independent of author Codex / story147. Wave 30 manual review; no source edits or hosted runs by the reviewer.
+
+| Reviewed artifact | Raw SHA-256 before and after complete read | Full read |
+| --- | --- | ---: |
+| `2026-11-11-147-bind-gate-changes.md` | `08d5840595fa108bae1929e7d36ca3cba1425b507432652bfad36eb1d7917af9` | 62 / 62 |
+| `2026-11-11-147-jit.md` | `f70f836effa5e66c30acc0be0f53ca38a19501a62511055748f47d7b389300c2` | 63 / 63 |
+
+**Verdict: accept the exact plan and JIT.** No blocking findings. This verdict does not authorize Develop or claim an implementation or passing source candidate.
+
+- Plan lines 27–41 carry the exact trusted pair, repository, ref, endpoint, policy, scope and control-delta bindings into matching, distinct owner and review records. T03 verifies the PR merge ref and ordered parents; the plan uses the encoded number without inventing a T03 field. The finite classifier preserves raw Git path identity and the legacy predicate; a verified control edit retains full validation even after exact disposition. The refusal matrix tests uncertain inputs and replayed or incomplete authority.
+- Plan lines 43–56 carry the exact complete T02 workload and every required lane through independently established lineage, protected-target delivery, scope-specific review, and complete ordered row digests. Missing lane evidence, missing or reordered steps, wrong policy or source, and relaxed fixed obligations hold even if another part of the proof matches. The comparison result preserves the untouched reference, with no fresh collection or execution claim. The focused tests use the existing T02 and T03 boundaries.
+- At the 02:04:56 UTC readback, GitHub showed #147 open/Planning with precisely #139 and #140 as completed native prerequisites and #149 as open dependent. Earlier independent Project readbacks recorded both predecessors Done. Confirmed remote trunk `71aa5c880fc6a1db1cf676dfc663373f02ef7b16`, exact tree `b4a757f106b89086a24d0e909bc259d7b5b93c88`, clean assigned branch, both predecessor merges in ancestry, both planned paths absent, and all 13 JIT blob pins matching. Compared the four intervening #209 changes: two monitor modules and two gate-classified product tests. The workflow, policy, lock and T02/T03 pins are unchanged. The two changed tests belong to the new exact-base scope.
+- Independently confirmed active workflow `412848571`, effective ruleset `26821811`, hosted platform and tool pins, and the four-source helper denominator. Both proposed paths are gate controls, and the focused local proof stays separate from the hosted helper result. The JIT accurately labels the new trunk run as in progress at its own readback; at 02:04:56 UTC, run `43138335027` attempt 1 separately read back completed/success at the exact current trunk. That updated observation does not validate any future #147 candidate.
+- The 3.5-hour estimate with a 2.5-hour checkpoint and a hard four-hour limit is credible for an offline consumer in two files with fixture-backed authority and delivery inputs. Verify behavioral red beyond the initial absent-module result. A real authority feed, hosted integration, scope or source drift, or exceeding the cap requires the stated re-refinement.
+
+The independent review did not rerun the author's local preflight. Plan/JIT bind the published design and refinement bytes from Planning checkpoint `488fa94ad07eaa8b81200a80b11ebf38500208a9`. Exact source tests, current run/attempt proof, source review and verified delivery remain separate requirements.

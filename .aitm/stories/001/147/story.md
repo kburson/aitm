@@ -10,12 +10,12 @@ children: []
 blocking: [149]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:19Z"
-updated: "2026-11-12T01:58:58Z"
+updated: "2026-11-12T02:06:18Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-147-bind-gate-changes-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-147-refinement.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-147-bind-gate-changes-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-147-refinement.md", "plan/2026-11-11-147-bind-gate-changes.md", "plan/2026-11-11-147-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T10", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "49891b6867d122424f43f5b34fd4337a2cb5dc93c6325696b48d4f868f5ec76d"}
@@ -59,3 +59,9 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 - [Design](design/2026-11-11-147-bind-gate-changes-design.md) · SHA-256 `b4df3f9233e71f90627fee92f4031664122560739a63c2810310863611660746`
 - [Refinement](plan/2026-11-11-147-refinement.md) · SHA-256 `db9524f3e5b595c4e4bfee2d537728eca3831c341cd1f43f4f2bf41dea08aeba`
 - [Independent review](design/reviews/spr-2026-11-11-wave30-design/review-manifest.md)
+
+## Wave 30 Plan and JIT
+
+- [Plan](plan/2026-11-11-147-bind-gate-changes.md) · SHA-256 `08d5840595fa108bae1929e7d36ca3cba1425b507432652bfad36eb1d7917af9`
+- [Jit](plan/2026-11-11-147-jit.md) · SHA-256 `f70f836effa5e66c30acc0be0f53ca38a19501a62511055748f47d7b389300c2`
+- [Independent review](plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md)
