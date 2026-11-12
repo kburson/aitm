@@ -1,0 +1,117 @@
+{
+  "pr": {
+    "base": "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+    "head": "a9f97f937369192b6f565f6d5cec1e26340358ab",
+    "number": 261,
+    "state": "open",
+    "tested_merge": "30e7287cce8ef52d14f723b3fb516bfdd80587d2",
+    "url": "https://github.com/kburson/aitm/pull/261"
+  },
+  "tested_merge": {
+    "parents": [
+      "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+      "a9f97f937369192b6f565f6d5cec1e26340358ab"
+    ],
+    "sha": "30e7287cce8ef52d14f723b3fb516bfdd80587d2",
+    "tree": "b3aef9e5f6b75aa987f443bc6133d5a243147011"
+  },
+  "run": {
+    "id": 43140683160,
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "head_sha": "a9f97f937369192b6f565f6d5cec1e26340358ab",
+    "event": "pull_request",
+    "path": ".github/workflows/ci.yml",
+    "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160",
+    "check_suite_id": 116825395656
+  },
+  "jobs": [
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130926632616",
+      "completed_at": "2026-11-12T02:24:26Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130926632616",
+      "id": 130926632616,
+      "name": "python-base",
+      "started_at": "2026-11-12T02:20:15Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130926632850",
+      "completed_at": "2026-11-12T02:24:35Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130926632850",
+      "id": 130926632850,
+      "name": "python",
+      "started_at": "2026-11-12T02:20:15Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130926632886",
+      "completed_at": "2026-11-12T02:20:28Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130926632886",
+      "id": 130926632886,
+      "name": "file-checks",
+      "started_at": "2026-11-12T02:20:15Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130926632973",
+      "completed_at": "2026-11-12T02:20:37Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130926632973",
+      "id": 130926632973,
+      "name": "quality",
+      "started_at": "2026-11-12T02:20:15Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130928334673",
+      "completed_at": "2026-11-12T02:24:45Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130928334673",
+      "id": 130928334673,
+      "name": "collect-evidence",
+      "started_at": "2026-11-12T02:24:37Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/130928397689",
+      "completed_at": "2026-11-12T02:25:02Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43140683160/job/130928397689",
+      "id": 130928397689,
+      "name": "aitm-ci",
+      "started_at": "2026-11-12T02:24:47Z",
+      "status": "completed"
+    }
+  ],
+  "artifacts": [
+    {
+      "digest": "sha256:b87930ad22efe55ebb4d34656e8d53615b80c85dfe85a7da218afacf45136531",
+      "expired": false,
+      "id": 13910165124,
+      "name": "aitm-ci-base-a1"
+    },
+    {
+      "digest": "sha256:0fa6e93d83b52f80db9b7404d5ab243ae46dd5822f67adf7041ef0ee3a13700d",
+      "expired": false,
+      "id": 13909692099,
+      "name": "aitm-ci-evidence-a1"
+    },
+    {
+      "digest": "sha256:61dd1f4a0db03a886a401eb86b250b0e4b3a9f0981f4e9f152cb58f368b17e4c",
+      "expired": false,
+      "id": 13909268619,
+      "name": "aitm-ci-collector-a1"
+    },
+    {
+      "digest": "sha256:03b2ec0e2ebf36143765ab4caa70fab4d6edaf41955fe312e68bd541c2078670",
+      "expired": false,
+      "id": 13908939861,
+      "name": "aitm-ci-python-a1"
+    }
+  ]
+}

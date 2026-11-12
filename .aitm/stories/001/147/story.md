@@ -10,12 +10,12 @@ children: []
 blocking: [149]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:19Z"
-updated: "2026-11-12T02:25:04Z"
+updated: "2026-11-12T02:26:17Z"
 last-branch: "codex/aitm-wave30-147"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-147-bind-gate-changes-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-147-refinement.md", "plan/2026-11-11-147-bind-gate-changes.md", "plan/2026-11-11-147-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md", "plan/local-validation.md", "plan/delivery-checklist.md", "plan/local-focused-nodeids.txt"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-147-bind-gate-changes-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-147-refinement.md", "plan/2026-11-11-147-bind-gate-changes.md", "plan/2026-11-11-147-jit.md", "plan/reviews/spr-2026-11-11-wave30-jit/review-manifest.md", "plan/local-validation.md", "plan/delivery-checklist.md", "plan/local-focused-nodeids.txt", "plan/hosted-readback-a9f97f937369.json", "plan/hosted-signature-a9f97f937369.json", "plan/verifier-hold-a9f97f937369.json", "plan/reviews/2026-11-11-147-source-owner-assessment.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T10", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "49891b6867d122424f43f5b34fd4337a2cb5dc93c6325696b48d4f868f5ec76d"}
@@ -71,3 +71,7 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 [Source PR](https://github.com/kburson/aitm/pull/261) · [Local validation](plan/local-validation.md) · [Delivery checklist](plan/delivery-checklist.md).
 
 Attempt 1 head `a9f97f937369192b6f565f6d5cec1e26340358ab`, branch tree `b3aef9e5f6b75aa987f443bc6133d5a243147011`, target base `71aa5c880fc6a1db1cf676dfc663373f02ef7b16`. Hosted exact-candidate verification and independent review are pending.
+
+### First candidate and rework
+
+The first candidate completed six hosted jobs with authenticated signature custody. Its independent source assessment required correction, so the story returned to Develop within the same attempt. [Hosted readback](plan/hosted-readback-a9f97f937369.json) · [Signature](plan/hosted-signature-a9f97f937369.json) · [Source assessment](plan/reviews/2026-11-11-147-source-owner-assessment.md).
