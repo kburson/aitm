@@ -12,7 +12,7 @@ blocked-by: []
 created: "2026-11-12T00:31:36Z"
 updated: "2026-11-12T00:35:22Z"
 last-branch: "planning"
-estimate: {"agent-hours": 43.5, "size": "Feature", "scope": "proposed decomposition"}
+estimate: {"agent-hours": 43.5, "size": "Feature", "scope": "accepted backlog decomposition"}
 priority: null
 origin: ".aitm/drafts/2026-11/20261108-1310-viewer"
 files: {"draft": "draft.md", "events": "events.jsonl", "design": ["attachments/2026-11-11-1-hosted-dashboard-coverage-design.md"], "plan": ["plan/2026-11-11-247-m6-viewer-decomposition.md"], "attachments": ["attachments/2026-11-11-1-hosted-dashboard-coverage-design.md", "attachments/2026-11-11-1-m6-read-only-preview-plan-review.md", "attachments/2026-11-11-1-m6-read-only-preview-plan.md", "attachments/2026-11-11-1-m6-read-only-preview-refinement.md", "attachments/2026-11-11-139-m6-timing-pilot-readback.json", "attachments/2026-11-11-139-m6-timing-pilot.md"]}
@@ -26,7 +26,7 @@ trips: []
 
 Deliver the local viewer, then a static hosted viewer with progress, flow, timing and Cost, bumps, evidence summaries, retrospectives, and Discuss. Use the reviewed read-only preview to prove the pinned metrics and publication model.
 
-[Graduated draft](draft.md) · [Decomposition candidate](plan/2026-11-11-247-m6-viewer-decomposition.md) · [#139 timing pilot](attachments/2026-11-11-139-m6-timing-pilot.md)
+[Graduated draft](draft.md) · [Accepted decomposition](plan/2026-11-11-247-m6-viewer-decomposition.md) · [#139 timing pilot](attachments/2026-11-11-139-m6-timing-pilot.md)
 
 All items are in Backlog. Each needs its own reviewed and accepted JIT implementation plan at pickup. Formal M6 implementation follows released M1. See the plan for M2, timing, Cost and authorized hosting gates.
 
@@ -45,3 +45,5 @@ All items are in Backlog. Each needs its own reviewed and accepted JIT implement
 - [V11 #257 Qualify timing replay and board-to-view parity](../257/story.md)
 - [V12 #259 Qualify priced Cost replay and board-to-view parity](../259/story.md)
 - [V13 #260 Qualify M6 release and publish the viewer tutorial](../260/story.md)
+
+[Full decomposition review](plan/reviews/2026-11-11-247-m6-decomposition-acceptance.md) · [Backlog readback](plan/backlog-hydration-receipt.json)

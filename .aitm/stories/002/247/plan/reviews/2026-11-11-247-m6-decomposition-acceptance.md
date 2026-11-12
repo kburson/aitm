@@ -1,0 +1,11 @@
+# #247 M6 full decomposition review
+
+**Accepted for Backlog planning.** The final [decomposition](../2026-11-11-247-m6-viewer-decomposition.md) is 152 physical lines at SHA-256 `4be08e201c73d239ab2147ecd861000e7e0f1812a81f31b66fb1bc0bef514fd6`. The final bytes were published at planning `c7608f69cc3ef9aa424a8e7370f5dc1b5a6e0051`.
+
+- [Author review](2026-11-11-247-m6-decomposition-sar.md) checked the full candidate and its graph.
+- Independent Codex reviewer `/root/m6_hydration_spr` issued a [round 1 hold](2026-11-11-247-m6-decomposition-spr-round-1.md) and [round 2 pass](2026-11-11-247-m6-decomposition-spr-round-2.md). The reviewer reread all final 152 lines after XPR, matched local and published SHA-256, and accepted the final bytes with no remaining findings.
+- [Native cross-provider manifest](xpr-2026-11-11-m6/plan/2026-11-12-2026-11-11-247-m6-viewer-decomposition-review-794172cf9fbd41964f010085354f9df8/review-794172cf9fbd41964f010085354f9df8-review-manifest.md) records Claude Opus 5.5 at high effort, two rounds and consensus. The [actual returned read audit](2026-11-11-247-m6-xpr-full-read-audit.json) matched 151/151 and 152/152 physical lines. The reviewer required an explicit V02 → V05 compatibility contract. The second round accepted the separate Core-backed product view, the retained preview schema and regression fixtures, and the clarified formal sequence. Native authority assurance is unavailable in the manifest. Native revision and finalization were replayed onto the advanced planning tip with identical reviewed artifact and collateral bytes. [SPR patch](decomposition-patches/patch-001.diff) and [XPR patch](decomposition-patches/patch-002.diff) reconstructed the final plan byte for byte.
+
+Final GitHub and Project 24 readback confirmed #247 under #1 and all 13 open children in Backlog with 19 reciprocal internal edges and issue criteria matching the plan. The preliminary estimates total 43.5 h, each at most four hours. Every leaf needs its own reviewed and accepted JIT implementation plan at pickup.
+
+Core #2 still has open blockers #100 and #133. V12 and V13 retain the unresolved #100/#230/Core #51 completion boundary and other gates. Review and hydration are complete within planning. Formal M6 and any separately authorized pre-M1 preview sequencing retain their recorded pickup requirements.

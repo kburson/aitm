@@ -1,0 +1,58 @@
+diff --git a/.aitm/stories/002/247/plan/2026-11-11-247-m6-viewer-decomposition.md b/.aitm/stories/002/247/plan/2026-11-11-247-m6-viewer-decomposition.md
+index 5fb9722..4d70079 100644
+--- a/.aitm/stories/002/247/plan/2026-11-11-247-m6-viewer-decomposition.md
++++ b/.aitm/stories/002/247/plan/2026-11-11-247-m6-viewer-decomposition.md
+@@ -13 +13 @@ The bootstrap reuses the shipped Python dashboard reader and validated evidence.
+-The first preview ends at a verified downloadable bundle. V09 separately qualifies a manual default-branch refresh with synthetic inputs. V10 selects and verifies an authorized real-data route and audience at pickup; a recurring trigger requires the agreed freshness target and verified last-valid behavior. A deployment never assumes a planning push can run trunk workflows. Real hosted links use the M2 contract. Current authorized local work continues through the shipped dashboard path.
++The first preview ends at a verified downloadable bundle. V09 separately qualifies a manual default-branch refresh with synthetic inputs. V10 verifies an authorized GitHub Pages route and audience at pickup; a recurring trigger requires the agreed freshness target and verified last-valid behavior. A deployment never assumes a planning push can run trunk workflows. Real hosted links use the M2 contract. Current authorized local work continues through the shipped dashboard path.
+@@ -19 +19 @@ The leaf estimates are implementation agent-hours including local verification a
+-The native graph represents required M6 predecessors. External release, provider, approved audience and alternative-path gates are declared per leaf. Verify each at JIT against delivered evidence. Do not add an AND block for the #228/#229 alternative. Add M2 issue linkage when its owning milestone graduates. Parent and dependency mirrors inside M6 are recorded in the story store.
++The native graph represents required M6 predecessors. External release, provider, approved audience and alternative-path gates are declared per leaf. Verify each at JIT against delivered evidence. Do not add an AND block for the #228/#229 alternative. Add M2 issue linkage when its owning milestone graduates. Parent and dependency mirrors inside M6 are recorded in the story store. The receipt records preliminary issue-body estimates. AITM-PY Estimate remains unset until independently reviewed item pickup establishes the JIT estimate.
+@@ -32 +32 @@ The native graph represents required M6 predecessors. External release, provider
+-| V10 | [#258](https://github.com/kburson/aitm/issues/258) | 3.5 | V09 | Delivered M2 hosted issue-link contract, authorized audience/host/route and current refresh target. Board parity remains V11 and V12. |
++| V10 | [#258](https://github.com/kburson/aitm/issues/258) | 3.5 | V09 | Delivered M2 hosted issue-link contract, authorized GitHub Pages audience/route and current refresh target. Board parity remains V11 and V12. |
+@@ -34,2 +34,2 @@ The native graph represents required M6 predecessors. External release, provider
+-| V12 | [#259](https://github.com/kburson/aitm/issues/259) | 3.5 | V05, V10 | Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. |
+-| V13 | [#260](https://github.com/kburson/aitm/issues/260) | 2.75 | V10, V11, V12 | Applicable supported hosted and local scope, exact released package dependencies and aggregate verification. |
++| V12 | [#259](https://github.com/kburson/aitm/issues/259) | 3.5 | V05, V10 | Qualified #230, including #123/#124 and Core #51, plus M2 Cost field/readback contract and authorized scope. Resolve #100 completion accounting for the post-Core #230 follow-up with the owner first. |
++| V13 | [#260](https://github.com/kburson/aitm/issues/260) | 3.5 | V10, V11, V12 | Applicable supported hosted and local scope, exact released package dependencies and aggregate verification. |
+@@ -37 +37,5 @@ The native graph represents required M6 predecessors. External release, provider
+-Total **42.75 implementation agent-hours** across **13** leaves and **19** internal dependency edges. V01 → V02 is the bootstrap chain. The formal local chain starts at V03 after released M1, then V04. V05–V08 may work on disjoint feature paths once their predecessors and pickup gates pass. V09 integrates the local features before V10 qualifies real-data hosting. V11 and V12 then qualify separate metric scopes. V13 is the aggregate release and tutorial gate.
++Total **43.5 implementation agent-hours** across **13** leaves and **19** internal dependency edges. V01 → V02 is the bootstrap chain. The formal local chain starts at V03 after released M1, then V04. V05–V08 may work on disjoint feature paths once their predecessors and pickup gates pass. V09 integrates the local features before V10 qualifies real-data hosting. V11 and V12 then qualify separate metric scopes. V13 is the aggregate release and tutorial gate.
++
++## Open dependency affecting Cost and release
++
++#230 is a post-Core follow-up under #100 and depends on Core #51. The owner gates every Core child on completion of #100 and #133. If #100 completion includes #230, those conditions form a cycle. At planning review there is no verified owner decision that excludes #230 from #100's completion or moves it to another owner. V12 and V13 therefore remain held for Cost and release until the owner records the #100 completion boundary or rehomes the post-Core follow-up and the normal prerequisites are satisfied. This does not authorize work on a Core child or change the native #100 or #2 graphs.
+@@ -47 +51 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Trust only pinned operator verification blobs bound to the exact metric, scope and digest. Reproduce #139, count the tool once, preserve Unknown for unchecked metrics and report #209 only in the input audit. Reject forged, transplanted or future evidence.
++- [ ] Trust only pinned operator verification blobs bound to the exact metric, scope and digest. Reproduce the single #139 1,208 ms contribution and exact Actual and working wall verification timestamps. Preserve each source value, coverage, reason and evidence-through time, and leave last verified null without matching verification. Report #209 only in the input audit. Reject forged, transplanted or future evidence.
+@@ -69 +73 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Render progress, state and parent/child navigation from the exported story graph. Support project/epic, lifecycle and coverage filters.
++- [ ] Render a board-style progress view, state and parent/child navigation from the exported story graph. Support project/epic, lifecycle and coverage filters. Distinguish a current local index view from a hosted snapshot and expose its freshness.
+@@ -75 +79 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-**Show timing, Cost and evidence coverage in the local viewer.** 3.75 h. **Candidate paths:** `packages/aitm-viewer/web/src/metrics/`, `packages/aitm-viewer/web/tests/metrics.test.ts`.
++**Show timing, Cost and evidence coverage in the local viewer.** 3.75 h. **Candidate paths:** `packages/aitm-viewer/src/aitm_viewer/metric_view.py`, `packages/aitm-viewer/web/src/metrics/`, `packages/aitm-viewer/web/tests/metrics.test.ts`.
+@@ -78 +82 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Reuse the preview view semantics without introducing a second fold. Show Unknown and supported Partial or verified-zero states and label pricing basis.
++- [ ] Own the versioned approved metric view over the released Core export. Produce the same pinned metric payload for the local viewer, hosted build and M2 readback comparison, with independent timing and usage watermarks. Preserve the preview semantics without introducing a second timing or pricing fold. Show Unknown, supported Partial and verified zero, and label pricing basis.
+@@ -85 +89 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Show state history, transitions, cycle and lead time and flow cohorts for the selected project and period.
++- [ ] Show cumulative flow, cycle time per state, lead time, transition paths and loopbacks for the selected project and period.
+@@ -93 +97 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Expose sourced design and plan summaries, bumps, lessons, retrospectives and advisory confidence from supported read-only exports.
++- [ ] Expose sourced design and plan summaries, fixed links to the approved full design and plan documents, bumps, lessons, retrospectives and advisory confidence from supported read-only exports.
+@@ -115 +119 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-**Qualify authorized real-data hosting and issue links.** 3.5 h. **Candidate paths:** `.github/workflows/viewer-preview.yml`, `packages/aitm-viewer/hosting/publish.py`, `packages/aitm-viewer/tests/test_hosted_publish.py`.
++**Qualify real-data GitHub Pages hosting and issue links.** 3.5 h. **Candidate paths:** `.github/workflows/viewer-preview.yml`, `packages/aitm-viewer/hosting/publish.py`, `packages/aitm-viewer/tests/test_hosted_publish.py`.
+@@ -117 +121 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Publish only the approved view to the selected static target, prove allowlisted data, link authority, permissions and authorized browser readback for the published pin and digest.
++- [ ] Publish only the approved view to the authorized GitHub Pages route for approved public data. Prove allowlisted data, link authority, permissions and authorized browser readback for the published pin and digest. For a restricted audience, qualify an authenticated route after a reviewed routing decision. An alternate formal public target requires a reviewed change to the M6 scope.
+@@ -139 +143 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-**Qualify M6 release and publish the viewer tutorial.** 2.75 h. **Candidate paths:** `docs/learn/aitm-viewer.md`, `packages/aitm-viewer/tests/test_release_viewer.py`.
++**Qualify M6 release and publish the viewer tutorial.** 3.5 h. **Candidate paths:** `docs/learn/aitm-viewer.md`, `packages/aitm-viewer/tests/test_release_viewer.py`.
+@@ -141 +145 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Rebuild and verify the prebuilt local package and hosted view against exact release inputs. Exercise clean install, offline fallback, release provenance and latest publication readback.
++- [ ] Qualify and release the separately installable aitm-viewer distribution through the approved package delivery route at pickup. Pin exact released Core and any required extension versions. Exercise clean install, prebuilt static assets, offline fallback and latest hosted readback.
+@@ -143 +147 @@ Total **42.75 implementation agent-hours** across **13** leaves and **19** inter
+-- [ ] Record aggregate acceptance and evidence for the milestone owner.
++- [ ] Retain exact reviewed source, distribution digest, release identity and aggregate verification. Keep the milestone's eventual completion with its owner.

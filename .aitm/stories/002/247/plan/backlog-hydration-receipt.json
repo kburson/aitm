@@ -184,5 +184,12 @@
       "project_status": "Backlog"
     }
   ],
-  "estimate_basis": "preliminary issue-body and story-record estimates; board Estimate remains unset until accepted item JIT"
+  "estimate_basis": "preliminary issue-body and story-record estimates; board Estimate remains unset until accepted item JIT",
+  "final_review": {
+    "publication": "c7608f69cc3ef9aa424a8e7370f5dc1b5a6e0051",
+    "sha256": "4be08e201c73d239ab2147ecd861000e7e0f1812a81f31b66fb1bc0bef514fd6",
+    "native_readback_utc": "2026-11-12T00:52:28Z",
+    "project_estimate_fields": "unset pending accepted item JIT",
+    "review": "plan/reviews/2026-11-11-247-m6-decomposition-acceptance.md"
+  }
 }
