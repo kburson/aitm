@@ -68,8 +68,11 @@ jobs:
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
+          # Keep native fixtures away from the shared system temp directory and evidence output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-base-fixtures.XXXXXXXX")
           PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json" \
-            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" -q packages/aitm-usage/tests
+            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+              --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
           cd packages/aitm-usage
           sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
           jq -n --arg base "$BASE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
@@ -148,7 +151,7 @@ jobs:
           git ls-tree -r --name-only -z HEAD -- packages/aitm-usage/src/aitm_usage |
             python3 -c 'import json,sys; paths=sys.stdin.buffer.read().decode().split(chr(0)); print(json.dumps([p.removeprefix("packages/aitm-usage/") for p in paths if p.endswith(".py")]))' \
               > "$out/evidence/product-inventory.json"
-      - name: Run serial behavior suite and retain exact coverage
+      - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
         shell: bash
@@ -159,18 +162,27 @@ jobs:
           cd packages/aitm-usage
           uv sync --locked --python "$PYTHON_VERSION"
           ready=$(date +%s)
-          export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/evidence/pytest.json"
+          workers=3
+          mkdir -p "$out/observer"
+          export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
+          # Keep native fixtures away from the shared system temp directory and coverage output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
           uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
-            --junitxml="$out/evidence/product-junit.xml" --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
-          uv run --locked python - "$out" <<'PY'
+            -n "$workers" --dist worksteal -p no:cacheprovider \
+            --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
+            --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
+          uv run --locked python - "$out" "$workers" <<'PY'
           import json
           import sys
           from pathlib import Path
           from python_gate import collect_child_coverage
+          from pytest_evidence import reconcile_workers
 
           root = Path(sys.argv[1])
-          result = collect_child_coverage(json.loads((root / "evidence/pytest.json").read_text()), root / ".product")
+          evidence = reconcile_workers(root / "observer/pytest.json", int(sys.argv[2]))
+          (root / "evidence/pytest.json").write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+          result = collect_child_coverage(evidence, root / ".product")
           (root / "evidence/children.json").write_text(json.dumps(result))
           PY
           uv run --locked coverage combine --keep

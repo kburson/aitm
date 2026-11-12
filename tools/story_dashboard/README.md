@@ -4,6 +4,19 @@ Read a pinned AITM planning commit and generate a standalone HTML dashboard. It 
 
 ## Build and open
 
+On macOS, run this from the root of your `trunk` checkout:
+
+```sh
+make dashboard
+```
+
+This fetches the latest `origin/planning`, builds a fresh snapshot in a
+private temporary directory, prints the HTML path, and opens it in your browser.
+It uses Git, Make, and Python 3.13 or later. To use another Python executable,
+set `PYTHON_BIN`, for example `make dashboard PYTHON_BIN=python3.14`.
+
+### Build manually or reproduce a pinned snapshot
+
 Use a POSIX system, Python 3.13 or later, Git, and a complete clone of AITM with the dashboard tools on trunk. Run these commands from the source checkout. They use `python3.13` by default. Set `PYTHON_BIN` to another Python 3.13+ executable if needed. The qualification used macOS, Python 3.13.9 and Chrome. A shallow clone can omit historical planning pins. Keep output in a private directory outside every Git worktree. The UTC cutoff must be at or after the selected planning commit and the receipt registrations you intend to include.
 
 ```sh
