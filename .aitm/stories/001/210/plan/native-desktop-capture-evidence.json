@@ -1,0 +1,54 @@
+{
+  "story": 210,
+  "candidate": "b73ea4db2787d276c458101222ac807dbbbf1cdc",
+  "client": "0.167.0-alpha.3.2",
+  "surface": "codex-desktop-macos",
+  "thread_source": "agent_created_thread",
+  "launcher_verified_in_desktop": true,
+  "verified_typed_queue": true,
+  "eligible_owned_receipt": true,
+  "fixed_prefix_sha256": "8529c9f6c1f135e273abf043bd321b9bffc7cb6e471a5f7c66dafc8d13f8c51c",
+  "physical_rows": 125,
+  "native_order": {
+    "queued_tool_output": 118,
+    "receipt_linked_accounted_request": 122,
+    "changed_counter": 123,
+    "task_complete": 124
+  },
+  "same_session_and_turn": true,
+  "consistent_explicit_root_attribution": true,
+  "self_root_turn": false,
+  "root_belongs_to_coordinating_chat": true,
+  "native_diagnostics": {
+    "quota_coverage_gap_ordinals": [
+      20,
+      25,
+      30,
+      34,
+      47,
+      51,
+      66,
+      70,
+      83,
+      88,
+      92,
+      114,
+      119,
+      123
+    ],
+    "other": []
+  },
+  "ordinary_cursor_at_completion": false,
+  "qualified_completion": false,
+  "later_control": {
+    "append_preserved_prefix": true,
+    "usage_ordinals": [
+      139,
+      145
+    ],
+    "ordinary_cursor_available": true,
+    "qualified_completion": false
+  },
+  "hold_preserved": true,
+  "scope_bytes_preserved": true
+}

@@ -38,3 +38,7 @@ Project 24 Rank 228.2. Size and Estimate follow independent Refine and JIT. Star
 ## Active Refine and qualification JIT
 
 Project 24 shows Refine at Rank 228.2. The independent Claude review passed the amended read-only qualification JIT. The owner already authorized continuation. The synthetic qualification reader can recognize the completion while preserving existing reader outputs. A genuine Desktop disposition and later-usage control remain required for effective settlement. The installed launcher predates the monitor subcommand. The partial Actual derived from bounded coordinator progress is 0.1853 hours. [Exact amended JIT](plan/2026-11-11-210-native-completion-qualification-jit.md) · [Independent verdict](plan/2026-11-11-210-native-completion-qualification-jit-review-r2.md) · [Actual evidence](attachments/timing/native-completion-qualification-actual-input.json)
+
+## Genuine Desktop capture
+
+The staged launcher queued a genuine Desktop disposition, and the public reader verified its owned request. The completion was attributed to the coordinating chat's root and the reader recorded quota coverage gaps. The later-usage control kept the hold intact. [Capture and exact refusals](plan/2026-11-12-210-native-desktop-capture.md).

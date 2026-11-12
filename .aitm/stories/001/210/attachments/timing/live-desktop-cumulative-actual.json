@@ -1,0 +1,41 @@
+{
+  "story": 210,
+  "sources": [
+    {
+      "path": "full-auto-refine-1-210.json",
+      "sha256": "c05882c483a12d055af51fdd519b4883e046d71d015e8aac9bce6e91d944b409"
+    },
+    {
+      "path": "full-auto-native-closure-1-210.json",
+      "sha256": "30807975bf83ff038dbe74a11ff71d0ac214eda070bf070ea7bf22a209b3c10e"
+    },
+    {
+      "path": "full-auto-receipt-placement-1-210.json",
+      "sha256": "a0c177c6ae2827ff8ec4a1e204d726e40c90ba0e99e64a066a2f43f9c73156a9"
+    },
+    {
+      "path": "full-auto-completion-review-1-210.json",
+      "sha256": "e586684be7c0526df212e9bba98939ca617b358f584ea7f712d8c5eadb42f23a"
+    },
+    {
+      "path": "full-auto-qualification-1-210.json",
+      "sha256": "b742e651cd0951ef425842e9c91aae7ed641415e1033f749aedfa4b0eb7a8f59"
+    },
+    {
+      "path": "full-auto-live-desktop-1-210.json",
+      "sha256": "5eecb9be3b8371b27865147375b34f71f428a2d8b0799ae6e655267f5bdf56d2"
+    }
+  ],
+  "observation_count": 180,
+  "milliseconds": 939047,
+  "actual_hours": "0.2608",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-12T12:05:56.837Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union of the published #210 receipt"
+}
