@@ -1,0 +1,223 @@
+{
+  "client": "2.1.318 (Claude Code)",
+  "default_background_control": {
+    "agent_arguments": [
+      "description",
+      "prompt",
+      "subagent_type"
+    ],
+    "aggregate_fields_that_name_membership_or_inclusion": [],
+    "cost_state_records": 1,
+    "cost_state_shapes": [
+      [
+        "hasUnknownModelCost",
+        "modelUsage",
+        "sessionId",
+        "startTime",
+        "totalAPIDuration",
+        "totalAPIDurationWithoutRetries",
+        "totalCostUSD",
+        "totalDuration",
+        "totalLinesAdded",
+        "totalLinesRemoved",
+        "totalToolDuration",
+        "type"
+      ]
+    ],
+    "distinct_child_request_and_row_keys": 3,
+    "exact_child_keys_referenced_by_aggregate_metadata": 0,
+    "native_child_links_to_outer_tool": 1,
+    "native_child_transcripts": 1,
+    "native_child_usage_rows": 1,
+    "native_parent_rows": 41,
+    "native_stream_rows": 19,
+    "native_task_completion_statuses": [
+      "completed"
+    ],
+    "native_task_start_background_flags": [
+      true
+    ],
+    "outer_result_declares_async": true,
+    "outer_result_metadata_keys": [
+      "agentId",
+      "canContinueAgent",
+      "canReadOutputFile",
+      "description",
+      "isAsync",
+      "outputFile",
+      "prompt",
+      "resolvedModel",
+      "status"
+    ],
+    "outer_result_ordinal": 20,
+    "outer_result_status": "async_launched",
+    "outer_result_usage_keys": [],
+    "outer_stop_reason_is_tool_use": true,
+    "outer_tool_ordinal": 19,
+    "parent_receipt_linked": true,
+    "raw_digests": {
+      "children": [
+        "73dc506d4f82be9bc87b8fb83f9a95058354592a4eb946b442a311a7345225b6"
+      ],
+      "parent": "aaa4c29f6d9b4b961636f946535452a0fc0425c83da40f544e6c97838bc446fe",
+      "stream": "bdd2e6dbb41cdb498110166e7282ffbb0ec3a152b92dfa6f461d5551d495e1e0"
+    },
+    "terminal_model_usage_metric_keys": [
+      "cacheCreationEphemeral1hInputTokens",
+      "cacheCreationEphemeral5mInputTokens",
+      "cacheCreationInputTokens",
+      "cacheReadInputTokens",
+      "canonicalModel",
+      "contextWindow",
+      "costBasis",
+      "costUSD",
+      "inputTokens",
+      "maxOutputTokens",
+      "outputTokens",
+      "provider",
+      "thinkingTokens",
+      "webSearchRequests"
+    ],
+    "terminal_result_is_synthetic_constant": false,
+    "terminal_subagent_stats_type": "dict",
+    "terminal_success": true,
+    "terminal_usage_keys": [
+      "cache_creation",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens",
+      "fallback_credit",
+      "inference_geo",
+      "input_tokens",
+      "iterations",
+      "output_tokens",
+      "output_tokens_details",
+      "server_tool_use",
+      "service_tier",
+      "speed"
+    ],
+    "tool_agent_id_matches_child_sidecar": true
+  },
+  "explicit_foreground_control": {
+    "agent_arguments": [
+      "description",
+      "prompt",
+      "subagent_type"
+    ],
+    "aggregate_fields_that_name_membership_or_inclusion": [],
+    "cost_state_records": 1,
+    "cost_state_shapes": [
+      [
+        "hasUnknownModelCost",
+        "modelUsage",
+        "sessionId",
+        "startTime",
+        "totalAPIDuration",
+        "totalAPIDurationWithoutRetries",
+        "totalCostUSD",
+        "totalDuration",
+        "totalLinesAdded",
+        "totalLinesRemoved",
+        "totalToolDuration",
+        "type"
+      ]
+    ],
+    "distinct_child_request_and_row_keys": 3,
+    "exact_child_keys_referenced_by_aggregate_metadata": 0,
+    "native_child_links_to_outer_tool": 0,
+    "native_child_transcripts": 1,
+    "native_child_usage_rows": 1,
+    "native_parent_rows": 31,
+    "native_stream_rows": 10,
+    "native_task_completion_statuses": [
+      "completed"
+    ],
+    "native_task_start_background_flags": [
+      false
+    ],
+    "ordinary_adapter_cursor_available": true,
+    "ordinary_adapter_observations": 0,
+    "ordinary_approved_adapter_diagnostic_codes": {},
+    "outer_result_declares_async": null,
+    "outer_result_metadata_keys": [
+      "agentId",
+      "agentType",
+      "canContinueAgent",
+      "content",
+      "harnessNoteCount",
+      "harnessSectionHash",
+      "harnessTailCount",
+      "prompt",
+      "resolvedModel",
+      "status",
+      "totalDurationMs",
+      "totalTokens",
+      "totalToolUseCount",
+      "usage"
+    ],
+    "outer_result_ordinal": 22,
+    "outer_result_status": "completed",
+    "outer_result_usage_keys": [
+      "cache_creation",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens",
+      "fallback_credit",
+      "inference_geo",
+      "input_tokens",
+      "iterations",
+      "output_tokens",
+      "output_tokens_details",
+      "server_tool_use",
+      "service_tier",
+      "speed"
+    ],
+    "outer_stop_reason_is_tool_use": true,
+    "outer_tool_ordinal": 18,
+    "parent_receipt_linked": true,
+    "raw_digests": {
+      "children": [
+        "27e8d344ca2898cd9928bd8b96f7a91391188bb934000f744b1c43907e64827a"
+      ],
+      "parent": "4732a76622dd703651a4a2afd218506d3109db3be9c5d1f635ae1982cf9bb16c",
+      "stream": "52b34495ac298b2e20ce712d56b465be89260736ac9a42e749269a415baa8664"
+    },
+    "terminal_model_usage_metric_keys": [
+      "cacheCreationEphemeral1hInputTokens",
+      "cacheCreationEphemeral5mInputTokens",
+      "cacheCreationInputTokens",
+      "cacheReadInputTokens",
+      "canonicalModel",
+      "contextWindow",
+      "costBasis",
+      "costUSD",
+      "inputTokens",
+      "maxOutputTokens",
+      "outputTokens",
+      "provider",
+      "thinkingTokens",
+      "webSearchRequests"
+    ],
+    "terminal_result_is_synthetic_constant": true,
+    "terminal_subagent_stats_type": "dict",
+    "terminal_success": true,
+    "terminal_usage_keys": [
+      "cache_creation",
+      "cache_creation_input_tokens",
+      "cache_read_input_tokens",
+      "fallback_credit",
+      "inference_geo",
+      "input_tokens",
+      "iterations",
+      "output_tokens",
+      "output_tokens_details",
+      "server_tool_use",
+      "service_tier",
+      "speed"
+    ],
+    "tool_agent_id_matches_child_sidecar": true
+  },
+  "literal_trunk": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+  "production_effect": false,
+  "schema": "aitm.folded-native-refine-evidence/v1",
+  "story": 204,
+  "synthetic_only": true
+}

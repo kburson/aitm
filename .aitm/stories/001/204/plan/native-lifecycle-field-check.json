@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.folded-native-lifecycle-check/v1",
+  "story": 204,
+  "completed_notification_usage_fields": [
+    "duration_ms",
+    "tool_uses",
+    "total_tokens"
+  ],
+  "task_update_fields": [
+    "end_time",
+    "status"
+  ],
+  "terminal_subagent_stats_fields": [
+    "by_type",
+    "completed",
+    "failed",
+    "killed",
+    "max_depth",
+    "refused",
+    "requested",
+    "spawned",
+    "spawned_by_subagents",
+    "started_in_background"
+  ],
+  "terminal_by_type_is_configured_agent_type_only": true,
+  "explicit_closed_membership_or_inclusion_fields": []
+}

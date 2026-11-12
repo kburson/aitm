@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "allowed_tools": [
+      "Agent"
+    ],
+    "disable_slash_commands": true,
+    "effort": "low",
+    "max_budget_usd": "0.75",
+    "max_turns": 3,
+    "mcp_config": {
+      "mcpServers": {}
+    },
+    "model": "claude-opus-5-5",
+    "output_format": "stream-json",
+    "permission_mode": "dontAsk",
+    "restricted": true,
+    "setting_sources": "",
+    "strict_mcp_config": true,
+    "tools": [
+      "Agent"
+    ],
+    "verbose": true
+  },
+  "environment": {
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+    "CLAUDE_CODE_DISABLE_BACKGROUND_TASKS": "1",
+    "CLAUDE_CODE_DISABLE_CLAUDE_MDS": "1"
+  }
+}

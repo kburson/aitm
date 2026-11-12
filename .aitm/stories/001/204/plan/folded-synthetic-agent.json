@@ -1,0 +1,1 @@
+{"aitm-fold-fixture":{"description":"Return a constant for a synthetic accounting fixture.","prompt":"This is a synthetic accounting fixture. Use no tools and perform no external actions. Reply with exactly AITM_FOLD_CHILD_OK.","tools":[],"model":"inherit"}}

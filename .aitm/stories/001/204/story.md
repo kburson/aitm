@@ -37,3 +37,7 @@ Project 24 Rank 229. Size and Estimate follow its own independent Refine and JIT
 #203 and #210 are both Closed Completed. [#210's verified settlement](../210/plan/settlement-verified-delivery.json) is available at literal trunk `766504a02aaeb9dda339d588172dd7d5bdbd2b3f`. Project 24 is in [Refine at Rank 229](plan/project-folded-refine-entry.json). The [verified prerequisites](plan/folded-refine-prerequisites.json) and direct #119 gate remain.
 
 The bounded probe uses only a synthetic project and a pinned synchronous Claude Agent. Independent Refine must establish exact keyed child membership, terminal closure, and explicit inclusion before the exact JIT. If evidence qualifies, extend `_build_settlement_change` under #210's accepted [handoff](../210/plan/2026-11-12-210-settlement-scope-disposition.md), preserving the private v5 payload history. Until then, unresolved overlap and #119 remain held.
+
+### Native producer HOLD
+
+The pinned foreground Claude Agent completed, but its aggregate does not attest exact child membership, a closed accounting set, or inclusion of the child usage. Independent Refine agreed. Its two suggested fields were checked and did not qualify. [Hold and exact evidence](plan/2026-11-12-204-folded-producer-hold.md). Project 24 still shows Refine at Rank 229 with partial Actual 0.0402 hours. JIT and #119 remain gated.
