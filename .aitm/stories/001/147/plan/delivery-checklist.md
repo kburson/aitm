@@ -35,3 +35,7 @@
 - [Independent source assessment](reviews/2026-11-11-147-source-owner-assessment-r2.md) informs the owner disposition.
 - Trusted #103 verifier held with `gate controls changed or disposition is stale; provide the exact reviewed tree`. [Verifier receipt](verifier-hold-0d8f8ea353d7.json).
 - The owner decision must bind the exact tested tree and the two gate-defining additions. The authenticated CI diagnostic and source assessment leave the full trusted verifier and formal independent source review pending. The Project stays in Test.
+
+## Formal independent PR review
+
+[Off-platform SAR](reviews/147-formal-sar-r1.md) records **changes-requested** on head `0d8f8ea353d71ab19802e882ceecbd105e6837ae`, tested tree `9699130f9be8411cb2a5646197e803956b1ef1b3`, after the exact trusted verifier passed.
