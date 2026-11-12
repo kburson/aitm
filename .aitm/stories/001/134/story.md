@@ -32,3 +32,7 @@ Obtain an authenticated Linux Codex CLI receipt independently of Desktop. Prove 
 Reopen planning if authentic Linux evidence requires changing the #114 contract. Obtain separate design, estimate, plan and JIT approval before Develop, and stay within four implementation agent-hours. Keep raw credentials, paths, transcripts and provider identifiers private.
 
 [Reviewed split](../114/plan/jit.md#host-evidence-and-split).
+
+## Native Linux Refine checkpoint
+
+Project 24 shows Refine. The local Linux host works and the native Codex CLI evidence requires an authenticated sandbox. Proposed estimate is 3.25 hours, size M, conditional on the actual carrier fitting the delivered adapter contract. Independent Refine and exact JIT remain pending. [Refine packet](plan/2026-11-11-134-linux-codex-carrier-refine.md)

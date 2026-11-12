@@ -34,3 +34,7 @@ Project 24 Rank 228.2. Size and Estimate follow independent Refine and JIT. Star
 ## Independent Refine checkpoint
 
 [Refine](plan/2026-11-11-210-native-terminal-refine.md) held because no chronological public-reader control qualified a genuinely settled no-later-usage terminal. [Independent verdict](plan/2026-11-11-210-native-terminal-refine-review.md) · [Native qualification evidence](plan/native-terminal-qualification.json).
+
+## Active Refine and qualification JIT
+
+Project 24 shows Refine at Rank 228.2. The independent Claude review passed the amended read-only qualification JIT. The owner already authorized continuation. The synthetic qualification reader can recognize the completion while preserving existing reader outputs. A genuine Desktop disposition and later-usage control remain required for effective settlement. The installed launcher predates the monitor subcommand. The partial Actual derived from bounded coordinator progress is 0.1853 hours. [Exact amended JIT](plan/2026-11-11-210-native-completion-qualification-jit.md) · [Independent verdict](plan/2026-11-11-210-native-completion-qualification-jit-review-r2.md) · [Actual evidence](attachments/timing/native-completion-qualification-actual-input.json)

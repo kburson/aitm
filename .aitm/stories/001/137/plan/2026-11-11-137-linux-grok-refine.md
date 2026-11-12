@@ -1,0 +1,29 @@
+# #137 Refine hold for the Linux Grok Build carrier
+
+## Status and evidence
+
+[Issue #137](https://github.com/kburson/aitm/issues/137) is open in Project 24 Refine at Rank 350. [#115](https://github.com/kburson/aitm/issues/115) is closed and Done. [PR #179](https://github.com/kburson/aitm/pull/179) delivered merge `37a22922f072e39c35434ae645a1c20692b8da01`, which is an ancestor of the inspected live trunk `011342493399ed6e8a12ba0e9c2a4a1e9efaf294`. #137 remains a prerequisite of [#129](https://github.com/kburson/aitm/issues/129).
+
+**Hold Refine.** No authorized, already-authenticated native Linux Grok Build CLI sandbox was available in the surfaces inspected. The current host is Darwin arm64. Docker Desktop's local Linux arm64 context ran a clean unprivileged Debian arm64 probe with network disabled, capabilities dropped and no mounts. The image had no Grok CLI. The only registered Parallels guest was suspended Windows 11. No applicable Linux SSH alias, Linux runner configuration or existing admission was identified from the local environment and reviewed AITM planning records. The #102 credential-free Linux smoke test observed the CLI interfaces of arm64 Grok Build 1.0.34, build `3736acbc8658`. The reviewed #115 capture authenticated macOS only. The reviewed split records both limits.
+
+The available evidence covers source provenance, baseline behavior and local host availability. Linux native coverage is zero for the two marked turns across explicit resume, their authenticated receipt joins, persisted accounting comparison, cursor restart continuity and the separate hookless completion. No paid model request ran. Raw provider state and credentials were neither read nor copied.
+
+## Evidence needed to resume
+
+Identify an existing owner-authorized Linux session with Grok Build CLI already authenticated, its approved scratch scope, and its supported access path. If provider authentication is required, it can be established by the account owner directly on that target. Record exact OS/architecture, native binary version/build/digest, admitted format and stream provenance before choosing an allowlist entry.
+
+Use isolated synthetic prompts and a disposable local receipt verifier. Capture two distinct marked turns in one native session with an explicit resume between them. For each turn prove the authenticated local receipt joins the durable successful `UserPromptSubmit` hook and subsequent `end_turn` completion by exact native session and prompt identities. Restart with the saved cursor, verify retained native prefix and one charge per distinct turn, and reconcile shared token categories across durable completion and persisted snapshot. Check headless usage as independent corroboration when the proved format provides it. Capture a separate hookless eligible completion with interval membership and absent story. Publish only an allowlisted result and sanitized fixtures. Preserve receipt authority and routing as owned by #117 and live release qualification across arm64 and x86-64 as owned by #129.
+
+## Conditional scope and estimate
+
+Size M, 3.75 active agent-hours conditional on a reachable authenticated sandbox and one compatible proved tuple. Allow 0.75 hours for capture and fixture provenance, 0.50 for JIT and review preparation, 1.50 for the narrow bridge and focused regressions, and 1.00 for validation and delivery handling. Environment provisioning and CI/review wait time are unestimated. If the capture requires a new grammar, verification authority or materially expanded bridge, re-estimate before freezing scope.
+
+The source already checks Grok origin as Darwin arm64 1.0.77 build `50ca579fa996` with an exact executable digest and format 1, and rejects Linux with zero observations or cursor advance. `sources/grok.py` and `monitor_types.py` currently use only the macOS Grok surface. The delivered #117 bridge in `monitor_scope.py` also compares against macOS in its source tuple verification, eligibility, surface selection, receipt binding and handoff positioning. Limit any accepted bridge update to the explicitly proven Linux tuple and corresponding Grok semantics. Maintain existing prompt keys and cursor/receipt authority, untouched legacy codecs and refusal of every unsupported tuple. Keep observations and boundaries allowlisted. Check both cold and resumed paths and the applicable same-format typed round trips.
+
+After obtaining native evidence, independently review the story's exact JIT before Develop. Validate any source candidate with focused regressions and the locked product/helper suites, Ruff and both raw coverage floors. Require exact hosted jobs `python-base`, `python`, `quality`, `file-checks`, `collect-evidence` and `aitm-ci`, signed exact-head/base verification and independent source review. Delivery and sign-off follow the existing story checklist.
+
+## Baseline verification and timing
+
+The first locked offline run against the exact archive reported 185 passed and one setup error in `test_ordered_native_disposition_records_only_proof_and_replays_after_restart[expired-gap]`, with `BoundaryUnavailable: Native capture frontier is unavailable` in registry fixture setup. On the same pinned source, the private-temp rerun covering all Grok adapter and pricing cases plus the exact setup-error case passed 39 tests in 1.12 seconds. A fresh locked offline private-temp rerun of the full Grok, Grok pricing, monitor scope and accounting selection passed 186 tests in 30.97 seconds. The setup error was observed on untouched trunk, and its exact trigger is unverified.
+
+At least 3 minutes 56 seconds elapsed across timestamped Refine checks, with earlier activity outside that measured interval. Actual active time and Codex token cost are unknown because phase instrumentation was unavailable. No Grok request or paid review was launched. No Linux provider proof or hosted candidate gate was attempted.
