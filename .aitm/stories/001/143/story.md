@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 143
 title: "[#133 T06] Deliver local advisory feedback"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/143"
 parent: 133
 children: []
 blocking: [172]
 blocked-by: [142]
 created: "2026-11-10T16:51:10Z"
-updated: "2026-11-12T14:50:15Z"
+updated: "2026-11-12T15:06:40Z"
 last-branch: "codex/aitm-wave50-143"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md", "plan/143-local-validation-e2c87eef770b.md", "plan/delivery-checklist.md", "plan/143-focused-nodeids.txt"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T06", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "fc2eef29fc3410c7e4a56949ba44c28dc76ef94ee4fc87557d71bd44ca2bdbcb"}
@@ -57,3 +57,9 @@ dependency proof, and implementation authority govern pickup.
 - [Plan](plan/2026-11-12-143-local-tia.md) · SHA-256 `5da21fa6b30418d58dd1d5cbf18f6b9b022552ed2d5f0b3c05e3331c6b027b63`
 - [Jit](plan/2026-11-12-143-jit.md) · SHA-256 `febd54ed163210198097dd69c825644b489a68e09fbbb3213cfbcadf800316ab`
 - [Independent review](plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md)
+
+## Wave 50 candidate validation
+
+[Source PR](https://github.com/kburson/aitm/pull/265) · [Local validation](plan/143-local-validation-e2c87eef770b.md) · [Delivery checklist](plan/delivery-checklist.md).
+
+Attempt 1 head `e2c87eef770bd89a2ab68c7795a7d0a34398cfef`, branch tree `8b71d7263241fdeb8f4e057f4daa6b5b14d0ac82`, target base `0dfbcf0c4b346fe014674aae0775a82f40e3a9b8`. Hosted exact-candidate verification and independent review are pending.
