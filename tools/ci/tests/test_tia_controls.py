@@ -5,7 +5,7 @@ from dataclasses import replace
 from hashlib import sha256
 
 import pytest
-from test_tia_inventory import _collection, _project
+from test_tia_inventory import _CI103, _SUITES, _collection, _project
 from test_tia_snapshot import blob, commit, git, hosted_request, tree
 from tia.controls import (
     ControlApprovals,
@@ -24,6 +24,7 @@ from tia.controls import (
     applicable_inventory,
     qualify_controls,
 )
+from tia.inventory import SuitePolicy
 from tia.snapshot import GitEndpoint, resolve
 from verify_pr import gate_controls
 
@@ -61,7 +62,12 @@ def git_tree(repo, files):
 
 
 def full_lanes():
-    runner = (("filesystem", "apfs"), ("name", "macos-26"), ("profile", "darwin-apfs"))
+    runner = (
+        ("filesystem", "apfs"),
+        ("name", "macos-26"),
+        ("os", "Darwin"),
+        ("profile", "darwin-apfs"),
+    )
     capabilities = ("apfs", "darwin", "native-acl")
     return (
         Lane("ci-helpers", "ci-tools", "darwin-apfs", runner, capabilities),
@@ -76,8 +82,14 @@ def control_pair(repo, before, after):
     head = commit(repo, tested_tree, base, message="proposed head")
     tested = commit(repo, tested_tree, base, head, message="hosted merge")
     old, new = resolve(repo, hosted_request(base, tested, tested_tree, head))
-    scope = Scope("full", full_lanes(), "1" * 64, "2" * 64)
-    return old, ControlCandidate(new, _TARGET, 12, scope)
+    policy = SuitePolicy(_SUITES.read_bytes(), _CI103.read_bytes(), "full")
+    scope = Scope(
+        "full",
+        full_lanes(),
+        sha256(policy.suites).hexdigest(),
+        sha256(policy.ci103).hexdigest(),
+    )
+    return old, ControlCandidate(new, _TARGET, 12, scope, policy)
 
 
 def approvals_for(binding):
@@ -224,11 +236,13 @@ def test_disposition_refuses_conflicting_or_replayed_exact_binding(repo):
             == "approval_mismatch"
         ), field
     wrong_policy = replace(scope, ci103_policy_sha256="3" * 64)
-    policy_candidate = replace(candidate, scope=wrong_policy)
-    assert (
-        qualify_controls(base, policy_candidate, approved).hold_reason
-        == "approval_mismatch"
+    stale = replace(
+        approved,
+        reviewer=replace(
+            approved.reviewer, binding=replace(result.binding, scope=wrong_policy)
+        ),
     )
+    assert qualify_controls(base, candidate, stale).hold_reason == "approval_mismatch"
     for attempted in (
         replace(
             approved, reviewer=replace(approved.reviewer, actor=approved.owner.actor)
@@ -625,3 +639,133 @@ def test_control_approval_compares_canonical_lane_sets(repo):
     qualified = qualify_controls(base, candidate, approved)
     assert qualified.full_required
     assert qualified.hold_reason is None
+
+
+@pytest.mark.parametrize("gap", ["missing-helper", "wrong-platform", "wrong-owner"])
+def test_exact_approvals_cannot_clear_invalid_full_control_scope(repo, gap):
+    base, candidate = control_pair(
+        repo,
+        {_NESTED_CONTROL: ("100644", b"old")},
+        {_NESTED_CONTROL: ("100644", b"new")},
+    )
+    scope = candidate.scope
+    helper, product = scope.lanes
+    if gap == "missing-helper":
+        wrong = (product,)
+    elif gap == "wrong-platform":
+        wrong = (replace(helper, platform_scope="elsewhere"), product)
+    else:
+        wrong = (replace(helper, owner="other"), product)
+    proposal = qualify_controls(base, candidate, ControlApprovals())
+    wrong_scope = replace(scope, lanes=wrong)
+    wrong_binding = replace(proposal.binding, scope=wrong_scope)
+    result = qualify_controls(
+        base, replace(candidate, scope=wrong_scope), approvals_for(wrong_binding)
+    )
+    assert result.full_required
+    assert result.hold_reason == "invalid_scope"
+    assert result.approval_refs == ()
+
+
+@pytest.mark.parametrize(
+    ("field", "bad_value"),
+    [
+        ("observer", None),
+        ("observer", "a" * 40),
+        ("receipt_sha256", None),
+        ("receipt_sha256", "a" * 40),
+        ("controls", None),
+        ("controls", {}),
+        ("controls", {"": "b" * 40}),
+        ("controls", {"workflow": "not-an-object-id"}),
+    ],
+)
+def test_inventory_refuses_malformed_scope_provenance_with_exact_hash(
+    lineage, field, bad_value
+):
+    reference, target, steps, _ = lineage
+    document = json.loads(reference.inventory)
+    document["scopes"][0][field] = bad_value
+    raw = canonical(document)
+    reference = replace(
+        reference, inventory=raw, expected_sha256=sha256(raw).hexdigest()
+    )
+    with pytest.raises(InventoryHold, match="reference_scope_provenance"):
+        applicable_inventory(reference, target, steps)
+
+
+def test_control_qualification_requires_the_reviewed_policy_bytes(repo):
+    base, candidate = control_pair(
+        repo,
+        {_NESTED_CONTROL: ("100644", b"old")},
+        {_NESTED_CONTROL: ("100644", b"new")},
+    )
+    binding = qualify_controls(base, candidate, ControlApprovals()).binding
+    approval = approvals_for(binding)
+    proof = candidate.suite_policy
+    for invalid in (None, replace(proof, suites=proof.suites + b"\n")):
+        result = qualify_controls(
+            base, replace(candidate, suite_policy=invalid), approval
+        )
+        assert result.full_required and result.hold_reason == "invalid_scope"
+        assert result.approval_refs == ()
+
+
+def test_named_comparison_scope_keeps_control_changes_full(repo):
+    base, candidate = control_pair(
+        repo,
+        {_NESTED_CONTROL: ("100644", b"old")},
+        {_NESTED_CONTROL: ("100644", b"new")},
+    )
+    scope = candidate.scope
+    name = "compare-product-cli"
+    comparison = replace(
+        candidate,
+        scope=replace(scope, workload=name, lanes=(scope.lanes[1],)),
+        suite_policy=replace(candidate.suite_policy, workload=name),
+    )
+    proposed = qualify_controls(base, comparison, ControlApprovals())
+    assert proposed.full_required and proposed.hold_reason == "missing_approval"
+    approvals = approvals_for(proposed.binding)
+    qualified = qualify_controls(base, comparison, approvals)
+    assert qualified.full_required and qualified.hold_reason is None
+    assert qualified.binding.scope.workload == name
+    assert (
+        qualify_controls(base, candidate, approvals).hold_reason == "approval_mismatch"
+    )
+
+
+def test_full_control_scope_checks_every_reviewed_profile_platform_pair(repo):
+    base, candidate = control_pair(
+        repo,
+        {_NESTED_CONTROL: ("100644", b"old")},
+        {_NESTED_CONTROL: ("100644", b"new")},
+    )
+    document = json.loads(candidate.suite_policy.suites)
+    secondary = "darwin-apfs-secondary"
+    document["runners"][secondary] = {
+        **document["runners"]["darwin-apfs"],
+        "platform_scope": secondary,
+    }
+    document["workloads"]["full"]["required_pairs"].append(["product-cli", secondary])
+    raw = canonical(document)
+    scope = replace(candidate.scope, suite_policy_sha256=sha256(raw).hexdigest())
+    proof = replace(candidate.suite_policy, suites=raw)
+    candidate = replace(candidate, scope=scope, suite_policy=proof)
+    incomplete = qualify_controls(base, candidate, ControlApprovals())
+    assert incomplete.full_required and incomplete.hold_reason == "invalid_scope"
+
+    product = scope.lanes[1]
+    second = replace(
+        product,
+        platform_scope=secondary,
+        runner=tuple(
+            (key, secondary if key == "profile" else value)
+            for key, value in product.runner
+        ),
+    )
+    complete = replace(candidate, scope=replace(scope, lanes=(*scope.lanes, second)))
+    disposition = qualify_controls(base, complete, ControlApprovals())
+    assert disposition.full_required and disposition.hold_reason == "missing_approval"
+    qualified = qualify_controls(base, complete, approvals_for(disposition.binding))
+    assert qualified.full_required and qualified.hold_reason is None

@@ -6,7 +6,7 @@ import re
 from dataclasses import asdict, dataclass, is_dataclass, replace
 from hashlib import sha256
 
-from tia.inventory import Inventory, _git_ref, _node
+from tia.inventory import Inventory, SuitePolicy, _git_ref, _node, _policy
 from tia.snapshot import Entry, GitEndpoint, HostedBinding, HostedProvenance, Snapshot
 from verify_pr import CI_CONFIG_NAMES, gate_controls
 
@@ -39,6 +39,7 @@ class ControlCandidate:
     target_ref: str
     workflow_id: int
     scope: Scope
+    suite_policy: SuitePolicy | None = None
 
 
 @dataclass(frozen=True)
@@ -119,7 +120,12 @@ def _hash(value) -> str:
 
 
 def _text(value) -> bool:
-    return isinstance(value, str) and value.isprintable() and value.strip() == value
+    return (
+        isinstance(value, str)
+        and bool(value)
+        and value.isprintable()
+        and value.strip() == value
+    )
 
 
 def _digest(value, *lengths) -> bool:
@@ -327,27 +333,63 @@ def _approval_hold(approvals: ControlApprovals, binding: ControlBinding) -> str 
     return None
 
 
+def _control_scope(candidate: ControlCandidate) -> Scope:
+    scope = candidate.scope
+    policy = candidate.suite_policy
+    if (
+        not isinstance(scope, Scope)
+        or not _text(scope.workload)
+        or not isinstance(policy, SuitePolicy)
+        or policy.workload != scope.workload
+        or not isinstance(policy.suites, bytes)
+        or not isinstance(policy.ci103, bytes)
+        or sha256(policy.suites).hexdigest() != scope.suite_policy_sha256
+        or sha256(policy.ci103).hexdigest() != scope.ci103_policy_sha256
+    ):
+        raise ValueError("missing or mismatched reviewed control policy")
+    lanes = _lanes(scope.lanes)
+    rules = _policy(policy)
+    workload = rules.workloads.get(scope.workload)
+    if workload is None or {(lane.profile, lane.platform_scope) for lane in lanes} != {
+        tuple(pair) for pair in workload["required_pairs"]
+    }:
+        raise ValueError("incomplete control workload")
+    for lane in lanes:
+        profile = rules.profiles[lane.profile]
+        identity = dict(lane.runner)
+        runner = rules.runners.get(identity["profile"])
+        if (
+            lane.owner != profile["owner"]
+            or runner is None
+            or lane.platform_scope != runner["platform_scope"]
+            or any(
+                identity.get(key) != value for key, value in runner["identity"].items()
+            )
+            or not (
+                set(runner["required_capabilities"])
+                | set(profile["required_capabilities"])
+                <= set(lane.capabilities)
+                <= set(runner["capabilities"])
+            )
+        ):
+            raise ValueError("incompatible control scope lane")
+    return replace(scope, lanes=lanes)
+
+
 def qualify_controls(
     base: Snapshot, candidate: ControlCandidate, approvals: ControlApprovals
 ) -> ControlDisposition:
     """Bind exact source approval and retain full validation for changed controls.
 
-    Snapshots, workflow metadata, scope and decisions come from a trusted
-    caller. The result carries the execution attempt independently of the
-    source decisions and confers no runtime or merge authority.
+    Snapshots, workflow metadata, scope, reviewed policy and decisions come
+    from a trusted caller. Check the policy's exact bytes and every required
+    lane before matching decisions. The result carries the execution attempt
+    independently of source approval and confers no runtime or merge authority.
     """
     if not _valid_pair(base, candidate):
         return ControlDisposition(True, "invalid_snapshot_pair")
-    scope = candidate.scope
-    if (
-        not isinstance(scope, Scope)
-        or not _text(scope.workload)
-        or not _digest(scope.suite_policy_sha256, 64)
-        or not _digest(scope.ci103_policy_sha256, 64)
-    ):
-        return ControlDisposition(True, "invalid_scope")
     try:
-        scope = replace(scope, lanes=_lanes(scope.lanes))
+        scope = _control_scope(candidate)
     except ValueError:
         return ControlDisposition(True, "invalid_scope")
     after = candidate.snapshot
@@ -665,6 +707,18 @@ def _validate_reference(
             and scope["runner"] == dict(lane.runner)
             and scope["capabilities"] == list(lane.capabilities),
             "reference_lane_mismatch",
+        )
+        controls = scope["controls"]
+        _require(
+            _digest(scope["observer"], 64)
+            and _digest(scope["receipt_sha256"], 64)
+            and isinstance(controls, dict)
+            and bool(controls)
+            and all(
+                _text(name) and _digest(identity, 40, 64)
+                for name, identity in controls.items()
+            ),
+            "reference_scope_provenance",
         )
         seen.add(key)
     _require(seen == lanes.keys(), "reference_lane_mismatch")
