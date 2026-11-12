@@ -41,7 +41,8 @@ A, B, C, UNKNOWN, SOURCE = (UUID(int=i) for i in range(1, 6))
 
 
 class NativeScopeFixture:
-    def __init__(self, base, monkeypatch):
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
         self.registry = Registry(base / "monitor")
         self.transcripts = base / "transcripts"
         self.transcripts.mkdir()
@@ -60,7 +61,10 @@ class NativeScopeFixture:
         self.adapter = ProviderAdapter()
         self.total = 0
         self.turn = 0
-        write(self.path, [startup(self.anchors[A], originator="Codex Desktop")])
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
         self.append()
         with self.registry.writer() as writer:
             self.evidence = writer.source_evidence()
@@ -2263,6 +2267,16 @@ def _append_completed_disposition(native, command_id, request_path, stdout):
     after = usage(native.total, native.total)
     completed = end(turn, time=when)
     completed["payload"]["root_turn_id"] = str(turn)
+    final_counter = counter(after, delta, time=when)
+    if native.creator_account is not None:
+        final_counter["payload"]["rate_limits"] = {
+            "limit_id": "codex",
+            "primary": {
+                "window_minutes": 10080,
+                "resets_at": int((when + timedelta(hours=1)).timestamp()),
+                "used_percent": 25,
+            },
+        }
     write(
         native.path,
         [
@@ -2277,7 +2291,7 @@ def _append_completed_disposition(native, command_id, request_path, stdout):
             response(
                 f"completion-accounted-{turn}", after, delta, time=when, turn=turn
             ),
-            counter(after, delta, time=when),
+            final_counter,
             completed,
         ],
         append=True,
@@ -2335,6 +2349,117 @@ def _completed_disposition(native, tmp_path, monkeypatch, capsys):
 def completed_disposition(native, tmp_path, monkeypatch, capsys):
     with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
         yield case
+
+
+@pytest.fixture
+def quota_disposition(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+    native = NativeScopeFixture(
+        tmp_path, monkeypatch, creator_account="fixture-account"
+    )
+    with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
+        yield native, case
+
+
+def _bind_quota_disposition(native, case, account="fixture-account"):
+    case.state._bind_codex_quota_account(
+        SOURCE,
+        native.locator(),
+        case.owner,
+        native.anchor_ref(A),
+        native.evidence.pseudonymize("codex-account", account),
+    )
+
+
+def test_completion_quota_binding_supplies_existing_quota_validation(quota_disposition):
+    native, case = quota_disposition
+    state = case.state
+    assert DiagnosticCode.COVERAGE_GAP in {d.code for d in case.ordinary.diagnostics}
+    _bind_quota_disposition(native, case)
+    locator = native.locator()
+    ordinary = state.read_source(SOURCE, locator)
+    opted = state.read_source(SOURCE, locator, qualify_completion=True)
+    assert (
+        ordinary.observations,
+        ordinary.boundaries,
+        ordinary.cursor,
+        ordinary.diagnostics,
+    ) == (opted.observations, opted.boundaries, opted.cursor, opted.diagnostics)
+    assert [d.code for d in opted.diagnostics] == [DiagnosticCode.BOUNDARY_UNVERIFIED]
+    target = native.target(opted, case.command.command_id)
+    assert state.completion_witness(case.command, case.owner, opted, target) is not None
+    scope_before = case.scope_file.read_bytes()
+    native.append()
+    later = state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    assert state.completion_witness(case.command, case.owner, opted, target) is None
+    assert not later._completion_witnesses
+    assert later.cursor is not None and not later.diagnostics
+    assert case.scope_file.read_bytes() == scope_before
+
+
+def test_completion_quota_binding_requires_the_native_creator(quota_disposition):
+    native, case = quota_disposition
+    _bind_quota_disposition(native, case, "other-account")
+    batch = case.state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    assert DiagnosticCode.COVERAGE_GAP in {d.code for d in batch.diagnostics}
+    assert not batch._completion_witnesses
+
+
+def test_completion_quota_binding_is_current_and_writer_local(quota_disposition):
+    from aitm_usage.monitor_scope import ScopeState
+
+    native, case = quota_disposition
+    state = case.state
+    _bind_quota_disposition(native, case)
+    locator = native.locator()
+    original = state._quota_binding_for(SOURCE, locator)
+    assert original is not None
+    assert state._quota_binding_for(UNKNOWN, locator) is None
+    with pytest.raises(LedgerError, match="already bound"):
+        _bind_quota_disposition(native, case)
+    foreign = ScopeState(state.registry, clock=lambda: case.clock[0])
+    with pytest.raises(LedgerError, match="outside the approved owner read"):
+        foreign._bind_codex_quota_account(
+            SOURCE, locator, case.owner, native.anchor_ref(A), original.account
+        )
+    foreign_read = foreign.read_source(SOURCE, locator, qualify_completion=True)
+    assert DiagnosticCode.COVERAGE_GAP in {d.code for d in foreign_read.diagnostics}
+    assert not foreign_read._completion_witnesses
+    moved = replace(native.root, cutoff=native.root.cutoff + timedelta(seconds=1))
+    (different_cutoff,) = native.adapter.discover(moved)
+    assert state._quota_binding_for(SOURCE, different_cutoff) is None
+    batch = state.read_source(SOURCE, different_cutoff, qualify_completion=True)
+    assert DiagnosticCode.COVERAGE_GAP in {d.code for d in batch.diagnostics}
+    case.clock[0] = original.expires_at
+    expired = state.read_source(SOURCE, locator, qualify_completion=True)
+    assert DiagnosticCode.COVERAGE_GAP in {d.code for d in expired.diagnostics}
+    assert not expired._completion_witnesses
+
+
+def test_completion_quota_binding_change_refuses_entire_read(
+    quota_disposition, monkeypatch
+):
+    native, case = quota_disposition
+    state = case.state
+    _bind_quota_disposition(native, case)
+    normal_read = ProviderAdapter.read_delta
+    captured = []
+
+    def expire_after_scan(self, *args, **kwargs):
+        result = normal_read(self, *args, **kwargs)
+        sink = kwargs.get("_completion_witnesses")
+        if kwargs.get("_codex_quota_authority") is not None:
+            assert sink and len(sink) == 1
+            captured.append(sink)
+            case.clock[0] += timedelta(minutes=5)
+        return result
+
+    monkeypatch.setattr(ProviderAdapter, "read_delta", expire_after_scan)
+    with pytest.raises(
+        LedgerError, match="Codex quota authority changed during the native read"
+    ):
+        state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    assert captured == [[]]
 
 
 def test_completion_qualification_preserves_journal_after_restart(

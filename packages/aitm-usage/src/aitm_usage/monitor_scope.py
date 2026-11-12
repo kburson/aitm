@@ -291,6 +291,35 @@ class _ObservationProof:
     eligible_projects: frozenset[UUID]
 
 
+@dataclass(frozen=True, slots=True)
+class _CodexQuotaBinding:
+    source_id: UUID
+    source_key: tuple[SourceRef | None, SourceRef, SourceRef, SourceRef, datetime]
+    account: SourceRef
+    checkout: SourceRef
+    operator: ScopeAuthority
+    writer: Registry
+    registry: RegistryView
+    expires_at: datetime
+
+
+def _quota_source_key(
+    locator: SourceLocator,
+) -> tuple[SourceRef | None, SourceRef, SourceRef, SourceRef, datetime] | None:
+    source = locator._source
+    if type(source) is not CandidateSource or (
+        source._native_surface is not NativeSurface.CODEX_DESKTOP_MACOS
+    ):
+        return None
+    return (
+        source.session_ref,
+        source.stream_ref,
+        source.locator_ref,
+        source.incarnation_ref,
+        source._registration.cutoff,
+    )
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class VerifiedScopeBatch:
     source_id: UUID
@@ -309,6 +338,9 @@ class VerifiedScopeBatch:
     ] = field(default=(), repr=False, compare=False)
     _completion_witnesses: tuple[_CodexCompletionWitness, ...] = field(
         default=(), repr=False, compare=False
+    )
+    _quota_binding: _CodexQuotaBinding | None = field(
+        default=None, repr=False, compare=False
     )
     _completion_scope: _ScopeSnapshotV2 | None = field(
         default=None, repr=False, compare=False
@@ -663,6 +695,7 @@ class ScopeState:
         self.registry = registry
         self._clock = clock
         self._grok_reader = grok_reader
+        self._codex_quota_binding: _CodexQuotaBinding | None = None
         self._operators: dict[UUID, ScopeAuthority] = {}
         self._authorized: dict[UUID, tuple[str, ScopeAuthority]] = {}
         self._batches: WeakValueDictionary[int, VerifiedScopeBatch] = (
@@ -974,6 +1007,72 @@ class ScopeState:
                 selected.append(event.native_boundary)
         return tuple(selected)
 
+    def _bind_codex_quota_account(
+        self,
+        source_id: UUID,
+        locator: SourceLocator,
+        operator: ScopeAuthority,
+        checkout: SourceRef,
+        account: SourceRef,
+    ) -> None:
+        """Bind quota evidence supplied by the trusted disposable monitor operator."""
+        self.registry.lease
+        if self._codex_quota_binding is not None:
+            raise LedgerError("Codex quota authority is already bound")
+        view = self.registry.view()
+        _, current = self.registry._approved_candidate(view, source_id, locator)
+        key = _quota_source_key(current)
+        self.registry.source_evidence().validate_source_ref(account)
+        if (
+            key is None
+            or operator.project_id
+            not in self._admitted_readers(view, source_id, current)
+            or not self._quota_operator_current(operator, view, checkout)
+        ):
+            raise LedgerError(
+                "Codex quota authority is outside the approved owner read"
+            )
+        self._codex_quota_binding = _CodexQuotaBinding(
+            source_id,
+            key,
+            account,
+            checkout,
+            operator,
+            self.registry,
+            view,
+            self._now() + timedelta(minutes=5),
+        )
+
+    def _quota_operator_current(
+        self, operator: ScopeAuthority, view: RegistryView, checkout: SourceRef
+    ) -> bool:
+        project = operator.project_id
+        return (
+            self._operators.get(project) is operator
+            and self._ledger(project).identity.key_id == operator.key_id
+            and self._anchor(view, checkout) == project
+        )
+
+    def _quota_binding_for(
+        self, source_id: UUID, locator: SourceLocator
+    ) -> _CodexQuotaBinding | None:
+        binding = self._codex_quota_binding
+        if (
+            binding is None
+            or binding.writer is not self.registry
+            or binding.source_id != source_id
+            or binding.source_key != _quota_source_key(locator)
+            or self._now() >= binding.expires_at
+        ):
+            return None
+        self.registry.lease
+        view = self.registry.view()
+        if view != binding.registry or not self._quota_operator_current(
+            binding.operator, view, binding.checkout
+        ):
+            return None
+        return binding
+
     def read_source(
         self,
         source_id: UUID,
@@ -989,6 +1088,7 @@ class ScopeState:
         completion_witnesses: list[_CodexCompletionWitness] | None = (
             [] if qualify_completion else None
         )
+        quota_binding = None
         if type(locator._source) is CandidateSource:
             if not any(
                 self.registry.capture_read_limit(
@@ -1019,6 +1119,9 @@ class ScopeState:
                 ) from None
             self.registry._verify_capture_tuple(approved, physical)
             native_cursor = physical.cursor
+            if cursor is None:
+                quota_binding = self._quota_binding_for(source_id, current)
+            quota_lease = self.registry.lease if quota_binding is not None else None
             # A caller cursor cannot hide the first occurrence of a queued receipt.
             batch = ProviderAdapter().read_delta(
                 current,
@@ -1029,7 +1132,26 @@ class ScopeState:
                 _capture_limit=native_cursor,
                 _revision_witnesses=revision_witnesses,
                 _completion_witnesses=completion_witnesses,
+                _codex_quota_authority=(
+                    (quota_binding.account, quota_binding.checkout)
+                    if quota_binding is not None
+                    else None
+                ),
             )
+            if quota_binding is not None:
+                try:
+                    if (
+                        self.registry.lease is not quota_lease
+                        or self._quota_binding_for(source_id, current)
+                        is not quota_binding
+                    ):
+                        raise LedgerError(
+                            "Codex quota authority changed during the native read"
+                        )
+                except LedgerError:
+                    if completion_witnesses is not None:
+                        completion_witnesses.clear()
+                    raise
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
         else:
@@ -1097,6 +1219,7 @@ class ScopeState:
             _registry=view,
             _revision_witnesses=tuple(revision_witnesses),
             _completion_witnesses=tuple(completion_witnesses or ()),
+            _quota_binding=quota_binding,
             _completion_scope=(
                 completion_scope
                 if isinstance(completion_scope, _ScopeSnapshotV2)
@@ -1132,6 +1255,12 @@ class ScopeState:
         ):
             return None
         try:
+            if (
+                batch._quota_binding is not None
+                and self._quota_binding_for(batch.source_id, batch._locator)
+                is not batch._quota_binding
+            ):
+                return None
             proof = self._verified_boundary(command, authority, batch, request_target)
             if (
                 not proof.eligible

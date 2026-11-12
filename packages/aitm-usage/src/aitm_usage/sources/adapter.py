@@ -192,16 +192,54 @@ class AdapterBatch:
     cursor: StreamCursor | None = None
 
 
+def _codex_quota_reference(
+    source: CandidateSource,
+    frames: FrameBatch,
+    authority: tuple[SourceRef, SourceRef] | None,
+) -> SourceRef | None:
+    if authority is None or not frames.commit_frames:
+        return None
+    account, checkout = authority
+    startup = frames.commit_frames[0]
+    if startup.ordinal != 0 or startup.row["type"] != "session_meta":
+        return None
+    creator = startup.row["payload"].get("creator_account_id")
+    source._ledger.validate_source_ref(account)
+    if (
+        type(creator) is not str
+        or not creator
+        or source._ledger.pseudonymize("codex-account", creator) != account
+        or any(
+            frame.anchor_ref != checkout
+            for frame in frames.commit_frames
+            if frame.eligibility is Eligibility.ELIGIBLE
+            and not frame.pre_cutoff
+            and frame.row["type"] == "event_msg"
+            and frame.row["payload"].get("type") == "token_count"
+            and frame.row["payload"].get("rate_limits") is not None
+        )
+    ):
+        return None
+    return account
+
+
 def _read_usage(
     source: CandidateSource,
     frames: FrameBatch,
     record_revision: _RevisionRecorder | None,
     completion_witnesses: list[_CodexCompletionWitness] | None = None,
+    codex_quota_authority: tuple[SourceRef, SourceRef] | None = None,
 ) -> tuple[AdapterResult, dict[SourceRef, int], bool]:
     if source.provider is Provider.CODEX:
         result, _, span_ends = _read_codex(
             frames,
-            CodexState(source._ledger, neutral_markers=True),
+            CodexState(
+                source._ledger,
+                account_ref=_codex_quota_reference(
+                    source, frames, codex_quota_authority
+                ),
+                neutral_markers=True,
+            ),
             Eligibility.ELIGIBLE,
             _completion_witnesses=completion_witnesses,
         )
@@ -304,6 +342,7 @@ class ProviderAdapter:
         _revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]]
         | None = None,
         _completion_witnesses: list[_CodexCompletionWitness] | None = None,
+        _codex_quota_authority: tuple[SourceRef, SourceRef] | None = None,
     ) -> AdapterBatch:
         if _completion_witnesses is not None:
             _completion_witnesses.clear()
@@ -362,8 +401,13 @@ class ProviderAdapter:
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
         completion = [] if _completion_witnesses is not None else None
+        quota_authority = (
+            _codex_quota_authority
+            if surface is NativeSurface.CODEX_DESKTOP_MACOS and checkpoint is None
+            else None
+        )
         result, span_ends, retains_prefix = _read_usage(
-            source, frames, recorder, completion
+            source, frames, recorder, completion, quota_authority
         )
         scope_verified = True
         if _scope_boundaries:
@@ -386,7 +430,7 @@ class ProviderAdapter:
                 if frames.cursor is None:
                     return AdapterBatch(diagnostics=frames.diagnostics, cursor=cursor)
                 result, span_ends, retains_prefix = _read_usage(
-                    source, frames, recorder, completion
+                    source, frames, recorder, completion, quota_authority
                 )
                 scope_verified = all(
                     boundary in result.boundaries
