@@ -1,0 +1,120 @@
+{
+  "159_blockers": {
+    "157": "open",
+    "158": "open"
+  },
+  "authenticated_actor": "kburson",
+  "collaborator_writer_logins": [
+    "kburson"
+  ],
+  "disposition": "bounded_refusal",
+  "external_automation_preflight": {
+    "active_repository_hooks": [],
+    "app_scope_verified": false,
+    "installation_listing_response": "You must authenticate with an access token authorized to a GitHub App in order to list installations",
+    "registered_workflows": [
+      {
+        "path": ".github/workflows/aitm-python-parallel-qualification.yml",
+        "state": "active"
+      },
+      {
+        "path": ".github/workflows/ci.yml",
+        "state": "active"
+      }
+    ]
+  },
+  "fixture_cleanup": {
+    "pr": {
+      "merge_commit": "595fab23785db4c7e063fb452a2727f943362a2d",
+      "merged": true,
+      "number": 243,
+      "state": "closed"
+    },
+    "refs_found": [],
+    "ruleset_id": 27046475,
+    "ruleset_present": false
+  },
+  "fixture_rule_suite": {
+    "after_sha": "595fab23785db4c7e063fb452a2727f943362a2d",
+    "before_sha": "ac54af8eb46d8f7cbfaf436c561f988a992a7fd8",
+    "evaluations": [
+      {
+        "result": "pass",
+        "rule_type": "pull_request"
+      }
+    ],
+    "id": 5050237373,
+    "ref": "refs/heads/codex/158-atomic-b0f8ac7-target",
+    "result": "pass"
+  },
+  "live_graphql_input_fields": {
+    "entry": [
+      "name",
+      "afterOid",
+      "beforeOid",
+      "force"
+    ],
+    "merge": [
+      "clientMutationId",
+      "pullRequestId",
+      "commitHeadline",
+      "commitBody",
+      "expectedHeadOid",
+      "mergeMethod",
+      "authorEmail"
+    ],
+    "updates": [
+      "clientMutationId",
+      "repositoryId",
+      "refUpdates"
+    ]
+  },
+  "new_fixture_writes": 0,
+  "observed_at": "2026-11-12T01:00:40Z",
+  "prior_trial": {
+    "path": "attachments/2026-11-11-158-atomic-ref-trial.json",
+    "reviewed": true,
+    "sha256": "f79ecea2a38afb2b8e384d08baaccabca7165f90762845f9d5ab32b7e0ad6cd3"
+  },
+  "protection_readback": {
+    "planning": {
+      "definition_equal_to_trial_teardown": true,
+      "definition_fields_compared": [
+        "bypass_actors",
+        "conditions",
+        "enforcement",
+        "id",
+        "name",
+        "rules",
+        "target"
+      ],
+      "definition_sha256": "36f0a89fa73f6b8cf02a6c0b6aeeaed7192b00bf645d3282078945ddfc756466",
+      "effective_equal_to_trial_teardown": true,
+      "effective_sha256": "a38064477d43a9f9ba4cf5facafe77004a151889e259fbfa0a78f623c9246848",
+      "ruleset_id": 26821812
+    },
+    "trunk": {
+      "definition_equal_to_trial_teardown": true,
+      "definition_fields_compared": [
+        "bypass_actors",
+        "conditions",
+        "enforcement",
+        "id",
+        "name",
+        "rules",
+        "target"
+      ],
+      "definition_sha256": "48a13babb8ba60d22d2b33c617364b1d68a423696482d33b51b3b0e495385fd9",
+      "effective_equal_to_trial_teardown": true,
+      "effective_sha256": "0149a8032ce29e0d967a3115c361626628645cfbcf90c2a87cdff757e155eb47",
+      "ruleset_id": 26821811
+    }
+  },
+  "qualified_production_route": false,
+  "repository": {
+    "database_id": 1450406435,
+    "full_name": "kburson/aitm",
+    "node_id": "R_kgDOVnNyIw"
+  },
+  "schema": "aitm.158-merge-only-qualification-disposition/v1"
+}
