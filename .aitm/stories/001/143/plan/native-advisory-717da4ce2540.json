@@ -1,0 +1,63 @@
+{
+  "base": "0dfbcf0c4b346fe014674aae0775a82f40e3a9b8",
+  "executed": 1298,
+  "exit_code": 0,
+  "head": "717da4ce2540d4ba52f340cd3fe276fc43ccfb5b",
+  "inventory": {
+    "baseline_ci103_policy_sha256": "323498224344b7852da7c02299ff7e5812e3d9fbd1557c4e950de0b7dd8ba776",
+    "baseline_observer_sha256": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+    "baseline_sha256": "bcf59d32e88b75341251c1eda0615dcc44d00b7dd86b7d5c738d5b9b38c06131",
+    "baseline_suite_policy_sha256": "950b7c71783e2dcafab5ec4a680832d36e3beb0584d2e5dfeaf5bf5f7c564f3f",
+    "candidate_ci103_policy_sha256": "323498224344b7852da7c02299ff7e5812e3d9fbd1557c4e950de0b7dd8ba776",
+    "candidate_observer_sha256": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+    "candidate_sha256": "f29b42f9f143ca3fbf9682836352148ed896433f99f4a711d8d1568674b4c2b7",
+    "candidate_suite_policy_sha256": "950b7c71783e2dcafab5ec4a680832d36e3beb0584d2e5dfeaf5bf5f7c564f3f"
+  },
+  "issue": 143,
+  "mode": "full",
+  "plan_sha256": "ccfa34ed306323ca06e1c2a71d8e1ae7c43c8901899a8b310d8bbece238c1ffb",
+  "pr": 265,
+  "profiles": [
+    {
+      "children": [],
+      "executed": 196,
+      "exit_code": 0,
+      "outcomes": {
+        "passed": 196
+      },
+      "profile": "ci-helpers",
+      "seconds": 18.754
+    },
+    {
+      "children": [
+        "service-one-shot",
+        "cli-help"
+      ],
+      "executed": 1102,
+      "exit_code": 0,
+      "outcomes": {
+        "passed": 1102
+      },
+      "profile": "product-cli",
+      "seconds": 210.058
+    }
+  ],
+  "provenance": "local_advisory",
+  "reasons": [
+    "uncertain impact for 2 changed path(s): dynamic-import, unresolved-import"
+  ],
+  "repository": "kburson/aitm",
+  "runtime": "locked CPython 3.13.9 / uv 0.10.6 on Darwin APFS",
+  "seconds": 240.218,
+  "selected": 1298,
+  "snapshot": {
+    "after": "9e5c6209e9d817ba8a5ead7dbe21841996bc75b788af66ea90735ab2491409d8",
+    "base": "0dfbcf0c4b346fe014674aae0775a82f40e3a9b8",
+    "base_tree": "61eeabeed1362d5c39188dd6aade2b6549515b01",
+    "before": "210621c2fc3bd378053a5695d585da5248aae5f75010f2878eb90b69fb7e85b8",
+    "repository": "kburson/aitm",
+    "worktree": "7bc117c7961d687cccdc0f57057ec4967cb95e70613cad48542d0b293a188a3c"
+  },
+  "status": "passed",
+  "tree": "2f5169c7e1129f0cdb089b9d52ffe776de6af782"
+}
