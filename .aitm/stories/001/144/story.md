@@ -10,7 +10,7 @@ children: []
 blocking: [145, 146]
 blocked-by: [139]
 created: "2026-11-10T16:51:12Z"
-updated: "2026-11-12T02:09:54Z"
+updated: "2026-11-12T02:11:20Z"
 last-branch: "codex/aitm-wave30-144"
 estimate: {"agent-hours": 0.75, "size": "S"}
 priority: "P1"
@@ -78,3 +78,7 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 [Refusal](attachments/2026-11-11-144-trusted-pytest-observation-refusal.md) · [Documentary validation](plan/2026-11-11-144-refusal-documentary-validation.md) · [Independent acceptance](plan/reviews/2026-11-11-144-refusal-report-review.md).
 
 All six trial cases remain unrun. Both modes remain unqualified. #144 stays open and holds #145 and #146 pending verified authorization and independent observation capability.
+
+### Implementer sign-off
+
+[Signed retrospective](retro/2026-11-11-144-implementer-refusal-signoff.md) records verified archival delivery of the refusal and Unknown active implementation time.
