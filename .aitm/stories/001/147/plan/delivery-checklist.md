@@ -25,3 +25,13 @@
 - [ ] Keep the implementing agent available for the signed post-delivery retrospective. Publish that and the verified delivery record, then close the issue and move the Project item to Done under coordinator ownership. Read back each state and preserve the closure record.
 
 [Manual delivery checklist](../../../../manual-delivery-checklist.md) · [#103 gate contract](../../103/design/github-ci-quality-gates-design.md)
+
+## Current exact-candidate Test readback
+
+- GitHub Project Test, Rank 30. [PR #261](https://github.com/kburson/aitm/pull/261) targets `trunk` at `71aa5c880fc6a1db1cf676dfc663373f02ef7b16` from exact head `0d8f8ea353d71ab19802e882ceecbd105e6837ae`.
+- GitHub's tested merge is `348932349a6d19f8d4aaf150eb683b4c9311418f` with ordered parents base then head. The tested tree is `9699130f9be8411cb2a5646197e803956b1ef1b3`.
+- [CI run 43142104151 attempt 1](https://github.com/kburson/aitm/actions/runs/43142104151/attempts/1) finished with `success`. [Authenticated metadata](hosted-readback-0d8f8ea353d7.json).
+- All six required jobs and the signed subject's custody were independently authenticated for this exact attempt. [Signature readback](hosted-signature-0d8f8ea353d7.json).
+- [Independent source assessment](reviews/2026-11-11-147-source-owner-assessment-r2.md) informs the owner disposition.
+- Trusted #103 verifier held with `gate controls changed or disposition is stale; provide the exact reviewed tree`. [Verifier receipt](verifier-hold-0d8f8ea353d7.json).
+- The owner decision must bind the exact tested tree and the two gate-defining additions. The authenticated CI diagnostic and source assessment leave the full trusted verifier and formal independent source review pending. The Project stays in Test.
