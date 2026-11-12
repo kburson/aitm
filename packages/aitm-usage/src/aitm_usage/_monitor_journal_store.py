@@ -35,6 +35,7 @@ _LEGACY_SCHEMA_VERSION = 1
 _REVISION_SCHEMA_VERSION = 2
 _CONTENT_DISPUTE_SCHEMA_VERSION = 3
 _SCHEMA_VERSION = 4
+_PAIRED_SCHEMA_VERSION = 5
 _SCHEMA = """
 CREATE TABLE identity (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -100,6 +101,14 @@ CREATE TABLE route_dispositions (
 """
 
 
+_PAIRED_SCHEMA = """
+CREATE TABLE paired_settlements (
+    sequence INTEGER PRIMARY KEY REFERENCES commits,
+    payload BLOB NOT NULL
+) STRICT;
+"""
+
+
 @cache
 def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], ...]:
     if version not in {
@@ -107,6 +116,7 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
         _REVISION_SCHEMA_VERSION,
         _CONTENT_DISPUTE_SCHEMA_VERSION,
         _SCHEMA_VERSION,
+        _PAIRED_SCHEMA_VERSION,
     }:
         raise LedgerError("Unsupported routing journal schema version")
     with closing(sqlite3.connect(":memory:")) as conn:
@@ -115,8 +125,10 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
             conn.execute(_REVISION_SCHEMA)
         if version >= _CONTENT_DISPUTE_SCHEMA_VERSION:
             conn.execute(_CONTENT_DISPUTE_SCHEMA)
-        if version == _SCHEMA_VERSION:
+        if version >= _SCHEMA_VERSION:
             conn.execute(_ROUTE_DISPOSITION_SCHEMA)
+        if version == _PAIRED_SCHEMA_VERSION:
+            conn.execute(_PAIRED_SCHEMA)
         return _schema_objects(conn)
 
 
@@ -132,6 +144,7 @@ def _validate_identity(
             (_REVISION_SCHEMA_VERSION,),
             (_CONTENT_DISPUTE_SCHEMA_VERSION,),
             (_SCHEMA_VERSION,),
+            (_PAIRED_SCHEMA_VERSION,),
         } or (version is not None and stored != (version,)):
             raise LedgerError("Unsupported routing journal schema version")
         stored_version = stored[0]
@@ -269,7 +282,7 @@ class JournalStore:
                     version = _validate_identity(conn, key_id, version=expected)
                     if published is None:
                         self._evidence = self._read_evidence(root)
-                if version != _SCHEMA_VERSION:
+                if version < _SCHEMA_VERSION:
                     self._upgrade(root, directory, version)
                 # Confirm a validated store even if a prior publisher lost its sync.
                 try:
@@ -384,6 +397,22 @@ class JournalStore:
         except sqlite3.Error:
             raise LedgerError("Unable to upgrade private routing journal") from None
 
+    def _enable_paired(self, conn: sqlite3.Connection) -> None:
+        if not conn.in_transaction:
+            raise LedgerError("Paired settlement requires a journal transaction")
+        version = self._current_version(conn)
+        if version == _SCHEMA_VERSION:
+            _validate_foreign_keys(conn)
+            conn.execute(_PAIRED_SCHEMA)
+            conn.execute(f"PRAGMA user_version = {_PAIRED_SCHEMA_VERSION}")
+            _validate_identity(conn, self._key_id, version=_PAIRED_SCHEMA_VERSION)
+
+    def _current_version(self, conn: sqlite3.Connection) -> int:
+        version = _validate_identity(conn, self._key_id, version=None)
+        if version < _SCHEMA_VERSION:
+            raise LedgerError("Unsupported routing journal schema version")
+        return version
+
     @contextmanager
     def transaction(self, *, write: bool = False) -> Iterator[sqlite3.Connection]:
         self._writer.lease
@@ -392,6 +421,6 @@ class JournalStore:
             _pin_directory(root.path / _STORE) as directory,
             self._pinned_transaction(root, directory, write=write) as conn,
         ):
-            _validate_identity(conn, self._key_id)
+            self._current_version(conn)
             yield conn
-            _validate_identity(conn, self._key_id)
+            self._current_version(conn)

@@ -787,3 +787,33 @@ def test_route_disposition_table_enforces_strict_identity_and_commit(tmp_path):
             ):
                 with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
                     conn.execute(insert, values)
+
+
+def test_paired_journal_upgrade_occurs_only_with_first_committed_pair(tmp_path):
+    registry = Registry(tmp_path / "monitor")
+    with registry.writer() as writer:
+        writer.source_evidence()
+        store = journal.JournalStore(writer)
+        with store.transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+        with pytest.raises(RuntimeError, match="abort pair"):
+            with store.transaction(write=True) as conn:
+                store._enable_paired(conn)
+                raise RuntimeError("abort pair")
+        with store.transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+        with store.transaction(write=True) as conn:
+            store._enable_paired(conn)
+            conn.execute("INSERT INTO commits VALUES (1)")
+            conn.execute("INSERT INTO paired_settlements VALUES (1, ?)", (b"pair",))
+    with registry.writer() as writer:
+        store = journal.JournalStore(writer)
+        with store.transaction() as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (5,)
+            assert conn.execute("SELECT * FROM paired_settlements").fetchall() == [
+                (1, b"pair")
+            ]
+            with pytest.raises(
+                LedgerError, match="Unsupported routing journal schema version"
+            ):
+                journal._validate_identity(conn, writer.view().source_key_id, version=4)

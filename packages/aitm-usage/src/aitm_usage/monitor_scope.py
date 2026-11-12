@@ -3,7 +3,7 @@
 import os
 import re
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -35,6 +35,7 @@ from .sources.adapter import (
     SourceLocator,
     StreamCursor,
     _claude_revision_material,
+    _CompletionFrontier,
     _GrokSource,
     _NativeRevisionWitness,
 )
@@ -320,6 +321,12 @@ def _quota_source_key(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _CompletionProgress:
+    cursor: StreamCursor
+    proofs: tuple[_ObservationProof, ...]
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class VerifiedScopeBatch:
     source_id: UUID
@@ -338,6 +345,9 @@ class VerifiedScopeBatch:
     ] = field(default=(), repr=False, compare=False)
     _completion_witnesses: tuple[_CodexCompletionWitness, ...] = field(
         default=(), repr=False, compare=False
+    )
+    _completion_progress: _CompletionProgress | None = field(
+        default=None, repr=False, compare=False
     )
     _quota_binding: _CodexQuotaBinding | None = field(
         default=None, repr=False, compare=False
@@ -384,12 +394,49 @@ class VerifiedRouteDisposition:
     _command: Disposition = field(repr=False)
 
 
+@dataclass(frozen=True, slots=True)
+class _TypedDisposition:
+    digest: str
+    grant_id: UUID
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class _VerifiedSettlementSide:
+    hold: ProofHold
+    command: Disposition
+    request: _TypedDisposition
+    progress: _CompletionProgress
+    scope_digest: str
+    _original: _HeldRouteTarget = field(repr=False)
+    _prior_route: "_Route" = field(repr=False)
+    _terminal: NativeBoundary = field(repr=False)
+    _batch: VerifiedScopeBatch = field(repr=False)
+    _operator: ScopeAuthority = field(repr=False)
+    _issuer: "ScopeState" = field(repr=False)
+
+
+@dataclass(frozen=True, slots=True)
+class _JournalScopeRelease:
+    hold: ProofHold
+    original: _HeldRouteTarget
+    command_id: UUID
+    checkout: SourceRef
+    prior_route: "_Route"
+    terminal: SourceBoundary
+    completion_ordinal: int
+    terminal_prefix: SourceCursor
+    outcome: HoldState
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class ScopeView:
     events: tuple[_ScopeEvent, ...]
     holds: tuple[ProofHold, ...]
     _proofs: tuple[_ObservationProof, ...] = field(default=(), repr=False)
     _registry: RegistryView | None = field(default=None, repr=False)
+    _effective_terminals: tuple[tuple[SourceBoundary, int], ...] = field(
+        default=(), repr=False
+    )
 
 
 _ISSUED_VIEWS: WeakValueDictionary[int, ScopeView] = WeakValueDictionary()
@@ -624,6 +671,31 @@ def _timeline(
     return route, statuses
 
 
+def _restorable_owned_route(
+    events: tuple[_ScopeEvent, ...], hold: ProofHold, checkout: SourceRef | None
+) -> _Route | None:
+    previous, _ = _timeline(events, hold.position, through=hold.affected.start - 1)
+    endpoints = {
+        event.position.ordinal
+        for event in events
+        if _stream(event.position) == _stream(hold.position)
+        and hold.affected.start <= event.position.ordinal < hold.affected.end
+    }
+    endpoints.add(hold.affected.end - 1)
+    if (
+        previous.scope is not None
+        and previous.scope.project_id == hold.project_id
+        and previous.checkout == checkout
+        and not previous.held
+        and all(
+            _timeline(events, hold.position, through=end)[0] == previous
+            for end in endpoints
+        )
+    ):
+        return previous
+    return None
+
+
 def resolve_route(
     observation: NativeObservation, registry: RegistryView, scopes: ScopeView
 ) -> RouteDecision:
@@ -705,6 +777,9 @@ class ScopeState:
             WeakValueDictionary()
         )
 
+        self._settlement_sides: WeakValueDictionary[int, _VerifiedSettlementSide] = (
+            WeakValueDictionary()
+        )
         self._route_proofs: WeakValueDictionary[int, VerifiedRouteDisposition] = (
             WeakValueDictionary()
         )
@@ -1088,6 +1163,9 @@ class ScopeState:
         completion_witnesses: list[_CodexCompletionWitness] | None = (
             [] if qualify_completion else None
         )
+        completion_frontiers: list[_CompletionFrontier] | None = (
+            [] if qualify_completion else None
+        )
         quota_binding = None
         if type(locator._source) is CandidateSource:
             if not any(
@@ -1132,6 +1210,7 @@ class ScopeState:
                 _capture_limit=native_cursor,
                 _revision_witnesses=revision_witnesses,
                 _completion_witnesses=completion_witnesses,
+                _completion_frontiers=completion_frontiers,
                 _codex_quota_authority=(
                     (quota_binding.account, quota_binding.checkout)
                     if quota_binding is not None
@@ -1160,9 +1239,58 @@ class ScopeState:
             admitted = frozenset()
             native_cursor = None
 
+        proofs = self._observation_proofs(
+            source_id, locator, surface, batch.observations, view, admitted
+        )
+        completion_progress = None
+        if completion_frontiers:
+            (frontier,) = completion_frontiers
+            completion_progress = _CompletionProgress(
+                frontier.cursor,
+                self._observation_proofs(
+                    source_id, locator, surface, frontier.observations, view, admitted
+                ),
+            )
+        completion_scope = (
+            self._snapshot(confirm=True) if completion_witnesses else None
+        )
+        verified = VerifiedScopeBatch(
+            source_id=source_id,
+            surface=surface,
+            observations=batch.observations,
+            boundaries=batch.boundaries,
+            diagnostics=batch.diagnostics,
+            cursor=batch.cursor,
+            _proofs=proofs,
+            _admitted=admitted,
+            _locator=current,
+            _native_cursor=native_cursor,
+            _registry=view,
+            _revision_witnesses=tuple(revision_witnesses),
+            _completion_witnesses=tuple(completion_witnesses or ()),
+            _completion_progress=completion_progress,
+            _quota_binding=quota_binding,
+            _completion_scope=(
+                completion_scope
+                if isinstance(completion_scope, _ScopeSnapshotV2)
+                else None
+            ),
+        )
+        self._batches[id(verified)] = verified
+        return verified
+
+    def _observation_proofs(
+        self,
+        source_id: UUID,
+        locator: SourceLocator,
+        surface: NativeSurface,
+        observations: tuple[NativeObservation, ...],
+        view: RegistryView,
+        admitted: frozenset[UUID],
+    ) -> tuple[_ObservationProof, ...]:
         proofs = []
         evidence = self.registry.source_evidence()
-        for observation in batch.observations:
+        for observation in observations:
             usage = observation.usage
             native = (
                 usage.boundary
@@ -1202,32 +1330,7 @@ class ScopeState:
                     self._eligible(admitted, position, end),
                 )
             )
-        completion_scope = (
-            self._snapshot(confirm=True) if completion_witnesses else None
-        )
-        verified = VerifiedScopeBatch(
-            source_id=source_id,
-            surface=surface,
-            observations=batch.observations,
-            boundaries=batch.boundaries,
-            diagnostics=batch.diagnostics,
-            cursor=batch.cursor,
-            _proofs=tuple(proofs),
-            _admitted=admitted,
-            _locator=current,
-            _native_cursor=native_cursor,
-            _registry=view,
-            _revision_witnesses=tuple(revision_witnesses),
-            _completion_witnesses=tuple(completion_witnesses or ()),
-            _quota_binding=quota_binding,
-            _completion_scope=(
-                completion_scope
-                if isinstance(completion_scope, _ScopeSnapshotV2)
-                else None
-            ),
-        )
-        self._batches[id(verified)] = verified
-        return verified
+        return tuple(proofs)
 
     def completion_witness(
         self,
@@ -2085,6 +2188,87 @@ class ScopeState:
         return hold
 
     @contextmanager
+    def _route_requests(
+        self, commands: tuple[Disposition, ...]
+    ) -> Iterator[tuple[tuple[_TypedDisposition, ...], Callable[[], None]]]:
+        from .monitor_control import (
+            INBOX_NAME,
+            ControlInbox,
+            ScopeInboxReader,
+            _scope_now,
+        )
+        from .scope_admission import (
+            DispositionRequest,
+            open_grant,
+            require_witness,
+            seal_request,
+        )
+        from .scopes import _filename, _read_private
+
+        self.registry.lease
+        if not _path_exists(self.registry.root / INBOX_NAME):
+            raise LedgerError("Current typed disposition is unavailable")
+        inbox = ControlInbox(self.registry.root)
+        with inbox.publication() as locked, ExitStack() as pins:
+            reader = ScopeInboxReader(self.registry, inbox)
+            wanted = {command.command_id for command in commands}
+            envelopes = {}
+            for item in reader.iter_verified(locked):
+                if item.command_id in wanted:
+                    envelopes[item.command_id] = item
+                    if envelopes.keys() == wanted:
+                        break
+            requests = []
+            checks = []
+            for command in commands:
+                envelope = envelopes.get(command.command_id)
+                request = envelope.body.request if envelope is not None else None
+                if type(request) is not DispositionRequest or (
+                    request.project_id,
+                    request.hold_id,
+                    request.release_previous,
+                ) != (command.project_id, command.hold_id, command.release_previous):
+                    raise LedgerError("Current typed disposition is unavailable")
+                grant, recheck, revision = pins.enter_context(
+                    open_grant(self.registry, request.grant_id)
+                )
+                requests.append(
+                    _TypedDisposition(envelope.payload_digest, request.grant_id)
+                )
+                checks.append((envelope, request, grant, recheck, revision))
+
+            def verify_again() -> None:
+                locked.directory.check()
+                for envelope, request, grant, recheck, revision in checks:
+                    recheck()
+                    saved = locked.captured[request.command_id][1]
+                    if (
+                        _read_private(locked.directory, _filename(request.command_id))
+                        != saved
+                    ):
+                        raise ConflictError(
+                            "Current typed disposition publication changed"
+                        )
+                    with open_grant(self.registry, request.grant_id) as (
+                        current,
+                        _,
+                        latest,
+                    ):
+                        if (
+                            current != grant
+                            or latest != revision
+                            or seal_request(current, request) != envelope
+                        ):
+                            raise ConflictError(
+                                "Current typed disposition grant changed"
+                            )
+                        require_witness(self.registry, current, _scope_now())
+                locked.directory.check()
+
+            verify_again()
+            yield tuple(requests), verify_again
+
+    @contextmanager
     def _route_request(self, command: Disposition) -> Iterator[str]:
         from .monitor_control import (
             INBOX_NAME,
@@ -2120,6 +2304,91 @@ class ScopeState:
                 yield envelope.payload_digest
                 recheck()
                 require_witness(self.registry, grant, _scope_now())
+
+    def _settlement_side(
+        self,
+        command: Disposition,
+        operator: ScopeAuthority,
+        batch: VerifiedScopeBatch,
+        target: NativeBoundary,
+        request: _TypedDisposition,
+    ) -> _VerifiedSettlementSide:
+        if (
+            type(command) is not Disposition
+            or not command.release_previous
+            or (witness := self.completion_witness(command, operator, batch, target))
+            is None
+            or (progress := batch._completion_progress) is None
+            or type(checkpoint := progress.cursor.checkpoint) is not SourceCheckpoint
+            or checkpoint.provider.ordinal != witness.completion_ordinal
+        ):
+            raise LedgerError("Settlement requires a current owned completion proof")
+        state = self._snapshot(confirm=True)
+        if not isinstance(state, _ScopeSnapshotV2) or state != batch._completion_scope:
+            raise LedgerError("Settlement scope snapshot changed")
+        hold = next(
+            (row for row in state.holds if row.command_id == command.hold_id), None
+        )
+        if hold is None:
+            raise LedgerError("Settlement hold is unavailable")
+        if any(
+            item.command_id == command.command_id
+            for item in (*state.events, *state.holds, *state.resolutions)
+        ):
+            raise ConflictError("Settlement command conflicts with scope history")
+        original = next(
+            (
+                item
+                for item in state.held_route_targets
+                if item.hold_id == hold.command_id
+            ),
+            None,
+        )
+        route = _restorable_owned_route(state.events, hold, target.project_context)
+        if original is None or route is None:
+            raise LedgerError("Settlement cannot restore the original owned route")
+        return _VerifiedSettlementSide(
+            hold,
+            command,
+            request,
+            progress,
+            sha256(_encode(state, _ScopeSnapshotV2).encode()).hexdigest(),
+            original,
+            route,
+            target,
+            batch,
+            operator,
+            self,
+        )
+
+    def verify_settlement_side(
+        self,
+        command: Disposition,
+        operator: ScopeAuthority,
+        batch: VerifiedScopeBatch,
+        target: NativeBoundary,
+    ) -> _VerifiedSettlementSide:
+        """Issue current evidence for one side of a separately adjudicated pair."""
+        with self._route_requests((command,)) as ((request,), verify_again):
+            proof = self._settlement_side(command, operator, batch, target, request)
+            verify_again()
+        self._settlement_sides[id(proof)] = proof
+        return proof
+
+    def _require_settlement_side(
+        self, proof: _VerifiedSettlementSide, request: _TypedDisposition
+    ) -> None:
+        if (
+            type(proof) is not _VerifiedSettlementSide
+            or self._settlement_sides.get(id(proof)) is not proof
+            or self._settlement_side(
+                proof.command, proof._operator, proof._batch, proof._terminal, request
+            )
+            != proof
+        ):
+            raise LedgerError(
+                "Expected a current settlement side from its scope writer"
+            )
 
     def _route_proposal(
         self, command: Disposition, terminal: VerifiedBoundary, request_digest: str
@@ -2310,6 +2579,84 @@ class ScopeState:
             ) or record not in state.route_dispositions:
                 raise LedgerError("Scope disposition is no longer current")
         return record
+
+    def _journal_view(
+        self,
+        batch: VerifiedScopeBatch,
+        releases: tuple[_JournalScopeRelease, ...],
+        conflicts: frozenset[UUID],
+        *,
+        progress: _CompletionProgress | None = None,
+        confirm: bool = True,
+    ) -> ScopeView:
+        state = self._snapshot(confirm=confirm)
+        self._recheck_batch(batch)
+        registry = self.registry.view(_confirm_publication=confirm)
+        source = batch._locator._source
+        holds = {hold.command_id: hold for hold in state.holds}
+        terminals = []
+        for release in releases:
+            hold = release.hold
+            position = hold.position
+            if (
+                batch.source_id != position.source_id
+                or batch.surface != position.surface
+                or source.stream_ref != position.stream_ref
+            ):
+                continue
+            original = holds.get(hold.command_id)
+            prefix = release.terminal_prefix
+            if (
+                not isinstance(state, _ScopeSnapshotV2)
+                or type(source) is not CandidateSource
+                or source.session_ref != position.session_ref
+                or _prefix_identity(prefix)
+                != (source.stream_ref, source.locator_ref, source.incarnation_ref)
+                or original is None
+                or original.state not in (HoldState.HELD, HoldState.GAP)
+                or replace(original, state=HoldState.HELD) != hold
+                or release.original not in state.held_route_targets
+                or release.outcome is not HoldState.RESOLVED
+                or {hold.command_id, release.command_id} & conflicts
+                or any(
+                    row.result.command_id == hold.command_id
+                    or row.command_id == release.command_id
+                    for row in state.resolutions
+                )
+                or any(
+                    row.hold_id == hold.command_id
+                    or row.command_id == release.command_id
+                    for row in state.route_dispositions
+                )
+                or _restorable_owned_route(state.events, hold, release.checkout)
+                != release.prior_route
+            ):
+                raise LedgerError("Committed settlement conflicts with scope history")
+            try:
+                _capture_position(source, prefix, fixed=prefix)
+            except (OSError, ValueError):
+                raise LedgerError(
+                    "Committed settlement native prefix changed"
+                ) from None
+            holds[hold.command_id] = replace(hold, state=release.outcome)
+            terminals.append((release.terminal, release.completion_ordinal))
+        if progress is not None:
+            if batch._completion_progress is not progress:
+                raise LedgerError(
+                    "Journal settlement progress was not issued by this scope"
+                )
+            for proof in progress.proofs:
+                if self._anchor(registry, proof.checkout) != proof.anchor_project:
+                    raise LedgerError("Settlement checkout identity changed")
+        view = ScopeView(
+            state.events,
+            tuple(holds.values()),
+            batch._proofs if progress is None else progress.proofs,
+            registry,
+            tuple(terminals),
+        )
+        _ISSUED_VIEWS[id(view)] = view
+        return view
 
     def view(
         self, *batches: VerifiedScopeBatch, _confirm_publication: bool = False

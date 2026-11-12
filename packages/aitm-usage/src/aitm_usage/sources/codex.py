@@ -7,7 +7,7 @@ from dataclasses import dataclass, field, fields, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
-from itertools import combinations
+from itertools import combinations, pairwise
 from pathlib import Path
 from uuid import UUID
 
@@ -126,6 +126,9 @@ class _CodexCompletionWitness:
     root_turn_ref: SourceRef
     segment_ref: SourceRef
     checkout: SourceRef
+    _checkpoint: ProviderCheckpoint | None = field(
+        default=None, repr=False, compare=False
+    )
 
 
 @dataclass(slots=True)
@@ -828,6 +831,13 @@ class _Walk:
             < counter_ordinal
             == frame.ordinal - 1
         ):
+            return
+        ordered_times = (
+            item.observed_at
+            for item in self.batch.commit_frames
+            if turn.start.ordinal <= item.ordinal <= frame.ordinal
+        )
+        if any(before > after for before, after in pairwise(ordered_times)):
             return
         trace.witness = _CodexCompletionWitness(
             request,
@@ -1533,7 +1543,7 @@ def _read_codex(
         and len(batch.commit_frames) == len(batch.frames)
         and batch.commit_frames[-1].ordinal == witness.completion_ordinal
     ):
-        _completion_witnesses.append(witness)
+        _completion_witnesses.append(replace(witness, _checkpoint=walk.checkpoint))
     checkpoint = walk.checkpoint
     unsettled = None
     if state.neutral_markers and (

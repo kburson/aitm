@@ -183,6 +183,12 @@ class NativeBoundary:
 
 
 @dataclass(frozen=True, slots=True)
+class _CompletionFrontier:
+    observations: tuple[NativeObservation, ...]
+    cursor: StreamCursor
+
+
+@dataclass(frozen=True, slots=True)
 class AdapterBatch:
     """Evidence only. A missing cursor supplies no new checkpoint."""
 
@@ -255,6 +261,36 @@ def _read_usage(
         frames, state, result.provider_checkpoint
     )
     return result, {}, retains_prefix
+
+
+def _native_observations(
+    source: CandidateSource,
+    frames: FrameBatch,
+    result: AdapterResult,
+    surface: NativeSurface,
+    span_ends: dict[SourceRef, int],
+) -> dict[int, NativeObservation]:
+    prior_checkout = dict(frames._prior_checkout)
+    observations: dict[int, NativeObservation] = {}
+    for revision in result.revisions:
+        usage = revision.record
+        if not isinstance(usage, UsageObservation):
+            continue
+        boundary = usage.boundary
+        proof = frames.scope_evidence(boundary)
+        context = proof.anchor_ref if proof is not None else None
+        if proof is None and source._matches(boundary):
+            context = prior_checkout.get(boundary.ordinal)
+        observations[id(revision)] = NativeObservation(
+            revision.key,
+            revision.revision,
+            usage,
+            surface,
+            ObservationTimeBasis.NATIVE_USAGE_EVENT,
+            context,
+            span_end=span_ends.get(revision.key),
+        )
+    return observations
 
 
 class ProviderAdapter:
@@ -342,10 +378,13 @@ class ProviderAdapter:
         _revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]]
         | None = None,
         _completion_witnesses: list[_CodexCompletionWitness] | None = None,
+        _completion_frontiers: list[_CompletionFrontier] | None = None,
         _codex_quota_authority: tuple[SourceRef, SourceRef] | None = None,
     ) -> AdapterBatch:
         if _completion_witnesses is not None:
             _completion_witnesses.clear()
+        if _completion_frontiers is not None:
+            _completion_frontiers.clear()
         source = locator._source
         if not isinstance(source, CandidateSource):
             return AdapterBatch()
@@ -467,6 +506,20 @@ class ProviderAdapter:
                     for item in boundaries
                 ):
                     _completion_witnesses.append(witness)
+                    if _completion_frontiers is not None:
+                        assert witness._checkpoint is not None
+                        _completion_frontiers.append(
+                            _CompletionFrontier(
+                                tuple(
+                                    _native_observations(
+                                        source, frames, result, surface, span_ends
+                                    ).values()
+                                ),
+                                StreamCursor(
+                                    SourceCheckpoint(frames.cursor, witness._checkpoint)
+                                ),
+                            )
+                        )
             return AdapterBatch(
                 boundaries=boundaries if scope_verified else (),
                 diagnostics=(
@@ -481,26 +534,7 @@ class ProviderAdapter:
                 cursor=cursor,
             )
 
-        prior_checkout = dict(frames._prior_checkout)
-        observations: dict[int, NativeObservation] = {}
-        for revision in result.revisions:
-            usage = revision.record
-            if not isinstance(usage, UsageObservation):
-                continue
-            boundary = usage.boundary
-            proof = frames.scope_evidence(boundary)
-            context = proof.anchor_ref if proof is not None else None
-            if proof is None and source._matches(boundary):
-                context = prior_checkout.get(boundary.ordinal)
-            observations[id(revision)] = NativeObservation(
-                revision.key,
-                revision.revision,
-                usage,
-                surface,
-                ObservationTimeBasis.NATIVE_USAGE_EVENT,
-                context,
-                span_end=span_ends.get(revision.key),
-            )
+        observations = _native_observations(source, frames, result, surface, span_ends)
         batch = AdapterBatch(
             tuple(observations.values()),
             boundaries,
