@@ -6,7 +6,7 @@ kind: epic
 state: backlog
 issue: https://github.com/kburson/aitm/issues/1
 parent: null
-children: [2]
+children: [2, 247]
 blocking: []
 blocked-by: []
 created: 2026-11-08T19:24:00Z
@@ -67,7 +67,11 @@ Root epic for the aitm product: a Python rewrite of ai-task-manager as a core pl
 ## Story dashboard production intake from #181
 
 - M2 owns [C05 board projection](../../../drafts/2026-11/20261108-1310-github-extension/draft.md#c05-intake-from-181).
-- M6 owns [C06 hosted viewer](../../../drafts/2026-11/20261108-1310-viewer/draft.md#c06-intake-from-181).
+- M6 [Viewer #247](../../002/247/story.md) owns [C06 hosted viewer](../../002/247/draft.md#c06-intake-from-181).
 - M8 owns [C07 estimate calibration](../../../drafts/2026-11/20261108-1310-rubric/draft.md#c07-intake-from-181).
 
 These are backlog inputs to the existing milestone drafts. [#2](../2/story.md) owns timing qualification and [#100](../../001/100/story.md) owns Cost compatibility. [The #181 transfer](../../001/181/attachments/2026-11-11-production-scope-transfer.md) records the end-to-end dependency map.
+
+## M6 Viewer graduation
+
+[Viewer Epic #247](../../002/247/story.md) carries the M6 master-plan scope. Its backlog and reviewed preview evidence are retained in its own planning record.

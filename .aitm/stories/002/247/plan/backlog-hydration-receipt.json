@@ -1,0 +1,187 @@
+{
+  "epic": 247,
+  "parent": 1,
+  "project": 24,
+  "story_status": "Backlog",
+  "readback_utc": "2026-11-12T00:35:22Z",
+  "children": [
+    {
+      "key": "V01",
+      "story": 249,
+      "parent": 247,
+      "blocked_by": [],
+      "blocking": [
+        248
+      ],
+      "estimate": 3,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V02",
+      "story": 248,
+      "parent": 247,
+      "blocked_by": [
+        249
+      ],
+      "blocking": [
+        252
+      ],
+      "estimate": 3,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V03",
+      "story": 250,
+      "parent": 247,
+      "blocked_by": [],
+      "blocking": [
+        251
+      ],
+      "estimate": 3.75,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V04",
+      "story": 251,
+      "parent": 247,
+      "blocked_by": [
+        250
+      ],
+      "blocking": [
+        252,
+        253,
+        254,
+        255
+      ],
+      "estimate": 3.5,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V05",
+      "story": 252,
+      "parent": 247,
+      "blocked_by": [
+        248,
+        251
+      ],
+      "blocking": [
+        256,
+        257,
+        259
+      ],
+      "estimate": 3.75,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V06",
+      "story": 253,
+      "parent": 247,
+      "blocked_by": [
+        251
+      ],
+      "blocking": [
+        256
+      ],
+      "estimate": 3,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V07",
+      "story": 254,
+      "parent": 247,
+      "blocked_by": [
+        251
+      ],
+      "blocking": [
+        256
+      ],
+      "estimate": 3.25,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V08",
+      "story": 255,
+      "parent": 247,
+      "blocked_by": [
+        251
+      ],
+      "blocking": [
+        256
+      ],
+      "estimate": 2.5,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V09",
+      "story": 256,
+      "parent": 247,
+      "blocked_by": [
+        252,
+        253,
+        254,
+        255
+      ],
+      "blocking": [
+        258
+      ],
+      "estimate": 3.75,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V10",
+      "story": 258,
+      "parent": 247,
+      "blocked_by": [
+        256
+      ],
+      "blocking": [
+        257,
+        259,
+        260
+      ],
+      "estimate": 3.5,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V11",
+      "story": 257,
+      "parent": 247,
+      "blocked_by": [
+        252,
+        258
+      ],
+      "blocking": [
+        260
+      ],
+      "estimate": 3.5,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V12",
+      "story": 259,
+      "parent": 247,
+      "blocked_by": [
+        252,
+        258
+      ],
+      "blocking": [
+        260
+      ],
+      "estimate": 3.5,
+      "project_status": "Backlog"
+    },
+    {
+      "key": "V13",
+      "story": 260,
+      "parent": 247,
+      "blocked_by": [
+        258,
+        257,
+        259
+      ],
+      "blocking": [],
+      "estimate": 2.75,
+      "project_status": "Backlog"
+    }
+  ]
+}
