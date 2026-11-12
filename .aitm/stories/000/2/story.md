@@ -7,10 +7,10 @@ state: backlog
 issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 230]
-blocking: []
+blocking: [247]
 blocked-by: [100, 133]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-12T01:09:16Z"
+updated: "2026-11-12T01:40:33Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: 297.25, size: XL }
@@ -48,7 +48,7 @@ So that state, timing and evidence are recorded by the tool, never repaired by h
 
 ## Dependencies
 
-- **Parent:** [#1](../1/story.md) · **Blocking:** none · **Blocked by:** [#100](../../001/100/story.md), [#133](../../001/133/story.md)
+- **Parent:** [#1](../1/story.md) · **Blocking:** [#247 M6 Viewer](../../002/247/story.md) · **Blocked by:** [#100](../../001/100/story.md), [#133](../../001/133/story.md)
 
 <details><summary>State history (generated from events.jsonl)</summary>
 

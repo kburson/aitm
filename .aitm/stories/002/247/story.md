@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/247"
 parent: 1
 children: [249, 248, 250, 251, 252, 253, 254, 255, 256, 258, 257, 259, 260]
 blocking: []
-blocked-by: []
+blocked-by: [2]
 created: "2026-11-12T00:31:36Z"
-updated: "2026-11-12T00:35:22Z"
+updated: "2026-11-12T01:40:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": 43.5, "size": "Feature", "scope": "accepted backlog decomposition"}
 priority: null
@@ -28,7 +28,7 @@ Deliver the local viewer, then a static hosted viewer with progress, flow, timin
 
 [Graduated draft](draft.md) · [Accepted decomposition](plan/2026-11-11-247-m6-viewer-decomposition.md) · [#139 timing pilot](attachments/2026-11-11-139-m6-timing-pilot.md)
 
-All items are in Backlog. Each needs its own reviewed and accepted JIT implementation plan at pickup. Formal M6 implementation follows released M1. See the plan for M2, timing, Cost and authorized hosting gates.
+All items are in Backlog. Each needs its own reviewed and accepted JIT implementation plan at pickup. Core Epic [#2](../../000/2/story.md) blocks #247. Formal M6 implementation follows the released M1 Core contracts tracked by [#72](../../000/72/story.md). See the plan for M2, timing, Cost and authorized hosting gates.
 
 ## Backlog items
 
