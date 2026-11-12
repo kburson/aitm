@@ -10,12 +10,12 @@ children: []
 blocking: [172]
 blocked-by: [142]
 created: "2026-11-10T16:51:10Z"
-updated: "2026-11-12T15:43:27Z"
+updated: "2026-11-12T15:43:37Z"
 last-branch: "codex/aitm-wave50-143"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md", "plan/143-local-validation-e2c87eef770b.md", "plan/delivery-checklist.md", "plan/143-focused-nodeids.txt", "plan/native-run-r1-diagnostic.md", "plan/143-local-validation-717da4ce2540.md", "plan/143-replacement-focused-nodeids.txt", "plan/native-advisory-717da4ce2540.json", "plan/hosted-attempt-1-717da4ce2540.json", "plan/owner-disposition-717da4ce2540.json", "plan/verifier-pass-717da4ce2540.json", "plan/review-entry-signature-717da4ce2540.json", "plan/reviews/143-formal-sar-r1.md", "plan/premerge-verifier-717da4ce2540.json", "plan/premerge-rules-717da4ce2540.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md", "plan/143-local-validation-e2c87eef770b.md", "plan/delivery-checklist.md", "plan/143-focused-nodeids.txt", "plan/native-run-r1-diagnostic.md", "plan/143-local-validation-717da4ce2540.md", "plan/143-replacement-focused-nodeids.txt", "plan/native-advisory-717da4ce2540.json", "plan/hosted-attempt-1-717da4ce2540.json", "plan/owner-disposition-717da4ce2540.json", "plan/verifier-pass-717da4ce2540.json", "plan/review-entry-signature-717da4ce2540.json", "plan/reviews/143-formal-sar-r1.md", "plan/premerge-verifier-717da4ce2540.json", "plan/premerge-rules-717da4ce2540.json", "plan/verified-delivery-717da4ce2540.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T06", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "fc2eef29fc3410c7e4a56949ba44c28dc76ef94ee4fc87557d71bd44ca2bdbcb"}
@@ -77,3 +77,7 @@ The Wave 50 coordinator applied the owner’s standing delegation to the exact c
 ### Independent PR review
 
 [Formal SAR verdict](plan/reviews/143-formal-sar-r1.md) records **accepted** for head `717da4ce2540d4ba52f340cd3fe276fc43ccfb5b` and tested tree `2f5169c7e1129f0cdb089b9d52ffe776de6af782`.
+
+### Verified trunk delivery
+
+[Delivery receipt](plan/verified-delivery-717da4ce2540.json) confirms merge `22f265b6aa7c24050c2d798d7e16c1796701cf64`, its exact ordered parents and reviewed tree `2f5169c7e1129f0cdb089b9d52ffe776de6af782` on protected `trunk`. Implementer sign-off and closure follow.
