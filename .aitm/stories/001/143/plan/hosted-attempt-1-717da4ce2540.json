@@ -1,0 +1,102 @@
+{
+  "pr": {
+    "base": "0dfbcf0c4b346fe014674aae0775a82f40e3a9b8",
+    "head": "717da4ce2540d4ba52f340cd3fe276fc43ccfb5b",
+    "number": 265,
+    "state": "open",
+    "tested_merge": "31466f9127d4f9ac940bcc93df7ccf468a3b61db",
+    "url": "https://github.com/kburson/aitm/pull/265"
+  },
+  "tested_merge": {
+    "parents": [
+      "0dfbcf0c4b346fe014674aae0775a82f40e3a9b8",
+      "717da4ce2540d4ba52f340cd3fe276fc43ccfb5b"
+    ],
+    "sha": "31466f9127d4f9ac940bcc93df7ccf468a3b61db",
+    "tree": "2f5169c7e1129f0cdb089b9d52ffe776de6af782"
+  },
+  "run": {
+    "id": 43245371964,
+    "status": "completed",
+    "conclusion": "failure",
+    "run_attempt": 1,
+    "head_sha": "717da4ce2540d4ba52f340cd3fe276fc43ccfb5b",
+    "event": "pull_request",
+    "path": ".github/workflows/ci.yml",
+    "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964",
+    "check_suite_id": 117105924634
+  },
+  "jobs": [
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131276708958",
+      "completed_at": "2026-11-12T15:13:46Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131276708958",
+      "id": 131276708958,
+      "name": "quality",
+      "started_at": "2026-11-12T15:13:26Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131276709598",
+      "completed_at": "2026-11-12T15:13:55Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131276709598",
+      "id": 131276709598,
+      "name": "file-checks",
+      "started_at": "2026-11-12T15:13:27Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131276709916",
+      "completed_at": "2026-11-12T15:21:41Z",
+      "conclusion": "success",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131276709916",
+      "id": 131276709916,
+      "name": "python-base",
+      "started_at": "2026-11-12T15:18:27Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131276710092",
+      "completed_at": "2026-11-12T15:28:25Z",
+      "conclusion": "cancelled",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131276710092",
+      "id": 131276710092,
+      "name": "python",
+      "started_at": "2026-11-12T15:13:24Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131286350845",
+      "completed_at": "2026-11-12T15:28:34Z",
+      "conclusion": "failure",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131286350845",
+      "id": 131286350845,
+      "name": "collect-evidence",
+      "started_at": "2026-11-12T15:28:28Z",
+      "status": "completed"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/kburson/aitm/check-runs/131286446346",
+      "completed_at": "2026-11-12T15:28:34Z",
+      "conclusion": "skipped",
+      "html_url": "https://github.com/kburson/aitm/actions/runs/43245371964/job/131286446346",
+      "id": 131286446346,
+      "name": "aitm-ci",
+      "started_at": "2026-11-12T15:28:35Z",
+      "status": "completed"
+    }
+  ],
+  "candidate_job": {
+    "completed_at": "2026-11-12T15:28:25Z",
+    "conclusion": "cancelled",
+    "id": 131276710092,
+    "runner_name": "",
+    "started_at": "2026-11-12T15:13:24Z",
+    "status": "completed",
+    "steps": []
+  },
+  "cause": "Candidate job completed as cancelled with no runner assignment and no steps. The evidence collector then failed and final attestation was skipped.",
+  "disposition": "Retry complete workflow on identical head and base. Keep Test."
+}

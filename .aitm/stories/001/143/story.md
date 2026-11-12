@@ -10,12 +10,12 @@ children: []
 blocking: [172]
 blocked-by: [142]
 created: "2026-11-10T16:51:10Z"
-updated: "2026-11-12T15:19:17Z"
+updated: "2026-11-12T15:29:36Z"
 last-branch: "codex/aitm-wave50-143"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md", "plan/143-local-validation-e2c87eef770b.md", "plan/delivery-checklist.md", "plan/143-focused-nodeids.txt", "plan/native-run-r1-diagnostic.md", "plan/143-local-validation-717da4ce2540.md", "plan/143-replacement-focused-nodeids.txt", "plan/native-advisory-717da4ce2540.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-12-143-local-tia-design.md", "design/reviews/sar-2026-11-12-wave50-design/review-manifest.md"], "plan": ["plan/2026-11-12-143-refinement.md", "plan/2026-11-12-143-local-tia.md", "plan/2026-11-12-143-jit.md", "plan/reviews/sar-2026-11-12-wave50-jit/review-manifest.md", "plan/143-local-validation-e2c87eef770b.md", "plan/delivery-checklist.md", "plan/143-focused-nodeids.txt", "plan/native-run-r1-diagnostic.md", "plan/143-local-validation-717da4ce2540.md", "plan/143-replacement-focused-nodeids.txt", "plan/native-advisory-717da4ce2540.json", "plan/hosted-attempt-1-717da4ce2540.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T06", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "fc2eef29fc3410c7e4a56949ba44c28dc76ef94ee4fc87557d71bd44ca2bdbcb"}
