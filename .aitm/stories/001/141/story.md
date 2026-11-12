@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 141
 title: "[#133 T04] Derive Python and package edges"
 kind: "story"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/141"
 parent: 133
 children: []
 blocking: [142]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:04Z"
-updated: "2026-11-12T01:59:26Z"
+updated: "2026-11-12T01:59:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
