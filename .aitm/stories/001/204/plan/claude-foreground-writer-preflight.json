@@ -1,0 +1,48 @@
+{
+  "locator_count": 2,
+  "unique_stream_count": 1,
+  "projections": [
+    {
+      "sidecar": true,
+      "startup_excluded_ordinals": [],
+      "first_frame_ordinal": 0,
+      "first_frame_kind": "user",
+      "first_frame_eligibility": "eligible",
+      "committed_frames": 15,
+      "observations": 2,
+      "diagnostics": [
+        "coverage-gap",
+        "unreconciled-usage",
+        "unreconciled-usage"
+      ],
+      "registry_binding": {
+        "status": "refused",
+        "reason": "Expected the unique current native stream"
+      }
+    },
+    {
+      "sidecar": false,
+      "startup_excluded_ordinals": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "first_frame_ordinal": 5,
+      "first_frame_kind": "user",
+      "first_frame_eligibility": "eligible",
+      "committed_frames": 17,
+      "observations": 3,
+      "diagnostics": [
+        "overlap-unverified",
+        "unreconciled-usage",
+        "coverage-gap",
+        "unreconciled-usage"
+      ],
+      "registry_binding": {
+        "status": "refused",
+        "reason": "Expected the unique current native stream"
+      }
+    }
+  ]
+}

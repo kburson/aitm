@@ -1,0 +1,66 @@
+{
+  "parent_root": [
+    {
+      "sidecar": true,
+      "registry": "Expected the unique current native stream",
+      "observations": [
+        {
+          "ordinal": 10,
+          "same_stream": false,
+          "availability": "partial",
+          "checkout_proven": false
+        },
+        {
+          "ordinal": 17,
+          "same_stream": false,
+          "availability": "partial",
+          "checkout_proven": false
+        }
+      ]
+    },
+    {
+      "sidecar": false,
+      "registry": "Expected the unique current native stream",
+      "observations": [
+        {
+          "ordinal": 23,
+          "same_stream": true,
+          "availability": "partial",
+          "checkout_proven": true
+        },
+        {
+          "ordinal": 25,
+          "same_stream": false,
+          "availability": "partial",
+          "checkout_proven": false
+        },
+        {
+          "ordinal": 31,
+          "same_stream": true,
+          "availability": "partial",
+          "checkout_proven": true
+        }
+      ]
+    }
+  ],
+  "child_only_root": [
+    {
+      "sidecar": true,
+      "registry": "unique native locator accepted",
+      "observations": [
+        {
+          "ordinal": 10,
+          "same_stream": false,
+          "availability": "partial",
+          "checkout_proven": false
+        },
+        {
+          "ordinal": 17,
+          "same_stream": false,
+          "availability": "partial",
+          "checkout_proven": false
+        }
+      ]
+    }
+  ]
+}

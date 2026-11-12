@@ -1,0 +1,84 @@
+{
+  "actual_child_membership_claim": "singleton selected row for toolUseResult.usage",
+  "agent_definition_sha256": "ad3787ba19f1b31c0399503f06750a77aca52f9553d57c299d954ff268cfbfb5",
+  "binary_sha256": "677a2ea7bf576cedd20e191d973914ed8a41796f53a63b1923381ddc4d5b5e7d",
+  "foreground_and_sidecar_identities_checked": true,
+  "immutable_capture_sha256": {
+    "child": "13282f1b270e880b409499dbd4c102265873d26d4adefbe556a7587d922c0997",
+    "parent": "383f152050a87bec208b4114fad552b4e13c8097219937e5b949f0d1e2e252de",
+    "stream": "ad84dfabb35afa8c4e96060ad4a77a519a4571b90ff3c8de06ef3747a10644bc"
+  },
+  "issue": 204,
+  "native_child_rows": [
+    {
+      "durable_ordinal": 10,
+      "exact_parent_usage_match": false,
+      "selected_by_producer": false,
+      "stop_reason": "tool_use",
+      "stream_ordinal": 31
+    },
+    {
+      "durable_ordinal": 17,
+      "exact_parent_usage_match": true,
+      "selected_by_producer": true,
+      "stop_reason": "end_turn",
+      "stream_ordinal": 33
+    }
+  ],
+  "outer_completed_result_ordinal": 23,
+  "outer_tool_ordinal": 21,
+  "probe_mode": {
+    "foreground": true,
+    "forward_subagent_text": true,
+    "include_partial_messages": true,
+    "only_child_tool": "Read synthetic fixture",
+    "restricted": true
+  },
+  "producer_operand": "last metered assistant message in completed foreground child history",
+  "production_journal_writes": false,
+  "request_id_kinds": [
+    "server requestId",
+    "client requestRef",
+    "message.id",
+    "row uuid"
+  ],
+  "schema": "aitm.claude-foreground-coverage-research/v1",
+  "scope_authority_checked": false,
+  "source_ranges": {
+    "foreground_close": {
+      "end_byte": 276365750,
+      "sha256": "05435fc8e8b8c4a204714287a9618e7b0b9e2b8703fbff0a5ffe0540b851c307",
+      "start_byte": 276364600
+    },
+    "handoff_preserves_usage": {
+      "end_byte": 276204380,
+      "sha256": "f31cbd3bd0b1958b52068ed15972290048224ba89a02601cd84e59f73f9d50da",
+      "start_byte": 276203000
+    },
+    "history_append": {
+      "end_byte": 276362500,
+      "sha256": "3204e76880d9ec1bb6fa2f6beb2a51330f6cb2e0a088f660be56d133a6546b24",
+      "start_byte": 276361031
+    },
+    "selected_usage": {
+      "end_byte": 276194180,
+      "sha256": "f456e0bb21960fa2bc9bf0a5ab79ddfaf96b6add76f2b886d8faf09a6e46a362",
+      "start_byte": 276190880
+    },
+    "selector": {
+      "end_byte": 276194180,
+      "sha256": "f456e0bb21960fa2bc9bf0a5ab79ddfaf96b6add76f2b886d8faf09a6e46a362",
+      "start_byte": 276190880
+    },
+    "usage_validation": {
+      "end_byte": 265519280,
+      "sha256": "bbfe9c7ae5f7b49f34f0c7fe23fda8a70ccae5b9a47b1a672d11ebb4a21c9c0f",
+      "start_byte": 265519097
+    }
+  },
+  "stream_outer_result_ordinal": 36,
+  "stream_task_end_ordinal": 35,
+  "stream_task_start_ordinal": 25,
+  "surface": "Claude Code macOS 2.1.318",
+  "synthetic_prompt_sha256": "44acb558c0bc1441da7b9d798f34749f807a043f7d2f2f8824c33b66ee8e92f9"
+}

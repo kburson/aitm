@@ -41,3 +41,7 @@ The bounded probe uses only a synthetic project and a pinned synchronous Claude 
 ### Native producer HOLD
 
 The pinned foreground Claude Agent completed, but its aggregate does not attest exact child membership, a closed accounting set, or inclusion of the child usage. Independent Refine agreed. Its two suggested fields were checked and did not qualify. [Hold and exact evidence](plan/2026-11-12-204-folded-producer-hold.md). Project 24 still shows Refine at Rank 229 with partial Actual 0.0402 hours. JIT and #119 remain gated.
+
+### Exact child membership independently verified
+
+The pinned foreground Agent included the final metered child response in `toolUseResult.usage`. The earlier metered request remains independently accounted. Independent Refine passed the native producer proof. The scope writer still requires proof of the original eligible owner and span before the journal can reserve a folded intent. [Native proof and review](plan/2026-11-12-204-folded-membership-refine-pass.md).

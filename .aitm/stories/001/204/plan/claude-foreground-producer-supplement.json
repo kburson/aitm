@@ -1,0 +1,12 @@
+{
+  "native_defaults": {
+    "start_byte": 265518725,
+    "end_byte": 265519095,
+    "sha256": "f8a6918a7a55ad2ffacc1183e8e6c00abd294a802b23083a709c7103a5e84eb8"
+  },
+  "foreground_completed_data": {
+    "start_byte": 276365100,
+    "end_byte": 276365620,
+    "sha256": "e5809fc7c17458c2a61e454aa9a424d502129c6eee17ae8ce912e44cec0f160d"
+  }
+}
