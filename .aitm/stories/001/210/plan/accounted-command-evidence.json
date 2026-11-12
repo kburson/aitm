@@ -1,0 +1,73 @@
+{
+  "base": "15b3076848e726c3fed62c2725621106a04246ef",
+  "tree": "f2c045b29ed4c8f99ba8056de459d17ff340f4d3",
+  "scope": "synthetic chronological fixture with real isolated typed queue",
+  "public_reader_checkpoints": [
+    {
+      "phase": "through_accounted_command_output",
+      "receipts": [],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 60
+    },
+    {
+      "phase": "through_post_output_accounting",
+      "receipts": [
+        {
+          "ordinal": 60,
+          "kind": "request"
+        }
+      ],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 62
+    },
+    {
+      "phase": "through_command_turn_completion",
+      "receipts": [
+        {
+          "ordinal": 60,
+          "kind": "request"
+        }
+      ],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 63
+    },
+    {
+      "phase": "through_followup_turn_context",
+      "receipts": [
+        {
+          "ordinal": 60,
+          "kind": "request"
+        },
+        {
+          "ordinal": 63,
+          "kind": "turn"
+        }
+      ],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 65
+    }
+  ],
+  "native_call_shape": {
+    "scope": "one admitted Desktop chat, deliberately unavailable request, no release",
+    "results": [
+      {
+        "call_kind": "custom_tool_call",
+        "output_kind": "custom_tool_call_output",
+        "native_output_matches_call_id": true,
+        "recognized_queue_receipt": false
+      }
+    ]
+  }
+}
