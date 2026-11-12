@@ -10,7 +10,7 @@ children: []
 blocking: [143, 151, 163]
 blocked-by: [139, 141]
 created: "2026-11-10T16:51:07Z"
-updated: "2026-11-12T14:18:36Z"
+updated: "2026-11-12T14:18:46Z"
 last-branch: "codex/aitm-wave40-142"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -88,3 +88,7 @@ The Wave 40 coordinator applied the owner’s standing delegation to the exact c
 ### Verified trunk delivery
 
 [Delivery receipt](plan/verified-delivery-4e752acaf311.json) confirms merge `0dfbcf0c4b346fe014674aae0775a82f40e3a9b8`, its exact ordered parents and reviewed tree `61eeabeed1362d5c39188dd6aade2b6549515b01` on protected `trunk`. Implementer sign-off and closure follow.
+
+### Implementer sign-off
+
+[Signed retrospective](retro/2026-11-12-142-implementer-retrospective.md) covers the verified source and delivery.
