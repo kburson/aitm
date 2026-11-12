@@ -11,3 +11,9 @@ The owner directed delivery of #246 before #244, with both Python jobs capped at
 - All six jobs passed. The candidate Python job took 177 seconds and the serial base job took 254 seconds. [PR run 43124351778, attempt 1](https://github.com/kburson/aitm/actions/runs/43124351778/attempts/1)
 - Trunk's verifier authenticated signed artifact `13902865941` and subject SHA-256 `eb963bc52dd252b7f26f50235a08460f438f3d7e97f8d9e820d7585d726e73d0`.
 - An independent Codex reviewer passed the exact candidate on 2026-11-11 Central time with zero actionable findings. The reviewer checked the diff and reran signature verification. Independent comparison of the retained serial and hosted parallel archives matched all 1,071 product and CLI test IDs, 3,213 phase outcomes, exact line and branch coverage and both PID-linked subprocess proofs. All 190 helper tests passed. The review was conducted off-platform.
+
+## Verified delivery
+
+The trusted verifier passed again immediately before the expected-head GitHub merge. Trunk received merge commit `91e96bd9e3ae3bc907af3ed457ac1b4df424f542` with the ordered parents and tree listed above. The merge completed at 00:11:34 UTC on November 12, 2026. [Merged PR #246](https://github.com/kburson/aitm/pull/246)
+
+The trunk push passed all four applicable jobs. The three-worker Python job took 243 seconds and ran all 1,071 product and CLI tests and 190 CI helper tests. The retained artifact matched the serial test inventory, phase outcomes, line and branch coverage, and both PID-linked child proofs. Its wheel digest matched the PR run. [Trunk push run 43125473626](https://github.com/kburson/aitm/actions/runs/43125473626)
