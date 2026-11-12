@@ -1,10 +1,10 @@
 {
-  "literal_base": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
-  "head": "d1916b81fc05417c6ff709beb59890d22369243b",
-  "tree": "6bad3235d96230997930b513328dc7faf4e78ef1",
+  "literal_base": "56266ed30bbc572b7e56bc64777e802be264c23f",
+  "head": "dab76d25ffdce10d5782e14b5b1ea02f617b235c",
+  "tree": "b4a757f106b89086a24d0e909bc259d7b5b93c88",
   "retained_baseline_ids": 1071,
   "candidate_ids": 1102,
-  "retained_helper_ids": 182,
+  "retained_helper_ids": 196,
   "new_ids": [
     "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_claude_explicit_quota_gap_preserves_earlier_cursor",
     "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row[same-command]",
@@ -44,8 +44,8 @@
       "num_statements": 11681
     },
     "helper": {
-      "covered_lines": 778,
-      "num_statements": 821
+      "covered_lines": 806,
+      "num_statements": 849
     }
   },
   "baseline_coverage": {
@@ -54,12 +54,16 @@
       "num_statements": 11604
     },
     "helper": {
-      "covered_lines": 778,
-      "num_statements": 821
+      "covered_lines": 806,
+      "num_statements": 849
     }
   },
-  "isolated_fixture_verification": {
-    "local_candidate_test_ids_unchanged": true,
-    "local_base_test_ids_unchanged": true
+  "local_exact_validation": {
+    "base_serial": true,
+    "candidate_serial": true,
+    "hosted_candidate_xdist_workers": 3,
+    "all_previous_product_ids_retained": true,
+    "all_current_baseline_helper_ids_retained": true,
+    "upstream_parameterized_prior_helper_id": "tools/ci/tests/test_pytest_evidence.py::test_candidate_records_both_normally_exiting_subprocesses"
   }
 }
