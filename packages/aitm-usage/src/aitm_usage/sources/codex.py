@@ -99,6 +99,7 @@ class _Turn:
 class _Marker(Enum):
     LEGACY = 1
     MONITOR_SCOPE = 2
+    MONITOR_DISPOSITION = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +114,42 @@ class _Call:
 class _Receipt:
     reference: SourceRef
     target: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
+class _CodexCompletionWitness:
+    request: SourceBoundary
+    output_ordinal: int
+    counter_ordinal: int
+    completion_ordinal: int
+    turn_ref: SourceRef
+    root_turn_ref: SourceRef
+    segment_ref: SourceRef
+    checkout: SourceRef
+
+
+@dataclass(slots=True)
+class _CompletionTrace:
+    receipt: SourceRef | None = None
+    output_ordinal: int | None = None
+    accounted: tuple[SourceBoundary, int] | None = None
+    invalid: bool = False
+    witness: _CodexCompletionWitness | None = None
+
+
+_COMPLETION_TIMING_FIELDS = {
+    "started_at",
+    "completed_at",
+    "duration_ms",
+    "time_to_first_token_ms",
+}
+_COMPLETION_FIELDS = _COMPLETION_TIMING_FIELDS | {
+    "type",
+    "turn_id",
+    "root_turn_id",
+    "last_agent_message",
+    "error",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -387,7 +424,11 @@ def _marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
         if project_root is None and is_monitor_scope(cmd, parts):
             # Refuse an ambiguous cmd inside the verified wrapper.
             json.loads(wrapper[1], object_pairs_hook=_unique_fields)
-            return _Marker.MONITOR_SCOPE
+            return (
+                _Marker.MONITOR_DISPOSITION
+                if parts[3] == "dispose"
+                else _Marker.MONITOR_SCOPE
+            )
     except (ValueError, RecursionError):
         return None
     if (
@@ -429,7 +470,7 @@ def _marker_output(payload: dict, marker: _Marker) -> UUID | None:
         or len(content) > 256
     ):
         return None
-    if marker is _Marker.MONITOR_SCOPE:
+    if marker in (_Marker.MONITOR_SCOPE, _Marker.MONITOR_DISPOSITION):
         return queued_monitor_scope_id(content)
     try:
         result = _object(json.loads(content))
@@ -451,7 +492,14 @@ def _matching_context(state: CodexState, batch: FrameBatch) -> bool:
 class _Walk:
     """Fold one verified scanner snapshot without mutating its input state."""
 
-    def __init__(self, batch: FrameBatch, state: CodexState, eligibility: Eligibility):
+    def __init__(
+        self,
+        batch: FrameBatch,
+        state: CodexState,
+        eligibility: Eligibility,
+        *,
+        qualify_completion: bool = False,
+    ):
         self.state = state
         self.marker_root = None if state.neutral_markers else state.ledger.root
         self.record_usage = eligibility is Eligibility.ELIGIBLE
@@ -487,6 +535,7 @@ class _Walk:
         self.span_ends: dict[SourceRef, int] = {}
         self.quota: list[QuotaEvidence] = []
         self.batch = batch
+        self.completion = _CompletionTrace() if qualify_completion else None
 
     @property
     def ledger(self) -> Ledger:
@@ -726,10 +775,69 @@ class _Walk:
         unsettled = context.response is not None or (turn is not None and not matches)
         if commit and (not matches or not turn.seen_counter or unsettled):
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
+        if commit and self.completion is not None:
+            self._qualify_turn_completion(frame, payload, turn)
         self.context = _Context(
             closed_turn=turn.start.boundary_ref if matches else None,
             next_turn_receipt=context.next_turn_receipt if matches else None,
             tainted=context.tainted or context.enrollment_output or unsettled,
+        )
+
+    def _qualify_turn_completion(
+        self, frame: SourceFrame, payload: dict, turn: _Turn | None
+    ) -> None:
+        trace = self.completion
+        context = self.context
+        if (
+            trace is None
+            or trace.invalid
+            or trace.accounted is None
+            or trace.output_ordinal is None
+            or turn is None
+            or not self.matches_turn(frame, payload, turn, require_root=True)
+            or turn.root_turn_ref != turn.start.boundary_ref
+            or not turn.seen_context
+            or not turn.seen_counter
+            or not self.eligible(frame)
+            or frame.segment_ref != turn.segment_ref
+            or frame.anchor_ref is None
+            or context.response is not None
+            or context.call is not None
+            or context.compaction is not None
+            or context.ambiguous
+            or context.conflict
+            or context.parallel
+            or context.tainted
+            or context.enrollment_output
+            or set(payload) - _COMPLETION_FIELDS
+            or payload.get("error") is not None
+            or (
+                payload.get("last_agent_message") is not None
+                and type(payload["last_agent_message"]) is not str
+            )
+            or any(
+                value is not None and type(value) is not int
+                for value in (payload.get(key) for key in _COMPLETION_TIMING_FIELDS)
+            )
+        ):
+            return
+        request, counter_ordinal = trace.accounted
+        if (
+            not trace.output_ordinal
+            < request.ordinal
+            < counter_ordinal
+            == frame.ordinal - 1
+        ):
+            return
+        trace.witness = _CodexCompletionWitness(
+            request,
+            trace.output_ordinal,
+            counter_ordinal,
+            frame.ordinal,
+            turn.start.boundary_ref,
+            turn.root_turn_ref,
+            turn.segment_ref,
+            frame.anchor_ref,
         )
 
     def discard_serial_output(self) -> None:
@@ -760,6 +868,8 @@ class _Walk:
 
     def tool(self, frame: SourceFrame, payload: dict, kind: str, commit: bool) -> None:
         context = self.context
+        if commit and self.completion is not None and self.completion.receipt:
+            self.completion.invalid = True
         raw_call = _identifier(payload.get("call_id"))
         if raw_call is None:
             context.call = None
@@ -807,6 +917,16 @@ class _Walk:
                 ),
             )
             context.next_turn_receipt = context.receipt
+            if (
+                commit
+                and self.completion is not None
+                and call.marker is _Marker.MONITOR_DISPOSITION
+                and context.turn is not None
+                and frame.segment_ref == context.turn.segment_ref
+                and self.eligible(frame)
+            ):
+                self.completion.receipt = context.receipt.reference
+                self.completion.output_ordinal = frame.ordinal
 
     def reject_response(
         self, frame: SourceFrame, code: DiagnosticCode, commit: bool
@@ -1175,6 +1295,15 @@ class _Walk:
         if len(reasoning) > 1:
             difference = replace(difference, reasoning_output_tokens=None)
         self.observe(frame, difference, response, turn, complete)
+        trace = self.completion
+        if (
+            trace is not None
+            and trace.receipt is not None
+            and complete
+            and response is not None
+            and response.boundary.receipt_ref == trace.receipt
+        ):
+            trace.accounted = (response.boundary, frame.ordinal)
 
     def observe(
         self,
@@ -1262,6 +1391,16 @@ class _Walk:
         item = payload.get("type")
         item = item if type(item) is str else None
         self.continue_compaction(frame, kind, item, payload)
+        if commit and self.completion is not None:
+            if kind == "event_msg" and item == "task_started":
+                self.completion = _CompletionTrace()
+            elif (
+                frame.pre_cutoff
+                or kind == "compacted"
+                or kind == "event_msg"
+                and (item in _ATTEMPT_ERRORS or item == "warning")
+            ):
+                self.completion.invalid = True
 
         if kind == "session_meta":
             self.startup(frame, payload, commit)
@@ -1366,7 +1505,11 @@ def read_codex(
 
 
 def _read_codex(
-    batch: FrameBatch, state: CodexState, eligibility: Eligibility
+    batch: FrameBatch,
+    state: CodexState,
+    eligibility: Eligibility,
+    *,
+    _completion_witnesses: list[_CodexCompletionWitness] | None = None,
 ) -> tuple[AdapterResult, int | None, dict[SourceRef, int]]:
     if batch.cursor is None:
         return AdapterResult(diagnostics=batch.diagnostics), None, {}
@@ -1375,8 +1518,22 @@ def _read_codex(
         or batch.provider_checkpoint.provider is not _PROVIDER
     ):
         raise ValueError("Expected a Codex provider checkpoint")
-    walk = _Walk(batch, state, eligibility)
+    walk = _Walk(
+        batch, state, eligibility, qualify_completion=_completion_witnesses is not None
+    )
     walk.committed()
+    if (
+        _completion_witnesses is not None
+        and walk.completion is not None
+        and (witness := walk.completion.witness) is not None
+        and not walk.completion.invalid
+        and not walk.diagnostics
+        and walk.checkpoint is not None
+        and batch.commit_frames
+        and len(batch.commit_frames) == len(batch.frames)
+        and batch.commit_frames[-1].ordinal == witness.completion_ordinal
+    ):
+        _completion_witnesses.append(witness)
     checkpoint = walk.checkpoint
     unsettled = None
     if state.neutral_markers and (

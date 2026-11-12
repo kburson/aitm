@@ -2,6 +2,7 @@
 
 import json
 import shlex
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from test_codex import (
     CUTOFF,
     SESSION,
     begin,
+    compaction,
     counter,
     end,
     response,
@@ -2228,6 +2230,361 @@ def _sealed_disposition(
         followup,
         when,
     )
+
+
+def _append_completed_disposition(native, command_id, request_path, stdout):
+    native.turn += 1
+    turn = UUID(int=0x200 + native.turn)
+    when = AFTER + timedelta(seconds=native.turn)
+    started, context = begin(native.anchors[A], turn, time=when)
+    for entry in (started, context):
+        entry["payload"]["root_turn_id"] = str(turn)
+    call = tool_call(native.ledgers[A])
+    command = shlex.join(
+        (
+            "aitm-usage",
+            "monitor",
+            "scope",
+            "dispose",
+            "--request",
+            str(request_path),
+            "--json",
+        )
+    )
+    args = json.dumps({"cmd": command}, separators=(",", ":"))
+    call["payload"]["input"] = (
+        f"const marker = await tools.exec_command({args}); text(marker.output);"
+    )
+    output = tool_output(command_id, stdout=stdout)
+    call["timestamp"] = output["timestamp"] = when.isoformat()
+    native.total += 4
+    before, delta = usage(native.total, native.total), usage(4, 4)
+    native.total += 4
+    after = usage(native.total, native.total)
+    completed = end(turn, time=when)
+    completed["payload"]["root_turn_id"] = str(turn)
+    write(
+        native.path,
+        [
+            started,
+            context,
+            call,
+            response(
+                f"completion-disposition-{turn}", before, delta, time=when, turn=turn
+            ),
+            counter(before, delta, time=when),
+            output,
+            response(
+                f"completion-accounted-{turn}", after, delta, time=when, turn=turn
+            ),
+            counter(after, delta, time=when),
+            completed,
+        ],
+        append=True,
+    )
+    return turn, when
+
+
+@contextmanager
+def _completed_disposition(native, tmp_path, monkeypatch, capsys):
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import Disposition, ScopeState
+
+    with native.registry.writer() as writer:
+        clock = [datetime(2026, 11, 10, tzinfo=UTC)]
+        state = ScopeState(writer, clock=lambda: clock[0])
+        journal = RoutingJournal(writer, state)
+        initial = journal.prepare(SOURCE, native.locator())
+        journal.reserve_batch(initial)
+        owner = state.operator(A)
+        hold_id, command_id = UUID(int=0x901), UUID(int=0x902)
+        handoff, _ = _authorize_handoff(state, native, hold_id, A, _issue(B, 210), 1)
+        _, held_at = native.append(hold_id)
+        held_batch = state.read_source(SOURCE, native.locator())
+        hold = state.hold(
+            state.verify_boundary(
+                handoff, owner, held_batch, native.target(held_batch, hold_id, held_at)
+            ),
+            retain_route_target=True,
+        )
+        command = Disposition(command_id, A, hold_id, native.receipt_ref(command_id))
+        monkeypatch.setitem(
+            globals(), "_append_ordered_disposition", _append_completed_disposition
+        )
+        _, _, _, _, target, ordinary, turn, when = _sealed_disposition(
+            native, writer, state, command, tmp_path, monkeypatch, capsys
+        )
+        yield SimpleNamespace(
+            state=state,
+            command=command,
+            owner=owner,
+            hold=hold,
+            ordinary=ordinary,
+            target=target,
+            scope_file=writer.root / "scope-v1.json",
+            journal=journal,
+            journal_root=writer.root,
+            journal_cursor=initial.progress,
+            clock=clock,
+            turn=turn,
+            when=when,
+        )
+
+
+@pytest.fixture
+def completed_disposition(native, tmp_path, monkeypatch, capsys):
+    with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
+        yield case
+
+
+def test_completion_qualification_preserves_journal_after_restart(
+    native, tmp_path, monkeypatch, capsys
+):
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import ScopeState
+
+    with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
+        old_scope = case.scope_file.read_bytes()
+        old_journal = _scope_journal_bytes(case.journal_root)
+        batch = case.state.read_source(
+            SOURCE, native.locator(), qualify_completion=True
+        )
+        target = native.target(batch, case.command.command_id)
+        witness = case.state.completion_witness(case.command, case.owner, batch, target)
+        assert witness is not None
+        assert _scope_journal_bytes(case.journal_root) == old_journal
+        assert case.scope_file.read_bytes() == old_scope
+        assert case.journal.cursor_for(SOURCE, native.locator()) == case.journal_cursor
+        journal_before_restart = _scope_journal_bytes(case.journal_root)
+
+    with native.registry.writer() as writer:
+        state = ScopeState(writer, clock=lambda: case.clock[0])
+        owner = state.operator(A)
+        state.authorize(case.command, owner)
+        assert state.completion_witness(case.command, owner, batch, target) is None
+        reread = state.read_source(SOURCE, native.locator(), qualify_completion=True)
+        assert (
+            state.completion_witness(
+                case.command,
+                owner,
+                reread,
+                native.target(reread, case.command.command_id),
+            )
+            == witness
+        )
+        assert _scope_journal_bytes(writer.root) == journal_before_restart
+        assert (
+            RoutingJournal(writer, state).cursor_for(SOURCE, native.locator())
+            == case.journal_cursor
+        )
+        assert _scope_journal_bytes(writer.root)[:2] == old_journal[:2]
+        assert case.scope_file.read_bytes() == old_scope
+
+
+def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
+    native, completed_disposition
+):
+    case = completed_disposition
+    state, command, owner = case.state, case.command, case.owner
+    scope_before = case.scope_file.read_bytes()
+    assert state.completion_witness(command, owner, case.ordinary, case.target) is None
+    opted = state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    for field in ("observations", "boundaries", "diagnostics", "cursor"):
+        assert getattr(opted, field) == getattr(case.ordinary, field)
+    target = native.target(opted, command.command_id)
+    assert target.boundary.kind is BoundaryKind.REQUEST
+    witness = state.completion_witness(command, owner, opted, target)
+    assert witness is not None
+    assert witness.request == target.boundary
+    assert witness.completion_ordinal == len(native.path.read_bytes().splitlines()) - 1
+    assert state.view().holds == (case.hold,)
+    assert opted.cursor is None
+    assert [entry.code for entry in opted.diagnostics] == [
+        DiagnosticCode.BOUNDARY_UNVERIFIED
+    ]
+    assert state.completion_witness(command, owner, replace(opted), target) is None
+    assert state.completion_witness(command, owner, opted, replace(target)) is None
+    with pytest.raises(LedgerError, match="current writer-verified"):
+        state.verify_route_disposition(command, witness)
+    with pytest.raises(LedgerError, match="unsettled native terminal"):
+        state.verify_route_disposition(
+            command, state.verify_boundary(command, owner, opted, target)
+        )
+    native.total += 4
+    late = usage(native.total, native.total)
+    delta = usage(4, 4)
+    write(
+        native.path,
+        [
+            response(
+                "late-completion-usage", late, delta, time=case.when, turn=case.turn
+            ),
+            counter(late, delta, time=case.when),
+        ],
+        append=True,
+    )
+    assert state.completion_witness(command, owner, opted, target) is None
+    later = state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    assert not later._completion_witnesses
+    reused_sink = [witness]
+    ProviderAdapter().read_delta(
+        native.locator(), None, _completion_witnesses=reused_sink
+    )
+    assert not reused_sink
+    assert case.scope_file.read_bytes() == scope_before
+
+
+@pytest.mark.parametrize(
+    "disproof",
+    [
+        "output-only",
+        "accounted-before-close",
+        "missing-counter",
+        "repeated-counter",
+        "counter-regression",
+        "quota-only",
+        "wrong-root",
+        "wrong-turn",
+        "different-checkout",
+        "pre-cutoff",
+        "missing-baseline",
+        "physical-tail",
+        "close-error",
+        "bad-timing-field",
+        "unknown-close-field",
+        "abort",
+        "warning",
+        "wrong-output-type",
+        "wrong-verb",
+        "second-tool",
+        "duplicate-output",
+        "compaction",
+    ],
+)
+def test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows(
+    native, completed_disposition, disproof
+):
+    case = completed_disposition
+    entries = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    _, context, call, _, prior_counter, output, _, final_counter, close = entries[-9:]
+    match disproof:
+        case "output-only":
+            del entries[-3:]
+        case "accounted-before-close":
+            entries.pop()
+        case "missing-counter":
+            entries.remove(final_counter)
+        case "repeated-counter":
+            final_counter["payload"] = prior_counter["payload"]
+        case "counter-regression":
+            final_counter["payload"] = counter(usage(1, 1), usage(1, 1))["payload"]
+        case "quota-only":
+            final_counter["payload"]["info"] = None
+        case "wrong-root":
+            close["payload"]["root_turn_id"] = str(UUID(int=1))
+        case "wrong-turn":
+            close["payload"]["turn_id"] = str(UUID(int=1))
+        case "different-checkout":
+            context["payload"]["cwd"] = str(native.anchors[B])
+        case "pre-cutoff":
+            for entry in entries[-9:]:
+                entry["timestamp"] = (CUTOFF - timedelta(seconds=1)).isoformat()
+        case "missing-baseline":
+            for entry in entries[:-4]:
+                if entry["payload"].get("type") == "token_count":
+                    entry["payload"]["info"] = None
+        case "close-error":
+            close["payload"]["error"] = "failed"
+        case "bad-timing-field":
+            close["payload"]["duration_ms"] = True
+        case "unknown-close-field":
+            close["payload"]["unexpected"] = False
+        case "abort":
+            close["payload"]["type"] = "turn_aborted"
+        case "warning":
+            entries.insert(-2, row("event_msg", {"type": "warning"}, time=case.when))
+        case "wrong-output-type":
+            output["payload"]["type"] = "function_call_output"
+        case "wrong-verb":
+            call["payload"]["input"] = call["payload"]["input"].replace(
+                "scope dispose", "scope mark"
+            )
+        case "second-tool":
+            total, delta = usage(native.total + 4, native.total + 4), usage(4, 4)
+            entries[-1:-1] = [
+                call,
+                response(
+                    "second-tool-usage", total, delta, time=case.when, turn=case.turn
+                ),
+                counter(total, delta, time=case.when),
+                output,
+            ]
+        case "duplicate-output":
+            entries.insert(-2, output)
+        case "compaction":
+            compact = compaction(
+                response("late-compaction", usage(8, 8), usage(4, 4), turn=case.turn)
+            )
+            compact["timestamp"] = case.when.isoformat()
+            entries.insert(-3, compact)
+    write(native.path, entries)
+    if disproof == "physical-tail":
+        with native.path.open("ab") as transcript:
+            transcript.write(b'{"type":')
+    scope_before = case.scope_file.read_bytes()
+    if disproof == "missing-baseline":
+        for enabled in (False, True):
+            with pytest.raises(LedgerError, match="lost its enrolled physical prefix"):
+                case.state.read_source(
+                    SOURCE, native.locator(), qualify_completion=enabled
+                )
+        assert case.scope_file.read_bytes() == scope_before
+        return
+    ordinary = case.state.read_source(SOURCE, native.locator())
+    opted = case.state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    for field in ("observations", "boundaries", "diagnostics", "cursor"):
+        assert getattr(opted, field) == getattr(ordinary, field)
+    if disproof == "different-checkout":
+        target = native.target(opted, case.command.command_id)
+        assert target.project_context == native.anchor_ref(B)
+        assert (
+            case.state.completion_witness(case.command, case.owner, opted, target)
+            is None
+        )
+    else:
+        assert not opted._completion_witnesses
+    assert case.scope_file.read_bytes() == scope_before
+
+
+def test_completion_qualification_requires_current_hold_and_authority(
+    native, completed_disposition
+):
+    case = completed_disposition
+    state, command, owner = case.state, case.command, case.owner
+    batch = state.read_source(SOURCE, native.locator(), qualify_completion=True)
+    target = native.target(batch, command.command_id)
+    scope_before = case.scope_file.read_bytes()
+    assert state.completion_witness(command, owner, batch, target) is not None
+    wrong_actor = state.operator(B)
+    assert state.completion_witness(command, wrong_actor, batch, target) is None
+    assert (
+        state.completion_witness(
+            replace(command, release_previous=True), owner, batch, target
+        )
+        is None
+    )
+    saved = state._snapshot(confirm=True)
+    changed_hold = replace(
+        case.hold, expires_at=case.hold.expires_at + timedelta(seconds=1)
+    )
+    state._save(replace(saved, holds=(changed_hold,)))
+    modified_scope = case.scope_file.read_bytes()
+    assert state.completion_witness(command, owner, batch, target) is None
+    assert case.scope_file.read_bytes() == modified_scope
+    state._save(saved)
+    case.clock[0] = case.hold.expires_at
+    assert state.completion_witness(command, owner, batch, target) is None
+    assert case.scope_file.read_bytes() == scope_before
 
 
 def _route_disposition_fixture(
