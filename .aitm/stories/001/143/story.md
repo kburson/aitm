@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 143
 title: "[#133 T06] Deliver local advisory feedback"
 kind: "story"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/143"
 parent: 133
 children: []
 blocking: [172]
 blocked-by: [142]
 created: "2026-11-10T16:51:10Z"
-updated: "2026-11-12T14:48:25Z"
+updated: "2026-11-12T14:48:40Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
