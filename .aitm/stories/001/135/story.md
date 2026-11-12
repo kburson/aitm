@@ -36,3 +36,5 @@ Reopen planning if authentic Linux evidence requires changing the #114 contract.
 ## Native Linux Refine checkpoint
 
 Project 24 shows Refine. The local Linux host works and the native Claude Code evidence requires an authenticated sandbox. Proposed estimate is 3.25 hours, size M, conditional on the actual carrier fitting the delivered adapter contract. Independent Refine and exact JIT remain pending. [Refine packet](plan/2026-11-11-135-refine.md)
+
+Partial Actual is 0.0381 hours from the assigned Codex worker’s bounded Refine progress. [Timing receipt](attachments/timing/full-auto-linux-refine-1-135.json)
