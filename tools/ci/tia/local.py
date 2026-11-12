@@ -823,7 +823,11 @@ def main(argv=None):
         repo, request = _request(args.base)
         before, after = resolve(repo, request)
         identity = (before.digest, after.digest)
-        temp_root = Path(tempfile.gettempdir()).resolve()
+        # The native product fixtures compare directory ctimes along the
+        # entire path. Keep unrelated activity in the shared temp directory
+        # from changing an ancestor of the fixture data during observation.
+        cache = Path.home() / "Library/Caches"
+        temp_root = (cache if cache.is_dir() else Path(tempfile.gettempdir())).resolve()
         _checked(
             not temp_root.is_relative_to(repo),
             "runtime: temporary directory must be outside the checkout",

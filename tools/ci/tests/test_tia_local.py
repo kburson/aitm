@@ -314,3 +314,28 @@ def test_nested_pytest_cache_stays_outside_bound_source(checkout, tmp_path):
     cache = runtime.root / _PRODUCT / ".pytest_cache"
     assert (cache / "v/cache/nodeids").is_file()
     assert not cache.resolve().is_relative_to(runtime.root)
+
+
+def test_native_fixtures_avoid_the_shared_temporary_ancestor(
+    checkout, tmp_path, monkeypatch, capsys
+):
+    repo, base = checkout
+    cache = tmp_path / "home/Library/Caches"
+    cache.mkdir(parents=True)
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
+    monkeypatch.setattr(local.tempfile, "tempdir", str(shared))
+    observed = []
+
+    def inspect(before, after, private):
+        observed.append(private)
+        return local._unavailable("fixture stops after allocating scratch"), None
+
+    monkeypatch.setattr(local, "_capabilities", lambda _: None)
+    monkeypatch.setattr(local, "_plan", inspect)
+    assert local.main(["--base", base, "--plan"]) == 2
+    assert json.loads(capsys.readouterr().out)["plan"]["provenance"] == "local_advisory"
+    assert len(observed) == 1 and observed[0].parent == cache.resolve()
+    assert not observed[0].exists()
