@@ -117,3 +117,7 @@ Trusted raw replay retained all 1,070 hosted package baseline tests and passed t
 ### Exact source re-acceptance
 
 The [bounded source recovery review](post-ci-source-review.md) accepted the corrected exact head after fresh authenticated hosted validation. The earlier HOLD remains separately retained. Native GitHub review is absent. The source and tests remain limited to the approved #209 paths and preserve the independent #210 and #204 scope and native gates.
+
+### Verified delivery
+
+[PR #231](https://github.com/kburson/aitm/pull/231) delivered merge `71aa5c880fc6a1db1cf676dfc663373f02ef7b16` to literal trunk with ordered parents `56266ed30bbc572b7e56bc64777e802be264c23f` and `dab76d25ffdce10d5782e14b5b1ea02f617b235c`. The merge tree equals the independently accepted signed tree `b4a757f106b89086a24d0e909bc259d7b5b93c88` with zero candidate diff. The native dependency graph and the [delivery receipt](verified-delivery.json) were verified before Close.

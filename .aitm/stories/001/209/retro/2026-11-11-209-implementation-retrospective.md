@@ -1,0 +1,11 @@
+# #209 journal disposition implementer retrospective
+
+Signed by Codex, root implementation and delivery actor, on November 11, 2026 America/Chicago. Reviewed head `dab76d25ffdce10d5782e14b5b1ea02f617b235c`, tree `b4a757f106b89086a24d0e909bc259d7b5b93c88` and literal trunk `56266ed30bbc572b7e56bc64777e802be264c23f`. PR #231 delivered that exact tree as `71aa5c880fc6a1db1cf676dfc663373f02ef7b16`. Verified ordered parents, ancestry and zero source diff.
+
+I implemented the v4 journal evidence, exact half-open coverage projection and atomic recording under the existing writer. The journal retains historical outcomes and first ownership without making the proposed scope state effective or moving either frontier. #210 owns the independently qualified settlement and joined effective view. #204 owns folded intent. M09 owns publication and project ACK.
+
+The first source review held on three missing test proofs. The corrected tests isolate the copied observation's scope field at the guarded revision decision, prove the native v3 store was persisted before upgrade to v4, and verify that replay after legacy resolution refuses while the recorded projection and cursor remain intact. The earlier HOLD remains in the delivery history.
+
+Repeated hosted capture attempts refused on candidate and literal trunk. I reproduced a refusal when an unrelated entry changed shared temporary ancestor metadata during a real fixture snapshot. An isolated fixture root passed under the same controlled churn. I applied that isolation to both hosted Python jobs. The independent controls audit verified the existing gates. The precise hosted metadata writer remained unverified.
+
+The final refresh inherited trunk’s fixture isolation, parallel candidate execution, and rerun-verifier fix. The four story files are identical to the preceding candidate. The final local baseline passed 1,071 product and CLI tests, the candidate passed 1,102, and both passed 196 helpers. Hosted run 43136444518 attempt 1 passed all six jobs. Trusted verification authenticated the exact tree, replayed raw gates and reconciled the test IDs. The remaining authorized independent exact source review passed. Actual is partial and measures bounded coordinator engagement only.
