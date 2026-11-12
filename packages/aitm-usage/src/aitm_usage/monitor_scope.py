@@ -39,6 +39,7 @@ from .sources.adapter import (
     _NativeRevisionWitness,
 )
 from .sources.claude import _ClaudeRevisionKind
+from .sources.codex import _CodexCompletionWitness, codex_request_boundary_reference
 from .sources.grok import (
     _MAX_NATIVE_BYTES,
     GrokAdapter,
@@ -306,6 +307,12 @@ class VerifiedScopeBatch:
     _revision_witnesses: tuple[
         tuple[NativeObservation, _NativeRevisionWitness], ...
     ] = field(default=(), repr=False, compare=False)
+    _completion_witnesses: tuple[_CodexCompletionWitness, ...] = field(
+        default=(), repr=False, compare=False
+    )
+    _completion_scope: _ScopeSnapshotV2 | None = field(
+        default=None, repr=False, compare=False
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -973,11 +980,15 @@ class ScopeState:
         locator: SourceLocator,
         *,
         cursor: StreamCursor | None = None,
+        qualify_completion: bool = False,
     ) -> VerifiedScopeBatch:
         """Read one exact pinned native stream and retain provenance for its results."""
         self.registry.lease
         view = self.registry.view()
         revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]] = []
+        completion_witnesses: list[_CodexCompletionWitness] | None = (
+            [] if qualify_completion else None
+        )
         if type(locator._source) is CandidateSource:
             if not any(
                 self.registry.capture_read_limit(
@@ -1017,6 +1028,7 @@ class ScopeState:
                 ),
                 _capture_limit=native_cursor,
                 _revision_witnesses=revision_witnesses,
+                _completion_witnesses=completion_witnesses,
             )
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
@@ -1068,6 +1080,9 @@ class ScopeState:
                     self._eligible(admitted, position, end),
                 )
             )
+        completion_scope = (
+            self._snapshot(confirm=True) if completion_witnesses else None
+        )
         verified = VerifiedScopeBatch(
             source_id=source_id,
             surface=surface,
@@ -1081,9 +1096,117 @@ class ScopeState:
             _native_cursor=native_cursor,
             _registry=view,
             _revision_witnesses=tuple(revision_witnesses),
+            _completion_witnesses=tuple(completion_witnesses or ()),
+            _completion_scope=(
+                completion_scope
+                if isinstance(completion_scope, _ScopeSnapshotV2)
+                else None
+            ),
         )
         self._batches[id(verified)] = verified
         return verified
+
+    def completion_witness(
+        self,
+        command: ScopeCommand,
+        authority: ScopeAuthority,
+        batch: VerifiedScopeBatch,
+        request_target: NativeBoundary,
+    ) -> _CodexCompletionWitness | None:
+        """Read completion evidence without registering a settlement authority."""
+        if (
+            type(command) is not Disposition
+            or self._batches.get(id(batch)) is not batch
+            or batch.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+            or batch._completion_scope is None
+            or len(batch._completion_witnesses) != 1
+        ):
+            return None
+        witness = batch._completion_witnesses[0]
+        boundary = request_target.boundary
+        if (
+            type(boundary) is not SourceBoundary
+            or boundary.kind is not BoundaryKind.REQUEST
+            or boundary != witness.request
+            or request_target.project_context != witness.checkout
+        ):
+            return None
+        try:
+            proof = self._verified_boundary(command, authority, batch, request_target)
+            if (
+                not proof.eligible
+                or proof.anchor_project != command.project_id
+                or proof.checkout != witness.checkout
+                or boundary.boundary_ref
+                != codex_request_boundary_reference(
+                    batch._locator._source._ledger,
+                    boundary.session_ref,
+                    command.command_id,
+                )
+                or not self._completion_span_current(command, batch, proof)
+            ):
+                return None
+        except (LedgerError, _CaptureDiscontinuity, OSError, ValueError):
+            return None
+        return witness
+
+    def _completion_span_current(
+        self, command: Disposition, batch: VerifiedScopeBatch, proof: VerifiedBoundary
+    ) -> bool:
+        def owned_span(state: _ScopeSnapshotV2):
+            hold = next(
+                (h for h in state.holds if h.command_id == command.hold_id), None
+            )
+            target = next(
+                (t for t in state.held_route_targets if t.hold_id == command.hold_id),
+                None,
+            )
+            stream = _stream(proof.position)
+            events = tuple(
+                event for event in state.events if _stream(event.position) == stream
+            )
+            pending = any(
+                record.hold_id == command.hold_id
+                or record.command_id == command.command_id
+                for record in state.route_dispositions
+            ) or any(
+                record.result.command_id == command.hold_id
+                for record in state.resolutions
+            )
+            return hold, target, events, pending
+
+        previous = batch._completion_scope
+        current = self._snapshot(confirm=True)
+        if previous is None or not isinstance(current, _ScopeSnapshotV2):
+            return False
+        hold, target, _, pending = original = owned_span(previous)
+        prefix = batch._native_cursor
+        if (
+            original != owned_span(current)
+            or hold is None
+            or target is None
+            or prefix is None
+            or pending
+            or hold.project_id != command.project_id
+            or hold.state is not HoldState.HELD
+            or self._now() >= hold.expires_at
+            or hold.affected.end > proof.position.ordinal
+            or _stream(hold.position) != _stream(proof.position)
+            or prefix.offset <= target.prefix.offset
+            or hold.project_id
+            not in self._eligible(
+                batch._admitted,
+                replace(hold.position, ordinal=hold.affected.start),
+                hold.affected.end,
+            )
+        ):
+            return False
+        matches = [row for row in batch.boundaries if row.boundary == target.boundary]
+        if len(matches) != 1 or matches[0].project_context != proof.checkout:
+            return False
+        source = batch._locator._source
+        _capture_position(source, target.prefix, fixed=target.prefix)
+        return _capture_position(source, None).cursor == prefix
 
     def verified_revision(
         self, batch: VerifiedScopeBatch, observation: NativeObservation
@@ -1367,6 +1490,17 @@ class ScopeState:
         batch: VerifiedScopeBatch,
         target: NativeBoundary,
     ) -> VerifiedBoundary:
+        proof = self._verified_boundary(command, authority, batch, target)
+        self._boundaries[id(proof)] = proof
+        return proof
+
+    def _verified_boundary(
+        self,
+        command: ScopeCommand,
+        authority: ScopeAuthority,
+        batch: VerifiedScopeBatch,
+        target: NativeBoundary,
+    ) -> VerifiedBoundary:
         self.registry.lease
         self._require_authority(command, authority)
         digest = _digest(command)
@@ -1477,7 +1611,7 @@ class ScopeState:
             )
         if isinstance(command, Handoff):
             eligible = eligible and command.current_project in eligible_projects
-        proof = VerifiedBoundary(
+        return VerifiedBoundary(
             command.command_id,
             digest,
             position,
@@ -1489,8 +1623,6 @@ class ScopeState:
             batch,
             authority,
         )
-        self._boundaries[id(proof)] = proof
-        return proof
 
     def _require_boundary(
         self, receipt: VerifiedBoundary, command: ScopeCommand | None = None

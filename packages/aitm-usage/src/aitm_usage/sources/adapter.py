@@ -40,7 +40,7 @@ from .claude import (
     read_claude,
     retains_streamed_prefix,
 )
-from .codex import CodexState, _read_codex
+from .codex import CodexState, _CodexCompletionWitness, _read_codex
 from .scan import (
     CandidateSource,
     FrameBatch,
@@ -196,12 +196,14 @@ def _read_usage(
     source: CandidateSource,
     frames: FrameBatch,
     record_revision: _RevisionRecorder | None,
+    completion_witnesses: list[_CodexCompletionWitness] | None = None,
 ) -> tuple[AdapterResult, dict[SourceRef, int], bool]:
     if source.provider is Provider.CODEX:
         result, _, span_ends = _read_codex(
             frames,
             CodexState(source._ledger, neutral_markers=True),
             Eligibility.ELIGIBLE,
+            _completion_witnesses=completion_witnesses,
         )
         return result, span_ends, True
     state = ClaudeState(source._ledger, neutral_markers=True)
@@ -301,7 +303,10 @@ class ProviderAdapter:
         _capture_limit: SourceCursor | None = None,
         _revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]]
         | None = None,
+        _completion_witnesses: list[_CodexCompletionWitness] | None = None,
     ) -> AdapterBatch:
+        if _completion_witnesses is not None:
+            _completion_witnesses.clear()
         source = locator._source
         if not isinstance(source, CandidateSource):
             return AdapterBatch()
@@ -356,7 +361,10 @@ class ProviderAdapter:
         frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
-        result, span_ends, retains_prefix = _read_usage(source, frames, recorder)
+        completion = [] if _completion_witnesses is not None else None
+        result, span_ends, retains_prefix = _read_usage(
+            source, frames, recorder, completion
+        )
         scope_verified = True
         if _scope_boundaries:
             requested = set(_scope_boundaries)
@@ -370,13 +378,15 @@ class ProviderAdapter:
             }
             if selected:
                 read_revisions.clear()
+                if completion is not None:
+                    completion.clear()
                 for boundary, prefix in selected.items():
                     source = source._select_boundary(boundary, prefix, None)
                 frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
                 if frames.cursor is None:
                     return AdapterBatch(diagnostics=frames.diagnostics, cursor=cursor)
                 result, span_ends, retains_prefix = _read_usage(
-                    source, frames, recorder
+                    source, frames, recorder, completion
                 )
                 scope_verified = all(
                     boundary in result.boundaries
@@ -396,6 +406,23 @@ class ProviderAdapter:
             or not retains_prefix
             or result.provider_checkpoint is None
         ):
+            if (
+                _completion_witnesses is not None
+                and completion is not None
+                and len(completion) == 1
+                and scope_verified
+                and result.provider_checkpoint is None
+                and not result.diagnostics
+                and _capture_limit is not None
+                and frames.cursor == _capture_limit
+            ):
+                witness = completion[0]
+                if any(
+                    item.boundary == witness.request
+                    and item.project_context == witness.checkout
+                    for item in boundaries
+                ):
+                    _completion_witnesses.append(witness)
             return AdapterBatch(
                 boundaries=boundaries if scope_verified else (),
                 diagnostics=(
