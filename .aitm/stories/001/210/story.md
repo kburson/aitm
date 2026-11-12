@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 210
 title: "[M08b4c] Verified paired disposition settlement"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
 blocking: [119, 204]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
-updated: "2026-11-12T15:46:04+00:00"
+updated: "2026-11-12T16:03:31+00:00"
 last-branch: "codex/aitm-210-native-quota-recovery"
 estimate: {"agent-hours": 4.4, "size": "M"}
 priority: null
@@ -53,3 +53,10 @@ The re-run passed the self-root, authenticated quota, exact accounting and fixed
 The [accepted exact JIT](plan/2026-11-12-210-paired-settlement-jit.md) and its [independent PASS](plan/2026-11-12-210-paired-settlement-jit-review.md) cover a durable two-project ownership dispute and two independently proven physical frontiers. The accepted split and the live issue define the other shapes as unsupported coverage to retain. No undisputed, GAP-only, mixed, same-project content, missing-rival or diagnostic case supplies a release or advances a held frontier. [Recorded owner direction for the completion anchor](plan/2026-11-11-210-completion-receipt-followup.md).
 
 Project 24 reads back Dev, Rank 228.2, Estimate 4.4 hours, Size M, Start date 2026-11-12, and Actual 0.4958 hours partial. Estimate includes the roughly 0.4 hours of recorded coordinator work entering Develop and up to 4 hours planned for settlement. It is a planning forecast. Review and hosted wait are tracked separately. [Project readback](plan/project-settlement-develop.json) · [Partial Actual evidence](attachments/timing/paired-settlement-actual.json).
+
+
+## Exact Test entry
+
+[PR #266](https://github.com/kburson/aitm/pull/266) is ready for review at head `ede095d8ce46d6d1dc5138a849259cfc74e34787`, tree `6f1ae4a5707f2344bbeb4c15efdb823480866feb`, and literal trunk `22f265b6aa7c24050c2d798d7e16c1796701cf64`. All 1,216 product and CLI tests and 196 helpers passed on the locked local runtime. Raw lines covered were 11,272/12,276 product and 806/849 helpers. Both required child processes produced verified coverage, and the literal v4 reader refused a v5 store. [Exact local evidence](plan/local-settlement-verification.json) · [Native chronology](plan/native-fixed-prefix-chronology.json).
+
+The hosted run and independent exact source review remain separate gates. Project 24 reads back Test, Estimate 4.4 hours and Actual 0.5998 hours partial. [Project readback](plan/project-settlement-test.json) · [Partial Actual evidence](attachments/timing/paired-settlement-test-actual.json).

@@ -1,0 +1,14 @@
+{
+  "surface": "codex-desktop-macos",
+  "version": "0.167.0-alpha.3.2",
+  "output_ordinal": 249,
+  "request_ordinal": 253,
+  "counter_ordinal": 254,
+  "completion_ordinal": 255,
+  "physical_rows": 256,
+  "native_diagnostics_absent": true,
+  "self_root": true,
+  "fixed_prefix_digest_preserved": true,
+  "qualifying_turn_rows": 16,
+  "qualifying_turn_timestamps_monotonic": true
+}

@@ -1,0 +1,28 @@
+{
+  "literal_base": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+  "head": "ede095d8ce46d6d1dc5138a849259cfc74e34787",
+  "tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+  "baseline_ids_retained": 1102,
+  "candidate_ids": 1216,
+  "passed": 1216,
+  "helper_passed": 196,
+  "new_test_ids": 114,
+  "coverage": {
+    "product": {
+      "covered_lines": 11272,
+      "num_statements": 12276
+    },
+    "helpers": {
+      "covered_lines": 806,
+      "num_statements": 849
+    }
+  },
+  "required_child_coverage": {
+    "service-one-shot": 6501,
+    "cli-help": 4327
+  },
+  "ruff": true,
+  "git_diff_check": true,
+  "literal_trunk_v4_reader_refused_v5": true,
+  "local_verification": "pass"
+}
