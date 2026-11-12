@@ -9,7 +9,10 @@ from hashlib import sha256
 from .snapshot import Snapshot
 
 _REGULAR = {"100644", "100755"}
-_DYNAMIC_LOADERS = {"builtins": "__import__", "importlib": "import_module"}
+_DYNAMIC_LOADERS = {
+    "builtins": ("__import__",),
+    "importlib": ("__import__", "import_module"),
+}
 
 
 @dataclass(frozen=True)
@@ -189,8 +192,10 @@ def _dynamic_import_present(nodes):
                 ):
                     module_aliases[module].add(alias.asname or module)
         elif isinstance(node, ast.ImportFrom) and not node.level:
-            loader = _DYNAMIC_LOADERS.get(node.module)
-            if loader and any(alias.name in {loader, "*"} for alias in node.names):
+            loaders = _DYNAMIC_LOADERS.get(node.module)
+            if loaders and any(
+                alias.name == "*" or alias.name in loaders for alias in node.names
+            ):
                 return True
 
     for node in nodes:
@@ -198,8 +203,8 @@ def _dynamic_import_present(nodes):
             return True
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
             if any(
-                node.attr == loader and node.value.id in module_aliases[module]
-                for module, loader in _DYNAMIC_LOADERS.items()
+                node.attr in loaders and node.value.id in module_aliases[module]
+                for module, loaders in _DYNAMIC_LOADERS.items()
             ):
                 return True
     return False

@@ -119,6 +119,36 @@ def test_dynamic_scope():
     }
 
 
+@pytest.mark.parametrize(
+    ("loader_source", "bound"),
+    [
+        pytest.param(
+            b"import importlib as il\nil.__import__(computed)",
+            (b"src",),
+            id="aliased-module",
+        ),
+        pytest.param(
+            b"from importlib import __import__ as load\nload(computed)",
+            None,
+            id="from-import",
+        ),
+    ],
+)
+def test_importlib_dunder_import_reports_unresolved_scope(loader_source, bound):
+    reader = b"src/reader.py"
+    helper = b"src/helper.py"
+    endpoint = Endpoint({reader: loader_source + b"\nimport helper", helper: b""})
+    rules = policy(
+        b"src",
+        external_modules=("importlib",),
+        dynamic_import_bounds=((reader, bound),) if bound is not None else (),
+    )
+
+    graph = build_graph(endpoint, rules)
+    assert edges(graph) == {(reader, helper, "import")}
+    assert graph.unresolved == (UnresolvedScope(reader, "dynamic-import", "", bound),)
+
+
 def test_ambiguous_owners_keep_possible_edges():
     reader = b"tests/test_owners.py"
     first = b"one/shared/worker.py"
