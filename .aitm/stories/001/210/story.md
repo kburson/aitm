@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 210
 title: "[M08b4c] Verified paired disposition settlement"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
 blocking: [119, 204]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
-updated: "2026-11-12T16:03:31+00:00"
+updated: "2026-11-12T16:10:54+00:00"
 last-branch: "codex/aitm-210-native-quota-recovery"
 estimate: {"agent-hours": 4.4, "size": "M"}
 priority: null
@@ -60,3 +60,10 @@ Project 24 reads back Dev, Rank 228.2, Estimate 4.4 hours, Size M, Start date 20
 [PR #266](https://github.com/kburson/aitm/pull/266) is ready for review at head `ede095d8ce46d6d1dc5138a849259cfc74e34787`, tree `6f1ae4a5707f2344bbeb4c15efdb823480866feb`, and literal trunk `22f265b6aa7c24050c2d798d7e16c1796701cf64`. All 1,216 product and CLI tests and 196 helpers passed on the locked local runtime. Raw lines covered were 11,272/12,276 product and 806/849 helpers. Both required child processes produced verified coverage, and the literal v4 reader refused a v5 store. [Exact local evidence](plan/local-settlement-verification.json) · [Native chronology](plan/native-fixed-prefix-chronology.json).
 
 The hosted run and independent exact source review remain separate gates. Project 24 reads back Test, Estimate 4.4 hours and Actual 0.5998 hours partial. [Project readback](plan/project-settlement-test.json) · [Partial Actual evidence](attachments/timing/paired-settlement-test-actual.json).
+
+
+## Signed hosted Review entry
+
+[PR #266](https://github.com/kburson/aitm/pull/266) passed all six jobs on [hosted attempt 1](https://github.com/kburson/aitm/actions/runs/43253326460/attempts/1). The delivered verifier authenticated the signature, archive, exact merge parents, head and tree. The exact reviewed-tree input was required because the existing classifier includes test files. The [independent audit](plan/settlement-ci-control-audit.md) identified only three changed test blobs and no change to gates. [Signed readback](plan/signed-hosted-settlement.json) · [Raw replay](plan/settlement-hosted-raw-replay.json) · [Test ID reconciliation](plan/settlement-hosted-id-reconciliation.json) · [Project In review](plan/project-settlement-review.json).
+
+Independent exact source review is active. Delivery and Close remain pending.
