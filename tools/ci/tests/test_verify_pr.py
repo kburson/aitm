@@ -12,7 +12,9 @@ from verify_pr import (
     GitHub,
     Hold,
     checked_out_base,
+    live_pull,
     main,
+    read_attempt,
     read_evidence_archive,
     run_bounded,
     verify_pr,
@@ -127,6 +129,67 @@ def verified_signature():
     client = FixtureGitHub()
     subject, bundle = read_evidence_archive(client.raw_archive)
     return client.attestation(subject, bundle, f"refs/pull/{PR}/merge", MERGE)
+
+
+@pytest.fixture
+def attempt_records(client):
+    selected = client.documents[RUN_LIST][0]["workflow_runs"][0]
+    selected["created_at"] = "2026-11-11T16:25:48Z"
+    record = client.documents[ATTEMPT]
+    record["run_started_at"] = "2026-11-11T16:42:28Z"
+    record["updated_at"] = "2026-11-11T16:50:34Z"
+    return selected, record
+
+
+@pytest.mark.parametrize("created_at", ["2026-11-11T16:25:48Z", "2026-11-11T16:42:30Z"])
+def test_rerun_accepts_original_or_attempt_creation_time(
+    client, attempt_records, created_at
+):
+    selected, record = attempt_records
+    selected["run_attempt"] = record["run_attempt"] = 3
+    record["created_at"] = created_at
+    attempt_path = f"actions/runs/{RUN}/attempts/3"
+    client.documents[attempt_path] = client.documents.pop(ATTEMPT)
+    pull = live_pull(client, PR, TARGET)
+
+    path, started, suite = read_attempt(client, pull, selected["workflow_id"], selected)
+
+    assert path == attempt_path
+    assert started.isoformat() == "2026-11-11T16:42:28+00:00"
+    assert suite["id"] == SUITE
+
+
+@pytest.mark.parametrize(
+    ("attempt", "created_at", "reason"),
+    [
+        (1, "2026-11-11T16:42:30Z", "first attempt creation disagrees"),
+        (3, "2026-11-11T16:25:47Z", "rerun creation falls outside"),
+        (3, "2026-11-11T16:50:35Z", "rerun creation falls outside"),
+    ],
+)
+def test_attempt_rejects_inconsistent_creation_time(
+    client, attempt_records, attempt, created_at, reason
+):
+    selected, record = attempt_records
+    selected["run_attempt"] = record["run_attempt"] = attempt
+    record["created_at"] = created_at
+    client.documents[f"actions/runs/{RUN}/attempts/{attempt}"] = record
+    pull = live_pull(client, PR, TARGET)
+
+    with pytest.raises(Hold, match=reason):
+        read_attempt(client, pull, selected["workflow_id"], selected)
+
+
+def test_rerun_start_cannot_predate_original_run(client, attempt_records):
+    selected, record = attempt_records
+    selected["run_attempt"] = record["run_attempt"] = 3
+    record["created_at"] = "2026-11-11T16:42:30Z"
+    record["run_started_at"] = "2026-11-11T16:25:47Z"
+    client.documents[f"actions/runs/{RUN}/attempts/3"] = record
+    pull = live_pull(client, PR, TARGET)
+
+    with pytest.raises(Hold, match="attempt start predates run"):
+        read_attempt(client, pull, selected["workflow_id"], selected)
 
 
 def test_authentic_canonical_proof_passes_with_offline_signature(client):
