@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 141
 title: "[#133 T04] Derive Python and package edges"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/141"
 parent: 133
 children: []
 blocking: [142]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:04Z"
-updated: "2026-11-12T02:05:38Z"
-last-branch: "planning"
+updated: "2026-11-12T02:05:44Z"
+last-branch: "codex/aitm-wave30-141"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
