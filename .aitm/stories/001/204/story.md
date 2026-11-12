@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 204
 title: "[M08b5] Qualified folded usage intent"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/204"
 parent: 100
 children: []
 blocking: [119]
 blocked-by: [203, 210]
 created: "2026-11-10T23:50:22Z"
-updated: "2026-11-11T02:41:48+00:00"
+updated: "2026-11-12T16:22:28+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
@@ -30,3 +30,10 @@ Independently qualify a bounded, pinned pre-M09 Claude producer for exact closed
 Project 24 Rank 229. Size and Estimate follow its own independent Refine and JIT. Start Date follows Develop.
 
 [#210 qualified effective settlement](../210/story.md) is an additional native prerequisite. The existing #203 edge and the positive folded producer gate remain.
+
+
+## Native producer Refine
+
+#203 and #210 are both Closed Completed. [#210's verified settlement](../210/plan/settlement-verified-delivery.json) is available at literal trunk `766504a02aaeb9dda339d588172dd7d5bdbd2b3f`. Project 24 is in [Refine at Rank 229](plan/project-folded-refine-entry.json). The [verified prerequisites](plan/folded-refine-prerequisites.json) and direct #119 gate remain.
+
+The bounded probe uses only a synthetic project and a pinned synchronous Claude Agent. Independent Refine must establish exact keyed child membership, terminal closure, and explicit inclusion before the exact JIT. If evidence qualifies, extend `_build_settlement_change` under #210's accepted [handoff](../210/plan/2026-11-12-210-settlement-scope-disposition.md), preserving the private v5 payload history. Until then, unresolved overlap and #119 remain held.
