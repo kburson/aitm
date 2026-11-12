@@ -7,3 +7,7 @@
 - Verify the actual local command replay, authenticated CI, owner-delegated disposition, trusted verifier, independent source review, exact expected-head merge, verified source delivery, implementing-agent sign-off and native closure.
 
 The replacement passed [159 local TIA tests](143-local-validation-717da4ce2540.md) and the [real Darwin APFS advisory run](native-advisory-717da4ce2540.json) executed all 1,298 obligations with exit 0.
+
+## Formal independent PR review
+
+[Off-platform SAR](reviews/143-formal-sar-r1.md) records **accepted** on head `717da4ce2540d4ba52f340cd3fe276fc43ccfb5b`, tested tree `2f5169c7e1129f0cdb089b9d52ffe776de6af782`, after the exact trusted verifier passed.
