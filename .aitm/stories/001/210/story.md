@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 210
 title: "[M08b4c] Verified paired disposition settlement"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
 blocking: [119, 204]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
-updated: "2026-11-11T02:41:48+00:00"
-last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+updated: "2026-11-12T15:46:04+00:00"
+last-branch: "codex/aitm-210-native-quota-recovery"
+estimate: {"agent-hours": 4.4, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-12-210-native-quota-recovery-jit.md", "plan/2026-11-12-210-paired-settlement-jit.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan-split", "story": 100, "key": "M08b4c", "source-leaf": 199, "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "split-sha256": "1c97ab7d36b9fe162e59472e89da03a36b2ddbcf83717f6fb70a89eeba85000f", "path": ".aitm/stories/001/199/plan/2026-11-10-199-m08b-proof-split.md", "refinement": {"source-leaf": 203, "sha256": "0158b267bcfcee8989639d7aa89a84bdf4e1687849ec449abfab07fe198a6cbf", "path": ".aitm/stories/001/203/plan/2026-11-10-203-disposition-proof-split.md"}}
@@ -46,3 +46,10 @@ The staged launcher queued a genuine Desktop disposition, and the public reader 
 ## Qualified Desktop capture
 
 The re-run passed the self-root, authenticated quota, exact accounting and fixed prefix checks, and the genuine later-usage control refused the witness. The native Refine prerequisite is met. Effective paired settlement still requires its independent JIT and verified delivery. [Native pass](plan/2026-11-12-210-native-quota-capture-pass.md).
+
+
+## Paired settlement Develop
+
+The [accepted exact JIT](plan/2026-11-12-210-paired-settlement-jit.md) and its [independent PASS](plan/2026-11-12-210-paired-settlement-jit-review.md) cover a durable two-project ownership dispute and two independently proven physical frontiers. The accepted split and the live issue define the other shapes as unsupported coverage to retain. No undisputed, GAP-only, mixed, same-project content, missing-rival or diagnostic case supplies a release or advances a held frontier. [Recorded owner direction for the completion anchor](plan/2026-11-11-210-completion-receipt-followup.md).
+
+Project 24 reads back Dev, Rank 228.2, Estimate 4.4 hours, Size M, Start date 2026-11-12, and Actual 0.4958 hours partial. Estimate includes the roughly 0.4 hours of recorded coordinator work entering Develop and up to 4 hours planned for settlement. It is a planning forecast. Review and hosted wait are tracked separately. [Project readback](plan/project-settlement-develop.json) · [Partial Actual evidence](attachments/timing/paired-settlement-actual.json).
