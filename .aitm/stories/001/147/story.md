@@ -70,4 +70,4 @@ Rank 30. The required predecessors are Closed as completed and marked Done. [Ref
 
 [Source PR](https://github.com/kburson/aitm/pull/261) · [Local validation](plan/local-validation.md) · [Delivery checklist](plan/delivery-checklist.md).
 
-Attempt 1 head , branch tree , target base . Hosted exact-candidate verification and independent review are pending.
+Attempt 1 head `a9f97f937369192b6f565f6d5cec1e26340358ab`, branch tree `b3aef9e5f6b75aa987f443bc6133d5a243147011`, target base `71aa5c880fc6a1db1cf676dfc663373f02ef7b16`. Hosted exact-candidate verification and independent review are pending.
