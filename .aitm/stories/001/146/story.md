@@ -10,12 +10,12 @@ children: []
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-12T20:20:39Z"
+updated: "2026-11-12T20:54:24Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-12-146-trusted-observation-replan.md", "plan/146-linux-rehearsal.json", "plan/reviews/2026-11-12-146-trusted-observation-replan-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T09", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "96f92716c462213744f98c10b0db9cc163f768fe3bd4bbe4bf9f56644378389d"}
@@ -56,3 +56,9 @@ Backlog / BLOCKED. #144 and #145 ended without qualifying collection and executi
 ## Pickup order
 
 Rank 50 is the next unresolved story. Its trusted collection and execution qualification hold remains active. [Rank order](../../001/133/plan/2026-11-12-133-rank-order.md).
+
+## Current Rank 50 qualification replan
+
+The local synthetic rehearsal demonstrated controller-owned inventory and external verdicts on Linux. A bounded same-repository macOS/APFS pilot is the proposed qualification route. No available route met the pilot's entry criteria. #146 remains open and blocked on qualification, and #148 and #267 remain held by Rank order.
+
+[Reviewed replan](plan/2026-11-12-146-trusted-observation-replan.md) · [Linux rehearsal](plan/146-linux-rehearsal.json) · [Independent review](plan/reviews/2026-11-12-146-trusted-observation-replan-review.md).

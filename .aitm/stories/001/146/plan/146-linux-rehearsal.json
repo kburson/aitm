@@ -1,0 +1,45 @@
+{
+  "assurance": "synthetic Linux rehearsal only",
+  "catalog": {
+    "identity_sha256": "4b723a29a6d101ff403334166b236839ca8c7d1ad4ad1e74d0f70c97dc810e5b",
+    "scope": [
+      "uppercase-alpha",
+      "uppercase-beta"
+    ]
+  },
+  "full": {
+    "uppercase-alpha": "pass",
+    "uppercase-beta": "pass"
+  },
+  "known_failure_with_missing_case": {
+    "uppercase-alpha": "fail",
+    "uppercase-beta": "missing"
+  },
+  "known_failure_with_missing_case_scope": "Second case was deliberately not dispatched. The first case failed an externally evaluated expected value.",
+  "limits": [
+    "Benign fixture only",
+    "No hostile-code or platform isolation claim",
+    "No macOS/APFS, native child coverage or arbitrary pytest qualification",
+    "No production gate authority"
+  ],
+  "missing_catalog_entry": "Reduced fixture catalog had a different digest. It was not dispatched.",
+  "selected": {
+    "uppercase-alpha": "pass",
+    "uppercase-beta": "unobserved"
+  },
+  "worker": {
+    "architecture": "arm64",
+    "image_id": "sha256:6ed9a3bfbe834b7e0e23a89d39bd4056cff7eeaaeb6eb0caa0f4fe2aef3a09cf",
+    "os": "linux",
+    "python": "3.13.9",
+    "registry_digest": "python@sha256:b685a4fa58bb19d1814d78a1ec0f0208f351452724f78b20212c984d6e124a34"
+  },
+  "worker_invocations": 4,
+  "worker_settings": {
+    "caps": "none",
+    "filesystem": "read-only",
+    "mounts": [],
+    "network": "none",
+    "uid": 65534
+  }
+}
