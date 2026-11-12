@@ -1,0 +1,22 @@
+{
+  "repository": "kburson/aitm",
+  "pr": 261,
+  "url": "https://github.com/kburson/aitm/pull/261",
+  "method": "merge",
+  "head": "26e8ba1aa41eb8eb1c26d963a189c5cc43771a85",
+  "base": "15b3076848e726c3fed62c2725621106a04246ef",
+  "merge": "011342493399ed6e8a12ba0e9c2a4a1e9efaf294",
+  "merged_at": "2026-11-12T03:51:47Z",
+  "reviewed_tree": "cab945d1c8bdd14bab3b1f7aa06fde7b023f9357",
+  "delivered_tree": "cab945d1c8bdd14bab3b1f7aa06fde7b023f9357",
+  "tested_merge": "ed9696e6f769350cd9a230ef1ae018f43bad8ce8",
+  "verified_parents": [
+    "15b3076848e726c3fed62c2725621106a04246ef",
+    "26e8ba1aa41eb8eb1c26d963a189c5cc43771a85"
+  ],
+  "remote_target": "011342493399ed6e8a12ba0e9c2a4a1e9efaf294",
+  "run_id": 43149944287,
+  "run_attempt": 1,
+  "review_publication": "7d2669d8192851ce757ddcaab5f9ec077d3c739b",
+  "source_mapping": "verified"
+}
