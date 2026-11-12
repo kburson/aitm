@@ -1,0 +1,65 @@
+{
+  "issue": {
+    "closedAt": "2026-11-12T14:18:52Z",
+    "number": 142,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/142"
+  },
+  "board": {
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHkcKg",
+    "project": {
+      "id": "PVT_kwHOABCEY84Bq1hZ",
+      "number": 24
+    },
+    "content": {
+      "number": 142,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "repository": {
+        "nameWithOwner": "kburson/aitm"
+      }
+    },
+    "status": {
+      "name": "Done",
+      "optionId": "98236657"
+    },
+    "rank": {
+      "number": 40.0
+    },
+    "estimate": {
+      "number": 4.0
+    },
+    "size": {
+      "name": "M"
+    },
+    "priority": {
+      "name": "P1"
+    }
+  },
+  "outgoing_dependencies": [
+    {
+      "number": 143,
+      "state": "open",
+      "state_reason": null
+    },
+    {
+      "number": 151,
+      "state": "open",
+      "state_reason": null
+    },
+    {
+      "number": 163,
+      "state": "open",
+      "state_reason": null
+    }
+  ],
+  "merge": "0dfbcf0c4b346fe014674aae0775a82f40e3a9b8",
+  "tree": "61eeabeed1362d5c39188dd6aade2b6549515b01",
+  "implementer_signoff": "retro/2026-11-12-142-implementer-retrospective.md",
+  "signoff_sha256": "26af06a16e24552b924eae00c46644e5ca5f2a00d33277004ec2772b762b0da3",
+  "signoff_publication": "9fba24ff27f3464221cd842ac91919a4a163d3ad",
+  "delivery_publication": "11ccf7fb9ec52a9f2471db9dab32f71d4d72210d",
+  "last_gate": "published and verified implementer sign-off",
+  "last_gate_observed_at": "2026-11-12T14:18:50Z"
+}
