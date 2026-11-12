@@ -1,0 +1,12 @@
+{
+  "actual": 0.0248,
+  "coverage": "Partial. Assigned Codex worker\u2019s bounded Refine progress only.",
+  "estimate": 3.75,
+  "id": "PVTI_lAHOABCEY84Bq1hZzhHkPJg",
+  "issue": 137,
+  "rank": 350,
+  "repository": "kburson/aitm",
+  "size": "M",
+  "start": null,
+  "status": "Refine"
+}
