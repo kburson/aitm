@@ -1,0 +1,524 @@
+{
+  "amendment_commit": "dc1317219fdc255a86b63c9ce5170a06bd61cca3",
+  "board": {
+    "133": {
+      "item": {
+        "disposition": null,
+        "estimate": {
+          "number": 146.5
+        },
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHjBtA",
+        "priority": {
+          "name": "P2"
+        },
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 10.0
+        },
+        "size": {
+          "name": "XL"
+        },
+        "status": {
+          "name": "Dev"
+        }
+      },
+      "number": 133,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "145": {
+      "item": {
+        "disposition": {
+          "name": "Discarded"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkcTA",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 40.0
+        },
+        "size": null,
+        "status": {
+          "name": "Done"
+        }
+      },
+      "number": 145,
+      "state": "CLOSED",
+      "stateReason": "NOT_PLANNED"
+    },
+    "146": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkcWk",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 50.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 146,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "148": {
+      "item": {
+        "disposition": null,
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkc6M",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 60.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 148,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "172": {
+      "item": {
+        "disposition": null,
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdeI",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 110.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 172,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "267": {
+      "item": {
+        "disposition": null,
+        "estimate": {
+          "number": 3.0
+        },
+        "id": "PVTI_lAHOABCEY84Bq1hZzhIQh2c",
+        "priority": {
+          "name": "P2"
+        },
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 60.0
+        },
+        "size": {
+          "name": "M"
+        },
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 267,
+      "state": "OPEN",
+      "stateReason": null
+    }
+  },
+  "dependency_edges": {
+    "acyclic": true,
+    "added": [
+      [
+        143,
+        267
+      ],
+      [
+        267,
+        172
+      ]
+    ],
+    "orientation": "prerequisite, dependent",
+    "other_edges_match_preflight": true,
+    "removed": [
+      [
+        145,
+        148
+      ]
+    ]
+  },
+  "graph": {
+    "138": {
+      "blocked_by": [],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "139": {
+      "blocked_by": [
+        138
+      ],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "140": {
+      "blocked_by": [],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "141": {
+      "blocked_by": [
+        139,
+        140
+      ],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "142": {
+      "blocked_by": [
+        139,
+        141
+      ],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "143": {
+      "blocked_by": [
+        142
+      ],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "144": {
+      "blocked_by": [
+        139
+      ],
+      "reason": "not_planned",
+      "state": "closed"
+    },
+    "145": {
+      "blocked_by": [
+        144
+      ],
+      "reason": "not_planned",
+      "state": "closed"
+    },
+    "146": {
+      "blocked_by": [
+        144,
+        145
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "147": {
+      "blocked_by": [
+        139,
+        140
+      ],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "148": {
+      "blocked_by": [
+        139
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "149": {
+      "blocked_by": [
+        146,
+        147,
+        148
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "150": {
+      "blocked_by": [
+        149
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "151": {
+      "blocked_by": [
+        142,
+        150
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "152": {
+      "blocked_by": [
+        150
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "153": {
+      "blocked_by": [
+        152
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "154": {
+      "blocked_by": [
+        153
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "155": {
+      "blocked_by": [
+        154
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "156": {
+      "blocked_by": [
+        155
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "157": {
+      "blocked_by": [
+        156
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "158": {
+      "blocked_by": [],
+      "reason": "completed",
+      "state": "closed"
+    },
+    "159": {
+      "blocked_by": [
+        157,
+        158
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "160": {
+      "blocked_by": [
+        152,
+        157
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "161": {
+      "blocked_by": [
+        159,
+        160
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "162": {
+      "blocked_by": [
+        161
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "163": {
+      "blocked_by": [
+        142,
+        162
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "164": {
+      "blocked_by": [
+        154
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "165": {
+      "blocked_by": [
+        157,
+        164
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "166": {
+      "blocked_by": [
+        165
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "167": {
+      "blocked_by": [
+        166
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "168": {
+      "blocked_by": [
+        146,
+        163,
+        165
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "169": {
+      "blocked_by": [
+        162,
+        167,
+        168
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "170": {
+      "blocked_by": [
+        169
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "171": {
+      "blocked_by": [
+        151
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "172": {
+      "blocked_by": [
+        143,
+        171,
+        267
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "173": {
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "174": {
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "175": {
+      "blocked_by": [
+        173
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "176": {
+      "blocked_by": [
+        170,
+        175
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "177": {
+      "blocked_by": [
+        174,
+        175
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "178": {
+      "blocked_by": [
+        172,
+        176,
+        177
+      ],
+      "reason": null,
+      "state": "open"
+    },
+    "267": {
+      "blocked_by": [
+        143
+      ],
+      "reason": null,
+      "state": "open"
+    }
+  },
+  "new_story": 267,
+  "qualification": {
+    "held_issue": 146,
+    "production_gate": "#103",
+    "retired_issue": 145,
+    "status": "unqualified"
+  },
+  "verified_at": "2026-11-12T20:02:09Z",
+  "verified_reciprocal_edges": {
+    "133": [
+      2
+    ],
+    "143": [
+      172,
+      267
+    ],
+    "144": [
+      145,
+      146
+    ],
+    "145": [
+      146
+    ],
+    "146": [
+      149,
+      168
+    ],
+    "148": [
+      149
+    ],
+    "267": [
+      172
+    ]
+  }
+}

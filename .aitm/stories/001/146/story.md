@@ -10,7 +10,7 @@ children: []
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T20:02:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -48,3 +48,7 @@ qualified T07 execution adapter.
   collection and exact assignment. V(observe) and native qualification
   repeat on the exact implementation. Split or replan before Develop
   if the approved mechanism exceeds four hours.
+
+## Qualification hold
+
+Backlog / BLOCKED. #144 and #145 ended without qualifying collection and execution. A qualified replacement is required. [Current replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md).

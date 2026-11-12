@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 145
 title: "[#133 T08] Implement qualified complete collection"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/145"
 parent: 133
 children: []
-blocking: [146, 148]
+blocking: [146]
 blocked-by: [144]
 created: "2026-11-10T16:51:15Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T20:02:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -47,3 +47,7 @@ qualified T07 collection adapter.
   Use T07's isolated mechanism. Bind exact candidate, qualified
   observer, controls and platform. V(collect) and the hosted attack
   fixture pass independently of how many IDs later execute.
+
+## Terminal disposition
+
+Discarded as not planned without a qualification result. [Replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md) · [Native closure receipt](../133/plan/2026-11-12-133-advisory-and-qualification-readback.json).

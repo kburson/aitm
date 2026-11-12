@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/172"
 parent: 133
 children: []
 blocking: [178]
-blocked-by: [143, 171]
+blocked-by: [143, 171, 267]
 created: "2026-11-10T16:52:18Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T20:02:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
@@ -25,7 +25,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T35", "path"
 
 [GitHub issue #172](https://github.com/kburson/aitm/issues/172) · [Parent #133](../133/story.md) · [Exact accepted plan section](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L747)
 
-**Required predecessors** [T06 #143](../143/story.md), [T34 #171](../171/story.md).
+**Required predecessors** [T06 #143](../143/story.md), [T34 #171](../171/story.md), [T35L #267](../../002/267/story.md).
 
 The planning estimate is 3 implementation agent-hours.
 Recheck it at the leaf's own refinement and JIT. The parent plan
@@ -84,3 +84,7 @@ and a sanitized timing and selector report.
   and full fallback on the representative candidates. Report co-run
   contention, missed impacts and retuning separately. V(qualification)
   passes and each accepted sample has a bound run receipt.
+
+## Local advisory evidence
+
+[#267](../../002/267/story.md) supplies local measurement evidence. #171 still gates the hosted comparison, and #178 retains this broader qualification dependency. [Current replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md).

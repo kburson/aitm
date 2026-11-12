@@ -1,5 +1,7 @@
 # #133 bounded implementation stories
 
+For current T08, T11 and T35L scope, see the [reviewed replan](2026-11-12-133-advisory-and-qualification-replan.md) and [verified graph](2026-11-12-133-advisory-and-qualification-readback.json). This table records the original decomposition.
+
 [Exact reviewed plan](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md) · SHA-256 `ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7`.
 
 Verified 41 open Backlog items and 64 reciprocal direct dependencies. The estimates total 146.5 implementation agent-hours. [GitHub readback receipt](leaf-issue-receipt.json).
