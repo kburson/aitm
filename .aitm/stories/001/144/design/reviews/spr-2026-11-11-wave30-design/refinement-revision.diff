@@ -1,0 +1,10 @@
+--- a/2026-11-11-144-refinement.md
++++ b/2026-11-11-144-refinement.md
+@@ -1,6 +1,6 @@
+ # #144 refinement — Size the T07 prerequisite refusal
+ 
+-**Draft for independent review.** Wave 30, Rank 30, P1 spike. Author and assigned implementer: Codex / story144, acting for kburson. Wave owner owns publication, Project and issue updates, and remote actions. The existing [refinement intake](2026-11-11-144-refinement-draft.md) from `0c80233a9b59bf3c54c4bc3cd23c6f235a967f2f` remains historical. This refinement proposes the limited refusal path; it does not accept the design, move the story, or authorize Develop.
++**Refinement and sizing.** Wave 30, Rank 30, P1 spike. Author and assigned implementer: Codex / story144, acting for kburson. Wave owner owns publication, Project and issue updates, and remote actions. The existing [refinement intake](2026-11-11-144-refinement-draft.md) from `0c80233a9b59bf3c54c4bc3cd23c6f235a967f2f` remains historical. This refinement proposes the limited refusal path; it does not accept the design, move the story, or authorize Develop.
+ 
+ ## Predecessor and pickup evidence
+ 

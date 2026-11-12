@@ -10,12 +10,12 @@ children: []
 blocking: [145, 146]
 blocked-by: [139]
 created: "2026-11-10T16:51:12Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T01:57:47Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-144-trusted-pytest-observation-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-144-refinement.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T07", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "638dc7c738badde978b3799404e9210cef3c1a5798f1f0591fd6274ef0dee1ad"}
@@ -60,3 +60,9 @@ attack cases, and a bounded controller design or an explicit refusal.
 ## Wave 3 refinement draft
 
 Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-144-refinement-draft.md).
+
+## Wave 30 leaf design and refinement
+
+- [Design](design/2026-11-11-144-trusted-pytest-observation-design.md) · SHA-256 `04489f58b31a1904e9e6f0926a6ed9a9e2c00f4362f55d95343863cc1240a8cc`
+- [Refinement](plan/2026-11-11-144-refinement.md) · SHA-256 `0eccbc15c939aba16526993429bf6b3b1937ece8988430f4ed9ee489587e615d`
+- [Independent review](design/reviews/spr-2026-11-11-wave30-design/review-manifest.md)

@@ -1,0 +1,10 @@
+--- a/2026-11-11-144-trusted-pytest-observation-design.md
++++ b/2026-11-11-144-trusted-pytest-observation-design.md
+@@ -1,6 +1,6 @@
+ # #144 design — Trusted pytest observation prerequisite refusal
+ 
+-**Draft for independent review.** Wave 30, Rank 30, #133 T07. Author and assigned implementer: Codex / story144, acting for kburson. Wave owner retains planning publication, Project, issue and remote actions. The wave's proposed deliverable is a sanitized, dated refusal record; this design is not that record or a qualification result.
++**Leaf design.** Wave 30, Rank 30, #133 T07. Author and assigned implementer: Codex / story144, acting for kburson. Wave owner retains planning publication, Project, issue and remote actions. The wave's proposed deliverable is a sanitized, dated refusal record; this design is not that record or a qualification result.
+ 
+ ## Purpose and source of authority
+ 
