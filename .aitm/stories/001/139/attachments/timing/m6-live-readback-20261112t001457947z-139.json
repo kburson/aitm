@@ -1,0 +1,39 @@
+{
+  "batch": "m6-live-readback-20261112t001457947z",
+  "observations": [
+    {
+      "actor": "dashboard-pilot-coordinator",
+      "attempt": "attempt-1",
+      "basis": "verified-story-scoped-in-turn-readback",
+      "coverage": "partial",
+      "end_utc": "2026-11-12T00:14:59.155Z",
+      "kind": "agent-turn",
+      "observation_id": "pilot.139.20261112t001457947z.scoped-turn",
+      "phase": "test",
+      "role": "coordinator",
+      "start_utc": "2026-11-12T00:14:57.947Z",
+      "turn": "pilot.139.20261112t001457947z"
+    },
+    {
+      "actor": "dashboard-pilot-coordinator",
+      "attempt": "attempt-1",
+      "basis": "verified-tool-call-and-return",
+      "coverage": "partial",
+      "end_utc": "2026-11-12T00:14:59.155Z",
+      "kind": "tool",
+      "observation_id": "pilot.139.20261112t001457947z.tool",
+      "phase": "test",
+      "role": "coordinator",
+      "start_utc": "2026-11-12T00:14:57.947Z",
+      "turn": "pilot.139.20261112t001457947z"
+    }
+  ],
+  "project": "aitm",
+  "recorded_at_utc": "2026-11-12T00:15:38.471Z",
+  "schema": "aitm.story-timing-receipt/v1",
+  "source": {
+    "ref": "manual:m6-test-evidence-readback",
+    "sha256": "64f26a495f754bfdaabd1b1c904707c8c75a087d2712c836b5540bec61d7699e"
+  },
+  "subject": 139
+}
