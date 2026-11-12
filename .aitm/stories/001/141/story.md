@@ -47,3 +47,7 @@ directed consumer/input edges and unresolved scope records.
   mapping. Include pytest fixture and configuration scopes from
   qualified inputs. V(python_graph) passes. Neither a cycle nor an
   ambiguous namespace package silently drops a potential edge.
+
+## Wave 3 refinement draft
+
+Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-141-refinement-draft.md).

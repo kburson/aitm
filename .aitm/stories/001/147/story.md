@@ -49,3 +49,7 @@ and `applicable_inventory(reference, target, dispositions) -> Inventory`.
   or wrong-scope approval. V(controls) passes. T12/T14/T15/T24/T34
   consume these same rules for ordinary, scheduled, repair and selected
   paths, without inventing a new approval source.
+
+## Wave 3 refinement draft
+
+Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-147-refinement-draft.md).

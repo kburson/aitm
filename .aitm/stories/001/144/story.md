@@ -56,3 +56,7 @@ attack cases, and a bounded controller design or an explicit refusal.
   test execution. If the boundary cannot resist the cases, stop
   T08/T09 and their descendants. Keep #103 and local advisory available
   and return the boundary to design review.
+
+## Wave 3 refinement draft
+
+Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-144-refinement-draft.md).
