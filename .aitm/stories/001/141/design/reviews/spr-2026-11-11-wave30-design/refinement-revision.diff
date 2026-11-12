@@ -1,0 +1,13 @@
+--- a/2026-11-11-141-refinement.md
++++ b/2026-11-11-141-refinement.md
+@@ -1,6 +1,9 @@
+ # #141 refinement · Derive Python and package edges
+ 
+-Wave 3 · Rank 30 · P1 · M · 3.5 implementation agent-hours
++Wave 30 · Rank 30 · P1 · M · 3.5 implementation agent-hours
++
++The historical refinement intake called this Wave 3.
++[Refinement intake](2026-11-11-141-refinement-draft.md)
+ 
+ [Story #141](../story.md) · [Leaf design](../design/derive-python-package-edges-design.md) · [Accepted parent design §3](https://github.com/kburson/aitm/blob/2ff1b49ed3a3f91c8164d6c7b0e1dbe4c15cd3f9/.aitm/stories/001/133/design/test-impact-analysis-design.md#L70) · [Accepted T04](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L217-L229)
+ 

@@ -10,12 +10,12 @@ children: []
 blocking: [142]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:04Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-12T01:59:26Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": ["design/derive-python-package-edges-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-141-refinement.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T04", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "8834c6ab0466869c48e118e34b3064ff1ef86a362aaecc5e4db66a6f6c0b6165"}
@@ -51,3 +51,9 @@ directed consumer/input edges and unresolved scope records.
 ## Wave 3 refinement draft
 
 Rank 30. The required predecessors are Closed as completed and marked Done. [Refinement draft](plan/2026-11-11-141-refinement-draft.md).
+
+## Wave 30 leaf design and refinement
+
+- [Design](design/derive-python-package-edges-design.md) · SHA-256 `0f10b0e978208480b39b304c9e513019e2f603bb1358a0b8738eff75f817d438`
+- [Refinement](plan/2026-11-11-141-refinement.md) · SHA-256 `7ef160644c7374a678ad6b837507839ef886de327eeb88c0348b1400160baedc`
+- [Independent review](design/reviews/spr-2026-11-11-wave30-design/review-manifest.md)

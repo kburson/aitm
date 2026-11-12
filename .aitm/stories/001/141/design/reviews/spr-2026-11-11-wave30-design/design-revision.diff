@@ -1,0 +1,27 @@
+--- a/derive-python-package-edges-design.md
++++ b/derive-python-package-edges-design.md
+@@ -105,8 +105,12 @@
+ test's ancestors creates fixture-scope uncertainty. A nested fixture
+ cannot apply to siblings. Scan attached fixtures, test modules and
+ qualified Python config inputs as readers even outside the import
+-roots. Their imports use the same resolver. A nonregular fixture
+-remains an observed input with unresolved behavior.
++roots. Their imports use the same resolver. When an applicable Python
++reader has no usable module name under the trusted roots, record
++unbounded `pytest-import-scope` uncertainty for that reader, including
++when it has no relative imports. The invocation may have an unmapped
++search directory. A nonregular fixture remains an observed input with
++unresolved behavior.
+ 
+ Add one edge to each qualified `config_paths` input that exists in
+ the endpoint. The field covers shared invocation inputs such as
+@@ -144,7 +148,8 @@
+   with a reviewed external name.
+ - Verify ancestor and nested fixture reachability, fixture helper
+   imports, qualified config input, missing or unqualified config,
+-  plugin uncertainty, and the CLI test outside the product directory.
++  an unmapped pytest reader with only absolute imports, plugin
++  uncertainty, and the CLI test outside the product directory.
+   Verify a reviewed package edge and missing endpoint disposition.
+ - Build a before/after graph with the real #140 resolver and a
+   rename or deletion. Verify old and new edge sets and bound digest.
