@@ -39,3 +39,7 @@
 ## Formal independent PR review
 
 [Off-platform SAR](reviews/147-formal-sar-r1.md) records **changes-requested** on head `0d8f8ea353d71ab19802e882ceecbd105e6837ae`, tested tree `9699130f9be8411cb2a5646197e803956b1ef1b3`, after the exact trusted verifier passed.
+
+## Formal independent PR review
+
+[Off-platform SAR](reviews/147-formal-sar-r2.md) records **accepted** on head `26e8ba1aa41eb8eb1c26d963a189c5cc43771a85`, tested tree `cab945d1c8bdd14bab3b1f7aa06fde7b023f9357`, after the exact trusted verifier passed.
