@@ -155,6 +155,43 @@ def test_ambiguous_owners_keep_possible_edges():
     }
 
 
+def test_wildcard_package_import_preserves_initializer_and_uncertainty():
+    reader = b"src/consumer.py"
+    initializer = b"src/pkg/__init__.py"
+    plain_module = b"src/plain.py"
+    endpoint = Endpoint(
+        {
+            reader: b"from pkg import *\nfrom plain import *\nfrom math import *",
+            initializer: b"__all__ = ['child']",
+            b"src/pkg/child.py": b"",
+            plain_module: b"value = 1",
+        }
+    )
+
+    graph = build_graph(endpoint, policy(b"src", external_modules=("math",)))
+    assert edges(graph) == {
+        (reader, initializer, "package-init"),
+        (reader, plain_module, "import"),
+    }
+    assert graph.unresolved == (
+        UnresolvedScope(reader, "wildcard-import", "pkg", None),
+    )
+
+
+def test_missing_namespace_from_import_preserves_known_child_and_uncertainty():
+    reader = b"src/consumer.py"
+    known = b"src/workspace/existing.py"
+    endpoint = Endpoint(
+        {reader: b"from workspace import existing, missing", known: b""}
+    )
+
+    graph = build_graph(endpoint, policy(b"src"))
+    assert edges(graph) == {(reader, known, "import")}
+    assert graph.unresolved == (
+        UnresolvedScope(reader, "unresolved-import", "workspace.missing", None),
+    )
+
+
 def test_ambiguous_relative_context_keeps_valid_dependency():
     reader = b"src/pkg/helper.py"
     owner = b"src/pkg/worker.py"

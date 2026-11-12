@@ -301,9 +301,21 @@ class _GraphBuilder:
             names = {node.module}
         for name in names:
             self._resolve_import(reader, name)
+            owners = self.owners.get(name, ())
+            namespace_only = bool(owners) and all(
+                owner.kind == "namespace" for owner in owners
+            )
             for alias in node.names:
+                if alias.name == "*":
+                    # A package's __all__ can trigger child imports at runtime.
+                    if any(
+                        owner.kind in {"package-init", "namespace"} for owner in owners
+                    ):
+                        self._unknown(reader, "wildcard-import", name)
+                    continue
                 child = f"{name}.{alias.name}"
-                if child in self.owners:
+                # A namespace has no initializer to account for a missing symbol.
+                if child in self.owners or namespace_only:
                     self._resolve_import(reader, child)
 
     def _scan_source(self, path):
