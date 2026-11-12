@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 144
 title: "[#133 T07] Qualify trusted pytest observation"
 kind: "spike"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/144"
 parent: 133
 children: []
 blocking: [145, 146]
 blocked-by: [139]
 created: "2026-11-10T16:51:12Z"
-updated: "2026-11-12T01:57:47Z"
+updated: "2026-11-12T01:58:19Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "M"}
+estimate: {"agent-hours": 0.75, "size": "S"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": ["design/2026-11-11-144-trusted-pytest-observation-design.md", "design/reviews/spr-2026-11-11-wave30-design/review-manifest.md"], "plan": ["plan/2026-11-11-144-refinement.md"], "attachments": []}
