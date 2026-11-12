@@ -1,0 +1,8 @@
+{
+  "scope": "current chat, shape counts only",
+  "counts": {
+    "native_exec_calls": 2680,
+    "exact_native_monitor_scope_calls": 0,
+    "queued_output_recognized": 0
+  }
+}

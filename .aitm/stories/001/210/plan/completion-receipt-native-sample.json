@@ -1,0 +1,27 @@
+{
+  "scope": "one current Codex Desktop chat, one scan window",
+  "counts": {
+    "both_signals_after_final_tool_output": 11,
+    "changed_total_display": 3357,
+    "completed_tool_turns": 11,
+    "increased_cumulative_total_after_final_tool_output": 11,
+    "same_total_display": 19,
+    "task_complete": 11,
+    "task_started": 13,
+    "turn_aborted": 1,
+    "usage_record_after_final_tool_output": 11,
+    "usage_record_with_explicit_turn_id_after_close": 0
+  },
+  "token_usage_record_payload_key_sets": [
+    [
+      "response_id",
+      "root_turn_id",
+      "session_id",
+      "thread_id",
+      "thread_token_usage",
+      "turn_id",
+      "turn_token_usage",
+      "usage"
+    ]
+  ]
+}
