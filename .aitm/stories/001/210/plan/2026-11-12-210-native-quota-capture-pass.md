@@ -1,0 +1,7 @@
+# #210 Desktop capture passed
+
+The private staged launcher was built from `6abd6f4ac77bc29edc09216bc344132fc3f3dd48`, based on literal trunk `0dfbcf0c4b346fe014674aae0775a82f40e3a9b8`. Existing Desktop queue and navigation produced a self-rooted native turn. The existing monitor cutoff excluded older quota rows. The disposable driver acquired live backend account evidence before the cutoff, again at the terminal, and after the later-usage control. All three snapshots matched the approved source's creator account. The writer supplied the scoped keyed account to the existing validator. The reviewed design records the point-in-time continuity limit. No raw account identifiers or quota snapshots enter planning.
+
+The actual typed disposition linked output 249 to the owned request 253, reconciled changed counter 254 and successful completion 255. The public reader qualified it with no native diagnostics and preserved its ordinary output and held scope. The genuine later-usage control kept the original 256-row prefix, observed new usage at 263 and 269, and refused the witness while preserving the hold. The proof is read-only. It supplies the native prerequisite for independent paired settlement planning.
+
+[Exact capture evidence](native-desktop-quota-capture-pass.json) · [Accepted recovery Refine](2026-11-12-210-native-quota-recovery-refine-review.md) · [Accepted recovery JIT](2026-11-12-210-native-quota-recovery-jit-review.md)

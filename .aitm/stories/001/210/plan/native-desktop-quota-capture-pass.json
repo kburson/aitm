@@ -1,0 +1,28 @@
+{
+  "stage": "pass",
+  "positive": {
+    "candidate": "6abd6f4ac77bc29edc09216bc344132fc3f3dd48",
+    "surface": "codex-desktop-macos",
+    "version": "0.167.0-alpha.3.2",
+    "output_ordinal": 249,
+    "request_ordinal": 253,
+    "counter_ordinal": 254,
+    "completion_ordinal": 255,
+    "row_shape_sha256": "07f2626e2a6cc00177c15490776bd69f70331381f20850d035cdae9bf6e03a40",
+    "completed_turns": 12,
+    "hold_and_ordinary_reader_preserved": true,
+    "self_root": true,
+    "native_diagnostics_absent": true,
+    "native_prefix_sha256": "afdcba2cd919455542336462c29abdf3deb78faf641f571c95de8f9a64a653ed",
+    "physical_rows": 256,
+    "before_after_account_match": true
+  },
+  "subsequent_turns": 13,
+  "later_usage_rejected": true,
+  "scope_bytes_preserved": true,
+  "later_usage_ordinals": [
+    263,
+    269
+  ],
+  "all_account_checks_match": true
+}

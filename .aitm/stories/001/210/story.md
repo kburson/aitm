@@ -42,3 +42,7 @@ Project 24 shows Refine at Rank 228.2. The independent Claude review passed the 
 ## Genuine Desktop capture
 
 The staged launcher queued a genuine Desktop disposition, and the public reader verified its owned request. The completion was attributed to the coordinating chat's root and the reader recorded quota coverage gaps. The later-usage control kept the hold intact. [Capture and exact refusals](plan/2026-11-12-210-native-desktop-capture.md).
+
+## Qualified Desktop capture
+
+The re-run passed the self-root, authenticated quota, exact accounting and fixed prefix checks, and the genuine later-usage control refused the witness. The native Refine prerequisite is met. Effective paired settlement still requires its independent JIT and verified delivery. [Native pass](plan/2026-11-12-210-native-quota-capture-pass.md).
