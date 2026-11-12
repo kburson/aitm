@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 142
 title: "[#133 T05] Select and explain test impact"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/142"
 parent: 133
 children: []
 blocking: [143, 151, 163]
 blocked-by: [139, 141]
 created: "2026-11-10T16:51:07Z"
-updated: "2026-11-12T13:02:14Z"
-last-branch: "planning"
+updated: "2026-11-12T13:02:20Z"
+last-branch: "codex/aitm-wave40-142"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
