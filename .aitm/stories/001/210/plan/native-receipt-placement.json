@@ -1,0 +1,43 @@
+{
+  "literal_base": "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+  "literal_tree": "b4a757f106b89086a24d0e909bc259d7b5b93c88",
+  "reader": "ScopeState.read_source",
+  "append_only_checkpoints": [
+    {
+      "phase": "through_accounted_command_output",
+      "receipt_ordinals": [],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 60
+    },
+    {
+      "phase": "through_command_turn_completion",
+      "receipt_ordinals": [],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 61
+    },
+    {
+      "phase": "through_followup_turn_context",
+      "receipt_ordinals": [
+        61
+      ],
+      "cursor": false,
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "rows": 63
+    }
+  ],
+  "real_chat_shape_sample": {
+    "scope": "completed turns with tool output in one Codex Desktop chat",
+    "counts": {
+      "usage_record_after_last_tool_output": 10
+    }
+  },
+  "control_passed": true
+}

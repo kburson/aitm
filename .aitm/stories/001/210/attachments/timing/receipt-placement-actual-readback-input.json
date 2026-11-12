@@ -1,0 +1,29 @@
+{
+  "story": 210,
+  "sources": [
+    {
+      "path": "full-auto-refine-1-210.json",
+      "sha256": "c05882c483a12d055af51fdd519b4883e046d71d015e8aac9bce6e91d944b409"
+    },
+    {
+      "path": "full-auto-native-closure-1-210.json",
+      "sha256": "30807975bf83ff038dbe74a11ff71d0ac214eda070bf070ea7bf22a209b3c10e"
+    },
+    {
+      "path": "full-auto-receipt-placement-1-210.json",
+      "sha256": "a0c177c6ae2827ff8ec4a1e204d726e40c90ba0e99e64a066a2f43f9c73156a9"
+    }
+  ],
+  "observation_count": 43,
+  "milliseconds": 249570,
+  "actual_hours": "0.0693",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-12T03:27:12.415Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ],
+  "projection": "manual interval union of the published #210 receipt"
+}
