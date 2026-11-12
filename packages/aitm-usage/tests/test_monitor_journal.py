@@ -3,7 +3,7 @@
 import json
 import os
 import shlex
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from shutil import copyfile
@@ -23,6 +23,10 @@ from test_codex import (
     tool_output,
     usage,
     write,
+)
+from test_monitor_scope import (
+    _COMPLETION_NATIVE_DISPROOFS,
+    _damage_completed_disposition,
 )
 
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
@@ -1493,12 +1497,12 @@ def test_claude_revision_rolls_back_when_the_final_read_check_fails(
         fresh = journal._fresh_view
         checked = False
 
-        def reject_final(read):
+        def reject_final(connection, read):
             nonlocal checked
             if checked:
                 raise LedgerError("test final native custody failure")
             checked = True
-            return fresh(read)
+            return fresh(connection, read)
 
         monkeypatch.setattr(journal, "_fresh_view", reject_final)
         with pytest.raises(LedgerError, match="test final native custody failure"):
@@ -1719,12 +1723,12 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         fresh = journal._fresh_view
         checked = False
 
-        def reject_final(read):
+        def reject_final(connection, read):
             nonlocal checked
             if checked:
                 raise LedgerError("injected content dispute final custody failure")
             checked = True
-            return fresh(read)
+            return fresh(connection, read)
 
         with monkeypatch.context() as fault:
             fault.setattr(journal, "_fresh_view", reject_final)
@@ -2407,3 +2411,578 @@ def test_v3_upgrade_preserves_native_journal_historical_views(tmp_path, monkeypa
         assert journal.as_of(early.sequence) == early
         assert _prior_journal_rows(journal) == rows
         assert journal.cursor_for(LIVE, native.locator()) == latest.progress
+
+
+@pytest.fixture
+def journal_pair(native, tmp_path, monkeypatch, capsys):
+    from test_monitor_scope import (
+        NativeScopeFixture,
+        _append_completed_disposition,
+        _issue,
+        _sealed_disposition,
+    )
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import Disposition, Handoff
+    from aitm_usage.sources.scan import checkout_anchor_reference
+
+    class Carrier(NativeScopeFixture):
+        def __init__(self, source_id, project, clock):
+            self.source_id, self.project, self.clock = source_id, project, clock
+            self.registry, self.evidence = native.registry, native.evidence
+            self.anchors, self.ledgers = native.anchors, native.ledgers
+            self.path = native.paths[source_id]
+            self.total, self.turn = 8, 2
+            self.creator_account = None
+
+        def locator(self):
+            return native.locator(self.source_id)
+
+        def append(self, command_id=None, *, checkout=None, **kwargs):
+            return super().append(command_id, checkout=self.project, **kwargs)
+
+        def append_boundary(self, command_id, *, shared=False):
+            def append_turn(name, *, command=None):
+                self.turn += 1
+                turn = UUID(int=0x200 + self.turn)
+                when = AFTER + timedelta(seconds=self.turn)
+                self.total += 4
+                delta, total = usage(4, 4), usage(self.total, self.total)
+                rows = begin(self.anchors[self.project], turn, time=when)
+                if command is not None:
+                    call = tool_call(self.ledgers[self.project])
+                    call["timestamp"] = when.isoformat()
+                    rows.append(call)
+                rows += [
+                    response(name, total, delta, time=when, turn=turn),
+                    counter(total, delta, time=when),
+                ]
+                if command is not None:
+                    output = tool_output(command)
+                    output["timestamp"] = when.isoformat()
+                    rows.append(output)
+                write(self.path, [*rows, end(turn, time=when)], append=True)
+
+            append_turn(f"boundary-tool-{command_id}", command=command_id)
+            if shared and self.project == A:
+                self.padding(1)
+            ordinal = len(self.path.read_bytes().splitlines())
+            append_turn(
+                "paired-obligation" if shared else f"boundary-usage-{command_id}"
+            )
+            return ordinal
+
+        def padding(self, count):
+            when = AFTER + timedelta(seconds=self.turn)
+            rows = [
+                {
+                    "type": "response_item",
+                    "timestamp": when.isoformat(),
+                    "payload": {"type": "reasoning", "summary": []},
+                }
+                for _ in range(count)
+            ]
+            write(self.path, rows, append=True)
+
+        def prepare(self, writer, journal):
+            state = ScopeState(writer, clock=lambda: self.clock[0])
+            auth = state.operator(self.project)
+            mark_id, hold_id, self.command_id = (
+                UUID(int=0x900 + 0x10 * self.source_id.int + i) for i in range(3)
+            )
+            mark = Mark(mark_id, _issue(self.project, 210), self.receipt_ref(mark_id))
+            if self.project == B:
+                self.turn = 5
+                self.padding(1)
+            state.authorize(mark, auth)
+            ordinal = self.append_boundary(mark_id)
+            batch = state.read_source(self.source_id, self.locator())
+            assert (
+                state.apply_mark(
+                    mark,
+                    state.verify_boundary(
+                        mark, auth, batch, self.target(batch, mark_id, ordinal)
+                    ),
+                ).status
+                == "applied"
+            )
+
+            handoff = Handoff(
+                hold_id,
+                self.project,
+                _issue(B if self.project == A else A, 210),
+                1,
+                checkout_anchor_reference(self.evidence, self.anchors[self.project]),
+                self.receipt_ref(hold_id),
+            )
+            state.authorize(handoff, auth)
+            self.turn = 9
+            ordinal = self.append_boundary(hold_id, shared=True)
+            batch = state.read_source(self.source_id, self.locator())
+            receipt = state.verify_boundary(
+                handoff, auth, batch, self.target(batch, hold_id, ordinal)
+            )
+            prepared = journal.prepare(self.source_id, self.locator())
+            candidate = next(
+                item
+                for item in prepared.candidates
+                if item.observation.usage.boundary.ordinal == ordinal + 2
+            )
+            result = journal.reserve(candidate, prepared.progress)
+            self.hold = state.hold(receipt, retain_route_target=True)
+            self.state, self.auth = state, auth
+            self.command = Disposition(
+                self.command_id,
+                self.project,
+                self.hold.command_id,
+                self.receipt_ref(self.command_id),
+                True,
+            )
+            return result
+
+        def complete(self, writer):
+            if self.project == B:
+                self.turn = 12
+                self.padding(10)
+
+            def append(carrier, command, request, stdout):
+                return _append_completed_disposition(
+                    carrier, command, request, stdout, project_id=self.project
+                )
+
+            with monkeypatch.context() as patch:
+                patch.setattr("test_monitor_scope._append_ordered_disposition", append)
+                _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+                    _sealed_disposition(
+                        self,
+                        writer,
+                        self.state,
+                        self.command,
+                        tmp_path,
+                        patch,
+                        capsys,
+                        source_id=self.source_id,
+                        grant_id=UUID(int=0xA00 + self.source_id.int),
+                    )
+                )
+
+        def prove(self):
+            batch = self.state.read_source(
+                self.source_id, self.locator(), qualify_completion=True
+            )
+            target = self.target(batch, self.command_id)
+            return self.state.verify_settlement_side(
+                self.command, self.auth, batch, target
+            )
+
+        def late_usage(self):
+            self.total += 4
+            total, delta = usage(self.total, self.total), usage(4, 4)
+            write(
+                self.path,
+                [
+                    response(
+                        "same-turn-after-close",
+                        total,
+                        delta,
+                        time=self.when,
+                        turn=self.closed_turn,
+                    ),
+                    counter(total, delta, time=self.when),
+                ],
+                append=True,
+            )
+
+    clock = [datetime(2026, 11, 10, tzinfo=UTC)]
+    owner, rival = Carrier(LIVE, A, clock), Carrier(COPY, B, clock)
+    with ExitStack() as leases:
+        writer = leases.enter_context(native.registry.writer())
+
+        def restart():
+            leases.close()
+            current = leases.enter_context(native.registry.writer())
+            return RoutingJournal(current, ScopeState(current, clock=lambda: clock[0]))
+
+        journal = RoutingJournal(writer, ScopeState(writer))
+        for side in (owner, rival):
+            prepared = journal.prepare(side.source_id, side.locator())
+            journal.reserve_batch(prepared)
+            assert (
+                journal.cursor_for(side.source_id, side.locator()) == prepared.progress
+            )
+        first, dispute = owner.prepare(writer, journal), rival.prepare(writer, journal)
+        assert first.status == "pending" and dispute.status == "disputed"
+        assert first.key == dispute.key
+        for side in (owner, rival):
+            side.complete(writer)
+        yield SimpleNamespace(
+            journal=journal,
+            writer=writer,
+            registry=native.registry,
+            owner=owner,
+            rival=rival,
+            key=first.key,
+            first=first,
+            dispute=dispute,
+            clock=clock,
+            restart=restart,
+        )
+
+
+def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
+    case = journal_pair
+    journal = case.journal
+    before = journal.as_of()
+    owner, rival = case.owner.prove(), case.rival.prove()
+    scope = case.writer.root / "scope-v1.json"
+    scope_bytes = scope.read_bytes()
+    old = [
+        journal.cursor_for(side.source_id, side.locator())
+        for side in (case.owner, case.rival)
+    ]
+    change = journal.settle_disposition(case.key, owner, rival)
+    assert change.sequence == before.sequence + 1
+    assert journal.as_of(before.sequence) == before
+    assert journal.as_of().settlements == (change,)
+    assert journal.as_of().disputes == before.disputes
+    assert all(claim in journal.as_of().claims for claim in before.claims)
+    assert change.paired.owner.release.hold.project_id == A
+    assert change.paired.rival.release.hold.project_id == B
+    assert scope.read_bytes() == scope_bytes
+    for carrier, previous, proof in zip(
+        (case.owner, case.rival), old, (owner, rival), strict=True
+    ):
+        assert (
+            journal.cursor_for(carrier.source_id, carrier.locator())
+            == proof.progress.cursor
+        )
+        assert previous != proof.progress.cursor
+        assert carrier.hold in carrier.state.view().holds
+    with journal._store.transaction() as connection:
+        assert connection.execute(
+            "SELECT count(*) FROM progress WHERE sequence = ?", (change.sequence,)
+        ).fetchone() == (2,)
+    assert journal.settle_disposition(case.key, owner, rival) == change
+    assert journal.as_of().sequence == change.sequence
+
+
+@pytest.mark.parametrize("broken", ["owner", "rival"])
+@pytest.mark.parametrize(
+    "failure",
+    ["late", "copy", "grant", "expired-hold", "changed-route", "disabled", "swap"],
+)
+def test_pair_refuses_one_bad_side_without_moving_either_frontier(
+    journal_pair, broken, failure
+):
+    case = journal_pair
+    journal = case.journal
+    good = [case.owner.prove(), case.rival.prove()]
+    carriers = (case.owner, case.rival)
+    index = int(broken == "rival")
+    source = carriers[index]
+    prior = journal.as_of()
+    original_rows = _prior_journal_rows(journal)
+    if failure == "late":
+        source.late_usage()
+    elif failure == "copy":
+        good[index] = replace(good[index])
+    elif failure == "grant":
+        source.reader.withdraw(source.request.grant_id)
+    elif failure == "expired-hold":
+        source.state._clock = lambda: source.hold.expires_at
+    elif failure == "changed-route":
+        state = source.state._snapshot()
+        event = next(
+            item for item in state.events if item.position.source_id == source.source_id
+        )
+        changed = replace(
+            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
+        )
+        source.state._save(
+            replace(
+                state,
+                events=tuple(
+                    changed if item is event else item for item in state.events
+                ),
+            )
+        )
+    elif failure == "disabled":
+        source.append()
+        change = CaptureChange(source.project, source.source_id, False)
+        frontier = case.writer.capture_frontier(change, source.locator())
+        source.append()
+        boundary = case.writer.verify_boundary(change, source.locator(), frontier)
+        case.writer.set_permission(change, boundary)
+    elif failure == "swap":
+        good.reverse()
+    scope = case.writer.root / "scope-v1.json"
+    scope_bytes = scope.read_bytes()
+    with pytest.raises(LedgerError):
+        journal.settle_disposition(case.key, *good)
+    assert journal.as_of() == prior
+    assert _prior_journal_rows(journal) == original_rows
+    assert scope.read_bytes() == scope_bytes
+    with journal._store.transaction() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (4,)
+
+
+def test_pair_rolls_back_staged_upgrade_claims_and_both_cursors(
+    journal_pair, monkeypatch
+):
+    case = journal_pair
+    journal = case.journal
+    prior, rows = journal.as_of(), _prior_journal_rows(journal)
+    owner, rival = case.owner.prove(), case.rival.prove()
+    build = journal._build_settlement_change
+
+    def append_after_stage(*args):
+        result = build(*args)
+        case.owner.late_usage()
+        return result
+
+    monkeypatch.setattr(journal, "_build_settlement_change", append_after_stage)
+    with pytest.raises(LedgerError, match="Expected a current|Settlement requires"):
+        journal.settle_disposition(case.key, owner, rival)
+    assert journal.as_of() == prior
+    assert _prior_journal_rows(journal) == rows
+    with journal._store.transaction() as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (4,)
+
+
+def test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage(
+    journal_pair, monkeypatch
+):
+    from aitm_usage.monitor_control import _scope_now
+    from aitm_usage.scope_admission import WITNESS_LIFETIME
+
+    case = journal_pair
+    journal = case.journal
+    owner, rival = case.owner.prove(), case.rival.prove()
+    change = journal.settle_disposition(case.key, owner, rival)
+    later = _scope_now() + WITNESS_LIFETIME + timedelta(seconds=1)
+    monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: later)
+    with pytest.raises(LedgerError, match="Scope consumer is unavailable"):
+        journal.settle_disposition(case.key, owner, rival)
+    assert journal.as_of(change.sequence).settlements == (change,)
+    case.clock[0] = case.owner.hold.expires_at
+    assert len(case.owner.state.expire()) == 2
+    with journal._store.transaction() as connection:
+        releases, conflicts = journal._effective_releases(connection)
+        batch = case.owner.state.read_source(case.owner.source_id, case.owner.locator())
+        effective = case.owner.state._journal_view(batch, releases, conflicts)
+        assert (
+            next(
+                hold
+                for hold in effective.holds
+                if hold.command_id == case.owner.hold.command_id
+            ).state
+            == "resolved"
+        )
+        assert all(hold.state == "gap" for hold in case.owner.state.view().holds)
+
+    case.owner.late_usage()
+    for reopening in (False, True):
+        if reopening:
+            journal = case.restart()
+        cursor = journal.cursor_for(case.owner.source_id, case.owner.locator())
+        assert cursor == owner.progress.cursor
+        batch = journal._scopes.read_source(
+            case.owner.source_id, case.owner.locator(), cursor=cursor
+        )
+        assert DiagnosticCode.COVERAGE_GAP in {item.code for item in batch.diagnostics}
+        assert not batch.observations
+        if batch.cursor is None:
+            with pytest.raises(LedgerError, match="verified journal cursor"):
+                journal.prepare(case.owner.source_id, case.owner.locator())
+        else:
+            prepared = journal.prepare(case.owner.source_id, case.owner.locator())
+            assert journal.reserve_batch(prepared) == ()
+        assert journal.cursor_for(case.owner.source_id, case.owner.locator()) == cursor
+        assert journal.as_of().settlements == (change,)
+
+
+@pytest.mark.parametrize(
+    "conflict", ["legacy-resolution", "changed-hold", "changed-route", "v4-proposal"]
+)
+def test_committed_pair_conflict_stalls_affected_source_without_regressing_history(
+    journal_pair, conflict, tmp_path, monkeypatch, capsys
+):
+    from test_monitor_scope import _sealed_disposition
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import Disposition, _Resolution
+
+    case = journal_pair
+    journal, carrier = case.journal, case.owner
+    owner, rival = carrier.prove(), case.rival.prove()
+    change = journal.settle_disposition(case.key, owner, rival)
+    history = journal.as_of(change.sequence)
+    state = carrier.state._snapshot()
+    if conflict == "v4-proposal":
+        command_id = UUID(int=0xA20)
+        command = Disposition(
+            command_id,
+            A,
+            carrier.hold.command_id,
+            carrier.receipt_ref(command_id),
+            True,
+        )
+        _, _, _, _, target, batch, followup, when = _sealed_disposition(
+            carrier,
+            case.writer,
+            carrier.state,
+            command,
+            tmp_path,
+            monkeypatch,
+            capsys,
+            source_id=carrier.source_id,
+            grant_id=UUID(int=0xA21),
+        )
+        terminal = carrier.state.verify_boundary(command, carrier.auth, batch, target)
+        proposal = carrier.state.verify_route_disposition(command, terminal)
+        RoutingJournal(case.writer, carrier.state).record_disposition(proposal)
+        # Separate the v4 journal conflict from the scope proposal in this control.
+        carrier.state._save(state)
+        carrier.total += 4
+        delta, total = usage(4, 4), usage(carrier.total, carrier.total)
+        write(
+            carrier.path,
+            [
+                response(
+                    "complete-competing-next-turn",
+                    total,
+                    delta,
+                    time=when,
+                    turn=followup,
+                ),
+                counter(total, delta, time=when),
+                end(followup, time=when),
+            ],
+            append=True,
+        )
+    elif conflict == "changed-route":
+        event = next(
+            row for row in state.events if row.position.source_id == carrier.source_id
+        )
+        amended = replace(
+            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
+        )
+        carrier.state._save(
+            replace(
+                state,
+                events=tuple(amended if row is event else row for row in state.events),
+            )
+        )
+        carrier.append()
+    else:
+        if conflict == "changed-hold":
+            changed = replace(
+                carrier.hold, expires_at=carrier.hold.expires_at + timedelta(seconds=1)
+            )
+            resolutions = state.resolutions
+        else:
+            changed = replace(carrier.hold, state=type(carrier.hold.state).RESOLVED)
+            resolutions = (_Resolution(UUID(int=0xA22), "a" * 64, changed),)
+        holds = tuple(changed if row == carrier.hold else row for row in state.holds)
+        carrier.state._save(replace(state, holds=holds, resolutions=resolutions))
+        carrier.append()
+    with pytest.raises(LedgerError, match="Committed settlement conflicts"):
+        journal.prepare(carrier.source_id, carrier.locator())
+    assert (
+        journal.cursor_for(carrier.source_id, carrier.locator())
+        == owner.progress.cursor
+    )
+    assert journal.as_of(change.sequence) == history
+    case.rival.append()
+    assert journal.prepare(case.rival.source_id, case.rival.locator()).candidates
+
+
+def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(journal_pair):
+    case = journal_pair
+    journal, carrier = case.journal, case.owner
+    owner, rival = carrier.prove(), case.rival.prove()
+    before = journal.as_of()
+    change = journal.settle_disposition(case.key, owner, rival)
+    with journal._store.transaction(write=True) as connection:
+        connection.execute(
+            "UPDATE paired_settlements SET payload = ? WHERE sequence = ?",
+            (b"{}", change.sequence),
+        )
+    assert journal.as_of(before.sequence) == before
+    with pytest.raises(LedgerError, match="Invalid stored paired settlement"):
+        journal.as_of()
+    carrier.append()
+    with pytest.raises(LedgerError, match="Invalid stored paired settlement"):
+        journal.prepare(carrier.source_id, carrier.locator())
+    assert (
+        journal.cursor_for(carrier.source_id, carrier.locator())
+        == owner.progress.cursor
+    )
+    assert (
+        journal.cursor_for(case.rival.source_id, case.rival.locator())
+        == rival.progress.cursor
+    )
+
+
+@pytest.mark.parametrize("side", [0, 1], ids=["owner", "rival"])
+@pytest.mark.parametrize("disproof", _COMPLETION_NATIVE_DISPROOFS)
+def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
+    journal_pair, side, disproof
+):
+    case = journal_pair
+    carriers = (case.owner, case.rival)
+    bad, other = carriers[side], carriers[1 - side]
+    prior, rows = case.journal.as_of(), _prior_journal_rows(case.journal)
+    proofs = tuple(carrier.prove() for carrier in carriers)
+    _damage_completed_disposition(
+        bad, disproof, bad.when, bad.closed_turn, other_project=other.project
+    )
+    good = other.prove()
+    assert (
+        good.hold == proofs[1 - side].hold
+        and good.progress.cursor == proofs[1 - side].progress.cursor
+    )
+    if disproof == "missing-baseline":
+        with pytest.raises(LedgerError, match="lost its enrolled physical prefix"):
+            bad.state.read_source(bad.source_id, bad.locator(), qualify_completion=True)
+    else:
+        batch = bad.state.read_source(
+            bad.source_id, bad.locator(), qualify_completion=True
+        )
+        targets = [
+            target
+            for target in batch.boundaries
+            if target.boundary.receipt_ref == bad.command.receipt_ref
+        ]
+        assert all(
+            bad.state.completion_witness(bad.command, bad.auth, batch, target) is None
+            for target in targets
+        )
+    with pytest.raises(LedgerError):
+        case.journal.settle_disposition(case.key, *proofs)
+    assert case.journal.as_of() == prior
+    assert _prior_journal_rows(case.journal) == rows
+
+
+def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journal_pair):
+    case = journal_pair
+    change = case.journal.settle_disposition(
+        case.key, case.owner.prove(), case.rival.prove()
+    )
+    historical = case.journal.as_of(change.sequence)
+    journal = case.restart()
+    for carrier in (case.owner, case.rival):
+        prior = journal.cursor_for(carrier.source_id, carrier.locator())
+        carrier.append()
+        prepared = journal.prepare(carrier.source_id, carrier.locator())
+        (new,) = prepared.candidates
+        assert new.observation.key != case.key
+        (claim,) = journal.reserve_batch(prepared)
+        assert claim.status == "pending" and claim.project_id == carrier.project
+        assert (
+            journal.cursor_for(carrier.source_id, carrier.locator())
+            == prepared.progress
+        )
+        assert prepared.progress != prior
+    assert journal.as_of(change.sequence) == historical
+    assert journal.as_of().settlements == (change,)

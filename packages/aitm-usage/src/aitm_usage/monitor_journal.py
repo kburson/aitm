@@ -9,7 +9,7 @@ from itertools import chain
 from uuid import UUID
 from weakref import WeakValueDictionary
 
-from ._monitor_journal_store import JournalStore
+from ._monitor_journal_store import _PAIRED_SCHEMA_VERSION, JournalStore
 from .ledger import ConflictError, LedgerError
 from .monitor_registry import Registry, RegistryView, _ServiceEvidence
 from .monitor_scope import (
@@ -23,10 +23,15 @@ from .monitor_scope import (
     ScopeView,
     VerifiedRouteDisposition,
     VerifiedScopeBatch,
+    _JournalScopeRelease,
     _ObservationProof,
     _RouteDispositionRecord,
     _timeline,
+    _VerifiedSettlementSide,
     resolve_route,
+)
+from .monitor_scope import (
+    _digest as _scope_command_digest,
 )
 from .monitor_scope import (
     _stream as _scope_stream,
@@ -39,6 +44,7 @@ from .sources.adapter import (
     _claude_revision_material,
     _NativeRevisionWitness,
 )
+from .sources.codex import codex_request_boundary_reference
 from .sources.scan import CandidateSource, _capture_position, _CaptureDiscontinuity
 from .types import (
     BoundaryKind,
@@ -191,9 +197,35 @@ class _JournalDispositionPayload:
 
 
 @dataclass(frozen=True, slots=True)
+class _SettledSide:
+    release: _JournalScopeRelease
+    command_digest: str
+    request_digest: str
+    grant_id: UUID
+    cursor: StreamCursor
+    claim: ClaimEvidence
+    claim_digest: str
+    claim_sequence: int
+
+
+@dataclass(frozen=True, slots=True)
+class _PairedSettlement:
+    key: SourceRef
+    owner: _SettledSide
+    rival: _SettledSide
+
+
+@dataclass(frozen=True, slots=True)
+class _StoredSettlement:
+    pair: _PairedSettlement
+    identity: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
 class JournalChange:
     sequence: int
-    disposition: _JournalDispositionPayload
+    disposition: _JournalDispositionPayload | None = None
+    paired: _PairedSettlement | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,6 +241,7 @@ class JournalView:
     disputes: tuple[OwnershipDispute, ...]
     content_disputes: tuple[ContentDispute, ...] = ()
     dispositions: tuple[JournalChangeProjection, ...] = ()
+    settlements: tuple[JournalChange, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,6 +289,112 @@ def _source_checkpoint(progress: StreamCursor) -> SourceCheckpoint:
     if type(progress.checkpoint) is not SourceCheckpoint:
         raise LedgerError("Journal requires a verified native cursor")
     return progress.checkpoint
+
+
+def _settlement_stream(side: _SettledSide) -> _Stream:
+    position = side.release.hold.position
+    cursor = _source_checkpoint(side.cursor).cursor
+    return (
+        str(position.source_id),
+        position.surface.value,
+        position.stream_ref.value,
+        cursor.locator_ref.value,
+        cursor.incarnation_ref.value,
+    )
+
+
+def _settlement_identity(
+    sequence: int, pair: _PairedSettlement, evidence: _ServiceEvidence
+) -> SourceRef:
+    data = _encode(pair, _PairedSettlement, validate_ref=evidence.validate_source_ref)
+    return evidence.pseudonymize("journal-paired-settlement", f"{sequence}:{data}")
+
+
+def _validate_settled_side(
+    side: _SettledSide, sequence: int, evidence: _ServiceEvidence
+) -> None:
+    release, claim = side.release, side.claim
+    hold, boundary, target = release.hold, release.terminal, release.original
+    position = hold.position
+    checkpoint = _source_checkpoint(side.cursor)
+    cursor = checkpoint.cursor
+    if (
+        release.outcome is not HoldState.RESOLVED
+        or hold.state is not HoldState.HELD
+        or release.prior_route.scope is None
+        or release.prior_route.scope.project_id != hold.project_id
+        or release.prior_route.checkout != release.checkout
+        or release.prior_route.held
+        or hold.first_seen >= hold.expires_at
+        or hold.command_id != target.hold_id
+        or hold.command_id == release.command_id
+        or not all(
+            re.fullmatch(r"[0-9a-f]{64}", digest)
+            for digest in (
+                hold.command_digest,
+                side.command_digest,
+                side.request_digest,
+                side.claim_digest,
+            )
+        )
+        or not 0 < side.claim_sequence < sequence
+        or (claim.source_id, claim.surface, claim.session_ref, claim.stream_ref)
+        != _scope_stream(position)
+        or position.surface is not NativeSurface.CODEX_DESKTOP_MACOS
+        or checkpoint.provider.provider is not Provider.CODEX
+        or not hold.affected.start <= claim.start < claim.end <= hold.affected.end
+        or not position.ordinal < hold.affected.end <= boundary.ordinal
+        or not boundary.ordinal
+        < release.completion_ordinal
+        == checkpoint.provider.ordinal
+        or boundary.kind is not BoundaryKind.REQUEST
+        or boundary.provider is not Provider.CODEX
+        or (boundary.session_ref, boundary.stream_ref)
+        != (position.session_ref, position.stream_ref)
+        or boundary.receipt_ref
+        != evidence.pseudonymize("scope-receipt", str(release.command_id))
+        or boundary.boundary_ref
+        != codex_request_boundary_reference(
+            evidence, position.session_ref, release.command_id
+        )
+        or (
+            target.boundary.provider,
+            target.boundary.session_ref,
+            target.boundary.stream_ref,
+            target.boundary.ordinal,
+        )
+        != (Provider.CODEX, position.session_ref, position.stream_ref, position.ordinal)
+        or target.boundary.receipt_ref
+        != evidence.pseudonymize("scope-receipt", str(hold.command_id))
+        or cursor.source_ref != position.stream_ref
+        or release.terminal_prefix != cursor
+        or (
+            target.prefix.source_ref,
+            target.prefix.locator_ref,
+            target.prefix.incarnation_ref,
+        )
+        != (cursor.source_ref, cursor.locator_ref, cursor.incarnation_ref)
+        or not 0 < target.prefix.offset < cursor.offset
+    ):
+        raise LedgerError("Invalid stored paired settlement side")
+
+
+def _check_distinct_sides(pair: _PairedSettlement) -> None:
+    owner, rival = pair.owner, pair.rival
+    a, b = owner.release, rival.release
+    first, second = _settlement_stream(owner), _settlement_stream(rival)
+    if (
+        a.hold.project_id == b.hold.project_id
+        or owner.grant_id == rival.grant_id
+        or first[0] == second[0]
+        or first[3] == second[3]
+        or first[4] == second[4]
+        or len({a.command_id, b.command_id, a.hold.command_id, b.hold.command_id}) != 4
+        or owner.claim_sequence >= rival.claim_sequence
+    ):
+        raise LedgerError(
+            "Paired settlement requires independent owner and rival evidence"
+        )
 
 
 def _tip(connection: sqlite3.Connection) -> int:
@@ -651,24 +790,33 @@ class RoutingJournal:
             != stream[2:]
         ):
             raise LedgerError("Native read changed the journal cursor identity")
-        view = self._scopes.view(batch)
-        registry = self._writer.view()
         read = _Read(batch, stream, prior, progress)
-        candidates = tuple(
-            RoutedRevision(observation, route, read)
-            for observation in batch.observations
-            if (route := resolve_route(observation, registry, view)).status
-            is RouteStatus.ROUTED
-        )
+        with self._store.transaction() as connection:
+            if self._cursor(connection, stream) != prior:
+                raise ConflictError("Journal cursor changed during preparation")
+            view, registry = self._fresh_view(connection, read, confirm=False)
+            settled = self._paired_frontier(view)
+            candidates = tuple(
+                RoutedRevision(proof.observation, route, read)
+                for proof in view._proofs
+                if proof.end > settled
+                and (route := resolve_route(proof.observation, registry, view)).status
+                is RouteStatus.ROUTED
+            )
         for candidate in candidates:
             self._candidates[id(candidate)] = candidate
         prepared = PreparedRouting(candidates, progress, read)
         self._batches[id(prepared)] = prepared
         return prepared
 
-    def _fresh_view(self, read: _Read) -> tuple[ScopeView, RegistryView]:
+    def _fresh_view(
+        self, connection: sqlite3.Connection, read: _Read, *, confirm: bool = True
+    ) -> tuple[ScopeView, RegistryView]:
         self._writer.lease
-        view = self._scopes.view(read.batch, _confirm_publication=True)
+        releases, conflicts = self._effective_releases(connection)
+        view = self._scopes._journal_view(
+            read.batch, releases, conflicts, confirm=confirm
+        )
         registry = self._writer.view()
         if view._registry != registry:
             raise LedgerError("Journal scope or registry changed during read")
@@ -688,13 +836,57 @@ class RoutingJournal:
             for project in registry.projects
         )
 
-    def _boundaries_settled(self, read: _Read, view: ScopeView) -> bool:
+    @staticmethod
+    def _paired_frontier(view: ScopeView) -> int:
+        # Every observation ending in this exact authenticated prefix was
+        # handled when the pair committed, including the retained rival.
+        return max((ordinal + 1 for _, ordinal in view._effective_terminals), default=0)
+
+    @staticmethod
+    def _paired_receipts(
+        boundaries: tuple[SourceBoundary, ...], view: ScopeView
+    ) -> set[SourceBoundary]:
+        settled = set()
+        for terminal, completed in view._effective_terminals:
+            if terminal not in boundaries:
+                continue
+            settled.add(terminal)
+            following = min(
+                (
+                    item
+                    for item in boundaries
+                    if item.kind is BoundaryKind.TURN
+                    and item.ordinal > completed
+                    and (item.provider, item.session_ref, item.stream_ref)
+                    == (terminal.provider, terminal.session_ref, terminal.stream_ref)
+                ),
+                default=None,
+                key=lambda item: item.ordinal,
+            )
+            if (
+                following is not None
+                and following.receipt_ref == terminal.receipt_ref
+                and following.epoch_ref == terminal.epoch_ref
+            ):
+                # Codex repeats this receipt at the first subsequent turn.
+                # The exact committed REQUEST already covered the command.
+                settled.add(following)
+        return settled
+
+    def _boundaries_settled(
+        self, read: _Read, view: ScopeView, *, after: int = -1
+    ) -> bool:
         evidence = self._store.evidence
-        for native in read.batch.boundaries:
-            boundary = native.boundary
-            if not isinstance(boundary, SourceBoundary):
-                return False
-            if boundary.receipt_ref is None:
+        boundaries = tuple(native.boundary for native in read.batch.boundaries)
+        if any(not isinstance(item, SourceBoundary) for item in boundaries):
+            return False
+        settled_receipts = self._paired_receipts(boundaries, view)
+        for boundary in boundaries:
+            if (
+                boundary.ordinal <= after
+                or boundary.receipt_ref is None
+                or boundary in settled_receipts
+            ):
                 continue
             position = ScopePosition(
                 read.batch.source_id,
@@ -741,11 +933,18 @@ class RoutingJournal:
             return False
         selected_ids = {id(item.observation) for item in selected}
         proofs = {id(item.observation): item for item in view._proofs}
+        settled = self._paired_frontier(view)
         for item in read.batch.observations:
             if id(item) in selected_ids:
                 continue
             proof = proofs.get(id(item))
-            if proof is None or not self._known_excluded(proof, registry):
+            if proof is None:
+                return False
+            if proof.end <= settled:
+                continue
+            if proof.position.ordinal < settled or not self._known_excluded(
+                proof, registry
+            ):
                 return False
             position = proof.position
             if any(
@@ -1061,11 +1260,13 @@ class RoutingJournal:
                     raise ConflictError(
                         "Journal cursor did not advance its verified physical prefix"
                     )
-            view, registry = self._fresh_view(read)
+            view, registry = self._fresh_view(connection, read)
             proofs = {id(item.observation): item for item in view._proofs}
+            settled = self._paired_frontier(view)
             for item in selected:
                 if (
                     id(item.observation) not in proofs
+                    or proofs[id(item.observation)].position.ordinal < settled
                     or resolve_route(item.observation, registry, view) != item.route
                 ):
                     raise LedgerError("Journal route changed after preparation")
@@ -1081,7 +1282,7 @@ class RoutingJournal:
             ):
                 self._write_progress(connection, read, sequence)
 
-            final_view, final_registry = self._fresh_view(read)
+            final_view, final_registry = self._fresh_view(connection, read)
             if final_view != view or final_registry != registry:
                 raise LedgerError("Journal scope or registry changed before commit")
             return outcomes
@@ -1159,6 +1360,397 @@ class RoutingJournal:
             if self._scopes.require_route_disposition(change) != record:
                 raise LedgerError("Verified journal disposition changed before commit")
             return written
+
+    def _settlements(
+        self, connection: sqlite3.Connection, limit: int
+    ) -> tuple[JournalChange, ...]:
+        if self._store._current_version(connection) < _PAIRED_SCHEMA_VERSION:
+            return ()
+        evidence = self._store.evidence
+        changes = []
+        used_ids: set[UUID] = set()
+        used_keys: set[SourceRef] = set()
+        for sequence, raw, commit in connection.execute(
+            "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements s"
+            " LEFT JOIN commits c ON c.sequence=s.sequence"
+            " WHERE s.sequence <= ? ORDER BY s.sequence",
+            (limit,),
+        ):
+            try:
+                _positive(sequence)
+                stored = _decode(
+                    raw, _StoredSettlement, validate_ref=evidence.validate_source_ref
+                )
+                pair = stored.pair
+                if (
+                    commit != sequence
+                    or stored.identity != _settlement_identity(sequence, pair, evidence)
+                    or raw != _encode(stored, _StoredSettlement).encode()
+                ):
+                    raise ValueError("Invalid paired settlement identity")
+                _check_distinct_sides(pair)
+                ids = {
+                    item
+                    for side in (pair.owner, pair.rival)
+                    for item in (side.release.command_id, side.release.hold.command_id)
+                }
+                if ids & used_ids or pair.key in used_keys:
+                    raise ValueError("Duplicate paired settlement identity")
+                for side in (pair.owner, pair.rival):
+                    _validate_settled_side(side, sequence, evidence)
+                    row = connection.execute(
+                        "SELECT cursor FROM progress"
+                        " WHERE (source,surface,stream,locator,incarnation,sequence)"
+                        " = (?,?,?,?,?,?)",
+                        (*_settlement_stream(side), sequence),
+                    ).fetchone()
+                    if row != (_encode(side.cursor, StreamCursor).encode(),):
+                        raise ValueError("Invalid paired settlement progress")
+                self._validate_settlement_claims(connection, pair)
+            except (TypeError, ValueError):
+                raise LedgerError("Invalid stored paired settlement") from None
+            used_ids.update(ids)
+            used_keys.add(pair.key)
+            changes.append(JournalChange(sequence, paired=pair))
+        return tuple(changes)
+
+    def _effective_releases(
+        self, connection: sqlite3.Connection
+    ) -> tuple[tuple[_JournalScopeRelease, ...], frozenset[UUID]]:
+        releases = []
+        conflicts: set[UUID] = set()
+        for change in self._settlements(connection, _tip(connection)):
+            assert change.paired is not None
+            for side in (change.paired.owner, change.paired.rival):
+                release = side.release
+                ids = (str(release.command_id), str(release.hold.command_id))
+                rows = connection.execute(
+                    "SELECT 1 FROM route_dispositions"
+                    " WHERE command IN (?,?) OR hold IN (?,?) LIMIT 1",
+                    (*ids, *ids),
+                )
+                if rows.fetchone() is not None:
+                    conflicts.add(release.hold.command_id)
+                releases.append(release)
+        return tuple(releases), frozenset(conflicts)
+
+    def _validate_settlement_claims(
+        self, connection: sqlite3.Connection, pair: _PairedSettlement
+    ) -> None:
+        owner, rival = pair.owner, pair.rival
+        first = connection.execute(
+            "SELECT project,digest,payload,sequence FROM claims WHERE key = ?",
+            (pair.key.value,),
+        ).fetchone()
+        if (
+            first is None
+            or (first[0], first[1], first[3])
+            != (
+                str(owner.release.hold.project_id),
+                owner.claim_digest,
+                owner.claim_sequence,
+            )
+            or _stored_claim(first[2], first[1]).evidence != owner.claim
+        ):
+            raise LedgerError("Paired settlement first ownership changed")
+        dispute = connection.execute(
+            "SELECT sequence FROM disputes WHERE (key,contender,digest,evidence) = (?,?,?,?)",
+            (
+                pair.key.value,
+                str(rival.release.hold.project_id),
+                rival.claim_digest,
+                _encode(rival.claim, ClaimEvidence).encode(),
+            ),
+        ).fetchone()
+        if dispute != (rival.claim_sequence,):
+            raise LedgerError("Paired settlement ownership dispute changed")
+
+    def _settled_side(
+        self,
+        key: SourceRef,
+        side: _VerifiedSettlementSide,
+        releases: tuple[_JournalScopeRelease, ...],
+        conflicts: frozenset[UUID],
+        claim_sequence: int,
+    ) -> tuple[_SettledSide, ScopeView]:
+        terminal = side._terminal
+        if (
+            type(terminal.boundary) is not SourceBoundary
+            or terminal.project_context is None
+        ):
+            raise LedgerError("Paired settlement needs an exact owned terminal")
+        release = _JournalScopeRelease(
+            side.hold,
+            side._original,
+            side.command.command_id,
+            terminal.project_context,
+            side._prior_route,
+            terminal.boundary,
+            _source_checkpoint(side.progress.cursor).provider.ordinal,
+            _source_checkpoint(side.progress.cursor).cursor,
+            HoldState.RESOLVED,
+        )
+        view = side._issuer._journal_view(
+            side._batch, (*releases, release), conflicts, progress=side.progress
+        )
+        registry = view._registry
+        assert registry is not None
+        claims = [
+            item
+            for item in side.progress.proofs
+            if item.observation.key == key
+            and side.hold.affected.start
+            <= item.position.ordinal
+            < item.end
+            <= side.hold.affected.end
+        ]
+        if len(claims) != 1:
+            raise LedgerError("Paired settlement lacks one exact native obligation")
+        (proof,) = claims
+        observation = proof.observation
+        route = resolve_route(observation, registry, view)
+        if (
+            route.status is not RouteStatus.ROUTED
+            or route.project_id != side.hold.project_id
+            or observation.revision != 1
+            or type(observation.usage) is not UsageObservation
+        ):
+            raise LedgerError("Paired settlement obligation is not exactly routed")
+        material = _UsageMaterial(
+            observation.usage, route.scope, observation.time_basis
+        )
+        return _SettledSide(
+            release,
+            _scope_command_digest(side.command),
+            side.request.digest,
+            side.request.grant_id,
+            side.progress.cursor,
+            _evidence(proof, side.hold.project_id, registry),
+            _claim_digest(material),
+            claim_sequence,
+        ), view
+
+    def _advance_settlement_side(
+        self,
+        connection: sqlite3.Connection,
+        key: SourceRef,
+        side: _VerifiedSettlementSide,
+        settled: _SettledSide,
+        view: ScopeView,
+        sequence: int,
+    ) -> None:
+        batch = side._batch
+        stream = _stream(batch.source_id, batch._locator)
+        prior = self._cursor(connection, stream)
+        next_cursor = _source_checkpoint(settled.cursor).cursor
+        old_ordinal = -1
+        if prior is not None:
+            old = _source_checkpoint(prior)
+            if old.cursor.offset >= next_cursor.offset:
+                raise LedgerError(
+                    "Paired settlement does not advance its native prefix"
+                )
+            old_ordinal = old.provider.ordinal
+            _capture_position(batch._locator._source, old.cursor, fixed=next_cursor)
+        read = _Read(batch, stream, prior, settled.cursor)
+        registry = view._registry
+        assert registry is not None
+        if any(
+            hold.state is not HoldState.RESOLVED
+            and _scope_stream(hold.position) == _scope_stream(side.hold.position)
+            and hold.affected.end > old_ordinal + 1
+            and hold.affected.start
+            <= _source_checkpoint(settled.cursor).provider.ordinal
+            for hold in view.holds
+        ):
+            raise LedgerError("Paired settlement encounters an unrelated held span")
+        if not self._boundaries_settled(read, view, after=old_ordinal):
+            raise LedgerError("Paired settlement encounters an unrelated receipt")
+        for proof in side.progress.proofs:
+            observation = proof.observation
+            if proof.end <= old_ordinal + 1:
+                continue
+            if proof.position.ordinal <= old_ordinal:
+                raise LedgerError("Paired settlement overlaps the prior cursor")
+            if observation.key == key:
+                if _evidence(proof, side.hold.project_id, registry) != settled.claim:
+                    raise LedgerError(
+                        "Paired settlement encounters another disputed copy"
+                    )
+                continue
+            route = resolve_route(observation, registry, view)
+            if route.status is not RouteStatus.ROUTED:
+                if not self._known_excluded(proof, registry):
+                    raise LedgerError("Paired settlement has unrouted native usage")
+                continue
+            result = self._claim(
+                connection,
+                RoutedRevision(observation, route, read),
+                proof,
+                registry,
+                sequence,
+            )
+            if result.status not in (ClaimStatus.PENDING, ClaimStatus.REPLAY):
+                raise LedgerError(
+                    "Paired settlement encounters an unrelated claim conflict"
+                )
+            if result.status is ClaimStatus.REPLAY:
+                row = connection.execute(
+                    "SELECT payload,digest FROM claims WHERE key = ?",
+                    (result.key.value,),
+                ).fetchone()
+                if row is None or _stored_claim(*row).evidence != _evidence(
+                    proof, result.project_id, registry
+                ):
+                    raise LedgerError("Paired settlement claim replay changed its span")
+        self._write_progress(connection, read, sequence)
+
+    def _build_settlement_change(
+        self,
+        connection: sqlite3.Connection,
+        key: SourceRef,
+        owner: _VerifiedSettlementSide,
+        rival: _VerifiedSettlementSide,
+    ) -> tuple[JournalChange, bool]:
+        tip = _tip(connection)
+        previous = self._settlements(connection, tip)
+        releases, conflicts = self._effective_releases(connection)
+        evidence = self._store.evidence
+        evidence.validate_source_ref(key)
+        sides = (owner, rival)
+        ids = {
+            item
+            for side in sides
+            for item in (side.command.command_id, side.hold.command_id)
+        }
+        encoded_ids = tuple(str(item) for item in ids)
+        if (
+            len(ids) != 4
+            or connection.execute(
+                "SELECT 1 FROM route_dispositions WHERE command IN (?,?,?,?)"
+                " OR hold IN (?,?,?,?) LIMIT 1",
+                (*encoded_ids, *encoded_ids),
+            ).fetchone()
+            is not None
+        ):
+            raise LedgerError("Paired settlement conflicts with a historical proposal")
+        existing = None
+        for old in previous:
+            assert old.paired is not None
+            old_ids = {
+                item
+                for side in (old.paired.owner, old.paired.rival)
+                for item in (side.release.command_id, side.release.hold.command_id)
+            }
+            if old.paired.key == key or old_ids & ids:
+                if old.paired.key != key or old_ids != ids:
+                    raise ConflictError(
+                        "Paired settlement conflicts with committed history"
+                    )
+                existing = old
+        owner_row = connection.execute(
+            "SELECT sequence FROM claims WHERE key = ?", (key.value,)
+        ).fetchone()
+        disputes = connection.execute(
+            "SELECT sequence FROM disputes WHERE key = ?", (key.value,)
+        ).fetchall()
+        if (
+            owner_row is None
+            or len(disputes) != 1
+            or connection.execute(
+                "SELECT 1 FROM content_disputes WHERE key = ?", (key.value,)
+            ).fetchone()
+            is not None
+        ):
+            raise LedgerError(
+                "Paired settlement requires exactly one ownership dispute"
+            )
+        # Retry compares the exact original release once rather than applying it twice.
+        other_releases = tuple(
+            row for row in releases if row.hold.command_id not in ids
+        )
+        first, first_view = self._settled_side(
+            key, owner, other_releases, conflicts, owner_row[0]
+        )
+        second, second_view = self._settled_side(
+            key, rival, other_releases, conflicts, disputes[0][0]
+        )
+        pair = _PairedSettlement(key, first, second)
+        sequence = existing.sequence if existing is not None else tip + 1
+        _check_distinct_sides(pair)
+        for side in (first, second):
+            _validate_settled_side(side, sequence, evidence)
+        self._validate_settlement_claims(connection, pair)
+        if existing is not None:
+            if existing.paired != pair:
+                raise ConflictError("Paired settlement retry changed its evidence")
+            return existing, False
+        self._advance_settlement_side(
+            connection, key, owner, first, first_view, sequence
+        )
+        self._advance_settlement_side(
+            connection, key, rival, second, second_view, sequence
+        )
+        stored = _StoredSettlement(pair, _settlement_identity(sequence, pair, evidence))
+        self._store._enable_paired(connection)
+        connection.execute(
+            "INSERT INTO paired_settlements VALUES (?,?)",
+            (sequence, _encode(stored, _StoredSettlement).encode()),
+        )
+        return JournalChange(sequence, paired=pair), True
+
+    def settle_disposition(
+        self,
+        key: SourceRef,
+        owner: _VerifiedSettlementSide,
+        rival: _VerifiedSettlementSide,
+    ) -> JournalChange:
+        """Commit one effective release and both exact native frontiers."""
+        if (
+            type(owner) is not _VerifiedSettlementSide
+            or type(rival) is not _VerifiedSettlementSide
+            or owner._issuer is rival._issuer
+            or any(side._issuer.registry is not self._writer for side in (owner, rival))
+            or owner.scope_digest != rival.scope_digest
+        ):
+            raise LedgerError(
+                "Expected independent settlement proofs under one scope writer"
+            )
+        sides = (owner, rival)
+        try:
+            with self._scopes._route_requests((owner.command, rival.command)) as (
+                requests,
+                recheck,
+            ):
+                with self._store.transaction(write=True) as connection:
+                    for side, request in zip(sides, requests, strict=True):
+                        side._issuer._require_settlement_side(side, request)
+                    change, inserted = self._build_settlement_change(
+                        connection, key, owner, rival
+                    )
+                    if (
+                        inserted
+                        and self._settlements(connection, change.sequence)[-1] != change
+                    ):
+                        raise LedgerError(
+                            "Paired settlement failed transactional readback"
+                        )
+                    for side, request in zip(sides, requests, strict=True):
+                        side._issuer._require_settlement_side(side, request)
+                    recheck()
+            with self._store.transaction() as connection:
+                if change not in self._settlements(connection, change.sequence):
+                    raise LedgerError("Paired settlement failed committed readback")
+                for side in sides:
+                    cursor = _source_checkpoint(side.progress.cursor).cursor
+                    _capture_position(
+                        side._batch._locator._source, cursor, fixed=cursor
+                    )
+            return change
+        except (_CaptureDiscontinuity, OSError, sqlite3.Error, ValueError):
+            raise LedgerError(
+                "Unable to verify paired settlement and its native prefixes"
+            ) from None
 
     def as_of(self, sequence: int | None = None) -> JournalView:
         """Read immutable first claims and disputes at a private journal sequence."""
@@ -1256,6 +1848,7 @@ class RoutingJournal:
                 (limit,),
             ):
                 change = _stored_disposition(row, evidence)
+                assert change.disposition is not None
                 affected = _affected_disposition_keys(
                     change.disposition, claims, disputes, content_disputes
                 )
@@ -1266,4 +1859,5 @@ class RoutingJournal:
                 tuple(disputes),
                 tuple(content_disputes),
                 tuple(dispositions),
+                self._settlements(connection, limit),
             )

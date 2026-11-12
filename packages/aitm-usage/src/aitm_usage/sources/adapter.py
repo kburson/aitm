@@ -40,7 +40,7 @@ from .claude import (
     read_claude,
     retains_streamed_prefix,
 )
-from .codex import CodexState, _read_codex
+from .codex import CodexState, _CodexCompletionWitness, _read_codex
 from .scan import (
     CandidateSource,
     FrameBatch,
@@ -183,6 +183,12 @@ class NativeBoundary:
 
 
 @dataclass(frozen=True, slots=True)
+class _CompletionFrontier:
+    observations: tuple[NativeObservation, ...]
+    cursor: StreamCursor
+
+
+@dataclass(frozen=True, slots=True)
 class AdapterBatch:
     """Evidence only. A missing cursor supplies no new checkpoint."""
 
@@ -192,16 +198,56 @@ class AdapterBatch:
     cursor: StreamCursor | None = None
 
 
+def _codex_quota_reference(
+    source: CandidateSource,
+    frames: FrameBatch,
+    authority: tuple[SourceRef, SourceRef] | None,
+) -> SourceRef | None:
+    if authority is None or not frames.commit_frames:
+        return None
+    account, checkout = authority
+    startup = frames.commit_frames[0]
+    if startup.ordinal != 0 or startup.row["type"] != "session_meta":
+        return None
+    creator = startup.row["payload"].get("creator_account_id")
+    source._ledger.validate_source_ref(account)
+    if (
+        type(creator) is not str
+        or not creator
+        or source._ledger.pseudonymize("codex-account", creator) != account
+        or any(
+            frame.anchor_ref != checkout
+            for frame in frames.commit_frames
+            if frame.eligibility is Eligibility.ELIGIBLE
+            and not frame.pre_cutoff
+            and frame.row["type"] == "event_msg"
+            and frame.row["payload"].get("type") == "token_count"
+            and frame.row["payload"].get("rate_limits") is not None
+        )
+    ):
+        return None
+    return account
+
+
 def _read_usage(
     source: CandidateSource,
     frames: FrameBatch,
     record_revision: _RevisionRecorder | None,
+    completion_witnesses: list[_CodexCompletionWitness] | None = None,
+    codex_quota_authority: tuple[SourceRef, SourceRef] | None = None,
 ) -> tuple[AdapterResult, dict[SourceRef, int], bool]:
     if source.provider is Provider.CODEX:
         result, _, span_ends = _read_codex(
             frames,
-            CodexState(source._ledger, neutral_markers=True),
+            CodexState(
+                source._ledger,
+                account_ref=_codex_quota_reference(
+                    source, frames, codex_quota_authority
+                ),
+                neutral_markers=True,
+            ),
             Eligibility.ELIGIBLE,
+            _completion_witnesses=completion_witnesses,
         )
         return result, span_ends, True
     state = ClaudeState(source._ledger, neutral_markers=True)
@@ -215,6 +261,36 @@ def _read_usage(
         frames, state, result.provider_checkpoint
     )
     return result, {}, retains_prefix
+
+
+def _native_observations(
+    source: CandidateSource,
+    frames: FrameBatch,
+    result: AdapterResult,
+    surface: NativeSurface,
+    span_ends: dict[SourceRef, int],
+) -> dict[int, NativeObservation]:
+    prior_checkout = dict(frames._prior_checkout)
+    observations: dict[int, NativeObservation] = {}
+    for revision in result.revisions:
+        usage = revision.record
+        if not isinstance(usage, UsageObservation):
+            continue
+        boundary = usage.boundary
+        proof = frames.scope_evidence(boundary)
+        context = proof.anchor_ref if proof is not None else None
+        if proof is None and source._matches(boundary):
+            context = prior_checkout.get(boundary.ordinal)
+        observations[id(revision)] = NativeObservation(
+            revision.key,
+            revision.revision,
+            usage,
+            surface,
+            ObservationTimeBasis.NATIVE_USAGE_EVENT,
+            context,
+            span_end=span_ends.get(revision.key),
+        )
+    return observations
 
 
 class ProviderAdapter:
@@ -301,7 +377,14 @@ class ProviderAdapter:
         _capture_limit: SourceCursor | None = None,
         _revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]]
         | None = None,
+        _completion_witnesses: list[_CodexCompletionWitness] | None = None,
+        _completion_frontiers: list[_CompletionFrontier] | None = None,
+        _codex_quota_authority: tuple[SourceRef, SourceRef] | None = None,
     ) -> AdapterBatch:
+        if _completion_witnesses is not None:
+            _completion_witnesses.clear()
+        if _completion_frontiers is not None:
+            _completion_frontiers.clear()
         source = locator._source
         if not isinstance(source, CandidateSource):
             return AdapterBatch()
@@ -356,7 +439,15 @@ class ProviderAdapter:
         frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
         if frames.cursor is None:
             return AdapterBatch(diagnostics=frames.diagnostics)
-        result, span_ends, retains_prefix = _read_usage(source, frames, recorder)
+        completion = [] if _completion_witnesses is not None else None
+        quota_authority = (
+            _codex_quota_authority
+            if surface is NativeSurface.CODEX_DESKTOP_MACOS and checkpoint is None
+            else None
+        )
+        result, span_ends, retains_prefix = _read_usage(
+            source, frames, recorder, completion, quota_authority
+        )
         scope_verified = True
         if _scope_boundaries:
             requested = set(_scope_boundaries)
@@ -370,13 +461,15 @@ class ProviderAdapter:
             }
             if selected:
                 read_revisions.clear()
+                if completion is not None:
+                    completion.clear()
                 for boundary, prefix in selected.items():
                     source = source._select_boundary(boundary, prefix, None)
                 frames = scan(source, checkpoint, cutoff, _capture_limit=_capture_limit)
                 if frames.cursor is None:
                     return AdapterBatch(diagnostics=frames.diagnostics, cursor=cursor)
                 result, span_ends, retains_prefix = _read_usage(
-                    source, frames, recorder
+                    source, frames, recorder, completion, quota_authority
                 )
                 scope_verified = all(
                     boundary in result.boundaries
@@ -396,6 +489,37 @@ class ProviderAdapter:
             or not retains_prefix
             or result.provider_checkpoint is None
         ):
+            if (
+                _completion_witnesses is not None
+                and completion is not None
+                and len(completion) == 1
+                and scope_verified
+                and result.provider_checkpoint is None
+                and not result.diagnostics
+                and _capture_limit is not None
+                and frames.cursor == _capture_limit
+            ):
+                witness = completion[0]
+                if any(
+                    item.boundary == witness.request
+                    and item.project_context == witness.checkout
+                    for item in boundaries
+                ):
+                    _completion_witnesses.append(witness)
+                    if _completion_frontiers is not None:
+                        assert witness._checkpoint is not None
+                        _completion_frontiers.append(
+                            _CompletionFrontier(
+                                tuple(
+                                    _native_observations(
+                                        source, frames, result, surface, span_ends
+                                    ).values()
+                                ),
+                                StreamCursor(
+                                    SourceCheckpoint(frames.cursor, witness._checkpoint)
+                                ),
+                            )
+                        )
             return AdapterBatch(
                 boundaries=boundaries if scope_verified else (),
                 diagnostics=(
@@ -410,26 +534,7 @@ class ProviderAdapter:
                 cursor=cursor,
             )
 
-        prior_checkout = dict(frames._prior_checkout)
-        observations: dict[int, NativeObservation] = {}
-        for revision in result.revisions:
-            usage = revision.record
-            if not isinstance(usage, UsageObservation):
-                continue
-            boundary = usage.boundary
-            proof = frames.scope_evidence(boundary)
-            context = proof.anchor_ref if proof is not None else None
-            if proof is None and source._matches(boundary):
-                context = prior_checkout.get(boundary.ordinal)
-            observations[id(revision)] = NativeObservation(
-                revision.key,
-                revision.revision,
-                usage,
-                surface,
-                ObservationTimeBasis.NATIVE_USAGE_EVENT,
-                context,
-                span_end=span_ends.get(revision.key),
-            )
+        observations = _native_observations(source, frames, result, surface, span_ends)
         batch = AdapterBatch(
             tuple(observations.values()),
             boundaries,
