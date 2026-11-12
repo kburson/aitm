@@ -1,0 +1,11 @@
+{
+  "previousHead": "0bcb00c69cbf5d38431480b90260d013a6f09e3e",
+  "previousTree": "6bad3235d96230997930b513328dc7faf4e78ef1",
+  "previousLiteralBase": "b0f8ac79b8bd3f178b1d47dc2e66650f1f54e0d5",
+  "literalBase": "56266ed30bbc572b7e56bc64777e802be264c23f",
+  "head": "dab76d25ffdce10d5782e14b5b1ea02f617b235c",
+  "tree": "b4a757f106b89086a24d0e909bc259d7b5b93c88",
+  "run": 43136444518,
+  "trunkWorkflowAndControlsInherited": true,
+  "storyProductAndTestFilesByteIdenticalToPriorCandidate": true
+}
