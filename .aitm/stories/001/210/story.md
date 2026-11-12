@@ -30,3 +30,7 @@ Direct child of Epic #100. Requires #209 and directly gates #119 and #204.
 Qualify a genuinely settled native terminal with no later usage under chronological public-reader evidence. A proof-only EOF receipt with an unresolved boundary or absent cursor cannot settle it. Independently verify both owner and rival source/span/frontier authorities before any paired release. Derive the admitted routing ScopeView's effective hold from the one committed journal change under the existing writer and publication fence. Keep earlier evidence, first ownership, unsupported coverage, and all unresolved frontiers. M09 retains publication and project ACK.
 
 Project 24 Rank 228.2. Size and Estimate follow independent Refine and JIT. Start Date follows Develop.
+
+## Independent Refine checkpoint
+
+[Refine](plan/2026-11-11-210-native-terminal-refine.md) held because no chronological public-reader control qualified a genuinely settled no-later-usage terminal. [Independent verdict](plan/2026-11-11-210-native-terminal-refine-review.md) · [Native qualification evidence](plan/native-terminal-qualification.json).

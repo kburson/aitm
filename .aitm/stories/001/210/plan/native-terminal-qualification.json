@@ -1,0 +1,108 @@
+{
+  "literal_base": "71aa5c880fc6a1db1cf676dfc663373f02ef7b16",
+  "literal_tree": "b4a757f106b89086a24d0e909bc259d7b5b93c88",
+  "path": "ScopeState.read_source",
+  "status": "no_settled_no_later_usage_carrier_qualified",
+  "chronological_append_only_native_controls": [
+    {
+      "diagnostics": [
+        "boundary-unverified"
+      ],
+      "earlier_usage_in_current_projection": [],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": false,
+      "later_usage": [],
+      "mode": "proof_only_eof",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    },
+    {
+      "diagnostics": [
+        "coverage-gap"
+      ],
+      "earlier_usage_in_current_projection": [
+        3,
+        8,
+        13,
+        18,
+        23,
+        29,
+        32,
+        37,
+        43,
+        46,
+        51,
+        57
+      ],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": true,
+      "later_usage": [],
+      "mode": "counterless_completion",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    },
+    {
+      "diagnostics": [],
+      "earlier_usage_in_current_projection": [
+        3,
+        8,
+        13,
+        18,
+        23,
+        29,
+        32,
+        37,
+        43,
+        46,
+        51,
+        57
+      ],
+      "existing_journal_cursor_unchanged": true,
+      "existing_scope_hold": "held",
+      "has_progress_cursor": true,
+      "later_usage": [
+        63
+      ],
+      "mode": "later_usage",
+      "original_span": [
+        46,
+        53
+      ],
+      "prior_committed_positive_usage": [
+        3,
+        8,
+        13,
+        18,
+        23
+      ],
+      "terminal": 61,
+      "terminal_eligible": true
+    }
+  ],
+  "control_tests_passed": 3,
+  "pilot_correction": "Prior committed usage must be witnessed before the proof-only EOF projection, which contains no usage observations."
+}
