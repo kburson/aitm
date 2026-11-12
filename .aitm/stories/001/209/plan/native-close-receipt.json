@@ -1,0 +1,21 @@
+{
+  "issue": {
+    "closedAt": "2026-11-12T02:01:11Z",
+    "number": 209,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/209"
+  },
+  "project": {
+    "actual": 0.6842,
+    "coverage": "Partial coordinator engagement (Refine through delivery) through 2026-11-12T02:00:49.677Z. Bounded progress intervals only.",
+    "estimate": 3.9,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHsda8",
+    "issue": 209,
+    "rank": 228.1,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-11",
+    "status": "Done"
+  }
+}

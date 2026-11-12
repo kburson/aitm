@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 209
 title: "[M08b4b] Atomic journal disposition and coverage projection"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/209"
 parent: 100
 children: []
 blocking: [119, 210]
 blocked-by: [203]
 created: "2026-11-11T02:38:34Z"
-updated: "2026-11-12T01:58:15+00:00"
+updated: "2026-11-12T02:01:18+00:00"
 last-branch: "codex/aitm-209-journal-disposition"
 estimate: {"agent-hours": 3.9, "size": "M"}
 priority: null
