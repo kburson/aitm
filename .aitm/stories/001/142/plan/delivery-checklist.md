@@ -6,3 +6,7 @@
 - [PR #263](https://github.com/kburson/aitm/pull/263) · branch `codex/aitm-wave40-142` · source `4e752acaf311c42c4173fc532977502b88ba398a` · tree `61eeabeed1362d5c39188dd6aade2b6549515b01` · target `trunk` at `011342493399ed6e8a12ba0e9c2a4a1e9efaf294`.
 - [Exact local candidate validation](142-local-validation-4e752acaf311.md). Required hosted jobs: `python-base`, `python`, `quality`, `file-checks`, `collect-evidence`, `aitm-ci`.
 - Next gates: authenticated hosted attempt, owner-delegated control disposition, trusted exact-tree verification, independent PR SAR, exact-head merge and delivery readback, implementing agent sign-off, native closure and Project Done.
+
+## Formal independent PR review
+
+[Off-platform SAR](reviews/142-formal-sar-r1.md) records **accepted** on head `4e752acaf311c42c4173fc532977502b88ba398a`, tested tree `61eeabeed1362d5c39188dd6aade2b6549515b01`, after the exact trusted verifier passed.
