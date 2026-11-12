@@ -26,7 +26,7 @@ trips: []
 
 Proposed implementation estimate **2.5 agent-hours**. Internal predecessors: #251.
 
-Supported released Discuss CLI or owning harness context handoff contract at JIT.
+Released Core C18 Discuss context and suggested-command contract, or a separately qualified owning harness handoff at JIT.
 
 ## Acceptance criteria
 

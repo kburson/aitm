@@ -31,7 +31,8 @@ The UI can be qualified with safe fixtures and unavailable states. Live timing a
 ## Acceptance criteria
 
 - [ ] Present Actual, elapsed, owner wait, working wall time, direct/descendant totals and Cost with independent value, coverage, reason, basis and source/verification times.
+- [ ] Consume V02's versioned preview JSON schema, controlled reason-code and precedence table, and the pinned #139 before/after and synthetic fixtures as compatibility inputs. The product view is a separate Core-backed contract. Define a deterministic mapping from the supported preview schema for shared values, coverage, reasons and evidence times. Reject unsupported versions or lossy mappings. Use the mapped preview fixtures as regressions; keep the legacy reader and bundle off the production runtime path.
 - [ ] Own the versioned approved metric view over the released Core export. Produce the same pinned metric payload for the local viewer, hosted build and M2 readback comparison, with independent timing and usage watermarks. Preserve the preview semantics without introducing a second timing or pricing fold. Show Unknown, supported Partial and verified zero, and label pricing basis.
-- [ ] Prove parallel actors, in-turn tools, scope changes, missing usage, stale evidence and exact estimate scope. Keep Partial or Unknown outside calibration.
+- [ ] Prove parallel actors, in-turn tools, scope changes, missing usage, stale evidence and exact estimate scope. Keep Partial or Unknown outside calibration. If the view contract and UI exceed four hours at JIT, split them and review the dependency change before pickup.
 
 Require an independently reviewed and accepted item-specific JIT implementation plan at pickup. Recheck source, prerequisites, scope, file ownership and estimate then.
