@@ -49,3 +49,14 @@ checklist is a local candidate handoff for the coordinator.
 Preserve distinct failed, pending and superseded attempts. Changed
 head, base or validation inputs require applicable fresh proof.
 [Manual delivery checklist](../../../../manual-delivery-checklist.md) · [#103 CI contract](../../103/design/github-ci-quality-gates-design.md)
+
+## Current exact-candidate Test readback
+
+- GitHub Project Test, Rank 30. [PR #262](https://github.com/kburson/aitm/pull/262) targets `trunk` at `71aa5c880fc6a1db1cf676dfc663373f02ef7b16` from exact head `be8f5bff9311655fb788e597c69069c23609a341`.
+- GitHub's tested merge is `95f6ebe25c6cca5c67efdc509a617842b729f276` with ordered parents base then head. The tested tree is `ed4ea486732346bfaaf7d518bc91b4d13b555fd5`.
+- [CI run 43140853744 attempt 1](https://github.com/kburson/aitm/actions/runs/43140853744/attempts/1) finished with `success`. [Authenticated metadata](hosted-readback-be8f5bff9311.json).
+- All six required jobs and the signed subject's custody were independently authenticated for this exact attempt. [Signature readback](hosted-signature-be8f5bff9311.json).
+- [Independent source assessment](reviews/2026-11-11-141-source-assessment-r1.md) informs the owner disposition.
+- [Independent source assessment](reviews/2026-11-11-141-source-assessment-r2.md) informs the owner disposition.
+- Trusted #103 verifier held with `gate controls changed or disposition is stale; provide the exact reviewed tree`. [Verifier receipt](verifier-hold-be8f5bff9311.json).
+- The owner decision must bind the exact tested tree and the two gate-defining additions. The authenticated CI diagnostic and source assessment leave the full trusted verifier and formal independent source review pending. The Project stays in Test.
