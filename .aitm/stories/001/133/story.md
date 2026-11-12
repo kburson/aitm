@@ -10,12 +10,12 @@ children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151,
 blocking: [2]
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-10T18:38:22Z"
+updated: "2026-11-12T20:01:18Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -116,3 +116,7 @@ and teardown receipt record its use and deletion. The owner declined
 continual use of disposable repositories. Any follow-on qualification
 or rehearsal that depends on another disposable GitHub repository
 requires a revised plan before pickup.
+
+## Current advisory and qualification replan
+
+[Reviewed replan](plan/2026-11-12-133-advisory-and-qualification-replan.md) · [Independent review](plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md).

@@ -1,0 +1,14 @@
+# Independent builder review for #133
+
+**Verdict** Accepted for planning publication.  
+**Signed** Codex / replan133_review, independent builder reviewer.  
+**Amendment SHA-256** `61c760529ed13971453a11ede1455a692a170a29d110472a39e1beaf4a131d97`  
+**Before-graph SHA-256** `571d821de410c062b99a706b304b94ce7cd96901657ccc19aed6b79f63ec738e`
+
+I verified the basis for retiring #145. #144 closed as not planned after the required isolated macOS/APFS host, independent observer, and protected receipt channel remained unverified. No trial ran. The repository self-hosted runner endpoint returned zero. #146 still requires positive qualification for both trusted collection and execution before it can advance. [#144 closure receipt](https://github.com/kburson/aitm/blob/69a1cc8cc1f09092866e8fdf34dd604d807e6464/.aitm/stories/001/144/plan/closure-receipt.json) · [#144 qualification report](https://github.com/kburson/aitm/blob/69a1cc8cc1f09092866e8fdf34dd604d807e6464/.aitm/stories/001/144/attachments/2026-11-11-144-trusted-pytest-observation-refusal.md)
+
+#148 has an available input contract. The completed T02 classifier produces a versioned inventory with policy and lane identities. #143 already constructs this inventory with local advisory provenance. The revised acceptance criteria distinguish a detectable input mismatch from completeness of the original collection and require separate evidence for the latter. The local measurement story can use #143's normal command against controlled changes on a pinned AITM revision. A predeclared expected-impact set makes missed-test counts interpretable against the serial reference. [T02 classifier](https://github.com/kburson/aitm/blob/766504a02aaeb9dda339d588172dd7d5bdbd2b3f/tools/ci/tia/inventory.py) · [#143 local command](https://github.com/kburson/aitm/blob/766504a02aaeb9dda339d588172dd7d5bdbd2b3f/tools/ci/tia/local.py) · [#143 closure receipt](https://github.com/kburson/aitm/blob/15049492e356fd08cc8f27f4ad3d8a09facf9c19/.aitm/stories/001/143/plan/closure-receipt.json)
+
+I compared the before-graph with all 41 live child dependency lists and checked the proposed delta against the live Project 24 ranks. The projected graph is acyclic with 42 children and 65 dependency edges. Every dependent ranks at least ten above each prerequisite. #148 and T35L can proceed independently at Rank 60 once their own refinement and pickup are complete. #146 retains its qualification hold. #149, #159, #168 and #178 retain their direct prerequisites. #172 adds the local measurement as an input and retains #171 and its hosted acceptance requirements. #2 still depends directly on #133.
+
+The existing #103 gate, #133 cutover and rollback criteria, and separate production authorization govern subsequent work. This signature covers the reviewed amendment bytes and proposed graph. Issue and Project changes require publication readback.
