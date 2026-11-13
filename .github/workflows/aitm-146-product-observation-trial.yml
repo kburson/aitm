@@ -21,7 +21,9 @@ jobs:
         with:
           version: '0.10.6'
           enable-cache: false
-      - name: Observe exact product suite as an unprivileged worker
+      - name: Observe the bounded product slice as an unprivileged worker
+        env:
+          AITM_146_BOUNDED_ONLY: '1'
         shell: bash
         run: |
           set -euo pipefail

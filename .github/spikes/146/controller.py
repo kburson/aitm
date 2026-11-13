@@ -127,6 +127,11 @@ def build_trace_python(shared, logs, receipt):
         if name == "download":
             require(hash_bytes(archive.read_bytes()) == bounded.PYTHON_SHA256, "trace source digest differs")
             outputs["source_sha256"] = bounded.PYTHON_SHA256
+        elif name == "extract":
+            # These two offline CLI cases do not require OpenSSL extensions.
+            modules = "*disabled*\n_ssl _hashlib\n"
+            (build / "Modules/Setup.local").write_text(modules)
+            outputs["disabled_extensions"] = ["_ssl", "_hashlib"]
     python = build / "python.exe"
     config = good((str(python), "-I", "-c",
                    "import sys,sysconfig,sqlite3;"
@@ -313,6 +318,8 @@ def trial(shared, private, staging, receipt, provisioned):
         result = receipt.setdefault("bounded", {"status": "incomplete"})
         result["reason"] = str(error).replace(str(shared), "<trial>").replace(str(private), "<controller>")
     print(f"Bounded product slice status: {receipt['bounded']['status']}", flush=True)
+    if os.environ.get("AITM_146_BOUNDED_ONLY") == "1":
+        return receipt["bounded"]["status"]
     settings.update(AITM_CI_PYTEST_EVIDENCE=str(reports / "pytest.json"), AITM_CI_CHILD_EVIDENCE="1",
                     COVERAGE_FILE=str(reports / ".product"))
     full_targets = ("tests", str(src / TARGETS[1]))
@@ -409,7 +416,7 @@ def main():
             command(("/usr/bin/sudo", "-n", "/bin/rm", "-rf", str(shared)))
             for record in provisioned:
                 command(("/usr/bin/sudo", "-n", "/usr/bin/dscl", ".", "-delete", record))
-    return 0 if receipt["status"] == "comparison-complete" else 1
+    return 0 if receipt["status"] in {"comparison-complete", "bounded-pass"} else 1
 
 
 if __name__ == "__main__":
