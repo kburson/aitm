@@ -1,0 +1,8 @@
+{
+  "live.py": "c29966d4798987d8147d3e8b80cf55b9d07d21b1411d2737d9931bc55428c182",
+  "verify-writer-paths.py": "0fbf99df7e301c6fd78f3ca2fc6e8a3065b9dfec869437c176281c7755c28a74",
+  "verify-native-lineage-controls.py": "48bf4da40616857a23a06b7a94cc828762eb29939824f0b9caafce144ed65c9e",
+  "isolated-baseline.log": "6c75d8a7192ddb8df3d004ca8f254dca4960aa88390104c0fa336ca6c19632ea",
+  "independent-spike-input.md": "c297e0bcdc82f25b487fbb2d484fbcbb9d629aeaec4dfe64ad3d63368d5d5962",
+  "2026-11-12-269-writer-admission-findings.md": "8cf09e9c6930fb5fc6cadbb379e76cb77089b5cd022f943842d964fccc5e0f19"
+}

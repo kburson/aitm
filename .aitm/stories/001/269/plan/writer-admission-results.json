@@ -1,0 +1,38 @@
+{
+  "schema": "aitm.claude-folded-writer-admission-spike/v1",
+  "client_version": "2.1.318",
+  "artifact_sha256": {
+    "parent": "e3b8410471dfa2e0eeeb64040bed8dba09bf663fe1f9df3ec4770d1847113ca9",
+    "child": "a55fde85811401c6d0477608725d9a1b70604bfe99c77a4e3fdf03785b2e346a",
+    "metadata": "7a371b44bd488e29d602a5befeafa305257c4393ae2bc5d8d8c2151f89d7f751",
+    "progress": "b344f518e0b9e81cd30bb0f23f02837308dc2633ca309c7c9b946cf358804df6",
+    "registry": "0e6c1b7641e631cd1fc70cde1a09af66e9e5774e901a7e8ac054054ed25fb6b4"
+  },
+  "parent_original_epoch_ordinal": 34,
+  "parent_prompt_to_result_span": [
+    37,
+    47
+  ],
+  "parent_epoch_span_disposition": "eligible",
+  "parent_aggregate_scope": "held",
+  "parent_adapter_report": "overlap-unverified; no aggregate observation projected in this run",
+  "ordinary_parent_lookup": "Expected the unique current native stream",
+  "child_locator_valid_in_separate_approved_root": true,
+  "child_origin_span": [
+    0,
+    20
+  ],
+  "selected_child_request_span": [
+    19,
+    20
+  ],
+  "child_capture_frontier_armed_before_first_metered_response": 9,
+  "child_observations_after_live_append": 2,
+  "child_same_stream_capture_boundary_candidates": 0,
+  "child_native_capture_boundary": "The next native capture boundary is unavailable",
+  "ordinary_child_scope_read": "Native scope source has no admitted unbounded read",
+  "selected_child_scope": "held",
+  "parent_epoch_cursor_refused_on_child_incarnation": true,
+  "exact_prefix_and_registry_unchanged_during_reopen": true,
+  "fold_or_journal_mutation": false
+}

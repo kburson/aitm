@@ -1,0 +1,18 @@
+{
+  "schema": "aitm.claude-folded-diagnostic-lineage-controls/v1",
+  "native_only_baseline_join": true,
+  "controls": {
+    "wrong-child-checkout": "refused by diagnostic lineage projection",
+    "foreign-child-agent": "refused by diagnostic lineage projection",
+    "unrelated-tool": "refused by diagnostic lineage projection",
+    "missing-result": "refused by diagnostic lineage projection",
+    "duplicate-result": "refused by diagnostic lineage projection",
+    "missing-terminal": "refused by diagnostic lineage projection",
+    "post-terminal-child-append": "refused by diagnostic lineage projection",
+    "background-request": "refused by diagnostic lineage projection"
+  },
+  "candidate_predicate_only": true,
+  "writer_authority_issued": false,
+  "scope_permission_controls_rely_on_existing_writer_tests": true,
+  "native_artifacts_unchanged": true
+}
