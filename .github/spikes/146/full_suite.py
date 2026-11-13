@@ -36,10 +36,17 @@ raise SystemExit(pytest.main(sys.argv[1:]))
 SITE = """
 import os
 import sys
-if os.environ.get("AITM146_CHILD_LINES") == "1":
+invocation = sys.orig_argv[1:]
+if os.environ.get("AITM146_CHILD_LINES") == "1" and (
+    any(arg.endswith("/aitm-usage") for arg in invocation) and "--help" in invocation
+    or any(arg.endswith("/run_cli.py") for arg in invocation) and "collect-once" in invocation
+):
     monitor = sys.monitoring
     monitor.use_tool_id(4, "aitm146-line-probe")
-    monitor.set_events(4, monitor.events.LINE)
+    monitor.register_callback(4, monitor.events.PY_START, lambda code, offset:
+        monitor.set_local_events(4, code, monitor.events.LINE)
+        if "/aitm_usage/" in code.co_filename else None)
+    monitor.set_events(4, monitor.events.PY_START)
 """
 
 
@@ -67,21 +74,42 @@ aitm146_event(PyObject *module, PyObject *args)
         return NULL;
     }
     if (PyDTrace_TEST_EVENT_ENABLED()) {
-        PyDTrace_TEST_EVENT(kind, data);
+        PyFrameObject *frame = PyEval_GetFrame();
+        if (frame == NULL) {
+            Py_RETURN_NONE;
+        }
+        PyCodeObject *code = PyFrame_GetCode(frame);
+        const char *file = PyUnicode_AsUTF8(code->co_filename);
+        const char *name = PyUnicode_AsUTF8(code->co_qualname);
+        if (file != NULL && name != NULL) {
+            PyDTrace_TEST_EVENT(kind, data, file, name);
+        }
+        Py_DECREF(code);
+        if (PyErr_Occurred()) {
+            return NULL;
+        }
     }
     Py_RETURN_NONE;
 }
 
 """
     table = b"static PyMethodDef sys_methods[] = {\n"
+    executed = b"                                start_new_session, process_group)\n"
     return {
         "pydtrace": patch(build / "Include/pydtrace.d",
                           "9dd7071fac51ba3a1cf21cd24183d285d46176f795fce62c3575555f10f4cad0",
-                          [(declaration, declaration + b"\n    probe test__event(const char *, const char *);")]),
+                          [(declaration, declaration + b"\n    probe test__event(const char *, const char *, const char *, const char *);")]),
         "sysmodule": patch(build / "Python/sysmodule.c",
                             "82d36f5cfa6a75d13a1960f11e3faf45677bacc8d1b86df995156432d69aa295",
                             [(table, source + table +
                               b'    {"_aitm146_event", aitm146_event, METH_VARARGS, NULL},\n')]),
+        "subprocess": patch(build / "Lib/subprocess.py",
+                             "21ecc4c8f4fcf641974fc0d9cc28e97b07670ed1cef7e9d96769b31bb8345586",
+                             [(executed, executed + b'            if hasattr(sys, "_aitm146_event"):\n'
+                               b'                command = args if isinstance(args, (tuple, list)) else (args,)\n'
+                               b'                for marker in ("--help", "collect-once"):\n'
+                               b'                    if marker in command:\n'
+                               b'                        sys._aitm146_event("child-argument", f"{self.pid} {marker} {command[0]}")\n')]),
     }
 
 
@@ -106,7 +134,10 @@ def instrument_pytest(site):
             (end, b'    ' + emit + b'("end", item.nodeid)\n' + end),
             (raw, b'    ' + emit + b'(when + ("-ok" if call.excinfo is None else "-failed"), item.nodeid)\n' + raw),
         ],
-        "python": [(body, b'    ' + emit + b'("body-enter", pyfuncitem.nodeid)\n' + body
+        "python": [(body, b'    if (testfunction.__code__.co_filename != str(pyfuncitem.path)\n'
+                    b'            or testfunction.__code__.co_name != pyfuncitem.originalname):\n'
+                    b'        raise RuntimeError("test function source identity differs from assignment")\n'
+                    b'    ' + emit + b'("body-enter", pyfuncitem.nodeid)\n' + body
                     + b'    ' + emit + b'("body-return", pyfuncitem.nodeid)\n')],
     }
     return {name: patch(site / "_pytest" / f"{name}.py", digest, edits[name])
@@ -174,8 +205,12 @@ def reconcile(events, expected, selected=None):
                 problems.append(data)
             if kind == "end":
                 active = None
-    failed = sorted(node for node, history in phases.items()
-                    if any(event.endswith("-failed") for event in history))
+    failure_prefixes = (("start", "setup-failed"),
+                        ("start", "setup-ok", "body-enter", "call-failed"),
+                        ("start", "setup-ok", "body-enter", "body-return", "call-failed"),
+                        ("start", "setup-ok", "body-enter", "body-return", "call-ok", "teardown-failed"))
+    failed = sorted(node for node, history in phases.items() if node in assignment
+                    and any(tuple(history[:len(prefix)]) == prefix for prefix in failure_prefixes))
     passed = sorted(node for node in assignment if tuple(phases[node]) == PHASES)
     return {
         "collection_matches": complete and Counter(collection) == Counter(expected),
@@ -187,12 +222,22 @@ def reconcile(events, expected, selected=None):
     }
 
 
-def dtrace_program(uid, source):
+def dtrace_program(uid, source, pytest_site, subprocess_file):
     target = json.dumps(str(source) + "/")
+    main, runner, python = (json.dumps(str(pytest_site / "_pytest" / f"{file}.py"))
+                            for file in ("main", "runner", "python"))
+    valid_origins = f"""(
+      (copyinstr(arg2) == {main} && copyinstr(arg3) == "Session.perform_collect")
+      || (copyinstr(arg2) == {runner} && copyinstr(arg3) == "runtestprotocol")
+      || (copyinstr(arg2) == {runner} && copyinstr(arg3) == "call_and_report")
+      || (copyinstr(arg2) == {python} && copyinstr(arg3) == "pytest_pyfunc_call")
+      || (copyinstr(arg2) == {json.dumps(str(subprocess_file))}
+          && copyinstr(arg3) == "Popen.__init__" && copyinstr(arg0) == "child-argument")
+    )"""
     return f'''
 dtrace:::BEGIN {{ printf("READY %d\\n", $target); }}
 python$target:::test-event
-/pid == $target && uid == {uid}/
+/pid == $target && uid == {uid} && {valid_origins}/
 {{
     printf("%llu E %d %s %s\\n", timestamp, pid, copyinstr(arg0), copyinstr(arg1));
 }}
@@ -201,7 +246,10 @@ proc:::create
 {{ printf("%llu P %d %d\\n", timestamp, pid, args[0]->pr_pid); }}
 proc:::exec-success
 /uid == {uid} && ppid == $target/
-{{ printf("%llu X %d %d %s\\n", timestamp, ppid, pid, execname); }}
+{{ printf("%llu X %d %d %s\\n", timestamp, ppid, pid, curpsinfo->pr_psargs); }}
+syscall::exit:entry
+/uid == {uid} && ppid == $target/
+{{ printf("%llu S %d %d %d\\n", timestamp, ppid, pid, arg0); }}
 proc:::exit
 /uid == {uid} && ppid == $target/
 {{ printf("%llu R %d %d %d\\n", timestamp, ppid, pid, arg0); }}
@@ -222,6 +270,12 @@ def parse_trace(data, parent, product):
             raise ValueError("unexpected traced process")
         if kind == "E":
             event, payload = value.split(" ", 1)
+            if event == "child-argument":
+                pid, argument, executable = payload.split(" ", 2)
+                children[int(pid)].setdefault("arguments", []).append({
+                    "argument": argument, "executable": executable,
+                })
+                continue
             events.append((event, payload))
             if event == "start":
                 active = payload
@@ -235,6 +289,9 @@ def parse_trace(data, parent, product):
         elif kind == "R":
             pid, reason = map(int, value.split())
             children[pid]["os_exit_reason"] = reason
+        elif kind == "S":
+            pid, status = map(int, value.split())
+            children[pid]["os_exit_status"] = status
         elif kind == "L":
             pid, rest = value.split(" ", 1)
             path, number, hits = rest.rsplit(" ", 2)
@@ -283,7 +340,9 @@ def observe(label, args, worker_args, uid, project, product, private, logs, comm
         pid = int(ready(child))
         result["lineage"] = lineage(pid, child.pid, uid, command)
         script = private / f"{label}.d"
-        script.write_text(dtrace_program(uid, product))
+        site = Path(args[0]).parent.parent / "lib/python3.13/site-packages"
+        stdlib = site.parents[3] / "installed/lib/python3.13/subprocess.py"
+        script.write_text(dtrace_program(uid, product, site, stdlib))
         trace = subprocess.Popen(("/usr/bin/sudo", "-n", "/usr/sbin/dtrace", "-Z", "-q",
                                   "-x", "switchrate=50hz", "-x", "bufsize=16m", "-x", "aggsize=32m",
                                   "-x", "strsize=1024", "-p", str(pid), "-s", str(script)),
@@ -355,14 +414,18 @@ def run(src, shared, build, locked_venv, fixtures, private, logs, receipt, uid,
                                  worker_args, uid, project, product, private, logs, command, execution)
     execution.update(reconcile(observed, expected))
     records = result["native_children"] = {}
-    for node, (file, line, _) in CHILDREN.items():
+    for node, (file, line, argument) in CHILDREN.items():
         matches = [(pid, data) for pid, data in children.items()
-                   if data.get("test") == node and line in data.get("files", {}).get(file, [])]
+                   if data.get("test") == node and line in data.get("files", {}).get(file, [])
+                   and any(entry == {"argument": argument, "executable":
+                                    str(venv / "bin" / ("aitm-usage" if argument == "--help" else "python"))}
+                           for entry in data.get("arguments", [])) and data.get("exec")]
         records[node] = [{"pid": pid, "required_file": file, "required_line": line, **row} for pid, row in matches]
     require(execution["driver"]["exit"] == 0 and execution["trace_clean"] and execution["collection_matches"]
             and not any(execution[key] for key in ("failed", "missing_or_inconsistent", "unexpected_execution",
                                                    "ordering_errors"))
-            and all(len(rows) == 1 and rows[0].get("exec") and "os_exit_reason" in rows[0]
+            and Counter(data for kind, data in observed if kind == "discovered") == Counter(expected)
+            and all(len(rows) == 1 and rows[0].get("os_exit_status") == 0 and "os_exit_reason" in rows[0]
                     for rows in records.values()),
             "full execution or required child coverage remains incomplete")
     result["status"] = "full-observation-pass"

@@ -118,7 +118,8 @@ def build_trace_python(shared, logs, receipt, *, full=False):
         ("download", ("/usr/bin/curl", "-fsSL", "--max-time", "60", "-o", str(archive),
                       f"https://www.python.org/ftp/python/3.13.9/{archive.name}"), build_root, 75),
         ("extract", ("/usr/bin/tar", "-xf", str(archive)), build_root, 35),
-        ("configure", ("./configure", "--with-dtrace", "--with-ensurepip=no",
+        ("configure", ("/usr/bin/env", "MACOSX_DEPLOYMENT_TARGET=26.0", "ac_cv_func_pipe2=no",
+                       "./configure", "--with-dtrace", "--with-ensurepip=no",
                        f"--prefix={build_root / 'installed'}"), build, 120),
         ("compile", ("/usr/bin/make", "-j", "4"), build, 340),
     )
@@ -142,6 +143,13 @@ def build_trace_python(shared, logs, receipt, *, full=False):
                    "import sys,sysconfig,sqlite3;"
                    "print(sys.version.split()[0],sysconfig.get_config_var('WITH_DTRACE'),sqlite3.sqlite_version)"))
     require(config.split()[:2] == ["3.13.9", "1"], "unexpected trace interpreter configuration")
+    if full:
+        spawn = logs.run("trace-build-spawn", outputs.setdefault("spawn_preflight", {}), command,
+                         (str(python), "-I", "-X", "faulthandler", "-c",
+                          "import os,subprocess; fds=os.pipe(); [os.close(fd) for fd in fds];"
+                          "subprocess.run(['/usr/bin/true'], capture_output=True, check=True)"),
+                         timeout=15)
+        require(spawn.returncode == 0, "trace interpreter pipe or process launch failed")
     good(("/bin/chmod", "-R", "a+rX,go-w", str(build)))
     outputs.update(binary_sha256=hash_bytes(python.read_bytes()), configuration=config)
     dof = logs.run("trace-build-dof", outputs.setdefault("dof", {}), command,
