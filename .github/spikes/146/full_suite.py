@@ -36,7 +36,9 @@ arguments = sys.argv[1:]
 if arguments[0] == "--aitm-assigned":
     import json
     import _pytest.main
-    _pytest.main._aitm146_assignment = frozenset(json.loads(arguments[1]))
+    scope = json.loads(arguments[1])
+    _pytest.main._aitm146_assignment = frozenset(scope["assigned"])
+    _pytest.main._aitm146_inventory = scope["catalog_sha256"]
     arguments = arguments[2:]
 raise SystemExit(pytest.main(arguments))
 """
@@ -140,6 +142,12 @@ def instrument_pytest(site):
              + b'("collection-end", str(len(items)))\n'
              + b'        assignment = globals().get("_aitm146_assignment")\n'
              + b'        if assignment is not None:\n'
+             + b'            inventory = globals()["_aitm146_inventory"]\n'
+             + b'            import hashlib, json\n'
+             + b'            ids = sorted(item.nodeid for item in items)\n'
+             + b'            if hashlib.sha256(json.dumps(ids, separators=(",", ":")).encode()).hexdigest() != inventory:\n'
+             + b'                ' + emit + b'("dispatch-refused", "inventory-mismatch")\n'
+             + b'                raise UsageError("complete observed inventory differs from approved catalog")\n'
              + b'            selected = [item for item in items if item.nodeid in assignment]\n'
              + b'            if len(selected) != len(assignment) or {item.nodeid for item in selected} != assignment:\n'
              + b'                raise UsageError("observed assignment differs from collection")\n'
@@ -350,9 +358,10 @@ def install_runtime(build, destination, locked_site, src, good):
 
 
 def observe(label, args, worker_args, uid, project, product, private, logs, command, result,
-            timeout=800, assignment=None):
+            timeout=800, assignment=None, expected_inventory=None):
     if assignment is not None:
-        args = (*args[:5], "--aitm-assigned", json.dumps(assignment), *args[5:])
+        payload = {"assigned": assignment, "catalog_sha256": expected_inventory}
+        args = (*args[:5], "--aitm-assigned", json.dumps(payload), *args[5:])
     child = subprocess.Popen(worker_args(*args, extra={"PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
                                                         "AITM146_CHILD_LINES": "1"}),
                              cwd=project, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,

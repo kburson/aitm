@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   observation:
@@ -24,6 +25,7 @@ jobs:
       - name: Observe selected product tests and live negative controls
         env:
           AITM_146_SELECTED_OBSERVATION: '1'
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail

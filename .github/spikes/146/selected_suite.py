@@ -3,10 +3,12 @@
 from collections import Counter
 from dataclasses import dataclass
 from hashlib import sha256
+from io import BytesIO
 import json
 from pathlib import Path
+from zipfile import ZipFile
 
-from full_suite import CHILDREN, ROOT, reconcile, observe, native_records
+from full_suite import CHILDREN, ROOT, reconcile, observe, native_records, parse_trace
 
 
 @dataclass(frozen=True)
@@ -54,10 +56,7 @@ def evaluate(assignment, catalog, evidence):
     return result
 
 
-CONTROL_TEST = """import os
-import sys
-
-def test_a_observed_failure():
+CONTROL_TEST = """def test_a_observed_failure():
     assert False, "expected control failure"
 
 def test_b_stopped_sibling():
@@ -77,6 +76,58 @@ print(json.dumps({
 """
 
 
+def check_prior_attempt(receipt, assignment, catalog, command):
+    identity = receipt["identity"]
+    attempt = identity["attempt"] - 1
+    if attempt < 1:
+        return {"status": "no-prior-attempt"}
+    endpoint = f"repos/{identity['repository']}/actions"
+    run = identity["run"]
+
+    def github(path):
+        result = command(("gh", "api", f"{endpoint}/{path}"), timeout=30)
+        if result.returncode:
+            raise ValueError("unable to retrieve prior GitHub Actions evidence")
+        return result.stdout
+
+    prior = json.loads(github(f"runs/{run}/attempts/{attempt}"))
+    metadata = json.loads(github(f"runs/{run}/artifacts"))["artifacts"]
+    name = f"product-146-{run}-a{attempt}"
+    matching = [row for row in metadata if row["name"] == name and not row["expired"]]
+    if len(matching) != 1 or prior["id"] != run or prior["run_attempt"] != attempt or prior["head_sha"] != identity["head"]:
+        raise ValueError("prior attempt provenance differs from intended replay input")
+    artifact = matching[0]
+    raw_zip = github(f"artifacts/{artifact['id']}/zip")
+    if artifact["digest"] != "sha256:" + sha256(raw_zip).hexdigest():
+        raise ValueError("prior attempt archive digest mismatch")
+    with ZipFile(BytesIO(raw_zip)) as archive:
+        raw_receipt = archive.read("receipt.json")
+        older = json.loads(raw_receipt)
+        selected = older["selected_observation"]
+        execution = selected["execution"]
+        trace = execution["tracer"]["stdout"]
+        raw_trace = archive.read(trace["path"])
+    if (older["identity"]["attempt"] != attempt or selected["status"] != "selected-observation-pass"
+            or sha256(raw_trace).hexdigest() != trace["sha256"]
+            or len(raw_trace) != trace["bytes"]):
+        raise ValueError("prior attempt lacks complete selected evidence")
+    expected_stale = {**assignment, "attempt": attempt}
+    if selected["assignment"] != expected_stale:
+        raise ValueError("prior assignment differs beyond attempt identity")
+    product = Path(f"<trial>/source/{ROOT}/src/aitm_usage")
+    events, children = parse_trace(raw_trace, execution["ready_pid"], product)
+    stale = Trace(selected["assignment"], events, children, execution["trace_clean"], execution["driver"]["exit"])
+    if not evaluate(expected_stale, catalog, stale)["accepted"]:
+        raise ValueError("prior attempt trace is not independently complete")
+    result = evaluate(assignment, catalog, stale)
+    if result.get("reason") != "assignment-identity-mismatch":
+        raise ValueError("prior GitHub attempt crossed evidence intake")
+    return {**result, "status": "rejected-prior-attempt", "run": run, "prior_attempt": attempt,
+            "expected_attempt": identity["attempt"], "artifact_id": artifact["id"],
+            "archive_sha256": artifact["digest"], "receipt_sha256": sha256(raw_receipt).hexdigest(),
+            "trace_sha256": trace["sha256"]}
+
+
 def run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args, command, require,
         args, targets, catalog, collection):
     project = src / ROOT
@@ -91,11 +142,12 @@ def run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args, c
     assignment = authorize({**identity, "invocation": "product-selected"}, catalog, chosen)
     result["assignment"] = assignment
 
-    def traced(label, path_targets, context, bind=None, options=(), timeout=100):
+    def traced(label, path_targets, context, bind=None, options=(), timeout=100, expected=catalog):
         events, children = observe(label, (*args, "--basetemp", str(fixtures / label),
                                           *options, *path_targets),
                                    worker_args, uid, project, product, private, logs, command, context,
-                                   timeout=timeout, assignment=None if bind is None else bind["nodes"])
+                                   timeout=timeout, assignment=None if bind is None else bind["nodes"],
+                                   expected_inventory=digest(sorted(expected)))
         return Trace(bind or {}, events, children, context["trace_clean"], context["driver"]["exit"])
 
     execution = result["execution"] = {}
@@ -103,16 +155,19 @@ def run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args, c
     execution.update(evaluate(assignment, catalog, observation))
     result["native_children"] = children = native_records(observation.children, venv)
     require(execution["accepted"] and all(len(rows) == 1 and rows[0]["os_exit_status"] == 0
+                                          and rows[0]["os_exit_reason"] == 1
                                           for rows in children.values()), "selected evidence is incomplete")
 
     controls = result["controls"] = {}
     missing = controls["missing-inventory"] = {}
-    omitted = traced("negative-missing-inventory", targets, missing, options=(
-        "--collect-only", "--ignore", str(project / "tests/test_accounting.py"),
+    omitted = traced("negative-missing-inventory", targets, missing, assignment, options=(
+        "--ignore", str(project / "tests/test_accounting.py"),
     ))
-    missing.update(reconcile(omitted.events, catalog, []))
+    missing.update(reconcile([(kind, data) for kind, data in omitted.events if kind != "dispatch-refused"], catalog, []))
+    missing["rejection"] = [data for kind, data in omitted.events if kind == "dispatch-refused"]
     missing["dispatch_refused"] = (
-        omitted.clean and omitted.exit_code == 0 and not missing["collection_matches"]
+        omitted.clean and omitted.exit_code == 4 and missing["rejection"] == ["inventory-mismatch"]
+        and not missing["collection_matches"]
         and not missing["unexpected_execution"] and not any(kind == "dispatch" for kind, _ in omitted.events)
     )
     require(missing["dispatch_refused"], "missing inventory control did not refuse before dispatch")
@@ -136,7 +191,7 @@ def run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args, c
             "negative control collection was incomplete")
     control_assignment = authorize({**identity, "invocation": "failure-control"}, control_nodes, control_nodes)
     stopped = traced("negative-failed-and-missing", (str(control_file),), failure.setdefault("execution", {}),
-                     control_assignment, ("--maxfail=1",))
+                     control_assignment, ("--maxfail=1",), expected=control_nodes)
     failure.update(evaluate(control_assignment, control_nodes, stopped))
     require(stopped.clean and stopped.exit_code == 1 and failure["dispatch_matches"]
             and failure["failed"] == control_nodes[:1] and failure["missing_or_inconsistent"] == control_nodes[1:]
@@ -146,5 +201,6 @@ def run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args, c
         {**assignment, "invocation": "replacement-selected"}, catalog, observation,
     )
     require(replay.get("reason") == "assignment-identity-mismatch", "stale invocation crossed evidence intake")
+    controls["actual-prior-attempt-replay"] = check_prior_attempt(receipt, assignment, catalog, command)
     result["status"] = "selected-observation-pass"
     return result["status"]
