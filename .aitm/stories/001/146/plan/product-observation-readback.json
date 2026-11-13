@@ -1,0 +1,91 @@
+{
+  "holds": {
+    "146": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        144,
+        145
+      ],
+      "rank": 50,
+      "status": "Backlog"
+    },
+    "148": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        139
+      ],
+      "rank": 60,
+      "status": "Backlog"
+    },
+    "267": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        143
+      ],
+      "rank": 60,
+      "status": "Backlog"
+    }
+  },
+  "independent_review": "plan/reviews/2026-11-12-146-product-observation-review.md",
+  "independent_review_sha256": "b21d1d10b510359bd92205568895a5d24d0020a2d32833507880d9e662dac09f",
+  "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+  "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+  "production_qualification": "unqualified",
+  "reference": {
+    "artifact": 13962226641,
+    "ids": 1216,
+    "ids_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+    "origin": "existing CI worker report",
+    "run": 43257314192
+  },
+  "trials": [
+    {
+      "archive_sha256": "sha256:b95f4fe04162c0759c7bf664389b7a85a480f926e5d6187958951cc97be4ffc4",
+      "artifact_id": 14004349066,
+      "attempt": 1,
+      "head": "794482ddc48a1f561b98a48cc693b0ca6ee57ec9",
+      "receipt": "plan/product-trial-1-receipt.json",
+      "receipt_sha256": "d3e919a630042b240192f9bafab79fbfe1718d0038fb49d84a773d602e510cfd",
+      "result": "refused",
+      "run": 43354052011,
+      "run_url": "https://github.com/kburson/aitm/actions/runs/43354052011/attempts/1",
+      "tree": "f745ac1008ff2ec5a2365538277cac31a79dfdba"
+    },
+    {
+      "archive_sha256": "sha256:9887c1a46f404be5d3f91f37c94abf970ee22fac4b77beb8634ffea1e7932d2e",
+      "artifact_id": 14004798224,
+      "attempt": 1,
+      "head": "b0b097dba5244c1e257204ec2ee6630fe0e6de74",
+      "receipt": "plan/product-trial-2-receipt.json",
+      "receipt_sha256": "bce6e089a274d230651c22382f8735210758aaabe2de42dab6680771f4659fe4",
+      "result": "refused",
+      "run": 43354143225,
+      "run_url": "https://github.com/kburson/aitm/actions/runs/43354143225/attempts/1",
+      "tree": "9b224fd4c829584c7ac4f22fd33757585ee7aa44"
+    },
+    {
+      "archive_sha256": "sha256:e6f17fe1e87c5751b0405dce0fcca5d6b3b9a5605e660d8b4510bb5cea5037f9",
+      "artifact_id": 14005262639,
+      "attempt": 1,
+      "head": "38ae598efadf7c3e43ce524a5ae0234bb23aa49d",
+      "receipt": "plan/product-trial-3-receipt.json",
+      "receipt_sha256": "83df19fe4dff4c62a0cba9c6c18492e05971082e55ab757e0131658adba5c6da",
+      "result": "refused",
+      "run": 43354251426,
+      "run_url": "https://github.com/kburson/aitm/actions/runs/43354251426/attempts/1",
+      "tree": "dff99f130a385dfd50b362267327c34e2f2c4cc8"
+    },
+    {
+      "archive_sha256": "sha256:333fe7f265d5a8f0e1f13a8ab218d771e0131e327fda26f7b3ef048445a2c2f8",
+      "artifact_id": 14006025262,
+      "attempt": 1,
+      "head": "f61ed7ead867d8527683c935f2f04b0c66df7deb",
+      "receipt": "plan/product-trial-4-receipt.json",
+      "receipt_sha256": "8903b6e46a8c6bfad926d7ef671654f751b2bb339df62ade4f2077aa9efae3e1",
+      "result": "comparison-incomplete",
+      "run": 43354487946,
+      "run_url": "https://github.com/kburson/aitm/actions/runs/43354487946/attempts/1",
+      "tree": "1769b8f1d5e2c041e54d7fdf7cb703658e306646"
+    }
+  ]
+}

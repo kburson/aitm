@@ -1,0 +1,77 @@
+{
+  "boundary": {
+    "controller_uid": 501,
+    "filesystem": "apfs",
+    "worker_environment_keys": [
+      "HOME",
+      "LC_ALL",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "TMPDIR"
+    ],
+    "worker_groups": [
+      4294967294,
+      12,
+      61,
+      100,
+      701
+    ],
+    "worker_locked_inputs_write": "denied",
+    "worker_marker_read_write": "denied",
+    "worker_noninteractive_elevation": "denied",
+    "worker_private_and_staged_directory_read_write": "denied",
+    "worker_staged_receipt_create": "denied",
+    "worker_uid": 4294967294
+  },
+  "collect_process": {
+    "count": 1216,
+    "exact_reference_match": true,
+    "exit": 0,
+    "ids_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+    "seconds": 3.776
+  },
+  "external_cli_probe": {
+    "has_expected_help": true,
+    "returncode": 0,
+    "stdout_sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+  },
+  "full_process": {
+    "exit": 1,
+    "seconds": 61.049,
+    "stdout_sha256": "3565ea0458d3257c186cb237460a33d5c4756e0b57da34f92c301311c0471c19"
+  },
+  "identity": {
+    "attempt": 1,
+    "controller_sha256": "55e10ee79a0dd4265511af5b83d340190f77c7de20b73f497138190d18f1fe90",
+    "head": "38ae598efadf7c3e43ce524a5ae0234bb23aa49d",
+    "image": "20261102.0473.1",
+    "lock_sha256": "949aa576be20d2b4f2516313fde8426304b0aeda3874751927243f8ff979ae73",
+    "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+    "product_python": "3.13.9",
+    "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+    "ref": "refs/heads/codex/146-product-observation-trial",
+    "reference_sha256": "7f68d7969a014db9b775d7a36579e3f4a4f36a8b96538df1bc0fe87ebe6cb24f",
+    "repository": "kburson/aitm",
+    "run": 43354251426,
+    "runner": "GitHub Actions 1000189148",
+    "tree": "dff99f130a385dfd50b362267327c34e2f2c4cc8",
+    "uv": "0.10.6"
+  },
+  "limits": [
+    "Reference is an earlier same-tree worker report, not an independent completeness oracle",
+    "Per-test and native coverage reports are worker-generated",
+    "External CLI probe observes one direct product process, not native descendants or source-line coverage"
+  ],
+  "production_qualification": "unqualified",
+  "reason": "worker could not reconcile its runtime evidence",
+  "reference": {
+    "artifact": 13962226641,
+    "ids": 1216,
+    "ids_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+    "origin": "existing CI worker report",
+    "run": 43257314192
+  },
+  "schema": "aitm.146-product-comparison/v1",
+  "status": "refused"
+}

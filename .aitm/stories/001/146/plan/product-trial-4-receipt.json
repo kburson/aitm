@@ -1,0 +1,135 @@
+{
+  "boundary": {
+    "controller_uid": 501,
+    "filesystem": "apfs",
+    "worker_environment_keys": [
+      "HOME",
+      "LC_ALL",
+      "PATH",
+      "PYTHONDONTWRITEBYTECODE",
+      "TMPDIR"
+    ],
+    "worker_groups": [
+      4294967294,
+      12,
+      61,
+      100,
+      701
+    ],
+    "worker_locked_inputs_write": "denied",
+    "worker_marker_read_write": "denied",
+    "worker_noninteractive_elevation": "denied",
+    "worker_private_and_staged_directory_read_write": "denied",
+    "worker_staged_receipt_create": "denied",
+    "worker_uid": 4294967294
+  },
+  "collect_process": {
+    "count": 1216,
+    "exact_reference_match": true,
+    "exit": 0,
+    "ids_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+    "seconds": 3.839
+  },
+  "external_cli_probe": {
+    "has_expected_help": true,
+    "returncode": 0,
+    "stdout_sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+  },
+  "full_process": {
+    "diagnostics": [
+      "ERROR tests/test_monitor_journal.py::test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes1]",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes2]",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes3]",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes4]",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes5]",
+      "ERROR tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn[changes6]",
+      "ERROR tests/test_scopes.py::test_scope_correction_preserves_prior_view_and_final_receipts",
+      "ERROR tests/test_scopes.py::test_quarantines_duplicate_sequence_and_retroactive_boundary[1-9]",
+      "ERROR tests/test_scopes.py::test_quarantines_duplicate_sequence_and_retroactive_boundary[2-7]",
+      "ERROR tests/test_scopes.py::test_quarantines_duplicate_sequence_and_retroactive_boundary[2-8]",
+      "ERROR tests/test_scopes.py::test_binding_checks_anchor_session_and_monotonic_generation",
+      "ERROR tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free",
+      "ERROR tests/test_scopes.py::test_publication_and_consumption_reject_unsafe_or_untyped_inputs",
+      "ERROR tests/test_scopes.py::test_local_commit_rolls_back_effect_and_replays_before_ack",
+      "ERROR tests/test_scopes.py::test_correction_can_recover_quarantined_scope_with_recorded_proof",
+      "ERROR tests/test_scopes.py::test_bound_owner_cannot_claim_development_in_an_unproven_stream",
+      "ERROR tests/test_scopes.py::test_exclusive_publication_keeps_one_concurrent_command",
+      "ERROR tests/test_scopes.py::test_final_commit_cannot_race_conflicting_publication",
+      "ERROR tests/test_scopes.py::test_inbox_directory_refuses_symlink_destination",
+      "ERROR tests/test_scopes.py::test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker",
+      "ERROR tests/test_scopes.py::test_publication_mutex_excludes_other_process_on_pinned_inbox",
+      "ERROR tests/test_scopes.py::test_review_outside_checkout_cannot_claim_wrong_attempt",
+      "ERROR tests/test_scopes.py::test_development_marker_waits_for_owner_binding"
+    ],
+    "exit": 1,
+    "reconciliation": [
+      "ValueError: inconsistent pytest controller evidence"
+    ],
+    "seconds": 48.796,
+    "stdout_sha256": "9da067ba919c77bc82ba80b53a4858ca3f00c368a6cb11a75ce67e9716ee6418"
+  },
+  "identity": {
+    "attempt": 1,
+    "controller_sha256": "31003bca4425b4c38cc1d91220e3ee4efef009c304ebebabab4592440a3b72a2",
+    "head": "f61ed7ead867d8527683c935f2f04b0c66df7deb",
+    "image": "20261102.0473.1",
+    "lock_sha256": "949aa576be20d2b4f2516313fde8426304b0aeda3874751927243f8ff979ae73",
+    "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+    "product_python": "3.13.9",
+    "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+    "ref": "refs/heads/codex/146-product-observation-trial",
+    "reference_sha256": "7f68d7969a014db9b775d7a36579e3f4a4f36a8b96538df1bc0fe87ebe6cb24f",
+    "repository": "kburson/aitm",
+    "run": 43354487946,
+    "runner": "GitHub Actions 1000189149",
+    "tree": "1769b8f1d5e2c041e54d7fdf7cb703658e306646",
+    "uv": "0.10.6"
+  },
+  "limits": [
+    "Reference is an earlier same-tree worker report, not an independent completeness oracle",
+    "Per-test and native coverage reports are worker-generated",
+    "External CLI probe observes one direct product process, not native descendants or source-line coverage"
+  ],
+  "production_qualification": "unqualified",
+  "reference": {
+    "artifact": 13962226641,
+    "ids": 1216,
+    "ids_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+    "origin": "existing CI worker report",
+    "run": 43257314192
+  },
+  "schema": "aitm.146-product-comparison/v1",
+  "selected_diagnostics": {
+    "authority": "worker-originated pytest, PID and coverage data",
+    "collection": {
+      "count": 0,
+      "exact_reference_match": false,
+      "extra": [],
+      "ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "missing": [
+        "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+        "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+      ]
+    },
+    "native_children": {
+      "expected_positive_product_line_counts": false,
+      "rows": []
+    },
+    "per_test": {
+      "complete_passing_phases": false,
+      "exit_report": 4,
+      "outcome_counts": {},
+      "phase_rows": 0
+    }
+  },
+  "selected_process": {
+    "diagnostics": [],
+    "exit": 4,
+    "seconds": 1.492,
+    "stdout_sha256": "a6fc53a5cef0fe8278c459c532a5e372bbe2dd65e4c365a7d7757a210299799f",
+    "unobserved_count": 1214
+  },
+  "status": "comparison-incomplete"
+}

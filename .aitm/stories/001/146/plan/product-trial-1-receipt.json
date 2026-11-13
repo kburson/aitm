@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "attempt": 1,
+    "controller_sha256": "21e729442cd12a4cad03f1855ccb7994acdbd994eaa1bcb0fd994e9a70263e14",
+    "head": "794482ddc48a1f561b98a48cc693b0ca6ee57ec9",
+    "image": "20261102.0473.1",
+    "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+    "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+    "ref": "refs/heads/codex/146-product-observation-trial",
+    "reference_sha256": "7f68d7969a014db9b775d7a36579e3f4a4f36a8b96538df1bc0fe87ebe6cb24f",
+    "repository": "kburson/aitm",
+    "run": 43354052011,
+    "runner": "GitHub Actions 1000189146",
+    "tree": "f745ac1008ff2ec5a2365538277cac31a79dfdba"
+  },
+  "limits": [
+    "Reference is an earlier same-tree worker report, not an independent completeness oracle",
+    "Per-test and native coverage reports are worker-generated",
+    "External CLI probe observes one direct product process, not native descendants or source-line coverage"
+  ],
+  "production_qualification": "unqualified",
+  "reason": "[Errno 1] Operation not permitted: '<trial>/worker'",
+  "schema": "aitm.146-product-comparison/v1",
+  "status": "refused"
+}
