@@ -6,11 +6,11 @@ kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/146"
 parent: 133
-children: []
+children: [268]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-12T20:54:24Z"
+updated: "2026-11-13T02:03:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -62,3 +62,7 @@ Rank 50 is the next unresolved story. Its trusted collection and execution quali
 The local synthetic rehearsal demonstrated controller-owned inventory and external verdicts on Linux. A bounded same-repository macOS/APFS pilot is the proposed qualification route. No available route met the pilot's entry criteria. #146 remains open and blocked on qualification, and #148 and #267 remain held by Rank order.
 
 [Reviewed replan](plan/2026-11-12-146-trusted-observation-replan.md) · [Linux rehearsal](plan/146-linux-rehearsal.json) · [Independent review](plan/reviews/2026-11-12-146-trusted-observation-replan-review.md).
+
+## Authorized Rank 50 pilot
+
+[#268](../../002/268/story.md) owns the disposable macOS/APFS spike. Production qualification and the Rank 60 pickup holds stay active.
