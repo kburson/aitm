@@ -1,0 +1,12 @@
+{
+  "evidence": "plan/measurement/evidence.json",
+  "evidence_sha256": "7edc9e3e109786b5fb00eb11961dd3c4947898886642196e94e4d005cfff11c5",
+  "issue": 267,
+  "report": "plan/measurement/report.md",
+  "report_sha256": "6c45e1c5cbf8e65385c934cb947394dacddcfbeb4e7093b2b7a405588b19b5a3",
+  "review": "plan/reviews/267-formal-review.md",
+  "review_sha256": "b1a6fec0b1f4b0e8cd6afb9cbb4d03c2a7309768a29cea74f2c9c6f56d159408",
+  "scope": "local-advisory-measurement",
+  "source_revision": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+  "status": "accepted"
+}

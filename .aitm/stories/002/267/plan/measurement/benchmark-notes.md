@@ -1,0 +1,9 @@
+# #267 implementer notes
+
+The benchmark pins AITM commit `766504a02aaeb9dda339d588172dd7d5bdbd2b3f` and runs each scenario in disposable Git clones on Darwin arm64 with APFS. Testmon is installed only in the benchmark venv. Its collection setting, history state and exact executed pytest IDs are captured per profile. The fixture patch stays outside the worktrees used for delivery. The benchmark never applies gate policy or publishes a branch.
+
+The first unchanged serial product run collected 1,216 nodes. One setup failed when `NativeJournalFixture.locator` received zero source locators for `test_pair_preserves_frontiers_when_one_native_completion_is_invalid[repeated-counter-rival]`. The native source scanner compares `st_ctime_ns` for the complete path during discovery. The fixture and its home-directory ancestor changed during the same second as the failure. That supports an ancestor-churn hypothesis, with no live snapshot data from the failed scan to identify the exact rejected comparison. Three independent isolated rechecks of that exact unchanged node passed. The original receipt and setup traceback remain retained, and the later measurement hook records setup, call, teardown and collection failures immediately. Seed-attributable failures are compared against the unchanged full receipt and tracked separately from other observed phase deltas.
+
+The first matrix invocation began before the optional #143 CLI full-run step was added to the recipe. That command was run separately using the same pinned source, exact seed and normal advisory entry point. The initial shell wrappers were revised while their long commands were active, which caused a shell parse error at a script boundary. Completed pytest outputs and phase receipts retained their own exit codes. The source restoration completed separately and both disposable Git checkouts returned to a clean pinned tree.
+
+Signed `codex-collaboration:/root/measure267`.

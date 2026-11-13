@@ -10,12 +10,12 @@ children: []
 blocking: [172]
 blocked-by: [143]
 created: "2026-11-12T20:01:44Z"
-updated: "2026-11-13T10:16:50Z"
+updated: "2026-11-13T10:17:51Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-advisory-and-qualification-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-267-measurement-plan.md", "plan/reviews/267-plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-267-measurement-plan.md", "plan/reviews/267-plan-review.md", "plan/measurement/2026-11-13-267-measurement-plan.md", "plan/measurement/benchmark-notes.md", "plan/measurement/evidence.json", "plan/measurement/manifest.py", "plan/measurement/measure_diagnostics.py", "plan/measurement/measure_testmon.py", "plan/measurement/prepare.sh", "plan/measurement/raw-manifest.sha256", "plan/measurement/recheck-baseline.sh", "plan/measurement/recipe.md", "plan/measurement/report.md", "plan/measurement/report.py", "plan/measurement/run-matrix.sh", "plan/measurement/run-profile.sh", "plan/measurement/seed.py", "plan/measurement/summarize.py", "plan/measurement/publication.sha256", "plan/reviews/267-formal-review.md", "plan/delivery.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T35L", "path": ".aitm/stories/001/133/plan/2026-11-12-133-advisory-and-qualification-replan.md", "publication": "dc1317219fdc255a86b63c9ce5170a06bd61cca3", "raw-sha256": "61c760529ed13971453a11ede1455a692a170a29d110472a39e1beaf4a131d97", "section-sha256": "56892d2d98ede1115e132a994c3f87ac780e631d78ac8f5369fb56554fba84df"}
@@ -42,3 +42,11 @@ The Rank 50 replacement is recorded. The prior Rank 60 pickup hold has ended. Ke
 ## Predeclared measurement
 
 [Plan](plan/2026-11-13-267-measurement-plan.md) · [Independent plan review](plan/reviews/267-plan-review.md).
+
+## Reviewed local advisory measurement
+
+[Sanitized report](plan/measurement/report.md) · [Exact outcomes](plan/measurement/evidence.json) · [Reproduction recipe](plan/measurement/recipe.md) · [Independent review](plan/reviews/267-formal-review.md).
+
+## Delivery
+
+[Verified measurement delivery](plan/delivery.json).
