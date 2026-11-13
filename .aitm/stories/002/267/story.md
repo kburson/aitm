@@ -10,7 +10,7 @@ children: []
 blocking: [172]
 blocked-by: [143]
 created: "2026-11-12T20:01:44Z"
-updated: "2026-11-12T20:20:39Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
@@ -34,3 +34,7 @@ Deliver a sanitized report and repeatable local recipe. Its results are advisory
 ## Pickup order
 
 Rank 60 pickup is blocked by owner sequencing until Rank 50 #146 is resolved. [Rank order](../../001/133/plan/2026-11-12-133-rank-order.md).
+
+## Rank 60 advisory pickup
+
+The Rank 50 replacement is recorded. The prior Rank 60 pickup hold has ended. Keep the existing advisory scope and completed prerequisite #143. Its measurements are retained for advisory evaluation under the revised #133 plan. [Replan](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).
