@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 277
 title: "[#133] Verify canonical full-CI evidence for advisory warnings"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/277"
 parent: 133
 children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T05:14:05Z"
+updated: "2026-11-13T10:18:35Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
