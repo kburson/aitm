@@ -1,0 +1,34 @@
+{
+  "schema": "aitm.claude-coverage-otel-feasibility/v1",
+  "surface": "macOS Claude Code 2.1.318",
+  "scope": "one synthetic foreground Agent prompt and one tool-free control prompt",
+  "telemetry_api_requests": 5,
+  "all_joined_to_unique_native_request_identity": true,
+  "agent_prompt_total_requests": 4,
+  "agent_prompt_child_requests": 2,
+  "agent_prompt_child_tokens": {
+    "input_tokens": 4,
+    "output_tokens": 128,
+    "cache_read_tokens": 1942,
+    "cache_creation_tokens": 2149
+  },
+  "agent_prompt_all_tokens": {
+    "input_tokens": 8,
+    "output_tokens": 324,
+    "cache_read_tokens": 18723,
+    "cache_creation_tokens": 2790
+  },
+  "agent_prompt_child_estimated_cost_usd_micros": 10574,
+  "agent_prompt_all_estimated_cost_usd_micros": 22406,
+  "agent_prompt_child_estimated_cost_share": 0.471927,
+  "earlier_child_request_estimated_cost_usd_micros": 8987,
+  "parent_result_covers_final_child_request_only": true,
+  "original_ownership_or_gate_change": false,
+  "production_prevalence_measured": false,
+  "artifact_sha256": {
+    "telemetry": "cd782cf4b5ae69fa391fbbd7ff711f71eba1e2873cc5420d87eb36bee3c31f64",
+    "parent": "d20f7f4ed7547940d9fc405cc8750e70c5c35174bd90638cf4354e3eccf4435f",
+    "child": "922efff08324b9861031055cfca9f18d7f84d320b7eef97e13933f1557fe3845",
+    "wire": "74f64ec8fac68d7a6dd19c977d5387029e509355efc7dc2f3c0cd0fa3b219830"
+  }
+}
