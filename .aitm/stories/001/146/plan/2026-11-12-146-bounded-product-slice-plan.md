@@ -1,0 +1,9 @@
+# #146 bounded product slice
+
+Use the same macOS/APFS job and pinned product archive. Preserve and diagnose the full pytest driver separately. The bounded trial maps two existing product obligations to external controller checks: console help, and one-shot collection with a persisted producer PID. It uses exact AST-discovered test names only for the reviewed nonparametrized slice, and does not treat those names as a full-suite oracle. Retain the mapped sources and catalog digest in the receipt.
+
+Dispatch each operation under the existing unprivileged principal. Observe process identity, completion and product outputs from the controller. Require a CPython 3.13.9 build with DTrace and controller-side line probes on each actual product process. The slice does not consume pytest/coverage.py reports. Refuse a coverage result when instrumentation errors, identity mismatches or required line anchors are missing. Keep bounded results separate from the existing product-wide acceptance criteria.
+
+Verify the diagnostic stream hashes, ancestry preflight and exact worker comparison first. Check the reviewed catalog, both assertions and coverage binding locally with unit inputs, then run hosted and obtain an independent evidence review of the exact run. Preserve any failed or incomplete observations and the Rank 60 holds.
+
+Execution notes. The diagnostic phase established two green full comparisons on the pinned uv runtime after provisioning a dedicated account, making runtime ancestry root-owned, and splitting worker scratch. The observer phase used a separate offline CPython 3.13.9 build. It required an explicit line-probe emission at the native interpreter hook because the pinned source had no call site. The controller archived the compiler output, probe table, tracer streams and actual product outputs. [Execution findings](2026-11-12-146-bounded-product-slice-findings.md)

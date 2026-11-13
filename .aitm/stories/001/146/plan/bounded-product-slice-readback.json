@@ -1,0 +1,1696 @@
+{
+  "holds": {
+    "146": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        144,
+        145
+      ],
+      "rank": 50,
+      "status": "Backlog"
+    },
+    "148": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        139
+      ],
+      "rank": 60,
+      "status": "Backlog"
+    },
+    "267": {
+      "disposition": "BLOCKED",
+      "prerequisites": [
+        143
+      ],
+      "rank": 60,
+      "status": "Backlog"
+    }
+  },
+  "production_qualification": "unqualified",
+  "review_sha256": "676ba37bca26d8c2c2ba845fc0f0c4dc45b24deeef9816b9e0d1f7e46f67cb10",
+  "trials": [
+    {
+      "archive_sha256": "a8bd751f3c869d47f00b1a334d844b04b625110e00b4aa1145a945b1100dad5d",
+      "artifact_id": 14006214746,
+      "attempt": 1,
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "88fba4ba96deedab5688104d1e158b49bf3d14ffe14b4d1c75d05dc32553390b"
+        },
+        "diagnostics/full-reconciliation.stderr.log": {
+          "bytes": 731,
+          "sha256": "22f5c2f49fba52c38c1b19e9d4a83415604e9455197d10919887b4f8daad970e"
+        },
+        "diagnostics/full-reconciliation.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full.stderr.log": {
+          "bytes": 605,
+          "sha256": "680f2632ae104d3c541c5a00c6a3bc32c3c5d050278ab47138f78104b9fcd051"
+        },
+        "diagnostics/full.stdout.log": {
+          "bytes": 5830619,
+          "sha256": "1bc6ed6880b694514afbd1e760b9cc99d4dfa7821bc45103e7ad1315c2bf524d"
+        },
+        "diagnostics/selected-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected-reconciliation.stdout.log": {
+          "bytes": 179,
+          "sha256": "1843e8149c75c81cb26efa15e8f096609ff78f694de2284eee20e8d742ef9e6c"
+        },
+        "diagnostics/selected.stderr.log": {
+          "bytes": 737,
+          "sha256": "db7c5c716d040096ca34ef23c7bfbbffe6f524a7f894e08ea8850c52408906d3"
+        },
+        "diagnostics/selected.stdout.log": {
+          "bytes": 23,
+          "sha256": "a6fc53a5cef0fe8278c459c532a5e372bbe2dd65e4c365a7d7757a210299799f"
+        }
+      },
+      "full_process": {
+        "exit": 1,
+        "seconds": 31.787,
+        "timeout_seconds": null
+      },
+      "head": "d3175162b207f873d3355ca97d6acaeb9999e013",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "a7611bdc8e42591692fb79a71cbb2123d9d00a061e996b7955da113cd9752041",
+      "receipt_status": "comparison-incomplete",
+      "run": 43358167408,
+      "selected_process": {
+        "exit": 4,
+        "seconds": 0.621
+      },
+      "tree": "fc7fb21ac20b544d537715057d458743c2e0fa07"
+    },
+    {
+      "archive_sha256": "929dc84a7055d939f5426770d47e6619ea7861e5aa8aa8401358e66eb1b23179",
+      "artifact_id": 14007133163,
+      "attempt": 1,
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "7abd356bc4238541f5944eba33d7edd63386353e95e8605d5f057deec1f20715"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full-reconciliation.stderr.log": {
+          "bytes": 731,
+          "sha256": "22f5c2f49fba52c38c1b19e9d4a83415604e9455197d10919887b4f8daad970e"
+        },
+        "diagnostics/full-reconciliation.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full.stderr.log": {
+          "bytes": 605,
+          "sha256": "680f2632ae104d3c541c5a00c6a3bc32c3c5d050278ab47138f78104b9fcd051"
+        },
+        "diagnostics/full.stdout.log": {
+          "bytes": 331374,
+          "sha256": "0a0497d6a070742a9f43e4552fe3270bded18e26baf8f727d2fd5e434c70350d"
+        },
+        "diagnostics/selected-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected-reconciliation.stdout.log": {
+          "bytes": 1637,
+          "sha256": "202f75c58883da8478e7760f2b5dd532411eac8879950a9f9c99aa400db45b65"
+        },
+        "diagnostics/selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "2b1de2f830d76664f66cfe4e0a619a803504508f18fb395c3ece000468f23876"
+        }
+      },
+      "full_process": {
+        "exit": 1,
+        "seconds": 286.344,
+        "timeout_seconds": null
+      },
+      "head": "ae3b73de4c2fb59f76f628406160e0a140897bbb",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "2cf9cac3e3471be0ec9f52fbb942a273ec18bf717adb97922e339d2d3f83910f",
+      "receipt_status": "comparison-incomplete",
+      "run": 43358380231,
+      "selected_process": {
+        "exit": 0,
+        "seconds": 3.476
+      },
+      "tree": "b018b12e56fe49bfb4b1f2661b1690ef7a65bf2b"
+    },
+    {
+      "archive_sha256": "78717ca3c3b2de3867fd0a16db93ee059b01f5c1cd5437dff842ebf13ce8b9b3",
+      "artifact_id": 14007927025,
+      "attempt": 1,
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "72710da952b4d857211a4876076771d71e16dfcf4b067826b5bf24821175cea7"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full.stdout.log": {
+          "bytes": 844,
+          "sha256": "547cdf59305c3c2fa1eebbd440a9d70572dae4f4508fd0e6ac2a234ff1603e01"
+        }
+      },
+      "full_process": {
+        "exit": null,
+        "seconds": 430.045,
+        "timeout_seconds": 430
+      },
+      "head": "34d5685e7dbd49add702348f2db01430c7c8f6a5",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "e323fdad539e6f2f40c41b21f7e086388c725d4ca6d75313d2b1384d52b91431",
+      "receipt_status": "refused",
+      "run": 43359225097,
+      "selected_process": {
+        "exit": null,
+        "seconds": null
+      },
+      "tree": "eef3238c3bc48d578d2504c2fb8a5e09bdc1e91d"
+    },
+    {
+      "archive_sha256": "f4d5de1cb9fdf7e68348bfac472b1efd968fa827ec0a8743dd3f4d1123b9ae9c",
+      "artifact_id": 14007687856,
+      "attempt": 1,
+      "bounded": {
+        "reason": "trace interpreter compile failed",
+        "status": "incomplete"
+      },
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "a2fd6bfe97a18ff0b49922986086e1988acf7ce1d1bc72463843ac3735b31679"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full-reconciliation.stdout.log": {
+          "bytes": 912169,
+          "sha256": "af3ffc5a6ea24156fd0325ca3141b18d8dc5ae4f19cda88a3f3a6b3651a53938"
+        },
+        "diagnostics/full.stderr.log": {
+          "bytes": 605,
+          "sha256": "680f2632ae104d3c541c5a00c6a3bc32c3c5d050278ab47138f78104b9fcd051"
+        },
+        "diagnostics/full.stdout.log": {
+          "bytes": 1436,
+          "sha256": "e47af6b7a77eb2800f5bd2ab4d865af4ebb729f6d981a1068bf705364801fe55"
+        },
+        "diagnostics/selected-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected-reconciliation.stdout.log": {
+          "bytes": 1641,
+          "sha256": "4ac2f2fdb82c1356335b22e6ab5624c513ffe49832688442c63ea67ac33653d4"
+        },
+        "diagnostics/selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "6ede137f5481cc9dab8f66fd90a9c89881116964a8d3e0d38ebbe8b808cea709"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 6856,
+          "sha256": "87b94b643eba6966105d6444d013bb732c8ae47eb12be1f8ae8c883106148b51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 100376,
+          "sha256": "e7ca699653981f35b4797efbba8de1f8db96d861460e89c0bfb3d1eec3ebbc72"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30608,
+          "sha256": "8043cf60d775c238fe6e38df15815d2f81946806a1e6d5b509fa4e8f5f8b0984"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "full_process": {
+        "exit": 0,
+        "seconds": 344.402,
+        "timeout_seconds": null
+      },
+      "head": "3dcc614eadcc61b926af1062df00274b9f4271d9",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "fbd465847dcd83a780d121665434e4a42dc42f88ac16de8adb7e68a85baf7fd2",
+      "receipt_status": "comparison-incomplete",
+      "run": 43360021305,
+      "selected_process": {
+        "exit": 0,
+        "seconds": 4.333
+      },
+      "tree": "6992bdf842ba8ec0e61bbd67c1c8702bc4ac7ae6"
+    },
+    {
+      "archive_sha256": "8c14387db4d561705ab565379fb8d8303b73cbf14f1d2a42c26bfc5579ca5dad",
+      "artifact_id": 14008821135,
+      "attempt": 1,
+      "bounded": {
+        "reason": "trace interpreter compile failed",
+        "status": "incomplete"
+      },
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "bcd7e2f7b27eaed304bd1c353c367391292ae5b94e83edaa42b3ae4bb5eeae3e"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/full-reconciliation.stdout.log": {
+          "bytes": 912169,
+          "sha256": "407f57ebeb19f3e6b03b64e06f2a542422eadaa0560f950ecbc0a67e4fa4fd95"
+        },
+        "diagnostics/full.stderr.log": {
+          "bytes": 605,
+          "sha256": "680f2632ae104d3c541c5a00c6a3bc32c3c5d050278ab47138f78104b9fcd051"
+        },
+        "diagnostics/full.stdout.log": {
+          "bytes": 1436,
+          "sha256": "65ef674f607f78cc947e8d5ed5c1d32d5e4349ac69d53eeb1b3648ca92adbc09"
+        },
+        "diagnostics/selected-reconciliation.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected-reconciliation.stdout.log": {
+          "bytes": 1641,
+          "sha256": "738522d471416c5036fd579ca00f2d38a9056f0b98e454c80ecce2903f19b8a6"
+        },
+        "diagnostics/selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "33491df9a0ed1898058863467b55b78ae620277c96b219bc356c614a1a9d70d0"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 6856,
+          "sha256": "87b94b643eba6966105d6444d013bb732c8ae47eb12be1f8ae8c883106148b51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 100759,
+          "sha256": "bbe35e597a9f5500cea3d8033f3a0d492c19042cdc30f9faf37396a97b3e675f"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30608,
+          "sha256": "8043cf60d775c238fe6e38df15815d2f81946806a1e6d5b509fa4e8f5f8b0984"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "full_process": {
+        "exit": 0,
+        "seconds": 388.581,
+        "timeout_seconds": null
+      },
+      "head": "f5971f58e463b5563a2b027826f0c8a1168ed274",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "e1ca68890871b5408f8d2326c2c6626e7f3fd4057bdd8ce92cf268daa824fdff",
+      "receipt_status": "comparison-incomplete",
+      "run": 43360265384,
+      "selected_process": {
+        "exit": 0,
+        "seconds": 5.502
+      },
+      "tree": "622a48224f71841136bd3fff8e5c74045db1dd70"
+    },
+    {
+      "archive_sha256": "aac8e15e98cdf87b3100be25a0a6d096ae449f03b114ad8c4acc3968fe262245",
+      "artifact_id": 14008182137,
+      "attempt": 1,
+      "bounded": {
+        "assignment": [
+          "cli-help",
+          "service-one-shot"
+        ],
+        "fixture": {
+          "exit": 0,
+          "seconds": 0.065,
+          "stderr": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-fixture.stderr.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "stdout": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-fixture.stdout.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "inventory": {
+          "cli-help": {
+            "function_line": 7,
+            "node_id": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+            "required_product_probe": {
+              "file": "cli.py",
+              "line": 417,
+              "sha256": "b74258da1ca51bc67344e95970f563331c017b43b02a7d357a6c44ad66be95a3"
+            },
+            "source_sha256": "1574c4076f6fa957e66a264f2d3c0a11e1446e06f60249c83c14d3237fa91283"
+          },
+          "service-one-shot": {
+            "function_line": 1157,
+            "node_id": "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+            "required_product_probe": {
+              "file": "service.py",
+              "line": 1052,
+              "sha256": "cdb8f673c254cb5e9d4d186a18f15bab0df7bd9a059fb27900ca6b0c09c32faa"
+            },
+            "source_sha256": "d70c3517a60482fe67339d4f1bb454146ec369b984023fa89588d86987932995"
+          }
+        },
+        "inventory_sha256": "ae9c089b6904fc6412c8ea9775e72c82044c734c01c67c020ff820eb96f10de3",
+        "outcomes": {
+          "cli-help": {
+            "coverage": {
+              "attach_error": "process did not provide expected readiness",
+              "line_numbers": [],
+              "process_pid": 10348,
+              "required_line": 417,
+              "source": "cli.py",
+              "verified": false
+            },
+            "outcome": "passed",
+            "process": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-cli-help.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 697,
+                "path": "diagnostics/bounded-cli-help.stdout.log",
+                "raw_sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f",
+                "sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+              }
+            },
+            "process_lineage": [
+              {
+                "parent": 10347,
+                "pid": 10348,
+                "uid": 550
+              },
+              {
+                "parent": 1309,
+                "pid": 10347,
+                "uid": 0
+              }
+            ],
+            "trace": {
+              "exit": 1,
+              "stderr": {
+                "bytes": 129,
+                "path": "diagnostics/bounded-cli-help-dtrace.stderr.log",
+                "raw_sha256": "cec7f95a5e408ada1fcfe0626942aab7158a2f25c988ed657874cced91355ea0",
+                "sha256": "5266c98b8fcf556159014d85a26090ed1e60a5ebe8a100f67800f7574b362ece"
+              },
+              "stdout": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-cli-help-dtrace.stdout.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            }
+          },
+          "service-one-shot": {
+            "coverage": {
+              "attach_error": "process did not provide expected readiness",
+              "line_numbers": [],
+              "process_pid": 10449,
+              "required_line": 1052,
+              "source": "service.py",
+              "verified": false
+            },
+            "outcome": "passed",
+            "process": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-service-one-shot.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 146,
+                "path": "diagnostics/bounded-service-one-shot.stdout.log",
+                "raw_sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb",
+                "sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb"
+              }
+            },
+            "process_lineage": [
+              {
+                "parent": 10448,
+                "pid": 10449,
+                "uid": 550
+              },
+              {
+                "parent": 1309,
+                "pid": 10448,
+                "uid": 0
+              }
+            ],
+            "status": {
+              "exit": 0,
+              "seconds": 0.87,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-status.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 1578,
+                "path": "diagnostics/bounded-status.stdout.log",
+                "raw_sha256": "ba42d1dfd94d055e6f285b1c36b4444875cabc399c627515cc800cfa6e9945a2",
+                "sha256": "ba42d1dfd94d055e6f285b1c36b4444875cabc399c627515cc800cfa6e9945a2"
+              }
+            },
+            "status_witness": {
+              "producer_mode": "one-shot",
+              "producer_pid": 10449
+            },
+            "trace": {
+              "exit": 1,
+              "stderr": {
+                "bytes": 137,
+                "path": "diagnostics/bounded-service-one-shot-dtrace.stderr.log",
+                "raw_sha256": "585afaa8cb32e2891fa487198cd05b9bd51677535f80b9355b0b5e4760ac571d",
+                "sha256": "1f8fb89bd7817af13f3ba1da54cdca6aea585fd16f6c1563ab309b76655f6abc"
+              },
+              "stdout": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-service-one-shot-dtrace.stdout.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              }
+            }
+          }
+        },
+        "registration": {
+          "exit": 0,
+          "seconds": 0.766,
+          "stderr": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-register.stderr.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "stdout": {
+            "bytes": 94,
+            "path": "diagnostics/bounded-register.stdout.log",
+            "raw_sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193",
+            "sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193"
+          }
+        },
+        "status": "incomplete"
+      },
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/bounded-cli-help-dtrace.stderr.log": {
+          "bytes": 129,
+          "sha256": "5266c98b8fcf556159014d85a26090ed1e60a5ebe8a100f67800f7574b362ece"
+        },
+        "diagnostics/bounded-cli-help-dtrace.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-cli-help.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-cli-help.stdout.log": {
+          "bytes": 697,
+          "sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+        },
+        "diagnostics/bounded-fixture.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-fixture.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-register.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-register.stdout.log": {
+          "bytes": 94,
+          "sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193"
+        },
+        "diagnostics/bounded-service-one-shot-dtrace.stderr.log": {
+          "bytes": 137,
+          "sha256": "1f8fb89bd7817af13f3ba1da54cdca6aea585fd16f6c1563ab309b76655f6abc"
+        },
+        "diagnostics/bounded-service-one-shot-dtrace.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-service-one-shot.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-service-one-shot.stdout.log": {
+          "bytes": 146,
+          "sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb"
+        },
+        "diagnostics/bounded-status.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-status.stdout.log": {
+          "bytes": 1578,
+          "sha256": "ba42d1dfd94d055e6f285b1c36b4444875cabc399c627515cc800cfa6e9945a2"
+        },
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "455007529deee29773b5e94fe025c5aabf87e08df0b57c0ed053a8ee4735d936"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 465,
+          "sha256": "b1178e4933a755e4ec895d1c3e9c26158f11339606159cb62865c6b1f111fd51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 162650,
+          "sha256": "0d37d3acab60c06bdb8ded461cb945771ec0bd803da0a4b77323303dd7aca9b4"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 98,
+          "sha256": "6b9d8f7fbeeff98623732298c4b3f91a900bfb546a161f49900be09d51f088c4"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30608,
+          "sha256": "8043cf60d775c238fe6e38df15815d2f81946806a1e6d5b509fa4e8f5f8b0984"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "full_process": {
+        "exit": null,
+        "seconds": null,
+        "timeout_seconds": null
+      },
+      "head": "23fed19fdc76bb359ba60bf634821340350df93b",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "eab34b48c64bcfa06a9166aefe8c571a52de239550992a53166ff71a148b77ed",
+      "receipt_status": "incomplete",
+      "run": 43361077255,
+      "selected_process": {
+        "exit": null,
+        "seconds": null
+      },
+      "tree": "7f2d4a5702f7a438d7398fd37083d69c88c4c096"
+    },
+    {
+      "archive_sha256": "d904289a70de88d1463cc944b3c99aaaa27449c75b498a160efa7bad2967d125",
+      "artifact_id": 14007819897,
+      "attempt": 1,
+      "bounded": {
+        "assignment": [
+          "cli-help",
+          "service-one-shot"
+        ],
+        "fixture": {
+          "exit": 0,
+          "seconds": 0.052,
+          "stderr": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-fixture.stderr.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "stdout": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-fixture.stdout.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        "inventory": {
+          "cli-help": {
+            "function_line": 7,
+            "node_id": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+            "required_product_probe": {
+              "file": "cli.py",
+              "line": 417,
+              "sha256": "b74258da1ca51bc67344e95970f563331c017b43b02a7d357a6c44ad66be95a3"
+            },
+            "source_sha256": "1574c4076f6fa957e66a264f2d3c0a11e1446e06f60249c83c14d3237fa91283"
+          },
+          "service-one-shot": {
+            "function_line": 1157,
+            "node_id": "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+            "required_product_probe": {
+              "file": "service.py",
+              "line": 1052,
+              "sha256": "cdb8f673c254cb5e9d4d186a18f15bab0df7bd9a059fb27900ca6b0c09c32faa"
+            },
+            "source_sha256": "d70c3517a60482fe67339d4f1bb454146ec369b984023fa89588d86987932995"
+          }
+        },
+        "inventory_sha256": "ae9c089b6904fc6412c8ea9775e72c82044c734c01c67c020ff820eb96f10de3",
+        "outcomes": {
+          "cli-help": {
+            "coverage": {
+              "line_numbers": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                12,
+                13,
+                14,
+                15,
+                23,
+                35,
+                36,
+                37,
+                44,
+                45,
+                51,
+                60,
+                79,
+                85,
+                113,
+                119,
+                136,
+                165,
+                200,
+                231,
+                235,
+                254,
+                255,
+                256,
+                261,
+                269,
+                284,
+                295,
+                328,
+                383,
+                412,
+                416,
+                417,
+                418,
+                420,
+                421,
+                423,
+                424,
+                426,
+                427,
+                428,
+                429,
+                430,
+                431,
+                432,
+                434,
+                435,
+                436,
+                437,
+                438,
+                439,
+                441,
+                442,
+                444,
+                445,
+                449,
+                450,
+                451,
+                452,
+                453,
+                454,
+                455,
+                456,
+                457,
+                458,
+                459,
+                460,
+                461,
+                463,
+                464,
+                465,
+                466,
+                467,
+                468,
+                469,
+                470,
+                471,
+                472,
+                473,
+                474,
+                475,
+                476,
+                477,
+                478,
+                479,
+                480,
+                481,
+                482,
+                483,
+                484,
+                485,
+                486,
+                487,
+                488,
+                489,
+                490,
+                491,
+                492,
+                493,
+                494,
+                495,
+                496,
+                497,
+                498,
+                499,
+                500,
+                501,
+                502,
+                503,
+                504,
+                505,
+                506,
+                507,
+                508,
+                510,
+                511,
+                513,
+                514
+              ],
+              "process_pid": 10603,
+              "required_line": 417,
+              "source": "cli.py",
+              "verified": true
+            },
+            "outcome": "passed",
+            "process": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-cli-help.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 697,
+                "path": "diagnostics/bounded-cli-help.stdout.log",
+                "raw_sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f",
+                "sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+              }
+            },
+            "process_lineage": [
+              {
+                "parent": 10602,
+                "pid": 10603,
+                "uid": 550
+              },
+              {
+                "parent": 1433,
+                "pid": 10602,
+                "uid": 0
+              }
+            ],
+            "trace": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-cli-help-dtrace.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 8672,
+                "path": "diagnostics/bounded-cli-help-dtrace.stdout.log",
+                "raw_sha256": "1de5b48bcd84314dd302e293b27663183950cf262ff70bc7ab8f44e7e61b269f",
+                "sha256": "7daf8326f5ff19ee8308efb4e52e09a8fac5c8af9de721edc2dc2fc58e68c358"
+              }
+            },
+            "trace_ready": "READY 10603"
+          },
+          "service-one-shot": {
+            "coverage": {
+              "line_numbers": [
+                1,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                17,
+                18,
+                19,
+                30,
+                31,
+                32,
+                45,
+                46,
+                47,
+                54,
+                81,
+                82,
+                83,
+                84,
+                85,
+                88,
+                89,
+                90,
+                91,
+                92,
+                95,
+                96,
+                97,
+                98,
+                100,
+                105,
+                106,
+                107,
+                108,
+                109,
+                110,
+                111,
+                112,
+                113,
+                116,
+                117,
+                118,
+                119,
+                120,
+                123,
+                124,
+                126,
+                127,
+                128,
+                129,
+                132,
+                134,
+                137,
+                138,
+                139,
+                140,
+                141,
+                142,
+                148,
+                159,
+                160,
+                162,
+                163,
+                165,
+                166,
+                167,
+                169,
+                170,
+                171,
+                173,
+                174,
+                177,
+                178,
+                179,
+                180,
+                181,
+                182,
+                184,
+                185,
+                186,
+                187,
+                190,
+                191,
+                193,
+                197,
+                198,
+                200,
+                201,
+                202,
+                203,
+                204,
+                205,
+                206,
+                207,
+                208,
+                209,
+                210,
+                216,
+                228,
+                265,
+                266,
+                267,
+                268,
+                269,
+                270,
+                272,
+                273,
+                274,
+                276,
+                278,
+                279,
+                280,
+                283,
+                286,
+                287,
+                288,
+                289,
+                290,
+                291,
+                292,
+                293,
+                294,
+                298,
+                311,
+                335,
+                340,
+                341,
+                342,
+                362,
+                369,
+                370,
+                371,
+                383,
+                384,
+                385,
+                395,
+                396,
+                397,
+                424,
+                425,
+                426,
+                435,
+                436,
+                437,
+                469,
+                470,
+                471,
+                472,
+                473,
+                474,
+                475,
+                504,
+                505,
+                506,
+                507,
+                508,
+                509,
+                510,
+                511,
+                517,
+                518,
+                519,
+                533,
+                534,
+                535,
+                536,
+                537,
+                538,
+                539,
+                542,
+                544,
+                545,
+                548,
+                552,
+                568,
+                569,
+                570,
+                571,
+                572,
+                574,
+                576,
+                577,
+                580,
+                584,
+                602,
+                603,
+                604,
+                605,
+                606,
+                607,
+                608,
+                609,
+                610,
+                613,
+                614,
+                615,
+                616,
+                617,
+                620,
+                621,
+                622,
+                625,
+                626,
+                627,
+                628,
+                629,
+                630,
+                631,
+                632,
+                633,
+                635,
+                636,
+                637,
+                638,
+                643,
+                644,
+                645,
+                646,
+                648,
+                649,
+                650,
+                654,
+                655,
+                656,
+                657,
+                658,
+                659,
+                676,
+                678,
+                679,
+                681,
+                682,
+                692,
+                693,
+                694,
+                695,
+                696,
+                697,
+                698,
+                699,
+                703,
+                704,
+                705,
+                706,
+                708,
+                710,
+                714,
+                715,
+                716,
+                717,
+                718,
+                719,
+                721,
+                722,
+                723,
+                724,
+                725,
+                729,
+                730,
+                731,
+                732,
+                733,
+                734,
+                737,
+                738,
+                739,
+                740,
+                741,
+                756,
+                757,
+                758,
+                759,
+                760,
+                761,
+                763,
+                765,
+                767,
+                768,
+                769,
+                770,
+                771,
+                772,
+                773,
+                774,
+                775,
+                776,
+                778,
+                782,
+                784,
+                785,
+                787,
+                788,
+                790,
+                791,
+                792,
+                793,
+                794,
+                795,
+                798,
+                800,
+                801,
+                802,
+                803,
+                804,
+                805,
+                806,
+                807,
+                811,
+                812,
+                813,
+                814,
+                815,
+                816,
+                817,
+                818,
+                820,
+                842,
+                843,
+                844,
+                845,
+                846,
+                847,
+                849,
+                851,
+                852,
+                855,
+                856,
+                857,
+                858,
+                859,
+                860,
+                861,
+                862,
+                868,
+                869,
+                872,
+                873,
+                878,
+                879,
+                883,
+                884,
+                885,
+                887,
+                889,
+                890,
+                891,
+                893,
+                894,
+                895,
+                897,
+                898,
+                900,
+                901,
+                902,
+                903,
+                904,
+                905,
+                906,
+                907,
+                908,
+                914,
+                915,
+                917,
+                918,
+                920,
+                922,
+                923,
+                924,
+                925,
+                926,
+                935,
+                937,
+                938,
+                939,
+                940,
+                941,
+                950,
+                951,
+                956,
+                957,
+                958,
+                959,
+                961,
+                962,
+                963,
+                964,
+                965,
+                966,
+                967,
+                968,
+                969,
+                971,
+                986,
+                987,
+                988,
+                989,
+                993,
+                994,
+                995,
+                996,
+                997,
+                998,
+                999,
+                1005,
+                1006,
+                1007,
+                1009,
+                1010,
+                1011,
+                1012,
+                1013,
+                1016,
+                1018,
+                1019,
+                1020,
+                1021,
+                1022,
+                1023,
+                1024,
+                1025,
+                1027,
+                1028,
+                1029,
+                1030,
+                1031,
+                1032,
+                1033,
+                1034,
+                1035,
+                1036,
+                1038,
+                1039,
+                1040,
+                1041,
+                1042,
+                1043,
+                1044,
+                1046,
+                1049,
+                1051,
+                1052,
+                1053,
+                1056,
+                1071,
+                1105
+              ],
+              "process_pid": 10639,
+              "required_line": 1052,
+              "source": "service.py",
+              "verified": true
+            },
+            "outcome": "passed",
+            "process": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-service-one-shot.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 146,
+                "path": "diagnostics/bounded-service-one-shot.stdout.log",
+                "raw_sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb",
+                "sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb"
+              }
+            },
+            "process_lineage": [
+              {
+                "parent": 10638,
+                "pid": 10639,
+                "uid": 550
+              },
+              {
+                "parent": 1433,
+                "pid": 10638,
+                "uid": 0
+              }
+            ],
+            "status": {
+              "exit": 0,
+              "seconds": 0.522,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-status.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 1578,
+                "path": "diagnostics/bounded-status.stdout.log",
+                "raw_sha256": "7f637cfb9a06aedda21b9b3830963f6e8ab60fd9c7768a7a6a10c2d35b6cf9e1",
+                "sha256": "7f637cfb9a06aedda21b9b3830963f6e8ab60fd9c7768a7a6a10c2d35b6cf9e1"
+              }
+            },
+            "status_witness": {
+              "producer_mode": "one-shot",
+              "producer_pid": 10639
+            },
+            "trace": {
+              "exit": 0,
+              "stderr": {
+                "bytes": 0,
+                "path": "diagnostics/bounded-service-one-shot-dtrace.stderr.log",
+                "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+              },
+              "stdout": {
+                "bytes": 32693,
+                "path": "diagnostics/bounded-service-one-shot-dtrace.stdout.log",
+                "raw_sha256": "d6a0bca0be297c320e28102b2e03783ba2f59663b1d3b353fb77536169d4e023",
+                "sha256": "74ab752935f96b22a4e3d2465ee2996c3eddbd10c845aae1997dcacab2446862"
+              }
+            },
+            "trace_ready": "READY 10639"
+          }
+        },
+        "registration": {
+          "exit": 0,
+          "seconds": 0.552,
+          "stderr": {
+            "bytes": 0,
+            "path": "diagnostics/bounded-register.stderr.log",
+            "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "stdout": {
+            "bytes": 94,
+            "path": "diagnostics/bounded-register.stdout.log",
+            "raw_sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193",
+            "sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193"
+          }
+        },
+        "status": "bounded-pass"
+      },
+      "conclusion": "success",
+      "diagnostics": {
+        "diagnostics/bounded-cli-help-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-cli-help-dtrace.stdout.log": {
+          "bytes": 8672,
+          "sha256": "7daf8326f5ff19ee8308efb4e52e09a8fac5c8af9de721edc2dc2fc58e68c358"
+        },
+        "diagnostics/bounded-cli-help.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-cli-help.stdout.log": {
+          "bytes": 697,
+          "sha256": "9bad045d9443508f664acd5985a6f59865adc85c31b054187f1ceaea30b2ce9f"
+        },
+        "diagnostics/bounded-fixture.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-fixture.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-register.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-register.stdout.log": {
+          "bytes": 94,
+          "sha256": "4409c4c6c6797da17f3a9b917276865414bae7e5d0477a333e1a332a487ba193"
+        },
+        "diagnostics/bounded-service-one-shot-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-service-one-shot-dtrace.stdout.log": {
+          "bytes": 32693,
+          "sha256": "74ab752935f96b22a4e3d2465ee2996c3eddbd10c845aae1997dcacab2446862"
+        },
+        "diagnostics/bounded-service-one-shot.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-service-one-shot.stdout.log": {
+          "bytes": 146,
+          "sha256": "78268ea4445f240230c48bd1c2cbbf3f48dd1c1518723cd7f51eaa96e6ed76eb"
+        },
+        "diagnostics/bounded-status.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/bounded-status.stdout.log": {
+          "bytes": 1578,
+          "sha256": "7f637cfb9a06aedda21b9b3830963f6e8ab60fd9c7768a7a6a10c2d35b6cf9e1"
+        },
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "d5c1d0218319efdffbe4de7997354f56a43dee599f704d1d80065d454f112a29"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 465,
+          "sha256": "b1178e4933a755e4ec895d1c3e9c26158f11339606159cb62865c6b1f111fd51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 162650,
+          "sha256": "b388bfccc5275bd32145a75e34bc571a27fd491798877cc8a8cce02213879c27"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 98,
+          "sha256": "6b9d8f7fbeeff98623732298c4b3f91a900bfb546a161f49900be09d51f088c4"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30608,
+          "sha256": "8043cf60d775c238fe6e38df15815d2f81946806a1e6d5b509fa4e8f5f8b0984"
+        },
+        "diagnostics/trace-build-dof.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-dof.stdout.log": {
+          "bytes": 4513,
+          "sha256": "61cd813f4655571509b0a3bd7e6bfe7eb70a99df45f499bf4e430019045201a6"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "full_process": {
+        "exit": null,
+        "seconds": null,
+        "timeout_seconds": null
+      },
+      "head": "eda36826d67d596528d6f8b33fffebc2d1b4bee6",
+      "product_collection": {
+        "count": 1216,
+        "exact_reference_match": true,
+        "exit": 0
+      },
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "72d1192b7263b17866108c590680cb7803bf0434f7d027594008bf4bd053fbbc",
+      "receipt_status": "bounded-pass",
+      "run": 43361629256,
+      "selected_process": {
+        "exit": null,
+        "seconds": null
+      },
+      "tree": "2a7165bdaae3315a9f32a731c95bbea147ea174e"
+    }
+  ]
+}
