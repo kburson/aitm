@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 278
 title: "[#133] Publish a durable CI warning and nominate one repair"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/278"
 parent: 133
 children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:07:06Z"
+updated: "2026-11-13T11:07:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,7 @@ Consume authenticated advisory intake. Serialize a versioned incident, deduplica
 ## Reviewed plan
 
 [Implementation plan](plan/2026-11-13-278-durable-warning-plan.md) · [Independent review](plan/reviews/plan-review.md).
+
+## Shadow warning and local validation
+
+[Operator warning](plan/operator-warning.md) · [Shadow evidence](plan/shadow.json) · [Rehearsal](plan/rehearse.py) · [Local tests](plan/local-test.log) · [PR #283](https://github.com/kburson/aitm/pull/283).
