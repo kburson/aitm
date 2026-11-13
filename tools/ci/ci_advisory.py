@@ -95,10 +95,27 @@ def run_identity(run, sha):
         and run["head_branch"] == TARGET
         and run["head_sha"] == sha
         and run["repository"]["id"] == run["head_repository"]["id"] == REPOSITORY_ID
-        and all(positive(run[key]) for key in RUN_FIELDS[:4])
-        and timestamp(run["run_started_at"]) >= timestamp(run["created_at"]),
+        and all(positive(run[key]) for key in RUN_FIELDS[:4]),
         "canonical run identity disagrees",
     )
+
+
+def validate_attempt(attempt, run):
+    run_identity(attempt, run["head_sha"])
+    require(run_fields(attempt) == run_fields(run), "selected run attempt changed")
+    created = timestamp(run["created_at"])
+    require(
+        timestamp(attempt["run_started_at"]) >= created,
+        "attempt predates canonical run",
+    )
+    recorded = timestamp(attempt["created_at"])
+    if attempt["run_attempt"] == 1:
+        require(recorded == created, "first attempt creation disagrees")
+    else:
+        require(
+            created <= recorded <= timestamp(attempt["updated_at"]),
+            "rerun record creation falls outside provider timestamps",
+        )
 
 
 def run_fields(run):
@@ -335,8 +352,7 @@ def observe(github, *, expected=None, shadow=False):
         return outcome
     route = f"actions/runs/{identity[0]}/attempts/{identity[1]}"
     attempt = github.document(route)
-    run_identity(attempt, sha)
-    require(run_fields(attempt) == run_fields(run), "selected run attempt changed")
+    validate_attempt(attempt, run)
     suite = check_suite(github, run)
     jobs = check_jobs(github, route, run, suite, gaps, failures)
     outcome["jobs"] = {name: job["id"] for name, job in jobs.items()}
@@ -360,6 +376,8 @@ def observe(github, *, expected=None, shadow=False):
             final_attempt = github.document(route)
             run_identity(final_attempt, sha)
             same_attempt = run_fields(final_attempt) == run_fields(attempt)
+            if same_attempt:
+                validate_attempt(final_attempt, run)
     except EVIDENCE_ERRORS:
         gaps.append("current target and attempt could not be reverified")
         outcome["status"] = "red" if failures else "incomplete"

@@ -28,6 +28,7 @@ RUN = {
     "event": "push",
     "check_suite_id": 51,
     "created_at": START,
+    "updated_at": END,
     "run_started_at": START,
     "status": "completed",
     "conclusion": "success",
@@ -278,3 +279,8 @@ def test_malformed_sibling_keeps_red(provider):
     assert actual["status"] == "red"
     assert actual["failures"] == [f"{provider.jobs[0]['name']}:failure"]
     assert "invalid push job record" in actual["gaps"]
+
+
+def test_rerun_record_can_be_created_after_its_start(provider):
+    provider.attempt["created_at"] = "2026-11-13T09:00:01Z"
+    assert ci.observe(provider)["status"] == "green"
