@@ -36,6 +36,42 @@ def stable_digest(data):
     return hash_bytes(json.dumps(data, sort_keys=True, separators=(",", ":")).encode())
 
 
+class DiagnosticLogs:
+    def __init__(self, staging, redactions):
+        self.directory = staging / "diagnostics"
+        self.directory.mkdir(mode=0o700)
+        self.redactions = [(os.fsencode(path), replacement.encode())
+                           for path, replacement in redactions]
+
+    def retain(self, label, proc):
+        timed_out = isinstance(proc, subprocess.TimeoutExpired)
+        result = {"exit": None if timed_out else proc.returncode}
+        if timed_out:
+            result["timeout_seconds"] = proc.timeout
+        for channel in ("stdout", "stderr"):
+            raw = getattr(proc, channel) or b""
+            retained = raw
+            for path, replacement in self.redactions:
+                retained = retained.replace(path, replacement)
+            path = self.directory / f"{label}.{channel}.log"
+            with path.open("xb") as stream:
+                os.fchmod(stream.fileno(), 0o600)
+                stream.write(retained)
+            result[channel] = {"path": f"diagnostics/{path.name}", "bytes": len(retained),
+                               "sha256": hash_bytes(retained), "raw_sha256": hash_bytes(raw)}
+        return result
+
+    def run(self, label, result, worker, *args, **kwargs):
+        started = monotonic()
+        try:
+            proc = worker(*args, **kwargs)
+        except subprocess.TimeoutExpired as error:
+            result.update(self.retain(label, error), seconds=round(monotonic() - started, 3))
+            raise
+        result.update(self.retain(label, proc), seconds=round(monotonic() - started, 3))
+        return proc
+
+
 def command(args, *, cwd=None, env=None, timeout=30):
     return subprocess.run(args, cwd=cwd, env=env, capture_output=True, check=False, timeout=timeout)
 
@@ -119,6 +155,8 @@ def assess(report, reference, child_report):
 
 
 def trial(shared, private, staging, receipt):
+    logs = DiagnosticLogs(staging, [(str(shared), "<trial>"), (str(private), "<controller>"),
+                                    (str(staging.parent), "<runner-temp>")])
     uid = pwd.getpwnam(WORKER).pw_uid & 0xFFFFFFFF
     src = shared / "source"
     runtime = shared / "runtime"
@@ -172,14 +210,13 @@ def trial(shared, private, staging, receipt):
     receipt["external_cli_probe"] = {"returncode": console.returncode,
                                     "has_expected_help": b"usage: aitm-usage" in console.stdout and b"collect-once" in console.stdout,
                                     "stdout_sha256": hash_bytes(console.stdout)}
-    common = ("-q", "-p", "no:cacheprovider", "-p", "pytest_evidence", "--rootdir", str(src),
+    common = ("-q", "--tb=long", "-p", "no:cacheprovider", "-p", "pytest_evidence", "--rootdir", str(src),
               "--confcutdir", str(src), "-c", str(project / "pyproject.toml"))
     settings = {"PYTHONPATH": str(src / "tools/ci"), "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
                 "AITM_CI_PYTEST_EVIDENCE": str(work / "collect.json")}
-    started = monotonic()
-    collected = worker(python, "-m", "pytest", *common, "--collect-only", "--basetemp",
-                       str(work / "collect-fixtures"), *TARGETS, extra=settings, cwd=src, timeout=80)
-    receipt["collect_process"] = {"exit": collected.returncode, "seconds": round(monotonic() - started, 3)}
+    collected = logs.run("collection", receipt.setdefault("collect_process", {}), worker,
+                         python, "-m", "pytest", *common, "--collect-only", "--basetemp",
+                         str(work / "collect-fixtures"), *TARGETS, extra=settings, cwd=src, timeout=80)
     collected_report = worker("/bin/cat", str(work / "collect.json"))
     require(collected_report.returncode == 0, "worker collection report unavailable")
     collect = json.loads(collected_report.stdout)
@@ -192,12 +229,10 @@ def trial(shared, private, staging, receipt):
     settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "pytest.json"), AITM_CI_CHILD_EVIDENCE="1",
                     COVERAGE_FILE=str(work / ".product"))
     full_targets = ("tests", str(src / TARGETS[1]))
-    started = monotonic()
-    actual = worker(python, "-m", "coverage", "run", "-m", "pytest", *common,
-                    "-p", "xdist.plugin", "-n", "3", "--dist", "worksteal", "--basetemp",
-                    str(work / "runtime-fixtures"), *full_targets, extra=settings, cwd=project, timeout=430)
-    receipt["full_process"] = {"exit": actual.returncode, "seconds": round(monotonic() - started, 3),
-                               "stdout_sha256": hash_bytes(actual.stdout)}
+    actual = logs.run("full", receipt.setdefault("full_process", {}), worker,
+                      python, "-m", "coverage", "run", "-m", "pytest", *common,
+                      "-p", "xdist.plugin", "-n", "3", "--dist", "worksteal", "--basetemp",
+                      str(work / "runtime-fixtures"), *full_targets, extra=settings, cwd=project, timeout=430)
     summary = (
         "from pathlib import Path; import json,sys;"
         "from pytest_evidence import reconcile_workers;"
@@ -206,36 +241,26 @@ def trial(shared, private, staging, receipt):
         "r=reconcile_workers(p/'pytest.json',3);"
         "print(json.dumps([r,collect_child_coverage(r,p/'.product')]))"
     )
-    def diagnostics(proc):
-        lines = (proc.stdout + proc.stderr).decode(errors="replace").splitlines()
-        return [line.replace(str(shared), "<trial>")[:360]
-                for line in lines if line.startswith(("FAILED ", "ERROR ", "E ", "ValueError:", "PermissionError:", "FileNotFoundError:"))][-24:]
-
-    examined = worker(python, "-c", summary, str(work), extra=settings, cwd=project, timeout=45)
-    receipt["full_process"]["diagnostics"] = diagnostics(actual)
+    examined = logs.run("full-reconciliation", receipt.setdefault("full_reconciliation", {}), worker,
+                        python, "-c", summary, str(work), extra=settings, cwd=project, timeout=45)
     if examined.returncode == 0:
         report, child = json.loads(examined.stdout)
         receipt["full_diagnostics"] = assess(report, reference, child)
-    else:
-        receipt["full_process"]["reconciliation"] = diagnostics(examined)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
     selected = sorted((CLI, SERVICE))
     settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "selected.json"),
                     COVERAGE_FILE=str(work / ".selected"))
-    started = monotonic()
-    narrowed = worker(python, "-m", "coverage", "run", "-m", "pytest", *common, "--basetemp",
-                      str(work / "selected-fixtures"), *selected, extra=settings, cwd=project, timeout=90)
-    receipt["selected_process"] = {"exit": narrowed.returncode, "seconds": round(monotonic() - started, 3),
-                                   "stdout_sha256": hash_bytes(narrowed.stdout),
-                                   "unobserved_count": len(reference) - len(selected)}
+    selected_process = {"unobserved_count": len(reference) - len(selected)}
+    receipt["selected_process"] = selected_process
+    narrowed = logs.run("selected", selected_process, worker,
+                        python, "-m", "coverage", "run", "-m", "pytest", *common, "--basetemp",
+                        str(work / "selected-fixtures"), *selected, extra=settings, cwd=project, timeout=90)
     selected_summary = summary.replace("reconcile_workers(p/'pytest.json',3)", "json.loads((p/'selected.json').read_bytes())").replace("p/'.product'", "p/'.selected'")
-    examined = worker(python, "-c", selected_summary, str(work), extra=settings, cwd=project, timeout=35)
-    receipt["selected_process"]["diagnostics"] = diagnostics(narrowed)
+    examined = logs.run("selected-reconciliation", receipt.setdefault("selected_reconciliation", {}), worker,
+                        python, "-c", selected_summary, str(work), extra=settings, cwd=project, timeout=35)
     if examined.returncode == 0:
         report, child = json.loads(examined.stdout)
         receipt["selected_diagnostics"] = assess(report, selected, child)
-    else:
-        receipt["selected_process"]["reconciliation"] = diagnostics(examined)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
 
     def matches(result):
@@ -263,7 +288,7 @@ def main():
         ".github/workflows/aitm-146-product-observation-trial.yml"
     ], "unexpected trial diff")
     receipt = {
-        "schema": "aitm.146-product-comparison/v1", "status": "refused",
+        "schema": "aitm.146-product-comparison/v2", "status": "refused",
         "production_qualification": "unqualified",
         "identity": {"repository": os.environ["GITHUB_REPOSITORY"], "head": git("rev-parse", "HEAD"),
                      "tree": git("rev-parse", "HEAD^{tree}"), "product_commit": BASE,

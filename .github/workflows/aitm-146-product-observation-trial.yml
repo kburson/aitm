@@ -27,11 +27,13 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python3 -I .github/spikes/146/controller.py "$RUNNER_TEMP/aitm-146/receipt.json"
-      - name: Retain controller receipt
+      - name: Retain controller receipt and complete diagnostic streams
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: product-146-${{ github.run_id }}-a${{ github.run_attempt }}
-          path: ${{ runner.temp }}/aitm-146/receipt.json
+          path: |
+            ${{ runner.temp }}/aitm-146/receipt.json
+            ${{ runner.temp }}/aitm-146/diagnostics/*.log
           if-no-files-found: error
           retention-days: 14
