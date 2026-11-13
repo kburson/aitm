@@ -1,0 +1,11 @@
+{
+  "schema": "aitm.claude-parent-route-diagnostic/v1",
+  "ordinary_ambiguity_refused": true,
+  "diagnostic_projected_parent_span": [
+    37,
+    47
+  ],
+  "existing_scope_and_claim_evidence_shape_accepted_projected_span": true,
+  "missing_approved_pair_verifier_substituted_for_test": true,
+  "native_parent_cover_authority_proven": false
+}

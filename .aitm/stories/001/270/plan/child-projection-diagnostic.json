@@ -1,0 +1,22 @@
+{
+  "schema": "aitm.claude-child-projection-diagnostic/v1",
+  "source_artifact_sha256": "f4798aa73c0b76729cced9dec34ef338f869d9cfd805df490a0772e34da7f412",
+  "unmodified_native_delta_advanced": true,
+  "unmodified_native_delta_boundary_count": 0,
+  "unmodified_verify_boundary_refusal": "The next native capture boundary is unavailable",
+  "diagnostic_projection_only": true,
+  "existing_writer_verified_boundary_ordinal": 10,
+  "existing_writer_capture_epoch_generation": 1,
+  "existing_scope_routed_child_request_spans": [
+    [
+      10,
+      11
+    ],
+    [
+      19,
+      20
+    ]
+  ],
+  "native_original_ownership_proven": false,
+  "parent_cover_authority_proven": false
+}
