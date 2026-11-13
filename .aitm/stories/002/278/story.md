@@ -10,12 +10,12 @@ children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:21:47Z"
+updated: "2026-11-13T11:42:42Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json", "retro/2026-11-13-278-implementer-retrospective.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -61,3 +61,7 @@ The final candidate keeps original authenticated job IDs in deduplicated receipt
 ## Closure
 
 [Verified closure receipt](plan/closure-receipt.json).
+
+## Implementer sign-off
+
+[Signed retrospective](retro/2026-11-13-278-implementer-retrospective.md).
