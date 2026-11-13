@@ -1,0 +1,5 @@
+# #146 selected execution and live negative controls
+
+Use the exact reviewed product tree and the same controller, pinned pytest and DTrace observer as the accepted full baseline. Collect the complete product suite before authorizing an assignment. Apply the controller's fixed ID list after full pytest collection. Trace the applied assignment, all actual phase outcomes and both required native children. Record the complete complement as unobserved. Select both required child tests and a parameterized group.
+
+Run harmless controls in the hosted worker. Exercise missing inventory before dispatch, a worker-originated result presented at the controller's evidence intake, a genuinely failing test followed by an assigned sibling stopped before execution, and prior-run evidence presented with a different attempt. Retain actual worker and DTrace streams and preserve the observed failure alongside the missing sibling. Audit source, provenance and remaining production limits independently. Keep #148 and #267 held.

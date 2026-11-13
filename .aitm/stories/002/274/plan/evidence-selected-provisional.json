@@ -1,0 +1,71 @@
+{
+  "negative": {
+    "archive-bytes": {
+      "decision": "refuse",
+      "reason": "downloaded archive digest differs from the approved evidence"
+    },
+    "assignment_sha256": {
+      "decision": "refuse",
+      "reason": "assignment_sha256 differs from the approved evidence"
+    },
+    "attempt": {
+      "decision": "refuse",
+      "reason": "attempt differs from the approved evidence"
+    },
+    "head": {
+      "decision": "refuse",
+      "reason": "head differs from the approved evidence"
+    },
+    "mode": {
+      "decision": "refuse",
+      "reason": "mode differs from the approved evidence"
+    },
+    "mutated-approved-policy": {
+      "decision": "refuse",
+      "reason": "reviewer-approved policy hash differs from the approved evidence"
+    },
+    "observer-file": {
+      "decision": "refuse",
+      "reason": "controller_sha256 differs from the approved evidence"
+    },
+    "observer_tree": {
+      "decision": "refuse",
+      "reason": "observer_tree differs from the approved evidence"
+    },
+    "product_tree": {
+      "decision": "refuse",
+      "reason": "product_tree differs from the approved evidence"
+    },
+    "transport-attempt": {
+      "decision": "refuse",
+      "reason": "GitHub run run_attempt differs from the approved evidence"
+    },
+    "worker-assertion-only": {
+      "decision": "refuse",
+      "reason": "evidence differs from the approved evidence"
+    }
+  },
+  "policy_sha256": "7ddb15049568fd0051062d510c9a87718c69ba02351c441aaae3768cb3b3ca0e",
+  "positive": {
+    "approved_tuple": {
+      "assignment_sha256": "0e37439f32759be00a30ca65bb493473b87eaa00a6918f52249228e5182a111c",
+      "attempt": 1,
+      "head": "306ffb5f2540dd31a29fe4a16e205236193830d4",
+      "mode": "selected",
+      "observer_tree": "936143767d37f792adaad9638e2fc02a197061f3",
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "repository": "kburson/aitm",
+      "run": 43368532756,
+      "workflow_id": 416811200,
+      "workflow_path": ".github/workflows/aitm-146-product-observation-trial.yml"
+    },
+    "archive_sha256": "211d6c97a6ac37a2075cdbc82029cf37b34a296248b93794efc76f8425417db2",
+    "artifact_id": 14012080289,
+    "decision": "verify-provisional-transport-and-observation",
+    "observed_passing": 4,
+    "production_qualification": "unqualified",
+    "receipt_sha256": "d2c143da18659fb25895caa9adf633fa140a7e577f64ee5a87a76132acdfc229",
+    "verified_streams": 38
+  }
+}

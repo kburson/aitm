@@ -1,0 +1,10 @@
+test_changed_scope_is_refused (test_admit.Controls.test_changed_scope_is_refused) ... ok
+test_exact_request_is_admitted (test_admit.Controls.test_exact_request_is_admitted) ... ok
+test_no_assertion_only_admission (test_admit.Controls.test_no_assertion_only_admission) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+admit-reviewed-observation-only 1216 passing 24 verified streams 11 refusals
+verify-provisional-transport-and-observation 4 passing 38 verified streams 11 refusals

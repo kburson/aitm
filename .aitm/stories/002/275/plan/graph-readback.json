@@ -1,0 +1,362 @@
+{
+  "epic": 133,
+  "leaves": {
+    "138": {
+      "blocked_by": [],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T01] Pin the serial baseline"
+    },
+    "139": {
+      "blocked_by": [
+        138
+      ],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T02] Classify the pytest inventory"
+    },
+    "140": {
+      "blocked_by": [],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T03] Resolve exact Git changes"
+    },
+    "141": {
+      "blocked_by": [
+        139,
+        140
+      ],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T04] Derive Python and package edges"
+    },
+    "142": {
+      "blocked_by": [
+        139,
+        141
+      ],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T05] Select and explain test impact"
+    },
+    "143": {
+      "blocked_by": [
+        142
+      ],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T06] Deliver local advisory feedback"
+    },
+    "144": {
+      "blocked_by": [
+        139
+      ],
+      "state": "closed",
+      "state_reason": "not_planned",
+      "title": "[#133 T07] Qualify trusted pytest observation"
+    },
+    "145": {
+      "blocked_by": [
+        144
+      ],
+      "state": "closed",
+      "state_reason": "not_planned",
+      "title": "[#133 T08] Implement qualified complete collection"
+    },
+    "146": {
+      "blocked_by": [
+        144,
+        145
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T09] Implement qualified execution observation"
+    },
+    "147": {
+      "blocked_by": [
+        139,
+        140
+      ],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T10] Bind gate changes and inventory dispositions"
+    },
+    "148": {
+      "blocked_by": [
+        139
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T11] Plan isolated test shards"
+    },
+    "149": {
+      "blocked_by": [
+        146,
+        147,
+        148
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T12] Verify shard receipts and inventories"
+    },
+    "150": {
+      "blocked_by": [
+        149
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T13] Combine coverage and timing"
+    },
+    "151": {
+      "blocked_by": [
+        142,
+        150
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T14] Run the full and TIA shadow workflow"
+    },
+    "152": {
+      "blocked_by": [
+        150
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T15] Schedule full trunk validation and ingest evidence"
+    },
+    "153": {
+      "blocked_by": [
+        152
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T16] Define the line incident reducer"
+    },
+    "154": {
+      "blocked_by": [
+        153
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T17] Persist authority and merge intents"
+    },
+    "155": {
+      "blocked_by": [
+        154
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T18] Fence authority restore with independent continuity"
+    },
+    "156": {
+      "blocked_by": [
+        155
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T19] Connect trusted scheduled evidence and freshness"
+    },
+    "157": {
+      "blocked_by": [
+        156
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T20] Authenticate workspace and incident authority"
+    },
+    "158": {
+      "blocked_by": [],
+      "state": "closed",
+      "state_reason": "completed",
+      "title": "[#133 T21] Qualify the GitHub merge fence"
+    },
+    "159": {
+      "blocked_by": [
+        157,
+        158
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T22] Implement conditional merge and reconciliation"
+    },
+    "160": {
+      "blocked_by": [
+        152,
+        157
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T23] Qualify full repair outside broken base controls"
+    },
+    "161": {
+      "blocked_by": [
+        159,
+        160
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T24] Validate repair on a broken base"
+    },
+    "162": {
+      "blocked_by": [
+        161
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T25] Bind repair delivery to current trunk"
+    },
+    "163": {
+      "blocked_by": [
+        142,
+        162
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T26] Bind incident probes to the repaired revision"
+    },
+    "164": {
+      "blocked_by": [
+        154
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T27] Enroll workspaces and issue bounded decisions"
+    },
+    "165": {
+      "blocked_by": [
+        157,
+        164
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T28] Qualify native workspace controls"
+    },
+    "166": {
+      "blocked_by": [
+        165
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T29] Bridge governed Codex operations"
+    },
+    "167": {
+      "blocked_by": [
+        166
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T30] Bridge governed Claude operations"
+    },
+    "168": {
+      "blocked_by": [
+        146,
+        163,
+        165
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T31] Produce trusted workspace update observations"
+    },
+    "169": {
+      "blocked_by": [
+        162,
+        167,
+        168
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T32] Verify workspace updates and release barrier"
+    },
+    "170": {
+      "blocked_by": [
+        169
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T33] Enforce current workspace proof on live admission"
+    },
+    "171": {
+      "blocked_by": [
+        151
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T34] Implement selected-mode gate in shadow"
+    },
+    "172": {
+      "blocked_by": [
+        143,
+        171,
+        267
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T35] Measure selection and sharding qualification"
+    },
+    "173": {
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T36] Rehearse PR isolation and escaped-defect fencing"
+    },
+    "174": {
+      "blocked_by": [
+        162,
+        170,
+        171
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T37] Rehearse merge-only holds"
+    },
+    "175": {
+      "blocked_by": [
+        173
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T38] Rehearse conditional repair and fresh trunk proof"
+    },
+    "176": {
+      "blocked_by": [
+        170,
+        175
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T39] Rehearse workspace pause and restart"
+    },
+    "177": {
+      "blocked_by": [
+        174,
+        175
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T40] Rehearse exact repair of a merge-only hold"
+    },
+    "178": {
+      "blocked_by": [
+        172,
+        176,
+        177
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T41] Rehearse rollback with a live stop"
+    },
+    "267": {
+      "blocked_by": [
+        143
+      ],
+      "state": "open",
+      "state_reason": null,
+      "title": "[#133 T35L] Measure local TIA and testmon advisory performance"
+    }
+  },
+  "source": "authenticated GitHub issue dependency readback"
+}

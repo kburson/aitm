@@ -1,0 +1,741 @@
+{
+  "exact_selected_status": "accepted",
+  "holds": {
+    "146": {
+      "disposition": "BLOCKED",
+      "rank": 50,
+      "state": "Backlog"
+    },
+    "148": {
+      "disposition": "BLOCKED",
+      "rank": 60,
+      "state": "Backlog"
+    },
+    "267": {
+      "disposition": "BLOCKED",
+      "rank": 60,
+      "state": "Backlog"
+    }
+  },
+  "production_qualification": "unqualified",
+  "real_stale_replay": {
+    "accepted": false,
+    "archive_sha256": "b015c3ac0d2b4e9f48e85730f6b41e5756563c94e13f73f5227a8b48dd2e56f1",
+    "artifact_id": 14011956322,
+    "expected_attempt": 2,
+    "head": "16df827e8335ecb876826f830a8f82a22ae57c28",
+    "location": "independent local controller with live GitHub attempt metadata",
+    "observed_attempt": 1,
+    "positive_control": true,
+    "reason": "assignment-identity-mismatch",
+    "receipt_sha256": "5f423b141ad66b11df617f490eb2c1757a8b3b9a46d52c976e43a9145aaa4c62",
+    "run": 43368915281,
+    "trace_sha256": "80ee6b63d66bbe40eda7356b9a5de4d5ae49361edb2ae3032bcc79fe1cea2009"
+  },
+  "retained_trace": "plan/selected-prior-attempt-dtrace.log",
+  "signed_review_sha256": "ec469a1cd9d0a9d14a8151e86774cb61fc15a562867f54a0804babdfccfc3bbf",
+  "trials": [
+    {
+      "archive_sha256": "211d6c97a6ac37a2075cdbc82029cf37b34a296248b93794efc76f8425417db2",
+      "artifact_id": 14012080289,
+      "attempt": 1,
+      "conclusion": "success",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "c1f50f2e1c212b8eda61f6d173ce0db0ababf084c811ed9d6b47968b5f27f8e9"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stdout.log": {
+          "bytes": 1176,
+          "sha256": "8ac72f9bd2203a8728b8dcc6ace3605d03fa9e563dce09cdf843f7766c2a3ea2"
+        },
+        "diagnostics/negative-failed-and-missing.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing.stdout.log": {
+          "bytes": 638,
+          "sha256": "7213766cde1d632880eeaaf9382b56f6c8cf91081f26afa5332ecef7615b782f"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stdout.log": {
+          "bytes": 406,
+          "sha256": "56c112ae687389c330f3e7fa71a506c4245e05580c98e9a7aa1bac1178af32dc"
+        },
+        "diagnostics/negative-failure-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection.stdout.log": {
+          "bytes": 153,
+          "sha256": "b00f3243505eb9cde93032efdf9de6c065d1fe87d8ca89dfee99b2c8bcbb2ad1"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stdout.log": {
+          "bytes": 344420,
+          "sha256": "8f8c45e8b4f207c43d28a5245dbf6e41f421c12653f192d65b8d88fe9aa29260"
+        },
+        "diagnostics/negative-missing-inventory.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-missing-inventory.stdout.log": {
+          "bytes": 137381,
+          "sha256": "5b3beaa58aacb551b3602b1962ed4af31c481204f08059068413888717b67de4"
+        },
+        "diagnostics/negative-worker-report.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-worker-report.stdout.log": {
+          "bytes": 2680,
+          "sha256": "d23621dc7578fd967d4996481ff1bca14d000358db45d354f1212e006c9507a6"
+        },
+        "diagnostics/observed-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection-dtrace.stdout.log": {
+          "bytes": 352440,
+          "sha256": "12b85a78ff517b6ee77d260d89abd4bba16b59295c39d2cdffb89a1c1fe57239"
+        },
+        "diagnostics/observed-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "b22c016829b062955c6da785daaa6e3186fb04a71b7a5474f97bdb01efb1914a"
+        },
+        "diagnostics/observed-selected-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected-dtrace.stdout.log": {
+          "bytes": 1293954,
+          "sha256": "de87d9b3d95dede59977657b0c8eab079c59b31b5fc808f38ed77b11736f9f18"
+        },
+        "diagnostics/observed-selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "41b53e773aa148e49c86d83839739226b3c00e4b38afccccc6c50c1abf808ceb"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 465,
+          "sha256": "b1178e4933a755e4ec895d1c3e9c26158f11339606159cb62865c6b1f111fd51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 162745,
+          "sha256": "741fd5ab687624835c7d47bc7aa251ec9805685059d9035d98eeb5e4f2da0e04"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 98,
+          "sha256": "6b9d8f7fbeeff98623732298c4b3f91a900bfb546a161f49900be09d51f088c4"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30617,
+          "sha256": "ab1300693df748c394f1b15ce3ff0762584b6e83ea78ae5317b6dbad16fbbf21"
+        },
+        "diagnostics/trace-build-dof.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-dof.stdout.log": {
+          "bytes": 5092,
+          "sha256": "892c03d17902276b55233e3e1f2d7e2bdd0381433a540f460e06d4eaaa7579af"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "head": "306ffb5f2540dd31a29fe4a16e205236193830d4",
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "d2c143da18659fb25895caa9adf633fa140a7e577f64ee5a87a76132acdfc229",
+      "receipt_status": "selected-observation-pass",
+      "run": 43368532756,
+      "selected": {
+        "assignment": {
+          "attempt": 1,
+          "catalog_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+          "head": "306ffb5f2540dd31a29fe4a16e205236193830d4",
+          "invocation": "product-selected",
+          "nodes": [
+            "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+            "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+          ],
+          "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+          "run": 43368532756,
+          "tree": "936143767d37f792adaad9638e2fc02a197061f3"
+        },
+        "controls": {
+          "different-invocation-replay": {
+            "accepted": false,
+            "reason": "assignment-identity-mismatch"
+          },
+          "failed-and-missing": {
+            "accepted": false,
+            "collected": 2,
+            "failed": [
+              "trial-harness/test_failure_control.py::test_a_observed_failure"
+            ],
+            "missing_or_inconsistent": [
+              "trial-harness/test_failure_control.py::test_b_stopped_sibling"
+            ]
+          },
+          "missing-inventory": {
+            "collected": 1181,
+            "dispatch_refused": true,
+            "failed": [],
+            "missing_or_inconsistent": []
+          },
+          "worker-result": {
+            "accepted": false,
+            "reason": "untrusted-origin"
+          }
+        },
+        "native_children": {
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid": {
+            "coverage_pairs": 6493,
+            "exit_status": 0,
+            "pid": 22291
+          },
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help": {
+            "coverage_pairs": 4327,
+            "exit_status": 0,
+            "pid": 22306
+          }
+        },
+        "passed": [
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+        ],
+        "status": "selected-observation-pass",
+        "unobserved_count": 1212,
+        "unobserved_sha256": "2b9144cc4ddff86455babff0d2eefa373a616f7f5e4b78d7ed3ad4544547665b"
+      },
+      "tree": "936143767d37f792adaad9638e2fc02a197061f3"
+    },
+    {
+      "archive_sha256": "b015c3ac0d2b4e9f48e85730f6b41e5756563c94e13f73f5227a8b48dd2e56f1",
+      "artifact_id": 14011956322,
+      "attempt": 1,
+      "conclusion": "success",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "bd5325da4b0bc1996db030e26954143f38b8acbf8eba60169b214c3deaa122bc"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stdout.log": {
+          "bytes": 1176,
+          "sha256": "eca4db98ed9093006b3c1ddd59112fd513258467ccbe2a08cd9a8ca5a448a6c9"
+        },
+        "diagnostics/negative-failed-and-missing.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing.stdout.log": {
+          "bytes": 638,
+          "sha256": "ad7ad024f42ec5c826d1ba93ffaab01f9491d2aead28c1611d41f999174c03b7"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stdout.log": {
+          "bytes": 406,
+          "sha256": "b8a7dbd8f4339570a7e97cddb8fc2021e43b0f96bf48e6abb662e188a96d3fd9"
+        },
+        "diagnostics/negative-failure-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection.stdout.log": {
+          "bytes": 153,
+          "sha256": "b00f3243505eb9cde93032efdf9de6c065d1fe87d8ca89dfee99b2c8bcbb2ad1"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stdout.log": {
+          "bytes": 344476,
+          "sha256": "7db81575b0743e3833c7d7dab881ed8455f7f4886fae172010ee57b22d35d809"
+        },
+        "diagnostics/negative-missing-inventory.stderr.log": {
+          "bytes": 66,
+          "sha256": "7ab5a65d124186cb8128e942877badd88d9ab0768c0344fdc7f478b6495fdcd0"
+        },
+        "diagnostics/negative-missing-inventory.stdout.log": {
+          "bytes": 23,
+          "sha256": "80501b7d0da3396b01b8416df5f6c3621f30d0b5d5280b6a86906e1e4ecda9b6"
+        },
+        "diagnostics/negative-worker-report.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-worker-report.stdout.log": {
+          "bytes": 2680,
+          "sha256": "d23621dc7578fd967d4996481ff1bca14d000358db45d354f1212e006c9507a6"
+        },
+        "diagnostics/observed-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection-dtrace.stdout.log": {
+          "bytes": 352440,
+          "sha256": "50b570f6f5ee440a6d687d54a7d8d45c9078a3edc5483b369db2b4ceda58c4c8"
+        },
+        "diagnostics/observed-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "d54630387dc2a952aab4cf45ac7c5f62dc65850f4af16e4a71f59544b70dbf75"
+        },
+        "diagnostics/observed-selected-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected-dtrace.stdout.log": {
+          "bytes": 1293954,
+          "sha256": "80ee6b63d66bbe40eda7356b9a5de4d5ae49361edb2ae3032bcc79fe1cea2009"
+        },
+        "diagnostics/observed-selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "4d268860242af3d9e6ef93340adabd7a713003046325f002f5381c9eebb6876d"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 465,
+          "sha256": "b1178e4933a755e4ec895d1c3e9c26158f11339606159cb62865c6b1f111fd51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 162745,
+          "sha256": "9164314101c23bd4e8855c73a2a4a4fada6884898a6651147a6ac976d0de4d93"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 98,
+          "sha256": "6b9d8f7fbeeff98623732298c4b3f91a900bfb546a161f49900be09d51f088c4"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30617,
+          "sha256": "ab1300693df748c394f1b15ce3ff0762584b6e83ea78ae5317b6dbad16fbbf21"
+        },
+        "diagnostics/trace-build-dof.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-dof.stdout.log": {
+          "bytes": 5092,
+          "sha256": "892c03d17902276b55233e3e1f2d7e2bdd0381433a540f460e06d4eaaa7579af"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "head": "16df827e8335ecb876826f830a8f82a22ae57c28",
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "5f423b141ad66b11df617f490eb2c1757a8b3b9a46d52c976e43a9145aaa4c62",
+      "receipt_status": "selected-observation-pass",
+      "run": 43368915281,
+      "selected": {
+        "assignment": {
+          "attempt": 1,
+          "catalog_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+          "head": "16df827e8335ecb876826f830a8f82a22ae57c28",
+          "invocation": "product-selected",
+          "nodes": [
+            "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+            "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+          ],
+          "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+          "run": 43368915281,
+          "tree": "3328c78bd2a71202d91cb637e88c21c1f2e4387f"
+        },
+        "controls": {
+          "actual-prior-attempt-replay": {
+            "status": "no-prior-attempt"
+          },
+          "different-invocation-replay": {
+            "accepted": false,
+            "reason": "assignment-identity-mismatch"
+          },
+          "failed-and-missing": {
+            "accepted": false,
+            "collected": 2,
+            "failed": [
+              "trial-harness/test_failure_control.py::test_a_observed_failure"
+            ],
+            "missing_or_inconsistent": [
+              "trial-harness/test_failure_control.py::test_b_stopped_sibling"
+            ]
+          },
+          "missing-inventory": {
+            "collected": 1181,
+            "dispatch_refused": true,
+            "failed": [],
+            "missing_or_inconsistent": [],
+            "rejection": [
+              "inventory-mismatch"
+            ]
+          },
+          "worker-result": {
+            "accepted": false,
+            "reason": "untrusted-origin"
+          }
+        },
+        "native_children": {
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid": {
+            "coverage_pairs": 6493,
+            "exit_status": 0,
+            "pid": 15290
+          },
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help": {
+            "coverage_pairs": 4327,
+            "exit_status": 0,
+            "pid": 15341
+          }
+        },
+        "passed": [
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+        ],
+        "status": "selected-observation-pass",
+        "unobserved_count": 1212,
+        "unobserved_sha256": "2b9144cc4ddff86455babff0d2eefa373a616f7f5e4b78d7ed3ad4544547665b"
+      },
+      "tree": "3328c78bd2a71202d91cb637e88c21c1f2e4387f"
+    },
+    {
+      "archive_sha256": "27775460e604c64b730dc524e11f147b57672f5b3afc8d04059e73bd248d08ab",
+      "artifact_id": 14012525119,
+      "attempt": 2,
+      "conclusion": "failure",
+      "diagnostics": {
+        "diagnostics/collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "22a95792cb2561704b59d09a36fa5ea423f613aa162eb5d2eb6ebf90615e0fbd"
+        },
+        "diagnostics/fixture-ancestry.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/fixture-ancestry.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing-dtrace.stdout.log": {
+          "bytes": 1176,
+          "sha256": "f9dd1ca8b7b9e2a7f970796f5523b634397531a8631c4c5451bef6805b9ba1aa"
+        },
+        "diagnostics/negative-failed-and-missing.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failed-and-missing.stdout.log": {
+          "bytes": 638,
+          "sha256": "ad7ad024f42ec5c826d1ba93ffaab01f9491d2aead28c1611d41f999174c03b7"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection-dtrace.stdout.log": {
+          "bytes": 406,
+          "sha256": "67625260ba6fa1eb4ab55f36fb6a66ce31fbd352270c0ef9c41b49b0c53dc8d3"
+        },
+        "diagnostics/negative-failure-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-failure-collection.stdout.log": {
+          "bytes": 153,
+          "sha256": "b00f3243505eb9cde93032efdf9de6c065d1fe87d8ca89dfee99b2c8bcbb2ad1"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-missing-inventory-dtrace.stdout.log": {
+          "bytes": 344476,
+          "sha256": "6104cb8522f3b5cb728010caaa2be0f996464663642c8e915402c3fa54001679"
+        },
+        "diagnostics/negative-missing-inventory.stderr.log": {
+          "bytes": 66,
+          "sha256": "7ab5a65d124186cb8128e942877badd88d9ab0768c0344fdc7f478b6495fdcd0"
+        },
+        "diagnostics/negative-missing-inventory.stdout.log": {
+          "bytes": 23,
+          "sha256": "35a6897925b3a9b1ce6b74a7e52fc64340ad188bd8d98cc6c2b71e36fb68f8ca"
+        },
+        "diagnostics/negative-worker-report.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/negative-worker-report.stdout.log": {
+          "bytes": 2680,
+          "sha256": "d23621dc7578fd967d4996481ff1bca14d000358db45d354f1212e006c9507a6"
+        },
+        "diagnostics/observed-collection-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection-dtrace.stdout.log": {
+          "bytes": 352440,
+          "sha256": "9d6602a9f8fc048ee183243512459619f0bff6907eb652cdc63d44ad379424d4"
+        },
+        "diagnostics/observed-collection.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-collection.stdout.log": {
+          "bytes": 141575,
+          "sha256": "4a194750ccfdaa6f0e6e232d96fadd86cc3c9bbab990022031253f19a4dc018a"
+        },
+        "diagnostics/observed-selected-dtrace.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected-dtrace.stdout.log": {
+          "bytes": 1293954,
+          "sha256": "6279dda849c5cd0caa22f4f59daa364a8189f4e769c567dc417700c5fd805924"
+        },
+        "diagnostics/observed-selected.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/observed-selected.stdout.log": {
+          "bytes": 98,
+          "sha256": "0a41aec5d63c0c890e1aa58bc887c42e4dc5d8442bcedc87aefa6e146df2845d"
+        },
+        "diagnostics/trace-build-compile.stderr.log": {
+          "bytes": 465,
+          "sha256": "b1178e4933a755e4ec895d1c3e9c26158f11339606159cb62865c6b1f111fd51"
+        },
+        "diagnostics/trace-build-compile.stdout.log": {
+          "bytes": 162745,
+          "sha256": "af5f038572cd1a3fb749593abadfa8c7c53998041e1d181b578b05871805ed29"
+        },
+        "diagnostics/trace-build-configure.stderr.log": {
+          "bytes": 98,
+          "sha256": "6b9d8f7fbeeff98623732298c4b3f91a900bfb546a161f49900be09d51f088c4"
+        },
+        "diagnostics/trace-build-configure.stdout.log": {
+          "bytes": 30617,
+          "sha256": "ab1300693df748c394f1b15ce3ff0762584b6e83ea78ae5317b6dbad16fbbf21"
+        },
+        "diagnostics/trace-build-dof.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-dof.stdout.log": {
+          "bytes": 5092,
+          "sha256": "892c03d17902276b55233e3e1f2d7e2bdd0381433a540f460e06d4eaaa7579af"
+        },
+        "diagnostics/trace-build-download.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-download.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-extract.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stderr.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostics/trace-build-spawn.stdout.log": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      },
+      "head": "16df827e8335ecb876826f830a8f82a22ae57c28",
+      "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+      "receipt_sha256": "d1beb644b7fbf65535cf370045fa8254ddff9a71bd14c207891d9f3bd945268a",
+      "receipt_status": "refused",
+      "run": 43368915281,
+      "selected": {
+        "assignment": {
+          "attempt": 2,
+          "catalog_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+          "head": "16df827e8335ecb876826f830a8f82a22ae57c28",
+          "invocation": "product-selected",
+          "nodes": [
+            "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+            "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+            "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+          ],
+          "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+          "run": 43368915281,
+          "tree": "3328c78bd2a71202d91cb637e88c21c1f2e4387f"
+        },
+        "controls": {
+          "different-invocation-replay": {
+            "accepted": false,
+            "reason": "assignment-identity-mismatch"
+          },
+          "failed-and-missing": {
+            "accepted": false,
+            "collected": 2,
+            "failed": [
+              "trial-harness/test_failure_control.py::test_a_observed_failure"
+            ],
+            "missing_or_inconsistent": [
+              "trial-harness/test_failure_control.py::test_b_stopped_sibling"
+            ]
+          },
+          "missing-inventory": {
+            "collected": 1181,
+            "dispatch_refused": true,
+            "failed": [],
+            "missing_or_inconsistent": [],
+            "rejection": [
+              "inventory-mismatch"
+            ]
+          },
+          "worker-result": {
+            "accepted": false,
+            "reason": "untrusted-origin"
+          }
+        },
+        "native_children": {
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid": {
+            "coverage_pairs": 6493,
+            "exit_status": 0,
+            "pid": 16370
+          },
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help": {
+            "coverage_pairs": 4327,
+            "exit_status": 0,
+            "pid": 16380
+          }
+        },
+        "passed": [
+          "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[claude]",
+          "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider[codex]",
+          "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+        ],
+        "status": "incomplete",
+        "unobserved_count": 1212,
+        "unobserved_sha256": "2b9144cc4ddff86455babff0d2eefa373a616f7f5e4b78d7ed3ad4544547665b"
+      },
+      "tree": "3328c78bd2a71202d91cb637e88c21c1f2e4387f"
+    }
+  ]
+}

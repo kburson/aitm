@@ -1,0 +1,80 @@
+{
+  "archive_sha256": "cc28de0c3ba2d969a5a1eec6ae5317e6a001d1f1ffc5915180804de26ae4dba0",
+  "artifact_id": 14010642704,
+  "artifact_name": "product-146-43366344563-a1",
+  "assignment_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+  "assignment_size": 1216,
+  "attempt": 1,
+  "catalog_sha256": "efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9",
+  "catalog_size": 1216,
+  "event": "push",
+  "head": "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+  "image": "20261102.0473.1",
+  "inputs": {
+    "bounded_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/spikes/146/bounded.py",
+      "757ef83d4dc0043380209dee17f21bae18552bce585ee9fb42023375a9604928"
+    ],
+    "controller_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/spikes/146/controller.py",
+      "a8b375ad7f7bf150d6e08ecef93417fccd15979c04dcccda562a30120af8c672"
+    ],
+    "diagnostic_plugin_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/spikes/146/diagnostic_plugin.py",
+      "160d7550d70a1fe898e862f1992002e4a2050b43768f82a514b1782c357fd705"
+    ],
+    "full_suite_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/spikes/146/full_suite.py",
+      "f9d08e02d7a339af9ddedd6650c4cd88c75052e011e1dae75489236b5b20a563"
+    ],
+    "lock_sha256": [
+      "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+      "packages/aitm-usage/uv.lock",
+      "949aa576be20d2b4f2516313fde8426304b0aeda3874751927243f8ff979ae73"
+    ],
+    "reference_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/spikes/146/reference.json",
+      "7f68d7969a014db9b775d7a36579e3f4a4f36a8b96538df1bc0fe87ebe6cb24f"
+    ],
+    "workflow_sha256": [
+      "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+      ".github/workflows/aitm-146-product-observation-trial.yml",
+      "329b91c01d631c288549f4f5e9ecbbd7b17a8abad286d82ddb23d9d1c62da930"
+    ]
+  },
+  "job_id": 131691536753,
+  "job_name": "observation",
+  "mode": "full",
+  "observer_tree": "330316f85af0926881bf9207ed8d53e6a378e1c9",
+  "planning_publication": "e518ea9f1a1a62ae6d430c056066eb7223aa3d2a",
+  "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+  "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+  "product_python": "3.13.9",
+  "product_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+  "receipt_sha256": "3993095705929e2ca5793c156aca0b425f4e5cca97608247c5b9529f46dc8dde",
+  "receipt_status": "full-observation-pass",
+  "ref": "refs/heads/codex/146-product-observation-trial",
+  "repository": "kburson/aitm",
+  "review_path": ".aitm/stories/001/146/plan/reviews/2026-11-12-146-full-suite-observation-review.md",
+  "review_sha256": "003c96f469e94571774a51219e7ec654642cc2341dfc8293c60bffc59b2960ca",
+  "run": 43366344563,
+  "runner_labels": [
+    "macos-26"
+  ],
+  "toolchain": {
+    "base_sha256": "344ecd3b816a3e36451b9d2876245d11f43d8636e3e143bdea000efc0428acc9",
+    "pytest_patches": {
+      "main": "fc9151cf028c57e1cb879ff5d203c34795f4df6b77ab9c2a65aaf5705c284c37",
+      "python": "986359ddd9bfcbb13556b573275bef943e140f5964654bededd93d0bd574bfc2",
+      "runner": "d4c2af1158db2b79ca7c092475120dc2bea34ada9d95e6880ba7e4ff3308e30a"
+    }
+  },
+  "uv": "0.10.6",
+  "workflow_id": 416811200,
+  "workflow_path": ".github/workflows/aitm-146-product-observation-trial.yml"
+}
