@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 148
 title: "[#133 T11] Plan isolated test shards"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/148"
 parent: 133
 children: []
 blocking: [149]
 blocked-by: [139]
 created: "2026-11-10T16:51:21Z"
-updated: "2026-11-13T09:24:50Z"
+updated: "2026-11-13T09:48:15Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-148-advisory-shard-plan.md", "plan/reviews/148-plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-148-advisory-shard-plan.md", "plan/reviews/148-plan-review.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/hosted-attempt-1.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T11", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "a63010c5e5b2d73b9b5ef11e15a214424c179c411dab425172f63cb11f4fe1db"}
@@ -63,3 +63,7 @@ The Rank 50 replacement is recorded. The prior Rank 60 pickup hold has ended. Ke
 ## Advisory pickup
 
 [Plan](plan/2026-11-13-148-advisory-shard-plan.md) · [Independent plan review](plan/reviews/148-plan-review.md).
+
+## Exact candidate and review
+
+[Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
