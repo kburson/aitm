@@ -1,0 +1,8 @@
+{
+  "schema": "aitm.claude-source-permission-preflight/v1",
+  "separate_owner_approved_empty_nested_root": true,
+  "existing_control_applied_permission_without_epoch": true,
+  "child_disable_preserved_parent_edge": true,
+  "reopened_writer_state": true,
+  "authority_or_eligible_child_boundary_issued": false
+}

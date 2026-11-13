@@ -1,0 +1,15 @@
+{
+  "story": 270,
+  "coverage": "partial",
+  "basis": "Bounded coordinator progress through independent Refine, initial JIT, and prospective source consent tests",
+  "observation_count": 23,
+  "milliseconds": 96859,
+  "actual_hours": "0.0269",
+  "evidence_through_utc": "2026-11-13T04:09:27.515Z",
+  "sources": [
+    {
+      "path": "full-auto-admission-refine-1-270.json",
+      "sha256": "0602c71bb83e03dc6ba71360fdf89b212682e6e9b44bc48cf939917bacbf48b2"
+    }
+  ]
+}

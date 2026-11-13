@@ -1,0 +1,13 @@
+{
+  "schema": "aitm.claude-native-duplicate-link/v1",
+  "parent_root_same_session_matches": 2,
+  "one_expected_native_direct_sidecar": true,
+  "sidecar_matches_durable_native_agent_prompt_session_and_tool": true,
+  "parent_epoch_cursor_authenticates_only_the_parent": true,
+  "ordinary_scope_authority_issued": false,
+  "sha256": {
+    "parent": "e3b8410471dfa2e0eeeb64040bed8dba09bf663fe1f9df3ec4770d1847113ca9",
+    "child": "a55fde85811401c6d0477608725d9a1b70604bfe99c77a4e3fdf03785b2e346a",
+    "metadata": "7a371b44bd488e29d602a5befeafa305257c4393ae2bc5d8d8c2151f89d7f751"
+  }
+}

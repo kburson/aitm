@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.claude-preapproved-child-native-preflight/v1",
+  "parent_epoch_ordinal": 34,
+  "live_child_qualification": {
+    "event": "independent-child-source-admission",
+    "child_permission_before_native_origin": true,
+    "unique_locator_verified": true,
+    "first_capture_frontier": 9,
+    "frontier_preceded_assistant": true,
+    "normal_adapter_observations": 2,
+    "native_stream_boundary_candidates": 0,
+    "writer_boundary_candidates": 0,
+    "writer_offset_advanced": true,
+    "verify_boundary_refusal": "The next native capture boundary is unavailable",
+    "has_capture_epoch": false
+  },
+  "native_parent_refusal": "Expected the unique current native stream",
+  "reopen_confirmed_two_enabled_edges_and_one_parent_epoch": true,
+  "artifact_sha256": {
+    "parent": "175009203c60b25b8ad0de59ee9f1d9e743ef79e5c28da87598329b39a0b2a37",
+    "child": "f4798aa73c0b76729cced9dec34ef338f869d9cfd805df490a0772e34da7f412",
+    "metadata": "5d49de1e261d38516e48b146460838a3253e72dcb8b2ccd0e69d2b34a4809bbc",
+    "stream": "649a2d430715eb05476fb423af831669ef23348c3eefe50a63de2b91ab51b1de",
+    "registry": "a8b6839bd4159dc6e759b0c5576d05ee314472cf605be6bbf1c6b273818695ab",
+    "progress": "a94f8161708cd3123e8fa2a3ddc249e3a85922f38f9eae5ec4c86ae64cf90c67"
+  }
+}
