@@ -49,3 +49,9 @@ The pinned foreground Agent included the final metered child response in `toolUs
 ### Independent JIT held on original scope authority
 
 The original eligible owner and span for the selected child and covering aggregate could not be issued through the current monitor. The child-only diagnostic confirmed no verified checkout even with the stream filter isolated. #204 remains open in Refine at Rank 229 and directly blocks #119. [Exact JIT disposition and scope inspection](plan/2026-11-12-204-folded-intent-jit-hold.md).
+
+### Prospective capture and independent JIT recovery
+
+The unchanged writer enrolled the parent before the Agent call. The full tool-to-result span was eligible under that epoch, and the native child frames independently carried the verified checkout. The ordinary writer still refuses the parent after sidecar discovery and cannot enroll the child in a distinct namespace. [Live capture receipt](plan/claude-prospective-authority-carrier.json) · [Native-only comparison](plan/claude-native-only-origin-preflight.json) · [JIT recovery HOLD](plan/claude-folded-origin-independent-jit-r2.md).
+
+[Spike #269](../269/story.md) is an Epic #100 child for the remaining evidence. The accepted #204 → #119 dependency remains.

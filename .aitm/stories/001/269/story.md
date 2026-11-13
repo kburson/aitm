@@ -1,0 +1,27 @@
+---
+schema: "aitm.story/v0"
+id: 269
+title: "[Spike] Prove Claude folded origin and original scope"
+kind: "spike"
+state: "backlog"
+issue: "https://github.com/kburson/aitm/issues/269"
+parent: 100
+children: []
+blocking: []
+blocked-by: []
+created: "2026-11-13T02:06:59Z"
+updated: "2026-11-13T02:06:59Z"
+last-branch: "planning"
+estimate: {"agent-hours": null, "size": null}
+priority: null
+origin: ".aitm/stories/001/204/plan/2026-11-12-204-folded-origin-jit-r2.md"
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/project-entry.json"], "attachments": []}
+expansions: []
+trips: []
+---
+
+# [Spike] Prove Claude folded origin and original scope
+
+[GitHub #269](https://github.com/kburson/aitm/issues/269) · [Epic #100](../100/story.md) · [#204 independent JIT recovery](../204/plan/claude-folded-origin-independent-jit-r2.md)
+
+Project 24 Rank 228.9 places this evidence spike before #204. Compare native-only origin and a contemporaneous scratch capture witness. The evidence bound is two active agent-hours. The existing #204 → #119 gate continues to govern delivery. A positive needs a distinct original child stream and an authenticated origin, the independently eligible parent and child spans, correct refusals, and restart custody. Publish a sanitized receipt and exact remaining qualification gap. [Exact issue scope](https://github.com/kburson/aitm/issues/269).
