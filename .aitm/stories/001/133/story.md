@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
-children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267]
+children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279]
 blocking: [2]
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-13T05:13:48Z"
+updated: "2026-11-13T05:14:05Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -132,3 +132,7 @@ Verified GitHub and Project synchronization is recorded in the [readback receipt
 Preserve #103 as the merge gate. Retain the signed #146 exact-scope observations and replace its unimplemented general production scope with a reviewed advisory warning and manual recovery chain. Local TIA and shard planning stay advisory.
 
 [Amendment](plan/2026-11-12-133-ci-warning-manual-recovery-replan.md) · [Independent review](plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md).
+
+## Replacement delivery sequence
+
+[#277](https://github.com/kburson/aitm/issues/277) → [#278](https://github.com/kburson/aitm/issues/278) → [#279](https://github.com/kburson/aitm/issues/279)
