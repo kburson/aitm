@@ -6,9 +6,9 @@ kind: "story"
 state: "refine"
 issue: "https://github.com/kburson/aitm/issues/270"
 parent: 100
-children: []
+children: [271, 272, 273]
 blocking: [204]
-blocked-by: [269]
+blocked-by: [269, 273]
 created: "2026-11-13T04:01:54Z"
 updated: "2026-11-13T04:04:57Z"
 last-branch: "planning"
@@ -33,3 +33,7 @@ Independent Refine accepted the bounded implementation scope subject to exact JI
 ## Independent JIT held
 
 The first and recovery reviews held original native admission. The live preapproved child still had no qualifying boundary. Diagnostic controls verified the stream and checkout mismatches, and ordinary reread held both child observations after the diagnostic epoch. [Exact held disposition](plan/2026-11-12-270-claude-writer-admission-hold.md). #204 remains blocked on #270 and directly blocks #119.
+
+## Approved split for qualification and review
+
+The native sequence is #269 → [#271 closure evidence](../271/story.md) → [#272 writer admission](../272/story.md) → [#273 restart and refusals](../273/story.md) → #270 → #204 → #119. The admission design requires independent re-acceptance under the existing gates. #271 issues no new usage or ownership authority.
