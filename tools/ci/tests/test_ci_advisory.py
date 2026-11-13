@@ -284,3 +284,11 @@ def test_malformed_sibling_keeps_red(provider):
 def test_rerun_record_can_be_created_after_its_start(provider):
     provider.attempt["created_at"] = "2026-11-13T09:00:01Z"
     assert ci.observe(provider)["status"] == "green"
+
+
+def test_empty_run_observation_reverifies_live_sha(provider, monkeypatch):
+    monkeypatch.setattr(provider, "pages", lambda *_: [])
+    observed = ci.observe(provider)
+    assert observed["status"] == "pending"
+    assert observed["current_verified"] is True
+    assert "run_id" not in observed
