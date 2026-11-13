@@ -13,7 +13,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import ci_advisory
-from verify_pr import GitHub, Hold, digest, positive, require, timestamp
+from verify_pr import GitHub, digest, positive, require, timestamp
 
 SCHEMA = 1
 INITIAL = {"version": 0, "incident": None, "latest": None, "pending_sha": None}
@@ -32,6 +32,7 @@ def order(key):
 
 
 def identity(decision, provenance):
+    require(isinstance(decision, dict), "invalid advisory decision")
     require(
         decision.get("schema") == "aitm.ci-advisory/v1"
         and decision.get("provenance") == provenance
@@ -168,6 +169,11 @@ class Store:
                 "body TEXT NOT NULL, PRIMARY KEY (run_number, attempt))"
             )
             db.execute(
+                "CREATE TABLE IF NOT EXISTS observations "
+                "(run_number INTEGER, attempt INTEGER, digest TEXT, body TEXT NOT NULL, "
+                "PRIMARY KEY (run_number, attempt, digest))"
+            )
+            db.execute(
                 "CREATE TABLE IF NOT EXISTS warning "
                 "(name TEXT PRIMARY KEY, body BLOB NOT NULL, delivered TEXT)"
             )
@@ -239,7 +245,14 @@ class Store:
         failures = set(decision["failures"])
         if previous:
             failures.update(json.loads(previous[1])["failures"])
+        observation = encode(decision)
+        db.execute(
+            "INSERT OR IGNORE INTO observations VALUES (?,?,?,?)",
+            (*order(key), sha256(observation.encode()).hexdigest(), observation),
+        )
         record = {**decision, "failures": sorted(failures)}
+        if failures:
+            record["status"] = "red"
         db.execute(
             "INSERT INTO attempts VALUES (?,?,?,?) ON CONFLICT(run_number,attempt) "
             "DO UPDATE SET body=excluded.body",
@@ -296,6 +309,7 @@ class Store:
                 current_failure
                 and failures == active["failures"]
                 and status == active["status"]
+                and record["failures"] == active["observed_failures"]
             ):
                 self._save(db, state)
                 return "duplicate"
@@ -307,6 +321,7 @@ class Store:
                 "started_at": record["started_at"],
                 "version": state["version"],
                 "failures": failures,
+                "observed_failures": record["failures"],
                 "nomination": None,
                 "recovery": None,
             }
@@ -447,7 +462,7 @@ def main(argv=None):
             result = {"delivered": store.deliver(DirectorySink(args.directory))}
         else:
             result = store.status()
-    except (Hold, ValueError, OSError, sqlite3.Error) as exc:
+    except (ValueError, TypeError, KeyError, OSError, sqlite3.Error) as exc:
         print(f"advisory incident: {exc}", file=sys.stderr)
         return 2
     print(json.dumps(result, indent=2, sort_keys=True))

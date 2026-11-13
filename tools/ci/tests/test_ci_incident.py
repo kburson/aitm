@@ -194,3 +194,31 @@ def test_existing_public_directory_is_rejected(tmp_path):
     path.chmod(0o755)
     with pytest.raises(ValueError, match="private owned directory"):
         store.deliver(incident.DirectorySink(path))
+
+
+def test_exact_failure_observation_keeps_original_authenticated_job(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    red = {**decision(), "jobs": {"python": 123}}
+    assert store.observe(red) == "warning"
+    assert store.observe(red) == "duplicate"
+    counter = {**decision(status="incomplete"), "jobs": {}}
+    assert store.observe(counter) == "duplicate"
+    with store.transaction() as db:
+        rows = [raw for (raw,) in db.execute("SELECT body FROM observations")]
+    assert len(rows) == 2
+    assert any('"jobs":{"python":123}' in row for row in rows)
+
+
+def test_inherited_failure_now_current_refreshes_exact_warning(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    sink = incident.DirectorySink(tmp_path / "operator")
+    store.observe(decision())
+    second = decision(sequence=4, failures=["quality:failure"])
+    store.observe(second)
+    assert store.deliver(sink) == 1
+    [path] = sink.directory.glob("*.md")
+    assert "Prior authenticated failures: python:failure" in path.read_text()
+    second["failures"].append("python:failure")
+    assert store.observe(second) == "updated"
+    assert store.deliver(sink) == 1
+    assert "Prior authenticated failures" not in path.read_text()
