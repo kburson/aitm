@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 270
 title: "[M08b5 prerequisite] Admit Claude foreground Agent source spans in the writer"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/270"
 parent: 100
 children: []
 blocking: [204]
 blocked-by: [269]
 created: "2026-11-13T04:01:54Z"
-updated: "2026-11-13T04:01:54Z"
+updated: "2026-11-13T04:04:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
