@@ -1,0 +1,32 @@
+name: Spike 268 macOS observation
+
+on:
+  push:
+    branches: [codex/spike-268-macos-observation]
+
+permissions:
+  contents: read
+
+jobs:
+  observation:
+    if: github.repository == 'kburson/aitm' && github.event_name == 'push' && github.run_attempt == 1
+    runs-on: macos-26
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify boundary and run synthetic observations
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -I .github/spikes/268/controller.py --receipt "$RUNNER_TEMP/aitm-spike-268/receipt.json"
+      - name: Retain controller receipt
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: spike-268-${{ github.run_id }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-spike-268/receipt.json
+          if-no-files-found: error
+          retention-days: 14
