@@ -47,3 +47,7 @@ The [reviewed M08 split](../118/plan/2026-11-10-118-m08b-revision-disposition-sp
 The [second independently reviewed M08b split](../199/plan/2026-11-10-199-m08b-proof-split.md) retains #118 and #199 and adds direct prerequisites [#201](../201/story.md), [#202](../202/story.md), [#203](../203/story.md), [#204](../204/story.md). Keep the project write ACK and atomic publication of a qualifying folded replacement in M09. [Native split receipt](../199/plan/2026-11-10-199-m08b-proof-split-receipt.json).
 
 The [accepted M08b4 split](../203/plan/2026-11-10-203-disposition-proof-split.md) adds direct [#209](../209/story.md) and [#210](../210/story.md) prerequisites while keeping all prior journal gates.
+
+## Qualified-source release re-acceptance
+
+The independent initial and recovery reviews returned HOLD. [Review status and exact digests](plan/qualified-source-review-status.json). The [revised amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) addresses the review findings and awaits independent acceptance. #204 remains a direct prerequisite. No replacement issue or edge has been activated.

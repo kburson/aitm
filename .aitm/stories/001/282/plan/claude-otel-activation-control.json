@@ -1,0 +1,25 @@
+{
+  "schema": "aitm.claude-coverage-bounded-sample/v1",
+  "start_utc_inclusive": "2026-11-09T23:06:05.589056+00:00",
+  "end_utc_exclusive": "2026-11-09T23:16:20+00:00",
+  "sample": "registered #83 AITM Claude sessions with admitted ledger request identity and an exact approved checkout transcript folder",
+  "eligible_registered_sessions": 2,
+  "eligible_registered_requests": 5,
+  "registered_sessions_without_selected_native_transcript": 0,
+  "registered_checkout_anchors_considered": 3,
+  "maximum_native_sessions": 12,
+  "distinct_joined_stories": 1,
+  "counts": {
+    "scanned_sessions": 2,
+    "sessions_with_overlap": 0,
+    "retained_prompt_ids": 5,
+    "overlap_prompt_ids": 0,
+    "matched_child_request_rows": 0,
+    "missing_child_sidecars": 0,
+    "ledger_requests_joined_to_native": 5,
+    "joined_requests_with_story_scope": 1
+  },
+  "workload_overlap_prevalence": null,
+  "workload_token_or_cost_share": null,
+  "reason": "Admitted legacy rows condition the denominator. Unadmitted requests and sessions may be absent. Native sidecars and a trusted telemetry denominator are not complete for this retrospective window. No child usage assigned to a story."
+}

@@ -1,0 +1,29 @@
+{
+  "schema": "aitm.claude-coverage-replay/v1",
+  "surface": "macOS Claude Code 2.1.318",
+  "mode": "offline replay of original loopback OTLP events through a disposable durable reference join",
+  "expected_native_requests": 5,
+  "duplicate_delivery_attempts_before_restart": 8,
+  "distinct_after_duplicate_delivery_and_reopen": 4,
+  "missing_after_one_dropped_event": 1,
+  "missing_is_coverage_gap_not_zero_usage": true,
+  "distinct_after_late_replay": 5,
+  "duplicate_did_not_change_counters": true,
+  "conflicting_duplicate_refused": true,
+  "child": {
+    "input_tokens": 4,
+    "output_tokens": 128,
+    "cache_read_tokens": 1942,
+    "cache_creation_tokens": 2149,
+    "cost_usd_micros": 10574
+  },
+  "parent": {
+    "input_tokens": 7,
+    "output_tokens": 212,
+    "cache_read_tokens": 16781,
+    "cache_creation_tokens": 8937,
+    "cost_usd_micros": 61857
+  },
+  "live_provider_retransmission_proven": false,
+  "original_ownership_proven": false
+}
