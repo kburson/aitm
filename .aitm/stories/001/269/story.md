@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 269
 title: "[Spike] Prove Claude folded origin and original scope"
 kind: "spike"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/269"
 parent: 100
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T02:06:59Z"
-updated: "2026-11-13T02:06:59Z"
+updated: "2026-11-13T02:12:05Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
