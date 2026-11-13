@@ -1,0 +1,19 @@
+{
+  "story": 270,
+  "coverage": "partial",
+  "basis": "Bounded coordinator progress through independent Refine, JIT and JIT recovery, and native diagnostics",
+  "observation_count": 36,
+  "milliseconds": 129941,
+  "actual_hours": "0.0361",
+  "evidence_through_utc": "2026-11-13T04:17:03.250Z",
+  "sources": [
+    {
+      "path": "full-auto-admission-refine-1-270.json",
+      "sha256": "0602c71bb83e03dc6ba71360fdf89b212682e6e9b44bc48cf939917bacbf48b2"
+    },
+    {
+      "path": "full-auto-admission-jit-final-270.json",
+      "sha256": "37e866cd509a1fe67ee45064a2ae8070d51ede20db776dd7454034e93b8bdcaf"
+    }
+  ]
+}

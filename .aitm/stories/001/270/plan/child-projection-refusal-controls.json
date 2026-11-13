@@ -1,0 +1,15 @@
+{
+  "schema": "aitm.claude-child-projection-refusal-controls/v1",
+  "stream_only_diagnostic_boundary": 10,
+  "stream_only_diagnostic_routes": [
+    "unassigned",
+    "unassigned"
+  ],
+  "unmodified_scope_read_after_diagnostic_epoch": [
+    "held",
+    "held"
+  ],
+  "unmodified_scope_proof_count": 0,
+  "test_epoch_only": true,
+  "native_original_ownership_proven": false
+}

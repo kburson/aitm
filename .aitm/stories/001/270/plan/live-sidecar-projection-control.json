@@ -1,0 +1,16 @@
+{
+  "schema": "aitm.claude-live-sidecar-projection-control/v1",
+  "same_physical_sidecar_and_stream_under_both_approved_roots": true,
+  "adapter_observations": [
+    {
+      "ordinal": 10,
+      "matches_locator_stream": false,
+      "has_project_context": false
+    },
+    {
+      "ordinal": 19,
+      "matches_locator_stream": false,
+      "has_project_context": false
+    }
+  ]
+}

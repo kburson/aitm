@@ -1,0 +1,33 @@
+{
+  "schema": "aitm.claude-closed-prefix-diagnostic/v1",
+  "provider_pipe": "stream-json stdin and stdout with inherited process handle",
+  "successful_final_native_result": true,
+  "matching_foreground_task_and_durable_tool_result": true,
+  "sidecar_entries": [
+    "agent transcript",
+    "matching native metadata"
+  ],
+  "last_child_end_turn_matches_result": true,
+  "exact_prefix_replayed": true,
+  "test_append_keeps_old_prefix_but_fails_full_fence": true,
+  "writer_admission_or_ownership_issued": false,
+  "proves_live_fence_in_product": false,
+  "fixed_artifacts": {
+    "parent": {
+      "size": 134462,
+      "sha256": "175009203c60b25b8ad0de59ee9f1d9e743ef79e5c28da87598329b39a0b2a37"
+    },
+    "child": {
+      "size": 32710,
+      "sha256": "f4798aa73c0b76729cced9dec34ef338f869d9cfd805df490a0772e34da7f412"
+    },
+    "metadata": {
+      "size": 281,
+      "sha256": "5d49de1e261d38516e48b146460838a3253e72dcb8b2ccd0e69d2b34a4809bbc"
+    },
+    "stream": {
+      "size": 45033,
+      "sha256": "649a2d430715eb05476fb423af831669ef23348c3eefe50a63de2b91ab51b1de"
+    }
+  }
+}
