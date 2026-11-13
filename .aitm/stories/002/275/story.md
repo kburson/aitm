@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 275
 title: "[#146 Spike] Test a CI warning and manual stop workflow"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/275"
 parent: 146
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T04:56:32Z"
-updated: "2026-11-13T05:08:18Z"
+updated: "2026-11-13T05:08:30Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: "P1"
