@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 282
 title: "[Spike] Measure Claude subagent telemetry coverage and story impact"
 kind: "spike"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/282"
 parent: 100
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T11:05:01Z"
-updated: "2026-11-13T11:23:28Z"
+updated: "2026-11-13T11:25:26Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: null
@@ -44,3 +44,5 @@ Claude 2.1.318 sent five distinct API request events to a local receiver in one 
 The separate [qualified-source release draft](plan/2026-11-13-119-qualified-sources-reacceptance-draft.md) is ready for independent re-acceptance if pursued. Existing journal tests passed for nested overlap, mixed diagnostics and keeping the prior frontier on partial input. The tested package tree matches current remote trunk `b1ff8ce027608da942ec8ac1c7bc124500c5f145`. This is baseline evidence. It does not certify the replacement blocker.
 
 [Bounded sample and replay findings](plan/2026-11-13-282-claude-otel-findings.md). [Reproduction](plan/claude-otel-reproduction.md). Actual records only bounded coordinator progress.
+
+[Completed evidence disposition](plan/2026-11-13-282-claude-otel-close.md) · [Project readback](plan/project-closed.json).
