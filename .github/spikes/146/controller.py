@@ -20,7 +20,7 @@ PRODUCT = "packages/aitm-usage"
 CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
 SERVICE = PRODUCT + "/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
 TARGETS = (PRODUCT + "/tests", CLI.partition("::")[0])
-WORKER = "nobody"
+WORKER = "_aitm146"
 
 
 def require(check, reason):
@@ -86,6 +86,21 @@ def good(args, **kwargs):
 
 def git(*args):
     return good(("/usr/bin/git", *args))
+
+
+def create_worker(home, provisioned):
+    uid = next(uid for uid in range(550, 600) if not any(p.pw_uid == uid for p in pwd.getpwall()))
+    require(WORKER not in {p.pw_name for p in pwd.getpwall()}, "trial worker account already exists")
+    record = f"/Users/{WORKER}"
+    directory = ("/usr/bin/sudo", "-n", "/usr/bin/dscl", ".", "-create", record)
+    good(directory)
+    provisioned.append(record)
+    for key, value in (("UniqueID", str(uid)), ("PrimaryGroupID", "20"), ("IsHidden", "1"),
+                       ("NFSHomeDirectory", str(home)), ("UserShell", "/usr/bin/false")):
+        good((*directory, key, value))
+    account = pwd.getpwnam(WORKER)
+    require(account.pw_uid == uid and account.pw_dir == str(home), "worker account identity differs")
+    return uid
 
 
 def probe(shared, private, staging, worker, uid):
@@ -154,15 +169,15 @@ def assess(report, reference, child_report):
     }
 
 
-def trial(shared, private, staging, receipt):
+def trial(shared, private, staging, receipt, provisioned):
     logs = DiagnosticLogs(staging, [(str(shared), "<trial>"), (str(private), "<controller>"),
                                     (str(staging.parent), "<runner-temp>")])
-    uid = pwd.getpwnam(WORKER).pw_uid & 0xFFFFFFFF
     src = shared / "source"
     runtime = shared / "runtime"
     work = shared / "worker"
     for path in (src, runtime, work):
         path.mkdir(mode=0o755)
+    uid = create_worker(work, provisioned)
     good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", WORKER, str(work)))
     good(("/usr/bin/sudo", "-n", "/bin/chmod", "700", str(work)))
     shared.chmod(0o755)
@@ -194,6 +209,7 @@ def trial(shared, private, staging, receipt):
     good((uv, "sync", "--locked", "--no-config", "--managed-python", "--python", "3.13.9",
           "--project", str(project)), cwd=src, env=install, timeout=130)
     good(("/bin/chmod", "-R", "a+rX,go-w", str(src), str(runtime)))
+    good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", "-Rh", "root:wheel", str(runtime)))
     python = str(venv / "bin/python")
     locked = worker(python, "-I", "-c", "import platform;print(platform.python_version())")
     require(locked.returncode == 0 and locked.stdout.strip() == b"3.13.9", "worker interpreter identity failed")
@@ -205,10 +221,14 @@ def trial(shared, private, staging, receipt):
     receipt["boundary"]["fixture_ancestry"] = ancestry
     preflight = logs.run("fixture-ancestry", receipt.setdefault("fixture_ancestry_process", {}), worker,
                          python, "-I", "-c",
-                         "import sys; from pathlib import Path; from aitm_usage.ledger import validate_private_path;"
-                         "validate_private_path(Path(sys.argv[1]), directory=True, allow_missing=True)",
+                         "import sys; from pathlib import Path;"
+                         "from aitm_usage.ledger import _control_root, validate_private_path;"
+                         "from aitm_usage.install import _interpreter;"
+                         "validate_private_path(Path(sys.argv[1]), directory=True, allow_missing=True);"
+                         "validate_private_path(_control_root(), directory=True, allow_missing=True);"
+                         "_interpreter(Path(sys._base_executable).resolve(strict=True))",
                          str(work / "preflight"))
-    require(preflight.returncode == 0, "private fixture ancestry failed product validation")
+    require(preflight.returncode == 0, "fixture, account guard or interpreter failed product validation")
     require(worker("/bin/test", "-w", str(src)).returncode == 1, "worker can write source directory")
     for path in (project / "uv.lock", project / "pyproject.toml", src / "tools/ci/pytest_evidence.py", venv / "bin/aitm-usage"):
         require(worker("/bin/test", "-r", str(path)).returncode == 0, "worker cannot read required input")
@@ -320,8 +340,9 @@ def main():
     }
     with tempfile.TemporaryDirectory(prefix="aitm146-controller-", dir=out.parent) as private:
         shared = Path(tempfile.mkdtemp(prefix="aitm146-product-", dir="/Users/Shared"))
+        provisioned = []
         try:
-            receipt["status"] = trial(shared, Path(private), out.parent, receipt)
+            receipt["status"] = trial(shared, Path(private), out.parent, receipt, provisioned)
         except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
             receipt["reason"] = str(error).replace(str(shared), "<trial>").replace(private, "<controller>")
         finally:
@@ -331,6 +352,8 @@ def main():
             print(f"Controller receipt SHA-256: {hash_bytes(out.read_bytes())}", flush=True)
             print(f"Product observation status: {receipt['status']}", flush=True)
             command(("/usr/bin/sudo", "-n", "/bin/rm", "-rf", str(shared)))
+            for record in provisioned:
+                command(("/usr/bin/sudo", "-n", "/usr/bin/dscl", ".", "-delete", record))
     return 0 if receipt["status"] == "comparison-complete" else 1
 
 
