@@ -18,6 +18,7 @@ from time import monotonic
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bounded
 import full_suite
+import selected_suite
 
 BASE = "766504a02aaeb9dda339d588172dd7d5bdbd2b3f"
 PRODUCT = "packages/aitm-usage"
@@ -263,6 +264,7 @@ def trial(shared, private, staging, receipt, provisioned):
     harness = src / "trial-harness"
     harness.mkdir(mode=0o755)
     shutil.copyfile(Path(__file__).with_name("diagnostic_plugin.py"), harness / "diagnostic_plugin.py")
+    (harness / "test_failure_control.py").write_text(selected_suite.CONTROL_TEST)
     project = src / PRODUCT
     venv = runtime / "venv"
     uv = shutil.which("uv")
@@ -325,10 +327,11 @@ def trial(shared, private, staging, receipt, provisioned):
                                        ids_sha256=stable_digest(sorted(collect["collected"])))
     require(collected.returncode == collect["exit_code"] == 0 and exact, "collection differs from exact reference")
     print(f"Separate worker collection matched {len(reference)} reference IDs", flush=True)
-    if os.environ.get("AITM_146_FULL_OBSERVATION") == "1":
+    selected = os.environ.get("AITM_146_SELECTED_OBSERVATION") == "1"
+    if selected or os.environ.get("AITM_146_FULL_OBSERVATION") == "1":
         build = build_trace_python(shared, logs, receipt, full=True)
         return full_suite.run(src, build, venv, fixtures, private, logs, receipt, uid,
-                              worker, worker_args, command, good, require, stable_digest, reference)
+                              worker, worker_args, command, good, require, stable_digest, reference, selected=selected)
     try:
         build = build_trace_python(shared, logs, receipt)
         require(worker("/bin/test", "-w", str(build / "python.exe")).returncode == 1,
@@ -402,6 +405,7 @@ def main():
         ".github/spikes/146/bounded.py", ".github/spikes/146/controller.py",
         ".github/spikes/146/diagnostic_plugin.py", ".github/spikes/146/full_suite.py",
         ".github/spikes/146/reference.json",
+        ".github/spikes/146/selected_suite.py",
         ".github/workflows/aitm-146-product-observation-trial.yml"
     ], "unexpected trial diff")
     receipt = {
@@ -415,6 +419,7 @@ def main():
                      "platform": platform.platform(),
                      "bounded_sha256": hash_bytes(Path(bounded.__file__).read_bytes()),
                      "full_suite_sha256": hash_bytes(Path(full_suite.__file__).read_bytes()),
+                     "selected_suite_sha256": hash_bytes(Path(selected_suite.__file__).read_bytes()),
                      "diagnostic_plugin_sha256": hash_bytes(Path(__file__).with_name("diagnostic_plugin.py").read_bytes()),
                      "controller_sha256": hash_bytes(Path(__file__).read_bytes()),
                      "reference_sha256": hash_bytes(Path(__file__).with_name("reference.json").read_bytes())},
@@ -438,7 +443,8 @@ def main():
             command(("/usr/bin/sudo", "-n", "/bin/rm", "-rf", str(shared)))
             for record in provisioned:
                 command(("/usr/bin/sudo", "-n", "/usr/bin/dscl", ".", "-delete", record))
-    return 0 if receipt["status"] in {"comparison-complete", "bounded-pass", "full-observation-pass"} else 1
+    return 0 if receipt["status"] in {"comparison-complete", "bounded-pass", "full-observation-pass",
+                                      "selected-observation-pass"} else 1
 
 
 if __name__ == "__main__":

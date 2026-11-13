@@ -32,7 +32,13 @@ print(os.getpid(), flush=True)
 if sys.stdin.buffer.read(1) != b"\n":
     raise SystemExit("controller did not release pytest")
 import pytest
-raise SystemExit(pytest.main(sys.argv[1:]))
+arguments = sys.argv[1:]
+if arguments[0] == "--aitm-assigned":
+    import json
+    import _pytest.main
+    _pytest.main._aitm146_assignment = frozenset(json.loads(arguments[1]))
+    arguments = arguments[2:]
+raise SystemExit(pytest.main(arguments))
 """
 SITE = """
 import os
@@ -131,7 +137,17 @@ def instrument_pytest(site):
              + b'("discovered", observed.nodeid)\n' + collection),
             (final, b'        for observed in items:\n            ' + emit
              + b'("collect", observed.nodeid)\n        ' + emit
-             + b'("collection-end", str(len(items)))\n' + final),
+             + b'("collection-end", str(len(items)))\n'
+             + b'        assignment = globals().get("_aitm146_assignment")\n'
+             + b'        if assignment is not None:\n'
+             + b'            selected = [item for item in items if item.nodeid in assignment]\n'
+             + b'            if len(selected) != len(assignment) or {item.nodeid for item in selected} != assignment:\n'
+             + b'                raise UsageError("observed assignment differs from collection")\n'
+             + b'            items[:] = selected\n'
+             + b'            self.testscollected = len(items)\n'
+             + b'            for observed in items:\n                ' + emit
+             + b'("dispatch", observed.nodeid)\n            ' + emit
+             + b'("dispatch-end", str(len(items)))\n' + final),
         ],
         "runner": [
             (start, b'    ' + emit + b'("start", item.nodeid)\n' + start),
@@ -333,7 +349,10 @@ def install_runtime(build, destination, locked_site, src, good):
     return binary, hashes
 
 
-def observe(label, args, worker_args, uid, project, product, private, logs, command, result, timeout=800):
+def observe(label, args, worker_args, uid, project, product, private, logs, command, result,
+            timeout=800, assignment=None):
+    if assignment is not None:
+        args = (*args[:5], "--aitm-assigned", json.dumps(assignment), *args[5:])
     child = subprocess.Popen(worker_args(*args, extra={"PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
                                                         "AITM146_CHILD_LINES": "1"}),
                              cwd=project, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -393,8 +412,25 @@ def observe(label, args, worker_args, uid, project, product, private, logs, comm
     return parse_trace(trace_output, pid, product)
 
 
+def native_records(children, venv):
+    records = {}
+    for node, (file, line, argument) in CHILDREN.items():
+        executable = "aitm-usage" if argument == "--help" else "python"
+        expected = {"argument": argument, "executable": str(venv / "bin" / executable)}
+        records[node] = [
+            {"pid": pid, "required_file": file, "required_line": line,
+             **{**row, "arguments": [{"argument": entry["argument"],
+                                       "executable": Path(entry["executable"]).name}
+                                      for entry in row["arguments"]]}}
+            for pid, row in children.items()
+            if row.get("test") == node and line in row.get("files", {}).get(file, [])
+            and expected in row.get("arguments", []) and row.get("exec")
+        ]
+    return records
+
+
 def run(src, build, locked_venv, fixtures, private, logs, receipt, uid,
-        worker, worker_args, command, good, require, stable_digest, expected):
+        worker, worker_args, command, good, require, stable_digest, expected, *, selected=False):
     result = receipt["full_observation"] = {"status": "incomplete"}
     files, groups = independently_check_groups(src, expected)
     result["catalog"] = {"files": files, "groups": groups, "count": len(expected),
@@ -421,22 +457,16 @@ def run(src, build, locked_venv, fixtures, private, logs, receipt, uid,
     require(collected["driver"]["exit"] == 0 and collected["trace_clean"] and collected["collection_matches"]
             and collected["discovered_matches"] and not collected["unexpected_execution"],
             "independent collection evidence is incomplete")
+    if selected:
+        import selected_suite
+
+        return selected_suite.run(src, venv, fixtures, private, logs, receipt, uid, worker, worker_args,
+                                  command, require, args, targets, expected, collected)
     execution = result["execution"] = {"assignment_sha256": stable_digest(expected)}
     observed, children = observe("observed-full", (*args, "--basetemp", str(fixtures / "observed-full"), *targets),
                                  worker_args, uid, project, product, private, logs, command, execution)
     execution.update(reconcile(observed, expected))
-    records = result["native_children"] = {}
-    for node, (file, line, argument) in CHILDREN.items():
-        matches = [(pid, data) for pid, data in children.items()
-                   if data.get("test") == node and line in data.get("files", {}).get(file, [])
-                   and any(entry == {"argument": argument, "executable":
-                                    str(venv / "bin" / ("aitm-usage" if argument == "--help" else "python"))}
-                           for entry in data.get("arguments", [])) and data.get("exec")]
-        records[node] = [{"pid": pid, "required_file": file, "required_line": line,
-                          **{**row, "arguments": [{"argument": entry["argument"],
-                                                    "executable": Path(entry["executable"]).name}
-                                                   for entry in row["arguments"]]}}
-                         for pid, row in matches]
+    records = result["native_children"] = native_records(children, venv)
     require(execution["driver"]["exit"] == 0 and execution["trace_clean"] and execution["collection_matches"]
             and not any(execution[key] for key in ("failed", "missing_or_inconsistent", "unexpected_execution",
                                                    "ordering_errors"))

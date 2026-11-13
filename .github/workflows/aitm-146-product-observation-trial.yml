@@ -21,9 +21,9 @@ jobs:
         with:
           version: '0.10.6'
           enable-cache: false
-      - name: Observe the pinned product suite as an unprivileged worker
+      - name: Observe selected product tests and live negative controls
         env:
-          AITM_146_FULL_OBSERVATION: '1'
+          AITM_146_SELECTED_OBSERVATION: '1'
         shell: bash
         run: |
           set -euo pipefail
