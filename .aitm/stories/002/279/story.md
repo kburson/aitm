@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 279
 title: "[#133] Rehearse manual repair and verified trunk recovery"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/279"
 parent: 133
 children: []
 blocking: []
 blocked-by: [278]
 created: "2026-11-13T05:14:32Z"
-updated: "2026-11-13T11:30:31Z"
+updated: "2026-11-13T11:38:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-279-manual-recovery-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/shadow.json", "plan/actual-repair.py", "plan/reviews/source-assessment.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-279-manual-recovery-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/shadow.json", "plan/actual-repair.py", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ Consume the durable advisory incident. Use one nominated repair through existing
 ## Independent source assessment
 
 [Exact-head source assessment](plan/reviews/source-assessment.md) verified the corrected implementation and reproduced the governed repair rehearsal.
+
+## Exact candidate and review
+
+[Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
