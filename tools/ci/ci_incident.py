@@ -302,7 +302,8 @@ class Store:
         }
         if status in {"red", "incomplete"}:
             failures = sorted(
-                set(record["failures"]) | set(active["failures"] if active else [])
+                set(record["failures"])
+                | set(active["failures"] if active and active["active"] else [])
             )
             current_failure = active and active["key"] == key
             if (
@@ -333,8 +334,10 @@ class Store:
             )
             result = "updated" if current_failure else "warning"
         else:
-            if active and (
-                status == "pending" or active["recovery"] and not same_attempt
+            if (
+                active
+                and active["active"]
+                and (status == "pending" or active["recovery"] and not same_attempt)
             ):
                 state["version"] += 1
                 active.update(
