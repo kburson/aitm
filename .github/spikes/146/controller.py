@@ -166,6 +166,9 @@ def trial(shared, private, staging, receipt):
     good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", WORKER, str(work)))
     good(("/usr/bin/sudo", "-n", "/bin/chmod", "700", str(work)))
     shared.chmod(0o755)
+    # The product requires every private-state ancestor to be root or worker owned.
+    # The controller still owns the source and runtime directories inside this root.
+    good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", "root:wheel", str(shared)))
 
     def worker(*args, extra=None, cwd=None, timeout=30):
         env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(work),
@@ -194,6 +197,18 @@ def trial(shared, private, staging, receipt):
     python = str(venv / "bin/python")
     locked = worker(python, "-I", "-c", "import platform;print(platform.python_version())")
     require(locked.returncode == 0 and locked.stdout.strip() == b"3.13.9", "worker interpreter identity failed")
+    ancestry = [
+        {"path": "worker" if path == work else "<trial>" if path == shared else str(path),
+         "uid": path.stat().st_uid, "mode": format(stat.S_IMODE(path.stat().st_mode), "04o")}
+        for path in (work, *work.parents)
+    ]
+    receipt["boundary"]["fixture_ancestry"] = ancestry
+    preflight = logs.run("fixture-ancestry", receipt.setdefault("fixture_ancestry_process", {}), worker,
+                         python, "-I", "-c",
+                         "import sys; from pathlib import Path; from aitm_usage.ledger import validate_private_path;"
+                         "validate_private_path(Path(sys.argv[1]), directory=True, allow_missing=True)",
+                         str(work / "preflight"))
+    require(preflight.returncode == 0, "private fixture ancestry failed product validation")
     require(worker("/bin/test", "-w", str(src)).returncode == 1, "worker can write source directory")
     for path in (project / "uv.lock", project / "pyproject.toml", src / "tools/ci/pytest_evidence.py", venv / "bin/aitm-usage"):
         require(worker("/bin/test", "-r", str(path)).returncode == 0, "worker cannot read required input")
@@ -248,13 +263,14 @@ def trial(shared, private, staging, receipt):
         receipt["full_diagnostics"] = assess(report, reference, child)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
     selected = sorted((CLI, SERVICE))
+    selected_paths = [str(src / node) for node in selected]
     settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "selected.json"),
                     COVERAGE_FILE=str(work / ".selected"))
     selected_process = {"unobserved_count": len(reference) - len(selected)}
     receipt["selected_process"] = selected_process
     narrowed = logs.run("selected", selected_process, worker,
                         python, "-m", "coverage", "run", "-m", "pytest", *common, "--basetemp",
-                        str(work / "selected-fixtures"), *selected, extra=settings, cwd=project, timeout=90)
+                        str(work / "selected-fixtures"), *selected_paths, extra=settings, cwd=project, timeout=90)
     selected_summary = summary.replace("reconcile_workers(p/'pytest.json',3)", "json.loads((p/'selected.json').read_bytes())").replace("p/'.product'", "p/'.selected'")
     examined = logs.run("selected-reconciliation", receipt.setdefault("selected_reconciliation", {}), worker,
                         python, "-c", selected_summary, str(work), extra=settings, cwd=project, timeout=35)
