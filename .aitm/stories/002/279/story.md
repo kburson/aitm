@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [278]
 created: "2026-11-13T05:14:32Z"
-updated: "2026-11-13T11:42:42Z"
+updated: "2026-11-13T11:47:38Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-279-manual-recovery-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/shadow.json", "plan/actual-repair.py", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json", "retro/2026-11-13-279-implementer-retrospective.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-279-manual-recovery-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/shadow.json", "plan/actual-repair.py", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json", "retro/2026-11-13-279-implementer-retrospective.md", "plan/final-trunk-green.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -57,3 +57,7 @@ Consume the durable advisory incident. Use one nominated repair through existing
 ## Implementer sign-off
 
 [Signed retrospective](retro/2026-11-13-279-implementer-retrospective.md).
+
+## Post-merge verification
+
+[Canonical protected trunk green](plan/final-trunk-green.json) verified the final merge commit, exact successful attempt and push artifact.
