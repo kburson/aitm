@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 278
 title: "[#133] Publish a durable CI warning and nominate one repair"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/278"
 parent: 133
 children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T05:14:05Z"
+updated: "2026-11-13T11:04:30Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
