@@ -10,7 +10,7 @@ children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:10:02Z"
+updated: "2026-11-13T11:10:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
@@ -41,3 +41,7 @@ Consume authenticated advisory intake. Serialize a versioned incident, deduplica
 ## Replacement candidate
 
 The replacement persists delayed failures, revokes stale nominations on a verified current target without a run, and binds delivery to a private operator directory. The [shadow rehearsal](plan/shadow.json) and 122 local tests passed.
+
+## Exact observation retention
+
+The final candidate keeps original authenticated job IDs in deduplicated receipts and refreshes a warning when a previously inherited lane becomes a current failure. All 124 local tests passed and the shadow rehearsal remained reproducible.
