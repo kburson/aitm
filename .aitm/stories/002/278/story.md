@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 278
 title: "[#133] Publish a durable CI warning and nominate one repair"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/278"
 parent: 133
 children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:21:44Z"
+updated: "2026-11-13T11:21:47Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -57,3 +57,7 @@ The final candidate keeps original authenticated job IDs in deduplicated receipt
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
