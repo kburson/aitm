@@ -268,3 +268,13 @@ def test_exact_attempt_endpoint_change_prevents_green(provider):
     actual = ci.observe(provider)
     assert actual["status"] == "stale"
     assert actual["current_verified"] is False
+
+
+def test_malformed_sibling_keeps_red(provider):
+    provider.jobs[0]["conclusion"] = "failure"
+    provider.jobs += [None, {"name": "quality", "id": [5]}]
+    actual = ci.observe(provider, shadow=True)
+    assert actual["provenance"] == "shadow"
+    assert actual["status"] == "red"
+    assert actual["failures"] == [f"{provider.jobs[0]['name']}:failure"]
+    assert "invalid push job record" in actual["gaps"]

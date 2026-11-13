@@ -159,12 +159,21 @@ def authenticate_job(github, job, run, suite, id_counts):
 
 def check_jobs(github, route, run, suite, gaps, failures):
     listed = github.pages(f"{route}/jobs?per_page=100", "jobs")
-    id_counts = Counter(job.get("id") for job in listed)
+    valid = [
+        job
+        for job in listed
+        if isinstance(job, dict)
+        and positive(job.get("id"))
+        and isinstance(job.get("name"), str)
+    ]
+    if len(valid) != len(listed):
+        gaps.append("invalid push job record")
+    id_counts = Counter(job["id"] for job in valid)
     jobs = {}
-    if any(job.get("name") not in REQUIRED | PUSH_SKIPS for job in listed):
+    if any(job.get("name") not in REQUIRED | PUSH_SKIPS for job in valid):
         gaps.append("unexpected push job")
     for name in sorted(REQUIRED):
-        matches = [job for job in listed if job.get("name") == name]
+        matches = [job for job in valid if job["name"] == name]
         if len(matches) != 1:
             gaps.append(f"{name}:missing-or-duplicate")
             continue
@@ -290,7 +299,7 @@ def verify_push_artifact(github, run, jobs):
     return {"id": item["id"], "digest": item["digest"], **result}
 
 
-def observe(github, *, expected=None):
+def observe(github, *, expected=None, shadow=False):
     """Read one current decision through a provider-owned transport."""
     sha = live_target(github)
     run = latest_run(github, sha)
@@ -299,6 +308,7 @@ def observe(github, *, expected=None):
         "repository_id": REPOSITORY_ID,
         "workflow_id": WORKFLOW_ID,
         "target": TARGET,
+        "provenance": "shadow" if shadow else "live",
         "sha": sha,
         "status": "pending",
         "current_verified": False,
