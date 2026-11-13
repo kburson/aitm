@@ -10,7 +10,7 @@ children: []
 blocking: [178]
 blocked-by: [143, 171, 267]
 created: "2026-11-10T16:52:18Z"
-updated: "2026-11-12T20:02:44Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
@@ -88,3 +88,7 @@ and a sanitized timing and selector report.
 ## Local advisory evidence
 
 [#267](../../002/267/story.md) supplies local measurement evidence. #171 still gates the hosted comparison, and #178 retains this broader qualification dependency. [Current replan](../133/plan/2026-11-12-133-advisory-and-qualification-replan.md).
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.

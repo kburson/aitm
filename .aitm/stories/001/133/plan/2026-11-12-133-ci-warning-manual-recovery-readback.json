@@ -1,0 +1,972 @@
+{
+  "closed_146": {
+    "item": {
+      "disposition": {
+        "name": "Replaced"
+      },
+      "estimate": null,
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkcWk",
+      "priority": null,
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 50.0
+      },
+      "size": null,
+      "status": {
+        "name": "Done"
+      }
+    },
+    "number": 146,
+    "state": "CLOSED",
+    "stateReason": "NOT_PLANNED"
+  },
+  "excluded_issues_unchanged": [
+    157,
+    159
+  ],
+  "held_legacy": {
+    "149": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkcds",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 70.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 149,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "150": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkchU",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 80.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 150,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "151": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdAM",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 90.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 151,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "152": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdG8",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 90.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 152,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "153": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkc5c",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 100.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 153,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "154": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdEI",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 110.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 154,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "155": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkc8k",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 120.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 155,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "156": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdQ0",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 130.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 156,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "160": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdF8",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 150.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 160,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "161": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdI4",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 160.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 161,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "162": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdYI",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 170.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 162,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "163": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdJM",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 180.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 163,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "164": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdHM",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 120.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 164,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "165": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdNo",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 150.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 165,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "166": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdtc",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 160.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 166,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "167": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdmI",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 170.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 167,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "168": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdx8",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 190.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 168,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "169": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdV8",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 200.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 169,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "170": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkd6g",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 210.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 170,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "171": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdao",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 100.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 171,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "172": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdeI",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 110.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 172,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "173": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdg0",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 220.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 173,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "174": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdlE",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 220.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 174,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "175": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdoY",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 230.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 175,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "176": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdt8",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 240.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 176,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "177": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkdz0",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 240.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 177,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "178": {
+      "item": {
+        "disposition": {
+          "name": "BLOCKED"
+        },
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkd3E",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 250.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 178,
+      "state": "OPEN",
+      "stateReason": null
+    }
+  },
+  "historical_edges": {
+    "133": [],
+    "146": [
+      144,
+      145
+    ],
+    "148": [
+      139
+    ],
+    "149": [
+      146,
+      147,
+      148
+    ],
+    "150": [
+      149
+    ],
+    "151": [
+      142,
+      150
+    ],
+    "152": [
+      150
+    ],
+    "153": [
+      152
+    ],
+    "154": [
+      153
+    ],
+    "155": [
+      154
+    ],
+    "156": [
+      155
+    ],
+    "157": [
+      156
+    ],
+    "159": [
+      157,
+      158
+    ],
+    "160": [
+      152,
+      157
+    ],
+    "161": [
+      159,
+      160
+    ],
+    "162": [
+      161
+    ],
+    "163": [
+      142,
+      162
+    ],
+    "164": [
+      154
+    ],
+    "165": [
+      157,
+      164
+    ],
+    "166": [
+      165
+    ],
+    "167": [
+      166
+    ],
+    "168": [
+      146,
+      163,
+      165
+    ],
+    "169": [
+      162,
+      167,
+      168
+    ],
+    "170": [
+      169
+    ],
+    "171": [
+      151
+    ],
+    "172": [
+      143,
+      171,
+      267
+    ],
+    "173": [
+      162,
+      170,
+      171
+    ],
+    "174": [
+      162,
+      170,
+      171
+    ],
+    "175": [
+      173
+    ],
+    "176": [
+      170,
+      175
+    ],
+    "177": [
+      174,
+      175
+    ],
+    "178": [
+      172,
+      176,
+      177
+    ],
+    "2": [
+      100,
+      133
+    ],
+    "267": [
+      143
+    ]
+  },
+  "released": {
+    "148": {
+      "item": {
+        "disposition": null,
+        "estimate": null,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhHkc6M",
+        "priority": null,
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 60.0
+        },
+        "size": null,
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 148,
+      "state": "OPEN",
+      "stateReason": null
+    },
+    "267": {
+      "item": {
+        "disposition": null,
+        "estimate": {
+          "number": 3.0
+        },
+        "id": "PVTI_lAHOABCEY84Bq1hZzhIQh2c",
+        "priority": {
+          "name": "P2"
+        },
+        "project": {
+          "id": "PVT_kwHOABCEY84Bq1hZ",
+          "number": 24
+        },
+        "rank": {
+          "number": 60.0
+        },
+        "size": {
+          "name": "M"
+        },
+        "status": {
+          "name": "Backlog"
+        }
+      },
+      "number": 267,
+      "state": "OPEN",
+      "stateReason": null
+    }
+  },
+  "replacements": [
+    {
+      "board": {
+        "item": {
+          "disposition": null,
+          "estimate": {
+            "number": 3.0
+          },
+          "id": "PVTI_lAHOABCEY84Bq1hZzhIXJTg",
+          "priority": {
+            "name": "P2"
+          },
+          "project": {
+            "id": "PVT_kwHOABCEY84Bq1hZ",
+            "number": 24
+          },
+          "rank": {
+            "number": 70.0
+          },
+          "size": {
+            "name": "M"
+          },
+          "status": {
+            "name": "Backlog"
+          }
+        },
+        "number": 277,
+        "state": "OPEN",
+        "stateReason": null
+      },
+      "body": "<!-- aitm-133-advisory-canonical-intake -->\n\nParent #133. Rank 70. No implementation predecessor.\n\nRead canonical #103 full trunk push metadata and exact attempt jobs. Pin the repository, workflow, target, current SHA and latest attempt. Retain failure with missing sibling evidence. Validate green against complete #103 evidence. Exercise failure without artifact, stale delivery and unavailable evidence in shadow. Deliver read-only replayable decisions. Existing #103 remains the gate.\n\n[Reviewed replacement scope](https://github.com/kburson/aitm/blob/7d5e0d332ef328c48c4e3428089cb33253c65a8e/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).\n",
+      "created": "2026-11-13T05:14:12Z",
+      "number": 277,
+      "predecessor": null,
+      "rank": 70,
+      "title": "[#133] Verify canonical full-CI evidence for advisory warnings",
+      "url": "https://github.com/kburson/aitm/issues/277"
+    },
+    {
+      "board": {
+        "item": {
+          "disposition": null,
+          "estimate": {
+            "number": 3.0
+          },
+          "id": "PVTI_lAHOABCEY84Bq1hZzhIXJcA",
+          "priority": {
+            "name": "P2"
+          },
+          "project": {
+            "id": "PVT_kwHOABCEY84Bq1hZ",
+            "number": 24
+          },
+          "rank": {
+            "number": 80.0
+          },
+          "size": {
+            "name": "M"
+          },
+          "status": {
+            "name": "Backlog"
+          }
+        },
+        "number": 278,
+        "state": "OPEN",
+        "stateReason": null
+      },
+      "body": "<!-- aitm-133-advisory-durable-warning -->\n\nParent #133. Rank 80. Required predecessor #277.\n\nConsume authenticated advisory intake. Serialize a versioned incident, deduplicate exact-attempt notifications, retain known failures and invalidate stale repair and recovery. In shadow, verify an operator-visible warning, lost-response retry and restart. Ask the operator to pause ordinary trunk work and nominate one repair owner. The warning grants no merge or pause authority.\n\n[Reviewed replacement scope](https://github.com/kburson/aitm/blob/7d5e0d332ef328c48c4e3428089cb33253c65a8e/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).\n",
+      "created": "2026-11-13T05:14:22Z",
+      "number": 278,
+      "predecessor": 277,
+      "rank": 80,
+      "title": "[#133] Publish a durable CI warning and nominate one repair",
+      "url": "https://github.com/kburson/aitm/issues/278"
+    },
+    {
+      "board": {
+        "item": {
+          "disposition": null,
+          "estimate": {
+            "number": 3.0
+          },
+          "id": "PVTI_lAHOABCEY84Bq1hZzhIXJkY",
+          "priority": {
+            "name": "P2"
+          },
+          "project": {
+            "id": "PVT_kwHOABCEY84Bq1hZ",
+            "number": 24
+          },
+          "rank": {
+            "number": 90.0
+          },
+          "size": {
+            "name": "M"
+          },
+          "status": {
+            "name": "Backlog"
+          }
+        },
+        "number": 279,
+        "state": "OPEN",
+        "stateReason": null
+      },
+      "body": "<!-- aitm-133-advisory-manual-recovery -->\n\nParent #133. Rank 90. Required predecessor #278.\n\nConsume the durable advisory incident. Use one nominated repair through existing #103 and independent review, then verify a fresh complete green run on repaired current trunk before operator resume. Exercise stale green, repeated failure, infrastructure-only recovery and rollback with an active incident. Keep merge and pause operations manual.\n\n[Reviewed replacement scope](https://github.com/kburson/aitm/blob/7d5e0d332ef328c48c4e3428089cb33253c65a8e/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).\n",
+      "created": "2026-11-13T05:14:32Z",
+      "number": 279,
+      "predecessor": 278,
+      "rank": 90,
+      "title": "[#133] Rehearse manual repair and verified trunk recovery",
+      "url": "https://github.com/kburson/aitm/issues/279"
+    }
+  ],
+  "replan_commit": "62b2c5f5af388a1b889c8440d91bc89a365effbd"
+}

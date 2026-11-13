@@ -10,7 +10,7 @@ children: []
 blocking: [176, 177]
 blocked-by: [173]
 created: "2026-11-10T16:52:26Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -47,3 +47,7 @@ and current-trunk full proof for T39.
 - [ ] Run the full suite on the confirmed current trunk. Retain
   the verified transition to workspace update, with ordinary
   merges and code work still stopped for the test incident.
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.

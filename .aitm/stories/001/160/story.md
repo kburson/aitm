@@ -10,7 +10,7 @@ children: []
 blocking: [161]
 blocked-by: [152, 157]
 created: "2026-11-10T16:51:50Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -49,3 +49,7 @@ or explicit refusal.
   reference inventory. Demonstrate normal independent review and
   gate-control disposition. Without this proof, hold T24 and its
   descendants. T07/T09 alone do not qualify this alternate route.
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.

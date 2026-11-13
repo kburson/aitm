@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 146
 title: "[#133 T09] Implement qualified execution observation"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/146"
 parent: 133
 children: [268, 274, 275, 276]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-13T05:09:23Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -105,3 +105,7 @@ The independent review accepted the exact pinned selected execution and the obse
 ## Controller-owned catalog spike
 
 [#276](../../002/276/story.md) tests an independently observed catalog of two product behaviors and exact canonical #103 required-ID evidence. It is a Rank 50 supplement experiment.
+
+## Terminal replacement
+
+GitHub Closed / Not Planned, Project 24 Done / Replaced. [Reviewed #133 replan](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).

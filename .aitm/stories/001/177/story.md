@@ -10,7 +10,7 @@ children: []
 blocking: [178]
 blocked-by: [174, 175]
 created: "2026-11-10T16:52:32Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -47,3 +47,7 @@ dependency proof, and implementation authority govern pickup.
   mutation. Run a fresh full suite on confirmed current trunk. Retain
   refusal while another recorded cause is unresolved, then the
   verified merge-only release with no workspace-update phase.
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.

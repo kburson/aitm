@@ -10,7 +10,7 @@ children: []
 blocking: [171]
 blocked-by: [142, 150]
 created: "2026-11-10T16:51:29Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -49,3 +49,7 @@ dependency proof, and implementation authority govern pickup.
   full on T10 gate changes and show unresolved approvals hold.
   V(hosted) and an isolated hosted serial versus sharded run pass.
   Do not move the required gate in this story.
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.

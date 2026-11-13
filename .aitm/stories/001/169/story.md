@@ -10,7 +10,7 @@ children: []
 blocking: [170]
 blocked-by: [162, 167, 168]
 created: "2026-11-10T16:52:11Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-13T05:14:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -55,3 +55,7 @@ for T33 to call before live lease issuance.
   state at release and next admission. A change after acknowledgment
   invalidates eligibility until the new proof verifies.
   V(restart) passes.
+
+## Superseded scope hold
+
+Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.
