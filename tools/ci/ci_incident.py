@@ -258,6 +258,18 @@ class Store:
             "DO UPDATE SET body=excluded.body",
             (*order(key), encode(key), encode(record)),
         )
+        if (
+            failures
+            and not decision["current_verified"]
+            and (
+                previous is None
+                or not failures <= set(json.loads(previous[1])["failures"])
+            )
+        ):
+            active = state["incident"]
+            if active and active["active"] and order(key) >= order(active["key"]):
+                active.update(nomination=None, recovery=None, infrastructure=None)
+                self._save(db, state)
         if latest and (
             order(key) < order(latest["key"])
             or state["pending_sha"]

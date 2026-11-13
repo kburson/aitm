@@ -7,6 +7,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from hashlib import sha256
+from secrets import token_hex
 
 import ci_advisory as intake
 from ci_incident import OWNER, Store, encode, identity, order
@@ -156,6 +157,16 @@ def verify_repair(github, plan_commit, receipt_path, receipt_digest, review_dige
     }
 
 
+def known_failures(db, active):
+    if active["failures"]:
+        return True
+    receipt = db.execute(
+        "SELECT body FROM attempts WHERE run_number=? AND attempt=?",
+        order(active["key"]),
+    ).fetchone()
+    return bool(receipt and json.loads(receipt[0])["failures"])
+
+
 def confirm_infrastructure(store, version, actor, reason, *, now=None, live=False):
     operator(actor)
     require(
@@ -175,7 +186,7 @@ def confirm_infrastructure(store, version, actor, reason, *, now=None, live=Fals
             and active["active"]
             and active["version"] == version
             and active["status"] == "incomplete"
-            and not active["failures"]
+            and not known_failures(db, active)
             and active["nomination"] is None
             and state["pending_sha"] is None
             and state["latest"]["key"] == active["key"]
@@ -206,7 +217,7 @@ def confirm_infrastructure(store, version, actor, reason, *, now=None, live=Fals
     )
 
 
-def proposed_recovery(store, state, version, observation, repair):
+def proposed_recovery(store, db, state, version, observation, repair):
     active = state["incident"]
     if not active or not active["active"] or active["version"] != version:
         return None
@@ -230,7 +241,13 @@ def proposed_recovery(store, state, version, observation, repair):
         and artifact.get("policy_result", {}).get("passed") is True
     ):
         return None
-    token_data = {"version": version, "green": key, "artifact": artifact["digest"]}
+    token_data = {
+        "version": version,
+        "green": key,
+        "started_at": observation["started_at"],
+        "artifact_id": artifact["id"],
+        "artifact": artifact["digest"],
+    }
     started = timestamp(observation["started_at"])
     if repair is not None:
         nomination = active["nomination"]
@@ -248,14 +265,14 @@ def proposed_recovery(store, state, version, observation, repair):
         infrastructure = active.get("infrastructure")
         if (
             not infrastructure
-            or active["failures"]
+            or known_failures(db, active)
             or active["nomination"]
             or key["sha"] != active["key"]["sha"]
             or started <= timestamp(infrastructure["time"])
         ):
             return None
         token_data["infrastructure"] = infrastructure
-    return {**token_data, "token": sha256(encode(token_data).encode()).hexdigest()}
+    return token_data
 
 
 def _reconcile(
@@ -268,13 +285,21 @@ def _reconcile(
         return None
     prior = active["recovery"]
     checked = (
-        proposed_recovery(store, state, version, observation, repair)
+        proposed_recovery(store, db, state, version, observation, repair)
         if outcome == "green" and evidence_ok
         else None
     )
-    active["recovery"] = checked
-    result = checked["token"] if checked and actor is None else None
-    if actor and checked and prior == checked and checked["token"] == token:
+    if checked and actor is None:
+        active["recovery"] = {**checked, "token": token_hex(32)}
+        result = active["recovery"]["token"]
+    else:
+        same_proof = bool(
+            prior and checked == {k: v for k, v in prior.items() if k != "token"}
+        )
+        active["recovery"] = prior if same_proof else None
+        result = None
+    if actor and active["recovery"] and active["recovery"]["token"] == token:
+        checked = active["recovery"]
         active["active"] = False
         active["acknowledgment"] = {
             "operator": actor,

@@ -119,3 +119,64 @@ def test_provider_loss_revokes_proof_and_requires_new_check(store):
     assert store.status()["incident"]["recovery"] is None
     assert not recovery.acknowledge(store, 1, "operator", token, current)
     assert store.status()["incident"]["active"]
+
+
+def test_late_authenticated_failure_prevents_same_sha_infrastructure_recovery(store):
+    initial = decision(status="incomplete")
+    store.observe(initial)
+    recovery.confirm_infrastructure(store, 1, "operator", "artifact outage", now=NOW)
+    current = green(sha=initial["sha"])
+    token = recovery.reconcile(store, 1, current)
+    assert token
+    assert store.observe(decision(verified=False)) == "stale"
+    assert not recovery.acknowledge(store, 1, "operator", token, current)
+    assert store.status()["incident"]["active"]
+
+
+def test_ack_does_not_restore_a_revoked_token(store):
+    initial = decision(status="incomplete")
+    store.observe(initial)
+    recovery.confirm_infrastructure(store, 1, "operator", "artifact outage", now=NOW)
+    current = green(sha=initial["sha"])
+    token = recovery.reconcile(store, 1, current)
+    assert token
+    assert not recovery.acknowledge(store, 1, "operator", token, None)
+    for _ in range(2):
+        assert not recovery.acknowledge(store, 1, "operator", token, current)
+        assert store.status()["incident"]["recovery"] is None
+
+
+def test_ack_binds_artifact_id_and_start_time(store):
+    initial = decision(status="incomplete")
+    store.observe(initial)
+    recovery.confirm_infrastructure(store, 1, "operator", "artifact outage", now=NOW)
+    current = green(sha=initial["sha"])
+    token = recovery.reconcile(store, 1, current)
+    assert token
+    current["artifact"]["id"] += 1
+    assert not recovery.acknowledge(store, 1, "operator", token, current)
+
+
+def test_fresh_check_after_evidence_loss_issues_new_token(store):
+    initial = decision(status="incomplete")
+    store.observe(initial)
+    recovery.confirm_infrastructure(store, 1, "operator", "artifact outage", now=NOW)
+    current = green(sha=initial["sha"])
+    discarded = recovery.reconcile(store, 1, current)
+    assert not recovery.acknowledge(store, 1, "operator", discarded, None)
+    fresh = recovery.reconcile(store, 1, current)
+    assert fresh and fresh != discarded
+    assert not recovery.acknowledge(store, 1, "operator", discarded, current)
+    assert recovery.acknowledge(store, 1, "operator", fresh, current)
+
+
+def test_unverified_newer_failure_revokes_persisted_recovery(store):
+    initial = decision(status="incomplete")
+    store.observe(initial)
+    recovery.confirm_infrastructure(store, 1, "operator", "artifact outage", now=NOW)
+    current = green(sha=initial["sha"])
+    token = recovery.reconcile(store, 1, current)
+    assert token
+    assert store.observe(decision(sequence=5, verified=False)) == "unverified"
+    assert store.status()["incident"]["recovery"] is None
+    assert not recovery.acknowledge(store, 1, "operator", token, current)
