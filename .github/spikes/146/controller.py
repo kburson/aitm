@@ -239,6 +239,9 @@ def trial(shared, private, staging, receipt, provisioned):
         subprocess.run(("/usr/bin/git", "archive", BASE, "packages/aitm-usage", "tools/ci"),
                        stdout=stream, check=True, timeout=30)
     good(("/usr/bin/tar", "-xf", str(archive), "-C", str(src)))
+    harness = src / "trial-harness"
+    harness.mkdir(mode=0o755)
+    shutil.copyfile(Path(__file__).with_name("diagnostic_plugin.py"), harness / "diagnostic_plugin.py")
     project = src / PRODUCT
     venv = runtime / "venv"
     uv = shutil.which("uv")
@@ -284,9 +287,10 @@ def trial(shared, private, staging, receipt, provisioned):
     receipt["external_cli_probe"] = {"returncode": console.returncode,
                                     "has_expected_help": b"usage: aitm-usage" in console.stdout and b"collect-once" in console.stdout,
                                     "stdout_sha256": hash_bytes(console.stdout)}
-    common = ("-q", "--tb=long", "-p", "no:cacheprovider", "-p", "pytest_evidence", "--rootdir", str(src),
+    common = ("-q", "--tb=long", "-p", "no:cacheprovider", "-p", "pytest_evidence",
+              "-p", "diagnostic_plugin", "-o", "faulthandler_timeout=90", "--rootdir", str(src),
               "--confcutdir", str(src), "-c", str(project / "pyproject.toml"))
-    settings = {"PYTHONPATH": str(src / "tools/ci"), "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+    settings = {"PYTHONPATH": os.pathsep.join(map(str, (src / "tools/ci", harness))), "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
                 "AITM_CI_PYTEST_EVIDENCE": str(reports / "collect.json")}
     collected = logs.run("collection", receipt.setdefault("collect_process", {}), worker,
                          python, "-m", "pytest", *common, "--collect-only", "--basetemp",
@@ -368,7 +372,8 @@ def main():
     os.chmod(out.parent, 0o700)
     require(git("merge-base", "HEAD", BASE) == BASE, "product reference base drift")
     require(git("diff", "--name-only", BASE, "HEAD").splitlines() == [
-        ".github/spikes/146/bounded.py", ".github/spikes/146/controller.py", ".github/spikes/146/reference.json",
+        ".github/spikes/146/bounded.py", ".github/spikes/146/controller.py",
+        ".github/spikes/146/diagnostic_plugin.py", ".github/spikes/146/reference.json",
         ".github/workflows/aitm-146-product-observation-trial.yml"
     ], "unexpected trial diff")
     receipt = {
@@ -381,6 +386,7 @@ def main():
                      "runner": os.environ["RUNNER_NAME"], "image": os.environ["ImageVersion"],
                      "platform": platform.platform(),
                      "bounded_sha256": hash_bytes(Path(bounded.__file__).read_bytes()),
+                     "diagnostic_plugin_sha256": hash_bytes(Path(__file__).with_name("diagnostic_plugin.py").read_bytes()),
                      "controller_sha256": hash_bytes(Path(__file__).read_bytes()),
                      "reference_sha256": hash_bytes(Path(__file__).with_name("reference.json").read_bytes())},
         "limits": ["Reference is an earlier same-tree worker report, not an independent completeness oracle",

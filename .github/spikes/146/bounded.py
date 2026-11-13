@@ -29,8 +29,8 @@ import os, sys
 print(os.getpid(), flush=True)
 if sys.stdin.buffer.read(1) != b"\n":
     raise SystemExit("controller did not release product")
-sys.path.insert(0, sys.argv[1])
-sys.argv = ["aitm-usage", *sys.argv[2:]]
+sys.path[0:0] = [sys.argv[1], sys.argv[2]]
+sys.argv = ["aitm-usage", *sys.argv[3:]]
 from aitm_usage.cli import main
 raise SystemExit(main())
 """
@@ -190,6 +190,7 @@ def run(src, build, work, private, receipt, uid, worker, worker_args, logs, comm
                   assignment=list(catalog), outcomes={})
     interpreter = build / "python.exe"
     product = src / "packages/aitm-usage/src"
+    site_packages = src.parent / "runtime/venv/lib/python3.13/site-packages"
     workspace = worker("/usr/bin/mktemp", "-d", str(work / "slice.XXXXXXXX"))
     case_root = Path(workspace.stdout.decode().strip())
     require(workspace.returncode == 0 and case_root.parent == work, "worker did not create slice workspace")
@@ -214,7 +215,7 @@ for provider in ("codex", "claude"):
     require(setup_result.returncode == 0, "product slice fixture setup failed")
 
     def invocation(*args):
-        return (str(interpreter), "-I", "-B", "-S", "-c", BOOTSTRAP, str(product), *args)
+        return (str(interpreter), "-I", "-B", "-S", "-c", BOOTSTRAP, str(product), str(site_packages), *args)
 
     # Setup and readback use the installed console. The two assigned processes use the trace build.
     console = src.parent / "runtime/venv/bin/aitm-usage"
