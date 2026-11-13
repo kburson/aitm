@@ -10,12 +10,12 @@ children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T11:03:10Z"
+updated: "2026-11-13T11:03:52Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json", "plan/hosted-attempt-1.json", "plan/hosted-attempt-2.json", "plan/hosted-attempt-3.json", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json", "plan/hosted-attempt-1.json", "plan/hosted-attempt-2.json", "plan/hosted-attempt-3.json", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -53,3 +53,7 @@ The exact candidate's Python, quality and file checks passed on attempts 1 and 2
 ## Exact candidate and review
 
 [Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
+
+## Delivery
+
+[Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
