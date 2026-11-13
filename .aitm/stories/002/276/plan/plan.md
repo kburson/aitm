@@ -1,0 +1,5 @@
+# #276 Controller-owned product catalog plan
+
+Pin the reviewed product commit and exact #103 workflow, gate, policy and passing trunk artifact. Reproduce the current full push gate and record every literal required test ID and child label. Run the two available direct behavior equivalents under a controller-owned catalog. Map the service behavior to its required test ID and child label. Map CLI help to its child label and existing test ID. Keep the other required tests and all existing line coverage rules in the full #103 proof.
+
+Repeat both real behaviors 20 times with isolated project state, source fixtures and account writer guards. The controller observes spawned PID, exit and output. Exercise omitted or renamed required tests, skipped and xfailed required outcomes, missing process and wrong output, and verify appropriate refusals. Retain exact source and artifact readback, local command receipts and diagnostics. Treat this two-behavior catalog as a shadow experiment with no production activation.

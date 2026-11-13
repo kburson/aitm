@@ -1,0 +1,9 @@
+test_failed_external_check_is_refused (test_catalog.CatalogTest.test_failed_external_check_is_refused) ... ok
+test_success_claim_requires_controlled_process_evidence (test_catalog.CatalogTest.test_success_claim_requires_controlled_process_evidence) ... ok
+test_unobserved_catalog_is_refused (test_catalog.CatalogTest.test_unobserved_catalog_is_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.000s
+
+OK
+20 repetitions, 40 behavior assertions, 80 process receipts, 6 negative decisions, zero stderr

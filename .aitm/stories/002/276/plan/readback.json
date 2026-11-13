@@ -1,0 +1,167 @@
+{
+  "catalog": {
+    "cli-help": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+    "service-one-shot": "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+  },
+  "diagnostics_sha256": "c9fcc89a5b81a95b6fb9550c84f04a10f843d08eb52e04b8b5f5ddec57895ca1",
+  "exact_ci": {
+    "artifact": 13962226641,
+    "artifact_sha256": "9a88fe3914b7df0765b5f7368c4eed118e5725041db5dd1f79363045d16bce02",
+    "attempt": 1,
+    "gate": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [],
+      "passed": true,
+      "tests": 1216
+    },
+    "job_ids": {
+      "aitm-ci": 131322175778,
+      "collect-evidence": 131322072547,
+      "file-checks": 131318946710,
+      "python": 131318946672,
+      "python-base": 131318947718,
+      "quality": 131318946094
+    },
+    "product_commit": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+    "repo": "kburson/aitm",
+    "required_children": [
+      "cli-help",
+      "service-one-shot"
+    ],
+    "required_test_ids": [
+      "packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl",
+      "packages/aitm-usage/tests/test_install.py::test_restore_fences_publication_until_atomic_swap",
+      "packages/aitm-usage/tests/test_ledger.py::test_atomic_cursor_and_revisions",
+      "packages/aitm-usage/tests/test_ledger.py::test_writer_refusal_read_snapshot_and_release_on_process_exit",
+      "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+      "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
+    ],
+    "run": 43257314192,
+    "tracked_input_hashes": {
+      ".github/workflows/ci.yml": "a5ef6d5e64c1f726ad1f90b1e1eab848ab34bbbf0cf8019ec26530b16464ce08",
+      "tools/ci/policy.json": "323498224344b7852da7c02299ff7e5812e3d9fbd1557c4e950de0b7dd8ba776",
+      "tools/ci/python_gate.py": "7dcc28e13db5a1dafb278f8d6d8029a19424bd72209cb48b6b999a99d404866c"
+    },
+    "tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+    "workflow_id": 412848571
+  },
+  "local_host": {
+    "arch": "arm64",
+    "filesystem": "apfs",
+    "os": "Darwin",
+    "python": "3.13.9",
+    "release": "26.6.2",
+    "uv": "uv 0.10.6 (a91bcf268 2026-02-24)"
+  },
+  "negative": {
+    "missing-process": {
+      "extra": [],
+      "failed": {
+        "service-one-shot": "missing or failed registration, collection or status process"
+      },
+      "invalid": [],
+      "missing": [],
+      "passed": false
+    },
+    "omitted-required-id": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [
+        "required test did not pass: packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+      ],
+      "passed": false,
+      "tests": 1215
+    },
+    "output-mismatch": {
+      "extra": [],
+      "failed": {
+        "cli-help": "CLI help output mismatch"
+      },
+      "invalid": [],
+      "missing": [],
+      "passed": false
+    },
+    "renamed-required-id": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [
+        "required test did not pass: packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+      ],
+      "passed": false,
+      "tests": 1216
+    },
+    "required-skip": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [
+        "missing or unexpected setup/call/skip for packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+        "required test did not pass: packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+      ],
+      "passed": false,
+      "tests": 1215
+    },
+    "required-xfail": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [
+        "unexpected xfail at call for packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+        "missing or unexpected setup/call/skip for packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+        "required test did not pass: packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+      ],
+      "passed": false,
+      "tests": 1215
+    }
+  },
+  "passing_behavior_invocations": 40,
+  "passing_repetitions": 20,
+  "production_qualification": "unqualified",
+  "repetitions": 20,
+  "spike": 276,
+  "status": "catalog-shadow-pass"
+}
