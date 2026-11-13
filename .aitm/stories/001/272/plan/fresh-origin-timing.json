@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.claude-fresh-origin-timing/v1",
+  "early_prefix_rows": 10,
+  "first_native_api_request": 9,
+  "first_assistant_row": 10,
+  "early_prefix_already_includes_api_request": true,
+  "provider_closed": true,
+  "writer_admission_or_owner_proof_issued": false,
+  "closed_artifacts": {
+    "parent": {
+      "bytes": 133856,
+      "sha256": "51fa2ba2f0efa4882b14bebd80438de97fe575b6b8e5d0df0d36ff3f46ab4209"
+    },
+    "child": {
+      "bytes": 32286,
+      "sha256": "7e01ec360eaac9edd88488eae6f072c6fcb19621ccb0e3d2f298e99664702d10"
+    },
+    "metadata": {
+      "bytes": 281,
+      "sha256": "3c404616cf901b3683279a43f0b1e225c6466d2ce3930b40e71b91e37b8f3686"
+    },
+    "wire": {
+      "bytes": 44860,
+      "sha256": "7c93aebb926546bd986bc972e3c8758c94df4aa558dd3a68f4738f590c501140"
+    }
+  }
+}

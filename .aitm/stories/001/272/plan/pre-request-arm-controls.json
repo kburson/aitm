@@ -1,0 +1,11 @@
+{
+  "schema": "aitm.claude-pre-request-arm-controls/v1",
+  "native_child_api_request_ordinal": 9,
+  "native_child_first_assistant_ordinal": 10,
+  "passive_one_millisecond_poll_first_complete_observation_rows": 10,
+  "scratch_subagent_start_child_transcript_count": 0,
+  "scratch_subagent_start_control_first_complete_observation_rows": 10,
+  "pre_first_request_live_arm_proven": false,
+  "ownership_issued": false,
+  "source_control_sha256": "f7f78753bdcedd9ea0597ac4c4c011d2237069a6052e5c972c36acc00952e59d"
+}

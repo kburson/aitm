@@ -29,3 +29,7 @@ Project 24 Rank 228.952.
 Second slice of #270 under Epic #100. After native closure qualification, obtain independent re-acceptance for a concrete admission design under the existing M06/M07 owner-approved root, capture permission, verified boundary, scope and writer custody rules.
 
 Prove a distinct authenticated child physical span and the original registered owner of both parent and child. Demonstrate the real authority path with genuine native evidence, no fabricated epoch or authority, no inherited parent permission, no caller-provided checkout, and no relaxation of ordinary duplicate refusal. Existing independently required Refine, JIT and delivery evidence apply. A gate change is outside scope. #270 remains the direct prerequisite of #204. Epic #2, C01 and production cutover are excluded.
+
+## Independent plan re-acceptance and fresh native arm result
+
+The amended admission plan passed independent re-acceptance under the existing gates. The live positive is held because both fresh runs reached the first native API request before the first complete child prefix could be armed. [Exact plan and native hold](plan/2026-11-12-272-pre-request-arm-hold.md).
