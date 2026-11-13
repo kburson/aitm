@@ -132,6 +132,7 @@ def build_trace_python(shared, logs, receipt):
             modules = "*disabled*\n_ssl _hashlib\n"
             (build / "Modules/Setup.local").write_text(modules)
             outputs["disabled_extensions"] = ["_ssl", "_hashlib"]
+            outputs["line_probe_patch"] = bounded.add_line_probe(build)
     python = build / "python.exe"
     config = good((str(python), "-I", "-c",
                    "import sys,sysconfig,sqlite3;"
@@ -139,6 +140,9 @@ def build_trace_python(shared, logs, receipt):
     require(config.split()[:2] == ["3.13.9", "1"], "unexpected trace interpreter configuration")
     good(("/bin/chmod", "-R", "a+rX,go-w", str(build)))
     outputs.update(binary_sha256=hash_bytes(python.read_bytes()), configuration=config)
+    dof = logs.run("trace-build-dof", outputs.setdefault("dof", {}), command,
+                   ("/usr/bin/otool", "-s", "__TEXT", "__dof_python", str(python)), timeout=15)
+    require(dof.returncode == 0 and b"__dof_python" in dof.stdout, "trace binary lacks Python DOF section")
     return build
 
 

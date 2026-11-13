@@ -12,6 +12,7 @@ from time import monotonic
 
 PYTHON_ARCHIVE = "Python-3.13.9.tar.xz"
 PYTHON_SHA256 = "ed5ef34cda36cfa2f3a340f07cac7e7814f91c7f3c411f6d3562323a866c5c66"
+INSTRUMENTATION_SHA256 = "06c6f8b87c556d8e8f0d2c77297f43c13b12599272d5fcad9071e8ea2efe772d"
 CASES = {
     "cli-help": (
         "tools/ci/tests/test_cli_evidence.py", "test_usage_console_help",
@@ -31,9 +32,36 @@ if sys.stdin.buffer.read(1) != b"\n":
     raise SystemExit("controller did not release product")
 sys.path[0:0] = [sys.argv[1], sys.argv[2]]
 sys.argv = ["aitm-usage", *sys.argv[3:]]
+monitor = sys.monitoring
+monitor.use_tool_id(4, "aitm146-line-probe")
+monitor.set_events(4, monitor.events.LINE)
 from aitm_usage.cli import main
 raise SystemExit(main())
 """
+
+
+def add_line_probe(build):
+    path = build / "Python/instrumentation.c"
+    original = path.read_bytes()
+    if sha256(original).hexdigest() != INSTRUMENTATION_SHA256:
+        raise ValueError("unexpected CPython instrumentation source")
+    source = original.replace(b'#include "Python.h"\n', b'#include "Python.h"\n#include "pydtrace.h"\n', 1)
+    anchor = b"    int line = _Py_Instrumentation_GetLine(code, i);\n    assert(line >= 0);\n"
+    if source.count(anchor) != 1:
+        raise ValueError("CPython line probe anchor is ambiguous")
+    probe = b"""
+    if (PyDTrace_LINE_ENABLED()) {
+        const char *file = PyUnicode_AsUTF8(code->co_filename);
+        const char *name = PyUnicode_AsUTF8(code->co_qualname);
+        if (file == NULL || name == NULL) {
+            return -1;
+        }
+        PyDTrace_LINE(file, name, line);
+    }
+"""
+    patched = source.replace(anchor, anchor + probe, 1)
+    path.write_bytes(patched)
+    return {"before_sha256": sha256(original).hexdigest(), "after_sha256": sha256(patched).hexdigest()}
 
 
 def inventory(src):
@@ -156,6 +184,10 @@ def traced(label, command_line, cwd, case, product, uid, staging, logs, record, 
             record["trace_ready"] = ready(tracer, f"READY {pid}".encode()).decode()
         except ValueError as error:
             attach_error = str(error)
+            probe_list = logs.run(f"bounded-{label}-probe-list", record.setdefault("probe_listing", {}), command,
+                                  ("/usr/bin/sudo", "-n", "/usr/sbin/dtrace", "-l", "-p", str(pid),
+                                   "-P", f"python{pid}"), timeout=12)
+            record["probe_listing"]["has_line_probe"] = b" line" in probe_list.stdout
         stdout, stderr = child.communicate(b"\n", timeout=30)
         trace_output, trace_error = tracer.communicate(timeout=20)
     finally:
