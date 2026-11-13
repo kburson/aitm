@@ -32,6 +32,11 @@
     "run": 43368915281,
     "trace_sha256": "80ee6b63d66bbe40eda7356b9a5de4d5ae49361edb2ae3032bcc79fe1cea2009"
   },
+  "retained_diagnostic_archive": {
+    "path": "plan/selected-diagnostic-streams.zip",
+    "sha256": "f839253677f55021fae68f5d15c100bdf2b5f9a83c63c569bc0155cb2913306a",
+    "streams": 114
+  },
   "retained_trace": "plan/selected-prior-attempt-dtrace.log",
   "signed_review_sha256": "ec469a1cd9d0a9d14a8151e86774cb61fc15a562867f54a0804babdfccfc3bbf",
   "trials": [
