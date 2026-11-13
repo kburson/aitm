@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T01:59:41Z"
-updated: "2026-11-13T02:05:04Z"
+updated: "2026-11-13T02:08:46Z"
 last-branch: "codex/spike-268-macos-observation"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/146/plan/2026-11-12-146-trusted-observation-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/macos-pilot-receipt.json", "plan/macos-pilot-readback.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/macos-pilot-receipt.json", "plan/macos-pilot-readback.json", "plan/2026-11-12-268-pilot-findings.md", "plan/reviews/268-independent-review.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,7 @@ The existing #103 gate remains in effect. #146 remains open pending its own qual
 ## Hosted evidence
 
 One synthetic macOS/APFS job ran seven fixture invocations. [Controller receipt](plan/macos-pilot-receipt.json) · [GitHub readback](plan/macos-pilot-readback.json).
+
+## Reviewed disposition
+
+[Findings](plan/2026-11-12-268-pilot-findings.md) · [Independent review](plan/reviews/268-independent-review.md). The result is bounded to the synthetic fixture.

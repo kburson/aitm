@@ -10,7 +10,7 @@ children: [268]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-13T02:03:00Z"
+updated: "2026-11-13T02:08:46Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -66,3 +66,7 @@ The local synthetic rehearsal demonstrated controller-owned inventory and extern
 ## Authorized Rank 50 pilot
 
 [#268](../../002/268/story.md) owns the disposable macOS/APFS spike. Production qualification and the Rank 60 pickup holds stay active.
+
+## Reviewed #268 pilot result
+
+[#268](../../002/268/story.md) verified worker/controller separation and receipt custody for the allowlisted synthetic catalog. The evidence covers seven fixture invocations on hosted macOS/APFS. #146 remains blocked on complete product collection and execution and native child coverage. Rank 60 stays on hold.
