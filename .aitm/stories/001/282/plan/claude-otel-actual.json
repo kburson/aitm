@@ -1,0 +1,20 @@
+{
+  "story": 282,
+  "sources": [
+    {
+      "path": "full-auto-otel-1-282.json",
+      "sha256": "bc5b6c5b071b542c5e4afc6c486e34a13eb944f9da9b62dac68e7fced9fcec5b"
+    }
+  ],
+  "observation_count": 12,
+  "milliseconds": 15755,
+  "actual_hours": "0.0044",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-13T11:21:45.382Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ]
+}

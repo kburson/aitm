@@ -1,7 +1,12 @@
 {
   "schema": "aitm.claude-coverage-replay/v1",
   "surface": "macOS Claude Code 2.1.318",
-  "mode": "offline replay of original loopback OTLP events through a disposable durable reference join",
+  "mode": "offline replay of the independently hashed receiver-side loopback OTLP POST bodies through a disposable durable reference join",
+  "input_receipt_sha256": "03707eb5926d2bde487ee2dbee141fda03a4578fb031c6659cb01f320421d558",
+  "native_child_order_confirmed": true,
+  "control_request_had_no_tool_use": true,
+  "content_redaction_controls_verified": true,
+  "separate_process_reopen_verified": true,
   "expected_native_requests": 5,
   "duplicate_delivery_attempts_before_restart": 8,
   "distinct_after_duplicate_delivery_and_reopen": 4,

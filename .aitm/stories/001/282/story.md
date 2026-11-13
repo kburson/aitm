@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 282
 title: "[Spike] Measure Claude subagent telemetry coverage and story impact"
 kind: "spike"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/282"
 parent: 100
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T11:05:01Z"
-updated: "2026-11-13T11:05:01Z"
+updated: "2026-11-13T11:23:28Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2, "size": null}
 priority: null
 origin: ".aitm/stories/001/204/story.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-119-qualified-sources-reacceptance-draft.md"], "attachments": []}
@@ -42,3 +42,5 @@ Evidence only. No dependency, capture, reporting, or production changes. Epic #2
 Claude 2.1.318 sent five distinct API request events to a local receiver in one synthetic session. All five joined the corresponding native transcript usage by server request identity. Both child requests carried the same child agent ID and shared their parent prompt ID. The child contributed 47.2% of estimated API cost within the one Agent prompt, with the tool-free control excluded from the denominator. This sample cannot estimate project or story prevalence. No report or ownership authority was issued. [Sanitized receipt](plan/claude-otel-feasibility.json).
 
 The separate [qualified-source release draft](plan/2026-11-13-119-qualified-sources-reacceptance-draft.md) is ready for independent re-acceptance if pursued. Existing journal tests passed for nested overlap, mixed diagnostics and keeping the prior frontier on partial input. The tested package tree matches current remote trunk `b1ff8ce027608da942ec8ac1c7bc124500c5f145`. This is baseline evidence. It does not certify the replacement blocker.
+
+[Bounded sample and replay findings](plan/2026-11-13-282-claude-otel-findings.md). [Reproduction](plan/claude-otel-reproduction.md). Actual records only bounded coordinator progress.
