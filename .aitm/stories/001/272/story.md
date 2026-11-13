@@ -33,3 +33,7 @@ Prove a distinct authenticated child physical span and the original registered o
 ## Independent plan re-acceptance and fresh native arm result
 
 The amended admission plan passed independent re-acceptance under the existing gates. The live positive is held because both fresh runs reached the first native API request before the first complete child prefix could be armed. [Exact plan and native hold](plan/2026-11-12-272-pre-request-arm-hold.md).
+
+## Buffered transcript timing controls
+
+Both a directory notification and a tight reader saw the first API request in the first complete child prefix in two live trials. The pinned transcript writer can publish the initial rows and first request together. [Native timing findings](plan/2026-11-13-272-native-buffered-prefix-findings.md).

@@ -1,0 +1,126 @@
+{
+  "schema": "aitm.claude-pre-request-native-timing/v1",
+  "client_version": "2.1.318",
+  "binary_sha256": "677a2ea7bf576cedd20e191d973914ed8a41796f53a63b1923381ddc4d5b5e7d",
+  "trunk": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+  "accepted_boundary": "complete original child prefix before first API request",
+  "private_producer_ranges": {
+    "start_hook_precedes_sidecar_enqueue": {
+      "start_byte": 276140700,
+      "end_byte": 276141850,
+      "sha256": "5f54f40963ea4b4e4d353a8cc09d9e9330b9b39826b6bb6b5a545c6c5ecea746"
+    },
+    "sidecar_initial_rows_enqueued_without_await": {
+      "start_byte": 276152700,
+      "end_byte": 276153480,
+      "sha256": "55cff3d3f346b51c99ff89e7f067aa5cd914cc367ee25d307d84d1db76ceccdd"
+    },
+    "query_starts_after_enqueue": {
+      "start_byte": 276156100,
+      "end_byte": 276157000,
+      "sha256": "7e20d28890c7197f0534c12bf8a568e6d853c12a71f28dde39632f7efd5d0d1d"
+    },
+    "request_record_enqueued_without_await": {
+      "start_byte": 267727850,
+      "end_byte": 267729270,
+      "sha256": "7b09aa63574f5d283ea35484c7b0ddf427970433dcf1c510b509004e1824bbfa"
+    },
+    "request_recorder_precedes_native_dispatch": {
+      "start_byte": 270343100,
+      "end_byte": 270343650,
+      "sha256": "01c134d3a3ac9efb7e243546df1088268d53ca8104f259805258aa1682e38eb6"
+    },
+    "request_replay_uses_same_append_entry": {
+      "start_byte": 267922300,
+      "end_byte": 267923650,
+      "sha256": "b1179aa4e869c3276868d096eaf1cd37ed8dc1afcbfbfcd456a6d119d37a5187"
+    },
+    "sidechain_and_requests_use_same_per_file_queue": {
+      "start_byte": 267924750,
+      "end_byte": 267926200,
+      "sha256": "150669e4a235d4eaece132aac5946f9da2712751b74bfb59dc1139c02c4d3d2d"
+    },
+    "queue_drain_default_100ms": {
+      "start_byte": 267888360,
+      "end_byte": 267888550,
+      "sha256": "e61f8f9d2df1d643ecb95a868803118a60eb42d60269eaa8bcb35345043144da"
+    },
+    "drain_combines_entries_in_append": {
+      "start_byte": 267894000,
+      "end_byte": 267895580,
+      "sha256": "26552be022b969efcc56d26c615fafd1ee431296273e7953a8f07db41d722903"
+    }
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "same_file_and_prefix_after_exit": true,
+      "observers": {
+        "busy": {
+          "rows": 10,
+          "first_api": 9,
+          "file_ends_in_complete_row": true
+        },
+        "kqueue": {
+          "rows": 10,
+          "first_api": 9,
+          "file_ends_in_complete_row": true
+        }
+      },
+      "closed_artifacts": {
+        "parent": {
+          "bytes": 130871,
+          "sha256": "3452f43b29404e681e0488911df617d96503e54d087e61247e068bce230a1c5e"
+        },
+        "child": {
+          "bytes": 32126,
+          "sha256": "87338839d330a4bea754f5ccf3ff4fd39eb585501482d5c82d59d2c3dbe561d3"
+        },
+        "metadata": {
+          "bytes": 281,
+          "sha256": "7fe080da4cb53fc6ff9f50817fc4a26816e8e267d9d8868b0811bbd9b2e57a71"
+        },
+        "wire": {
+          "bytes": 42088,
+          "sha256": "4a6a076ad97337de7ed5f4de6a586ead31010a9f2e3d0525fe90dfe00241c467"
+        }
+      }
+    },
+    {
+      "trial": 2,
+      "same_file_and_prefix_after_exit": true,
+      "observers": {
+        "busy": {
+          "rows": 10,
+          "first_api": 9,
+          "file_ends_in_complete_row": true
+        },
+        "kqueue": {
+          "rows": 10,
+          "first_api": 9,
+          "file_ends_in_complete_row": true
+        }
+      },
+      "closed_artifacts": {
+        "parent": {
+          "bytes": 133601,
+          "sha256": "22804b94a23939280bd9ca0b33a948271faffc3b6ec353beff3adc3f256c8b33"
+        },
+        "child": {
+          "bytes": 32157,
+          "sha256": "daa82263e7355697f89c26db5d4543717adfaf4e8d2e02084763d6b7beaa528e"
+        },
+        "metadata": {
+          "bytes": 281,
+          "sha256": "92a4eed8f1445712ed851462996ddae3596a73c2f887d19460aeff8c095fe9c3"
+        },
+        "wire": {
+          "bytes": 44786,
+          "sha256": "376f41ff01331b1cc6ab2e67404f1024974af13451bcd732140d5381be3c89a8"
+        }
+      }
+    }
+  ],
+  "pre_request_child_arm_issued": false,
+  "scope_ownership_issued": false
+}

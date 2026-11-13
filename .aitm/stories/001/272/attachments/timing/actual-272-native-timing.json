@@ -1,0 +1,17 @@
+{
+  "story": 272,
+  "coverage": "partial",
+  "basis": "Bounded coordinator progress through plan re-acceptance and native timing trials",
+  "milliseconds": 107194,
+  "actual_hours": "0.0298",
+  "sources": [
+    {
+      "path": "full-auto-admission-reacceptance-1-272.json",
+      "sha256": "7ed0fa84ffb7f585b76fc706535436da414d572a2a272feaa522ac675c8224f2"
+    },
+    {
+      "path": "full-auto-pre-request-timing-1-272.json",
+      "sha256": "1b7d0f676e8134dd145a45fe733e8bf2d4e638660471c3274b1ae4770086ba67"
+    }
+  ]
+}
