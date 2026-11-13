@@ -1,0 +1,216 @@
+{
+  "boundary": {
+    "controller_uid": 501,
+    "filesystem": "apfs",
+    "fixture_worker_write": "denied",
+    "native_process_probe": "worker identity observed through sudo and id",
+    "pinned_fixture_sha256": "ab5a90bc9a11b1c13c27eaef03bd7992622467e54b380be2ef7d440535d54107",
+    "worker_elevation": "denied",
+    "worker_environment_keys": [
+      "HOME",
+      "LC_ALL",
+      "PATH",
+      "TMPDIR"
+    ],
+    "worker_groups": [
+      4294967294,
+      12,
+      61,
+      100,
+      701
+    ],
+    "worker_marker_read": "denied",
+    "worker_marker_write": "denied",
+    "worker_receipt_create": "denied",
+    "worker_staged_receipt_create": "denied",
+    "worker_uid": 4294967294
+  },
+  "identity": {
+    "attempt": 1,
+    "catalog_sha256": "cc268e5538d5decd5b3a9a7865760cc41c202e6793fc57fb97ba861bb39f10bc",
+    "controller_sha256": "be3c16d59d962e6c9d3467ba3131da40a90655f288d44621c937eda548004d05",
+    "event": "push",
+    "fixture_sha256": "ab5a90bc9a11b1c13c27eaef03bd7992622467e54b380be2ef7d440535d54107",
+    "platform": "macOS-26.7.2-arm64-arm-64bit-Mach-O",
+    "policy_sha256": "813929add2dc318d2dbd6afe59474bb4ea559280c0ea08f143f03915cffe4c46",
+    "python": "3.15.2",
+    "ref": "refs/heads/codex/spike-268-macos-observation",
+    "repository": "kburson/aitm",
+    "run": 43349372876,
+    "runner": "GitHub Actions 1000189145",
+    "runner_environment": "github-hosted",
+    "runner_image_version": "20261102.0473.1",
+    "runner_label": "macos-26",
+    "source": "8a7c7ea8c77046371cee6bf282b7b2dd4c869535",
+    "tree": "1a6ab37ad05b1c0b82d2b1ba84926c6974da614d"
+  },
+  "issue": 268,
+  "observations": {
+    "fixture_invocations": [
+      {
+        "case": "alpha",
+        "mode": "full",
+        "outcome": "pass",
+        "returncode": 0,
+        "stdout_sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+        "variant": "normal"
+      },
+      {
+        "case": "beta",
+        "mode": "full",
+        "outcome": "pass",
+        "returncode": 0,
+        "stdout_sha256": "a0d89cbe67e84a23d7de399463e2e9a6fb702a6c8acaab0dcdf36b32c2656d82",
+        "variant": "normal"
+      },
+      {
+        "case": "gamma",
+        "mode": "full",
+        "outcome": "pass",
+        "returncode": 0,
+        "stdout_sha256": "b7f1365025be0d3aead7c6a0dbaaac6fbba6226612671bb20b296c4822ec973b",
+        "variant": "normal"
+      },
+      {
+        "case": "alpha",
+        "mode": "full",
+        "outcome": "fail",
+        "returncode": 0,
+        "stdout_sha256": "d4ba2bf854674703475a4a08506b4d45835899588a97709d988cc36997adeca5",
+        "variant": "negative"
+      },
+      {
+        "case": "alpha",
+        "mode": "selected",
+        "outcome": "pass",
+        "returncode": 0,
+        "stdout_sha256": "1921b918b15842c7fdb115078e610263fac85f159c1d8e0ecec3d89a0faa4005",
+        "variant": "normal"
+      },
+      {
+        "case": "beta",
+        "mode": "selected",
+        "outcome": "pass",
+        "returncode": 0,
+        "stdout_sha256": "a0d89cbe67e84a23d7de399463e2e9a6fb702a6c8acaab0dcdf36b32c2656d82",
+        "variant": "normal"
+      },
+      {
+        "case": "alpha",
+        "mode": "selected",
+        "outcome": "fail",
+        "returncode": 0,
+        "stdout_sha256": "d4ba2bf854674703475a4a08506b4d45835899588a97709d988cc36997adeca5",
+        "variant": "negative"
+      }
+    ],
+    "modes": {
+      "full": {
+        "assignment": [
+          "alpha",
+          "beta",
+          "gamma"
+        ],
+        "assignment_sha256": "a3e185260009ab5be7bb16f3bed296075f27322fb87d99209710a28ef3e8d99e",
+        "matrix": {
+          "known_failure_with_missing_sibling": {
+            "evidence_complete": false,
+            "outcomes": {
+              "alpha": "fail",
+              "beta": "missing",
+              "gamma": "missing"
+            },
+            "status": "fail"
+          },
+          "missing_catalog": {
+            "outcomes": {},
+            "reason": "inventory identity mismatch",
+            "status": "refused"
+          },
+          "positive": {
+            "evidence_complete": true,
+            "outcomes": {
+              "alpha": "pass",
+              "beta": "pass",
+              "gamma": "pass"
+            },
+            "status": "pass"
+          },
+          "reported_pass_without_observation": {
+            "evidence_complete": false,
+            "outcomes": {
+              "alpha": "missing",
+              "beta": "missing",
+              "gamma": "missing"
+            },
+            "status": "refused"
+          },
+          "stale_attempt": {
+            "outcomes": {},
+            "reason": "attempt mismatch",
+            "status": "refused"
+          },
+          "worker_receipt": {
+            "outcomes": {},
+            "reason": "worker receipt has no authority",
+            "status": "refused"
+          }
+        }
+      },
+      "selected": {
+        "assignment": [
+          "alpha",
+          "beta"
+        ],
+        "assignment_sha256": "138bf4722f7ae17122c7282d0eb156499d349940e129bd4cdf27c8ffdcbb3d25",
+        "matrix": {
+          "known_failure_with_missing_sibling": {
+            "evidence_complete": false,
+            "outcomes": {
+              "alpha": "fail",
+              "beta": "missing",
+              "gamma": "unobserved"
+            },
+            "status": "fail"
+          },
+          "missing_catalog": {
+            "outcomes": {},
+            "reason": "inventory identity mismatch",
+            "status": "refused"
+          },
+          "positive": {
+            "evidence_complete": true,
+            "outcomes": {
+              "alpha": "pass",
+              "beta": "pass",
+              "gamma": "unobserved"
+            },
+            "status": "pass"
+          },
+          "reported_pass_without_observation": {
+            "evidence_complete": false,
+            "outcomes": {
+              "alpha": "missing",
+              "beta": "missing",
+              "gamma": "unobserved"
+            },
+            "status": "refused"
+          },
+          "stale_attempt": {
+            "outcomes": {},
+            "reason": "attempt mismatch",
+            "status": "refused"
+          },
+          "worker_receipt": {
+            "outcomes": {},
+            "reason": "worker receipt has no authority",
+            "status": "refused"
+          }
+        }
+      }
+    }
+  },
+  "schema": "aitm.spike-268/v1",
+  "scope": "allowlisted synthetic fixture; no pytest or child coverage claim",
+  "status": "synthetic-scope-pass"
+}

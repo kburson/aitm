@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 268
 title: "[#146 Spike] Qualify a synthetic macOS/APFS observation boundary"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/268"
 parent: 146
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T01:59:41Z"
-updated: "2026-11-13T02:03:00Z"
+updated: "2026-11-13T02:05:04Z"
 last-branch: "codex/spike-268-macos-observation"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/146/plan/2026-11-12-146-trusted-observation-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/macos-pilot-receipt.json", "plan/macos-pilot-readback.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -29,3 +29,7 @@ Verify APFS on the test volume, distinct controller and unprivileged worker iden
 The existing #103 gate remains in effect. #146 remains open pending its own qualification disposition. #148 and #267 remain on hold.
 
 [Reviewed #146 plan](https://github.com/kburson/aitm/blob/10992dc57915f84adafcb5ffb90f1ab04c70c856/.aitm/stories/001/146/plan/2026-11-12-146-trusted-observation-replan.md)
+
+## Hosted evidence
+
+One synthetic macOS/APFS job ran seven fixture invocations. [Controller receipt](plan/macos-pilot-receipt.json) · [GitHub readback](plan/macos-pilot-readback.json).

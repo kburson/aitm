@@ -1,0 +1,80 @@
+{
+  "artifacts": [
+    {
+      "digest": "sha256:e39f55b8e26da312f3dedb6e122a9512f72b21ced9d360b660fe6fb3c8ab461b",
+      "expired": false,
+      "id": 14002573302,
+      "name": "spike-268-43349372876-a1",
+      "size_in_bytes": 1712,
+      "workflow_run": {
+        "head_branch": "codex/spike-268-macos-observation",
+        "head_repository_id": 1450406435,
+        "head_sha": "8a7c7ea8c77046371cee6bf282b7b2dd4c869535",
+        "id": 43349372876,
+        "repository_id": 1450406435
+      }
+    }
+  ],
+  "checkout": {
+    "base": "766504a02aaeb9dda339d588172dd7d5bdbd2b3f",
+    "head": "8a7c7ea8c77046371cee6bf282b7b2dd4c869535",
+    "tree": "1a6ab37ad05b1c0b82d2b1ba84926c6974da614d"
+  },
+  "jobs": [
+    {
+      "conclusion": "success",
+      "id": 131636416255,
+      "labels": [
+        "macos-26"
+      ],
+      "name": "observation",
+      "runner_name": "GitHub Actions 1000189145",
+      "status": "completed",
+      "steps": [
+        {
+          "conclusion": "success",
+          "name": "Set up job"
+        },
+        {
+          "conclusion": "success",
+          "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        },
+        {
+          "conclusion": "success",
+          "name": "Verify boundary and run synthetic observations"
+        },
+        {
+          "conclusion": "success",
+          "name": "Retain controller receipt"
+        },
+        {
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
+        },
+        {
+          "conclusion": "success",
+          "name": "Complete job"
+        }
+      ]
+    }
+  ],
+  "receipt_sha256": "88815f2bbc656de8a047e0c36f3d0a8459c3e934fe1bed929ae93dfa1d19ab7e",
+  "result": "synthetic-scope-pass",
+  "run": {
+    "conclusion": "success",
+    "event": "push",
+    "head_branch": "codex/spike-268-macos-observation",
+    "head_sha": "8a7c7ea8c77046371cee6bf282b7b2dd4c869535",
+    "html_url": "https://github.com/kburson/aitm/actions/runs/43349372876",
+    "id": 43349372876,
+    "path": ".github/workflows/aitm-spike-268-macos-observation.yml",
+    "run_attempt": 1,
+    "status": "completed"
+  },
+  "scope": "one allowlisted synthetic fixture on hosted macOS/APFS",
+  "verification": [
+    "ZIP digest matches GitHub artifact metadata",
+    "JSON digest matches controller job log",
+    "Runner, source, attempt and label match GitHub readback"
+  ]
+}
