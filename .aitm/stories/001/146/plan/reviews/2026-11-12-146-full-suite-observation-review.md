@@ -1,0 +1,40 @@
+# #146 independent full-suite observation review
+
+I reconstructed 1,216 unique exact IDs from all 27 pinned test source paths without importing the product tests, using the locked pytest 9.2.0 ID normalization. The sorted canonical SHA-256 is `efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9`. The same-tree historical report was read only after constructing this catalog.
+
+I independently retrieved the three run and attempt records, commit objects, artifact archives and job logs. The archived SHA-256 values match GitHub metadata. Each receipt SHA-256 matches its controller log and every archived stream matches the receipt's retained byte count and digest.
+
+| Hosted attempt 1 | Artifact | ZIP SHA-256 | Receipt SHA-256 | Streams |
+| --- | --- | --- | --- | --- |
+| [43364268821](https://github.com/kburson/aitm/actions/runs/43364268821/attempts/1) | 14010376929 | `20afbac53177bf709f19c4afa474b074341912b6484304f0e324d45c2ba9e895` | `187732e538290215e7580ab9f365a831f0d8011ec44ae45416aecad7373db0fc` | 18 |
+| [43364721864](https://github.com/kburson/aitm/actions/runs/43364721864/attempts/1) | 14009879890 | `4edb1574b3606dcd439818de3bdacdda941f228ffe2310cc0e6f2ff54da38e9c` | `7b927b017e2f10f3a69ef96a11bcb9604e40a8bf25c0c1d55a12006652d9cdad` | 24 |
+| [43366344563](https://github.com/kburson/aitm/actions/runs/43366344563/attempts/1) | 14010642704 | `cc28de0c3ba2d969a5a1eec6ae5317e6a001d1f1ffc5915180804de26ae4dba0` | `3993095705929e2ca5793c156aca0b425f4e5cca97608247c5b9529f46dc8dde` | 24 |
+
+The first run's DTrace streams contain 1,216 discovered and 1,216 finalized IDs, both exactly equal to the source-derived inventory. Its 800-second full driver deadline was exceeded. The 15-second cleanup timeout prevented retention of full driver and tracer streams. An independently built local copy of that same observer hit a null weak-linked `pipe2` symbol even with no pytest or monitoring. Configuring the platform deployment target to 26.0 and disabling the unavailable function made both `os.pipe` and a real captured subprocess pass locally. The two pinned pytest cases then passed in 1.20 seconds with their seven-event sequences in a local in-process event shim. The local test did not establish hosted timing or DTrace proof.
+
+The second run completed all 1,216 pytest tests in 594.86 seconds. Both independent collection sets match the AST catalog and each tested ID has exactly one complete seven-event sequence. Both required child starts were observed in their exact assigned test bodies, with OS exec and exit status 0. Parsed trace rows give 6,493 distinct product file/line pairs for one-shot collection and 4,327 for CLI help. The required file totals are 454 in `service.py` and 128 in `cli.py`. A line probe encountered an invalid address in a separate, non-required collect-once process, so the trial correctly refused clean-trace qualification.
+
+## Independent inventory and runtime method
+
+The checker compared every parsed test and enum source against immutable product commit `766504a02aaeb9dda339d588172dd7d5bdbd2b3f`, tree `6f1ae4a5707f2344bbeb4c15efdb823480866feb`, and checked the tracked test path inventory. The 552 test definitions contain 160 parametrization decorators. It materialized literal parameters, reviewed fixture helper outputs, enum and platform values, and stacked decorator products. Exact pytest 9.2.0 ID generation was used to normalize string escaping and duplicate suffixes. The script requires macOS CPython 3.13.9 and checks the hashes of the relevant pytest modules. Script SHA-256 `e138557c1a36963245d61a7d74383289a803bcd2431b036106c56cfef3c378bd`.
+
+The controller starts a separately provisioned worker on APFS and checks UID/parent lineage before releasing each invocation. Runtime pytest sources are pinned and instrumented at collection boundaries, before report construction and around the actual test function. The interpreter routes these observations to DTrace. The OS trace is read by the controller. Pytest stdout is a separate diagnostic. The controller's event matcher accepts only the named observer call sites and requires all seven events for an assigned pass. The named pytest-launched native child cases are scoped by invocation and test association, with OS process creation, exec and exit, the subprocess launch identity, and DTrace Python lines tied to the same PID.
+
+The in-memory negative decision checks refused an omitted collection ID, missing execution body, extra test and duplicate complete phase sequence. A modeled setup failure was retained alongside a missing sibling. These cases use controlled event inputs derived from a captured run. They are not hosted tampering, live negative worker cases or a selected qualification run. The exact source and Python code origin pins constrain the supported trust claim to this pinned product tree.
+
+## Exact clean hosted result
+
+I matched success to trial head `1419e3592d36cf90853664c2f22eb41bb26c1cef`, tree `330316f85af0926881bf9207ed8d53e6a378e1c9`, run `43366344563`, attempt 1. The receipt records the same pinned product tree, APFS with separate worker and controller principals, denial of worker elevation and receipt creation, and a passing subprocess preflight. The controller and observer are pinned by the receipt's source hashes. The native base interpreter binary SHA-256 is `344ecd3b816a3e36451b9d2876245d11f43d8636e3e143bdea000efc0428acc9`. Both observation drivers and both DTrace commands exited 0 with empty tracer stderr. [Passing hosted run](https://github.com/kburson/aitm/actions/runs/43366344563/attempts/1) · [Verified artifact](https://github.com/kburson/aitm/actions/runs/43366344563/artifacts/14010642704)
+
+I parsed the two raw DTrace streams separately from the controller's outcome JSON. The collection-only trace contains all 1,216 discovered IDs and all 1,216 finalized IDs, with exactly one observation for each ID in both lists. The full execution trace reproduces those lists and binds one complete `start`, `setup-ok`, `body-enter`, `body-return`, `call-ok`, `teardown-ok`, `end` sequence to each assigned ID. No assignment was missing, duplicated, skipped or observed failing. The diagnostic pytest summary reports 1,216 passes in 341.50 seconds.
+
+| Assigned pytest child case | Observed OS result | Python line observations in that native child |
+| --- | --- | --- |
+| `test_usage_console_help` | Direct pytest child created during the test body. Matching console help command, OS exec and exit status 0 | 4,327 distinct product path/line pairs across 27 files, including 128 in `cli.py` and required line 417 |
+| `test_one_shot_status_uses_collecting_subprocess_pid` | Direct pytest child created during the test body. Matching Python collect-once invocation, OS exec and exit status 0 | 6,493 distinct product path/line pairs across 27 files, including 454 in `service.py` and required line 1052 |
+
+The scoping change limits line monitoring to these two test invocations. The attribution rests on the ordered parent test-body observation and OS process lineage. The worker environment test name activates instrumentation and does not independently establish attribution. The two other source and process event streams continue to cover the full suite.
+
+**Independent disposition.** Accept this exact run as the independently observed full baseline for the pinned product suite on the tested macOS/APFS route. The result uses a controller-owned instrumented CPython 3.13.9 and pytest 9.2.0, source pins, caller metadata and separate OS trace custody. It covers Python source lines in the two named pytest-launched native processes. A production verdict still requires reviewed handling of future candidate code and collection forms, selected-mode evidence, live negative trust-boundary evidence, and production integration. Keep #146 production qualification open at Rank 50 and retain #148 and #267 on hold. [#146](https://github.com/kburson/aitm/issues/146) · [#148](https://github.com/kburson/aitm/issues/148) · [#267](https://github.com/kburson/aitm/issues/267)
+
+Signed **Codex / review146_full**, independent evidence reviewer.

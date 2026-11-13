@@ -10,12 +10,12 @@ children: [268]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-13T03:54:30Z"
+updated: "2026-11-13T04:43:29Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-12-146-trusted-observation-replan.md", "plan/146-linux-rehearsal.json", "plan/reviews/2026-11-12-146-trusted-observation-replan-review.md", "plan/2026-11-12-146-product-observation-findings.md", "plan/reviews/2026-11-12-146-product-observation-review.md", "plan/product-observation-readback.json", "plan/product-trial-1-receipt.json", "plan/product-trial-2-receipt.json", "plan/product-trial-3-receipt.json", "plan/product-trial-4-receipt.json", "plan/2026-11-12-146-bounded-product-slice-plan.md", "plan/2026-11-12-146-bounded-product-slice-findings.md", "plan/reviews/2026-11-12-146-bounded-product-slice-review.md", "plan/bounded-product-slice-readback.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-12-146-trusted-observation-replan.md", "plan/146-linux-rehearsal.json", "plan/reviews/2026-11-12-146-trusted-observation-replan-review.md", "plan/2026-11-12-146-product-observation-findings.md", "plan/reviews/2026-11-12-146-product-observation-review.md", "plan/product-observation-readback.json", "plan/product-trial-1-receipt.json", "plan/product-trial-2-receipt.json", "plan/product-trial-3-receipt.json", "plan/product-trial-4-receipt.json", "plan/2026-11-12-146-bounded-product-slice-plan.md", "plan/2026-11-12-146-bounded-product-slice-findings.md", "plan/reviews/2026-11-12-146-bounded-product-slice-review.md", "plan/bounded-product-slice-readback.json", "plan/2026-11-12-146-full-suite-observation-plan.md", "plan/2026-11-12-146-full-suite-observation-findings.md", "plan/reviews/2026-11-12-146-full-suite-observation-review.md", "plan/full-suite-independent-inventory.py", "plan/full-suite-observation-readback.json"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T09", "path": ".aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md", "publication": "dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84", "raw-sha256": "ec4ee32aa2f1770e903d80e9922b62b3e0a4a4bc79d5e71e9ca61a1179ce08d7", "section-sha256": "96f92716c462213744f98c10b0db9cc163f768fe3bd4bbe4bf9f56644378389d"}
@@ -82,3 +82,9 @@ The hosted comparison extended the separate macOS/APFS worker to the pinned prod
 The follow-up retained the full pytest streams, identified trial-environment failures and tested two pinned product obligations through a separate controller observation route. The production qualification remains outstanding.
 
 [Findings](plan/2026-11-12-146-bounded-product-slice-findings.md) · [Independent review](plan/reviews/2026-11-12-146-bounded-product-slice-review.md) · [Run readback](plan/bounded-product-slice-readback.json).
+
+## Full pinned product-suite observation
+
+The macOS/APFS trial checked dynamic pytest collection against an independently reconstructed inventory and traced assigned outcomes and required native children. The independent review records the scope and remaining production qualification work.
+
+[Findings](plan/2026-11-12-146-full-suite-observation-findings.md) · [Independent review](plan/reviews/2026-11-12-146-full-suite-observation-review.md) · [Run readback](plan/full-suite-observation-readback.json).

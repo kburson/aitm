@@ -1,0 +1,24 @@
+# #146 full pinned product-suite observation
+
+This trial extends the reviewed two-case macOS/APFS slice to the pinned product commit `766504a02aaeb9dda339d588172dd7d5bdbd2b3f`, tree `6f1ae4a5707f2344bbeb4c15efdb823480866feb`. It covers the actual pytest suite and the two native children required by the existing product gate. [Bounded slice findings](2026-11-12-146-bounded-product-slice-findings.md) · [Independent full-suite review](reviews/2026-11-12-146-full-suite-observation-review.md) · [Exact artifact readback](full-suite-observation-readback.json)
+
+The independent review reconstructed all 1,216 exact IDs from 27 pinned test files and 552 definitions, including the dynamic parameter expansions. The source checker evaluates the supported pinned AST forms and uses locked pytest 9.2.0 ID generation. It runs without importing the product tests. The controller also checks per-definition cardinalities and compares DTrace-observed IDs before and after pytest collection hooks. The sorted catalog digest is `efa82db7a5e60f7c67388d05a363216a08654f8175bb101e1f7f9db06a5237f9`. [Independent inventory checker](full-suite-independent-inventory.py)
+
+The runtime uses a controller-built CPython 3.13.9 with probe instrumentation and a source-pinned pytest 9.2.0 with observation points. The controller invokes the actual pytest driver under a separate worker UID, traces its pre-report exception state and checks entry and return at the test-function call boundary. Native coverage joins OS create, exec and exit observations, the pinned subprocess launch arguments and DTrace line events to each assigned test and PID. The controller reads and retains the trace itself. Pytest stdout remains diagnostic context.
+
+| Hosted attempt | Result |
+| --- | --- |
+| [43364268821](https://github.com/kburson/aitm/actions/runs/43364268821/attempts/1) | Clean collection matched all 1,216 IDs. Full execution hit the 800-second limit, then the driver's output pipes did not close during the cleanup window. This version lost full-run output and trace streams. |
+| [43364721864](https://github.com/kburson/aitm/actions/runs/43364721864/attempts/1) | A real pipe and process preflight passed after removing dependence on the SDK's unavailable `pipe2`. Full pytest exited 0 and all 1,216 assignments had complete passing trace sequences. Both required children had line data and OS exit status 0. A separate child caused a DTrace invalid-address error, so the controller refused the full result. |
+| [43366344563](https://github.com/kburson/aitm/actions/runs/43366344563/attempts/1) | Clean DTrace in collection and execution. Both collection stages matched all 1,216 exact IDs. All 1,216 assignments had complete passing sequences. Pytest exited 0 in 341.50 seconds. There were zero failed, missing, extra or out-of-order outcomes. Both required native children were verified. [Verified artifact](https://github.com/kburson/aitm/actions/runs/43366344563/artifacts/14010642704) |
+
+The faulting subprocess in the second job was launched by the separate service-crash recovery test and exited 1 as part of that passing test. Child line monitoring had applied to every matching `collect-once` command. The follow-up limits that monitoring to the two required pytest cases while preserving independent attribution from the controller trace. It also starts the pytest driver in a separate process group and preserves partial stream data when stopping a timed-out run.
+
+| Pytest obligation | Native child evidence |
+| --- | --- |
+| CLI help | Pytest launched the expected console with `--help`. Kernel exit status 0. DTrace recorded 4,327 distinct product file/line pairs, including 128 lines in `cli.py` and required line 417. |
+| One-shot collection | Pytest launched the expected Python child with `collect-once`. Kernel exit status 0. DTrace recorded 6,493 distinct product file/line pairs, including 454 lines in `service.py` and required line 1052. |
+
+**Disposition.** The named run qualifies full-suite observation for the exact pinned product tree and instrumented macOS/APFS configuration. It establishes dynamic inventory, all assigned outcomes and Python source-line coverage for the two required pytest-launched children. It uses an explicitly patched observer runtime and verified pytest call sites. Those call sites and their Python code metadata do not establish resistance to arbitrary candidate code running in the same interpreter.
+
+Local evidence controls refused an omitted collected ID, a missing body completion, duplicate and extra outcomes and a mismatched trace PID. They preserved an observed failure alongside a missing sibling. Hosted negative cases across the candidate boundary, selected-mode qualification and production integration remain outstanding. #146 stays at Rank 50 with production qualification open. #148 and #267 retain their Rank 60 holds.
