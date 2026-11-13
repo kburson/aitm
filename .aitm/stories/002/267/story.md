@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 267
 title: "[#133 T35L] Measure local TIA and testmon advisory performance"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/267"
 parent: 133
 children: []
 blocking: [172]
 blocked-by: [143]
 created: "2026-11-12T20:01:44Z"
-updated: "2026-11-13T05:14:57Z"
+updated: "2026-11-13T09:23:40Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
