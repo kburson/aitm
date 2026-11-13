@@ -301,6 +301,7 @@ def observe(github, *, expected=None):
         "target": TARGET,
         "sha": sha,
         "status": "pending",
+        "current_verified": False,
         "failures": [],
         "gaps": [],
         "jobs": {},
@@ -341,16 +342,27 @@ def observe(github, *, expected=None):
             gaps.append(f"workflow:{attempt['conclusion']}")
         if not successful(suite):
             gaps.append(f"check-suite:{suite['conclusion'] or suite['status']}")
-    if live_target(github) != sha or (
-        (current := latest_run(github, sha)) is None
-        or run_fields(current) != run_fields(run)
-    ):
-        outcome["status"] = "stale"
-        gaps.append("protected target or attempt changed during readback")
-    elif failures:
-        outcome["status"] = "red"
-    elif attempt["status"] == "completed":
-        outcome["status"] = "green" if outcome["artifact"] else "incomplete"
+    try:
+        same_target = live_target(github) == sha
+        current = latest_run(github, sha) if same_target else None
+        same_attempt = current is not None and run_fields(current) == run_fields(run)
+        if same_attempt:
+            final_attempt = github.document(route)
+            run_identity(final_attempt, sha)
+            same_attempt = run_fields(final_attempt) == run_fields(attempt)
+    except EVIDENCE_ERRORS:
+        gaps.append("current target and attempt could not be reverified")
+        outcome["status"] = "red" if failures else "incomplete"
+    else:
+        if not same_attempt:
+            outcome["status"] = "stale"
+            gaps.append("protected target or attempt changed during readback")
+        else:
+            outcome["current_verified"] = True
+            if failures:
+                outcome["status"] = "red"
+            elif attempt["status"] == "completed":
+                outcome["status"] = "green" if outcome["artifact"] else "incomplete"
     return outcome
 
 

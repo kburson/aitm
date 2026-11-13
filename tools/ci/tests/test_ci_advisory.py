@@ -232,3 +232,39 @@ def test_artifact_digest_and_attempt_binding(monkeypatch):
     item["name"] = "aitm-ci-python-a1"
     with pytest.raises(Hold, match="current attempt"):
         ci.verify_push_artifact(provider, RUN, jobs)
+
+
+@pytest.mark.parametrize("failed", [True, False])
+def test_readback_failure_retains_authenticated_observation(provider, failed):
+    if failed:
+        provider.jobs[0]["conclusion"] = "failure"
+    document = provider.document
+
+    def lost_readback(endpoint):
+        if endpoint == "branches/trunk" and provider.branch_reads == 1:
+            raise Hold("branch read unavailable")
+        return document(endpoint)
+
+    provider.document = lost_readback
+    actual = ci.observe(provider)
+    assert actual["status"] == ("red" if failed else "incomplete")
+    assert actual["current_verified"] is False
+    assert actual["failures"] == (
+        [f"{provider.jobs[0]['name']}:failure"] if failed else []
+    )
+    assert actual["jobs"][provider.jobs[0]["name"]] == provider.jobs[0]["id"]
+
+
+def test_exact_attempt_endpoint_change_prevents_green(provider):
+    document = provider.document
+
+    def changed_attempt(endpoint):
+        row = document(endpoint)
+        if endpoint == "actions/runs/50/attempts/2" and provider.branch_reads == 2:
+            return {**row, "status": "in_progress", "conclusion": None}
+        return row
+
+    provider.document = changed_attempt
+    actual = ci.observe(provider)
+    assert actual["status"] == "stale"
+    assert actual["current_verified"] is False
