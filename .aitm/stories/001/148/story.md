@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 148
 title: "[#133 T11] Plan isolated test shards"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/148"
 parent: 133
 children: []
 blocking: [149]
 blocked-by: [139]
 created: "2026-11-10T16:51:21Z"
-updated: "2026-11-13T09:23:40Z"
+updated: "2026-11-13T09:24:50Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
