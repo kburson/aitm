@@ -1,0 +1,22 @@
+{
+  "review_id": "review-029d47650b7278b302b26a3ad62af7a7",
+  "method": "Compare actual numbered Claude Read results with the exact committed artifact by line. Exclude the synthetic blank line at the end of a newline-terminated file.",
+  "rounds": [
+    {
+      "round": 1,
+      "commit": "ad20083299fc1ea449b39e8d5a3024580e144944",
+      "sha256": "f2ce1a217e971ccbeff3ad119725c672a8b8c0af2a104d6d61c6a26ce8726030",
+      "physical_lines": 66,
+      "exact_retrieval": true,
+      "first_matching_read_utc": "2026-11-12T14:35:23.889Z"
+    },
+    {
+      "round": 2,
+      "commit": "6d2f75a8aa85c81a14938a15b9d463002f40d675",
+      "sha256": "0adca6f338bbda55f98b17708bcd6d932b0ca87b6ca6965a0994bc2151e78abd",
+      "physical_lines": 67,
+      "exact_retrieval": true,
+      "first_matching_read_utc": "2026-11-12T14:39:57.161Z"
+    }
+  ]
+}

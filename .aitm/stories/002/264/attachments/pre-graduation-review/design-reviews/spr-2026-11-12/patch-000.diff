@@ -1,0 +1,67 @@
+diff --git a/.aitm/drafts/2026-11/20261112-0820-epic-dependency-maps/draft.md b/.aitm/drafts/2026-11/20261112-0820-epic-dependency-maps/draft.md
+new file mode 100644
+index 0000000..09f59a5
+--- /dev/null
++++ b/.aitm/drafts/2026-11/20261112-0820-epic-dependency-maps/draft.md
+@@ -0,0 +1,61 @@
++---
++kind: draft
++slug: epic-dependency-maps
++title: "Epic dependency maps for backlog review and the story viewer"
++package: aitm-viewer
++---
++
++# Draft: Epic dependency maps for backlog review and the story viewer
++
++**Status:** Proposed add-on to [M6 Viewer #247](https://github.com/kburson/aitm/issues/247). This draft is for design and planning review. It does not amend the accepted M6 decomposition, add a gate to #260, or authorize implementation.
++
++## What it should do
++
++A planner should be able to see where work branches, where it joins, and what a given story is waiting on. Start with a reusable command that generates the static #133 pilot outputs for any epic. Then use the same graph rules in the story viewer so a person can expand groups, follow prerequisites, and select a story to inspect its details. The two deliverables share semantics and fixtures; the product viewer continues to consume the supported Core export.
++
++The [#133 pilot input](https://github.com/kburson/aitm/blob/ea4a8384255e6ad8f28c69ffbd54f5399be0e78c/.aitm/stories/001/133/plan/leaf-issue-receipt.json) has 41 children and 64 declared child dependencies. Both pilot views show 55 arrows; the audit accounts for the other nine. [M6's accepted scope](https://github.com/kburson/aitm/blob/e086c099dd807cced6521f9606e7d381b0d086a4/.aitm/stories/002/247/plan/2026-11-11-247-m6-viewer-decomposition.md) and the later [#230 replan](https://github.com/kburson/aitm/blob/e086c099dd807cced6521f9606e7d381b0d086a4/.aitm/stories/002/230/plan/2026-11-11-230-cost-dependency-replan.md) are the sequencing and scope references.
++
++## Static planning command
++
++- Take an epic number and an exact Git planning commit. Read only that snapshot and write a bundle to an explicit output path. The command does not change issues, planning records, or the checkout.
++- Generate `dependency-map.md` with a Mermaid flowchart, `dependency-map.svg` with Graphviz, and `dependency-audit.md` with every omitted direct edge and one deterministic shortest alternate path made entirely of displayed arrows. Put the full planning commit on all three outputs. Use the same story IDs, edge sets, and lifecycle labels in both renderings. Prefer a top-to-bottom overview and align the entry stories where the renderer supports it.
++- Render from one validated graph projection. Graphviz is needed at generation time. No layout coordinates are hand-maintained. A missing epic or child record, unreadable in-scope dependency field, inconsistent containment, or detected cycle produces a diagnostic and no replacement bundle. An unavailable external record can be shown as an unresolved boundary when the link is known and allowed; report incomplete boundary coverage. Pin the renderer and fonts if byte-for-byte SVG reproduction becomes a requirement; graph and audit equality is the initial contract.
++
++## Graph and lifecycle rules
++
++- Use containment to select the epic's direct children. A child epic can have its own map. An arrow always means prerequisite → dependent. Containment, completion accounting, and epic-level gates are separate; surface explicit epic-level gates distinctly without inventing arrows from the epic to its children. A dependency map describes declared order, not authorization to pick up work.
++- For the static Git adapter, use the dependent story's `blocked-by` as the edge source. Use the pinned index of story records to find incoming and outgoing boundary edges. Treat `blocking` as a reverse projection and report disagreements in the audit. For example, at the M6 reference pin #227 declares #193 as a prerequisite, while #193's reverse field is empty. Keep the declared edge and report the disagreement.
++- Draw incoming and outgoing cross-epic edges as boundary links and preserve them during reduction. Reduce only ordinary prerequisite edges within the displayed epic scope. An alternate path must survive reduction, scope filtering, and the current view. Keep the complete dependency data available for the audit and selected-story detail; reduction never edits the stored edges.
++- Take state from the same source snapshot as the graph. For the Git adapter, use the existing planning reader's lifecycle rules at the commit's cutoff rather than introducing another event fold. For the viewer, use the Core export's state and provenance. Show a text label as well as color and represent missing state as Unknown. Lifecycle state and readiness are separate; a missing or restricted prerequisite never implies that a story is ready.
++- Validate dependency cycles before reduction. Diagnose the participating edges in the admitted scope. Keep missing, partial, or restricted data explicit. Apply the viewer visibility policy before graph construction, reduction, paths, counts, details, or public artifacts; restricted story identifiers and links must not leak through aggregate or audit data.
++
++## Make maps part of backlog review
++
++Generate the bundle locally when the plan's child and dependency records have been hydrated and read back. Treat raw local output as private. Before attaching a bundle, review its graph, labels, links, and audit for the same authorized audience as the plan, including any partial boundary data. If that audience or what it can see is unclear, keep the bundle local. The command has no publishing mode.
++
++Put approved bundles under the epic's `plan/dependency-maps/<source-planning-commit>/` and link the Markdown entry point from the plan or story. Use the commit containing the inputs as the source pin; attachment happens in a later commit. Keep each accepted map and audit as review evidence.
++
++Adopt the bundle as the normal planner-produced artifact for an epic with dependency records. This proposal does not make map generation a new lifecycle or release gate.
++
++For a replan that changes membership, dependencies, or gates, generate and review a new bundle and link the new pin. As development progresses, re-render static outputs on demand from the newer pin, including when only a child state changes. The same topology may have different colors and labels. The viewer redraws when its existing snapshot refresh succeeds. If a refreshed bundle is attached as evidence, give it its own pin and retain the previous one. Automatic generation or publication on state changes is outside this draft.
++
++## Viewer add-on
++
++Extend the #251 story overview and detail surface after #250's supported Core export and #251's navigation are available. The graph and the story details read the same admitted snapshot. A local refresh updates labels and colors when the snapshot changes; a hosted view shows the pin and freshness of its last published snapshot. A failed refresh retains the last valid view with its prior pin and a visible freshness indication. Default to the existing viewer refresh and visibility policies. A new hosting route or refresh schedule is a separate decision.
++
++- Show the epic's direct children first. Open a nested epic in its own map to inspect its children. In a flat epic such as #133, focus on a story and expand or collapse its upstream or downstream branches one layer at a time. A shared node keeps one identity and stays visible if another expanded branch still needs it. Stop traversal at direct cross-epic links; follow an authorized link to inspect the other epic's map.
++- Select a story by pointer or keyboard to open the existing story detail surface beside the graph, or below it on a narrow screen. Show lifecycle state, declared direct blockers, stories directly blocked, hidden-edge explanations, and allowed source links. Retain the selected story by ID on refresh when it remains visible.
++- The audit and selected-story detail use the expanded, admitted graph. If a collapsed branch or filter removes a witness path, the focused view must restore the direct edge or explain the omitted section. Never draw a summary connector that implies an unverified path. Support a readable text view for keyboard and assistive technology users.
++
++## Review and qualification
++
++1. Confirm the add-on's backlog placement. Keep it outside the accepted 13-item M6 release accounting unless a separately reviewed amendment changes that boundary. If native parentage would automatically expand that boundary, link it as a follow-up to #247 instead.
++2. Review the graph rules, source authority, refresh behavior, and publication convention before preparing implementation slices. Check whether the released Core export provides the required direct edges, hierarchy, and lifecycle provenance; a missing field needs an owning contract decision before product viewer work.
++3. Plan static generation and viewer integration as separately verifiable deliverables. The static command has no viewer runtime prerequisite; any early pickup is a separate sequencing decision. The interactive deliverable waits for the applicable released Core contract and #250/#251. Estimate at JIT and split work that exceeds the applicable four-hour leaf limit. Require the normal accepted Design, Plan, and item-specific JIT review before Develop.
++
++Qualification should include:
++
++- Reproduce #133 at `ea4a838`: 41 children, 64 declared edges between children, 55 displayed child-to-child arrows and nine audited shortcuts with valid paths. Report the #133 → #2 epic-level gate separately. #160 → #162 is absent from the source and must not appear as an audited edge.
++- Rebuild [`05d3330`](https://github.com/kburson/aitm/commit/05d33307c0164557359cb605e78158fc73d177d5) and [`ea4a838`](https://github.com/kburson/aitm/commit/ea4a8384255e6ad8f28c69ffbd54f5399be0e78c). The shipped reader resolves #142 from Plan to Develop across those pins, with the same 41 children and dependency records. Both outputs must show the changed state and preserve the dependency and audit sets. Leave the older bundle intact.
++- Use boundary and nested-epic fixtures to prove containment, crossing gates, shared nodes, and reverse-field diagnostics. Verify that a cycle or missing required input cannot replace a valid map. Test restricted data and an alternate path that crosses hidden nodes.
++- Qualify keyboard selection, detail parity, collapse and expand behavior, refresh with selection retained or cleared, and stale fallback. Verify that neither static generation nor the viewer changes story state or dependency records.

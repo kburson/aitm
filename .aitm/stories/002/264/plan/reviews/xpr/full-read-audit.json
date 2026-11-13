@@ -1,0 +1,22 @@
+{
+  "review_id": "review-6ed9de683e9ba54e0a3bee5ed08392b2",
+  "method": "Compare actual numbered Claude Read results against the committed artifact. Ignore the synthetic empty EOF line.",
+  "rounds": [
+    {
+      "round": 1,
+      "commit": "f785e3d7f5f703fe5ddc9c100df5a081db1c392f",
+      "sha256": "fd559940fee27e8095da863a840d10a5d8d0ff2816ea8efd5c635ecc214c22ed",
+      "physical_lines": 106,
+      "exact_retrieval": true,
+      "first_matching_read_utc": "2026-11-12T15:09:45.518Z"
+    },
+    {
+      "round": 2,
+      "commit": "869e0237f13630152fcdec138730398000b7c04d",
+      "sha256": "01d990bf16e400a6de2e56a5d88467b76c4aa3b56583920e913101f92e71aa5f",
+      "physical_lines": 121,
+      "exact_retrieval": true,
+      "first_matching_read_utc": "2026-11-12T15:15:54.740Z"
+    }
+  ]
+}
