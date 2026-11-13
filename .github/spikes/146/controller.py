@@ -327,7 +327,7 @@ def trial(shared, private, staging, receipt, provisioned):
     print(f"Separate worker collection matched {len(reference)} reference IDs", flush=True)
     if os.environ.get("AITM_146_FULL_OBSERVATION") == "1":
         build = build_trace_python(shared, logs, receipt, full=True)
-        return full_suite.run(src, shared, build, venv, fixtures, private, logs, receipt, uid,
+        return full_suite.run(src, build, venv, fixtures, private, logs, receipt, uid,
                               worker, worker_args, command, good, require, stable_digest, reference)
     try:
         build = build_trace_python(shared, logs, receipt)

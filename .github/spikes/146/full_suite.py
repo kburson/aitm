@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
@@ -37,9 +38,12 @@ SITE = """
 import os
 import sys
 invocation = sys.orig_argv[1:]
+parent_test = os.environ.get("PYTEST_CURRENT_TEST", "").partition(" (")[0]
 if os.environ.get("AITM146_CHILD_LINES") == "1" and (
-    any(arg.endswith("/aitm-usage") for arg in invocation) and "--help" in invocation
-    or any(arg.endswith("/run_cli.py") for arg in invocation) and "collect-once" in invocation
+    (parent_test == "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+     and any(arg.endswith("/aitm-usage") for arg in invocation) and "--help" in invocation)
+    or (parent_test == "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid"
+        and any(arg.endswith("/run_cli.py") for arg in invocation) and "collect-once" in invocation)
 ):
     monitor = sys.monitoring
     monitor.use_tool_id(4, "aitm146-line-probe")
@@ -332,10 +336,16 @@ def install_runtime(build, destination, locked_site, src, good):
 def observe(label, args, worker_args, uid, project, product, private, logs, command, result, timeout=800):
     child = subprocess.Popen(worker_args(*args, extra={"PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
                                                         "AITM146_CHILD_LINES": "1"}),
-                             cwd=project, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             cwd=project, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             start_new_session=True)
     trace = None
     trace_output = b""
     run_error = None
+
+    def stop_driver():
+        if child.poll() is None:
+            command(("/usr/bin/sudo", "-n", "/bin/kill", "-KILL", f"-{child.pid}"), timeout=5)
+
     try:
         pid = int(ready(child))
         result["lineage"] = lineage(pid, child.pid, uid, command)
@@ -359,20 +369,22 @@ def observe(label, args, worker_args, uid, project, product, private, logs, comm
                 run_error = error
                 result["timeout_seconds"] = error.timeout
             finally:
-                if child.poll() is None:
-                    child.kill()
+                stop_driver()
                 if trace.poll() is None:
-                    trace.terminate()
+                    trace.send_signal(signal.SIGINT)
             trace_output, trace_error = trace_out.result(), trace_err.result()
     finally:
-        if child.poll() is None:
-            child.kill()
+        stop_driver()
         if "out" not in locals():
-            out, err = child.communicate(timeout=15)
+            try:
+                out, err = child.communicate(timeout=15)
+            except subprocess.TimeoutExpired as error:
+                out, err = error.stdout or b"", error.stderr or b""
+                result["driver_pipe_timeout"] = True
         result["driver"] = logs.retain(label, process_result(child, out, err))
         if trace is not None:
             if trace.poll() is None:
-                trace.terminate()
+                trace.send_signal(signal.SIGINT)
             if "trace_error" not in locals():
                 trace_output, trace_error = trace.communicate(timeout=20)
             result["tracer"] = logs.retain(f"{label}-dtrace", process_result(trace, trace_output, trace_error))
@@ -381,7 +393,7 @@ def observe(label, args, worker_args, uid, project, product, private, logs, comm
     return parse_trace(trace_output, pid, product)
 
 
-def run(src, shared, build, locked_venv, fixtures, private, logs, receipt, uid,
+def run(src, build, locked_venv, fixtures, private, logs, receipt, uid,
         worker, worker_args, command, good, require, stable_digest, expected):
     result = receipt["full_observation"] = {"status": "incomplete"}
     files, groups = independently_check_groups(src, expected)
@@ -420,7 +432,11 @@ def run(src, shared, build, locked_venv, fixtures, private, logs, receipt, uid,
                    and any(entry == {"argument": argument, "executable":
                                     str(venv / "bin" / ("aitm-usage" if argument == "--help" else "python"))}
                            for entry in data.get("arguments", [])) and data.get("exec")]
-        records[node] = [{"pid": pid, "required_file": file, "required_line": line, **row} for pid, row in matches]
+        records[node] = [{"pid": pid, "required_file": file, "required_line": line,
+                          **{**row, "arguments": [{"argument": entry["argument"],
+                                                    "executable": Path(entry["executable"]).name}
+                                                   for entry in row["arguments"]]}}
+                         for pid, row in matches]
     require(execution["driver"]["exit"] == 0 and execution["trace_clean"] and execution["collection_matches"]
             and not any(execution[key] for key in ("failed", "missing_or_inconsistent", "unexpected_execution",
                                                    "ordering_errors"))
