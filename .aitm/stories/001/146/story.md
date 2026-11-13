@@ -6,11 +6,11 @@ kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/146"
 parent: 133
-children: [268]
+children: [268, 274, 275]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-13T04:43:29Z"
+updated: "2026-11-13T04:59:32Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -88,3 +88,10 @@ The follow-up retained the full pytest streams, identified trial-environment fai
 The macOS/APFS trial checked dynamic pytest collection against an independently reconstructed inventory and traced assigned outcomes and required native children. The independent review records the scope and remaining production qualification work.
 
 [Findings](plan/2026-11-12-146-full-suite-observation-findings.md) · [Independent review](plan/reviews/2026-11-12-146-full-suite-observation-review.md) · [Run readback](plan/full-suite-observation-readback.json).
+
+## Alternative qualification spikes
+
+- [#274](../../002/274/story.md) tests admission for immutable reviewed product and observer inputs.
+- [#275](../../002/275/story.md) tests a canonical CI warning and manual repair workflow.
+
+Both spikes are Rank 50. Their experimental results do not activate production behavior or change the Rank 60 holds.
