@@ -6,11 +6,11 @@ kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/146"
 parent: 133
-children: [268, 274, 275]
+children: [268, 274, 275, 276]
 blocking: [149, 168]
 blocked-by: [144, 145]
 created: "2026-11-10T16:51:17Z"
-updated: "2026-11-13T05:08:18Z"
+updated: "2026-11-13T05:09:23Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P1"
@@ -101,3 +101,7 @@ Both spikes are Rank 50. Their experimental results do not activate production b
 The independent review accepted the exact pinned selected execution and the observed live negative cases. Actual previous-attempt bytes were refused locally against the new attempt identity. #146 production qualification remains open.
 
 [Findings](plan/2026-11-12-146-selected-observation-findings.md) · [Independent review](plan/reviews/2026-11-12-146-selected-observation-review.md) · [Readback](plan/selected-observation-readback.json).
+
+## Controller-owned catalog spike
+
+[#276](../../002/276/story.md) tests an independently observed catalog of two product behaviors and exact canonical #103 required-ID evidence. It is a Rank 50 supplement experiment.
