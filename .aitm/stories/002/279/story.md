@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 279
 title: "[#133] Rehearse manual repair and verified trunk recovery"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/279"
 parent: 133
 children: []
 blocking: []
 blocked-by: [278]
 created: "2026-11-13T05:14:32Z"
-updated: "2026-11-13T05:14:05Z"
+updated: "2026-11-13T11:22:24Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
