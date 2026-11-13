@@ -4,7 +4,7 @@
   "provenance": "shadow",
   "published_sha256": "7a8d01538658558dcf20cfaa21eca9809f585b1b02342af491452b4510c5daf3",
   "published_text": "# Trunk CI warning (shadow)\n\nRun 43250904624, attempt 1, commit `22f265b6aa7c24050c2d798d7e16c1796701cf64`.\n\ncollect-evidence:failure\n\nPause ordinary trunk work and nominate one repair owner. Continue through the existing #103 merge gate.\n",
-  "published_warning": "trunk-43250904624-a1.md",
+  "published_warning": "shadow-trunk-43250904624-a1.md",
   "status": {
     "incident": {
       "active": true,
@@ -33,17 +33,18 @@
       "started_at": "2026-11-13T09:48:58Z",
       "status": "incomplete"
     },
+    "pending_sha": null,
     "version": 2,
     "warnings": [
       {
         "delivered": "7a8d01538658558dcf20cfaa21eca9809f585b1b02342af491452b4510c5daf3",
         "desired": "7a8d01538658558dcf20cfaa21eca9809f585b1b02342af491452b4510c5daf3",
-        "name": "trunk-43250904624-a1.md"
+        "name": "shadow-trunk-43250904624-a1.md"
       },
       {
-        "delivered": "6975f8f14e663743d0aa24e089ff04c1897db549dc51c00bc2b38c631a4bd6db",
-        "desired": "6975f8f14e663743d0aa24e089ff04c1897db549dc51c00bc2b38c631a4bd6db",
-        "name": "trunk-43404405270-a1.md"
+        "delivered": "1b435622e3dd7fc6894d419cc0dce33390d8b023dc0a2d8fadca60769986dba7",
+        "desired": "1b435622e3dd7fc6894d419cc0dce33390d8b023dc0a2d8fadca60769986dba7",
+        "name": "shadow-trunk-43404405270-a1.md"
       }
     ]
   },

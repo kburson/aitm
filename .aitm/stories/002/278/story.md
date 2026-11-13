@@ -10,7 +10,7 @@ children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:07:57Z"
+updated: "2026-11-13T11:10:02Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
@@ -37,3 +37,7 @@ Consume authenticated advisory intake. Serialize a versioned incident, deduplica
 ## Shadow warning and local validation
 
 [Operator warning](plan/operator-warning.md) · [Shadow evidence](plan/shadow.json) · [Rehearsal](plan/rehearse.py) · [Local tests](plan/local-test.log) · [PR #283](https://github.com/kburson/aitm/pull/283).
+
+## Replacement candidate
+
+The replacement persists delayed failures, revokes stale nominations on a verified current target without a run, and binds delivery to a private operator directory. The [shadow rehearsal](plan/shadow.json) and 122 local tests passed.

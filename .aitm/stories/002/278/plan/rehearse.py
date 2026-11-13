@@ -25,7 +25,7 @@ def main():
             raise OSError("simulated lost delivery response")
 
         try:
-            store.deliver(lost)
+            store.deliver(lost, directory=sink.directory)
         except OSError as exc:
             assert str(exc) == "simulated lost delivery response"
         else:
