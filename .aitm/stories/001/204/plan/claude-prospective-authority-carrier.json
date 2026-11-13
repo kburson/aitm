@@ -1,0 +1,59 @@
+{
+  "schema": "aitm.claude-foreground-authority-carrier/v1",
+  "client_version": "2.1.318",
+  "trunk_tree": "6f1ae4a5707f2344bbeb4c15efdb823480866feb",
+  "artifact_sha256": {
+    "parent": "82057b810b46b51082913956997266db38dc98666b8bf4ec5f58b63e9406482f",
+    "child": "2533992f53d25243c6db73f58930a849c76401a0207201eff18011df81a5895b",
+    "child_metadata": "76d69d1708aa4d7e4cd908b5af3ff7806a75f27d8286ba62d5343f2f42e62d6d",
+    "wire": "ea70226cb5f9f1302be6ada31ba33799ae753b497a3f33bc30735ba8c0f28c24",
+    "hooks": "63bc2b46959ebb461a3dccbf604636d0c857d25e3966320dd5e9f60778d4e443",
+    "epoch": "72c5239e84f71ddc4be2ee58140463a72a3bdb57db97b9440c8e44ad152890d3"
+  },
+  "parent_admitted_prospectively": true,
+  "parent_epoch_ordinal": 34,
+  "parent_ordinary_scope_route_verified_before_dispatch": true,
+  "parent_saved_epoch_prefix_revalidated_after_dispatch": true,
+  "parent_original_epoch_covers_full_tool_span": true,
+  "parent_prompt_to_result_span": [
+    37,
+    47
+  ],
+  "native_sidecar_metadata_joins_tool_use": true,
+  "initial_child_row_joins_native_parent_prompt_and_forwarded_user": true,
+  "parent_tool_to_result_span": [
+    44,
+    47
+  ],
+  "selected_child_request_span": [
+    19,
+    20
+  ],
+  "child_native_begin_through_selected_request": [
+    0,
+    20
+  ],
+  "earlier_request_physical_rows": [
+    10,
+    11
+  ],
+  "native_checkout_verified_on_physical_frames": {
+    "parent": [
+      44,
+      46
+    ],
+    "child": [
+      0,
+      10,
+      11,
+      19
+    ]
+  },
+  "child_absent_at_pre_tool_and_subagent_start": true,
+  "child_stop_hook_complete_rows": 19,
+  "child_post_tool_hook_complete_rows": 20,
+  "current_writer_admitted_child": false,
+  "current_writer_issued_aggregate_route": false,
+  "ordinary_parent_lookup_after_dispatch": "Expected the unique current native stream",
+  "journal_mutation": false
+}

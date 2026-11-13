@@ -1,0 +1,32 @@
+{
+  "story": 204,
+  "basis": "Bounded coordinator progress through folded membership, origin capture and independent JIT recovery",
+  "projection": "Active coordinator progress; provider time and waits excluded",
+  "coverage": "partial",
+  "observation_count": 105,
+  "milliseconds": 478264,
+  "actual_hours": "0.1329",
+  "evidence_through_utc": "2026-11-13T02:05:18.259Z",
+  "sources": [
+    {
+      "path": "full-auto-folded-refine-1-204.json",
+      "sha256": "79ee9a2a7e54af5428e81338bdc5e2b374769d410e0072076da3c4b964b72538"
+    },
+    {
+      "path": "full-auto-folded-membership-1-204.json",
+      "sha256": "6ae00548d67105dafe3dff3fcdf7b2e8e4783f08a1024d9d350191b46d7befb9"
+    },
+    {
+      "path": "full-auto-folded-jit-1-204.json",
+      "sha256": "5406ceeee196a81ac87de296ed750ef95e2ea50da6ccaaaac54ffbd198cf6ed3"
+    },
+    {
+      "path": "full-auto-folded-origin-1-204.json",
+      "sha256": "034e4d550d9695af460d62328b4c6abaacfaa1e369fdb7a5ccda95a85348abd4"
+    }
+  ],
+  "unmeasured": [
+    "Provider work and wait time",
+    "Earlier historical preflight"
+  ]
+}

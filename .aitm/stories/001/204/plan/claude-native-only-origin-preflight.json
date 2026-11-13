@@ -1,0 +1,25 @@
+{
+  "schema": "aitm.claude-native-origin-preflight/v1",
+  "captures": [
+    {
+      "scratch_start_hook": false,
+      "native_first_row_tool_prompt_metadata_join": true,
+      "prospective_capture": false,
+      "sha256": {
+        "parent": "383f152050a87bec208b4114fad552b4e13c8097219937e5b949f0d1e2e252de",
+        "child": "13282f1b270e880b409499dbd4c102265873d26d4adefbe556a7587d922c0997",
+        "metadata": "c27ce90205146b0c7b028da3d930f2b2d6dc7b37157d3350f9169cd70ddbb80f"
+      }
+    },
+    {
+      "scratch_start_hook": true,
+      "native_first_row_tool_prompt_metadata_join": true,
+      "prospective_capture": false,
+      "sha256": {
+        "parent": "5dd8689961d93a8f54850ababd0cf7be582729742b36136efc9600a9754d9683",
+        "child": "d79a5214f11be05dc41cda429009adaa8b774b9a1bf54e4582f2df09f3be6e11",
+        "metadata": "4ba02702d79be320cefd7177cc2e5902920373edfb07cefa7168de1faf49e4a4"
+      }
+    }
+  ]
+}
