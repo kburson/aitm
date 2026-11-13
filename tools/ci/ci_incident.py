@@ -258,6 +258,18 @@ class Store:
             "DO UPDATE SET body=excluded.body",
             (*order(key), encode(key), encode(record)),
         )
+        if (
+            failures
+            and not decision["current_verified"]
+            and (
+                previous is None
+                or not failures <= set(json.loads(previous[1])["failures"])
+            )
+        ):
+            active = state["incident"]
+            if active and active["active"] and order(key) >= order(active["key"]):
+                active.update(nomination=None, recovery=None, infrastructure=None)
+                self._save(db, state)
         if latest and (
             order(key) < order(latest["key"])
             or state["pending_sha"]
@@ -302,7 +314,8 @@ class Store:
         }
         if status in {"red", "incomplete"}:
             failures = sorted(
-                set(record["failures"]) | set(active["failures"] if active else [])
+                set(record["failures"])
+                | set(active["failures"] if active and active["active"] else [])
             )
             current_failure = active and active["key"] == key
             if (
@@ -333,8 +346,10 @@ class Store:
             )
             result = "updated" if current_failure else "warning"
         else:
-            if active and (
-                status == "pending" or active["recovery"] and not same_attempt
+            if (
+                active
+                and active["active"]
+                and (status == "pending" or active["recovery"] and not same_attempt)
             ):
                 state["version"] += 1
                 active.update(
