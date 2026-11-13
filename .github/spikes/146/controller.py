@@ -180,7 +180,9 @@ def trial(shared, private, staging, receipt):
     collected = worker(python, "-m", "pytest", *common, "--collect-only", "--basetemp",
                        str(work / "collect-fixtures"), *TARGETS, extra=settings, cwd=src, timeout=80)
     receipt["collect_process"] = {"exit": collected.returncode, "seconds": round(monotonic() - started, 3)}
-    collect = json.loads((work / "collect.json").read_bytes())
+    collected_report = worker("/bin/cat", str(work / "collect.json"))
+    require(collected_report.returncode == 0, "worker collection report unavailable")
+    collect = json.loads(collected_report.stdout)
     require(collect["schema"] == "aitm.pytest-evidence/v1", "unexpected collection report")
     exact = sorted(collect["collected"]) == reference and not collect["deselected"]
     receipt["collect_process"].update(count=len(collect["collected"]), exact_reference_match=exact,
@@ -244,7 +246,7 @@ def main():
     out = Path(sys.argv[1])
     out.parent.mkdir(mode=0o700)
     os.chmod(out.parent, 0o700)
-    require(git("rev-parse", "HEAD^") == BASE, "product reference parent drift")
+    require(git("merge-base", "HEAD", BASE) == BASE, "product reference base drift")
     require(git("diff", "--name-only", BASE, "HEAD").splitlines() == [
         ".github/spikes/146/controller.py", ".github/spikes/146/reference.json",
         ".github/workflows/aitm-146-product-observation-trial.yml"
