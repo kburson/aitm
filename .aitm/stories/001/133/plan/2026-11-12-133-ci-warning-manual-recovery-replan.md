@@ -1,0 +1,30 @@
+# #133 replan after #146 observation qualification trials
+
+## Decision
+
+Preserve the exact full and selected #146 observations and the live refusal cases as reviewed evidence. Replace the unimplemented general candidate-independent pytest observer and host-enforced Stop the Line scope with an advisory workflow. Keep the existing #103 full PR check as the merge gate. Derive warnings from authenticated canonical trunk CI and let the operator pause ordinary trunk work, nominate one repair owner and decide when work resumes. Retain local TIA, testmon and shard planning as advisory tools. [#103](https://github.com/kburson/aitm/issues/103) · [#146](https://github.com/kburson/aitm/issues/146) · [#274](https://github.com/kburson/aitm/issues/274) · [#275](https://github.com/kburson/aitm/issues/275) · [#276](https://github.com/kburson/aitm/issues/276)
+
+The live trials independently verified the pinned product and observer. Their interpreter and pytest call sites still share a process with future executable candidate inputs. The independent source inventory covers the known pinned parameter rules. #274 admits historical reviewed exact tuples and supplies no arbitrary-candidate trust. A verifier that processes signed or authenticated worker evidence still needs a defined trust model for what the evidence means. #275 demonstrated canonical #103 readback and advisory incident decisions without requiring that trust extension.
+
+Claude Code Opus 5.5 High independently advised keeping #103 and using a small controller-owned product behavior catalog for external checks. The controller catalog is a narrow supplemental experiment. Its observations do not replace the full gate, provide complete collection or qualify arbitrary code under pytest. Defer promoting that catalog until its own reviewed delivery identifies the reviewed cases and declares each remaining trust boundary.
+
+## Replacement delivery
+
+Create these three new #133 leaves with explicit dependencies. Old automated-authorization stories retain their historical evidence and confer no authority on the new route.
+
+1. **Canonical full CI advisory intake.** Read provider-owned attempt and job metadata from the canonical trunk push workflow. Pin repository, workflow and exact live branch SHA and latest attempt. Keep an authenticated failed lane if another job or artifact is missing. Accept green only on complete #103 push evidence. Start in read-only shadow and retain exact logs and replayable decisions. Acceptance includes real no-artifact failure intake, stale/delayed events and missing completion. Use a disposable named target or sanitized provider fixtures for negative behavior without breaking trunk. Schedule validation only after its source and attempt contract passes review.
+2. **Durable CI warning and repair ownership.** Depend on advisory intake. Serialize updates to a single versioned incident, deduplicate alerts by exact run and attempt, preserve authenticated failures, and invalidate obsolete repair and recovery when a newer unresolved result arrives. Select an operator-visible notification surface, verify actual delivery, retries and restart behavior in shadow, and retain the decision record. The warning asks the operator to pause ordinary trunk work and nominate one repair owner. It carries no merge or pause credential.
+3. **Manual repair and recovery rehearsal.** Depend on the warning. Use normal #103 and independent review on one nominated repair, then verify a fresh complete green on the current repaired trunk before the operator resumes work. Exercise unresolved failure plus missing evidence, repeated warning, stale green, manual acknowledgment, and rollback with an active incident. A confirmed infrastructure-only gap can recover on the same SHA after fresh green. Other work follows its normal authority until the operator pauses it.
+
+The narrow product catalog is optional supplemental evidence under an independently reviewed separate story after #276. It checks only externally observable behavior. It carries no authority to replace the existing gate. Advisory measurements may evaluate its value alongside local selection.
+
+## Graph and rank disposition
+
+- Preserve delivered #138–#143, #147 and #158 and terminal #144/#145 records. Preserve the signed #146 observations and their historical dependencies. Once the replacement chain is created and independently reviewed, close the original #146 production scope as replaced and not planned. Do not label it Delivered.
+- Keep #148 and #267 held during Rank 50 disposition. After #146's close and live graph readback, clear their pickup hold only for their already reviewed advisory scopes. #148 keeps #139, and #267 keeps #143.
+- Supersede the original #149–#155 and #160–#178 automation and qualification scopes. Preserve their issue links and provenance. Before closing #146, mark these open legacy leaves and #156 Backlog/BLOCKED. Keep #156 as the historical prerequisite for #157. Record the supersession explicitly on #149 and #168, which directly consume #146. #157 and #159 remain out of scope, including their incident edges. A later archive can close superseded leaves with its own verified graph readback. A separate new leaf owns any future advisory measurement or recovery rehearsal in place of old #172/#178.
+- Keep #133 open while the replacements deliver. #133 continues to block #2. Nothing in this replan qualifies a production rollout, changes repository protection, sends a warning or pauses an agent.
+
+## Adoption order
+
+Publish the signed #146 and spike evidence first. Verify the graph and review this exact amendment. Create and link the three replacement leaves before retiring the old #146 scope. Record old leaves' holds and the review evidence before clearing the #148 and #267 holds. Close #146 as GitHub Not Planned with Project 24 Done/Replaced. Done records terminal disposition. The retired contract remains unqualified. Keep all production changes behind the existing exact-tree review and gate authority.

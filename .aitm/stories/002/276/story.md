@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 276
 title: "[#146 Spike] Qualify a controller-owned product catalog"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/276"
 parent: 146
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T05:06:43Z"
-updated: "2026-11-13T05:13:35Z"
+updated: "2026-11-13T05:13:38Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "M"}
 priority: "P1"
