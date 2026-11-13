@@ -1,0 +1,23 @@
+{
+  "hook_events": [
+    [
+      "hook_started",
+      "SessionStart",
+      null
+    ],
+    [
+      "hook_response",
+      "SessionStart",
+      "success"
+    ]
+  ],
+  "init_count": 3,
+  "native_version": "2.1.318",
+  "init_tools": [
+    "Task",
+    "Read"
+  ],
+  "mcp_servers": [],
+  "nonbuiltin_plugins": [],
+  "managed_policy_absence_verified": false
+}

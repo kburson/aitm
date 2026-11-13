@@ -1,0 +1,11 @@
+{
+  "native-run/live.py": "0f08e78587253d3cb3d674c72ee0d7d4e4e62691aa3909b8bcdf619c93bf0852",
+  "native-run/settings.json": "17d5065bc8c5ddc4cd69b8d463e1b981d6eb9a422af99de2673ae1956765d08a",
+  "native-run/agent.json": "ad3787ba19f1b31c0399503f06750a77aca52f9553d57c299d954ff268cfbfb5",
+  "native-run/mcp.json": "691f62624936af38f0e6b2ac6c8b43162a23696696f62d5037d9eb2b43bd73c5",
+  "native-run/prompt.txt": "44acb558c0bc1441da7b9d798f34749f807a043f7d2f2f8824c33b66ee8e92f9",
+  "verify-closure.py": "6ceb24eb780b6995b284cf64104add7f288f6a7e8765b6fb29edb4ec44f84335",
+  "native-review-input.md": "c755515ecfff753840f1686eab43fdc4a77c2da4cf4dac49d36f47aef100a07a",
+  "native-recovery-input.md": "364a1e90e0e350445deffebe987c9d4924fd9f3f3a7154caf4008ed72068de0a",
+  "2026-11-12-271-claude-native-closure.md": "4228bdf8e67fa44dd34756f822bfe6185fb4094eeec5e420490fb0a3df1d0f0a"
+}

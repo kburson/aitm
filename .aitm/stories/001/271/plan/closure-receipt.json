@@ -1,0 +1,56 @@
+{
+  "schema": "aitm.claude-native-foreground-closure-research/v1",
+  "client_version": "2.1.318",
+  "input_output_mode": "stream-json",
+  "observer": "direct local subprocess and inherited pipe",
+  "closure_fence": "observed zero exit, exact sidecar file set, complete byte extents",
+  "span_convention": "half-open physical ordinals",
+  "child_prefix_seen_before_metering": 10,
+  "existing_parent_epoch_ordinal": 34,
+  "child_epoch_or_original_ownership_issued": false,
+  "closed_artifacts": {
+    "parent": {
+      "bytes": 133476,
+      "sha256": "e860c74ab55c6a7f364a64221eab80dc029f043a273940e7693d352dd9a92ba5"
+    },
+    "child": {
+      "bytes": 32106,
+      "sha256": "d01691c6a7709ab746194c0cbb4500812c3c6015032c1b37db0a96e76a9471d0"
+    },
+    "metadata": {
+      "bytes": 281,
+      "sha256": "08d27cf50fd3b9310d2e3676cd49bdbceeee81615c5158570bea74637ef669a2"
+    },
+    "wire": {
+      "bytes": 44726,
+      "sha256": "46d073c6cb1f2b227c42dcc23237915a34fc6ab78c6aae42fc7d007854dfc68a"
+    }
+  },
+  "spans": {
+    "parent_prompt_to_result_span": [
+      37,
+      47
+    ],
+    "child_origin_span": [
+      0,
+      20
+    ],
+    "selected_child_request_span": [
+      19,
+      20
+    ],
+    "earlier_request_ordinals": [
+      10,
+      11
+    ]
+  },
+  "diagnostic_controls": {
+    "extra_sidecar": true,
+    "missing_metadata": true,
+    "appended_child_keeps_old_prefix": true,
+    "changed_parent_prefix": true,
+    "missing_terminal": true,
+    "recovered_or_error_completion": true,
+    "duplicate_completion": true
+  }
+}
