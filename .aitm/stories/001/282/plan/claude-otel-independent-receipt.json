@@ -1,0 +1,26 @@
+{
+  "schema": "aitm.spike-independent-review/v1",
+  "story": 282,
+  "attempts": [
+    {
+      "attempt": 1,
+      "verdict": "HOLD",
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "input_sha256": "a0f8e1b4c3ceec009babf94fd9449d87d8e6c11397ce7571246ec31973fb93f5",
+      "response_sha256": "b05e6bf46a4eaf95ed79eb2247180d3d9458765503214daa09365e184ed01762",
+      "verdict_sha256": "4a36170321a1b6b5c1c1f886beea1f9e39552b3dec9c62bbe07f267ce504492b"
+    },
+    {
+      "attempt": 2,
+      "verdict": "PASS",
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "input_sha256": "c31fa2d61466e3c280515d912a5077d79fd9d77d921def13356eb67c011b49f3",
+      "response_sha256": "af8212196bdee5d14c21d957e9a8a1003cc3137a6d1b30e8c8de93ca9f1683db",
+      "verdict_sha256": "020c72d47a6a3fe644122ef3086fecb1c66a11b238c8b2c97455fec64dce8833"
+    }
+  ],
+  "reviewed_findings_sha256": "7af6e8169d9ba6e5b396c7390692b71ee4b9d2deaf284b1541e22be32309da77",
+  "publication_boundary": "evidence-only; no release amendment or unblock"
+}

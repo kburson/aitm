@@ -12,7 +12,7 @@ blocked-by: []
 created: "2026-11-13T11:05:01Z"
 updated: "2026-11-13T11:23:28Z"
 last-branch: "planning"
-estimate: {"agent-hours": 2, "size": null}
+estimate: {"agent-hours": 2, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/204/story.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-119-qualified-sources-reacceptance-draft.md"], "attachments": []}

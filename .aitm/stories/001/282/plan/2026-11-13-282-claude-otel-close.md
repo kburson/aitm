@@ -1,0 +1,7 @@
+# #282 evidence-spike disposition
+
+Independent review passed on the exact reproducible [findings](2026-11-13-282-claude-otel-findings.md). The bounded approved AITM sample had zero admitted Claude request rows after activation. The activation control joined five native requests across two sessions with one issue-scoped row and no detected completed foreground overlap. The sample cannot estimate everyday prevalence, cost share or per-story exposure.
+
+The controlled foreground Agent prompt had two child requests out of four. They made up 47.2% of its estimated API-equivalent cost. The replay joined the parsed, reserialized OTLP receiver batches and native transcripts. It proved duplicate idempotence, a detectable dropped-event gap and exact recovery on late replay after a separate process opened the reference store. The redaction check covers the tested fields, and the probe disables prompt, response and tool logging. The receipts characterize this controlled trial. They do not claim provider retransmission, original ownership or a correction factor.
+
+Retain telemetry as a corroboration option. This spike is complete and neither amends nor unblocks the qualified-source release. #204 and its original-owner proof remain separate. [Independent acceptance](claude-otel-independent-r2.md) · [Exact review receipt](claude-otel-independent-receipt.json) · [Timing coverage](claude-otel-actual.json).
