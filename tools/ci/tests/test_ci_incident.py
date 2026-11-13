@@ -50,7 +50,7 @@ def test_restart_after_write_and_before_acknowledgment(tmp_path):
         raise OSError("lost acknowledgment")
 
     with pytest.raises(OSError, match="lost acknowledgment"):
-        store.deliver(lose_response)
+        store.deliver(lose_response, directory=sink.directory)
     [path] = sink.directory.glob("*.md")
     written = path.read_bytes()
     assert b"Pause ordinary trunk work" in written
@@ -129,6 +129,68 @@ def test_incorrect_delivery_ack_remains_pending(tmp_path):
     store = incident.Store(tmp_path / "warnings.db", "shadow")
     store.observe(decision())
     with pytest.raises(ValueError, match="digest agrees|digest disagrees"):
-        store.deliver(lambda *_: "wrong")
+        store.deliver(lambda *_: "wrong", directory=tmp_path / "operator")
     [warning] = store.status()["warnings"]
     assert warning["delivered"] is None
+
+
+def test_verified_pending_target_without_a_run_revokes_nomination(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    store.observe(decision())
+    version = store.status()["incident"]["version"]
+    store.nominate(version, "repairer", 12)
+    pending = decision(sequence=4, status="pending")
+    del pending["run_id"]
+    assert store.observe(pending) == "pending"
+    state = store.status()
+    assert state["pending_sha"] == pending["sha"]
+    assert state["incident"]["nomination"] is None
+    assert store.observe(decision()) == "stale"
+
+
+def test_stale_failures_are_retained_without_reopening_incident(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    assert store.observe(decision(sequence=4, status="green")) == "green"
+    assert store.observe(decision(sequence=3)) == "stale"
+    with store.transaction() as db:
+        [row] = db.execute("SELECT body FROM attempts WHERE run_number=3").fetchone()
+    assert "python:failure" in row
+    assert store.status()["incident"] is None
+
+
+def test_bound_sink_revalidates_and_has_separate_provenance(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    store.observe(decision())
+    sink = incident.DirectorySink(tmp_path / "operator")
+    assert store.deliver(sink) == 1
+    [path] = sink.directory.glob("shadow-*.md")
+    path.unlink()
+    assert store.deliver(sink) == 1
+    assert path.is_file()
+    with pytest.raises(ValueError, match="bound operator surface"):
+        store.deliver(incident.DirectorySink(tmp_path / "elsewhere"))
+    live = incident.Store(tmp_path / "live.db", "live")
+    live.observe({**decision(), "provenance": "live"})
+    assert live.deliver(sink) == 1
+    assert len(list(sink.directory.glob("*.md"))) == 2
+
+
+def test_flush_only_current_warning_with_explicit_prior_failure(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    sink = incident.DirectorySink(tmp_path / "operator")
+    store.observe(decision())
+    store.observe(decision(sequence=4, status="incomplete"))
+    assert store.deliver(sink) == 1
+    [warning] = sink.directory.glob("*.md")
+    assert "Run 104" in warning.read_text()
+    assert "Prior authenticated failures: python:failure" in warning.read_text()
+
+
+def test_existing_public_directory_is_rejected(tmp_path):
+    store = incident.Store(tmp_path / "warnings.db", "shadow")
+    store.observe(decision())
+    path = tmp_path / "public"
+    path.mkdir()
+    path.chmod(0o755)
+    with pytest.raises(ValueError, match="private owned directory"):
+        store.deliver(incident.DirectorySink(path))

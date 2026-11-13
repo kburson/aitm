@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sqlite3
+import stat
 import sys
 from contextlib import contextmanager
 from hashlib import sha256
@@ -15,7 +16,7 @@ import ci_advisory
 from verify_pr import GitHub, Hold, digest, positive, require, timestamp
 
 SCHEMA = 1
-INITIAL = {"version": 0, "incident": None, "latest": None}
+INITIAL = {"version": 0, "incident": None, "latest": None, "pending_sha": None}
 OWNER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,79}")
 LANE = re.compile(
     r"(python|quality|file-checks|collect-evidence):(failure|timed_out|action_required)"
@@ -66,12 +67,16 @@ def identity(decision, provenance):
     return key
 
 
-def filename(key):
-    return f"trunk-{key['run_id']}-a{key['attempt']}.md"
+def filename(key, provenance):
+    return f"{provenance}-trunk-{key['run_id']}-a{key['attempt']}.md"
 
 
-def warning(key, failures, provenance):
-    detail = ", ".join(failures) if failures else "Required CI evidence is incomplete."
+def warning(key, observed, retained, provenance):
+    detail = ", ".join(observed) if observed else "Required CI evidence is incomplete."
+    inherited = sorted(set(retained) - set(observed))
+    if inherited:
+        detail += "\n\nPrior authenticated failures: " + ", ".join(inherited) + "."
+
     return (
         f"# Trunk CI warning ({provenance})\n\n"
         f"Run {key['run_id']}, attempt {key['attempt']}, commit `{key['sha']}`.\n\n"
@@ -85,14 +90,32 @@ class DirectorySink:
     """Publish one warning per attempt and acknowledge the persisted content."""
 
     def __init__(self, directory):
-        self.directory = Path(directory)
+        self.directory = Path(directory).absolute()
+
+    def ensure_private(self):
+        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        info = self.directory.lstat()
+        require(
+            stat.S_ISDIR(info.st_mode)
+            and info.st_uid == os.getuid()
+            and not info.st_mode & 0o077,
+            "operator warning directory must be a private owned directory",
+        )
+
+    def matches(self, name, digest):
+        path = self.directory / name
+        return (
+            not path.is_symlink()
+            and path.is_file()
+            and sha256(path.read_bytes()).hexdigest() == digest
+        )
 
     def __call__(self, name, content):
-        self.directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+        self.ensure_private()
         target = self.directory / name
         require(
             isinstance(name, str)
-            and re.fullmatch(r"trunk-[1-9][0-9]*-a[1-9][0-9]*\.md", name),
+            and re.fullmatch(r"(live|shadow)-trunk-[1-9][0-9]*-a[1-9][0-9]*\.md", name),
             "invalid warning filename",
         )
         if (
@@ -174,6 +197,7 @@ class Store:
     def status(self):
         with self.transaction() as db:
             state = self._load(db)
+            state.pop("warning_directory", None)
             state["warnings"] = [
                 {
                     "name": name,
@@ -187,38 +211,70 @@ class Store:
             return state
 
     def observe(self, decision):
-        key = identity(decision, self.provenance)
-        if key is None:
-            return decision["status"]
         with self.transaction() as db:
-            state = self._load(db)
-            latest = state["latest"]
-            previous = db.execute(
-                "SELECT identity, body FROM attempts WHERE run_number=? AND attempt=?",
-                order(key),
-            ).fetchone()
-            if previous:
-                require(json.loads(previous[0]) == key, "attempt identity collision")
-            if latest and order(key) < order(latest["key"]):
-                return "stale"
-            if latest and key["run_number"] == latest["key"]["run_number"]:
-                require(
-                    all(key[name] == latest["key"][name] for name in ("sha", "run_id")),
-                    "run identity collision",
-                )
-            failures = set(decision["failures"])
-            if previous:
-                failures.update(json.loads(previous[1])["failures"])
-            record = {**decision, "failures": sorted(failures)}
-            db.execute(
-                "INSERT INTO attempts VALUES (?,?,?,?) ON CONFLICT(run_number,attempt) "
-                "DO UPDATE SET body=excluded.body",
-                (*order(key), encode(key), encode(record)),
+            return self._observe(db, decision)
+
+    def observe_live(self):
+        require(self.provenance == "live", "live GitHub intake requires live store")
+        with self.transaction() as db:
+            return self._observe(db, ci_advisory.observe(GitHub(ci_advisory.REPO)))
+
+    def _observe(self, db, decision):
+        key = identity(decision, self.provenance)
+        state = self._load(db)
+        if key is None:
+            return self._observe_without_run(db, state, decision)
+        latest = state["latest"]
+        previous = db.execute(
+            "SELECT identity, body FROM attempts WHERE run_number=? AND attempt=?",
+            order(key),
+        ).fetchone()
+        if previous:
+            require(json.loads(previous[0]) == key, "attempt identity collision")
+        if latest and key["run_number"] == latest["key"]["run_number"]:
+            require(
+                all(key[name] == latest["key"][name] for name in ("sha", "run_id")),
+                "run identity collision",
             )
-            if not decision["current_verified"]:
-                return "unverified"
-            status = "red" if failures else decision["status"]
-            return self._apply(db, state, key, status, record)
+        failures = set(decision["failures"])
+        if previous:
+            failures.update(json.loads(previous[1])["failures"])
+        record = {**decision, "failures": sorted(failures)}
+        db.execute(
+            "INSERT INTO attempts VALUES (?,?,?,?) ON CONFLICT(run_number,attempt) "
+            "DO UPDATE SET body=excluded.body",
+            (*order(key), encode(key), encode(record)),
+        )
+        if latest and (
+            order(key) < order(latest["key"])
+            or state["pending_sha"]
+            and order(key) == order(latest["key"])
+        ):
+            return "stale"
+        if not decision["current_verified"]:
+            return "unverified"
+        state["pending_sha"] = None
+        status = "red" if failures else decision["status"]
+        return self._apply(db, state, key, status, record)
+
+    def _observe_without_run(self, db, state, decision):
+        if (
+            decision["status"] != "pending"
+            or decision.get("current_verified") is not True
+        ):
+            return decision["status"]
+        sha = decision.get("sha")
+        require(digest(sha), "invalid pending protected target")
+        latest = state["latest"]
+        if state["pending_sha"] == sha or latest and latest["key"]["sha"] == sha:
+            return "duplicate"
+        state["pending_sha"] = sha
+        if active := state["incident"]:
+            if active["active"]:
+                state["version"] += 1
+                active.update(version=state["version"], nomination=None, recovery=None)
+        self._save(db, state)
+        return "pending"
 
     def _apply(self, db, state, key, status, record):
         latest = state["latest"]
@@ -254,11 +310,11 @@ class Store:
                 "nomination": None,
                 "recovery": None,
             }
-            content = warning(key, failures, self.provenance)
+            content = warning(key, record["failures"], failures, self.provenance)
             db.execute(
                 "INSERT INTO warning VALUES (?,?,NULL) ON CONFLICT(name) "
                 "DO UPDATE SET body=excluded.body",
-                (filename(key), content),
+                (filename(key, self.provenance), content),
             )
             result = "updated" if current_failure else "warning"
         else:
@@ -288,7 +344,8 @@ class Store:
                 active
                 and active["active"]
                 and active["version"] == version
-                and state["latest"]["status"] != "pending",
+                and state["latest"]["status"] != "pending"
+                and state["pending_sha"] is None,
                 "active incident version changed or awaits completion",
             )
             nomination = {"owner": owner, "pr": pr}
@@ -304,24 +361,47 @@ class Store:
             active["nomination"] = nomination
             self._save(db, state)
 
-    def deliver(self, sink):
+    def deliver(self, sink, *, directory=None):
+        if directory is None:
+            directory = sink.directory
+        destination = str(Path(directory).resolve())
+        if isinstance(sink, DirectorySink):
+            sink.ensure_private()
+            require(
+                str(sink.directory.resolve()) == destination,
+                "warning sink differs from selected directory",
+            )
+        with self.transaction() as db:
+            state = self._load(db)
+            require(
+                state.get("warning_directory") in (None, destination),
+                "warning directory differs from the bound operator surface",
+            )
+            state["warning_directory"] = destination
+            self._save(db, state)
         delivered = 0
-        while True:
-            with self.transaction() as db:
-                row = db.execute(
-                    "SELECT name, body, delivered FROM warning ORDER BY name"
-                ).fetchall()
-                pending = next(
-                    (
-                        (name, body, sha256(body).hexdigest())
-                        for name, body, receipt in row
-                        if receipt != sha256(body).hexdigest()
-                    ),
-                    None,
-                )
-                if pending is None:
-                    return delivered
-                name, body, desired = pending
+        with self.transaction() as db:
+            state = self._load(db)
+            active = state["incident"]
+            if (
+                not active
+                or not active["active"]
+                or state["pending_sha"] is not None
+                or state["latest"]["status"] == "pending"
+            ):
+                return 0
+            current = filename(active["key"], self.provenance)
+            rows = db.execute(
+                "SELECT name, body, delivered FROM warning WHERE name=?", (current,)
+            ).fetchall()
+            for name, body, receipt in rows:
+                desired = sha256(body).hexdigest()
+                if (
+                    receipt == desired
+                    and isinstance(sink, DirectorySink)
+                    and sink.matches(name, desired)
+                ):
+                    continue
                 require(
                     sink(name, body) == desired,
                     "operator warning receipt digest disagrees",
@@ -329,7 +409,8 @@ class Store:
                 db.execute(
                     "UPDATE warning SET delivered=? WHERE name=?", (desired, name)
                 )
-            delivered += 1
+                delivered += 1
+        return delivered
 
 
 def main(argv=None):
@@ -354,12 +435,11 @@ def main(argv=None):
     try:
         store = Store(args.database, "shadow" if args.shadow else "live")
         if args.command == "observe":
-            decision = (
-                ci_advisory.decode_json(args.replay.read_bytes())
-                if args.shadow
-                else ci_advisory.observe(GitHub(ci_advisory.REPO))
-            )
-            result = {"decision": store.observe(decision)}
+            if args.shadow:
+                decision = ci_advisory.decode_json(args.replay.read_bytes())
+                result = {"decision": store.observe(decision)}
+            else:
+                result = {"decision": store.observe_live()}
         elif args.command == "nominate":
             store.nominate(args.version, args.owner, args.pr)
             result = store.status()

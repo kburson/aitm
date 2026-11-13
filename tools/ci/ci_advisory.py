@@ -338,6 +338,13 @@ def observe(github, *, expected=None, shadow=False):
     if run is None:
         outcome["status"] = "stale" if expected else "pending"
         gaps.append("no run for live trunk")
+        if expected is None:
+            try:
+                outcome["current_verified"] = (
+                    live_target(github) == sha and latest_run(github, sha) is None
+                )
+            except EVIDENCE_ERRORS:
+                gaps.append("current target could not be reverified")
         return outcome
     identity = (run["id"], run["run_attempt"])
     outcome.update(
