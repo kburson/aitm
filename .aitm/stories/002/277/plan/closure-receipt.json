@@ -1,0 +1,35 @@
+{
+  "board": {
+    "item": {
+      "disposition": {
+        "name": "Delivered"
+      },
+      "estimate": {
+        "number": 3.0
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhIXJTg",
+      "priority": {
+        "name": "P2"
+      },
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 70.0
+      },
+      "size": {
+        "name": "M"
+      },
+      "status": {
+        "name": "Done"
+      }
+    },
+    "number": 277,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED"
+  },
+  "evidence": "plan/delivery.json",
+  "publication": "6c4534d528e6004bfcc33e5109235b1a369821f5",
+  "review_sha256": "9941af9cb4624b6c306bcdf796d90619f35ca2d27ce1002e939d79bf2df30469"
+}

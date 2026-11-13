@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 277
 title: "[#133] Verify canonical full-CI evidence for advisory warnings"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/277"
 parent: 133
 children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T11:03:52Z"
+updated: "2026-11-13T11:03:55Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json", "plan/hosted-attempt-1.json", "plan/hosted-attempt-2.json", "plan/hosted-attempt-3.json", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json", "plan/hosted-attempt-1.json", "plan/hosted-attempt-2.json", "plan/hosted-attempt-3.json", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -57,3 +57,7 @@ The exact candidate's Python, quality and file checks passed on attempts 1 and 2
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
