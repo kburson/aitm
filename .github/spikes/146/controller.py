@@ -15,6 +15,9 @@ import sys
 import tempfile
 from time import monotonic
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import bounded
+
 BASE = "766504a02aaeb9dda339d588172dd7d5bdbd2b3f"
 PRODUCT = "packages/aitm-usage"
 CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
@@ -103,6 +106,37 @@ def create_worker(home, provisioned):
     return uid
 
 
+def build_trace_python(shared, logs, receipt):
+    build_root = shared / "trace-build"
+    good(("/usr/bin/sudo", "-n", "/usr/bin/install", "-d", "-o", str(os.getuid()),
+          "-m", "0755", str(build_root)))
+    archive = build_root / bounded.PYTHON_ARCHIVE
+    build = build_root / "Python-3.13.9"
+    outputs = receipt["trace_build"] = {}
+    steps = (
+        ("download", ("/usr/bin/curl", "-fsSL", "--max-time", "60", "-o", str(archive),
+                      f"https://www.python.org/ftp/python/3.13.9/{archive.name}"), build_root, 75),
+        ("extract", ("/usr/bin/tar", "-xf", str(archive)), build_root, 35),
+        ("configure", ("./configure", "--with-dtrace", "--with-ensurepip=no"), build, 120),
+        ("compile", ("/usr/bin/make", "-j", "4"), build, 340),
+    )
+    for name, args, cwd, timeout in steps:
+        proc = logs.run(f"trace-build-{name}", outputs.setdefault(name, {}), command,
+                        args, cwd=cwd, timeout=timeout)
+        require(proc.returncode == 0, f"trace interpreter {name} failed")
+        if name == "download":
+            require(hash_bytes(archive.read_bytes()) == bounded.PYTHON_SHA256, "trace source digest differs")
+            outputs["source_sha256"] = bounded.PYTHON_SHA256
+    python = build / "python.exe"
+    config = good((str(python), "-I", "-c",
+                   "import sys,sysconfig,sqlite3;"
+                   "print(sys.version.split()[0],sysconfig.get_config_var('WITH_DTRACE'),sqlite3.sqlite_version)"))
+    require(config.split()[:2] == ["3.13.9", "1"], "unexpected trace interpreter configuration")
+    good(("/bin/chmod", "-R", "a+rX,go-w", str(build)))
+    outputs.update(binary_sha256=hash_bytes(python.read_bytes()), configuration=config)
+    return build
+
+
 def probe(shared, private, staging, worker, uid):
     device = good(("/bin/df", "-P", str(shared))).splitlines()[-1].split()[0]
     disk = command(("/usr/sbin/diskutil", "info", "-plist", device))
@@ -175,9 +209,10 @@ def trial(shared, private, staging, receipt, provisioned):
     src = shared / "source"
     runtime = shared / "runtime"
     work = shared / "worker"
+    home, tmp, fixtures, reports = (work / name for name in ("home", "tmp", "fixtures", "reports"))
     for path in (src, runtime, work):
         path.mkdir(mode=0o755)
-    uid = create_worker(work, provisioned)
+    uid = create_worker(home, provisioned)
     good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", WORKER, str(work)))
     good(("/usr/bin/sudo", "-n", "/bin/chmod", "700", str(work)))
     shared.chmod(0o755)
@@ -185,15 +220,19 @@ def trial(shared, private, staging, receipt, provisioned):
     # The controller still owns the source and runtime directories inside this root.
     good(("/usr/bin/sudo", "-n", "/usr/sbin/chown", "root:wheel", str(shared)))
 
-    def worker(*args, extra=None, cwd=None, timeout=30):
-        env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(work),
-               "TMPDIR": str(work), "PYTHONDONTWRITEBYTECODE": "1"}
+    def worker_args(*args, extra=None):
+        env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "HOME": str(home),
+               "TMPDIR": str(tmp), "PYTHONDONTWRITEBYTECODE": "1"}
         env.update(extra or {})
-        return command(("/usr/bin/sudo", "-n", "-u", WORKER, "/usr/bin/env", "-i",
-                        *(f"{key}={value}" for key, value in env.items()), *args),
-                       cwd=cwd or shared, timeout=timeout)
+        return ("/usr/bin/sudo", "-n", "-u", WORKER, "/usr/bin/env", "-i",
+                *(f"{key}={value}" for key, value in env.items()), *args)
+
+    def worker(*args, extra=None, cwd=None, timeout=30):
+        return command(worker_args(*args, extra=extra), cwd=cwd or shared, timeout=timeout)
 
     receipt["boundary"] = probe(shared, private, staging, worker, uid)
+    require(worker("/bin/mkdir", "-m", "700", *(str(path) for path in (home, tmp, fixtures, reports))).returncode == 0,
+            "worker could not create private data directories")
     print("Controller and worker boundary verified", flush=True)
     archive = private / "source.tar"
     with archive.open("xb") as stream:
@@ -248,11 +287,11 @@ def trial(shared, private, staging, receipt, provisioned):
     common = ("-q", "--tb=long", "-p", "no:cacheprovider", "-p", "pytest_evidence", "--rootdir", str(src),
               "--confcutdir", str(src), "-c", str(project / "pyproject.toml"))
     settings = {"PYTHONPATH": str(src / "tools/ci"), "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
-                "AITM_CI_PYTEST_EVIDENCE": str(work / "collect.json")}
+                "AITM_CI_PYTEST_EVIDENCE": str(reports / "collect.json")}
     collected = logs.run("collection", receipt.setdefault("collect_process", {}), worker,
                          python, "-m", "pytest", *common, "--collect-only", "--basetemp",
-                         str(work / "collect-fixtures"), *TARGETS, extra=settings, cwd=src, timeout=80)
-    collected_report = worker("/bin/cat", str(work / "collect.json"))
+                         str(fixtures / "collection"), *TARGETS, extra=settings, cwd=src, timeout=80)
+    collected_report = worker("/bin/cat", str(reports / "collect.json"))
     require(collected_report.returncode == 0, "worker collection report unavailable")
     collect = json.loads(collected_report.stdout)
     require(collect["schema"] == "aitm.pytest-evidence/v1", "unexpected collection report")
@@ -261,13 +300,22 @@ def trial(shared, private, staging, receipt, provisioned):
                                        ids_sha256=stable_digest(sorted(collect["collected"])))
     require(collected.returncode == collect["exit_code"] == 0 and exact, "collection differs from exact reference")
     print(f"Separate worker collection matched {len(reference)} reference IDs", flush=True)
-    settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "pytest.json"), AITM_CI_CHILD_EVIDENCE="1",
-                    COVERAGE_FILE=str(work / ".product"))
+    try:
+        build = build_trace_python(shared, logs, receipt)
+        require(worker("/bin/test", "-w", str(build / "python.exe")).returncode == 1,
+                "worker can write trace interpreter")
+        bounded.run(src, build, tmp, private, receipt, uid, worker, worker_args, logs, command, require, stable_digest)
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        result = receipt.setdefault("bounded", {"status": "incomplete"})
+        result["reason"] = str(error).replace(str(shared), "<trial>").replace(str(private), "<controller>")
+    print(f"Bounded product slice status: {receipt['bounded']['status']}", flush=True)
+    settings.update(AITM_CI_PYTEST_EVIDENCE=str(reports / "pytest.json"), AITM_CI_CHILD_EVIDENCE="1",
+                    COVERAGE_FILE=str(reports / ".product"))
     full_targets = ("tests", str(src / TARGETS[1]))
     actual = logs.run("full", receipt.setdefault("full_process", {}), worker,
                       python, "-m", "coverage", "run", "-m", "pytest", *common,
                       "-p", "xdist.plugin", "-n", "3", "--dist", "worksteal", "--basetemp",
-                      str(work / "runtime-fixtures"), *full_targets, extra=settings, cwd=project, timeout=430)
+                      str(fixtures / "full"), *full_targets, extra=settings, cwd=project, timeout=525)
     summary = (
         "from pathlib import Path; import json,sys;"
         "from pytest_evidence import reconcile_workers;"
@@ -277,23 +325,23 @@ def trial(shared, private, staging, receipt, provisioned):
         "print(json.dumps([r,collect_child_coverage(r,p/'.product')]))"
     )
     examined = logs.run("full-reconciliation", receipt.setdefault("full_reconciliation", {}), worker,
-                        python, "-c", summary, str(work), extra=settings, cwd=project, timeout=45)
+                        python, "-c", summary, str(reports), extra=settings, cwd=project, timeout=45)
     if examined.returncode == 0:
         report, child = json.loads(examined.stdout)
         receipt["full_diagnostics"] = assess(report, reference, child)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
     selected = sorted((CLI, SERVICE))
     selected_paths = [str(src / node) for node in selected]
-    settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "selected.json"),
-                    COVERAGE_FILE=str(work / ".selected"))
+    settings.update(AITM_CI_PYTEST_EVIDENCE=str(reports / "selected.json"),
+                    COVERAGE_FILE=str(reports / ".selected"))
     selected_process = {"unobserved_count": len(reference) - len(selected)}
     receipt["selected_process"] = selected_process
     narrowed = logs.run("selected", selected_process, worker,
                         python, "-m", "coverage", "run", "-m", "pytest", *common, "--basetemp",
-                        str(work / "selected-fixtures"), *selected_paths, extra=settings, cwd=project, timeout=90)
+                        str(fixtures / "selected"), *selected_paths, extra=settings, cwd=project, timeout=90)
     selected_summary = summary.replace("reconcile_workers(p/'pytest.json',3)", "json.loads((p/'selected.json').read_bytes())").replace("p/'.product'", "p/'.selected'")
     examined = logs.run("selected-reconciliation", receipt.setdefault("selected_reconciliation", {}), worker,
-                        python, "-c", selected_summary, str(work), extra=settings, cwd=project, timeout=35)
+                        python, "-c", selected_summary, str(reports), extra=settings, cwd=project, timeout=35)
     if examined.returncode == 0:
         report, child = json.loads(examined.stdout)
         receipt["selected_diagnostics"] = assess(report, selected, child)
@@ -306,7 +354,7 @@ def trial(shared, private, staging, receipt, provisioned):
             result["native_children"]["expected_positive_product_line_counts"],
         ))
 
-    if actual.returncode or narrowed.returncode or not (
+    if actual.returncode or narrowed.returncode or receipt["bounded"]["status"] != "bounded-pass" or not (
         matches(receipt.get("full_diagnostics")) and matches(receipt.get("selected_diagnostics"))
     ):
         return "comparison-incomplete"
@@ -320,7 +368,7 @@ def main():
     os.chmod(out.parent, 0o700)
     require(git("merge-base", "HEAD", BASE) == BASE, "product reference base drift")
     require(git("diff", "--name-only", BASE, "HEAD").splitlines() == [
-        ".github/spikes/146/controller.py", ".github/spikes/146/reference.json",
+        ".github/spikes/146/bounded.py", ".github/spikes/146/controller.py", ".github/spikes/146/reference.json",
         ".github/workflows/aitm-146-product-observation-trial.yml"
     ], "unexpected trial diff")
     receipt = {
@@ -332,11 +380,12 @@ def main():
                      "attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]), "ref": os.environ["GITHUB_REF"],
                      "runner": os.environ["RUNNER_NAME"], "image": os.environ["ImageVersion"],
                      "platform": platform.platform(),
+                     "bounded_sha256": hash_bytes(Path(bounded.__file__).read_bytes()),
                      "controller_sha256": hash_bytes(Path(__file__).read_bytes()),
                      "reference_sha256": hash_bytes(Path(__file__).with_name("reference.json").read_bytes())},
         "limits": ["Reference is an earlier same-tree worker report, not an independent completeness oracle",
                    "Per-test and native coverage reports are worker-generated",
-                   "External CLI probe observes one direct product process, not native descendants or source-line coverage"],
+                   "Bounded results are separate external equivalents for two pinned pytest obligations"],
     }
     with tempfile.TemporaryDirectory(prefix="aitm146-controller-", dir=out.parent) as private:
         shared = Path(tempfile.mkdtemp(prefix="aitm146-product-", dir="/Users/Shared"))
