@@ -7,7 +7,7 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/269"
 parent: 100
 children: []
-blocking: []
+blocking: [270]
 blocked-by: []
 created: "2026-11-13T02:06:59Z"
 updated: "2026-11-13T03:30:52Z"
@@ -35,3 +35,5 @@ Two live trials observed and revalidated the original child file before its firs
 The child locator could be armed before metered usage but the writer found no matching capture boundary. The enrolled parent span was eligible and the current scope API still refused its ambiguous source. The independent review accepted the negative research result and held writer authority. [Final findings](plan/2026-11-12-269-writer-admission-close.md).
 
 GitHub shows Closed Completed and Project 24 shows Done at Rank 228.9. Actual is 0.0152 hours of partial coordinator engagement. [GitHub readback](plan/github-close.json) · [Project readback](plan/project-done.json).
+
+[Follow-up #270](../270/story.md) owns the writer admission repair and original scope proof.
