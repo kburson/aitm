@@ -206,19 +206,19 @@ def trial(shared, private, staging, receipt):
         "r=reconcile_workers(p/'pytest.json',3);"
         "print(json.dumps([r,collect_child_coverage(r,p/'.product')]))"
     )
+    def diagnostics(proc):
+        lines = (proc.stdout + proc.stderr).decode(errors="replace").splitlines()
+        return [line.replace(str(shared), "<trial>")[:360]
+                for line in lines if line.startswith(("FAILED ", "ERROR ", "E ", "ValueError:", "PermissionError:", "FileNotFoundError:"))][-24:]
+
     examined = worker(python, "-c", summary, str(work), extra=settings, cwd=project, timeout=45)
-    require(examined.returncode == 0, "worker could not reconcile its runtime evidence")
-    report, child = json.loads(examined.stdout)
-    receipt["full_diagnostics"] = assess(report, reference, child)
+    receipt["full_process"]["diagnostics"] = diagnostics(actual)
+    if examined.returncode == 0:
+        report, child = json.loads(examined.stdout)
+        receipt["full_diagnostics"] = assess(report, reference, child)
+    else:
+        receipt["full_process"]["reconciliation"] = diagnostics(examined)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
-    require(receipt["full_diagnostics"]["collection"]["exact_reference_match"], "runtime inventory differs")
-    if actual.returncode:
-        print(actual.stdout.decode(errors="replace")[-2800:], flush=True)
-        return "product-run-failed"
-    require(receipt["full_diagnostics"]["per_test"]["complete_passing_phases"],
-            "full per-test records differ from reference expectations")
-    require(receipt["full_diagnostics"]["native_children"]["expected_positive_product_line_counts"],
-            "full reported child coverage missing")
     selected = sorted((CLI, SERVICE))
     settings.update(AITM_CI_PYTEST_EVIDENCE=str(work / "selected.json"),
                     COVERAGE_FILE=str(work / ".selected"))
@@ -230,16 +230,27 @@ def trial(shared, private, staging, receipt):
                                    "unobserved_count": len(reference) - len(selected)}
     selected_summary = summary.replace("reconcile_workers(p/'pytest.json',3)", "json.loads((p/'selected.json').read_bytes())").replace("p/'.product'", "p/'.selected'")
     examined = worker(python, "-c", selected_summary, str(work), extra=settings, cwd=project, timeout=35)
-    require(examined.returncode == 0, "worker could not read selected runtime evidence")
-    report, child = json.loads(examined.stdout)
-    receipt["selected_diagnostics"] = assess(report, selected, child)
-    require(narrowed.returncode == 0 and all((
-        receipt["selected_diagnostics"]["collection"]["exact_reference_match"],
-        receipt["selected_diagnostics"]["per_test"]["complete_passing_phases"],
-        receipt["selected_diagnostics"]["native_children"]["expected_positive_product_line_counts"],
-    )), "selected comparison failed")
+    receipt["selected_process"]["diagnostics"] = diagnostics(narrowed)
+    if examined.returncode == 0:
+        report, child = json.loads(examined.stdout)
+        receipt["selected_diagnostics"] = assess(report, selected, child)
+    else:
+        receipt["selected_process"]["reconciliation"] = diagnostics(examined)
     require((private / "marker").read_bytes() == b"controller only\n", "controller marker changed")
+
+    def matches(result):
+        return result and all((
+            result["collection"]["exact_reference_match"],
+            result["per_test"]["complete_passing_phases"],
+            result["native_children"]["expected_positive_product_line_counts"],
+        ))
+
+    if actual.returncode or narrowed.returncode or not (
+        matches(receipt.get("full_diagnostics")) and matches(receipt.get("selected_diagnostics"))
+    ):
+        return "comparison-incomplete"
     return "comparison-complete"
+
 
 
 def main():
