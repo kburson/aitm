@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 271
 title: "[#270 A] Qualify native Claude foreground closure"
 kind: "story"
-state: "refine"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/271"
 parent: 270
 children: []
 blocking: [272]
 blocked-by: [269]
 created: "2026-11-13T04:32:19Z"
-updated: "2026-11-13T04:32:19Z"
+updated: "2026-11-13T04:39:19Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null

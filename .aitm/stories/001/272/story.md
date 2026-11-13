@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 272
 title: "[#270 B] Qualify Claude writer admission and original ownership"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/272"
 parent: 270
 children: []
 blocking: [273]
 blocked-by: [271]
 created: "2026-11-13T04:32:20Z"
-updated: "2026-11-13T04:32:20Z"
+updated: "2026-11-13T04:40:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
