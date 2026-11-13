@@ -1,0 +1,9 @@
+{
+  "sha256": {
+    "verify-writer-paths.py": "3fca2860a36ff3f804c3c70c075eadaa798c1f3408b4038f92f579f7fc6cf632",
+    "writer-reopen-replay.log": "747abf268cdf463e1cbfcb8ed3d3e36c53e415a157037adb176d2e86f1a52941",
+    "writer-admission-verified.log": "13253205f8a079a6a5c8c1f6122a53207de74550800e395ca02570af0937d588",
+    "independent-spike-verdict.md": "65872c6e499610440d91d83402bd5e346190511392cfa0d0b96818ba2c0303da",
+    "2026-11-12-269-writer-admission-close.md": "821d6f08e74fb84b411f2bf7f7abfaf2d1f42a433cd753ae7293092756d55e41"
+  }
+}

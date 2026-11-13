@@ -29,3 +29,7 @@ Project 24 Rank 228.9 places this evidence spike before #204. Compare native-onl
 ## Initial results
 
 Two live trials observed and revalidated the original child file before its first metered response. The unchanged scope writer still refused both files after sidecar discovery, and the child had no eligible capture epoch. [Preflight and remaining qualification](plan/2026-11-12-269-native-origin-preflight.md).
+
+## Research complete, authority held
+
+The child locator could be armed before metered usage but the writer found no matching capture boundary. The enrolled parent span was eligible and the current scope API still refused its ambiguous source. The independent review accepted the negative research result and held writer authority. [Final findings](plan/2026-11-12-269-writer-admission-close.md).

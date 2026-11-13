@@ -55,3 +55,7 @@ The original eligible owner and span for the selected child and covering aggrega
 The unchanged writer enrolled the parent before the Agent call. The full tool-to-result span was eligible under that epoch, and the native child frames independently carried the verified checkout. The ordinary writer still refuses the parent after sidecar discovery and cannot enroll the child in a distinct namespace. [Live capture receipt](plan/claude-prospective-authority-carrier.json) · [Native-only comparison](plan/claude-native-only-origin-preflight.json) · [JIT recovery HOLD](plan/claude-folded-origin-independent-jit-r2.md).
 
 [Spike #269](../269/story.md) is an Epic #100 child for the remaining evidence. The accepted #204 → #119 dependency remains.
+
+### Spike #269 research disposition
+
+[#269 completed its evidence investigation with an authority HOLD](../269/plan/2026-11-12-269-writer-admission-close.md). The existing writer could arm a unique child source before metered usage. Its two later observations still had a different stream identity, so neither supplied a boundary and the writer issued no child epoch. The covering parent route also remained unavailable. #204 stays in Refine and continues to block #119.
