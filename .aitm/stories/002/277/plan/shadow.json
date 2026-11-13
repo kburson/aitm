@@ -3,6 +3,7 @@
     "decision": {
       "artifact": null,
       "attempt": 1,
+      "current_verified": true,
       "failures": [
         "collect-evidence:failure"
       ],
@@ -17,6 +18,7 @@
         "python": 131296097574,
         "quality": 131296097502
       },
+      "provenance": "shadow",
       "repository_id": 1450406435,
       "run_id": 43250904624,
       "run_number": 140,
@@ -237,11 +239,13 @@
   "live_stale": {
     "artifact": null,
     "attempt": 1,
+    "current_verified": false,
     "failures": [],
     "gaps": [
       "requested run or attempt is no longer current"
     ],
     "jobs": {},
+    "provenance": "live",
     "repository_id": 1450406435,
     "run_id": 43404405270,
     "run_number": 145,
@@ -256,6 +260,7 @@
     "decision": {
       "artifact": null,
       "attempt": 1,
+      "current_verified": true,
       "failures": [],
       "gaps": [
         "missing or duplicate Python artifact for current attempt"
@@ -266,6 +271,7 @@
         "python": 131815066760,
         "quality": 131815067095
       },
+      "provenance": "shadow",
       "repository_id": 1450406435,
       "run_id": 43404405270,
       "run_number": 145,

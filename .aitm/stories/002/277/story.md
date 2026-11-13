@@ -10,12 +10,12 @@ children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T10:24:03Z"
+updated: "2026-11-13T10:27:34Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,7 @@ Read canonical #103 full trunk push metadata and exact attempt jobs. Pin the rep
 ## Test evidence
 
 [Live green](plan/live-current.json) · [Shadow decisions](plan/shadow.json) · [Replay recipe](plan/shadow.py) · [Local tests](plan/local-test.log) · [PR #281](https://github.com/kburson/aitm/pull/281).
+
+## Replacement candidate
+
+The source review found a readback path that dropped authenticated red evidence and a timestamp rule that rejected valid reruns. The replacement retains red with a freshness gap, distinguishes malformed sibling evidence, and accepts provider rerun record timestamps. The exact candidate passed 158 local tests and repeated [live and shadow validation](plan/offline-replay.log).

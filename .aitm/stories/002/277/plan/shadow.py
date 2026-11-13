@@ -71,10 +71,10 @@ def main():
     red = Shadow(github, 43250904624)
     artifact_path = "actions/runs/43250904624/artifacts?per_page=100"
     assert red.pages(artifact_path, "artifacts") == []
-    historical = ci.observe(red)
+    historical = ci.observe(red, shadow=True)
     assert historical["status"] == "red" and historical["failures"] == ["collect-evidence:failure"]
     missing = Shadow(github, 43404405270, missing_artifact=True)
-    incomplete = ci.observe(missing)
+    incomplete = ci.observe(missing, shadow=True)
     assert incomplete["status"] == "incomplete"
     stale = ci.observe(github, expected=(43250904624, 1))
     assert stale["status"] == "stale"

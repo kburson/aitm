@@ -26,6 +26,7 @@
     "tree": "68c7e46c9220aad7d7218192ac49114675072e36"
   },
   "attempt": 1,
+  "current_verified": true,
   "failures": [],
   "gaps": [],
   "jobs": {
@@ -34,6 +35,7 @@
     "python": 131815066760,
     "quality": 131815067095
   },
+  "provenance": "live",
   "repository_id": 1450406435,
   "run_id": 43404405270,
   "run_number": 145,
