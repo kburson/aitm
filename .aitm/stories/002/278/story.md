@@ -10,12 +10,12 @@ children: []
 blocking: [279]
 blocked-by: [277]
 created: "2026-11-13T05:14:22Z"
-updated: "2026-11-13T11:10:57Z"
+updated: "2026-11-13T11:19:18Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-278-durable-warning-plan.md", "plan/reviews/plan-review.md", "plan/local-test.log", "plan/rehearse.py", "plan/shadow.json", "plan/operator-warning.md", "plan/reviews/source-assessment.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,7 @@ The replacement persists delayed failures, revokes stale nominations on a verifi
 ## Exact observation retention
 
 The final candidate keeps original authenticated job IDs in deduplicated receipts and refreshes a warning when a previously inherited lane becomes a current failure. All 124 local tests passed and the shadow rehearsal remained reproducible.
+
+## Independent source assessment
+
+[Exact-head source assessment](plan/reviews/source-assessment.md) verified the corrected implementation and reproduced the shadow evidence.
