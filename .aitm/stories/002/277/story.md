@@ -10,12 +10,12 @@ children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T10:27:34Z"
+updated: "2026-11-13T10:44:59Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log", "plan/offline-replay.py", "plan/offline-replay.log", "plan/historical-rerun.json", "plan/hosted-attempt-1.json", "plan/hosted-attempt-2.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ Read canonical #103 full trunk push metadata and exact attempt jobs. Pin the rep
 ## Replacement candidate
 
 The source review found a readback path that dropped authenticated red evidence and a timestamp rule that rejected valid reruns. The replacement retains red with a freshness gap, distinguishes malformed sibling evidence, and accepts provider rerun record timestamps. The exact candidate passed 158 local tests and repeated [live and shadow validation](plan/offline-replay.log).
+
+## Hosted base timeouts
+
+The exact candidate's Python, quality and file checks passed on attempts 1 and 2. The inherited serial base lane reached its configured eight-minute job limit before artifact upload on both attempts. [Attempt 1](https://github.com/kburson/aitm/actions/runs/43409093456/attempts/1) · [Attempt 2](https://github.com/kburson/aitm/actions/runs/43409093456/attempts/2).
