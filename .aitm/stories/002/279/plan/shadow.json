@@ -1,0 +1,177 @@
+{
+  "acknowledged": {
+    "incident": {
+      "acknowledgment": {
+        "artifact": "sha256:8f578baffc7781ae7e5c0f3154efaed81725d2db856eab25a084ca21dc164c9d",
+        "artifact_id": 14032945742,
+        "green": {
+          "attempt": 1,
+          "run_id": 43416445402,
+          "run_number": 154,
+          "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d"
+        },
+        "operator": "shadow-operator",
+        "repair": {
+          "head": "e7fba46767bdad188d432f23584bb2c8e53f5381",
+          "landed_at": "2026-11-13T11:21:42Z",
+          "planning": "42ae4ea8215432618da5cc610256d345db5f2034",
+          "pr": 283,
+          "receipt": "c8c5f0df180a8884d406c14f0122cc488eac3c7934b9f40633e44e6e6d043b3e",
+          "review": "3c8f91d6155e81aaebae7177ca2424c101c3564838ed30f7b07b30770fca5379",
+          "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d",
+          "tree": "b2355e454752baf77d71293fed539e966e796cbc"
+        },
+        "started_at": "2026-11-13T11:21:45Z",
+        "time": "2026-11-13T11:30:04.901076+00:00",
+        "token": "c892713e4fede1e4ad8b26e840827921b6beb04078afeb11ca3c251188cc3b93",
+        "version": 1
+      },
+      "active": false,
+      "failures": [
+        "quality:failure"
+      ],
+      "key": {
+        "attempt": 1,
+        "run_id": 43416445401,
+        "run_number": 153,
+        "sha": "1111111111111111111111111111111111111111"
+      },
+      "nomination": {
+        "owner": "shadow-repairer",
+        "pr": 283
+      },
+      "observed_failures": [
+        "quality:failure"
+      ],
+      "recovery": {
+        "artifact": "sha256:8f578baffc7781ae7e5c0f3154efaed81725d2db856eab25a084ca21dc164c9d",
+        "artifact_id": 14032945742,
+        "green": {
+          "attempt": 1,
+          "run_id": 43416445402,
+          "run_number": 154,
+          "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d"
+        },
+        "repair": {
+          "head": "e7fba46767bdad188d432f23584bb2c8e53f5381",
+          "landed_at": "2026-11-13T11:21:42Z",
+          "planning": "42ae4ea8215432618da5cc610256d345db5f2034",
+          "pr": 283,
+          "receipt": "c8c5f0df180a8884d406c14f0122cc488eac3c7934b9f40633e44e6e6d043b3e",
+          "review": "3c8f91d6155e81aaebae7177ca2424c101c3564838ed30f7b07b30770fca5379",
+          "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d",
+          "tree": "b2355e454752baf77d71293fed539e966e796cbc"
+        },
+        "started_at": "2026-11-13T11:21:45Z",
+        "token": "c892713e4fede1e4ad8b26e840827921b6beb04078afeb11ca3c251188cc3b93",
+        "version": 1
+      },
+      "started_at": "2026-11-13T09:00:00Z",
+      "status": "red",
+      "version": 1
+    },
+    "latest": {
+      "key": {
+        "attempt": 1,
+        "run_id": 43416445402,
+        "run_number": 154,
+        "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d"
+      },
+      "started_at": "2026-11-13T11:21:45Z",
+      "status": "green"
+    },
+    "pending_sha": null,
+    "version": 1,
+    "warnings": [
+      {
+        "delivered": null,
+        "desired": "cf3afc200f32a09877b74354e0f6b5ff6ab5c4741a0a1e5f64159790f82f66b7",
+        "name": "shadow-trunk-43416445401-a1.md"
+      }
+    ]
+  },
+  "actual_green": {
+    "artifact": {
+      "controls": {
+        ".github/workflows/ci.yml": "e8fd821fd0ced62aed3c39d70b378143a10f6c67",
+        "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+        "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12"
+      },
+      "digest": "sha256:8f578baffc7781ae7e5c0f3154efaed81725d2db856eab25a084ca21dc164c9d",
+      "id": 14032945742,
+      "policy_result": {
+        "baseline_tests": 0,
+        "coverage": {
+          "helpers": {
+            "covered_lines": 806,
+            "num_statements": 849
+          },
+          "product": {
+            "covered_lines": 11272,
+            "num_statements": 12276
+          }
+        },
+        "failures": [],
+        "passed": true,
+        "tests": 1216
+      },
+      "tree": "b2355e454752baf77d71293fed539e966e796cbc"
+    },
+    "attempt": 1,
+    "current_verified": true,
+    "failures": [],
+    "gaps": [],
+    "jobs": {
+      "collect-evidence": 131858562252,
+      "file-checks": 131855443221,
+      "python": 131855442809,
+      "quality": 131855443245
+    },
+    "provenance": "live",
+    "repository_id": 1450406435,
+    "run_id": 43416445402,
+    "run_number": 154,
+    "schema": "aitm.ci-advisory/v1",
+    "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d",
+    "started_at": "2026-11-13T11:21:45Z",
+    "status": "green",
+    "target": "trunk",
+    "workflow_id": 412848571
+  },
+  "actual_repair": {
+    "head": "e7fba46767bdad188d432f23584bb2c8e53f5381",
+    "landed_at": "2026-11-13T11:21:42Z",
+    "planning": "42ae4ea8215432618da5cc610256d345db5f2034",
+    "pr": 283,
+    "receipt": "c8c5f0df180a8884d406c14f0122cc488eac3c7934b9f40633e44e6e6d043b3e",
+    "review": "3c8f91d6155e81aaebae7177ca2424c101c3564838ed30f7b07b30770fca5379",
+    "sha": "8148a449afc6596d09e6a4ae5f3543fea70a903d",
+    "tree": "b2355e454752baf77d71293fed539e966e796cbc"
+  },
+  "provenance": "shadow",
+  "synthetic_incident": {
+    "artifact": null,
+    "attempt": 1,
+    "current_verified": true,
+    "failures": [
+      "quality:failure"
+    ],
+    "gaps": [],
+    "jobs": {
+      "collect-evidence": 131858562252,
+      "file-checks": 131855443221,
+      "python": 131855442809,
+      "quality": 131855443245
+    },
+    "provenance": "shadow",
+    "repository_id": 1450406435,
+    "run_id": 43416445401,
+    "run_number": 153,
+    "schema": "aitm.ci-advisory/v1",
+    "sha": "1111111111111111111111111111111111111111",
+    "started_at": "2026-11-13T09:00:00Z",
+    "status": "red",
+    "target": "trunk",
+    "workflow_id": 412848571
+  }
+}
