@@ -1,0 +1,103 @@
+{
+  "attempt": 1,
+  "evidence_publication": "822fc938720a5dd9f63828aeb369bdaec85fce82",
+  "parent": 146,
+  "rank_50_and_rank_60": {
+    "146": {
+      "disposition": {
+        "name": "BLOCKED"
+      },
+      "estimate": null,
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkcWk",
+      "priority": null,
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 50.0
+      },
+      "size": null,
+      "status": {
+        "name": "Backlog"
+      }
+    },
+    "148": {
+      "disposition": {
+        "name": "BLOCKED"
+      },
+      "estimate": null,
+      "id": "PVTI_lAHOABCEY84Bq1hZzhHkc6M",
+      "priority": null,
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 60.0
+      },
+      "size": null,
+      "status": {
+        "name": "Backlog"
+      }
+    },
+    "267": {
+      "disposition": {
+        "name": "BLOCKED"
+      },
+      "estimate": {
+        "number": 3.0
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhIQh2c",
+      "priority": {
+        "name": "P2"
+      },
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 60.0
+      },
+      "size": {
+        "name": "M"
+      },
+      "status": {
+        "name": "Backlog"
+      }
+    }
+  },
+  "run": 43349372876,
+  "scope": "synthetic only",
+  "spike": {
+    "item": {
+      "disposition": {
+        "name": "Delivered"
+      },
+      "estimate": {
+        "number": 3.5
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhIVHeY",
+      "priority": {
+        "name": "P1"
+      },
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 50.0
+      },
+      "size": {
+        "name": "M"
+      },
+      "status": {
+        "name": "Done"
+      }
+    },
+    "number": 268,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED"
+  },
+  "tested_head": "8a7c7ea8c77046371cee6bf282b7b2dd4c869535"
+}

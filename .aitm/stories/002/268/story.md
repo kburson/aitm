@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 268
 title: "[#146 Spike] Qualify a synthetic macOS/APFS observation boundary"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/268"
 parent: 146
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-13T01:59:41Z"
-updated: "2026-11-13T02:08:46Z"
+updated: "2026-11-13T02:09:05Z"
 last-branch: "codex/spike-268-macos-observation"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/146/plan/2026-11-12-146-trusted-observation-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/macos-pilot-receipt.json", "plan/macos-pilot-readback.json", "plan/2026-11-12-268-pilot-findings.md", "plan/reviews/268-independent-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/macos-pilot-receipt.json", "plan/macos-pilot-readback.json", "plan/2026-11-12-268-pilot-findings.md", "plan/reviews/268-independent-review.md", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,7 @@ One synthetic macOS/APFS job ran seven fixture invocations. [Controller receipt]
 ## Reviewed disposition
 
 [Findings](plan/2026-11-12-268-pilot-findings.md) · [Independent review](plan/reviews/268-independent-review.md). The result is bounded to the synthetic fixture.
+
+## Closure
+
+The synthetic spike evidence was independently accepted. [Closure receipt](plan/closure-receipt.json).
