@@ -11,7 +11,7 @@ jobs:
   observation:
     if: github.repository == 'kburson/aitm' && github.event_name == 'push'
     runs-on: macos-26
-    timeout-minutes: 22
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -21,9 +21,9 @@ jobs:
         with:
           version: '0.10.6'
           enable-cache: false
-      - name: Observe the bounded product slice as an unprivileged worker
+      - name: Observe the pinned product suite as an unprivileged worker
         env:
-          AITM_146_BOUNDED_ONLY: '1'
+          AITM_146_FULL_OBSERVATION: '1'
         shell: bash
         run: |
           set -euo pipefail

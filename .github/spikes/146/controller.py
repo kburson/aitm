@@ -17,6 +17,7 @@ from time import monotonic
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bounded
+import full_suite
 
 BASE = "766504a02aaeb9dda339d588172dd7d5bdbd2b3f"
 PRODUCT = "packages/aitm-usage"
@@ -106,7 +107,7 @@ def create_worker(home, provisioned):
     return uid
 
 
-def build_trace_python(shared, logs, receipt):
+def build_trace_python(shared, logs, receipt, *, full=False):
     build_root = shared / "trace-build"
     good(("/usr/bin/sudo", "-n", "/usr/bin/install", "-d", "-o", str(os.getuid()),
           "-m", "0755", str(build_root)))
@@ -117,7 +118,8 @@ def build_trace_python(shared, logs, receipt):
         ("download", ("/usr/bin/curl", "-fsSL", "--max-time", "60", "-o", str(archive),
                       f"https://www.python.org/ftp/python/3.13.9/{archive.name}"), build_root, 75),
         ("extract", ("/usr/bin/tar", "-xf", str(archive)), build_root, 35),
-        ("configure", ("./configure", "--with-dtrace", "--with-ensurepip=no"), build, 120),
+        ("configure", ("./configure", "--with-dtrace", "--with-ensurepip=no",
+                       f"--prefix={build_root / 'installed'}"), build, 120),
         ("compile", ("/usr/bin/make", "-j", "4"), build, 340),
     )
     for name, args, cwd, timeout in steps:
@@ -133,6 +135,8 @@ def build_trace_python(shared, logs, receipt):
             (build / "Modules/Setup.local").write_text(modules)
             outputs["disabled_extensions"] = ["_ssl", "_hashlib"]
             outputs["line_probe_patch"] = bounded.add_line_probe(build)
+            if full:
+                outputs["test_event_patch"] = full_suite.patch_cpython(build)
     python = build / "python.exe"
     config = good((str(python), "-I", "-c",
                    "import sys,sysconfig,sqlite3;"
@@ -313,6 +317,10 @@ def trial(shared, private, staging, receipt, provisioned):
                                        ids_sha256=stable_digest(sorted(collect["collected"])))
     require(collected.returncode == collect["exit_code"] == 0 and exact, "collection differs from exact reference")
     print(f"Separate worker collection matched {len(reference)} reference IDs", flush=True)
+    if os.environ.get("AITM_146_FULL_OBSERVATION") == "1":
+        build = build_trace_python(shared, logs, receipt, full=True)
+        return full_suite.run(src, shared, build, venv, fixtures, private, logs, receipt, uid,
+                              worker, worker_args, command, good, require, stable_digest, reference)
     try:
         build = build_trace_python(shared, logs, receipt)
         require(worker("/bin/test", "-w", str(build / "python.exe")).returncode == 1,
@@ -384,7 +392,8 @@ def main():
     require(git("merge-base", "HEAD", BASE) == BASE, "product reference base drift")
     require(git("diff", "--name-only", BASE, "HEAD").splitlines() == [
         ".github/spikes/146/bounded.py", ".github/spikes/146/controller.py",
-        ".github/spikes/146/diagnostic_plugin.py", ".github/spikes/146/reference.json",
+        ".github/spikes/146/diagnostic_plugin.py", ".github/spikes/146/full_suite.py",
+        ".github/spikes/146/reference.json",
         ".github/workflows/aitm-146-product-observation-trial.yml"
     ], "unexpected trial diff")
     receipt = {
@@ -397,6 +406,7 @@ def main():
                      "runner": os.environ["RUNNER_NAME"], "image": os.environ["ImageVersion"],
                      "platform": platform.platform(),
                      "bounded_sha256": hash_bytes(Path(bounded.__file__).read_bytes()),
+                     "full_suite_sha256": hash_bytes(Path(full_suite.__file__).read_bytes()),
                      "diagnostic_plugin_sha256": hash_bytes(Path(__file__).with_name("diagnostic_plugin.py").read_bytes()),
                      "controller_sha256": hash_bytes(Path(__file__).read_bytes()),
                      "reference_sha256": hash_bytes(Path(__file__).with_name("reference.json").read_bytes())},
@@ -420,7 +430,7 @@ def main():
             command(("/usr/bin/sudo", "-n", "/bin/rm", "-rf", str(shared)))
             for record in provisioned:
                 command(("/usr/bin/sudo", "-n", "/usr/bin/dscl", ".", "-delete", record))
-    return 0 if receipt["status"] in {"comparison-complete", "bounded-pass"} else 1
+    return 0 if receipt["status"] in {"comparison-complete", "bounded-pass", "full-observation-pass"} else 1
 
 
 if __name__ == "__main__":
