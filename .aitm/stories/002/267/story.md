@@ -10,12 +10,12 @@ children: []
 blocking: [172]
 blocked-by: [143]
 created: "2026-11-12T20:01:44Z"
-updated: "2026-11-13T09:23:40Z"
+updated: "2026-11-13T09:26:23Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-advisory-and-qualification-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-267-measurement-plan.md", "plan/reviews/267-plan-review.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 133, "key": "T35L", "path": ".aitm/stories/001/133/plan/2026-11-12-133-advisory-and-qualification-replan.md", "publication": "dc1317219fdc255a86b63c9ce5170a06bd61cca3", "raw-sha256": "61c760529ed13971453a11ede1455a692a170a29d110472a39e1beaf4a131d97", "section-sha256": "56892d2d98ede1115e132a994c3f87ac780e631d78ac8f5369fb56554fba84df"}
@@ -38,3 +38,7 @@ Rank 60 pickup is blocked by owner sequencing until Rank 50 #146 is resolved. [R
 ## Rank 60 advisory pickup
 
 The Rank 50 replacement is recorded. The prior Rank 60 pickup hold has ended. Keep the existing advisory scope and completed prerequisite #143. Its measurements are retained for advisory evaluation under the revised #133 plan. [Replan](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md).
+
+## Predeclared measurement
+
+[Plan](plan/2026-11-13-267-measurement-plan.md) · [Independent plan review](plan/reviews/267-plan-review.md).
