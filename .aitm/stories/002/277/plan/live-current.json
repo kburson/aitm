@@ -1,0 +1,46 @@
+{
+  "artifact": {
+    "controls": {
+      ".github/workflows/ci.yml": "e8fd821fd0ced62aed3c39d70b378143a10f6c67",
+      "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+      "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12"
+    },
+    "digest": "sha256:e45f97966ce5b4a3ced682832a0b1aa26256daba7a5bd8406c1f39a5a4f2803c",
+    "id": 14027075991,
+    "policy_result": {
+      "baseline_tests": 0,
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 11272,
+          "num_statements": 12276
+        }
+      },
+      "failures": [],
+      "passed": true,
+      "tests": 1216
+    },
+    "tree": "68c7e46c9220aad7d7218192ac49114675072e36"
+  },
+  "attempt": 1,
+  "failures": [],
+  "gaps": [],
+  "jobs": {
+    "collect-evidence": 131816885236,
+    "file-checks": 131815067296,
+    "python": 131815066760,
+    "quality": 131815067095
+  },
+  "repository_id": 1450406435,
+  "run_id": 43404405270,
+  "run_number": 145,
+  "schema": "aitm.ci-advisory/v1",
+  "sha": "342b64314ff0966199f23b8efc77519febbad335",
+  "started_at": "2026-11-13T09:48:58Z",
+  "status": "green",
+  "target": "trunk",
+  "workflow_id": 412848571
+}

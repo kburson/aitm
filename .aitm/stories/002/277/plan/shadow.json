@@ -1,0 +1,487 @@
+{
+  "historical": {
+    "decision": {
+      "artifact": null,
+      "attempt": 1,
+      "failures": [
+        "collect-evidence:failure"
+      ],
+      "gaps": [
+        "python:cancelled",
+        "workflow:failure",
+        "check-suite:failure"
+      ],
+      "jobs": {
+        "collect-evidence": 131305726673,
+        "file-checks": 131296097013,
+        "python": 131296097574,
+        "quality": 131296097502
+      },
+      "repository_id": 1450406435,
+      "run_id": 43250904624,
+      "run_number": 140,
+      "schema": "aitm.ci-advisory/v1",
+      "sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+      "started_at": "2026-11-12T15:43:37Z",
+      "status": "red",
+      "target": "trunk",
+      "workflow_id": 412848571
+    },
+    "responses": {
+      "": {
+        "full_name": "kburson/aitm",
+        "id": 1450406435
+      },
+      "actions/runs/43250904624/artifacts?per_page=100": [],
+      "actions/runs/43250904624/attempts/1": {
+        "check_suite_id": 117121304686,
+        "conclusion": "failure",
+        "created_at": "2026-11-12T15:43:37Z",
+        "event": "push",
+        "head_branch": "trunk",
+        "head_repository": {
+          "id": 1450406435
+        },
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 43250904624,
+        "path": ".github/workflows/ci.yml",
+        "repository": {
+          "id": 1450406435
+        },
+        "run_attempt": 1,
+        "run_number": 140,
+        "run_started_at": "2026-11-12T15:43:37Z",
+        "status": "completed",
+        "workflow_id": 412848571
+      },
+      "actions/runs/43250904624/attempts/1/jobs?per_page=100": [
+        {
+          "completed_at": "2026-11-12T15:43:51Z",
+          "conclusion": "success",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131296097013,
+          "name": "file-checks",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:43:40Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-12T15:44:03Z",
+          "conclusion": "success",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131296097502,
+          "name": "quality",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:43:40Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-12T15:58:39Z",
+          "conclusion": "cancelled",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131296097574,
+          "name": "python",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:43:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-12T15:43:38Z",
+          "conclusion": "skipped",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131296099283,
+          "name": "python-base",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:43:38Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-12T15:58:46Z",
+          "conclusion": "failure",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131305726673,
+          "name": "collect-evidence",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:58:41Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-12T15:58:46Z",
+          "conclusion": "skipped",
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 131305805781,
+          "name": "aitm-ci",
+          "run_attempt": 1,
+          "run_id": 43250904624,
+          "started_at": "2026-11-12T15:58:46Z",
+          "status": "completed"
+        }
+      ],
+      "actions/workflows/412848571/runs?branch=trunk&event=push&head_sha=22f265b6aa7c24050c2d798d7e16c1796701cf64&per_page=100": [
+        {
+          "check_suite_id": 117121304686,
+          "conclusion": "failure",
+          "created_at": "2026-11-12T15:43:37Z",
+          "event": "push",
+          "head_branch": "trunk",
+          "head_repository": {
+            "id": 1450406435
+          },
+          "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+          "id": 43250904624,
+          "path": ".github/workflows/ci.yml",
+          "repository": {
+            "id": 1450406435
+          },
+          "run_attempt": 1,
+          "run_number": 140,
+          "run_started_at": "2026-11-12T15:43:37Z",
+          "status": "completed",
+          "workflow_id": 412848571
+        }
+      ],
+      "actions/workflows/ci.yml": {
+        "id": 412848571,
+        "path": ".github/workflows/ci.yml",
+        "state": "active"
+      },
+      "branches/trunk": {
+        "commit": {
+          "sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64"
+        },
+        "name": "trunk",
+        "protected": true
+      },
+      "check-runs/131296097013": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117121304686
+        },
+        "completed_at": "2026-11-12T15:43:51Z",
+        "conclusion": "success",
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 131296097013,
+        "name": "file-checks",
+        "started_at": "2026-11-12T15:43:40Z",
+        "status": "completed"
+      },
+      "check-runs/131296097502": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117121304686
+        },
+        "completed_at": "2026-11-12T15:44:03Z",
+        "conclusion": "success",
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 131296097502,
+        "name": "quality",
+        "started_at": "2026-11-12T15:43:40Z",
+        "status": "completed"
+      },
+      "check-runs/131296097574": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117121304686
+        },
+        "completed_at": "2026-11-12T15:58:39Z",
+        "conclusion": "cancelled",
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 131296097574,
+        "name": "python",
+        "started_at": "2026-11-12T15:43:38Z",
+        "status": "completed"
+      },
+      "check-runs/131305726673": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117121304686
+        },
+        "completed_at": "2026-11-12T15:58:46Z",
+        "conclusion": "failure",
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 131305726673,
+        "name": "collect-evidence",
+        "started_at": "2026-11-12T15:58:41Z",
+        "status": "completed"
+      },
+      "check-suites/117121304686": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "conclusion": "failure",
+        "head_branch": "trunk",
+        "head_sha": "22f265b6aa7c24050c2d798d7e16c1796701cf64",
+        "id": 117121304686,
+        "status": "completed"
+      }
+    }
+  },
+  "live_stale": {
+    "artifact": null,
+    "attempt": 1,
+    "failures": [],
+    "gaps": [
+      "requested run or attempt is no longer current"
+    ],
+    "jobs": {},
+    "repository_id": 1450406435,
+    "run_id": 43404405270,
+    "run_number": 145,
+    "schema": "aitm.ci-advisory/v1",
+    "sha": "342b64314ff0966199f23b8efc77519febbad335",
+    "started_at": "2026-11-13T09:48:58Z",
+    "status": "stale",
+    "target": "trunk",
+    "workflow_id": 412848571
+  },
+  "missing_artifact": {
+    "decision": {
+      "artifact": null,
+      "attempt": 1,
+      "failures": [],
+      "gaps": [
+        "missing or duplicate Python artifact for current attempt"
+      ],
+      "jobs": {
+        "collect-evidence": 131816885236,
+        "file-checks": 131815067296,
+        "python": 131815066760,
+        "quality": 131815067095
+      },
+      "repository_id": 1450406435,
+      "run_id": 43404405270,
+      "run_number": 145,
+      "schema": "aitm.ci-advisory/v1",
+      "sha": "342b64314ff0966199f23b8efc77519febbad335",
+      "started_at": "2026-11-13T09:48:58Z",
+      "status": "incomplete",
+      "target": "trunk",
+      "workflow_id": 412848571
+    },
+    "responses": {
+      "": {
+        "full_name": "kburson/aitm",
+        "id": 1450406435
+      },
+      "actions/runs/43404405270/artifacts?per_page=100": [],
+      "actions/runs/43404405270/attempts/1": {
+        "check_suite_id": 117530541558,
+        "conclusion": "success",
+        "created_at": "2026-11-13T09:48:58Z",
+        "event": "push",
+        "head_branch": "trunk",
+        "head_repository": {
+          "id": 1450406435
+        },
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 43404405270,
+        "path": ".github/workflows/ci.yml",
+        "repository": {
+          "id": 1450406435
+        },
+        "run_attempt": 1,
+        "run_number": 145,
+        "run_started_at": "2026-11-13T09:48:58Z",
+        "status": "completed",
+        "workflow_id": 412848571
+      },
+      "actions/runs/43404405270/attempts/1/jobs?per_page=100": [
+        {
+          "completed_at": "2026-11-13T09:53:48Z",
+          "conclusion": "success",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131815066760,
+          "name": "python",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:49:00Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-13T09:49:25Z",
+          "conclusion": "success",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131815067095,
+          "name": "quality",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:49:00Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-13T09:49:16Z",
+          "conclusion": "success",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131815067296,
+          "name": "file-checks",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:49:00Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-13T09:48:58Z",
+          "conclusion": "skipped",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131815069284,
+          "name": "python-base",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:48:59Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-13T09:53:55Z",
+          "conclusion": "success",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131816885236,
+          "name": "collect-evidence",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:53:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-13T09:53:55Z",
+          "conclusion": "skipped",
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 131816935783,
+          "name": "aitm-ci",
+          "run_attempt": 1,
+          "run_id": 43404405270,
+          "started_at": "2026-11-13T09:53:56Z",
+          "status": "completed"
+        }
+      ],
+      "actions/workflows/412848571/runs?branch=trunk&event=push&head_sha=342b64314ff0966199f23b8efc77519febbad335&per_page=100": [
+        {
+          "check_suite_id": 117530541558,
+          "conclusion": "success",
+          "created_at": "2026-11-13T09:48:58Z",
+          "event": "push",
+          "head_branch": "trunk",
+          "head_repository": {
+            "id": 1450406435
+          },
+          "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+          "id": 43404405270,
+          "path": ".github/workflows/ci.yml",
+          "repository": {
+            "id": 1450406435
+          },
+          "run_attempt": 1,
+          "run_number": 145,
+          "run_started_at": "2026-11-13T09:48:58Z",
+          "status": "completed",
+          "workflow_id": 412848571
+        }
+      ],
+      "actions/workflows/ci.yml": {
+        "id": 412848571,
+        "path": ".github/workflows/ci.yml",
+        "state": "active"
+      },
+      "branches/trunk": {
+        "commit": {
+          "sha": "342b64314ff0966199f23b8efc77519febbad335"
+        },
+        "name": "trunk",
+        "protected": true
+      },
+      "check-runs/131815066760": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117530541558
+        },
+        "completed_at": "2026-11-13T09:53:48Z",
+        "conclusion": "success",
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 131815066760,
+        "name": "python",
+        "started_at": "2026-11-13T09:49:00Z",
+        "status": "completed"
+      },
+      "check-runs/131815067095": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117530541558
+        },
+        "completed_at": "2026-11-13T09:49:25Z",
+        "conclusion": "success",
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 131815067095,
+        "name": "quality",
+        "started_at": "2026-11-13T09:49:00Z",
+        "status": "completed"
+      },
+      "check-runs/131815067296": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117530541558
+        },
+        "completed_at": "2026-11-13T09:49:16Z",
+        "conclusion": "success",
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 131815067296,
+        "name": "file-checks",
+        "started_at": "2026-11-13T09:49:00Z",
+        "status": "completed"
+      },
+      "check-runs/131816885236": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "check_suite": {
+          "id": 117530541558
+        },
+        "completed_at": "2026-11-13T09:53:55Z",
+        "conclusion": "success",
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 131816885236,
+        "name": "collect-evidence",
+        "started_at": "2026-11-13T09:53:50Z",
+        "status": "completed"
+      },
+      "check-suites/117530541558": {
+        "app": {
+          "id": 15368,
+          "slug": "github-actions"
+        },
+        "conclusion": "success",
+        "head_branch": "trunk",
+        "head_sha": "342b64314ff0966199f23b8efc77519febbad335",
+        "id": 117530541558,
+        "status": "completed"
+      }
+    }
+  },
+  "provenance": "shadow-replay-and-live-stale-control"
+}

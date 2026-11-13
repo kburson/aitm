@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 277
 title: "[#133] Verify canonical full-CI evidence for advisory warnings"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/277"
 parent: 133
 children: []
 blocking: [278]
 blocked-by: []
 created: "2026-11-13T05:14:12Z"
-updated: "2026-11-13T10:22:22Z"
+updated: "2026-11-13T10:24:03Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-13-277-canonical-ci-intake-plan.md", "plan/reviews/plan-review.md", "plan/live-current.json", "plan/shadow.json", "plan/shadow.py", "plan/local-test.log"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,7 @@ Read canonical #103 full trunk push metadata and exact attempt jobs. Pin the rep
 ## Reviewed plan
 
 [Implementation plan](plan/2026-11-13-277-canonical-ci-intake-plan.md) · [Independent review](plan/reviews/plan-review.md).
+
+## Test evidence
+
+[Live green](plan/live-current.json) · [Shadow decisions](plan/shadow.json) · [Replay recipe](plan/shadow.py) · [Local tests](plan/local-test.log) · [PR #281](https://github.com/kburson/aitm/pull/281).
