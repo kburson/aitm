@@ -1,0 +1,60 @@
+{
+  "schema": "aitm.claude-folded-origin-spike-preflight/v1",
+  "independent_child_lifecycle_hook_used": false,
+  "structured_scratch_session_start_used": true,
+  "post_enrollment_child_absence_observed_in_writer_process": true,
+  "native_child_prefix_seen_before_metered_response": true,
+  "first_snapshot_rows": 10,
+  "same_physical_child_and_prefix_at_completion": true,
+  "parent_capture_eligible_prompt_to_result_span": [
+    37,
+    46
+  ],
+  "parent_scanner_frames_with_registered_checkout": [
+    37,
+    38,
+    39,
+    41,
+    43,
+    45
+  ],
+  "child_scanner_frames_with_registered_checkout": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    18,
+    19
+  ],
+  "child_span": [
+    0,
+    20
+  ],
+  "selected_request_span": [
+    19,
+    20
+  ],
+  "native_parent_child_identity_join_replayed_without_stdout": true,
+  "unmodified_parent_and_child_scope_reads_refuse_after_discovery": true,
+  "nested_refs_valid_but_have_no_capture_permission": true,
+  "child_epoch_or_claim_issued": false,
+  "journal_mutation": false,
+  "artifact_sha256": {
+    "parent": "89c689bc79a7bdbff2d65c7ec0db0c1e27f89b105ef0b799e068aabb46c4f07b",
+    "child": "41820dee6dec04e4e4972440cdfc9cea35d0821b14f4561a9a12caf88d807d29",
+    "child_metadata": "38343cef3297f90886f7ae69f265d84fc21a4ade9e711851700f1e227dd94051",
+    "native_origin_progress": "5f07cd747c730abf83f3f2ae31dd51c248c286bc772027ba9b4c496b17566614",
+    "registry": "fc41a1c6f201075e69e1ce427639d266fa2d4570f8c6bce998c7c5ab092a7311"
+  }
+}

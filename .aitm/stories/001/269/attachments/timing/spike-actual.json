@@ -1,0 +1,14 @@
+{
+  "story": 269,
+  "coverage": "partial",
+  "basis": "Bounded coordinator progress through two isolated native origin trials",
+  "observation_count": 3,
+  "milliseconds": 10939,
+  "actual_hours": "0.0030",
+  "sources": [
+    {
+      "path": "full-auto-origin-spike-final-269.json",
+      "sha256": "485f9e5657055f692c43041ab94212b081c96a5b3058a2179d6fe40ec63d6040"
+    }
+  ]
+}

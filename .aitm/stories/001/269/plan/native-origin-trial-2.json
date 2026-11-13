@@ -1,0 +1,61 @@
+{
+  "schema": "aitm.claude-folded-origin-spike-preflight/v1",
+  "independent_child_lifecycle_hook_used": false,
+  "structured_scratch_session_start_used": true,
+  "post_enrollment_child_absence_observed_in_writer_process": true,
+  "native_child_prefix_seen_before_metered_response": true,
+  "first_snapshot_rows": 10,
+  "same_physical_child_and_prefix_at_completion": true,
+  "parent_capture_eligible_prompt_to_result_span": [
+    37,
+    47
+  ],
+  "parent_scanner_frames_with_registered_checkout": [
+    37,
+    38,
+    39,
+    41,
+    43,
+    44,
+    46
+  ],
+  "child_scanner_frames_with_registered_checkout": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    18,
+    19
+  ],
+  "child_span": [
+    0,
+    20
+  ],
+  "selected_request_span": [
+    19,
+    20
+  ],
+  "native_parent_child_identity_join_replayed_without_stdout": true,
+  "unmodified_parent_and_child_scope_reads_refuse_after_discovery": true,
+  "nested_refs_valid_but_have_no_capture_permission": true,
+  "child_epoch_or_claim_issued": false,
+  "journal_mutation": false,
+  "artifact_sha256": {
+    "parent": "15fdecf7ebb6ef520763e21b09eb7bf732731b4374251eb34fddfca07ff138e2",
+    "child": "129156bcc297adb31f28826c5af54228ba6449d97d9c5f56bce2381a57ebd104",
+    "child_metadata": "ffbf0a319e648a7afbeeef53c71ab17b4e1d5432190462dc65522d0cef4ac270",
+    "native_origin_progress": "c06dc3a43e83bc54c5d3a78c921250b6039752946018991e046432a88929c4f9",
+    "registry": "bc964a3dc7bd9a389e25c803226c61bdd63316ad4159855774b333e1c4d617da"
+  }
+}

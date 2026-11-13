@@ -1,0 +1,52 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 269,
+  "batch": "full-auto-origin-spike-final",
+  "recorded_at_utc": "2026-11-13T02:11:15.888Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "c98f2959fac8c1d5c20c2c5cf367a6df8097304d312ddc455e72e636ec5e27d6"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.043b5b304159769431b00637",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a7d3d612cba22cbd6222b9d",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-13T02:09:44.011Z",
+      "end_utc": "2026-11-13T02:09:47.758Z"
+    },
+    {
+      "observation_id": "codex.item.b7875cc87d0bedae4974e6cc",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a7d3d612cba22cbd6222b9d",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-13T02:09:47.763Z",
+      "end_utc": "2026-11-13T02:09:49.355Z"
+    },
+    {
+      "observation_id": "codex.item.4b57b3e7eee5e275ffb4d134",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a7d3d612cba22cbd6222b9d",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-13T02:09:56.319Z",
+      "end_utc": "2026-11-13T02:10:01.919Z"
+    }
+  ]
+}

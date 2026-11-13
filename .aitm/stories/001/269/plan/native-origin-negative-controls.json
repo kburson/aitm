@@ -1,0 +1,6 @@
+{
+  "schema": "aitm.claude-folded-origin-negative-controls/v1",
+  "same_size_mutated_fixed_parent_prefix": "refused",
+  "copied_sidecar_reuses_session_stream_and_causes_ordinary_parent_lookup": "refused",
+  "copied_source_approved_for_test_only": true
+}

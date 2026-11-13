@@ -25,3 +25,7 @@ trips: []
 [GitHub #269](https://github.com/kburson/aitm/issues/269) · [Epic #100](../100/story.md) · [#204 independent JIT recovery](../204/plan/claude-folded-origin-independent-jit-r2.md)
 
 Project 24 Rank 228.9 places this evidence spike before #204. Compare native-only origin and a contemporaneous scratch capture witness. The evidence bound is two active agent-hours. The existing #204 → #119 gate continues to govern delivery. A positive needs a distinct original child stream and an authenticated origin, the independently eligible parent and child spans, correct refusals, and restart custody. Publish a sanitized receipt and exact remaining qualification gap. [Exact issue scope](https://github.com/kburson/aitm/issues/269).
+
+## Initial results
+
+Two live trials observed and revalidated the original child file before its first metered response. The unchanged scope writer still refused both files after sidecar discovery, and the child had no eligible capture epoch. [Preflight and remaining qualification](plan/2026-11-12-269-native-origin-preflight.md).
