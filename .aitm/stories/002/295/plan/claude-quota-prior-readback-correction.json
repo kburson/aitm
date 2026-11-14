@@ -1,0 +1,9 @@
+{
+  "schema": "aitm.claude-295-channel-readback-correction/v1",
+  "prior_trace_digests_verified": true,
+  "assistant_stdout_request_field": "request_id",
+  "native_transcript_request_field": "requestId",
+  "assistant_rows_matching_request_message_and_uuid": 3,
+  "prior_zero_request_match_was_field_lookup_error": true,
+  "stdout_quota_and_terminal_lack_request_id": true
+}

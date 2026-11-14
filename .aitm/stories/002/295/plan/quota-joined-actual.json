@@ -1,0 +1,28 @@
+{
+  "story": 295,
+  "sources": [
+    {
+      "path": "full-auto-qualified-overlap-1-295.json",
+      "sha256": "76cf6f815f34511c3495154225af14722c34795ebd2ae6f25aee2eddafb75791"
+    },
+    {
+      "path": "full-auto-quota-carrier-1-295.json",
+      "sha256": "ab768b3da54e45b3d8d1074562851a043c93fbdcd5d395820373ed0e4f449be6"
+    },
+    {
+      "path": "full-auto-quota-joined-1-295.json",
+      "sha256": "b4264b016fbdf7cd9982e5148243188d50e53784bd77569fc0b8b7e6bc3a251e"
+    }
+  ],
+  "observation_count": 50,
+  "milliseconds": 203744,
+  "actual_hours": "0.0566",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-14T23:33:27.977Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ]
+}

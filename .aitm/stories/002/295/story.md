@@ -56,3 +56,7 @@ Use an isolated, allowlisted fixture based on verified retained native producer 
 ## Native quota qualification
 
 The [live Claude qualification](plan/2026-11-14-295-claude-quota-qualification.md) enrolled the scratch stream and replayed two claims after process reopen. The public affected-stream cursor remained absent. Refine stays held.
+
+## Joined quota and completion experiment
+
+The [joined-evidence qualification](plan/2026-11-14-295-claude-joined-evidence.md) inventories 13 prior sessions and verifies two new isolated trials. The scratch join ties CLI completion and the captured quota event to an admitted ordinary request interval. The three-channel trial corroborates account identity. Both unchanged native monitor runs kept the cursor absent. Refine stays held.

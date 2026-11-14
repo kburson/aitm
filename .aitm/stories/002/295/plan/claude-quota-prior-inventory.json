@@ -1,0 +1,157 @@
+{
+  "schema": "aitm.claude-295-experiment-inventory/v1",
+  "basis": "distinct prior retained scope-relevant scratch session UUIDs with original parent JSONL present",
+  "earlier_sessions": 13,
+  "groups": [
+    {
+      "scope": "#204",
+      "retained_sessions": 5,
+      "traces": [
+        {
+          "native_jsonl_sha256": "82057b810b46b51082913956997266db38dc98666b8bf4ec5f58b63e9406482f",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "5dd8689961d93a8f54850ababd0cf7be582729742b36136efc9600a9754d9683",
+          "records": {
+            "session-owner": 2,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "383f152050a87bec208b4114fad552b4e13c8097219937e5b949f0d1e2e252de",
+          "records": {
+            "session-owner": 2,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "aaa4c29f6d9b4b961636f946535452a0fc0425c83da40f544e6c97838bc446fe",
+          "records": {
+            "session-owner": 2,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "e3c43e50d7ba7cb88c158829ac587bbcef99d283542924f6d5b6452fafb7216a",
+          "records": {
+            "session-owner": 2,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        }
+      ]
+    },
+    {
+      "scope": "#269",
+      "retained_sessions": 3,
+      "traces": [
+        {
+          "native_jsonl_sha256": "e3b8410471dfa2e0eeeb64040bed8dba09bf663fe1f9df3ec4770d1847113ca9",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "89c689bc79a7bdbff2d65c7ec0db0c1e27f89b105ef0b799e068aabb46c4f07b",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "15fdecf7ebb6ef520763e21b09eb7bf732731b4374251eb34fddfca07ff138e2",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        }
+      ]
+    },
+    {
+      "scope": "#271/#272",
+      "retained_sessions": 3,
+      "traces": [
+        {
+          "native_jsonl_sha256": "e860c74ab55c6a7f364a64221eab80dc029f043a273940e7693d352dd9a92ba5",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "e85b01914af261f6d29942e6de3b5a4763b2b709b377014bf6b40853b49b3c68",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        },
+        {
+          "native_jsonl_sha256": "51fa2ba2f0efa4882b14bebd80438de97fe575b6b8e5d0df0d36ff3f46ab4209",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        }
+      ]
+    },
+    {
+      "scope": "#282",
+      "retained_sessions": 1,
+      "traces": [
+        {
+          "native_jsonl_sha256": "d20f7f4ed7547940d9fc405cc8750e70c5c35174bd90638cf4354e3eccf4435f",
+          "records": {
+            "session-owner": 3,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        }
+      ]
+    },
+    {
+      "scope": "#295 prior",
+      "retained_sessions": 1,
+      "traces": [
+        {
+          "native_jsonl_sha256": "a3c03a4bd53e4d0af3f80beb131dbb1c5a69abc38274321148424ccae814fc9c",
+          "records": {
+            "session-owner": 2,
+            "cost-state": 1,
+            "rate_limit_event": 0,
+            "result": 0
+          }
+        }
+      ]
+    }
+  ],
+  "new_scratch_sessions": 2,
+  "runtime_invocations_per_new_session": 2,
+  "includes_fixture_variants_and_replays": false
+}

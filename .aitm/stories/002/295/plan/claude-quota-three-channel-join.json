@@ -1,0 +1,25 @@
+{
+  "schema": "aitm.claude-three-channel-corroboration/v1",
+  "issue": 295,
+  "admitted_request_span": [
+    39,
+    41
+  ],
+  "capture_generation": 1,
+  "private_loopback_receiver_required_run_specific_header": true,
+  "same_provider_request_id": true,
+  "same_native_prompt_and_session": true,
+  "same_native_account_and_organization": true,
+  "four_usage_categories_match": true,
+  "otel_client_request_id_matches_native_internal_id": false,
+  "quota_events_inside_captured_turn": 1,
+  "cross_checks": {
+    "account": true,
+    "request": true,
+    "prompt": true,
+    "counter": true,
+    "duplicate": true
+  },
+  "receipt_sha256": "9318db7ac61640b5b77a89dc2e0f775b8462aa1582ccf50af32f62772172147a",
+  "monitor_account_authorization_or_cursor_established": false
+}

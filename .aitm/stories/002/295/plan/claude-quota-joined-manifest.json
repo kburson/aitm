@@ -1,0 +1,24 @@
+{
+  "schema": "aitm.claude-295-joined-evidence-manifest/v1",
+  "scratch_program_digests": {
+    "pipe": {
+      "probe.py": "27ed68bb4af6a5cf520581e8eafc52ffa47c05e465cf664b2f3a9aaf0011f09f",
+      "verify.py": "c80d206aa9dd1d7615531cd072608b6a6a3eadd0ca1602a74d9c0d4ded6b6c6e"
+    },
+    "three_channel": {
+      "probe.py": "b901ecc09d7915a8e8842ddd9e29d6eb69715204b673b119780037aa4647a9e6",
+      "verify.py": "c80d206aa9dd1d7615531cd072608b6a6a3eadd0ca1602a74d9c0d4ded6b6c6e",
+      "verify-otel.py": "6ba7395394b4b369ece5eecb578442839fe6dac560ee1ef0557d05028a066675"
+    }
+  },
+  "published_receipts": {
+    "claude-quota-three-channel-monitor-readback.json": "dcdc61beeeee86471ea312937b56c88a31c0c1b36a923841af540f27c3bbcedd",
+    "claude-quota-qualification.json": "cc08decc9a85e9c3be116844de3b62d4b85546c8cd8a656f4dfbe965260d79f5",
+    "claude-quota-channel-readback.json": "eaf6bc09ee7cb334f23a6985e5c3792dca2358ee25701a4572e604b555582135",
+    "claude-quota-prior-inventory.json": "89447c61fa26293a4898c728c14014f7c3bf4453ae137d23455e62c4d3594a9d",
+    "claude-quota-reopen.json": "1925e9a7b73852ea482157b7ff22f80762a13e7e7b5e2cd23c21ec77f8f0dd40",
+    "claude-quota-prior-readback-correction.json": "0edbe3cca6581004757fbfbb56197f5a2c1742f5cc402d17434afa414ba3085b",
+    "claude-quota-pipe-join.json": "ec9159b101b3185d327e983a257f99fd6a42f8a981d3b851e107e2c5d2c6df97",
+    "claude-quota-three-channel-join.json": "d94f8b4c8ed561e4688be7f06398499e974bfa967e4c99c7198d6e30b4323795"
+  }
+}
