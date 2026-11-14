@@ -1,0 +1,72 @@
+{
+  "schema": "aitm.claude-cursor-retained-prefix-controls/v1",
+  "selection": "five previously authorized disposable Claude trial parent transcripts",
+  "controls": [
+    {
+      "run": "282-telemetry",
+      "available": true,
+      "trace_sha256": "d20f7f4ed7547940d9fc405cc8750e70c5c35174bd90638cf4354e3eccf4435f",
+      "row_counts": {
+        "session-owner": 3,
+        "rate_limit_event": 0,
+        "result": 0,
+        "assistant": 4
+      }
+    },
+    {
+      "run": "269-live",
+      "available": true,
+      "trace_sha256": "e3b8410471dfa2e0eeeb64040bed8dba09bf663fe1f9df3ec4770d1847113ca9",
+      "row_counts": {
+        "session-owner": 3,
+        "rate_limit_event": 0,
+        "result": 0,
+        "assistant": 5
+      }
+    },
+    {
+      "run": "272-fresh-origin",
+      "available": true,
+      "trace_sha256": "51fa2ba2f0efa4882b14bebd80438de97fe575b6b8e5d0df0d36ff3f46ab4209",
+      "row_counts": {
+        "session-owner": 3,
+        "rate_limit_event": 0,
+        "result": 0,
+        "assistant": 5
+      }
+    },
+    {
+      "run": "272-native-run",
+      "available": true,
+      "trace_sha256": "e860c74ab55c6a7f364a64221eab80dc029f043a273940e7693d352dd9a92ba5",
+      "row_counts": {
+        "session-owner": 3,
+        "rate_limit_event": 0,
+        "result": 0,
+        "assistant": 5
+      }
+    },
+    {
+      "run": "272-start-control",
+      "available": true,
+      "trace_sha256": "e85b01914af261f6d29942e6de3b5a4763b2b709b377014bf6b40853b49b3c68",
+      "row_counts": {
+        "session-owner": 3,
+        "rate_limit_event": 0,
+        "result": 0,
+        "assistant": 5
+      }
+    }
+  ],
+  "production_sample": false,
+  "282_stdout": {
+    "sha256": "74f64ec8fac68d7a6dd19c977d5387029e509355efc7dc2f3c0cd0fa3b219830",
+    "session_join_verified": true,
+    "row_counts": {
+      "rate_limit_event": 2,
+      "result": 2
+    },
+    "scope_adapter_currently_consumes_stdout": false
+  },
+  "finding": "Retained #282 stdout and its parent JSONL are distinct native sources. Session matching supplies corroboration only. The approved file reader does not consume stdout, and it does not establish separate account authority."
+}
