@@ -1,0 +1,19 @@
+{
+  "schema": "aitm.refine-preflight/v1",
+  "issue": 295,
+  "trunk": "a85d088fdb0a4e36c78b848cc1c2bd1b1f2b08b2",
+  "current_checkout_package_tree_matches": true,
+  "scratch_test_sha256": "a5fd1d183f703d695cbae7e818e510e45be474b60c7da57b2a945937c96bcc05",
+  "monitor_preflight_tests_passed": 4,
+  "legacy_account_controls_passed": 11,
+  "focused_results": {
+    "ordinary_claude_claim": true,
+    "ordinary_claude_prior_cursor": false,
+    "independent_healthy_cursor": true,
+    "existing_native_overlap_and_mixed_diagnostic_cases": 2,
+    "existing_cases_use_direct_cursor_setup": true,
+    "legacy_parser_account_authority_supported": true,
+    "monitor_claude_read_receives_account_authority": false
+  },
+  "scope": "isolated read-only carrier verification, no product change"
+}

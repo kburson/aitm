@@ -48,3 +48,7 @@ Use an isolated, allowlisted fixture based on verified retained native producer 
 - [ ] Run the four named tests red on literal trunk. Implement the bounded journal changes and run the named tests green with `test_monitor_journal.py`, `test_monitor_scope.py`, `test_monitor_registry.py` and locked lint. Record the exact regression evidence and commit M08b6. Use the existing hosted and source-review delivery gates.
 
 [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) · [Independent verdict](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/qualified-source-review-r3.md).
+
+## Refine hold
+
+[Independent Refine](plan/claude-overlap-refine-r1.md) held on the unproven ordinary Claude accounting cursor and estimate. The submitted packet also omitted its literal-trunk and amendment references. [Corrected Refine draft](plan/2026-11-14-295-claude-overlap-refine.md) · [Reproduced controls](plan/claude-overlap-preflight.json) · [Proposed carrier qualification](plan/2026-11-14-295-claude-cursor-carrier-proposal.md). JIT awaits a qualifying carrier and accepted Refine.

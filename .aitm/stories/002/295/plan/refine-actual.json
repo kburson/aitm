@@ -1,0 +1,20 @@
+{
+  "story": 295,
+  "sources": [
+    {
+      "path": "full-auto-qualified-overlap-1-295.json",
+      "sha256": "76cf6f815f34511c3495154225af14722c34795ebd2ae6f25aee2eddafb75791"
+    }
+  ],
+  "observation_count": 30,
+  "milliseconds": 134540,
+  "actual_hours": "0.0374",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-14T13:20:30.901Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ]
+}

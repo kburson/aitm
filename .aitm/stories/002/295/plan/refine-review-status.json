@@ -1,0 +1,16 @@
+{
+  "schema": "aitm.independent-refine/v1",
+  "issue": 295,
+  "attempt": 1,
+  "verdict": "HOLD",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "literal_trunk": "a85d088fdb0a4e36c78b848cc1c2bd1b1f2b08b2",
+  "input_sha256": "2f3572149f273aba71713a2b3404dfce4151236f0a3bd30307d07180d1a53f35",
+  "submitted_scope_sha256": "da6ad41c4cd6a2aaf459d629d8bd4178ce696089d89be2f7eea55f25952d5114",
+  "response_sha256": "8bf5b3e41975c08db70313b590f87440a090872114abd59d305a696285be222d",
+  "verdict_sha256": "52741b3d5bd50a7eb0fee7ca930f60d492d825064a518355a0ad4667abdc0afd",
+  "estimate_proposed_agent_hours": 4,
+  "estimate_accepted": false,
+  "jit_started": false
+}
