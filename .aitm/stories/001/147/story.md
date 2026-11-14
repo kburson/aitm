@@ -7,10 +7,10 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/147"
 parent: 133
 children: []
-blocking: [149]
+blocking: [149, 292]
 blocked-by: [139, 140]
 created: "2026-11-10T16:51:19Z"
-updated: "2026-11-12T03:53:24Z"
+updated: "2026-11-14T13:12:59Z"
 last-branch: "codex/aitm-wave30-147"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
