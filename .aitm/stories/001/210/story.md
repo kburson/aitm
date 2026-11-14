@@ -7,7 +7,7 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
-blocking: [119, 204]
+blocking: [119, 204, 295]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
 updated: "2026-11-12T16:20:55+00:00"
@@ -76,3 +76,5 @@ The independent [exact source review](plan/settlement-source-review.md) passed o
 [PR #266](https://github.com/kburson/aitm/pull/266) delivered merge `766504a02aaeb9dda339d588172dd7d5bdbd2b3f` to literal trunk. Ordered parents and exact signed tree were verified with zero diff from the accepted candidate. [Delivery](plan/settlement-verified-delivery.json) · [Final signature](plan/settlement-premerge-signature.json) · [Implementer retrospective](retro/2026-11-12-210-implementer-retrospective.md).
 
 The [native Close readback](plan/settlement-native-close.json) verified Closed Completed and Project Done, Rank 228.2, Size M, Start 2026-11-12, Estimate 4.4 hours and Actual 0.6914 hours partial. Both #204 prerequisites are now closed. #119 still depends on the open #204. [Partial Close Actual](attachments/timing/paired-settlement-close-actual.json).
+
+[Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) also makes #210 the completed prerequisite of [#295](../../002/295/story.md).

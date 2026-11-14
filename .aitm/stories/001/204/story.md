@@ -7,7 +7,7 @@ state: "refine"
 issue: "https://github.com/kburson/aitm/issues/204"
 parent: 100
 children: []
-blocking: [119]
+blocking: [296]
 blocked-by: [203, 210, 270]
 created: "2026-11-10T23:50:22Z"
 updated: "2026-11-12T16:22:28+00:00"
@@ -61,3 +61,7 @@ The unchanged writer enrolled the parent before the Agent call. The full tool-to
 [#269 completed its evidence investigation with an authority HOLD](../269/plan/2026-11-12-269-writer-admission-close.md). The existing writer could arm a unique child source before metered usage. Its two later observations still had a different stream identity, so neither supplied a boundary and the writer issued no child epoch. The covering parent route also remained unavailable. #204 stays in Refine and continues to block #119.
 
 [#270 writer admission](../270/story.md) supplies the original authority prerequisite from #269. Keep #204 open and its direct #119 dependency in force.
+
+## Qualified-source release dependency
+
+This story remains open for original ownership and folded intent. [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) replaces only the direct edge to #119 and assigns the later atomic delivery proof to [#296](../../002/296/story.md), which requires both #204 and #119.

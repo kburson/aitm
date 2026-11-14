@@ -7,8 +7,8 @@ state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
-blocking: [120, 122]
-blocked-by: [118, 199, 201, 202, 203, 204, 209, 210]
+blocking: [120, 122, 296]
+blocked-by: [118, 199, 201, 202, 203, 209, 210, 295]
 created: "2026-11-10T13:58:01Z"
 updated: "2026-11-11T02:41:48+00:00"
 last-branch: "planning"
@@ -50,4 +50,4 @@ The [accepted M08b4 split](../203/plan/2026-11-10-203-disposition-proof-split.md
 
 ## Qualified-source release re-acceptance
 
-The [exact R3 amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) passed [independent re-acceptance](plan/qualified-source-review-r3.md). [Review status and exact digests](plan/qualified-source-review-status.json). Native graph change awaits verified installation of the replacement and folded follow-up.
+The [exact R3 amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) passed [independent re-acceptance](plan/qualified-source-review-r3.md). [Review status and exact digests](plan/qualified-source-review-status.json). [M08b6 #295](../../002/295/story.md) was verified as the direct replacement before removing #204’s edge. [M09-Folded #296](../../002/296/story.md) depends on #119 and #204. #119 enters Refine after verified delivery of #295. The amended M09 section of R3 supersedes the frozen excerpt above. [Native graph readback](plan/qualified-source-graph-readback.json).

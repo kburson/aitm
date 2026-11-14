@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 182, 194, 118, 199, 201, 202, 203, 209, 210, 204, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137, 182, 194, 199, 201, 202, 203, 204, 209, 210, 295, 296]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -83,3 +83,7 @@ The independently reviewed M08b split narrows [#199](../199/story.md) to the wri
 ## Production Cost qualification from #181
 
 Monitor completion includes #123 fenced reports and #124 versioned exports with approved receiver-fixture qualification. [#230](../../002/230/story.md) moved to Core #2 for the live integration check, after #51. [Dependency replan](../../002/230/plan/2026-11-11-230-cost-dependency-replan.md).
+
+## Qualified-source release amendment
+
+[Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) assigns [M08b6 #295](../../002/295/story.md) as a direct prerequisite of #119. [M09-Folded #296](../../002/296/story.md) owns the later positive delivery proof. See the [verified native graph](../119/plan/qualified-source-graph-readback.json).

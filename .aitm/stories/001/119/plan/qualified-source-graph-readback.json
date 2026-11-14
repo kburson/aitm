@@ -1,0 +1,206 @@
+{
+  "schema": "aitm.qualified-source-graph/v1",
+  "amendment_sha256": "75d073bda40f545f53f0dac6429dca571875592b864f72a37d17509698d0fd3c",
+  "acceptance_commit": "54f2a7f93668d1a5c744be8a8a654a51b073e2cc",
+  "plan_key_to_issue": {
+    "M08b6": 295,
+    "M09-Folded": 296
+  },
+  "119_before": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 204,
+      "state": "open"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    }
+  ],
+  "119_verified_before_deleting_204": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 204,
+      "state": "open"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 295,
+      "state": "open"
+    }
+  ],
+  "119_after": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 295,
+      "state": "open"
+    }
+  ],
+  "204_incoming_before": [
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 270,
+      "state": "open"
+    }
+  ],
+  "204_incoming_after": [
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 270,
+      "state": "open"
+    }
+  ],
+  "204_after": {
+    "number": 204,
+    "state": "open"
+  },
+  "replacement": {
+    "parent": {
+      "number": 100,
+      "state": "open"
+    },
+    "board_at_verification": {
+      "actual": null,
+      "coverage": null,
+      "estimate": null,
+      "id": "PVTI_lAHOABCEY84Bq1hZzhIsy1A",
+      "issue": 295,
+      "rank": 229.1,
+      "repository": "kburson/aitm",
+      "size": null,
+      "start": null,
+      "status": "Backlog"
+    },
+    "incoming": [
+      {
+        "number": 210,
+        "state": "closed"
+      }
+    ],
+    "outgoing": [
+      {
+        "number": 119,
+        "state": "open"
+      }
+    ]
+  },
+  "folded": {
+    "parent": {
+      "number": 100,
+      "state": "open"
+    },
+    "board_at_verification": {
+      "actual": null,
+      "coverage": null,
+      "estimate": null,
+      "id": "PVTI_lAHOABCEY84Bq1hZzhIszDU",
+      "issue": 296,
+      "rank": 230.1,
+      "repository": "kburson/aitm",
+      "size": null,
+      "start": null,
+      "status": "Backlog"
+    },
+    "incoming": [
+      {
+        "number": 119,
+        "state": "open"
+      },
+      {
+        "number": 204,
+        "state": "open"
+      }
+    ],
+    "outgoing": []
+  }
+}

@@ -36,6 +36,7 @@
       "route": "isolated provider CLI with sealed input digest"
     }
   ],
-  "native_graph_mutated": false,
-  "decision": "accepted exact R3; native graph step pending"
+  "native_graph_mutated": true,
+  "decision": "accepted exact R3; native graph swap verified",
+  "graph_receipt": "qualified-source-graph-readback.json"
 }
