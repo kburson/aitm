@@ -1,0 +1,63 @@
+{
+  "schema": "aitm.claude-quota-qualification/v1",
+  "issue": 295,
+  "literal_trunk": "a85d088fdb0a4e36c78b848cc1c2bd1b1f2b08b2",
+  "package_tree": "eb4b4bfb1a1314004ac3e20f7bdbfde84713842c",
+  "native_build": "Claude Code 2.1.318 macOS arm64",
+  "native_build_sha256": "677a2ea7bf576cedd20e191d973914ed8a41796f53a63b1923381ddc4d5b5e7d",
+  "mode": "tool-free stream-json with live prospective scratch enrollment, then process exit and independent writer reopen",
+  "native_capture_generation": 1,
+  "measured_ordinary_complete_requests": 1,
+  "native_account_owner_present_and_consistent": true,
+  "independent_monitor_account_authority_established": false,
+  "native_prefix_sha256": "a3c03a4bd53e4d0af3f80beb131dbb1c5a69abc38274321148424ccae814fc9c",
+  "stream_json_stdout_sha256": "59b09bf46c6e6b964dc5a54693528680c1edbd1a72bfdc1547ca52cb7cda321b",
+  "native_file_record_counts": {
+    "assistant": 3,
+    "api-request": 3,
+    "session-owner": 2,
+    "rate_limit_event": 0,
+    "result": 0
+  },
+  "matching_stdout_record_counts": {
+    "assistant": 3,
+    "api-request": 0,
+    "session-owner": 0,
+    "rate_limit_event": 1,
+    "result": 3
+  },
+  "matching_stdout_structured_rate_events": 1,
+  "journal_during_provider_process": {
+    "before_cursor_present": false,
+    "after_cursor_present": false,
+    "after_cursor_matches_prepared": false,
+    "diagnostics": {
+      "coverage-gap": 1,
+      "unreconciled-usage": 3
+    },
+    "claim_count": 2,
+    "prepared_candidates": 2,
+    "reservation_results": {
+      "pending": 2
+    },
+    "journal_sequence": 1
+  },
+  "journal_after_separate_writer_reopen": {
+    "before_cursor_present": false,
+    "after_cursor_present": false,
+    "after_cursor_matches_prepared": false,
+    "diagnostics": {
+      "coverage-gap": 1,
+      "unreconciled-usage": 3
+    },
+    "claim_count": 2,
+    "prepared_candidates": 2,
+    "reservation_results": {
+      "replay": 2
+    },
+    "journal_sequence": 1
+  },
+  "affected_cursor_qualified": false,
+  "production_data_or_state_used": false,
+  "gate_changes": false
+}

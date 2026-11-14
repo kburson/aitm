@@ -1,0 +1,13 @@
+# #295 Claude quota qualification
+
+**Disposition: HOLD.** The live qualification ran against the AITM usage package tree on literal trunk `a85d088fdb0a4e36c78b848cc1c2bd1b1f2b08b2` with Claude Code 2.1.318 on macOS arm64. A tool-free synthetic warmup provided the original transcript. The existing registry armed and verified the first prospective capture boundary in that file, then an ordinary measured turn completed. The test used a scratch project, source approval, registry, journal and writer.
+
+The approved JSONL and the process stdout were recorded separately. The admitted JSONL held three assistant requests and two consistent session-owner rows. The same-session stdout held three successful terminal results and one structured rate-limit event. The JSONL held zero terminal result rows and zero rate-limit events. Three assistant message IDs matched across the sources. The rate-limit and terminal stdout events carried no explicit request ID. Matching messages corroborates the process and file relationship. It establishes neither independent monitor account authority nor a qualifying binding for those events.
+
+In the live monitor, public `prepare`, `reserve_batch` and `cursor_for` produced two pending claims and no affected-stream cursor. A separate process reopened the same scratch writer and journal against the unchanged original prefix. Both claims replayed at the same journal sequence. The cursor remained absent. Both reads reported one `COVERAGE_GAP` and three `UNRECONCILED_USAGE` diagnostics. The deployed-path classifier must preserve both. The focused suite passed 17 tests covering legacy Claude account controls, Codex writer-local quota proof, ordinary Claude hold and independent healthy-stream progress.
+
+The current approved Claude file reader has no independent account binding or authenticated input for the separate stdout events. The next candidate is a reviewed design for authenticating both channels and preserving exact terminal, request, account and admitted-prefix binding. Any future design needs a way to prove that binding independently of matching assistant message IDs. No claim was made about other Claude versions or surfaces. Raw data and provider IDs remain private.
+
+#295 remains in Refine. Its estimate awaits independent acceptance. The cursor gate has not passed, so Refine and JIT were not rerun. The verified blocker graph and #204’s open status were re-read. Epic #2, C01 and production cutover were outside this run.
+
+[Live receipt](claude-quota-qualification.json) · [Cross-channel readback](claude-quota-channel-readback.json) · [Reopened journal readback](claude-quota-reopen.json).

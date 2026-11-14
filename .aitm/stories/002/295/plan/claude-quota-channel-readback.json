@@ -1,0 +1,15 @@
+{
+  "schema": "aitm.claude-quota-channel-readback/v1",
+  "both_channel_hashes_match": true,
+  "counts": {
+    "matched_native_and_stdout_assistant_message_ids": 3,
+    "native_file_distinct_assistant_message_ids": 3,
+    "stdout_distinct_assistant_message_ids": 3,
+    "matched_request_and_message_ids": 0,
+    "stdout_assistants_missing_provider_request_id": 3,
+    "stdout_quota_events_with_explicit_provider_request_id": 0,
+    "stdout_terminals_with_explicit_provider_request_id": 0
+  },
+  "source_join_only": true,
+  "original_account_authority_or_terminal_binding_proven": false
+}

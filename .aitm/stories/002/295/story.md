@@ -52,3 +52,7 @@ Use an isolated, allowlisted fixture based on verified retained native producer 
 ## Refine hold
 
 [Independent Refine](plan/claude-overlap-refine-r1.md) held on the unproven ordinary Claude accounting cursor and estimate. The submitted packet also omitted its literal-trunk and amendment references. [Corrected Refine draft](plan/2026-11-14-295-claude-overlap-refine.md) · [Reproduced controls](plan/claude-overlap-preflight.json) · [Proposed carrier qualification](plan/2026-11-14-295-claude-cursor-carrier-proposal.md). JIT awaits a qualifying carrier and accepted Refine.
+
+## Native quota qualification
+
+The [live Claude qualification](plan/2026-11-14-295-claude-quota-qualification.md) enrolled the scratch stream and replayed two claims after process reopen. The public affected-stream cursor remained absent. Refine stays held.
