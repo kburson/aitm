@@ -50,4 +50,4 @@ The [accepted M08b4 split](../203/plan/2026-11-10-203-disposition-proof-split.md
 
 ## Qualified-source release re-acceptance
 
-The independent initial and recovery reviews returned HOLD. [Review status and exact digests](plan/qualified-source-review-status.json). The [revised amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) addresses the review findings and awaits independent acceptance. #204 remains a direct prerequisite. No replacement issue or edge has been activated.
+The [exact R3 amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) passed [independent re-acceptance](plan/qualified-source-review-r3.md). [Review status and exact digests](plan/qualified-source-review-status.json). Native graph change awaits verified installation of the replacement and folded follow-up.

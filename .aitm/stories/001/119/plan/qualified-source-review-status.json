@@ -21,12 +21,21 @@
       "amendment_sha256": "7faeb4139ff316d056aa3fb77013e6e4549262df3865454d40829faaef73e758",
       "input_sha256": "c369109c7f42ff654e54fd256522f934f93cfd8db6cc6850bb31eb64ba16a621",
       "verdict_sha256": "6bd30eb72172832fd63553c26dec09d9405ea0c012005b5b24f1b8ba184a5602"
+    },
+    {
+      "attempt": 3,
+      "model": "claude-opus-5-5",
+      "effort": "high",
+      "verdict": "PASS",
+      "amendment": "2026-11-13-119-qualified-sources-reacceptance-r3.md",
+      "amendment_sha256": "75d073bda40f545f53f0dac6429dca571875592b864f72a37d17509698d0fd3c",
+      "input_sha256": "c4d0702d7513032d10de826350bb460a232b50f147079b204c996a60b58189df",
+      "verdict_sha256": "4042407fe6d3461ae1da0c3295e7fc0808c45c3928b21b07db21364cdd037099",
+      "response_sha256": "42dcce3bc7756568358a0ef484544f8a9b1344847bb47a33829a624315297c84",
+      "authority": "explicit additional R3 independent review authorization",
+      "route": "isolated provider CLI with sealed input digest"
     }
   ],
   "native_graph_mutated": false,
-  "next_candidate": {
-    "amendment": "2026-11-13-119-qualified-sources-reacceptance-r3.md",
-    "sha256": "75d073bda40f545f53f0dac6429dca571875592b864f72a37d17509698d0fd3c",
-    "status": "prepared-awaiting-review"
-  }
+  "decision": "accepted exact R3; native graph step pending"
 }
