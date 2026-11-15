@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from hashlib import file_digest, sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from threading import RLock
+from threading import RLock, get_ident
 from time import monotonic
 from typing import BinaryIO
 from urllib.parse import quote
@@ -224,6 +224,8 @@ class _Issuer:
         )
         self._run = secrets.token_hex(24)
         self._generation = 0
+        self._owner_thread = get_ident()
+        self._revoked = False
         self._deadline = 0.0
         self._expires: datetime | None = None
         self._committed: bytes | None = None
@@ -250,7 +252,8 @@ class _Issuer:
 
     def _check_custody(self) -> None:
         if (
-            self._writer.lease is not self._lease
+            get_ident() != self._owner_thread
+            or self._writer.lease is not self._lease
             or _directory(str(self._writer.root), private=True) != self._root
         ):
             raise _refuse()
@@ -308,10 +311,12 @@ class _Issuer:
             ):
                 raise _refuse()
 
-    def commit(self, payload: bytes, signature: bytes) -> None:
-        """Apply a signed next revision through the scratch writer's lease."""
+    def _commit(
+        self, payload: bytes, signature: bytes, allowed: tuple[str, ...]
+    ) -> int:
+        """Publish the next authorized revision while the owning caller holds the lock."""
         try:
-            with self._lock, _pin_directory(self._writer.root) as pin:
+            with _pin_directory(self._writer.root) as pin:
                 self._check_custody()
                 self._image.check()
                 proposal = json.loads(payload)
@@ -320,7 +325,9 @@ class _Issuer:
                 expires = datetime.fromisoformat(proposal["valid_until"])
                 now = datetime.now(UTC)
                 if (
-                    type(generation) is not int
+                    self._revoked
+                    or operation not in allowed
+                    or type(generation) is not int
                     or generation != self._generation + 1
                     or operation
                     not in (
@@ -328,6 +335,7 @@ class _Issuer:
                         if self._generation == 0
                         else ("replace", "revoke")
                     )
+                    or expires.utcoffset() != timedelta(0)
                     or not timedelta(0) < expires - now <= _MAX_VALIDITY
                     or payload != self.proposal(operation, generation, expires)
                     or _read_private(pin, _REVISION_FILE) != self._committed
@@ -351,21 +359,16 @@ class _Issuer:
                 self._generation = generation
                 self._deadline = deadline
                 self._expires = expires
-                if operation == "revoke":
-                    # Retain the last profile for private refusal provenance. Its currentness is gone.
-                    self._deadline = 0.0
-                else:
-                    self._writer._live_profile = _LiveProfile(
-                        self._root,
-                        self._lease,
-                        self._evidence.pseudonymize(
-                            "isolated-issuer-generation-v1", f"{self._run}:{generation}"
-                        ),
-                        (self._installation,),
-                        lambda installation: self.current(installation, generation),
-                    )
+                return generation
         except Exception:
             raise _refuse() from None
+
+    def revoke(self, payload: bytes, signature: bytes) -> None:
+        with self._lock:
+            self._commit(payload, signature, ("revoke",))
+            # The last profile supplies private refusal provenance but cannot be reactivated.
+            self._revoked = True
+            self._deadline = 0.0
 
     def current(self, installation: _InstallationProof, generation: int) -> bool:
         try:
@@ -374,6 +377,7 @@ class _Issuer:
                 if (
                     installation is not self._installation
                     or generation != self._generation
+                    or self._revoked
                     or self._expires is None
                     or monotonic() >= self._deadline
                     or datetime.now(UTC) >= self._expires
@@ -393,7 +397,7 @@ class _Issuer:
             return False
 
 
-def _install_isolated_profile(
+def _prepare_isolated_issuer(
     writer: Registry,
     layout: _PilotLayout,
     image: _OpenedExecutable,
@@ -411,3 +415,22 @@ def _install_isolated_profile(
         raise _refuse()
     witness = _collect_host_installation(layout, image, closure)
     return _Issuer(writer, layout, image, source, witness, closure, public)
+
+
+def _install_isolated_profile(
+    issuer: _Issuer, payload: bytes, signature: bytes
+) -> _InstallationProof:
+    """Install the exact proof after an authenticated activation or replacement."""
+    with issuer._lock:
+        generation = issuer._commit(payload, signature, ("activate", "replace"))
+        proof = issuer._installation
+        issuer._writer._live_profile = _LiveProfile(
+            issuer._root,
+            issuer._lease,
+            issuer._evidence.pseudonymize(
+                "isolated-issuer-generation-v1", f"{issuer._run}:{generation}"
+            ),
+            (proof,),
+            lambda installation: issuer.current(installation, generation),
+        )
+        return proof

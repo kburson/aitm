@@ -44,7 +44,6 @@ def installed(tmp_path, monkeypatch):
         tmp_path / "image",
         native.transcripts,
     )
-    monkeypatch.setattr(pilot, "_collect_host_installation", lambda *_: "a" * 64)
 
     def sign(payload):
         return subprocess.run(
@@ -65,33 +64,55 @@ def installed(tmp_path, monkeypatch):
     from hashlib import sha256
 
     digest = sha256(binary.read_bytes()).hexdigest()
-    monkeypatch.setattr(
-        pilot,
-        "_approved_pilot_tuple",
-        lambda candidate: expected if candidate == digest else None,
-    )
-    with (
-        native.registry.writer() as writer,
-        pilot._OpenedExecutable.copy(binary, tmp_path / "image" / "candidate") as image,
-    ):
-        owner = key.with_suffix(".pub").read_bytes()
-        issuer = pilot._install_isolated_profile(writer, layout, image, None, owner)
-        now = datetime.now(UTC)
+    original_resolver = pilot._approved_pilot_tuple
+    original_collector = pilot._collect_host_installation
+    with monkeypatch.context() as host:
+        host.setattr(pilot, "_collect_host_installation", lambda *_: "a" * 64)
+        host.setattr(
+            pilot,
+            "_approved_pilot_tuple",
+            lambda candidate: expected if candidate == digest else None,
+        )
+        with (
+            native.registry.writer() as writer,
+            pilot._OpenedExecutable.copy(
+                binary, tmp_path / "image" / "candidate"
+            ) as image,
+        ):
+            owner = key.with_suffix(".pub").read_bytes()
+            issuer = pilot._prepare_isolated_issuer(writer, layout, image, None, owner)
+            now = datetime.now(UTC)
 
-        def activate():
-            payload = issuer.proposal("activate", 1, now + timedelta(minutes=5))
-            issuer.commit(payload, sign(payload))
+            def activate():
+                payload = issuer.proposal("activate", 1, now + timedelta(minutes=5))
+                return pilot._install_isolated_profile(issuer, payload, sign(payload))
 
-        def revoke():
-            payload = issuer.proposal("revoke", 2, now + timedelta(minutes=5))
-            issuer.commit(payload, sign(payload))
+            def revoke():
+                payload = issuer.proposal("revoke", 2, now + timedelta(minutes=5))
+                issuer.revoke(payload, sign(payload))
 
-        yield native, writer, issuer, activate, revoke, sign
+            yield native, writer, issuer, activate, revoke, sign
+
+    assert pilot._approved_pilot_tuple is original_resolver
+    assert pilot._collect_host_installation is original_collector
+    with native.registry.writer() as reopened:
+        assert reopened._live_profile is None
+        with pytest.raises(_LiveSourceUnavailable):
+            ScopeState(reopened).read_source(SOURCE, native.locator())
 
 
 def _durable(journal, native):
+    view = journal.as_of()
+    with journal._store.transaction() as conn:
+        (tip,) = conn.execute(
+            "SELECT COALESCE(MAX(sequence), 0) FROM commits"
+        ).fetchone()
+        assert view.sequence == tip
+        assert conn.execute("SELECT count(*) FROM claims").fetchone() == (
+            len(view.claims),
+        )
     return (
-        journal.as_of(),
+        view,
         journal.cursor_for(SOURCE, native.locator()),
         journal.coverage_changes(0),
     )
@@ -131,6 +152,11 @@ def test_admission_drives_private_denial_without_a_journal_change(
 
     before = _durable(journal, native)
     original_view = writer.view()
+    (source,) = original_view.sources
+    original_profile = writer._live_profile
+    expected_installation = writer.source_evidence().pseudonymize(
+        "excluded-installation", f"{SOURCE}:{source.directory.identity}"
+    )
     revoke()
     assert writer.view() == original_view
     routes = [lambda: journal.reserve_batch(prepared)]
@@ -140,11 +166,12 @@ def test_admission_drives_private_denial_without_a_journal_change(
     for reserve in routes:
         with pytest.raises(_LiveSourceUnavailable) as captured:
             reserve()
+        assert type(captured.value) is _LiveSourceUnavailable
         if admitted:
             decision = captured.value.decision
             assert decision is not None and decision.source_id == SOURCE
-            writer.source_evidence().validate_source_ref(decision.installation)
-            writer.source_evidence().validate_source_ref(decision.generation)
+            assert decision.installation == expected_installation
+            assert decision.generation == original_profile.generation
         else:
             assert captured.value.decision is None
         assert _durable(journal, native) == before
@@ -174,16 +201,18 @@ def test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed(
 
 
 def test_valid_owner_signature_is_bound_to_revision_and_lease(installed):
+    from aitm_usage import _isolated_qualification as pilot
+
     native, writer, issuer, activate, _, sign = installed
     expires = datetime.now(UTC) + timedelta(minutes=5)
     proposal = issuer.proposal("activate", 1, expires)
     bogus = issuer.proposal("activate", 1, expires + timedelta(seconds=1))
     with pytest.raises(LedgerError):
-        issuer.commit(bogus, sign(proposal))
+        pilot._install_isolated_profile(issuer, bogus, sign(proposal))
     assert writer._live_profile is None
     activate()
     with pytest.raises(LedgerError):
-        issuer.commit(proposal, sign(proposal))
+        pilot._install_isolated_profile(issuer, proposal, sign(proposal))
     assert RoutingJournal(writer, ScopeState(writer)).prepare(SOURCE, native.locator())
     saved_view = writer.view()
     with _pin_directory(writer.root) as root:
@@ -240,59 +269,92 @@ def test_product_issuer_and_exclusion_consumers_have_fixed_entry_points():
 
     repo = Path(__file__).resolve().parents[3]
     package = repo / "packages" / "aitm-usage"
-    source = package / "src"
     runner = repo / "tools" / "qualification" / "isolated_grok_pilot.py"
-    imported = []
-    installers = []
-    consumers = []
-    confirmation_calls = []
-    recorder_calls = []
-    for path in [*source.rglob("*.py"), *sorted((repo / "tools").rglob("*.py"))]:
-        if "tests" in path.parts:
+    issuer = package / "src" / "aitm_usage" / "_isolated_qualification.py"
+    private_symbols = {
+        "_isolated_qualification",
+        "_install_isolated_profile",
+        "_prepare_isolated_issuer",
+    }
+    excluded = {".git", ".venv", "tests", "node_modules", ".scratch", "build", "dist"}
+    imports, activation_calls, prepare_calls = [], [], []
+    consumers, confirmation_calls, recorder_calls = [], [], []
+    for path in sorted(repo.rglob("*.py")):
+        if excluded.intersection(path.relative_to(repo).parts) or path.is_symlink():
             continue
         module = ast.parse(path.read_bytes())
         for node in ast.walk(module):
-            if isinstance(node, (ast.Import, ast.ImportFrom)) and (
-                "_isolated_qualification" in ast.unparse(node)
-                or "_install_isolated_profile" in ast.unparse(node)
+            if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
+                symbol in ast.unparse(node) for symbol in private_symbols
             ):
-                imported.append(path)
-            if not isinstance(node, ast.FunctionDef):
-                continue
-            for child in ast.walk(node):
-                if isinstance(child, ast.Call):
-                    name = getattr(child.func, "id", getattr(child.func, "attr", None))
-                    if name == "_install_isolated_profile":
-                        installers.append(path)
-                    elif name == "_confirm_live_exclusion":
-                        confirmation_calls.append((path.name, node.name))
-                    elif name == "_record_live_exclusion":
-                        recorder_calls.append((path.name, node.name))
-                if isinstance(child, ast.ExceptHandler) and any(
-                    isinstance(item, ast.Attribute)
-                    and item.attr == "decision"
-                    and isinstance(item.ctx, ast.Load)
-                    for item in ast.walk(child)
-                ):
-                    consumers.append((path.name, node.name))
-    assert imported == [runner]
-    assert installers == [runner]
-    assert sorted(consumers) == [
-        ("monitor_journal.py", "prepare"),
-        ("monitor_scope.py", "_confirm_live_exclusion"),
-    ]
-    assert confirmation_calls == [
-        ("monitor_journal.py", "_record_live_exclusion"),
-        ("monitor_journal.py", "_record_live_exclusion"),
-    ]
-    assert recorder_calls == [("monitor_journal.py", "prepare")]
-    scripts = tomllib.loads((package / "pyproject.toml").read_text())["project"][
-        "scripts"
-    ]
-    assert all("qualification" not in entry for entry in scripts.values())
+                imports.append(path)
+            if isinstance(node, ast.Constant) and type(node.value) is str:
+                assert not any(symbol in node.value for symbol in private_symbols)
+            if isinstance(node, ast.Call):
+                name = getattr(node.func, "id", getattr(node.func, "attr", None))
+                if name == "_install_isolated_profile":
+                    activation_calls.append(path)
+                elif name == "_prepare_isolated_issuer":
+                    prepare_calls.append(path)
+                elif name == "_confirm_live_exclusion":
+                    confirmation_calls.append(path.name)
+                elif name == "_record_live_exclusion":
+                    recorder_calls.append(path.name)
+            if isinstance(node, ast.ExceptHandler) and any(
+                isinstance(item, ast.Attribute)
+                and item.attr == "decision"
+                and isinstance(item.ctx, ast.Load)
+                for item in ast.walk(node)
+            ):
+                consumers.append(path.name)
+            if (
+                path != issuer
+                and isinstance(node, ast.Attribute)
+                and node.attr in private_symbols
+            ):
+                pytest.fail("Private issuer reflection outside its defining module")
+    assert imports == [runner]
+    assert activation_calls == [runner]
+    assert prepare_calls == [runner]
+    assert sorted(consumers) == ["monitor_journal.py", "monitor_scope.py"]
+    assert confirmation_calls == ["monitor_journal.py", "monitor_journal.py"]
+    assert recorder_calls == ["monitor_journal.py"]
+    for path in repo.rglob("pyproject.toml"):
+        if excluded.intersection(path.relative_to(repo).parts):
+            continue
+        project = tomllib.loads(path.read_text()).get("project", {})
+        entry_points = project.get("entry-points", {})
+        for group in (
+            project.get("scripts", {}),
+            project.get("gui-scripts", {}),
+            *entry_points.values(),
+        ):
+            assert all("qualification" not in entry for entry in group.values())
+
+
+def test_closed_resolver_cannot_copy_the_unpatched_codex_fixture(tmp_path):
+    from hashlib import sha256
+
+    from aitm_usage import _isolated_qualification as pilot
+
+    binary = tmp_path / "unqualified"
+    binary.write_bytes(b"exact installed image")
+    digest = sha256(binary.read_bytes()).hexdigest()
+    selected = pilot._approved_pilot_tuple(pilot._GROK_DIGEST)
+    assert selected == _LiveSourceTuple(
+        "grok", "grok-build-macos", "Darwin", "arm64", "1.0.77", 1
+    )
+    for unqualified in (digest, "0" * 64, "", pilot._GROK_DIGEST.upper()):
+        assert pilot._approved_pilot_tuple(unqualified) is None
+    with pytest.raises(LedgerError):
+        with pilot._OpenedExecutable.copy(binary, tmp_path / "wrong"):
+            pytest.fail("Unqualified binary could be copied")
+    assert not (tmp_path / "wrong").exists()
 
 
 def test_signed_supersession_invalidates_the_prior_generation(installed):
+    from aitm_usage import _isolated_qualification as pilot
+
     native, writer, issuer, activate, _, sign = installed
     activate()
     locator = native.locator()
@@ -302,7 +364,7 @@ def test_signed_supersession_invalidates_the_prior_generation(installed):
     (installation,) = profile.installations
     assert profile.current(installation)
     proposal = issuer.proposal("replace", 2, datetime.now(UTC) + timedelta(minutes=2))
-    issuer.commit(proposal, sign(proposal))
+    pilot._install_isolated_profile(issuer, proposal, sign(proposal))
     assert not profile.current(installation)
     assert writer._live_profile.current(installation)
     with pytest.raises(_LiveSourceUnavailable):
@@ -324,3 +386,23 @@ def test_currentness_preserves_cancellation(installed, monkeypatch):
     monkeypatch.setattr(pilot, "_read_private", cancelled)
     with pytest.raises(KeyboardInterrupt):
         journal.reserve_batch(prepared)
+
+
+def test_revocation_is_terminal_and_writer_thread_is_private(installed):
+    from concurrent.futures import ThreadPoolExecutor
+
+    from aitm_usage import _isolated_qualification as pilot
+
+    native, writer, issuer, activate, revoke, sign = installed
+    proof = activate()
+    assert type(proof) is pilot._InstallationProof
+    with ThreadPoolExecutor(max_workers=1) as task:
+        assert task.submit(writer._live_profile.current, proof).result() is False
+    revoke()
+    next_proposal = issuer.proposal(
+        "replace", 3, datetime.now(UTC) + timedelta(minutes=2)
+    )
+    with pytest.raises(LedgerError):
+        pilot._install_isolated_profile(issuer, next_proposal, sign(next_proposal))
+    with pytest.raises(_LiveSourceUnavailable):
+        ScopeState(writer).read_source(SOURCE, native.locator())

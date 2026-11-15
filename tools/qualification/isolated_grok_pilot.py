@@ -27,6 +27,7 @@ from aitm_usage._isolated_qualification import (
     _NativeClosure,
     _OpenedExecutable,
     _PilotLayout,
+    _prepare_isolated_issuer,
 )
 from aitm_usage.install import _BSDProcessInfo, _libproc, _process_identity
 from aitm_usage.ledger import (
@@ -327,7 +328,7 @@ def _prove(
         timeout=10,
         capture_output=True,
     )
-    issuer = _install_isolated_profile(
+    issuer = _prepare_isolated_issuer(
         writer, layout, image, closure, key.with_suffix(".pub").read_bytes()
     )
 
@@ -342,7 +343,12 @@ def _prove(
             timeout=10,
             capture_output=True,
         ).stdout
-        issuer.commit(proposal, signature)
+        if operation == "revoke":
+            issuer.revoke(proposal, signature)
+        else:
+            proof = _install_isolated_profile(issuer, proposal, signature)
+            if proof is not writer._live_profile.installations[0]:
+                raise _fail("exact installed proof")
 
     commit("activate", 1)
     evidence = writer.source_evidence()
@@ -394,11 +400,12 @@ def _prove(
     commit("revoke", 2)
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
+    refusal = None
     try:
         scopes.view(batch)
-    except _LiveSourceUnavailable:
-        pass
-    else:
+    except _LiveSourceUnavailable as error:
+        refusal = error
+    if type(refusal) is not _LiveSourceUnavailable or refusal.decision is not None:
         raise _fail("post-revoke recheck")
     return {
         "schema": "aitm.isolated-grok-pilot/v1",
@@ -418,6 +425,42 @@ def _prove(
         "qualified_scope_boundaries": len(batch.boundaries),
         "post_revoke_refused": True,
         "journal_cursor_exercised": False,
+    }
+
+
+def _source_binding() -> dict[str, str]:
+    runner = Path(__file__).resolve()
+    repo = runner.parents[2]
+    package = repo / "packages" / "aitm-usage" / "src" / "aitm_usage"
+    module = sys.modules[_install_isolated_profile.__module__]
+    issuer = Path(module.__file__).resolve()
+    with_source = subprocess.run(
+        [
+            "/usr/bin/git",
+            "-C",
+            str(repo),
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+        ],
+        capture_output=True,
+        check=True,
+        timeout=10,
+    ).stdout
+    if with_source or issuer.parent != package:
+        raise _fail("exact source binding")
+    head, tree = subprocess.run(
+        ["/usr/bin/git", "-C", str(repo), "rev-parse", "HEAD", "HEAD^{tree}"],
+        capture_output=True,
+        check=True,
+        timeout=10,
+        text=True,
+    ).stdout.splitlines()
+    return {
+        "commit": head,
+        "tree": tree,
+        "runner_sha256": sha256(runner.read_bytes()).hexdigest(),
+        "issuer_sha256": sha256(issuer.read_bytes()).hexdigest(),
     }
 
 
@@ -474,7 +517,11 @@ def main() -> int:
         if args.hook is not None and args.grok is None and args.auth_file is None:
             _hook(args.hook)
         elif args.hook is None and args.grok is not None and args.auth_file is not None:
-            print(_canonical(_pilot(args.grok, args.auth_file)).decode())
+            binding = _source_binding()
+            evidence = _pilot(args.grok, args.auth_file)
+            if _source_binding() != binding:
+                raise _fail("end-to-end source binding")
+            print(_canonical(evidence | {"source": binding}).decode())
         else:
             parser.error(
                 "provide the exact installed Grok executable and its owner-authorized login file"
