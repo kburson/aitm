@@ -1744,6 +1744,10 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         disputed = journal.as_of()
         assert disputed.claims == saved.claims
         (record,) = disputed.content_disputes
+        (content_change,) = journal.dispute_changes(saved.sequence)
+        assert content_change.dispute.record == record
+        candidate = journal.publication_candidate(content_change)
+        assert candidate.basis == "content"
         assert record.key == contender.observation.key and record.project_id == A
         assert record.sequence == outcome.sequence == saved.sequence + 1
         assert record.common == rival_proof.witness.successor_material
@@ -1770,6 +1774,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
 
     with registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
+        assert journal.publication_candidate(content_change) == candidate
         live = journal.prepare(native.source_id, native.locator())
         outcomes = [
             journal.reserve(candidate, live.progress).status
@@ -3121,3 +3126,86 @@ def test_paired_settlement_can_follow_a_coverage_first_v6_upgrade(
     assert journal.coverage_changes(0) == (event,)
     with journal._store.transaction() as connection:
         assert journal._store._current_version(connection) == 6
+
+
+def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(native):
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    for number in (3, 4):
+        native.append(LIVE, native.turn(number))
+        native.append(COPY, native.turn(number, checkout=B))
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        owner = journal.prepare(LIVE, native.locator())
+        journal.reserve_batch(owner)
+        contender = journal.prepare(COPY, native.locator(COPY))
+        assert [d.status for d in journal.reserve_batch(contender)].count(
+            "disputed"
+        ) == 2
+        before = journal.as_of()
+        first, second = journal.dispute_changes(0)
+        assert first.sequence == second.sequence
+        assert (first.dispute.record, second.dispute.record) == before.disputes
+        one = journal.publication_candidate(first)
+        two = journal.publication_candidate(second)
+        assert one.basis == two.basis == "ownership"
+        assert one.identity != two.identity
+        assert journal.publication_candidate(first) == one
+        assert journal.as_of() == before
+        for false in (
+            replace(first.dispute, row_digest="0" * 64),
+            replace(first.dispute, identity=two.identity),
+            replace(
+                first.dispute,
+                identity=native.ledgers[A].pseudonymize(
+                    "foreign-journal-proof", "candidate"
+                ),
+            ),
+            replace(first.dispute, record=second.dispute.record),
+        ):
+            for _ in range(2):
+                with pytest.raises(LedgerError):
+                    journal.publication_candidate(replace(first, dispute=false))
+        with journal._store.transaction(write=True) as connection:
+            connection.execute(
+                "UPDATE disputes SET evidence=? WHERE key=?",
+                (b"{}", first.dispute.record.key.value),
+            )
+        with pytest.raises(LedgerError):
+            journal.publication_candidate(first)
+        assert journal.publication_candidate(second) == two
+
+
+def test_journal_only_candidates_refuse_pre_content_dispute_schema(native):
+    from aitm_usage._monitor_journal_store import _open
+    from aitm_usage.monitor_journal import JournalChange, RoutingJournal
+
+    native.append(LIVE, native.turn(3))
+    native.append(COPY, native.turn(3, checkout=B))
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        for source in (LIVE, COPY):
+            prepared = journal.prepare(source, native.locator(source))
+            journal.reserve_batch(prepared)
+        (change,) = journal.dispute_changes(0)
+        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
+        with _open(database, write=True) as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("DROP TABLE route_dispositions")
+            conn.execute("DROP TABLE content_disputes")
+            conn.execute("PRAGMA user_version = 2")
+            conn.execute("COMMIT")
+        for read in (
+            lambda: journal.dispute_changes(0),
+            lambda: journal.publication_candidate(change),
+        ):
+            with pytest.raises(LedgerError):
+                read()
+        with _open(database, write=False) as conn:
+            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
+            assert conn.execute("SELECT count(*) FROM disputes").fetchone() == (1,)
+        for field in ("coverage", "paired", "disposition"):
+            with pytest.raises(ValueError):
+                JournalChange(
+                    change.sequence, dispute=change.dispute, **{field: object()}
+                )
