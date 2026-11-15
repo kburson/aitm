@@ -1,0 +1,28 @@
+{
+  "story": 303,
+  "state": "develop",
+  "branch": "codex/aitm-303-source-qualification",
+  "base": "ea73031baedfb37e9e6336b064ac34a1f57059a6",
+  "usage_package_tree": "ede965e7fcb8682d86ea9869820a5715f8360eef",
+  "source_map_sha256": "75e8f4fa550ca45a9913644053ca4c13d6bfd741dc240ea6d584ddf97a7e4e14",
+  "jit_publication": "ab741f66e6a076755c03f876885ae0ded4868cb4",
+  "required_predecessor": 210,
+  "direct_successors": [
+    119,
+    129,
+    300,
+    304
+  ],
+  "project": {
+    "actual": 0.0093,
+    "coverage": "Partial coordinator Refine and JIT intervals. Provider, tool and wait time excluded.",
+    "estimate": 2.7,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0O8A",
+    "issue": 303,
+    "rank": 229.055,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Dev"
+  }
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -52,3 +52,7 @@ The exact plan remains in Planning while the reviewed blockers are addressed. [R
 ## Independent JIT attempt 2
 
 Passed on the exact attached plan. Develop follows the current native graph and trunk readback. [Review](plan/source-qualification-independent-jit-r2.md).
+
+## Develop
+
+Exact independent JIT passed and GitHub confirms #210 closed, the current dependency graph and the Dev transition. [Native readback](plan/qualification-develop-native.json).
