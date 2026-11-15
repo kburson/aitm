@@ -1,0 +1,15 @@
+{
+  "story": 122,
+  "gate": "JIT",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "jit-result.json": "c649a81c8201ee97917a2495e648a276d60699f2fe0430df4254a9e508f6868c",
+    "recovery-fence-independent-jit-r1.md": "993fb05b7d8f9d06d0abf3d5f59910b7604dc5f26898dea1e0976acd32547359",
+    "jit-input.md": "605fd1b3525a94790c56c4cd702164f1d76219cd39666ad07d4b8875657078a2",
+    "2026-11-15-122-recovery-publication-fence-jit.md": "5d05f06a3ed47ff54ebe9f1ed5f1a09b498ed7bccb286ff31b36bab540e224d5"
+  }
+}

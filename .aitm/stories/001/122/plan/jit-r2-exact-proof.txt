@@ -1,0 +1,449 @@
+## Exact carried proof
+Literal trunk ab9db80098849e323d5122eb47bf48f377107058
+
+Exact candidate fields, construction and service identity
+    def __post_init__(self) -> None:
+        if type(self.record) not in (OwnershipDispute, ContentDispute):
+            raise ValueError("Expected one routing journal dispute")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationCandidate:
+    """A private verified journal-only candidate awaiting the recovery fence."""
+
+    sequence: int
+    basis: _CandidateBasis
+    identity: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
+                    ):
+                        raise ValueError("Dispute differs from its durable row")
+                    basis = (
+                        _CandidateBasis.OWNERSHIP
+                        if type(verified.dispute.record) is OwnershipDispute
+                        else _CandidateBasis.CONTENT
+                    )
+                    material = verified.dispute.identity.value
+                else:
+                    raise ValueError("Unexpected journal change type")
+                identity = _publication_reference(
+                    evidence,
+                    "monitor-journal-publication-v1",
+                    basis,
+                    change.sequence,
+                    material,
+                )
+                return PublicationCandidate(change.sequence, basis, identity)
+@dataclass(frozen=True, slots=True)
+class _ServiceEvidence:
+    """Stable source-only references independent of destination project keys."""
+
+    key: bytes = field(repr=False)
+
+    @property
+    def key_id(self) -> str:
+        return sha256(self.key).hexdigest()
+
+    def as_of(self) -> LedgerView:
+        namespace = UUID(
+            bytes=hmac.digest(self.key, b"monitor-source-namespace/v1", "sha256")[:16]
+        )
+        return LedgerView(namespace, 0, (), ())
+
+    def _tag(self, digest: str) -> str:
+        return hmac.digest(
+            self.key, b"monitor-source-proof/v1\0" + bytes.fromhex(digest), "sha256"
+        ).hex()
+
+    def pseudonymize(self, namespace: str, raw_reference: str) -> SourceRef:
+        if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", namespace) or not raw_reference:
+            raise ValueError("Expected a monitor source namespace and identifier")
+        message = f"monitor-source-ref/v1\0{namespace}\0{raw_reference}".encode()
+        digest = hmac.digest(self.key, message, "sha256").hex()
+        return SourceRef(f"hmac-sha256:{digest}:{self._tag(digest)}")
+
+    def validate_source_ref(self, reference: SourceRef) -> None:
+        if type(reference) is not SourceRef:
+            raise LedgerError("Unverified monitor source reference")
+        _, digest, tag = reference.value.split(":")
+        if not hmac.compare_digest(tag, self._tag(digest)):
+            raise LedgerError("Unverified monitor source reference")
+
+
+
+Existing private proof, publication and rollback source
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:165:def _copy_snapshot(reader: sqlite3.Connection, destination: Path) -> None:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:220:def _authority_names(ledger: Ledger, view: LedgerView) -> tuple[str, ...]:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:581:def _swap_store(project: _PinnedPath, staged: _PinnedPath) -> None:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/ledger.py:278:def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/ledger.py:335:def _physical_ancestry(
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/scopes.py:274:def _publish(
+
+Delivered exact node control
+Commit ab9db80098849e323d5122eb47bf48f377107058
+Tree 1344a37f6d5133a734781fe58dbc4ab70d39ee5a
+Working directory packages/aitm-usage
+Command uv run --locked pytest -q -p no:cacheprovider --basetemp "$runtime/pytest" tests/test_monitor_coverage.py::test_unqualified_source_gap_publishes_without_project_write_or_ack
+.                                                                        [100%]
+1 passed in 1.05s
+
+M16 monitor snapshot and separate current tail boundary
+### M16. Coordinated backup, legacy adoption and rollback
+
+**Files** Extend `S/backup.py`, `S/monitor_recovery.py`, `S/install.py` and `S/cli.py`. Add `T/test_monitor_cutover.py`.
+
+**Contract** `capture_monitor_backup(store: MonitorStore, destination: Path) -> MonitorBackupReceipt` and `adopt_legacy(request: LegacyAdoption, receipt: MonitorBackupReceipt) -> LegacyBaseline`. Back up the journal, keys and ledger vector with pending routes. Verify the separate current recovery tail. Adopt the existing UUID, key, cutoff and ledger sequence under the original writer guard. Fence new projects behind proven enrollment baselines and reconcile provider activity during stop exactly once. `CutoverController.activate(request: ApprovedCutover, qualification: TargetQualification) -> ActivationReceipt` owns the ordered sequence. Confirm exact runtime and target qualification, verify independent recovery currentness, capture and verify the legacy backup, stop legacy collection, acquire the original guard, confirm the final checkpoint and frozen export, then verify the rollback bundle matches that stopped checkpoint. If the legacy writer advanced after backup, capture and verify a matching replacement bundle under the guard or refuse before schema migration. Record and transfer exact pending legacy commands and freeze ingress, then adopt the schema under the guard and verify the replacement in write-disabled readiness mode. Install production hooks only within the authorized cutover. Rollback removes exact owned hook entries and preserves foreign changes. If an owned entry cannot be safely removed, prove it inert under legacy service and record it. Enable writes only after the authorized cutover receipt binds those results. Before enabling writes, persist the adopted project ledger identities, head sequences and journal checkpoint as the rollback fence. Recovery checks the guarded durable project and journal state against that fence. A project commit beyond the fence is a write even if ACK or a separate marker was interrupted. Restore and restart legacy only when the absence of new durable usage writes and publication is proven. If a write exists or absence cannot be verified, preserve the state and require proven compatible rollback or forward recovery. A portable restore needs independently authenticated current-tail evidence outside the restored material.
+Commit ab9db80098849e323d5122eb47bf48f377107058
+Tree 1344a37f6d5133a734781fe58dbc4ab70d39ee5a
+Command uv run --locked pytest -q -p no:cacheprovider --basetemp "$runtime/pytest" tests/test_monitor_journal.py::test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence
+.                                                                        [100%]
+1 passed in 0.80s
+
+## Existing two-distinct-candidates regression
+def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(native):
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    for number in (3, 4):
+        native.append(LIVE, native.turn(number))
+        native.append(COPY, native.turn(number, checkout=B))
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        owner = journal.prepare(LIVE, native.locator())
+        journal.reserve_batch(owner)
+        contender = journal.prepare(COPY, native.locator(COPY))
+        assert [d.status for d in journal.reserve_batch(contender)].count(
+            "disputed"
+        ) == 2
+        before = journal.as_of()
+        first, second = journal.dispute_changes(0)
+        assert first.sequence == second.sequence
+        assert (first.dispute.record, second.dispute.record) == before.disputes
+        one = journal.publication_candidate(first)
+        two = journal.publication_candidate(second)
+        assert one.basis == two.basis == "ownership"
+        assert one.identity != two.identity
+        assert journal.publication_candidate(first) == one
+        assert journal.as_of() == before
+        for false in (
+            replace(first.dispute, row_digest="0" * 64),
+            replace(first.dispute, identity=two.identity),
+
+## Read-only candidate and held private writer API
+    def coverage_changes(self, after_sequence: int) -> tuple[JournalChange, ...]:
+        """Read verified sanitized coverage in private journal commit order."""
+        with self._store.transaction() as connection:
+            if type(after_sequence) is not int or not 0 <= after_sequence <= _tip(
+                connection
+            ):
+                raise ValueError("Journal coverage sequence is unavailable")
+            if self._store._current_version(connection) < _COVERAGE_SCHEMA_VERSION:
+                return ()
+            evidence = self._store.evidence
+            return tuple(
+                _stored_coverage(row, evidence)
+                for row in connection.execute(
+                    _COVERAGE_ROWS + " WHERE s.sequence>? ORDER BY s.sequence",
+                    (after_sequence,),
+                )
+            )
+
+            )
+        )
+
+    def dispute_changes(self, after_sequence: int) -> tuple[JournalChange, ...]:
+        """Read exact stored disputes while preserving the public historical projection."""
+        with self._store.transaction() as connection:
+            try:
+                if type(after_sequence) is not int or not 0 <= after_sequence <= _tip(
+                    connection
+                ):
+                    raise ValueError("Invalid journal watermark")
+                return self._dispute_changes_in(connection, after_sequence)
+            except (ValueError, LedgerError):
+                raise LedgerError(
+                    "Verified journal-only publication is unavailable"
+                ) from None
+
+    def publication_candidate(self, change: JournalChange) -> PublicationCandidate:
+        self._live_profile: _LiveProfile | None = None
+        self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
+        self._frontiers: dict[_CaptureKey, tuple[CaptureChange, CaptureFrontier]] = {}
+        self._verified: dict[_CaptureKey, VerifiedBoundary] = {}
+        self._completed: dict[_CaptureKey, VerifiedBoundary] = {}
+
+    @contextmanager
+    def writer(self) -> Iterator["Registry"]:
+        _ensure_private_directory(self.root)
+        with _lease(self.root / _COORDINATOR_FILE, create=True) as lease:
+            writer = Registry(self.root, lease)
+            try:
+                yield writer
+            finally:
+                writer._writer = None
+
+    @property
+    def lease(self) -> _PinnedPath:
+        if self._writer is None:
+            raise LedgerError("Monitor coordinator lease is required")
+        self._writer.check()
+        return self._writer
+
+    def view(self, *, _confirm_publication: bool = False) -> RegistryView:
+        if not _path_exists(self.root):
+            return RegistryView()
+        with _pin_directory(self.root) as root:
+            data = _read_state(root, _STATE_FILE, _MAX_REGISTRY_BYTES)
+            if data is not None and _confirm_publication:
+                # A previous atomic replacement may have failed its directory sync.
+                os.fsync(root.fd)
+            item.command_id == command_id and item.digest == digest
+            for item in self.view().pending_capture
+        ):
+            return "proof-unavailable"
+        return None
+
+    def source_evidence(self) -> _ServiceEvidence:
+        """Read or explicitly initialize the coordinator's source-only key."""
+        self.lease
+        state = self.view()
+        with _pin_directory(self.root) as root:
+            key = _read_private(root, _SOURCE_KEY_FILE)
+            if key is None and state.source_key_id is None:
+                if not _publish(root, _SOURCE_KEY_FILE, os.urandom(32)):
+                    raise LedgerError("Monitor source key already exists")
+                key = _read_private(root, _SOURCE_KEY_FILE)
+        if key is None or len(key) != 32:
+            raise LedgerError("Monitor source key is unavailable")
+        evidence = _ServiceEvidence(key)
+        if state.source_key_id is None:
+            self._save(replace(state, source_key_id=evidence.key_id))
+        elif state.source_key_id != evidence.key_id:
+            raise LedgerError("Monitor source key changed")
+        return evidence
+
+    def _register(
+
+## Pin, physical alias check and publication semantics
+    try:
+        info = path.lstat()
+        _private(info, directory=directory)
+        _check_acl(path)
+        if not os.path.samestat(info, path.lstat()):
+            raise LedgerError("Private ledger path changed")
+    except OSError:
+        raise LedgerError("Private ledger path is unavailable") from None
+
+def _sync_directory(path: Path) -> None:
+    try:
+        fd = os.open(path, os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except OSError:
+        raise LedgerError("Unable to synchronize private ledger directory") from None
+
+
+@dataclass(frozen=True, slots=True)
+class _PinnedPath:
+    path: Path
+    fd: int
+    directory: bool
+    identities: tuple[tuple[int, int], ...]
+
+    def check(self) -> None:
+        try:
+            info = os.fstat(self.fd)
+            _private(info, directory=self.directory)
+            _check_acl(self.fd)
+        except OSError:
+            raise LedgerError("Private ledger descriptor is unavailable") from None
+        if self.identities[-1] != _path_id(info) or self.identities != _validated_path(
+            self.path, directory=self.directory
+        ):
+            raise LedgerError("Pinned private ledger path changed")
+
+
+@contextmanager
+def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+    identities = _validated_path(path, directory=True)
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError:
+        raise LedgerError("Private ledger directory is unavailable") from None
+    try:
+        pin = _PinnedPath(path, fd, True, identities)
+        pin.check()
+        yield pin
+    finally:
+        os.close(fd)
+
+
+
+def _physical_ancestry(
+    path: Path,
+) -> tuple[tuple[tuple[int, int], tuple[str, ...]], ...]:
+    # Each existing directory anchors the remaining path, including a missing tail.
+    components = tuple(
+        unicodedata.normalize("NFC", part).casefold() for part in path.parts
+    )
+    return tuple(
+        (identity, components[depth:])
+        for depth, identity in enumerate(
+            _validated_path(path, directory=True, allow_missing=True), start=1
+        )
+    )
+
+
+def _guard_path(root: Path, project_id: UUID) -> Path:
+    if type(project_id) is not UUID:
+        raise LedgerError("A project UUID is required")
+    control = _project_path(_control_root())
+    project_ancestry = _physical_ancestry(root)
+    # APFS firmlinks can share a physical ancestor without sharing its path spelling.
+    for control_identity, control_tail in _physical_ancestry(control):
+        for project_identity, project_tail in project_ancestry:
+            if control_identity == project_identity:
+                length = min(len(control_tail), len(project_tail))
+                if control_tail[:length] == project_tail[:length]:
+                    raise LedgerError("Writer guard must be outside project state")
+def _publish(
+    directory: _PinnedPath,
+    name: str,
+    data: bytes,
+    *,
+    replace_pending: bool = False,
+    before_commit: Callable[[], None] | None = None,
+) -> bool:
+    """Publish fsynced bytes relative to a pinned private directory."""
+    directory.check()
+    temporary = f".publishing-{secrets.token_hex(16)}"
+    fd = os.open(
+        temporary,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o600,
+        dir_fd=directory.fd,
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            os.fchmod(fd, 0o600)
+            _private(os.fstat(fd))
+            _check_acl(fd)
+            handle.write(data)
+            handle.flush()
+            os.fsync(fd)
+        directory.check()
+        if before_commit is not None:
+            before_commit()
+        if replace_pending:
+            os.replace(
+                temporary, name, src_dir_fd=directory.fd, dst_dir_fd=directory.fd
+            )
+        else:
+            try:
+                if not publish_noreplace(directory.fd, temporary, directory.fd, name):
+                    return False
+            except HostFilesystemError:
+                raise LedgerError("Unable to publish private inbox file") from None
+        os.fsync(directory.fd)
+        directory.check()
+        return True
+    finally:
+        try:
+            os.unlink(temporary, dir_fd=directory.fd)
+        except FileNotFoundError:
+            pass
+
+
+## Exact delivered Claude fixture
+from dataclasses import replace
+from pathlib import Path
+from shutil import copytree
+
+import pytest
+from test_monitor_qualification import qualify
+from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
+
+from aitm_usage.ledger import LedgerError
+from aitm_usage.monitor_journal import RoutingJournal
+from aitm_usage.monitor_registry import Registry, _directory
+from aitm_usage.monitor_scope import ScopeState
+
+
+@pytest.fixture
+def admitted_sources(tmp_path, monkeypatch):
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+    authority = object()
+    with monkeypatch.context() as setup:
+        setup.setattr(Registry, "_require_live_source", lambda *_, **__: authority)
+        native = NativeScopeFixture(tmp_path, monkeypatch)
+        claude = ClaudeScopeFixture(native)
+        with native.registry.writer() as writer:
+            claude.approve(writer)
+    return native, claude
+
+
+def store_version(journal):
+    with journal._store.transaction() as connection:
+        return journal._store._current_version(connection)
+
+
+
+    native, claude = admitted_sources
+    source = claude.locator()
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        qualify(writer)
+        prepared = journal.prepare(SOURCE, native.locator())
+        journal.reserve_batch(prepared)
+        assert store_version(journal) == 4
+        sequence = journal.as_of().sequence
+        seed = writer.source_evidence().pseudonymize("partial-test", "coverage")
+        forged = JournalCoverage(
+            _CoverageReason.UNQUALIFIED_SOURCE,
+            seed,
+            seed,
+            _CoverageExtent.UNKNOWN,
+            datetime.now(UTC),
+        )
+        with pytest.raises(LedgerError):
+            journal.publication_candidate(JournalChange(sequence, coverage=forged))
+        with pytest.raises(LedgerError, match="qualification"):
+            journal.prepare(claude.source_id, source)
+        (change,) = journal.coverage_changes(0)
+        before = journal.as_of()
+        prior = journal.cursor_for(claude.source_id, source)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(Ledger, "open", project_access)
+            patch.setattr(Ledger, "writer", project_access)
+            candidate = journal.publication_candidate(change)
+            assert (
+                candidate.basis == "coverage" and candidate.sequence == change.sequence
+            )
+            writer.source_evidence().validate_source_ref(candidate.identity)
+            assert journal.publication_candidate(change) == candidate
+            assert journal.as_of() == before
+            assert journal.cursor_for(claude.source_id, source) is prior is None
+            assert journal.coverage_changes(0) == (change,)
+        with pytest.raises(LedgerError):
+            journal.publication_candidate(replace(change, sequence=change.sequence + 1))
+        with pytest.raises(LedgerError):
+            journal.publication_candidate(JournalChange(change.sequence))
+        with pytest.raises(LedgerError):
+            journal.publication_candidate(
+                replace(
+                    change,
+                    coverage=replace(change.coverage, reason="UNQUALIFIED_SOURCE"),
+                )
+            )
+
+## Monitor exporter search and declared M16 owner
+git grep -n capture_monitor_backup ab9db80098849e323d5122eb47bf48f377107058 -- packages/aitm-usage/src
+No current capture_monitor_backup symbol. The exact scope lists this contract under M16.
+### M16. Coordinated backup, legacy adoption and rollback
+
+**Files** Extend `S/backup.py`, `S/monitor_recovery.py`, `S/install.py` and `S/cli.py`. Add `T/test_monitor_cutover.py`.
+
+**Contract** `capture_monitor_backup(store: MonitorStore, destination: Path) -> MonitorBackupReceipt` and `adopt_legacy(request: LegacyAdoption, receipt: MonitorBackupReceipt) -> LegacyBaseline`. Back up the journal, keys and ledger vector with pending routes. Verify the separate current recovery tail. Adopt the existing UUID, key, cutoff and ledger sequence under the original writer guard. Fence new projects behind proven enrollment baselines and reconcile provider activity during stop exactly once. `CutoverController.activate(request: ApprovedCutover, qualification: TargetQualification) -> ActivationReceipt` owns the ordered sequence. Confirm exact runtime and target qualification, verify independent recovery currentness, capture and verify the legacy backup, stop legacy collection, acquire the original guard, confirm the final checkpoint and frozen export, then verify the rollback bundle matches that stopped checkpoint. If the legacy writer advanced after backup, capture and verify a matching replacement bundle under the guard or refuse before schema migration. Record and transfer exact pending legacy commands and freeze ingress, then adopt the schema under the guard and verify the replacement in write-disabled readiness mode. Install production hooks only within the authorized cutover. Rollback removes exact owned hook entries and preserves foreign changes. If an owned entry cannot be safely removed, prove it inert under legacy service and record it. Enable writes only after the authorized cutover receipt binds those results. Before enabling writes, persist the adopted project ledger identities, head sequences and journal checkpoint as the rollback fence. Recovery checks the guarded durable project and journal state against that fence. A project commit beyond the fence is a write even if ACK or a separate marker was interrupted. Restore and restart legacy only when the absence of new durable usage writes and publication is proven. If a write exists or absence cannot be verified, preserve the state and require proven compatible rollback or forward recovery. A portable restore needs independently authenticated current-tail evidence outside the restored material.
