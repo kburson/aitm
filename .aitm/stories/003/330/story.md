@@ -34,3 +34,5 @@ Verified #119 and #329 Close and the M11d split release this leaf at Rank 249. [
 [Independent Refine passed](plan/grok-journal-independent-refine.md) with exact three-file scope and ten conditions for JIT.
 
 [Exact JIT](plan/2026-11-15-330-guarded-grok-journal-jit.md) is submitted for independent acceptance.
+
+[First JIT](plan/grok-journal-independent-jit-r1.md) held on absent source excerpts. [Independent recovery packet](plan/2026-11-15-330-guarded-grok-journal-jit-r2.md) supplies the literal delivered paths and retains the accepted scope.
