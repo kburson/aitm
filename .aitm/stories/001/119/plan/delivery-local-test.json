@@ -1,26 +1,22 @@
 {
   "story": 119,
+  "status": "local-test-pass",
   "candidate": {
     "baseRefName": "trunk",
-    "baseRefOid": "f89169df13120dc7fa4acc42d59b7ee5fef4429d",
-    "headRefOid": "5acd6a61b18b7a1d3e2a06375dfdca855b5a55d9",
+    "baseRefOid": "bfde496be4d21e78b5c96aa0e9300445f83822ca",
+    "headRefOid": "b401252741585ee072da9339c3dc6b52f8b0efbb",
     "number": 318,
     "state": "OPEN",
     "url": "https://github.com/kburson/aitm/pull/318"
   },
-  "verified_tree": "8cd4e48e62bb940da6cb0cba1af06fd87d96fa40",
+  "verified_tree": "6e558f8020495d6c8747ad0ce2c5ff3602d702a6",
   "tests": 1302,
-  "status": "local-test-pass",
-  "focused_tests": 7,
   "product_coverage": {
     "covered_lines": 12118,
     "num_statements": 13213
   },
   "logs_sha256": {
-    "product.log": "9e8be5c27a91039ad320fb8022e0cd5179082e51229800b9360aeaf5b0b86dc3",
-    "product-coverage.json": "91a4d0ba22ed835c9ce59c84860b26b979d0a5e91a968500552283016602fe66",
-    "narrow-develop-red.log": "1267d0e10994a7db60e3bad240dabfb47b05fc4a400fdb11e8a60e6bcadd23a1",
-    "narrow-develop-green.log": "2d23525ceb5f76caf4ce4e6f7213f6463fb16e9445192c7c40f200d404af980a",
-    "narrow-v7-green.log": "88600b07c30151aaf00972959b3fbceea23840cdf9e403abdd8f6b1f7dd17a4f"
+    "product.log": "e0dd5776578195b0d15267f3dd92fb26a768ae560c51c4b48aa244766a329b42",
+    "product-coverage.json": "d7b97996b670e97d7f6c48d8d049abab98d8ca5fd160e358cb99291588d2b261"
   }
 }
