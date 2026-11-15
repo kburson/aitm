@@ -1,0 +1,12 @@
+{
+  "story": 121,
+  "gate": "JIT",
+  "verdict": "HOLD",
+  "attempt": 1,
+  "base": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "raw_sha256": "60bdccf3e8289cffc7af782dc3f7155583d1bef4d68e83ffd8743cc913d61fdf",
+  "packet_sha256": "06f367eea797c4cf7761d2be9d1b4a54fa9ab8446497d385e4ae4fa6f624092e",
+  "review_sha256": "6ebee74f008e70ff747bb55bb89e10b8b6b54afbd03aa1a333e77ea384d80b24"
+}

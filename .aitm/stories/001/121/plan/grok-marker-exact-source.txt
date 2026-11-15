@@ -1,0 +1,483 @@
+Literal trunk 4ba4354f603ad861c897111dcaaf2342fc68da86
+        from .scope_admission import (
+            DispositionRequest,
+            open_grant,
+            require_witness,
+            seal_request,
+        )
+        from .scopes import _filename, _read_private
+
+        self.registry.lease
+        if not _path_exists(self.registry.root / INBOX_NAME):
+            raise LedgerError("Current typed disposition is unavailable")
+        inbox = ControlInbox(self.registry.root)
+        with inbox.publication() as locked, ExitStack() as pins:
+            reader = ScopeInboxReader(self.registry, inbox)
+            wanted = {command.command_id for command in commands}
+            envelopes = {}
+            for item in reader.iter_verified(locked):
+                if item.command_id in wanted:
+                    envelopes[item.command_id] = item
+                    if envelopes.keys() == wanted:
+                        break
+            requests = []
+            checks = []
+            for command in commands:
+                envelope = envelopes.get(command.command_id)
+                request = envelope.body.request if envelope is not None else None
+                if type(request) is not DispositionRequest or (
+                    request.project_id,
+                    request.hold_id,
+                    request.release_previous,
+                ) != (command.project_id, command.hold_id, command.release_previous):
+                    raise LedgerError("Current typed disposition is unavailable")
+                grant, recheck, revision = pins.enter_context(
+                    open_grant(self.registry, request.grant_id)
+                )
+                requests.append(
+                    _TypedDisposition(envelope.payload_digest, request.grant_id)
+                )
+                checks.append((envelope, request, grant, recheck, revision))
+
+            def verify_again() -> None:
+                locked.directory.check()
+                for envelope, request, grant, recheck, revision in checks:
+                    recheck()
+                    saved = locked.captured[request.command_id][1]
+                    if (
+                        _read_private(locked.directory, _filename(request.command_id))
+                        != saved
+                    ):
+                        raise ConflictError(
+                            "Current typed disposition publication changed"
+                        )
+                    with open_grant(self.registry, request.grant_id) as (
+                        current,
+                        _,
+                        latest,
+                    ):
+                        if (
+                            current != grant
+                            or latest != revision
+                            or seal_request(current, request) != envelope
+                        ):
+                            raise ConflictError(
+                                "Current typed disposition grant changed"
+                            )
+                        require_witness(self.registry, current, _scope_now())
+                locked.directory.check()
+
+            verify_again()
+            yield tuple(requests), verify_again
+
+    @contextmanager
+    def _route_request(self, command: Disposition) -> Iterator[str]:
+        from .monitor_control import (
+            INBOX_NAME,
+            ControlInbox,
+            ScopeInboxReader,
+            _scope_now,
+        )
+        from .scope_admission import DispositionRequest, open_grant, require_witness
+
+        self.registry.lease
+        if not _path_exists(self.registry.root / INBOX_NAME):
+            raise LedgerError("Current typed disposition is unavailable")
+        inbox = ControlInbox(self.registry.root)
+        with inbox.publication() as locked:
+            reader = ScopeInboxReader(self.registry, inbox)
+            envelope = next(
+                (
+                    item
+                    for item in reader.iter_verified(locked)
+                    if item.command_id == command.command_id
+                ),
+                None,
+            )
+            request = envelope.body.request if envelope is not None else None
+            if type(request) is not DispositionRequest or (
+                request.project_id,
+                request.hold_id,
+                request.release_previous,
+            ) != (command.project_id, command.hold_id, command.release_previous):
+                raise LedgerError("Current typed disposition is unavailable")
+            with open_grant(self.registry, request.grant_id) as (grant, recheck, _):
+                require_witness(self.registry, grant, _scope_now())
+                yield envelope.payload_digest
+                recheck()
+                require_witness(self.registry, grant, _scope_now())
+
+    def _settlement_side(
+        self,
+        command: Disposition,
+        operator: ScopeAuthority,
+        batch: VerifiedScopeBatch,
+class GrantRole(StrEnum):
+    OPERATOR = "operator"
+    INTEGRATION = "integration"
+
+
+@dataclass(frozen=True, slots=True)
+class MarkRequest:
+    command_id: UUID
+    grant_id: UUID
+    scope: Scope
+    destination_binding: DevelopmentBinding | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class HandoffRequest:
+    command_id: UUID
+    grant_id: UUID
+    current_project: UUID
+    destination: Scope
+    before_generation: int
+    retained_checkout: SourceRef | None = None
+    destination_binding: DevelopmentBinding | None = None
+
+    def __post_init__(self) -> None:
+        _nonnegative(self.before_generation)
+        if self.current_project == self.destination.project_id:
+            raise ValueError("A scope handoff requires another project")
+
+
+@dataclass(frozen=True, slots=True)
+class DispositionRequest:
+    command_id: UUID
+    grant_id: UUID
+    project_id: UUID
+    hold_id: UUID
+    release_previous: bool = False
+
+
+
+
+@dataclass(frozen=True, slots=True)
+class _ScopeBody:
+    request: ScopeRequest
+    generation: int
+    format: str = PROTOCOL
+
+    def __post_init__(self) -> None:
+        _positive(self.generation)
+        if self.format != PROTOCOL:
+            raise ValueError("Unsupported scope proposal format")
+
+
+@dataclass(frozen=True, slots=True)
+class ScopeEnvelope:
+    body: _ScopeBody
+    seal: str
+
+    @property
+    def command_id(self) -> UUID:
+        return self.body.request.command_id
+
+    @property
+    def payload_digest(self) -> str:
+        return sha256(_encode(self, ScopeEnvelope).encode()).hexdigest()
+
+
+def _tag(secret: bytes, domain: bytes, *parts: str) -> str:
+    return hmac.digest(
+    def _admit(self, request: HookEvent, resolver: WakeResolver) -> bool:
+        lease = self.lease
+        if request.kind is WakeKind.PARK:
+            return self.park(request.session)
+        result = resolver.resolve(request, lease=lease)
+        if (
+            type(result) is not WakeResolution
+            or result.kind is not WakeResolutionKind.RESOLVED
+            or not self._valid_facts(result.facts)
+        ):
+            return False
+        facts = result.facts
+        if request.provider is not facts.provider:
+            return False
+        lease.check()
+        stop = request.kind is WakeKind.STOP
+        if stop and (not facts.current_stop or facts.turn is None):
+            return False
+        name = self._slot(facts)
+        previous = self._records.get(name)
+        if previous is not None and previous.facts.stream != facts.stream:
+            return False
+        if (
+            stop
+            and previous is not None
+            and any(
+        self._retry.pop(name, None)
+        self._due[name] = self._clock()
+
+    def park(self, session: SourceRef) -> bool:
+        self.lease
+        self._evidence.validate_source_ref(session)
+        found = False
+        for name, item in tuple(self._records.items()):
+            if item.facts.session != session:
+                continue
+            found = True
+            if item.state is ScheduleState.ACTIVE:
+                self._persist(
+                    name, replace(item, state=ScheduleState.SETTLING, pending=True)
+                )
+                self._make_due(name)
+        return found
+
+    def take_due(self, now: float, limit: int) -> tuple[WorkItem, ...]:
+@dataclass(frozen=True, slots=True)
+class _WakeListener:
+    scheduler: Scheduler
+    resolver: WakeResolver
+    directory: _PinnedPath
+    server: socket.socket
+    identity: os.stat_result
+
+    def serve_once(self) -> bool:
+        """Handle one bounded connection, without creating native scope."""
+        try:
+            lease = self.scheduler.lease
+            current = _socket_entry(self.directory)
+            if (
+                not os.path.samestat(self.identity, current)
+                or stat.S_IMODE(current.st_mode) != 0o600
+            ):
+                return False
+            client, _ = self.server.accept()
+            with client:
+                if _peer_uid(client) != os.geteuid():
+                    return False
+                client.setblocking(False)
+                event = _parse_frame(
+                    _read_frame(client.fileno(), monotonic() + _SOCKET_SECONDS)
+                )
+            lease.check()
+            self.directory.check()
+            return self.scheduler._admit(event, self.resolver)
+        except (LedgerError, OSError, ValueError):
+            return False
+
+            if probe.connect_ex(address) != errno.ECONNREFUSED:
+                raise LedgerError("Private wake endpoint is active or unavailable")
+        if not os.path.samestat(previous, _socket_entry(directory)):
+            raise LedgerError("Private wake socket changed")
+        lease.check()
+        os.unlink(_SOCKET, dir_fd=directory.fd)
+        os.fsync(directory.fd)
+
+
+def _park_session(args: argparse.Namespace) -> int:
+    try:
+        event = HookEvent(WakeKind.PARK, session=SourceRef(args.session_ref))
+        disposition = HookSender().notify(event)
+    except (ValueError, LedgerError, OSError):
+        disposition = WakeDisposition.UNAVAILABLE
+    if args.json:
+        print(json.dumps({"status": disposition.value}))
+    else:
+        print(disposition.value)
+    return 0 if disposition is WakeDisposition.SENT else 1
+
+
+def configure_monitor_commands(monitor_subparsers: argparse._SubParsersAction) -> None:
+    """Register owner submissions and the lease-free status query."""
+    park = monitor_subparsers.add_parser("park")
+    def start_hook(self, update: _Update, offset: int) -> None:
+        fields = update.fields
+        if fields.get("event_name") != "user_prompt_submit":
+            raise _Held(DiagnosticCode.UNSUPPORTED_FORMAT)
+        prompt = _uuid(fields.get("prompt_id"))
+        if self.prompt is not None or self.user_chunk:
+            raise _Held(DiagnosticCode.OVERLAP_UNVERIFIED)
+        self.prompt = prompt
+        self.start = offset
+        runs = fields.get("runs")
+        if type(runs) is list and len(runs) == 1:
+            if _object(_object(runs[0]).get("status")).get("status") == "success":
+                self.hook = update
+
+    def complete(self, update: _Update, offset: int, byte_end: int) -> None:
+    def verified_boundary(
+        self,
+        hook: _Update | None,
+        update: _Update,
+        prompt: str,
+        key: SourceRef,
+        offset: int,
+    ) -> GrokBoundary | None:
+        if hook is None or hook.time > update.time or self.verify_receipt is None:
+            return None
+        receipt = self.verify_receipt(self.origin.session_id, prompt, hook.event_id)
+        if receipt is None:
+            return None
+        refs = self.source.root.evidence
+        try:
+            refs.validate_source_ref(receipt)
+        except (LedgerError, TypeError, ValueError):
+            return None
+        return GrokBoundary(
+            self.source.stream_ref,
+            refs.pseudonymize("grok-session", self.origin.session_id),
+            offset,
+            refs.pseudonymize("grok-marker-boundary", f"{key.value}:{hook.event_id}"),
+            receipt,
+        )
+
+    def check_headless(
+        remaining = deadline - monotonic()
+        return remaining > 0 and bool(select.select([], [connection], [], remaining)[1])
+
+
+def main() -> int:
+    try:
+        event = _parse_frame(
+            _read_frame(sys.stdin.fileno(), monotonic() + _SOCKET_SECONDS)
+        )
+    except (OSError, ValueError):
+        return 0
+    HookSender().notify(event)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+def _hook(control: Path) -> None:
+    row = json.loads(sys.stdin.buffer.read(65536))
+    pending = json.loads(_load(control, "pending.json"))
+    event, session, prompt = (
+        row.get(key) for key in ("hookEventName", "sessionId", "promptId")
+    )
+    if (
+        event != "user_prompt_submit"
+        or os.environ.get("GROK_HOOK_EVENT") != event
+        or session != os.environ.get("GROK_SESSION_ID")
+        or session != pending["session"]
+        or row.get("workspaceRoot") != pending["workspace"]
+        or os.environ.get("AITM_PILOT_NONCE") != pending["nonce"]
+        or type(prompt) is not str
+        or not re.fullmatch(r"[0-9A-Fa-f-]{36}", prompt)
+    ):
+        raise _fail("hook envelope")
+    deadline = monotonic() + 3
+    while not (control / "child.json").exists() and monotonic() < deadline:
+        sleep(0.02)
+    child = json.loads(_load(control, "child.json"))["pid"]
+    process = _process_identity(child)
+    if (
+        process is None
+        or str(process.executable) != pending["image"]
+        or not _under_process(child)
+    ):
+        raise _fail("live child custody")
+    body = {
+        "event": event,
+        "session": session,
+        "prompt": prompt,
+        "nonce": pending["nonce"],
+        "started": process.started.isoformat(),
+        "pid": process.pid,
+    }
+    sealed = {
+        "body": body,
+        "tag": hmac.digest(
+            _load(control, "receipt.key"), _canonical(body), "sha256"
+        ).hex(),
+    }
+    _put_private(control, "one-use-receipt.json", _canonical(sealed))
+
+
+def _completed_carrier(layout: _PilotLayout, session: str) -> _NativeClosure:
+    control = layout.control
+    pending = json.loads(_load(control, "pending.json"))
+    child = json.loads(_load(control, "child.json"))
+    receipt = _load(control, "one-use-receipt.json")
+    sealed = json.loads(receipt)
+    body = sealed["body"]
+    expected_tag = hmac.digest(
+        _load(control, "receipt.key"), _canonical(body), "sha256"
+    ).hex()
+    if (
+        _canonical(sealed) != receipt
+        or not hmac.compare_digest(expected_tag, sealed["tag"])
+        or body["session"] != session
+        or body["nonce"] != pending["nonce"]
+        or body["event"] != "user_prompt_submit"
+        or body["pid"] != child["pid"]
+        or body["started"] != child["started"]
+    ):
+        raise _fail("receipt authentication")
+    directory = layout.native_session(session)
+    if tuple(path for path in layout.capture.iterdir() if path.is_dir()) != (
+        directory.parent,
+    ) or tuple(path for path in directory.parent.iterdir() if path.is_dir()) != (
+        directory,
+    ):
+        raise _fail("exclusive native carrier")
+    raw = _load(directory, "updates.jsonl")
+    usage = _load(directory, "usage.json")
+    if not raw.endswith(b"\n") or not usage:
+        raise _fail("native closure")
+    rows = tuple(_update(json.loads(line), session) for line in raw.splitlines())
+    hooks = [i for i, row in enumerate(rows) if row.kind == "hook_execution"]
+    finals = [i for i, row in enumerate(rows) if row.kind == "turn_completed"]
+    if len(hooks) != 1 or len(finals) != 1 or hooks[0] >= finals[0]:
+        raise _fail("native hook and completion sequence")
+    hook, done = rows[hooks[0]], rows[finals[0]]
+    runs = hook.fields["runs"]
+    started = datetime.fromisoformat(child["started"])
+    if (
+        hook.fields.get("event_name") != body["event"]
+        or hook.fields.get("prompt_id") != body["prompt"]
+        or type(runs) is not list
+        or len(runs) != 1
+        or runs[0]["status"]["status"] != "success"
+        or done.fields.get("prompt_id") != body["prompt"]
+        or done.fields.get("stop_reason") != "end_turn"
+        or not started <= hook.time <= done.time <= datetime.now(UTC)
+    ):
+        raise _fail("native receipt join")
+    return _NativeClosure(
+        session,
+        body["prompt"],
+        hook.event_id,
+                raise _fail("exact installed proof")
+
+    commit("activate", 1)
+    evidence = writer.source_evidence()
+    path = layout.native_session(closure.session) / "updates.jsonl"
+    origin = GrokOrigin(
+        session_id=closure.session,
+        system="Darwin",
+        architecture="arm64",
+        version="1.0.77",
+        build="50ca579fa996",
+        executable_digest=image.sha256,
+        format_version=1,
+        lineage_id=closure.session,
+        incarnation=evidence.pseudonymize(
+            "isolated-grok-incarnation-v1", closure.updates_sha256
+        ),
+    )
+    receipt_ref = evidence.pseudonymize(
+        "isolated-grok-prompt-v1", closure.receipt_sha256
+    )
+    reader = GrokAdapter(
+        lambda candidate: origin if candidate == path else None,
+        lambda *marker: (
+            receipt_ref
+            if marker == (closure.session, closure.prompt, closure.event)
+            else None
+        ),
+    )
+    source = uuid4()
+    writer.approve_source(
+        SourceApprovalRequest(
+            source,
+            "grok",
+            "grok-build-macos",
+            "Darwin",
+            "arm64",
+            "1.0.77",
+            1,
+4ba4354f603ad861c897111dcaaf2342fc68da86:packages/aitm-usage/src/aitm_usage/monitor_scheduler.py:61:    def resolve(self, request: HookEvent, *, lease: _PinnedPath) -> WakeResolution: ...
+4ba4354f603ad861c897111dcaaf2342fc68da86:tools/qualification/isolated_grok_pilot.py:372:    reader = GrokAdapter(
