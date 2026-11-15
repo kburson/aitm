@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -32,3 +32,5 @@ Rank 248 and provisional Estimate 3.5 implementation hours. Complete the indepen
 Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at Rank 248. [Independent refinement packet](plan/2026-11-15-329-positive-grok-capture-refine.md).
 
 [Independent Refine passed](plan/grok-capture-independent-refine.md), with 14 conditions for exact JIT.
+
+[Exact JIT](plan/2026-11-15-329-positive-grok-capture-jit.md) is submitted for independent acceptance.
