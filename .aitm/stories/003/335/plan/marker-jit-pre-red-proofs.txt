@@ -1,0 +1,142 @@
+Exact JIT base 4ba4354f603ad861c897111dcaaf2342fc68da86
+class Mark:
+    command_id: UUID
+    scope: Scope
+    receipt_ref: SourceRef
+    destination_binding: DevelopmentBinding | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Handoff:
+class MarkRequest:
+    command_id: UUID
+    grant_id: UUID
+    scope: Scope
+    destination_binding: DevelopmentBinding | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class HandoffRequest:
+def _committed_grant(
+    registry: Registry, root: _PinnedPath, grant_id: UUID, *, confirm: bool = False
+) -> _GrantCommit | None:
+    with _grant_directory(root, grant_id, create=False) as directory:
+        if directory is None or not (names := _revisions(directory)):
+            return None
+        commit = _read_commit(root, directory, registry, grant_id, names[-1])
+        if confirm:
+            os.fsync(directory.fd)
+            directory.check()
+        return commit
+
+
+def stored_grant(root: Path, grant_id: UUID) -> _GrantRecord | None:
+def _private_child(
+    parent: _PinnedPath, name: str, *, create: bool
+) -> Iterator[_PinnedPath | None]:
+    parent.check()
+    if create:
+        try:
+            os.mkdir(name, 0o700, dir_fd=parent.fd)
+        except FileExistsError:
+            pass
+        except OSError:
+            raise LedgerError("Unable to create private inbox directory") from None
+        else:
+            os.fsync(parent.fd)
+    else:
+        try:
+            os.stat(name, dir_fd=parent.fd, follow_symlinks=False)
+        except FileNotFoundError:
+            yield None
+            return
+    with _pin_directory(parent.path / name) as child:
+        parent.check()
+        yield child
+
+
+@contextmanager
+def _publication(inbox: _PinnedPath) -> Iterator[None]:
+def _publish(
+    directory: _PinnedPath,
+    name: str,
+    data: bytes,
+    *,
+    replace_pending: bool = False,
+    before_commit: Callable[[], None] | None = None,
+) -> bool:
+    """Publish fsynced bytes relative to a pinned private directory."""
+    directory.check()
+    temporary = f".publishing-{secrets.token_hex(16)}"
+    fd = os.open(
+        temporary,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o600,
+        dir_fd=directory.fd,
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            os.fchmod(fd, 0o600)
+            _private(os.fstat(fd))
+            _check_acl(fd)
+            handle.write(data)
+            handle.flush()
+            os.fsync(fd)
+        directory.check()
+        if before_commit is not None:
+            before_commit()
+        if replace_pending:
+            os.replace(
+                temporary, name, src_dir_fd=directory.fd, dst_dir_fd=directory.fd
+            )
+        else:
+            try:
+                if not publish_noreplace(directory.fd, temporary, directory.fd, name):
+                    return False
+            except HostFilesystemError:
+                raise LedgerError("Unable to publish private inbox file") from None
+        os.fsync(directory.fd)
+        directory.check()
+        return True
+    finally:
+        try:
+            os.unlink(temporary, dir_fd=directory.fd)
+        except FileNotFoundError:
+            pass
+
+
+def _filename(command_id: UUID) -> str:
+def _directory(raw: str, *, private: bool = False) -> _PhysicalDirectory:
+    path = Path(raw)
+    if not path.is_absolute() or ".." in path.parts or "\0" in raw:
+        raise ValueError("Expected an absolute directory path")
+    if private:
+        validate_private_path(path, directory=True)
+    path = path.resolve(strict=True)
+    if not path.is_dir():
+        raise ValueError("Expected a physical directory")
+    if private:
+        validate_private_path(path, directory=True)
+    return _PhysicalDirectory(str(path), _identity(path))
+
+
+def _check_capture_root(directory: _PhysicalDirectory) -> None:
+def _read_snapshot(
+    root: Path, project_id: UUID
+) -> Iterator[tuple[sqlite3.Connection, LedgerIdentity, bytes]]:
+    key = _validate_storage(root, project_id)
+    with _connection(_database_path(root), write=False) as conn, conn:
+        conn.execute("BEGIN")
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        identity = _identity(project_id, key, version)
+        _validate_identity(conn, identity)
+        yield conn, identity, key
+
+
+def _create_store(root: Path, project_id: UUID, pins: tuple[_PinnedPath, ...]) -> None:
+    def open(cls, root: Path, project_id: UUID) -> "Ledger":
+        root = _project_path(root)
+        with _read_snapshot(root, project_id) as (_, identity, key):
+            return cls(root, identity, key)
+
+    def pseudonymize(self, namespace: str, raw_reference: str) -> SourceRef:

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 335
 title: "[M11f] Authenticate Grok scope marker receipts"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/335"
 parent: 100
 children: []
@@ -30,3 +30,5 @@ Rank 249.75, provisional Estimate 3.75 implementation hours. #182 and #329 are v
 [Refinement proposal](plan/2026-11-15-335-grok-scope-marker-refine.md) enters independent review against the current native owner, publisher and verifier source.
 
 [Exact JIT](plan/2026-11-15-335-grok-scope-marker-jit.md) is submitted for independent acceptance.
+
+[Independent JIT](plan/marker-independent-jit.md) passed with eight binding conditions and four verified source checks for exact trunk. Develop uses the three accepted paths.
