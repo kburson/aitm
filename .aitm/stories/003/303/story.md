@@ -64,3 +64,7 @@ The scoped controls and complete locked local validation passed, and https://git
 ## Review
 
 The exact PR candidate has a trusted signed hosted pass and the raw replay retained every baseline test. Independent source review is active. [Signed receipt](plan/qualification-signed-hosted-receipt.json) · [Policy replay](plan/qualification-hosted-policy-replay.json).
+
+## Independent source review
+
+Held for the reported source findings. The preserved exact hosted pass does not authorize delivery. [Review](plan/qualification-independent-source-r1.md).
