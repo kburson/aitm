@@ -44,6 +44,6 @@ The [#104 local delivery checkpoint](../104/attachments/local-delivery-checkpoin
 
 Full-Auto delivery resumed on November 10. The owner authorized recurring public attestations with the reviewed permissions and sanitized digests and metadata, and authorized #104 to enter Develop before the first CI result. Passing CI and independent review are evidence for this epic's acceptance.
 
-All three children are Done and closed. The local and hosted CI build passed and its exact final signed result was independently verified. [Delivery evidence](attachments/delivery-evidence.md) · [Signed epic retrospective](retro/2026-11-10-ci-epic.md).
+All three children are Done and closed. The local and hosted CI build passed and its exact final signed result was independently verified. [Delivery evidence](attachments/delivery-evidence.md) · [Post-cutover verification](attachments/2026-11-15-103-parallel-base-post-cutover.md) · [Signed epic retrospective](retro/2026-11-10-ci-epic.md).
 
 The last gate was the signed epic retrospective at `2026-11-10T08:10:47-0600`. GitHub recorded Completed closure at `2026-11-10T14:10:47Z` and the Project item was read back as Done.
