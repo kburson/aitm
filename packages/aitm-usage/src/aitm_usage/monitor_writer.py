@@ -8,6 +8,7 @@ from .ledger import Ledger, LedgerIdentity, _DeliveryReceipt
 from .monitor_journal import RoutingJournal, _DeliveryClaim, _DeliveryRefused
 from .monitor_registry import RegisteredProject, _directory, _project
 from .monitor_types import (
+    GrokObservation,
     MonitorModel,
     MonitorObservation,
     MonitorProvider,
@@ -65,6 +66,14 @@ class ProjectDelivery:
                 allow_nan=False,
             ),
         )
+        if type(usage) is GrokObservation:
+            if (
+                usage.native_surface is not claim.evidence.surface
+                or usage.time_basis is not claim.time_basis
+                or claim.revision != 1
+            ):
+                raise _DeliveryRefused("Destination Grok usage proof changed")
+            return MonitorRevision(key, claim.revision, usage)
         try:
             observation = MonitorObservation(
                 MonitorProvider(usage.boundary.provider.value),

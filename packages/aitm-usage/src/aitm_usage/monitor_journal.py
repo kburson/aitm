@@ -22,7 +22,13 @@ from ._monitor_journal_store import (
 )
 from ._monitor_qualification import _LiveExclusion, _LiveSourceUnavailable
 from .ledger import ConflictError, LedgerError, _DeliveryReceipt
-from .monitor_registry import Registry, RegistryView, _ServiceEvidence
+from .monitor_registry import (
+    Registry,
+    RegistryView,
+    _grok_records,
+    _GrokEpoch,
+    _ServiceEvidence,
+)
 from .monitor_scope import (
     HandoffStatus,
     HoldState,
@@ -34,6 +40,7 @@ from .monitor_scope import (
     ScopeView,
     VerifiedRouteDisposition,
     VerifiedScopeBatch,
+    _GrokAdmission,
     _JournalScopeRelease,
     _ObservationProof,
     _RouteDispositionRecord,
@@ -47,7 +54,13 @@ from .monitor_scope import (
 from .monitor_scope import (
     _stream as _scope_stream,
 )
-from .monitor_types import NativeSurface, ObservationTimeBasis
+from .monitor_types import (
+    GrokBoundary,
+    GrokCheckpoint,
+    GrokObservation,
+    NativeSurface,
+    ObservationTimeBasis,
+)
 from .sources.adapter import (
     NativeObservation,
     SourceLocator,
@@ -57,6 +70,7 @@ from .sources.adapter import (
     _NativeRevisionWitness,
 )
 from .sources.codex import codex_request_boundary_reference
+from .sources.grok import _VerifiedGrokHookless, _VerifiedGrokMark
 from .sources.scan import CandidateSource, _capture_position, _CaptureDiscontinuity
 from .types import (
     BoundaryKind,
@@ -145,7 +159,7 @@ class ClaimEvidence:
 
 @dataclass(frozen=True, slots=True)
 class _UsageMaterial:
-    usage: UsageObservation
+    usage: UsageObservation | GrokObservation
     scope: Scope | None
     time_basis: ObservationTimeBasis
 
@@ -202,7 +216,7 @@ class _ContentDisputePayload:
 class PendingClaim:
     key: SourceRef
     project_id: UUID
-    usage: UsageObservation
+    usage: UsageObservation | GrokObservation
     scope: Scope | None
     time_basis: ObservationTimeBasis
     evidence: ClaimEvidence
@@ -372,6 +386,7 @@ class _Read:
     stream: _Stream = field(repr=False)
     prior: StreamCursor | None = field(repr=False)
     progress: StreamCursor = field(repr=False)
+    grok: _GrokAdmission | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -405,6 +420,69 @@ def _stream(source_id: UUID, locator: SourceLocator) -> _Stream:
         source.locator_ref.value,
         source.incarnation_ref.value,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokProgress:
+    checkpoint: GrokCheckpoint
+    locator: SourceRef
+    seal: SourceRef
+
+
+def _grok_stream(admitted: _GrokAdmission, evidence: _ServiceEvidence) -> _Stream:
+    approved = admitted.approved
+    source = admitted.current._source
+    origin = source.origin
+    if (
+        type(source) is not _GrokSource
+        or origin is None
+        or approved.approval.surface != NativeSurface.GROK_BUILD_MACOS
+        or source.root.evidence != evidence
+    ):
+        raise LedgerError("Journal has no verified Grok stream")
+    locator = evidence.pseudonymize(
+        "grok-journal-locator-v1",
+        json.dumps(
+            [
+                str(admitted.source_id),
+                approved.directory.identity,
+                source.path.relative_to(source.root.path).as_posix(),
+                source.snapshot.identity,
+            ],
+            separators=(",", ":"),
+        ),
+    )
+    return (
+        str(admitted.source_id),
+        approved.approval.surface,
+        source.stream_ref.value,
+        locator.value,
+        origin.incarnation.value,
+    )
+
+
+def _grok_checkpoint(progress: StreamCursor, stream: _Stream) -> GrokCheckpoint:
+    key = progress.checkpoint
+    if (
+        type(key) is not GrokCheckpoint
+        or stream[1] != NativeSurface.GROK_BUILD_MACOS
+        or (key.stream_ref.value, key.incarnation_ref.value) != (stream[2], stream[4])
+    ):
+        raise LedgerError("Verified Grok checkpoint changed its native stream")
+    return key
+
+
+def _grok_progress(
+    progress: StreamCursor, stream: _Stream, evidence: _ServiceEvidence
+) -> _GrokProgress:
+    checkpoint = _grok_checkpoint(progress, stream)
+    locator = SourceRef(stream[3])
+    evidence.validate_source_ref(locator)
+    raw = _encode(checkpoint, GrokCheckpoint, validate_ref=evidence.validate_source_ref)
+    seal = evidence.pseudonymize(
+        "grok-journal-progress-v1", json.dumps([stream, raw], separators=(",", ":"))
+    )
+    return _GrokProgress(checkpoint, locator, seal)
 
 
 def _source_checkpoint(progress: StreamCursor) -> SourceCheckpoint:
@@ -1008,8 +1086,17 @@ class RoutingJournal:
         ).fetchone()
         if row is None:
             return None
+        evidence = self._store.evidence
+        if stream[1] == NativeSurface.GROK_BUILD_MACOS:
+            saved = _decode(
+                row[0], _GrokProgress, validate_ref=evidence.validate_source_ref
+            )
+            cursor = StreamCursor(saved.checkpoint)
+            if _grok_progress(cursor, stream, evidence) != saved:
+                raise LedgerError("Stored Grok progress seal changed")
+            return cursor
         cursor = _decode(
-            row[0], StreamCursor, validate_ref=self._store.evidence.validate_source_ref
+            row[0], StreamCursor, validate_ref=evidence.validate_source_ref
         )
         checkpoint = _source_checkpoint(cursor).cursor
         if (
@@ -1030,21 +1117,31 @@ class RoutingJournal:
     def prepare(self, source_id: UUID, locator: SourceLocator) -> PreparedRouting:
         """Read current native evidence from the journal's exact prior checkpoint."""
         self._writer.lease
+        grok = None
         try:
             if type(locator._source) is _GrokSource:
-                # Grok has no routing cursor in this journal. Its existing
-                # authenticated metadata can still establish a policy refusal.
-                try:
-                    self._scopes._grok_admission(
-                        self._writer.view(), source_id, locator
-                    )
-                except _LiveSourceUnavailable:
-                    raise
-                except (LedgerError, OSError, ValueError):
-                    self._writer.lease
-            stream = _stream(source_id, locator)
-            prior = self.cursor_for(source_id, locator)
-            batch = self._scopes.read_source(source_id, locator, cursor=prior)
+                grok = self._scopes._grok_admission(
+                    self._writer.view(), source_id, locator
+                )
+                stream = _grok_stream(grok, self._store.evidence)
+                if not any(
+                    type(epoch) is _GrokEpoch
+                    and epoch.identity.source_id == source_id
+                    and epoch.identity.stream.value == stream[2]
+                    and epoch.identity
+                    == self._scopes._grok_identity(grok, epoch.identity.project_id)
+                    for epoch in _grok_records(grok.view)
+                ):
+                    raise LedgerError("Journal source has no verified native session")
+                with self._store.transaction() as connection:
+                    prior = self._cursor(connection, stream)
+                batch = self._scopes.read_source(
+                    source_id, locator, cursor=prior, _grok_admission=grok
+                )
+            else:
+                stream = _stream(source_id, locator)
+                prior = self.cursor_for(source_id, locator)
+                batch = self._scopes.read_source(source_id, locator, cursor=prior)
         except _LiveSourceUnavailable as refusal:
             decision = refusal.decision
             if type(decision) is _LiveExclusion and decision.source_id == source_id:
@@ -1053,27 +1150,40 @@ class RoutingJournal:
                 except _StaleLiveExclusion:
                     pass
             raise
+        finally:
+            if grok is not None and self._scopes._grok_admissions.get(id(grok)) is grok:
+                del self._scopes._grok_admissions[id(grok)]
         progress = batch.cursor
         if progress is None:
             raise LedgerError("Native read did not provide a verified journal cursor")
-        checkpoint = _source_checkpoint(progress).cursor
-        if (
-            batch.source_id != source_id
-            or batch.surface.value != stream[1]
-            or (
+        if batch.source_id != source_id or batch.surface.value != stream[1]:
+            raise LedgerError("Native read changed the journal cursor identity")
+        if grok is not None:
+            if (
+                type(batch) is not VerifiedScopeBatch
+                or not batch._grok_strict
+                or batch.surface is not NativeSurface.GROK_BUILD_MACOS
+            ):
+                raise LedgerError(
+                    "Grok journal source has no verified capture interval"
+                )
+            _grok_checkpoint(progress, stream)
+        else:
+            checkpoint = _source_checkpoint(progress).cursor
+            if (
                 checkpoint.source_ref.value,
                 checkpoint.locator_ref.value,
                 checkpoint.incarnation_ref.value,
-            )
-            != stream[2:]
-        ):
-            raise LedgerError("Native read changed the journal cursor identity")
-        read = _Read(batch, stream, prior, progress)
+            ) != stream[2:]:
+                raise LedgerError("Native read changed the journal cursor identity")
+        read = _Read(batch, stream, prior, progress, grok)
         with self._store.transaction() as connection:
             if self._cursor(connection, stream) != prior:
                 raise ConflictError("Journal cursor changed during preparation")
             view, registry = self._fresh_view(connection, read, confirm=False)
-            settled = self._paired_frontier(view)
+            if grok is not None and grok.view != registry:
+                raise ConflictError("Grok admission changed during journal preparation")
+            settled = 0 if grok is not None else self._paired_frontier(view)
             candidates = tuple(
                 RoutedRevision(proof.observation, route, read)
                 for proof in view._proofs
@@ -1696,6 +1806,27 @@ class RoutingJournal:
             return False
         selected_ids = {id(item.observation) for item in selected}
         proofs = {id(item.observation): item for item in view._proofs}
+        if read.grok is not None:
+            return all(
+                id(item) in selected_ids for item in read.batch.observations
+            ) and all(
+                type(native.boundary) is GrokBoundary
+                and any(
+                    event.position
+                    == ScopePosition(
+                        read.batch.source_id,
+                        read.batch.surface,
+                        native.boundary.session_ref,
+                        native.boundary.stream_ref,
+                        native.boundary.ordinal,
+                    )
+                    and event.native_boundary == native.boundary
+                    and event.reported is not None
+                    and event.reported.status is HandoffStatus.APPLIED
+                    for event in view.events
+                )
+                for native in read.batch.boundaries
+            )
         settled = self._paired_frontier(view)
         for item in read.batch.observations:
             if id(item) in selected_ids:
@@ -1724,6 +1855,55 @@ class RoutingJournal:
     def _record_sequence(connection: sqlite3.Connection, sequence: int) -> None:
         connection.execute("INSERT OR IGNORE INTO commits VALUES (?)", (sequence,))
 
+    def _grok_claim_evidence(
+        self,
+        candidate: RoutedRevision,
+        proof: _ObservationProof,
+        project: UUID,
+        view: RegistryView,
+    ) -> ClaimEvidence:
+        admission = candidate._read.grok
+        typed = proof.grok
+        if (
+            admission is None
+            or type(typed) not in (_VerifiedGrokMark, _VerifiedGrokHookless)
+            or project not in proof.eligible_projects
+            or (
+                type(typed) is _VerifiedGrokHookless
+                and candidate.route.scope is not None
+            )
+        ):
+            raise LedgerError("Grok claim has no original eligible route")
+        identity = self._scopes._grok_identity(admission, project)
+        epochs = tuple(
+            epoch
+            for epoch in _grok_records(view)
+            if type(epoch) is _GrokEpoch
+            and epoch.identity == identity
+            and epoch.start.ordinal <= typed.start
+            and (epoch.end is None or typed.end <= epoch.end.ordinal)
+        )
+        if (
+            identity is None
+            or len(epochs) != 1
+            or (proof.position.session_ref, proof.position.stream_ref)
+            != (identity.session, identity.stream)
+            or proof.end != typed.end
+            or typed.key != candidate.observation.key
+        ):
+            raise LedgerError("Grok claim capture epoch is unavailable")
+        (epoch,) = epochs
+        return ClaimEvidence(
+            identity.source_id,
+            identity.surface,
+            identity.session,
+            identity.stream,
+            typed.start,
+            typed.end,
+            epoch.generation,
+            epoch.start.boundary,
+        )
+
     def _claim(
         self,
         connection: sqlite3.Connection,
@@ -1737,7 +1917,12 @@ class RoutingJournal:
         project = candidate.route.project_id
         if project is None:
             raise LedgerError("Journal claim has no verified project")
-        if type(observation.usage) is not UsageObservation:
+        usage_type = type(observation.usage)
+        if usage_type is not UsageObservation and (
+            usage_type is not GrokObservation
+            or observation.revision != 1
+            or candidate._read.grok is None
+        ):
             return ClaimDisposition(ClaimStatus.HELD, key, project, _tip(connection))
 
         evidence = self._store.evidence
@@ -1750,14 +1935,18 @@ class RoutingJournal:
             return ClaimDisposition(ClaimStatus.HELD, key, project, _tip(connection))
         _encode(
             observation.usage,
-            UsageObservation,
+            usage_type,
             validate_ref=evidence.validate_source_ref,
         )
         material = _UsageMaterial(
             observation.usage, candidate.route.scope, observation.time_basis
         )
         digest = _claim_digest(material)
-        position = _evidence(proof, project, registry)
+        position = (
+            self._grok_claim_evidence(candidate, proof, project, registry)
+            if usage_type is GrokObservation
+            else _evidence(proof, project, registry)
+        )
         location = _encode(
             position, ClaimEvidence, validate_ref=evidence.validate_source_ref
         )
@@ -1803,7 +1992,11 @@ class RoutingJournal:
             "SELECT sequence,payload FROM content_disputes WHERE key = ?",
             (key.value,),
         ).fetchone()
-        if observation.revision == 1 and digest == old_digest:
+        if (
+            observation.revision == 1
+            and digest == old_digest
+            and (usage_type is not GrokObservation or first.evidence == position)
+        ):
             if disputed is not None:
                 return ClaimDisposition(ClaimStatus.DISPUTED, key, project, disputed)
             if content is None:
@@ -2003,11 +2196,16 @@ class RoutingJournal:
     def _write_progress(
         self, connection: sqlite3.Connection, read: _Read, sequence: int
     ) -> None:
-        data = _encode(
-            read.progress,
-            StreamCursor,
-            validate_ref=self._store.evidence.validate_source_ref,
-        ).encode()
+        evidence = self._store.evidence
+        if read.grok is not None:
+            value = _grok_progress(read.progress, read.stream, evidence)
+            data = _encode(
+                value, _GrokProgress, validate_ref=evidence.validate_source_ref
+            ).encode()
+        else:
+            data = _encode(
+                read.progress, StreamCursor, validate_ref=evidence.validate_source_ref
+            ).encode()
         self._record_sequence(connection, sequence)
         connection.execute(
             "INSERT INTO progress(source,surface,stream,locator,incarnation,sequence,cursor)"
@@ -2023,15 +2221,19 @@ class RoutingJournal:
             if current != read.prior and current != read.progress:
                 raise ConflictError("Journal cursor changed after preparation")
             if read.prior is not None and read.prior != read.progress:
-                old = _source_checkpoint(read.prior).cursor
-                new = _source_checkpoint(read.progress).cursor
+                if read.grok is not None:
+                    old = _grok_checkpoint(read.prior, read.stream)
+                    new = _grok_checkpoint(read.progress, read.stream)
+                else:
+                    old = _source_checkpoint(read.prior).cursor
+                    new = _source_checkpoint(read.progress).cursor
                 if new.offset <= old.offset:
                     raise ConflictError(
                         "Journal cursor did not advance its verified physical prefix"
                     )
             view, registry = self._fresh_view(connection, read)
             proofs = {id(item.observation): item for item in view._proofs}
-            settled = self._paired_frontier(view)
+            settled = 0 if read.grok is not None else self._paired_frontier(view)
             for item in selected:
                 if (
                     id(item.observation) not in proofs
@@ -2546,7 +2748,7 @@ class RoutingJournal:
                 )
                 _encode(
                     payload.material.usage,
-                    UsageObservation,
+                    UsageObservation | GrokObservation,
                     validate_ref=evidence.validate_source_ref,
                 )
                 revision = _revision_head(connection, observation_key, limit, evidence)
