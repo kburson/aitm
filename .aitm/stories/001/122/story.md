@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -67,3 +67,7 @@ The first source review held on the physical rollback root and current-base help
 ## Independent source recovery
 
 The exact recovery and receiver fence passed signed Test. Independent source returned **PASS**. [Signed Test](plan/recovery-fence-signed-hosted-r2.json) · [Source receipt](plan/recovery-fence-independent-source-r2-receipt.json).
+
+## Close
+
+PR #321 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/recovery-fence-verified-delivery.json) · [Native Close](plan/recovery-fence-native-close.json).
