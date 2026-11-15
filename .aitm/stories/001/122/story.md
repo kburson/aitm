@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -39,3 +39,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_view_cannot_escape_before_recovery_fsync`, `test_restore_with_only_old_witness_holds_replay`, and `test_interrupted_export_requires_receiver_reconciliation`. Inject failure before and after persistence. Assert replay stops at the last proven common boundary when the current witness is missing.
 - [ ] Run red. Implement durable write-ahead witness and recovery verification. Run green with `test_monitor_journal.py` and `test_monitor_delivery.py`. Commit M12.
+
+## Refine
+
+Verified #119 Close releases this leaf at Rank 260. [Refine packet](plan/2026-11-15-122-recovery-publication-fence-refine.md) carries the accepted coverage-only amendment.
