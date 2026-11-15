@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -65,3 +65,7 @@ Refine identified new durable state for destination receipts and ACK. Independen
 ## Narrowed independent Refine
 
 The narrowed destination and ACK slice passed Refine after #310 closed. The board estimate is 3.6 hours, Size M. JIT owns exact custody, schema, lineage, retry and queue behavior. [Scope](plan/2026-11-15-119-destination-only-post-split-refine.md) · [Refine receipt](plan/destination-only-independent-refine-receipt.json).
+
+## Destination delivery JIT
+
+The exact destination delivery plan passed independent JIT. The accepted conditions bind the versioned guards and initial red tests. [Plan](plan/2026-11-15-119-destination-delivery-jit.md) · [Conditions](plan/jit-accepted-conditions.md) · [Receipt](plan/destination-delivery-independent-jit-receipt.json).

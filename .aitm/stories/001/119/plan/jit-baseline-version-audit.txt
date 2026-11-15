@@ -1,0 +1,39 @@
+100644 blob 0a1709f442f655df51acb97f99f7fbe3b1e842d0	packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py
+100644 blob 638415a4e8e1e3d7ccd29deae3cb42fedd300a30	packages/aitm-usage/src/aitm_usage/backup.py
+100644 blob 68ad98dcc3218621868c6e597002f2a4ee2bdac8	packages/aitm-usage/src/aitm_usage/install.py
+100644 blob dd74888d68ef4e92c6e33027f0fe7a97969950cc	packages/aitm-usage/src/aitm_usage/ledger.py
+100644 blob 1f6e8c33e976cac6ac3df65dd2608af6e0d85766	packages/aitm-usage/src/aitm_usage/monitor_journal.py
+100644 blob 58dfa1eb7ca43239f08d474149aab9d49d7c8276	packages/aitm-usage/src/aitm_usage/monitor_registry.py
+100644 blob 73b229d780b88981e6f51103d181c8d6b8bb02cf	packages/aitm-usage/src/aitm_usage/monitor_scope.py
+100644 blob e4f226e75836bc7389434bd0d751b5455b0b0a57	packages/aitm-usage/src/aitm_usage/sources/adapter.py
+100644 blob 0f74836712c0548c27a6bd9c2d8cb07f3128920d	packages/aitm-usage/src/aitm_usage/sources/claude.py
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:39:_COVERAGE_SCHEMA_VERSION = 6
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:131:        _COVERAGE_SCHEMA_VERSION,
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:144:        if version >= _COVERAGE_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:162:            (_COVERAGE_SCHEMA_VERSION,),
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:430:        if version == _COVERAGE_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:436:        conn.execute(f"PRAGMA user_version = {_COVERAGE_SCHEMA_VERSION}")
+packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py:437:        _validate_identity(conn, self._key_id, version=_COVERAGE_SCHEMA_VERSION)
+packages/aitm-usage/src/aitm_usage/backup.py:19:    MONITOR_SCHEMA_VERSION,
+packages/aitm-usage/src/aitm_usage/backup.py:21:    SUPPORTED_SCHEMA_VERSIONS,
+packages/aitm-usage/src/aitm_usage/backup.py:197:    if identity.schema_version == MONITOR_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/backup.py:417:        or expected.schema_version not in SUPPORTED_SCHEMA_VERSIONS
+packages/aitm-usage/src/aitm_usage/backup.py:600:            or expected.schema_version not in SUPPORTED_SCHEMA_VERSIONS
+packages/aitm-usage/src/aitm_usage/install.py:39:    MONITOR_SCHEMA_VERSION,
+packages/aitm-usage/src/aitm_usage/install.py:41:    SUPPORTED_SCHEMA_VERSIONS,
+packages/aitm-usage/src/aitm_usage/install.py:106:if hasattr(ledger, 'MONITOR_SCHEMA_VERSION'):
+packages/aitm-usage/src/aitm_usage/install.py:107:    version = ledger.MONITOR_SCHEMA_VERSION
+packages/aitm-usage/src/aitm_usage/install.py:708:    supported = [json.dumps([legacy_schema, fingerprint(MONITOR_SCHEMA_VERSION)])]
+packages/aitm-usage/src/aitm_usage/install.py:721:        or schema_version not in SUPPORTED_SCHEMA_VERSIONS
+packages/aitm-usage/src/aitm_usage/ledger.py:47:MONITOR_SCHEMA_VERSION = 2
+packages/aitm-usage/src/aitm_usage/ledger.py:48:SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, MONITOR_SCHEMA_VERSION)
+packages/aitm-usage/src/aitm_usage/ledger.py:451:    if type(version) is not int or version not in SUPPORTED_SCHEMA_VERSIONS:
+packages/aitm-usage/src/aitm_usage/ledger.py:462:        if version == MONITOR_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/ledger.py:971:            if self.identity.schema_version == MONITOR_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/ledger.py:975:            conn.execute(f"PRAGMA user_version = {MONITOR_SCHEMA_VERSION}")
+packages/aitm-usage/src/aitm_usage/ledger.py:976:            identity = replace(self.identity, schema_version=MONITOR_SCHEMA_VERSION)
+packages/aitm-usage/src/aitm_usage/ledger.py:1022:        if self.identity.schema_version != MONITOR_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:16:    _COVERAGE_SCHEMA_VERSION,
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:1104:            if self._store._current_version(connection) < _COVERAGE_SCHEMA_VERSION:
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:1124:            <= _COVERAGE_SCHEMA_VERSION
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:1186:                        != _COVERAGE_SCHEMA_VERSION

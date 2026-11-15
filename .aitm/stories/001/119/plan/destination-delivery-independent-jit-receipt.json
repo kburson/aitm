@@ -1,0 +1,21 @@
+{
+  "story": 119,
+  "gate": "jit",
+  "attempt": 1,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "2b3225e085319cd345c7c54e47605e1b1d43b289",
+  "submission_sha256": "7158b265617c86779c2aee6e1f42392e1f1326844fc097f138ff3ef02bba2949",
+  "review_sha256": "113cc6186e0fe215ef48fd5427ba23d8ace48c66794f47939cee4f228429e069",
+  "response_sha256": "35b41b9dda8c335ef43ebd3dba63c80857362f7895579bbc0f8b0acc694ce746",
+  "estimate": 3.6,
+  "remaining_storage_hours": 2.05,
+  "condition_bindings": {
+    "2026-11-15-119-destination-delivery-jit.md": "b0f3919f85cc2d285684e6927a60726cdd71c68d223aacefc22453d451428120",
+    "jit-accepted-conditions.md": "6676a7d265e7095ad467ab60a3fe42caadb4a37fba10822af2991ae016ea10ac",
+    "jit-baseline-version-audit.txt": "aa37334c6018c76e3dcc4f468b7fb4c6b136bd8e21ba862dc126a293b1555170",
+    "jit-baseline-skipped-revision.txt": "690635f4c8bed403d015a0c0a37d11447a33b6cbc036098a7c3a0436c13609b2",
+    "narrow-develop-board.json": "6f4c6d5ab4e8dda43b1b418215646da93452702707f94c15d942b598949fadf6"
+  }
+}
