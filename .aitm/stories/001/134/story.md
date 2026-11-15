@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -78,3 +78,7 @@ The exact local and signed hosted carrier built against trunk. Independent sourc
 ## Owner-authorized independent source
 
 The exact local and signed hosted carrier built against trunk. Owner-authorized independent source returned **PASS**. [Signed Test](plan/carrier-signed-hosted-r3.json) · [Source receipt](plan/carrier-independent-source-r3-receipt.json).
+
+## Close
+
+PR #313 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/carrier-verified-delivery.json) · [Native Close](plan/carrier-native-close.json).

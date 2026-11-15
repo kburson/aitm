@@ -1,0 +1,33 @@
+{
+  "issue": {
+    "closedAt": "2026-11-15T16:51:25Z",
+    "number": 134,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/134"
+  },
+  "project": {
+    "actual": 0.0353,
+    "coverage": "Partial coordinator Refine, Develop and source-recovery progress. Provider, tool and wait intervals excluded.",
+    "estimate": 3.25,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHjJA0",
+    "issue": 134,
+    "rank": 330,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "prerequisites": [
+    {
+      "number": 114,
+      "state": "closed"
+    }
+  ],
+  "dependents": [
+    {
+      "number": 129,
+      "state": "open"
+    }
+  ]
+}
