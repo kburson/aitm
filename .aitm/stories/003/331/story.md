@@ -44,3 +44,5 @@ Verified #329 Close and the M11e split release this leaf at Rank 249.5. [Indepen
 The exact candidate passed 1,484 locked local tests. The focused regressions cover grant reconstruction, empty roots, late discovery and in-flight turns, profile and incarnation changes, the pending-disable fence, and preserved gap readback. [Exact local Test](plan/grok-enrollment-local-test.json) · [PR #334](https://github.com/kburson/aitm/pull/334).
 
 [Signed hosted Test](plan/grok-enrollment-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
+
+[Independent source review](plan/grok-enrollment-independent-source.md) returned **HOLD** on the exact signed candidate. [Receipt](plan/grok-enrollment-independent-source-receipt.json).
