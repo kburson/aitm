@@ -10,12 +10,12 @@ children: []
 blocking: [292]
 blocked-by: [142, 285, 286]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:36:44Z"
+updated: "2026-11-15T02:37:27Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-288-grok-fixture-edge-plan.md", "plan/local-validation.md", "plan/replay-summary.json", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-288-grok-fixture-edge-plan.md", "plan/local-validation.md", "plan/replay-summary.json", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,7 @@ Improve one measured gap in dependency selection for fixtures, imports or child 
 ## Exact candidate and review
 
 [Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
+
+## Delivery
+
+[Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
