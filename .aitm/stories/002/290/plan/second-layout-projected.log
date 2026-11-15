@@ -1,0 +1,116 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [  5%]
+........................................................................ [ 11%]
+........................................................................ [ 17%]
+........................................................................ [ 23%]
+........................................................................ [ 29%]
+........................................................................ [ 35%]
+........................................................................ [ 41%]
+........................................................................ [ 47%]
+........................................................................ [ 53%]
+........................................................................ [ 59%]
+........................................................................ [ 65%]
+........................................................................ [ 71%]
+...............................................E........................ [ 77%]
+........................................................................ [ 83%]
+........................................................................ [ 89%]
+........................................................................ [ 95%]
+...................................................                      [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_ambiguous_current_locator_keeps_existing_stream_queued[duplicate] _
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark-r1.sfJyV5Xa/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark-r1.sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/popen-gw2/test_ambiguous_current_locator0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1087c0440>
+source = (Ledger(root=PosixPath('/private/tmp/aitm290-benchmark-r1.sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/pop....sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/popen-gw2/test_ambiguous_current_locator0/checkout-private'))
+
+    @pytest.fixture
+    def queued_disable(tmp_path, monkeypatch, source):
+>       return _QueuedDisable(tmp_path, monkeypatch, source)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_registry.py:415: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_registry._QueuedDisable object at 0x1075982b0>
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark-r1.sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/popen-gw2/test_ambiguous_current_locator0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1087c0440>
+source = (Ledger(root=PosixPath('/private/tmp/aitm290-benchmark-r1.sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/pop....sfJyV5Xa/native-fixtures/workers-3-cold/projected/pytest/popen-gw2/test_ambiguous_current_locator0/checkout-private'))
+
+    def __init__(self, tmp_path, monkeypatch, source):
+        from aitm_usage.monitor_control import ControlInbox
+    
+        self.module, self.reader, self.root, self.log = _native_fixture(
+            tmp_path, monkeypatch, source
+        )
+        self.registry = self.module.Registry(tmp_path / "monitor")
+        self.inbox = ControlInbox(self.registry.root)
+        self.enable = self.module.CaptureChange(PROJECT_A, SOURCE, True)
+        self.disable = replace(self.enable, enabled=False)
+        self.command = self.module.ControlCommand(UUID(int=300), self.disable)
+        self.stream = _locate(self.reader, self.root).stream_ref
+        with self.registry.writer() as writer:
+            writer.register_project(_request(self.module, tmp_path))
+            _approve(writer, self.module, self.root)
+>           self.start = _advance(writer, self.enable, self.log, self.reader, self.root)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_registry.py:373: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+writer = <aitm_usage.monitor_registry.Registry object at 0x10747b0d0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000074'), source_id=UUID('00000000-0000-0000-0000-000000000076'), enabled=True)
+log = <test_monitor_registry._DesktopLog object at 0x1078f8af0>
+reader = <aitm_usage.sources.adapter.ProviderAdapter object at 0x10758a030>
+root = SourceRoot(cutoff=datetime.datetime(2026, 11, 9, 16, 0, tzinfo=datetime.timezone.utc))
+stream_ref = None
+
+    def _advance(writer, change, log, reader, root, stream_ref=None):
+        frontier = writer.capture_frontier(change, _locate(reader, root, stream_ref))
+        log.append()
+>       return writer.verify_boundary(change, _locate(reader, root, stream_ref), frontier)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_registry.py:160: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+reader = <aitm_usage.sources.adapter.ProviderAdapter object at 0x10758a030>
+root = SourceRoot(cutoff=datetime.datetime(2026, 11, 9, 16, 0, tzinfo=datetime.timezone.utc))
+stream_ref = None
+
+    def _locate(reader, root, stream_ref=None):
+>       (locator,) = (
+        ^^^^^^^^^^
+            item
+            for item in reader.discover(root)
+            if stream_ref is None or item.stream_ref == stream_ref
+        )
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+packages/aitm-usage/tests/test_monitor_registry.py:133: ValueError
+============================= slowest 20 durations =============================
+18.88s call     packages/aitm-usage/tests/test_install.py::test_owned_launchagent_and_recoverable_upgrade
+13.54s call     packages/aitm-usage/tests/test_install.py::test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues
+11.74s call     tools/ci/tests/test_tia_local.py::test_selection_failure_runs_entire_applicable_suite
+10.79s call     packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity
+10.20s call     tools/ci/tests/test_tia_local.py::test_missing_child_is_not_a_local_pass
+7.70s call     packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state
+6.02s call     tools/ci/tests/test_tia_local.py::test_stops_on_checkout_drift_before_execution
+5.85s call     tools/ci/tests/test_tia_local.py::test_local_dirty_snapshot_never_mints_hosted_proof
+5.83s call     packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[later-head]
+5.42s call     packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel
+4.60s call     packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[head-child]
+3.60s call     packages/aitm-usage/tests/test_rollup.py::test_item_inbox_refuses_alias_conflicts_and_canonical_cycles
+3.59s call     packages/aitm-usage/tests/test_install.py::test_upgrade_refuses_witness_incapable_running_prior
+3.37s call     packages/aitm-usage/tests/test_install.py::test_same_pid_with_different_start_cannot_certify_health
+2.91s call     tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[.github/workflows/ci.yml]
+2.60s call     packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[legacy-resolution]
+2.34s call     tools/ci/tests/test_tia_selection.py::test_inventory_test_outside_all_qualified_pytest_scopes_forces_full
+2.33s call     packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[v4-proposal]
+2.31s call     tools/ci/tests/test_tia_selection.py::test_project_manifest_traces_measured_grok_fixture
+2.28s call     tools/ci/tests/test_tia_local.py::test_native_fixtures_avoid_the_shared_temporary_ancestor
+=========================== short test summary info ============================
+ERROR packages/aitm-usage/tests/test_monitor_registry.py::test_ambiguous_current_locator_keeps_existing_stream_queued[duplicate]
+1202 passed, 1 error in 195.27s (0:03:15)

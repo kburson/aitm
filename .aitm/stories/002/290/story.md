@@ -10,12 +10,12 @@ children: []
 blocking: [293]
 blocked-by: [148, 285, 289]
 created: "2026-11-14T13:09:51Z"
-updated: "2026-11-15T11:56:20Z"
+updated: "2026-11-15T12:28:58Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-290-full-suite-benchmark-plan.md", "plan/benchmark.py", "plan/check-workload.py", "plan/workload.json", "plan/check-path-layout.py", "plan/path-layout-control.log", "plan/first-layout-diagnostics.md", "plan/first-layout.log", "plan/first-layout-affected.txt", "plan/first-layout-focused-serial.log"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-290-full-suite-benchmark-plan.md", "plan/benchmark.py", "plan/check-workload.py", "plan/workload.json", "plan/check-path-layout.py", "plan/path-layout-control.log", "plan/first-layout-diagnostics.md", "plan/first-layout.log", "plan/first-layout-affected.txt", "plan/first-layout-focused-serial.log", "plan/2026-11-15-290-isolated-worker-checkpoint.md", "plan/isolated-workers-3-cold.json", "plan/isolated-workers-3-warm.json", "plan/second-layout-projected.log", "plan/first-worker-ancestor-events.jsonl"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -35,3 +35,7 @@ Benchmark the full reference above 3,000 with representative workload compositio
 ## Benchmark implementation and layout diagnostics
 
 [Harness](plan/benchmark.py) · [Fixed workload](plan/workload.json) · [First-layout diagnosis and retained trace](plan/first-layout-diagnostics.md). The corrected isolated matrix is running.
+
+## Isolated worker checkpoint
+
+[Measured cold and warm worker runs](plan/2026-11-15-290-isolated-worker-checkpoint.md) passed all assignments. Serial reference and final comparison are in progress.

@@ -1,0 +1,87 @@
+{
+  "assignments": 3020,
+  "cache": "cold",
+  "cohorts": {
+    "full": {
+      "children": [
+        {
+          "covered_product_lines": 4399,
+          "label": "cli-help",
+          "pid": 42590,
+          "returncode": 0
+        },
+        {
+          "covered_product_lines": 6565,
+          "label": "service-one-shot",
+          "pid": 42479,
+          "returncode": 0
+        }
+      ],
+      "coverage": {
+        "helper": {
+          "covered_branches": 1159,
+          "covered_lines": 4352,
+          "num_branches": 1378,
+          "num_statements": 4800
+        },
+        "product": {
+          "covered_branches": 3330,
+          "covered_lines": 11532,
+          "num_branches": 4130,
+          "num_statements": 12546
+        }
+      },
+      "inventory_sha256": "bd37fc1571ec3d3f5fe6e7172ba8c2457c48057f4b636b11f2826a0cf0ceb423",
+      "node_outcomes_sha256": "87ba56a71a84de6b803d9bc934dd4647e6ac3edfb052ce5912277e1baad3195b",
+      "outcome_counts": {
+        "passed": 1817
+      },
+      "reconcile_seconds": 4.037,
+      "test_seconds": 302.96
+    },
+    "projected": {
+      "children": [
+        {
+          "covered_product_lines": 4399,
+          "label": "cli-help",
+          "pid": 52494,
+          "returncode": 0
+        },
+        {
+          "covered_product_lines": 6565,
+          "label": "service-one-shot",
+          "pid": 52378,
+          "returncode": 0
+        }
+      ],
+      "coverage": {
+        "helper": {
+          "covered_branches": 1102,
+          "covered_lines": 4243,
+          "num_branches": 1378,
+          "num_statements": 4800
+        },
+        "product": {
+          "covered_branches": 3171,
+          "covered_lines": 11288,
+          "num_branches": 4130,
+          "num_statements": 12546
+        }
+      },
+      "inventory_sha256": "b662ecb17418ac3d38b8dc9c0eade893c11375d83a464739dba9e6c8e664d9ec",
+      "node_outcomes_sha256": "01c77aba6e25c049df1aafcb11aa4d0b2622dbf41a785143f4e83adbd17cbb40",
+      "outcome_counts": {
+        "passed": 1203
+      },
+      "reconcile_seconds": 3.02,
+      "test_seconds": 210.231
+    }
+  },
+  "cores": 10,
+  "elapsed_seconds": 521.355,
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "queue_seconds": 0,
+  "setup_seconds": 1.094,
+  "sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "workers": 3
+}
