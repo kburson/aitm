@@ -52,3 +52,5 @@ The exact candidate passed 1,468 locked local tests. The focused regressions cov
 The test-only candidate passed 1,473 locked local tests and adds the five regression groups requested in source review. Product blobs and validation controls retain their exact prior bytes. [Exact local Test](plan/grok-journal-source-r2-local-test.json) · [PR #333](https://github.com/kburson/aitm/pull/333).
 
 [Signed hosted Test](plan/grok-journal-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
+
+[Independent source review](plan/grok-journal-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-journal-independent-source-r2-receipt.json).
