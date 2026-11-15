@@ -9,6 +9,7 @@ from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
 
+from ._monitor_journal_store import _STORE as _JOURNAL_STORE
 from .ledger import LedgerError, _physical_ancestry, _pin_directory, _PinnedPath
 from .monitor_journal import PublicationCandidate, RoutingJournal, _CandidateBasis
 from .monitor_registry import _ServiceEvidence
@@ -234,13 +235,24 @@ class RecoveryFence:
             evidence = self._journal._store.evidence
             if evidence.key_id != key_id:
                 raise LedgerError(_HELD)
-            with _pin_directory(self._root) as directory, _publication(directory):
+            with (
+                _pin_directory(writer.root) as rollback,
+                _pin_directory(rollback.path / _JOURNAL_STORE) as journal_store,
+                _pin_directory(self._root) as directory,
+                _publication(directory),
+            ):
+                if not _overlaps(rollback.path, journal_store.path):
+                    raise LedgerError(_HELD)
+                # This also proves the original lease and source key still
+                # belong to the held registry root.
+                self._journal._store._check_store(rollback, journal_store)
                 if any(
                     _overlaps(directory.path, root)
-                    for root in (writer.root, *self._project_stores)
+                    for root in (rollback.path, *self._project_stores)
                 ):
                     raise LedgerError(_HELD)
                 yield directory, evidence
+                self._journal._store._check_store(rollback, journal_store)
                 lease.check()
         except (OSError, ValueError, LedgerError):
             raise LedgerError(_HELD) from None

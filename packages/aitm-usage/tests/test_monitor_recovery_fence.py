@@ -12,13 +12,15 @@ from test_monitor_journal import COPY, LIVE, B, NativeJournalFixture
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
-from aitm_usage.ledger import Ledger, LedgerError
+from aitm_usage._monitor_journal_store import _STORE as _JOURNAL_STORE
+from aitm_usage.ledger import Ledger, LedgerError, _pin_directory
 from aitm_usage.monitor_journal import RoutingJournal
 from aitm_usage.monitor_recovery import (
     ReceiverDelivery,
     ReceiverDisposition,
     RecoveryFence,
     VerifiedReceiverEvidence,
+    _overlaps,
 )
 from aitm_usage.monitor_registry import _SOURCE_KEY_FILE, _STATE_FILE
 from aitm_usage.monitor_scope import ScopeState
@@ -256,6 +258,33 @@ def test_fence_refuses_lost_coordinator_custody(coverage_candidate, monkeypatch)
             fence.protect(candidate)
         lost = fence.recover(ready.anchor)
         assert lost.held and lost.common is None
+    assert len(list(root.iterdir())) == 1
+
+
+def test_journal_store_key_and_lease_share_the_derived_rollback_root(
+    coverage_candidate,
+):
+    journal, root, candidate = coverage_candidate
+    writer = journal._writer
+    lease = writer.lease
+    key = writer.root / _SOURCE_KEY_FILE
+    store = writer.root / _JOURNAL_STORE
+    with _pin_directory(writer.root) as rollback, _pin_directory(store) as pinned:
+        for contained in (pinned.path, key.parent, lease.path.parent):
+            assert _overlaps(rollback.path, contained)
+        for name, expected in (
+            (_JOURNAL_STORE, os.fstat(pinned.fd)),
+            (_SOURCE_KEY_FILE, key.lstat()),
+            (lease.path.name, os.fstat(lease.fd)),
+        ):
+            actual = os.stat(name, dir_fd=rollback.fd, follow_symlinks=False)
+            assert os.path.samestat(actual, expected)
+    assert RecoveryFence(journal, root).protect(candidate).candidate == candidate
+    moved = root.parent / "moved-store"
+    store.rename(moved)
+    store.symlink_to(moved, target_is_directory=True)
+    with pytest.raises(LedgerError):
+        RecoveryFence(journal, root).protect(candidate)
     assert len(list(root.iterdir())) == 1
 
 
