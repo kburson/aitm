@@ -1,0 +1,17 @@
+{
+  "story": 134,
+  "attempt": 1,
+  "verdict": "HOLD",
+  "role": "JIT",
+  "estimate_hours": 3.25,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "trunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "artifacts": {
+    "2026-11-15-134-linux-codex-carrier-jit.md": "aa85d3f9e14561d818eaa8f750a62ce203262bd4d0a366c8681dbb9768b7e734",
+    "jit-input.md": "dc53163a1db81a0e9dc370169ba7810395101149b92d87060a30594940524053",
+    "jit-result.json": "d75dd6cfb63203f065a08748f62b2ac9e5a1bd27a129dd95b76ea34747f0a930",
+    "independent-jit-r1.md": "141a36abcd08fd1d411107b0e3a43fdcb48e67f5e7552841889ed43d06ddb9c9"
+  }
+}

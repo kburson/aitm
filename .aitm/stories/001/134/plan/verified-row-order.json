@@ -1,0 +1,47 @@
+{
+  "private_native_observation": true,
+  "call_and_tool_output_match": true,
+  "post_receipt_request_distinct": true,
+  "rows": [
+    {
+      "ordinal_in_resumed_suffix": 7,
+      "type": "response_item",
+      "kind": "custom_tool_call"
+    },
+    {
+      "ordinal_in_resumed_suffix": 8,
+      "type": "token_usage_record",
+      "kind": null
+    },
+    {
+      "ordinal_in_resumed_suffix": 9,
+      "type": "event_msg",
+      "kind": "item_completed"
+    },
+    {
+      "ordinal_in_resumed_suffix": 10,
+      "type": "response_item",
+      "kind": "custom_tool_call_output"
+    },
+    {
+      "ordinal_in_resumed_suffix": 11,
+      "type": "event_msg",
+      "kind": "token_count"
+    },
+    {
+      "ordinal_in_resumed_suffix": 12,
+      "type": "event_msg",
+      "kind": "item_completed"
+    },
+    {
+      "ordinal_in_resumed_suffix": 13,
+      "type": "response_item",
+      "kind": "message"
+    },
+    {
+      "ordinal_in_resumed_suffix": 14,
+      "type": "token_usage_record",
+      "kind": null
+    }
+  ]
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -46,3 +46,7 @@ The integrity-checked official arm64 candidate launched in a clean Linux sandbox
 ## Authenticated Linux capture and independent Refine
 
 Independent Refine accepted the exact qualified Codex CLI alpha tuple, command output, following native request and archive proof at 3.25 implementation hours. JIT is next. [Native evidence](plan/codex-native-arm64-evidence.json) · [Review](plan/authenticated-refine-r2.md).
+
+## Independent JIT
+
+Recovery passed at 3.25 implementation hours. Develop uses the potential Linux alpha carrier only. Signed target admission remains #129. [Verdict](plan/independent-jit-r2.md).

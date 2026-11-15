@@ -1,0 +1,7 @@
+{
+  "registry_archive_integrity": "sha512-dLT8WZjWKDJ7nlcQKFnDMlFizKLyCq/jY0Uv6LEPTr7KOwORp8d1inUyUfiUevLgGSkmB4DpMss579LWSbRU/A==",
+  "actual_archive_integrity": "sha512-dLT8WZjWKDJ7nlcQKFnDMlFizKLyCq/jY0Uv6LEPTr7KOwORp8d1inUyUfiUevLgGSkmB4DpMss579LWSbRU/A==",
+  "verified_archive_entry": "package/vendor/aarch64-unknown-linux-musl/bin/codex",
+  "extracted_native_binary_readback": "e7f91e14eab4ba3a0f65047c1757b593409d4ce791ccb6ac65c67c970dfed76f  /native/bin/codex",
+  "compared_byte_for_byte": true
+}

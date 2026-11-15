@@ -1,0 +1,17 @@
+{
+  "story": 134,
+  "attempt": 2,
+  "verdict": "PASS",
+  "role": "JIT",
+  "estimate_hours": 3.25,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "trunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "artifacts": {
+    "2026-11-15-134-linux-codex-carrier-jit-r2.md": "5f43d0072d6a045bf36a37923e95e2cd82f3e030d4b3f109fe4c90652aaea976",
+    "jit-r2-input.md": "181115c64627df14bc5044170276e6f192a23591d1bd284b533f9521d16a9d7d",
+    "jit-r2-result.json": "1eee8bbd3898b93fd9a4ec379407ef40d47f5aa19b1df6c77d18b5ff4d55daf7",
+    "independent-jit-r2.md": "750b93939a15ad872ba6edf199e3faabef313ebbd0b32f05bf29d64580fe719c"
+  }
+}
