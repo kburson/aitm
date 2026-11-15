@@ -1,0 +1,11 @@
+{
+  "story": 320,
+  "gate": "Refine",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "base": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "packet_sha256": "dcd5aeb1bb005600cfb5e25cc3cc4b36984a5cf29bc2e3468963c274f967bc40",
+  "review_sha256": "6674556756937db5a7b547d3e8140fd3c0a752cedf12b34d824cf73dca691762",
+  "model": "claude-opus-5-5",
+  "effort": "high"
+}

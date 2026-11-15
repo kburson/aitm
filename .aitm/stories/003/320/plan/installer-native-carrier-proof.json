@@ -1,0 +1,35 @@
+{
+  "schema": "aitm.320.native-installer-probe/v1",
+  "no_model_turn": true,
+  "codex": {
+    "version": "0.167.0-alpha.3.2",
+    "platform": "Darwin",
+    "architecture": "arm64",
+    "official_npm_integrity": "sha512-TdqlnjV3sbrV7uYvmiOHSJWlYedefDlL4HBPS520DRIlnawSym1fofM7xmeJ9JDx6/WMTrMYwjRHEQ41jsah0A==",
+    "marketplace_discovered": true,
+    "runtime_package_registered": true,
+    "manifest": ".codex-plugin/plugin.json",
+    "event": {
+      "eventName": "stop",
+      "source": "plugin",
+      "handlerType": "command",
+      "enabled": true,
+      "trustStatus": "untrusted"
+    },
+    "native_inspect_errors": []
+  },
+  "grok": {
+    "version": "1.0.77",
+    "binary_sha256": "197c66a63e5ac46e07450b0ca21d141ce665050a412180f185dadfae1c7a5b2a",
+    "default_user_location": "~/.grok/hooks/*.json",
+    "event": [
+      {
+        "event": "user_prompt_submit",
+        "hookType": "command",
+        "source": "user"
+      }
+    ],
+    "untrusted_fixture_hook_count": 0,
+    "disposable_workspace_trusted": true
+  }
+}

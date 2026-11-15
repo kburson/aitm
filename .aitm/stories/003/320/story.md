@@ -30,3 +30,5 @@ Own the three native installer descriptors, isolated install qualification and t
 ## Refine
 
 Verified #120 Close and its approved M10b split release this leaf at Rank 285. [Independent refinement packet](plan/2026-11-15-320-native-wake-installers-refine.md).
+
+[Independent Refine R2 held](plan/native-wake-installers-independent-refine-r2.md) the Codex half pending a macOS Desktop-bundled carrier probe on the approved version. The pinned Grok personal hook discovery and all other first-review findings were verified. Both ordinary paid attempts were used.
