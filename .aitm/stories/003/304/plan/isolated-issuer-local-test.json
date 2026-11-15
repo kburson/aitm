@@ -1,0 +1,51 @@
+{
+  "story": 304,
+  "pr": 309,
+  "head": "6870413b797657a124874846017ce05263d5f625",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "tree": "d9823db8efdec2f612c24d58169c5a36bb781b43",
+  "locked_tests": 1290,
+  "helper_tests_excluding_product_cli_probe": 539,
+  "product_coverage": {
+    "covered_lines": 11722,
+    "num_statements": 12769
+  },
+  "native_pilot": {
+    "architecture": "arm64",
+    "build": "50ca579fa996",
+    "executable_sha256": "197c66a63e5ac46e07450b0ca21d141ce665050a412180f185dadfae1c7a5b2a",
+    "journal_cursor_exercised": false,
+    "live_owned_image": true,
+    "native_format": 1,
+    "post_revoke_refused": true,
+    "provider": "grok",
+    "qualified_scope_boundaries": 1,
+    "qualified_scope_observations": 1,
+    "receipt_closure_join": true,
+    "schema": "aitm.isolated-grok-pilot/v1",
+    "signed_owner_generation": true,
+    "status": "pass",
+    "system": "Darwin",
+    "version": "1.0.77",
+    "writer_sealed_current_revision": true
+  },
+  "local_attempts": [
+    {
+      "result": "held",
+      "test": "test_corrupt_pair_payload_refuses_routing_without_moving_frontiers",
+      "cause": "native cursor unavailable before corrupt paired row read",
+      "log_sha256": "db5031d6699b2c738fcfb2b043d91b3790e67a972438a6e0aea33537e28d8191"
+    },
+    {
+      "result": "isolated base and candidate pass",
+      "logs": [
+        "73ab25e5a09c8277c54b97bb33c5b1bc964033e409a0798d74ea5db724db749b",
+        "172896570462eb33dfe37e808a819a44f06f79fc7b2e06eb2074dd578202a8aa"
+      ]
+    },
+    {
+      "result": "fresh locked pass",
+      "log_sha256": "e61112025ad0fcaf9e0305be815aa1b153ced7ae8d8b438e346e7e9b57fce5f6"
+    }
+  ]
+}

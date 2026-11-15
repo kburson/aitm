@@ -1,0 +1,21 @@
+{
+  "story": 304,
+  "hours": "0.1310",
+  "milliseconds": 471631,
+  "coverage": "partial",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "sources": [
+    {
+      "file": "full-auto-qualified-issuer-develop-1-304.json",
+      "sha256": "b284315f2f84d61485f8c93eda0a54b50be00f9e5458031dd7cb8329a64d86cd"
+    },
+    {
+      "file": "full-auto-qualified-issuer-jit-1-304.json",
+      "sha256": "dee7323657e45fbd9e3a3ee715255a2f97032308198d62bf0e570593729fc3c6"
+    },
+    {
+      "file": "full-auto-qualified-issuer-refine-1-304.json",
+      "sha256": "585941d1085d4cd3d7c6110d69ac5f7d8002469669e9c513b82be82891385ac2"
+    }
+  ]
+}

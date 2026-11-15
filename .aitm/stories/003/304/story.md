@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -46,3 +46,7 @@ Two exact JIT reviews held. The recovery closed four findings and left admission
 ## Independent JIT confirmation and Develop
 
 The authorized confirmation passed at 3.8 implementation hours. The delivered #300 tree equals the separately reviewed candidate, including its existing first-read-only coverage recorder. Exercise single-candidate reserve unconditionally and prove the prior #300 recorder remains the only reachable decision-consuming path. [Exact JIT](plan/isolated-issuer-independent-jit-r3.md) · [Receipt](plan/isolated-issuer-jit-r3-receipt.json).
+
+## Local Test and real pilot
+
+The exact local candidate passed locked validation and the real isolated macOS Grok scope read and revocation test. [Local evidence](plan/isolated-issuer-local-test.json).
