@@ -10,12 +10,12 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T03:19:10Z"
+updated: "2026-11-15T03:31:41Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md", "plan/reviews/toolchain-source-assessment.md", "plan/toolchain-local-tests.log"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md", "plan/reviews/toolchain-source-assessment.md", "plan/toolchain-local-tests.log", "plan/dispatch-green.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -67,3 +67,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Corrected hosted diagnostic
+
+[Manual diagnostic 43671830880/1](https://github.com/kburson/aitm/actions/runs/43671830880/attempts/1) and [verified evidence](plan/dispatch-green.json) recorded 1,215 product and 540 helper passes on the protected tree. Suite runtimes were 369.91 seconds and 151.87 seconds respectively. The pinned CLI passed the checksum check. This manual result is excluded from scheduled qualification.
