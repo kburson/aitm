@@ -12,3 +12,5 @@ Both branches are protected: no deletion, no force-push, no history rewrite.
 `planning` only ever moves forward, so every commit SHA and every file link on it stays valid permanently.
 
 Start at [`.aitm/README.md`](.aitm/README.md) for the folder layout.
+
+For backlog work, use the [Local Blocked-By sync guide](https://github.com/kburson/aitm/blob/trunk/docs/blocked-by.md) to reconcile GitHub relationships and planning before reading or updating dependencies.
