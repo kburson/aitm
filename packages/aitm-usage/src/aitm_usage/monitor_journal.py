@@ -3,13 +3,19 @@
 import re
 import sqlite3
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime
 from enum import StrEnum
 from hashlib import sha256
 from itertools import chain
 from uuid import UUID
 from weakref import WeakValueDictionary
 
-from ._monitor_journal_store import _PAIRED_SCHEMA_VERSION, JournalStore
+from ._monitor_journal_store import (
+    _COVERAGE_SCHEMA_VERSION,
+    _PAIRED_SCHEMA_VERSION,
+    JournalStore,
+)
+from ._monitor_qualification import _LiveExclusion, _LiveSourceUnavailable
 from .ledger import ConflictError, LedgerError
 from .monitor_registry import Registry, RegistryView, _ServiceEvidence
 from .monitor_scope import (
@@ -42,6 +48,7 @@ from .sources.adapter import (
     SourceLocator,
     StreamCursor,
     _claude_revision_material,
+    _GrokSource,
     _NativeRevisionWitness,
 )
 from .sources.codex import codex_request_boundary_reference
@@ -66,6 +73,16 @@ _DISPOSITION_ROWS = (
     "SELECT d.command,d.hold,d.sequence,c.sequence,d.payload"
     " FROM route_dispositions d LEFT JOIN commits c ON c.sequence=d.sequence"
 )
+
+
+_COVERAGE_ROWS = (
+    "SELECT s.identity,s.sequence,c.sequence,s.payload,s.seal"
+    " FROM source_coverage s LEFT JOIN commits c ON c.sequence=s.sequence"
+)
+
+
+class _StaleLiveExclusion(LedgerError):
+    """A previously observed policy refusal no longer grants coverage."""
 
 
 class ClaimStatus(StrEnum):
@@ -221,11 +238,41 @@ class _StoredSettlement:
     identity: SourceRef
 
 
+class _CoverageReason(StrEnum):
+    UNQUALIFIED_SOURCE = "UNQUALIFIED_SOURCE"
+
+
+class _CoverageExtent(StrEnum):
+    UNKNOWN = "unknown"
+
+
+@dataclass(frozen=True, slots=True)
+class _CoverageIdentity:
+    reason: _CoverageReason
+    installation: SourceRef
+    generation: SourceRef
+    extent: _CoverageExtent
+
+
+@dataclass(frozen=True, slots=True)
+class JournalCoverage(_CoverageIdentity):
+    """Sanitized coverage evidence available to the private journal writer."""
+
+    observed_at: datetime
+
+
 @dataclass(frozen=True, slots=True)
 class JournalChange:
     sequence: int
     disposition: _JournalDispositionPayload | None = None
     paired: _PairedSettlement | None = None
+    coverage: JournalCoverage | None = None
+
+    def __post_init__(self) -> None:
+        if self.coverage is not None and (
+            self.disposition is not None or self.paired is not None
+        ):
+            raise ValueError("Coverage must be a distinct journal change")
 
 
 @dataclass(frozen=True, slots=True)
@@ -401,6 +448,44 @@ def _tip(connection: sqlite3.Connection) -> int:
     return connection.execute(
         "SELECT coalesce(max(sequence), 0) FROM commits"
     ).fetchone()[0]
+
+
+def _coverage_key(value: _CoverageIdentity, evidence: _ServiceEvidence) -> SourceRef:
+    identity = _CoverageIdentity(
+        value.reason, value.installation, value.generation, value.extent
+    )
+    encoded = _encode(
+        identity, _CoverageIdentity, validate_ref=evidence.validate_source_ref
+    )
+    return evidence.pseudonymize("journal-coverage-key-v1", encoded)
+
+
+def _coverage_seal(sequence: int, raw: bytes, evidence: _ServiceEvidence) -> SourceRef:
+    return evidence.pseudonymize("journal-coverage-seal-v1", f"{sequence}:{raw.hex()}")
+
+
+def _stored_coverage(
+    row: tuple[str, int, int | None, bytes, str], evidence: _ServiceEvidence
+) -> JournalChange:
+    key, sequence, commit, raw, seal = row
+    try:
+        _positive(sequence)
+        payload = _decode(
+            raw, JournalCoverage, validate_ref=evidence.validate_source_ref
+        )
+        canonical = _encode(
+            payload, JournalCoverage, validate_ref=evidence.validate_source_ref
+        ).encode()
+        if (
+            sequence != commit
+            or canonical != raw
+            or _coverage_key(payload, evidence).value != key
+            or _coverage_seal(sequence, raw, evidence).value != seal
+        ):
+            raise ValueError("Unverified coverage row")
+    except (LedgerError, ValueError):
+        raise LedgerError("Invalid private journal coverage") from None
+    return JournalChange(sequence, coverage=payload)
 
 
 def _evidence(
@@ -772,9 +857,29 @@ class RoutingJournal:
     def prepare(self, source_id: UUID, locator: SourceLocator) -> PreparedRouting:
         """Read current native evidence from the journal's exact prior checkpoint."""
         self._writer.lease
-        stream = _stream(source_id, locator)
-        prior = self.cursor_for(source_id, locator)
-        batch = self._scopes.read_source(source_id, locator, cursor=prior)
+        try:
+            if type(locator._source) is _GrokSource:
+                # Grok has no routing cursor in this journal. Its existing
+                # authenticated metadata can still establish a policy refusal.
+                try:
+                    self._scopes._grok_admission(
+                        self._writer.view(), source_id, locator
+                    )
+                except _LiveSourceUnavailable:
+                    raise
+                except (LedgerError, OSError, ValueError):
+                    self._writer.lease
+            stream = _stream(source_id, locator)
+            prior = self.cursor_for(source_id, locator)
+            batch = self._scopes.read_source(source_id, locator, cursor=prior)
+        except _LiveSourceUnavailable as refusal:
+            decision = refusal.decision
+            if type(decision) is _LiveExclusion and decision.source_id == source_id:
+                try:
+                    self._record_live_exclusion(source_id, locator, decision)
+                except _StaleLiveExclusion:
+                    pass
+            raise
         progress = batch.cursor
         if progress is None:
             raise LedgerError("Native read did not provide a verified journal cursor")
@@ -808,6 +913,67 @@ class RoutingJournal:
         prepared = PreparedRouting(candidates, progress, read)
         self._batches[id(prepared)] = prepared
         return prepared
+
+    def _record_live_exclusion(
+        self, source_id: UUID, locator: SourceLocator, decision: _LiveExclusion
+    ) -> None:
+        identity = _CoverageIdentity(
+            _CoverageReason.UNQUALIFIED_SOURCE,
+            decision.installation,
+            decision.generation,
+            _CoverageExtent.UNKNOWN,
+        )
+        with self._store.transaction(write=True) as connection:
+            self._writer.lease
+            if not self._scopes._confirm_live_exclusion(source_id, locator, decision):
+                raise _StaleLiveExclusion()
+            self._store._enable_coverage(connection)
+            evidence = self._store.evidence
+            key = _coverage_key(identity, evidence).value
+            prior = connection.execute(
+                _COVERAGE_ROWS + " WHERE s.identity=?", (key,)
+            ).fetchone()
+            if prior is None:
+                sequence = _tip(connection) + 1
+                payload = JournalCoverage(
+                    identity.reason,
+                    identity.installation,
+                    identity.generation,
+                    identity.extent,
+                    datetime.now(UTC),
+                )
+                raw = _encode(
+                    payload, JournalCoverage, validate_ref=evidence.validate_source_ref
+                ).encode()
+                seal = _coverage_seal(sequence, raw, evidence).value
+                self._record_sequence(connection, sequence)
+                connection.execute(
+                    "INSERT INTO source_coverage VALUES (?,?,?,?)",
+                    (key, sequence, raw, seal),
+                )
+            else:
+                _stored_coverage(prior, evidence)
+            if not self._scopes._confirm_live_exclusion(source_id, locator, decision):
+                raise _StaleLiveExclusion()
+            self._writer.lease
+
+    def coverage_changes(self, after_sequence: int) -> tuple[JournalChange, ...]:
+        """Read verified sanitized coverage in private journal commit order."""
+        with self._store.transaction() as connection:
+            if type(after_sequence) is not int or not 0 <= after_sequence <= _tip(
+                connection
+            ):
+                raise ValueError("Journal coverage sequence is unavailable")
+            if self._store._current_version(connection) < _COVERAGE_SCHEMA_VERSION:
+                return ()
+            evidence = self._store.evidence
+            return tuple(
+                _stored_coverage(row, evidence)
+                for row in connection.execute(
+                    _COVERAGE_ROWS + " WHERE s.sequence>? ORDER BY s.sequence",
+                    (after_sequence,),
+                )
+            )
 
     def _fresh_view(
         self, connection: sqlite3.Connection, read: _Read, *, confirm: bool = True

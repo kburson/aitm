@@ -13,7 +13,11 @@ from pathlib import Path
 from uuid import UUID
 from weakref import WeakValueDictionary
 
-from ._monitor_qualification import _LiveSourceProof
+from ._monitor_qualification import (
+    _LiveExclusion,
+    _LiveSourceProof,
+    _LiveSourceUnavailable,
+)
 from .ledger import ConflictError, Ledger, LedgerError, _path_exists, _pin_directory
 from .monitor_registry import (
     ApprovedSource,
@@ -934,14 +938,11 @@ class ScopeState:
             raise LedgerError("Too many pending scope authorizations")
         self._authorized[command.command_id] = digest, authority
 
-    def _read_grok(
-        self,
-        source_id: UUID,
-        locator: SourceLocator,
-    ) -> tuple[SourceLocator, AdapterBatch, _LiveSourceProof]:
+    def _current_grok(
+        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+    ) -> tuple[ApprovedSource, SourceLocator]:
         if type(self._grok_reader) is not GrokAdapter:
             raise LedgerError("Grok scope reader is unavailable")
-        view = self.registry.view()
         approved = _source(view, source_id)
         _check_capture_root(approved.directory)
         source = locator._source
@@ -985,6 +986,12 @@ class ScopeState:
             )
         ):
             raise LedgerError("Grok scope source tuple changed")
+        return approved, current
+
+    def _grok_admission(
+        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+    ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
+        approved, current = self._current_grok(view, source_id, locator)
         authority = self.registry._require_live_source(
             approved,
             observed=any(
@@ -992,6 +999,15 @@ class ScopeState:
                 for project in view.projects
             ),
         )
+        return approved, current, authority
+
+    def _read_grok(
+        self,
+        source_id: UUID,
+        locator: SourceLocator,
+    ) -> tuple[SourceLocator, AdapterBatch, _LiveSourceProof]:
+        view = self.registry.view()
+        approved, current, authority = self._grok_admission(view, source_id, locator)
         result = self._grok_reader.read_delta(current, None)
         _check_capture_root(approved.directory)
         if (
@@ -1291,6 +1307,49 @@ class ScopeState:
         )
         self._batches[id(verified)] = verified
         return verified
+
+    def _confirm_live_exclusion(
+        self, source_id: UUID, locator: SourceLocator, expected: _LiveExclusion
+    ) -> bool:
+        self.registry.lease
+        try:
+            if expected.source_id != source_id:
+                return False
+            view = self.registry.view()
+            if type(locator._source) is CandidateSource:
+                if not any(
+                    self.registry.capture_read_limit(
+                        project.project_id, source_id, locator.stream_ref
+                    )
+                    is None
+                    for project in view.projects
+                ):
+                    return False
+                approved, _ = self.registry._current_candidate(view, source_id, locator)
+            elif type(locator._source) is _GrokSource:
+                if not any(
+                    self.registry.source_read_allowed(project.project_id, source_id)
+                    for project in view.projects
+                ):
+                    return False
+                approved, _ = self._current_grok(view, source_id, locator)
+            else:
+                return False
+            profile = self.registry._live_profile
+            if not self.registry._stable_live_exclusion(approved):
+                return False
+            try:
+                self.registry._require_live_source(approved, observed=True)
+            except _LiveSourceUnavailable as refusal:
+                return (
+                    refusal.decision == expected
+                    and self.registry._live_profile is profile
+                )
+        except (LedgerError, OSError, ValueError):
+            return False
+        finally:
+            self.registry.lease
+        return False
 
     def _observation_proofs(
         self,

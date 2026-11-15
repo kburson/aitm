@@ -3055,3 +3055,35 @@ def test_paired_revocation_retains_only_committed_history(
     with pytest.raises(LedgerError, match="qualification"):
         journal.settle_disposition(case.key, owner, rival)
     assert journal.as_of() == after
+
+
+def test_coverage_upgrade_preserves_a_real_paired_settlement(
+    journal_pair, monkeypatch, legacy_monitor_qualification
+):
+    from types import MethodType
+
+    case = journal_pair
+    journal = case.journal
+    prior = journal.settle_disposition(case.key, case.owner.prove(), case.rival.prove())
+    before = journal.as_of()
+    with journal._store.transaction() as connection:
+        assert journal._store._current_version(connection) == 5
+    assert journal.coverage_changes(0) == ()
+
+    monkeypatch.setattr(
+        case.writer,
+        "_require_live_source",
+        MethodType(legacy_monitor_qualification, case.writer),
+    )
+    locator = case.owner.locator()
+    cursor = journal.cursor_for(case.owner.source_id, locator)
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(case.owner.source_id, locator)
+    (covered,) = journal.coverage_changes(before.sequence)
+    assert covered.sequence == before.sequence + 1
+    with journal._store.transaction() as connection:
+        assert journal._store._current_version(connection) == 6
+    assert journal.as_of(before.sequence) == before
+    assert journal.as_of().settlements == (prior,)
+    assert journal.as_of().claims == before.claims
+    assert journal.cursor_for(case.owner.source_id, locator) == cursor

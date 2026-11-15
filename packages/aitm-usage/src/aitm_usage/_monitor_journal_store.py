@@ -36,6 +36,7 @@ _REVISION_SCHEMA_VERSION = 2
 _CONTENT_DISPUTE_SCHEMA_VERSION = 3
 _SCHEMA_VERSION = 4
 _PAIRED_SCHEMA_VERSION = 5
+_COVERAGE_SCHEMA_VERSION = 6
 _SCHEMA = """
 CREATE TABLE identity (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -109,6 +110,16 @@ CREATE TABLE paired_settlements (
 """
 
 
+_COVERAGE_SCHEMA = """
+CREATE TABLE source_coverage (
+    identity TEXT PRIMARY KEY,
+    sequence INTEGER NOT NULL UNIQUE REFERENCES commits,
+    payload BLOB NOT NULL,
+    seal TEXT NOT NULL
+) STRICT;
+"""
+
+
 @cache
 def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], ...]:
     if version not in {
@@ -117,6 +128,7 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
         _CONTENT_DISPUTE_SCHEMA_VERSION,
         _SCHEMA_VERSION,
         _PAIRED_SCHEMA_VERSION,
+        _COVERAGE_SCHEMA_VERSION,
     }:
         raise LedgerError("Unsupported routing journal schema version")
     with closing(sqlite3.connect(":memory:")) as conn:
@@ -127,8 +139,10 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
             conn.execute(_CONTENT_DISPUTE_SCHEMA)
         if version >= _SCHEMA_VERSION:
             conn.execute(_ROUTE_DISPOSITION_SCHEMA)
-        if version == _PAIRED_SCHEMA_VERSION:
+        if version >= _PAIRED_SCHEMA_VERSION:
             conn.execute(_PAIRED_SCHEMA)
+        if version >= _COVERAGE_SCHEMA_VERSION:
+            conn.execute(_COVERAGE_SCHEMA)
         return _schema_objects(conn)
 
 
@@ -145,6 +159,7 @@ def _validate_identity(
             (_CONTENT_DISPUTE_SCHEMA_VERSION,),
             (_SCHEMA_VERSION,),
             (_PAIRED_SCHEMA_VERSION,),
+            (_COVERAGE_SCHEMA_VERSION,),
         } or (version is not None and stored != (version,)):
             raise LedgerError("Unsupported routing journal schema version")
         stored_version = stored[0]
@@ -406,6 +421,21 @@ class JournalStore:
             conn.execute(_PAIRED_SCHEMA)
             conn.execute(f"PRAGMA user_version = {_PAIRED_SCHEMA_VERSION}")
             _validate_identity(conn, self._key_id, version=_PAIRED_SCHEMA_VERSION)
+
+    def _enable_coverage(self, conn: sqlite3.Connection) -> None:
+        self._writer.lease
+        if not conn.in_transaction:
+            raise LedgerError("Source coverage requires a journal transaction")
+        version = self._current_version(conn)
+        if version == _COVERAGE_SCHEMA_VERSION:
+            return
+        _validate_foreign_keys(conn)
+        if version == _SCHEMA_VERSION:
+            conn.execute(_PAIRED_SCHEMA)
+        conn.execute(_COVERAGE_SCHEMA)
+        conn.execute(f"PRAGMA user_version = {_COVERAGE_SCHEMA_VERSION}")
+        _validate_identity(conn, self._key_id, version=_COVERAGE_SCHEMA_VERSION)
+        _validate_foreign_keys(conn)
 
     def _current_version(self, conn: sqlite3.Connection) -> int:
         version = _validate_identity(conn, self._key_id, version=None)
