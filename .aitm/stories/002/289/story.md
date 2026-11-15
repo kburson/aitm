@@ -10,12 +10,12 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:56:50Z"
+updated: "2026-11-15T03:00:07Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Shadow workflow deployment
+
+[Registered workflow](plan/active-shadow-workflow.json) · [Diagnostic dispatch](https://github.com/kburson/aitm/actions/runs/43670107921). The story remains In review pending a genuine scheduled full green and independent readback. The current production #103 controls and effective trunk rules matched the original snapshots.
