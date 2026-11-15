@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 330
 title: "[M11d] Deliver verified Grok usage through the guarded journal"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/330"
 parent: 100
 children: []
@@ -38,3 +38,7 @@ Verified #119 and #329 Close and the M11d split release this leaf at Rank 249. [
 [First JIT](plan/grok-journal-independent-jit-r1.md) held on absent source excerpts. [Independent recovery packet](plan/2026-11-15-330-guarded-grok-journal-jit-r2.md) supplies the literal delivered paths and retains the accepted scope.
 
 [Independent JIT recovery](plan/grok-journal-independent-jit-r2.md) defined its remaining condition as a literal source check. [The checked code](plan/jit-r2-conditional-pending-claim-source.txt) proves the PendingClaim definition is within the accepted edit map and the guarded delivery claim has no provider filter. [Conditional PASS receipt](plan/grok-journal-independent-jit-r2-receipt.json).
+
+## Test
+
+The exact candidate passed 1,468 locked local tests. The focused regressions cover original marked and hookless claims, an independent stream, native prefix and locator custody, and the pinned destination restore with a lost ACK. [Exact local Test](plan/grok-journal-local-test.json) · [PR #333](https://github.com/kburson/aitm/pull/333).

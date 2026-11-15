@@ -1,0 +1,24 @@
+{
+  "story": 330,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "30e1a13d64a88d43e7447e2199c0e389324a0857",
+    "headRefOid": "0ead2c6ee79693d0eb27c0716cf91e7d6e04803d",
+    "isDraft": true,
+    "number": 333,
+    "url": "https://github.com/kburson/aitm/pull/333"
+  },
+  "tests": 1468,
+  "tree": "3f843c53614e41db16ade82c5f7c5e397d1403aa",
+  "product_lines": {
+    "covered_lines": 14048,
+    "num_statements": 15462
+  },
+  "evidence_sha256": {
+    "grok-final-focused.log": "6c094dc1462ee82703533aa4ec23c9509385d8f0f0a0a92c812d7e9e95af3c53",
+    "grok-journal-red.log": "39626f327ac707d90a69ce7310538e8210d4621508edfcee1c32388cfc93b6f7",
+    "local-current/product.log": "dece4c3cb1835d99ad664036e37bfd1ea698af4e4f560bbb890dd36040424ae9"
+  },
+  "inherited_regression": "The retained no-payload test required moving the verified-epoch check ahead of read_source. The old test and gates stayed unchanged."
+}
