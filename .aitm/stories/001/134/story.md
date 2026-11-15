@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -66,3 +66,7 @@ The exact local and signed hosted carrier built against trunk. Independent sourc
 ## Source recovery
 
 The unverified post-cutoff frontier stays held across later turns. The recovery shares the existing canonical argument check and adds proof for receipt bytes, the fixed capture fence, version pins, mixed carriers and the sanitized prefix. [Pinned base](plan/carrier-recovery-pinned-source-recheck.txt) · [Exact native replay](plan/carrier-recovery-exact-native-replay.json).
+
+## Independent source recovery
+
+The exact local and signed hosted carrier built against trunk. Independent source recovery returned **HOLD**. [Signed Test](plan/carrier-signed-hosted-r2.json) · [Source receipt](plan/carrier-independent-source-r2-receipt.json).
