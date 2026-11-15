@@ -1,18 +1,22 @@
 {
   "story": 120,
-  "actual_hours": 0.0391,
+  "actual_hours": 0.0416,
   "coverage": "partial",
-  "milliseconds": 140623,
+  "milliseconds": 149912,
   "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
   "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
   "evidence": [
     {
-      "path": "full-auto-wake-park-develop-1-120.json",
-      "sha256": "0ba24b47449912f903a5cba827e87c1fd1b15afdc45dc1d7ae585b4032a2ace9"
+      "path": "full-auto-wake-park-decoder-1-120.json",
+      "sha256": "2f403f0902472ffa37f44f770420b4139652e81a2caba7140e3f99805099481e"
     },
     {
       "path": "full-auto-wake-park-refine-1-120.json",
       "sha256": "67c2ed8d999902608e05559ed67c57a22d0a2b8fd5881b60ecc3233b0069baa4"
+    },
+    {
+      "path": "full-auto-wake-park-develop-1-120.json",
+      "sha256": "0ba24b47449912f903a5cba827e87c1fd1b15afdc45dc1d7ae585b4032a2ace9"
     }
   ]
 }

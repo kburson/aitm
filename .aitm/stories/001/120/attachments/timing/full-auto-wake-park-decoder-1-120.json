@@ -1,0 +1,78 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 120,
+  "batch": "full-auto-wake-park-decoder-1",
+  "recorded_at_utc": "2026-11-15T17:39:07.015Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "9f6ab626be648c218988255e4750ebff36347d88a2675e3ffdfa5ada8289583a"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.f50cbccddb9c12c1054d5cd3",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Develop",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T17:28:07.407Z",
+      "end_utc": "2026-11-15T17:28:08.496Z"
+    },
+    {
+      "observation_id": "codex.item.f5ad703729c63cf16b8723d6",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Develop",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T17:28:21.507Z",
+      "end_utc": "2026-11-15T17:28:22.878Z"
+    },
+    {
+      "observation_id": "codex.item.2ea05e5352c4fd67945ebf75",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Develop",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T17:28:33.438Z",
+      "end_utc": "2026-11-15T17:28:37.698Z"
+    },
+    {
+      "observation_id": "codex.item.35fc3e09cfd9f4659aad3689",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Develop",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T17:28:37.700Z",
+      "end_utc": "2026-11-15T17:28:39.263Z"
+    },
+    {
+      "observation_id": "codex.item.e905376ad0d470621443876c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Develop",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T17:28:44.105Z",
+      "end_utc": "2026-11-15T17:28:45.111Z"
+    }
+  ]
+}
