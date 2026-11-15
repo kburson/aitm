@@ -1,0 +1,18 @@
+{
+  "story": 325,
+  "gate": "JIT",
+  "attempt": 1,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "f235fe00e0ee5d2f15eabae673308e13071c3d25",
+  "estimate": 3,
+  "cap": 4,
+  "checkpoint": 2,
+  "sha256": {
+    "jit-input.md": "d6e5edce1e9a0d888c1cb1a74b54664b2c3021ecd7371e48ff81f51e0ee82881",
+    "jit-result.json": "4d2b6b07b6d2a9e086f48892f1635a8fb83e2e062a7b07f3fb6f9ce5dbdd8f1c",
+    "native-watch-independent-jit.md": "43274c991f74197e57d8335efd3c108aad3d917a33836b166ca42eea4cde7a00",
+    "2026-11-15-325-native-watch-jit.md": "dfba8613a212ff57b61c05fca1207a6acc8e806c3867c8e4f054cabaf621d1c9"
+  }
+}
