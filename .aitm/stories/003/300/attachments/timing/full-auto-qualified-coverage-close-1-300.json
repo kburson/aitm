@@ -1,0 +1,117 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 300,
+  "batch": "full-auto-qualified-coverage-close-1",
+  "recorded_at_utc": "2026-11-15T11:25:03.471Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "d03ed2880acb892a18c3c482d4359851932002aa09b294f4531769c0ff19b7cd"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.e87c40625236791913a27f57",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:23:38.155Z",
+      "end_utc": "2026-11-15T11:23:38.915Z"
+    },
+    {
+      "observation_id": "codex.item.dd64e5bbdb760c663b295c1c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:23:42.404Z",
+      "end_utc": "2026-11-15T11:23:43.357Z"
+    },
+    {
+      "observation_id": "codex.item.cb1b3cd0a48f559e5a999c8c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:23:55.692Z",
+      "end_utc": "2026-11-15T11:23:58.312Z"
+    },
+    {
+      "observation_id": "codex.item.85b0ccb8789ef901e3fd318a",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:24:13.665Z",
+      "end_utc": "2026-11-15T11:24:14.916Z"
+    },
+    {
+      "observation_id": "codex.item.ab2038b511781bc8f64b74da",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:24:29.544Z",
+      "end_utc": "2026-11-15T11:24:36.579Z"
+    },
+    {
+      "observation_id": "codex.item.bc6d8e146549a65bb5782de1",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:24:36.581Z",
+      "end_utc": "2026-11-15T11:24:38.046Z"
+    },
+    {
+      "observation_id": "codex.item.e9c4e82a3b5f59a9bd7da55b",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:24:48.278Z",
+      "end_utc": "2026-11-15T11:24:50.523Z"
+    },
+    {
+      "observation_id": "codex.item.c52adfaa68bea7323c1d7834",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Review",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:24:52.080Z",
+      "end_utc": "2026-11-15T11:24:52.837Z"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "story": 300,
+  "actual_hours": "0.1122",
+  "milliseconds": 404068,
+  "coverage": "partial",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "evidence_through_utc": "2026-11-15T11:24:52.837000+00:00",
+  "sources": [
+    {
+      "path": "full-auto-qualified-coverage-close-1-300.json",
+      "sha256": "2eddb381bcc3a5ebcfa58d9e5524a8044eec8d59f04435f3fa19da2e83548544"
+    },
+    {
+      "path": "full-auto-qualified-coverage-develop-1-300.json",
+      "sha256": "5ba2ab5652fb3b18d9729a0f893394a8b273f76b124a2447bae42197b442aa64"
+    },
+    {
+      "path": "full-auto-qualified-coverage-refine-2-300.json",
+      "sha256": "646553439f8d83d11f6e719942a31c3ca2236ae8a284add9286abafcac1367dd"
+    },
+    {
+      "path": "full-auto-qualified-coverage-rework-1-300.json",
+      "sha256": "a6dfbeb9aba2d37f5917812f8f1da61dd1a273b1ff5690866f0a60645c2dd125"
+    },
+    {
+      "path": "full-auto-qualified-policy-refine-1-300.json",
+      "sha256": "9d1d782af445ed9f0cb0a77a4c9aa89bada6d32dd4102bb7ad1bd99ddb4364cb"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "baseRefName": "trunk",
+  "headRefOid": "0542848b0c8f680e11d5f443707835170b04c8f1",
+  "mergeCommit": {
+    "oid": "4cfb41813199f9fa483447a61c65b9ca664fb97e"
+  },
+  "mergedAt": "2026-11-15T11:24:52Z",
+  "number": 308,
+  "state": "MERGED",
+  "url": "https://github.com/kburson/aitm/pull/308",
+  "literalBase": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "deliveredTree": "10d90c79a27472ac81543fa5ddad25d2ec8b203d",
+  "remoteTrunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "orderedParentsVerified": true,
+  "zeroDiffVerified": true,
+  "mergeMethod": "merge"
+}
