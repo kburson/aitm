@@ -1,0 +1,18 @@
+{
+  "story": 121,
+  "epic": 100,
+  "gate": "Refine and accepted-plan amendment",
+  "attempt": 2,
+  "verdict": "PASS",
+  "base": "f235fe00e0ee5d2f15eabae673308e13071c3d25",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "activation": "pending",
+  "sha256": {
+    "refine-r2-input.md": "bb1e43e1eff67e5c9a7d9b7c069df7cbc5ac6f65dde3f0ccdfec0f432769d19a",
+    "refine-r2-result.json": "6e77e7934a49f1e3667dc43c598537d378d5bea7bb4534c7832ac1f106fd3318",
+    "m11-independent-refine-r2.md": "5ed54234e372371641db68555143e9be178ca5ecd73752fbe02b9bc869b474c1",
+    "2026-11-15-121-watch-inventory-coordinator-split-r2.md": "84ede6331b21b6e01347bda1bd9e027279bfc0b7b853da9dbab81e2b7ded747e",
+    "m11-pre-children.json": "f1988118f33f6ef62ffdd086e27aaefd61e212a061b1cf09499463aed4e553ad"
+  }
+}
