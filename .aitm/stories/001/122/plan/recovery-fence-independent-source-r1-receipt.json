@@ -1,0 +1,23 @@
+{
+  "base": "e9b92172aee21eaab728e1a313d94f0bea38279b",
+  "head": "25a7709f2ae5994398c1e04f7aff8ebcd52c4434",
+  "tree": "bbe4641b272c564c2cfaa2c8605dbc8f7d1884c3",
+  "run": "https://github.com/kburson/aitm/actions/runs/43737934692/attempts/1",
+  "run_id": 43737934692,
+  "story": 122,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "3a27ef777bafcf7c7087f90abd72746f1837ad1ff3d725abe10a9c49fbc46481",
+  "response_sha256": "c1d42237f58ba73e15156ff8f71369f3e0e62dfdb281228ae5f74eb12709d610",
+  "review_sha256": "579c5fab26319b0c8ca5347dc849ca80fd3c394310bdf2629fbc35d221089d95",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "de17020d5118cfbf4f7016a9245bc81c913c95298b3a4d28f6a8c978fd741be3",
+    "develop-green.log": "d817c4e20114df84fe2dfcfe315e17e129f8d9bf96b5ba8089124ced5e47dfdf",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product.log": "82d4b5fc71050b733c14e5c03187e13ab8f3a5445a6fc823893ea1c4c20eb4a5",
+    "product-coverage.json": "4c1efa39cca8aa3cd490f9a82b11d49f1e7f84eafb135266ab787f33df44cb00"
+  }
+}

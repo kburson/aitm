@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -55,3 +55,7 @@ Independent JIT recovery passed. The two allowed paths and 2.4-hour witness chec
 ## Test
 
 The witness passed the checkpoint before receiver work. The exact candidate passed 1,366 locked local tests. [Test proof](plan/recovery-fence-local-test.json) · [PR #321](https://github.com/kburson/aitm/pull/321).
+
+## Independent source
+
+The exact recovery and receiver fence passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/recovery-fence-signed-hosted-r1.json) · [Source receipt](plan/recovery-fence-independent-source-r1-receipt.json).
