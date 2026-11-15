@@ -1,0 +1,17 @@
+{
+  "archive": "plan/benchmark-evidence.zip",
+  "archive_sha256": "1ed137fc6ad4dcf0736e69879fa204de49fa3239c8b5ca1b704b97213a8a5d20",
+  "issue": 293,
+  "production_gate": {
+    "final_check": "plan/production-gate-final-check.json",
+    "final_check_sha256": "bd72c6f36b1751a0fff10dbb7e1e391383c0aeae5e0ccf1ccac928704a86034c",
+    "issue": 103,
+    "readback": "plan/production-gate-readback.json"
+  },
+  "review": "plan/qualification-review.md",
+  "review_sha256": "1d9060cfd8d6741f7e2ae994d6e473f6aebf2c657cbbc12d9319123839ee079b",
+  "scope": "Candidate-bound hosted shadow comparison on the six reviewed case blobs",
+  "status": "accepted",
+  "summary": "plan/qualification-summary.json",
+  "summary_sha256": "54534d63f74cd0a25541de691aac831a30e95917b17d86e817af0e54a32ad579"
+}

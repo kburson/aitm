@@ -10,12 +10,12 @@ children: []
 blocking: [294]
 blocked-by: [287, 290, 292]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T16:00:09Z"
+updated: "2026-11-15T16:02:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log", "plan/qualification-summary.json", "plan/benchmark-evidence.zip", "plan/2026-11-15-293-hosted-validation-results.md", "plan/production-gate-readback.json", "plan/read-hosted.py", "plan/summarize.py", "plan/pack-evidence.py", "plan/check-production.py"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log", "plan/qualification-summary.json", "plan/benchmark-evidence.zip", "plan/2026-11-15-293-hosted-validation-results.md", "plan/production-gate-readback.json", "plan/read-hosted.py", "plan/summarize.py", "plan/pack-evidence.py", "plan/check-production.py", "plan/qualification-review.md", "plan/production-gate-final-check.json", "plan/delivery.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,7 @@ The original full comparator withheld its verdict after a source-bound nested py
 ## Hosted candidate comparisons
 
 [Results](plan/2026-11-15-293-hosted-validation-results.md) · [Exact readback](plan/qualification-summary.json) · [Retained original and corrected artifacts](plan/benchmark-evidence.zip) · [Production gate parity](plan/production-gate-readback.json).
+
+## Independent review
+
+[Signed evidence review](plan/qualification-review.md) accepts the bounded hosted comparison. The [final gate check](plan/production-gate-final-check.json) confirms identical #103 files and rules after an unrelated trunk merge.
