@@ -1,0 +1,21 @@
+{
+  "archive": "plan/rehearsal-evidence.zip",
+  "archive_sha256": "c9ff03705b8e3566a1ee09fcd0f4400a1bf5daffb5076becb231e6b0fa2f9906",
+  "evidence_commit": "3708f730092adcfe59fb0fb5e7646e4a173014f7",
+  "issue": 323,
+  "lab_run": {
+    "attempt": 1,
+    "id": 43741833227
+  },
+  "manifest": "plan/SHA256SUMS",
+  "manifest_sha256": "50ced6e241cbbd1c6698897e68beb3986fed14e22d8996719e0863bbb60bcb82",
+  "owner_cutover_approval": false,
+  "production_gate": 103,
+  "production_slot": "incomplete",
+  "review": "plan/missed-slot-recovery-review.md",
+  "review_sha256": "78867970f720542aa424525e922ddc6fdc0c452142a74b690af388aeaefe58c9",
+  "scope": "one disposable simulated-operator missed-slot recovery",
+  "status": "accepted",
+  "summary": "plan/qualification-summary.json",
+  "summary_sha256": "190085afd55313be96d5c2484671805d879f35f5ca6062ce2301277a3fd79b5c"
+}
