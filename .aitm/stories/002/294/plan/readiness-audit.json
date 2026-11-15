@@ -1,0 +1,266 @@
+{
+  "captured_at": "2026-11-15T16:50:06.313899+00:00",
+  "current_scheduled_reader": {
+    "artifact": null,
+    "current_verified": false,
+    "event": "schedule",
+    "failed_job": null,
+    "gaps": [
+      "no run for the current schedule slot"
+    ],
+    "observed_run": {
+      "attempt": 1,
+      "created_at": "2026-11-15T11:30:14Z",
+      "id": 43709222718,
+      "sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e"
+    },
+    "provenance": "shadow",
+    "repository_id": 1450406435,
+    "schema": "aitm.ci-scheduled-shadow/v1",
+    "sha": "ab9db80098849e323d5122eb47bf48f377107058",
+    "slot": "2026-11-15T03:47:00+00:00",
+    "status": "incomplete",
+    "target": "trunk",
+    "workflow_id": 418826440
+  },
+  "effective_rules": [
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "deletion"
+    },
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "non_fast_forward"
+    },
+    {
+      "parameters": {
+        "allowed_merge_methods": [
+          "merge",
+          "squash",
+          "rebase"
+        ],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_extra_approval_for_unattributed_changes": true,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false,
+        "required_reviewers": []
+      },
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "pull_request"
+    }
+  ],
+  "fast_shadow_runs": [
+    {
+      "conclusion": "success",
+      "created_at": "2026-11-15T14:00:53Z",
+      "event": "workflow_dispatch",
+      "head_branch": "trunk",
+      "head_sha": "454bddcea742fe048b42e95b707fb7a40096d76e",
+      "id": 43722007566,
+      "run_attempt": 1,
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "created_at": "2026-11-15T14:00:46Z",
+      "event": "workflow_dispatch",
+      "head_branch": "trunk",
+      "head_sha": "454bddcea742fe048b42e95b707fb7a40096d76e",
+      "id": 43721995748,
+      "run_attempt": 1,
+      "status": "completed"
+    }
+  ],
+  "gate": {
+    ".github/workflows/ci.yml": "98320b46e6e88144aa1a8e2dedd7763f0b70789e",
+    "tools/ci/file-lint": "39c22218bf49cd527655d8e38da5ba6368c7708a",
+    "tools/ci/file_checks.py": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+    "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "tools/ci/pytest_evidence.py": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+    "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12",
+    "tools/ci/verify_pr.py": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558"
+  },
+  "legacy_branch_protection": {
+    "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+    "message": "Branch not protected",
+    "status": "404"
+  },
+  "predecessors": {
+    "277": {
+      "delivery_sha256": "0e4dae60fd2a6cc67d72e2bf25a32c2f1b2de1a60c9f548d7b75336fe93e2d44",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "9941af9cb4624b6c306bcdf796d90619f35ca2d27ce1002e939d79bf2df30469"
+    },
+    "278": {
+      "delivery_sha256": "c8c5f0df180a8884d406c14f0122cc488eac3c7934b9f40633e44e6e6d043b3e",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "3c8f91d6155e81aaebae7177ca2424c101c3564838ed30f7b07b30770fca5379"
+    },
+    "279": {
+      "delivery_sha256": "68dba496418f5b35d6179a00736d744b7b992b408ba214d0f00b8c5990cf4bbb",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "19143304459646bb7ff35a5ec7f10c5c393cc8f0ebe7a3750b51e9dc5186c3b7"
+    },
+    "285": {
+      "delivery_sha256": "4d2b650593d1c1a655ff8d9d62470d58fae830f8d0ca14b0bbd52c582f1df19a",
+      "review": "plan/reviews/2026-11-14-285-behavior-audit-review.md",
+      "review_sha256": "9336b3aa967aa64a830e36db76cd955264447d4be748f6ac7185796f15572651"
+    },
+    "286": {
+      "delivery_sha256": "e045b527f3083e591082faf2d201fc451f1e66de1ae033ba06ebe274654fe2c2",
+      "review": "plan/reviews/2026-11-14-286-core-behavior-test-standard-review.md",
+      "review_sha256": "af81f0d84c2b6df711960c6a80321155819fa4cf05d259609bdc930274478b4a"
+    },
+    "287": {
+      "delivery_sha256": "badbfe07604bc34a2806b4980db5f03ea4bc870ada60bf374e77aeaed07a9ebf",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "f549e7d9431fa3751a48f1d760568fda18793945d5d555361b231daad6f63c7e"
+    },
+    "288": {
+      "delivery_sha256": "430d0d8a356e38cd84862230dec7f434750884839c4979a6283b66428717d1ef",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "e2a0790db360dbb4b83970a8190f249c3493bf48dfcc5cf5a4d5954cb6fc2795"
+    },
+    "289": {
+      "delivery_sha256": "dac5936a8e763d3db08a30a85e271aecca886cc16b82eafb855d60295f32b51e",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "16bf7cff53e23e16eaf3dbbd3611ace23f1d2565318deea1b0f61a6452f06088"
+    },
+    "290": {
+      "delivery_sha256": "04af1f176a405c37a093169631b113e7d9595eb46da8b59f7753f35b75cad617",
+      "review": "plan/benchmark-review.md",
+      "review_sha256": "33e6973b64783579fc776eb95e36505581f4569672fc0bec2db2b27905f449e0"
+    },
+    "291": {
+      "delivery_sha256": "616f2a1073d7a0a650cdc3fe3f8690f7a41036cb6b2d81e036bfd0e383b33682",
+      "review": "plan/hold-review.md",
+      "review_sha256": "fffa6d01108c25d31d9cfa3b9791a73a5540717c6c899ba4ab242f5c842cd6a5"
+    },
+    "292": {
+      "delivery_sha256": "82cc9b7d3f05ba811834ddda32c95fa0af4c8da6b46d5048095efcabb99b9c29",
+      "review": "plan/reviews/formal-review.md",
+      "review_sha256": "aba22b863028f32464f4354406267d0eb3d269348fb1065eb920d3cda406bbd0"
+    },
+    "293": {
+      "delivery_sha256": "9002b55571e0f77085ba0a57b0f9dd14eb3ed180959345515c41d1d4806d7427",
+      "review": "plan/qualification-review.md",
+      "review_sha256": "1d9060cfd8d6741f7e2ae994d6e473f6aebf2c657cbbc12d9319123839ee079b"
+    }
+  },
+  "qualification_293": {
+    "archive_sha256": "1ed137fc6ad4dcf0736e69879fa204de49fa3239c8b5ca1b704b97213a8a5d20",
+    "summary_sha256": "54534d63f74cd0a25541de691aac831a30e95917b17d86e817af0e54a32ad579",
+    "timings": [
+      {
+        "label": "selected",
+        "n": 4,
+        "p95_seconds": 499.0,
+        "samples_seconds": [
+          219.0,
+          335.0,
+          397.0,
+          499.0
+        ]
+      },
+      {
+        "label": "full-required",
+        "n": 2,
+        "p95_seconds": 604.0,
+        "samples_seconds": [
+          535.0,
+          604.0
+        ]
+      },
+      {
+        "label": "full-reference",
+        "n": 6,
+        "p95_seconds": 935.0,
+        "samples_seconds": [
+          535.0,
+          604.0,
+          633.0,
+          674.0,
+          753.0,
+          935.0
+        ]
+      }
+    ],
+    "workload": {
+      "baseline_distinct_ids": 1839,
+      "projected_repeat_assignments": 1181
+    }
+  },
+  "repository": "kburson/aitm",
+  "rulesets": [
+    {
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/trunk"
+          ]
+        }
+      },
+      "enforcement": "active",
+      "id": 26821811,
+      "rules": [
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        },
+        {
+          "parameters": {
+            "allowed_merge_methods": [
+              "merge",
+              "squash",
+              "rebase"
+            ],
+            "dismiss_stale_reviews_on_push": false,
+            "require_code_owner_review": false,
+            "require_extra_approval_for_unattributed_changes": true,
+            "require_last_push_approval": false,
+            "required_approving_review_count": 0,
+            "required_review_thread_resolution": false,
+            "required_reviewers": []
+          },
+          "type": "pull_request"
+        }
+      ]
+    }
+  ],
+  "scheduled_runs": [
+    {
+      "conclusion": "success",
+      "created_at": "2026-11-15T11:30:14Z",
+      "event": "schedule",
+      "head_branch": "trunk",
+      "head_sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+      "id": 43709222718,
+      "run_attempt": 1,
+      "status": "completed"
+    }
+  ],
+  "schema": "aitm.294.readiness-audit/v1",
+  "shadow": {
+    ".github/workflows/fast-story-shadow.yml": "5fb07416f74b78444dd1148d4bae631be929ad70",
+    ".github/workflows/scheduled-full-shadow.yml": "b979732cfd382a10f531db8dbcadc1ff4c5d0138",
+    "tools/ci/ci_advisory.py": "18bc17129036aedbeedb71bfa04a6c088209df73",
+    "tools/ci/ci_fast_story_shadow.py": "94706109836229aac33283b4dca06d56d0d5f8b6",
+    "tools/ci/ci_incident.py": "636fe44777e2fb8f589cb7c7abd72024a802295f",
+    "tools/ci/ci_recovery.py": "8eeaf1539da9ae5b8c77ffa0b77ed9c2b5f153fe",
+    "tools/ci/ci_scheduled_shadow.py": "f73cd10b4630dbec9bffe1384612ca303ca23434",
+    "tools/ci/run_scheduled_shadow.sh": "5295eb1b146fa71a47c4026c0a4f2f40f915bef9"
+  },
+  "trunk": "ab9db80098849e323d5122eb47bf48f377107058"
+}
