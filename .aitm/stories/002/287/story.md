@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 287
 title: "[#133] Apply the first reviewed behavior-preserving test consolidation"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/287"
 parent: 133
 children: []
 blocking: [293]
 blocked-by: [285, 286]
 created: "2026-11-14T13:09:49Z"
-updated: "2026-11-15T02:26:18Z"
+updated: "2026-11-15T02:26:21Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-287-test-consolidation-plan.md", "plan/local-validation.md", "plan/timing.json", "plan/bench.sh", "plan/measure_journal.py", "plan/family.log", "plan/parent-paired.log", "plan/candidate-paired.log", "plan/candidate-nodeids.txt", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-287-test-consolidation-plan.md", "plan/local-validation.md", "plan/timing.json", "plan/bench.sh", "plan/measure_journal.py", "plan/family.log", "plan/parent-paired.log", "plan/candidate-paired.log", "plan/candidate-nodeids.txt", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,7 @@ Apply one high-cost audit finding in a reviewed PR under #103. Preserve behavior
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
