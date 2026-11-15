@@ -44,3 +44,7 @@ Independent acceptance assigned the real issuer to #304. Refine recovery is scop
 ## Independent Refine recovery
 
 Passed at 2.7 implementation hours, with #304 owning real issuer proof. Exact JIT is active. [Review](plan/qualified-source-profile-independent-refine-r2.md).
+
+## Independent JIT attempt 1
+
+The exact plan remains in Planning while the reviewed blockers are addressed. [Review](plan/source-qualification-independent-jit-r1.md).
