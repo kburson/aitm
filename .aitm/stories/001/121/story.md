@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
 blocking: [123, 125]
-blocked-by: [115, 120, 304, 325, 326]
+blocked-by: [115, 120, 304, 325, 326, 330]
 created: "2026-11-10T13:58:05Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
@@ -49,3 +49,7 @@ Independent Refine held the integrated proposal because current admission reread
 ## Accepted coordinator scope
 
 [#325](../../003/325/story.md) and [#326](../../003/326/story.md) are verified native prerequisites. #121 owns coordinator integration, native command application and the dormant compatibility-preserving service entry. [Accepted amendment](plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md) · [Native readback](plan/m11-split-native-readback.json).
+
+## Accepted Grok prerequisites
+
+[#329](../../003/329/story.md) qualifies selected Grok capture. [#330](../../003/330/story.md) depends on it and blocks #121 until verified Grok journal delivery closes. [Accepted amendment](plan/2026-11-15-121-grok-guarded-delivery-amendment.md) · [Native readback](plan/grok-delivery-split-native-readback.json).

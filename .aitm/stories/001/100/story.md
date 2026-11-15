@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320, 325, 326, 329, 330]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -119,3 +119,7 @@ R2 independently passed. The current native graph stays authoritative until the 
 ## Accepted M11 split
 
 [#325](../../003/325/story.md) owns native watch resources at Rank 245. [#326](../../003/326/story.md) owns metadata-first selected admission at Rank 247.5. Both block [#121](../121/story.md), which retains the coordinator. [Accepted amendment](../121/plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md).
+
+## Accepted Grok delivery prerequisites
+
+[#329](../../003/329/story.md) owns verified Grok capture at Rank 248. It blocks [#330](../../003/330/story.md), which owns guarded journal delivery at Rank 249 and blocks [#121](../121/story.md). [Accepted amendment](../121/plan/2026-11-15-121-grok-guarded-delivery-amendment.md).
