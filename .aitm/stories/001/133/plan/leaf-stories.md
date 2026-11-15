@@ -53,3 +53,5 @@ Verified 41 open Backlog items and 64 reciprocal direct dependencies. The estima
 A completed spike report satisfies a dependent capability only when it qualifies the route.
 
 Rank 150 [#323 Missed-slot recovery qualification](../../../003/323/story.md) follows #294.
+
+Rank 160 [#337 Full PR validation and rollback](../../../003/337/story.md) follows #323.
