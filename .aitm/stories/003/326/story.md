@@ -12,7 +12,7 @@ blocked-by: [115, 120, 304]
 created: "2026-11-15T18:21:55Z"
 updated: "2026-11-15T18:22:18Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "M", "scope": "provisional"}
+estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/121/plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -30,3 +30,5 @@ Rank 247.5 and provisional Estimate 3.5 implementation hours. Complete the indep
 ## Refine
 
 Verified #115, #120 and #304 Close and the M11b split release this leaf at Rank 247.5. [Independent refinement packet](plan/2026-11-15-326-metadata-inventory-refine.md).
+
+Independent Refine accepted the six-file inventory scope at 3.5 implementation hours. [Refine receipt](plan/metadata-inventory-independent-refine-receipt.json).

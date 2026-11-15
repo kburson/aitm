@@ -1,0 +1,16 @@
+{
+  "story": 326,
+  "gate": "Refine",
+  "attempt": 1,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "f235fe00e0ee5d2f15eabae673308e13071c3d25",
+  "estimate": 3.5,
+  "cap": 4,
+  "sha256": {
+    "refine-input.md": "a1e46d9b243a775b19df1578d00ce97648eae6112697cd5742c5018af4c88642",
+    "refine-result.json": "646978aa3dead6f5416b60bb523ed58de9dd50819c9828ba8312cc92eb1a103a",
+    "metadata-inventory-independent-refine.md": "036364f10e1707ff3e0c0c74da81e47f8d25ca749e4a12c1b2de9e1b255f99f6"
+  }
+}
