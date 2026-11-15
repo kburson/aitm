@@ -1,0 +1,17 @@
+{
+  "story": 310,
+  "attempt": 2,
+  "verdict": "PASS",
+  "role": "JIT",
+  "estimate_hours": 1.25,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "trunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "artifacts": {
+    "2026-11-15-310-journal-publication-jit-r2.md": "a3b22d51f550109995a589f24175c499232a3edcbbed67020a41485458c1a29f",
+    "jit-r2-input.md": "886b9fc5b2dd899df62413a4fb50a5f3ae811b57e0010dee4f978b871dfecac4",
+    "jit-r2-result.json": "8af755e10ca55aef07aa334195b1ceb06dcb91cd9daa1e5258a1c08f647b5f4c",
+    "independent-jit-r2.md": "295d48f10fe2135b2b40b0130464cfcdc44b3932eefca48db38921c47de1b99f"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "story": 310,
+  "attempt": 1,
+  "verdict": "HOLD",
+  "role": "JIT",
+  "estimate_hours": 1.25,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "trunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "artifacts": {
+    "2026-11-15-310-journal-publication-jit.md": "469b551cc63b8e5342e5e83585e782451d887233b9465111c7916b7b821a5bc8",
+    "jit-input.md": "0a374b3d3cee2fce1580874a2570a5ad26a6f4d0589c725608ea6385bfecb536",
+    "jit-result.json": "745491d98d3d114aeeb78c62724bbcdeae2f5d38480167363668c91afa30e1aa",
+    "independent-jit-r1.md": "d505f628917a2d246226db7e321503a6a3f8fd9f429b7c047ead38f109b6b841"
+  }
+}

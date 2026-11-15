@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 310
 title: "Create verified journal-only publication candidates"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/310"
 parent: 100
 children: []
@@ -28,3 +28,7 @@ Project 24 Rank 229.9. Implement the M09a contract from the [accepted split](../
 ## Independent Refine
 
 Passed at 1.25 implementation hours. JIT will freeze complete committed row identity and verify candidate isolation. [Verdict](plan/independent-refine-r1.md).
+
+## Independent JIT
+
+Recovery passed at 1.25 implementation hours. The exact plan pins the journal SQL, schema gates and non-persisted identities. [Verdict](plan/independent-jit-r2.md).
