@@ -293,20 +293,24 @@ def inspect(github, *, expected=None, event="schedule", now=None):
         "current_verified": False,
         "gaps": [],
     }
-    if run and (
-        run["head_sha"] != sha
-        or expected
-        and expected != (run["id"], run["run_attempt"])
-    ):
-        result.update(status="stale")
+    deadline = slot + timedelta(minutes=45)
+    if expected and (not run or expected != (run["id"], run["run_attempt"])):
+        result["status"] = "stale"
         return result
     if run is None or (
         event == "schedule"
-        and not slot <= timestamp(run["created_at"]) <= slot + timedelta(minutes=45)
+        and not slot <= timestamp(run["created_at"]) <= min(now, deadline)
     ):
-        result["gaps"].append("no run for the current schedule slot")
-        if now >= slot + timedelta(minutes=45):
+        result["gaps"].append(
+            "no run for the current schedule slot"
+            if event == "schedule"
+            else "no diagnostic run"
+        )
+        if event == "schedule" and now >= deadline:
             result["status"] = "incomplete"
+        return result
+    if run["head_sha"] != sha:
+        result["status"] = "stale"
         return result
     result.update(
         run_id=run["id"],
@@ -324,20 +328,23 @@ def inspect(github, *, expected=None, event="schedule", now=None):
             result.update(status="red", failed_job=job["id"])
         elif successful(job) and successful(run) and successful(suite):
             result.update(status="green", artifact=verify_artifact(github, run, job))
-        elif run["status"] == "completed" or (
-            event == "schedule" and now >= slot + timedelta(minutes=45)
-        ):
+        elif run["status"] == "completed" or (event == "schedule" and now >= deadline):
             result.update(status="incomplete")
             result["gaps"].append("scheduled completion unavailable")
     except EVIDENCE_ERRORS as exc:
-        result.update(status="incomplete")
+        if run["status"] == "completed" or (event == "schedule" and now >= deadline):
+            result["status"] = "incomplete"
         result["gaps"].append(
             str(exc) if isinstance(exc, Hold) else "invalid scheduled evidence"
         )
     try:
         same_target = current_target(github) == (sha, workflow)
         final = latest(github, workflow, event, since) if same_target else None
-        same_attempt = final is not None and run_key(final) == run_key(run)
+        same_attempt = (
+            final is not None
+            and run_key(final) == run_key(run)
+            and final["created_at"] == run["created_at"]
+        )
         if same_attempt:
             final_attempt = github.document(route)
             validate_run(final_attempt, workflow, event)

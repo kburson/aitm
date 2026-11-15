@@ -208,3 +208,38 @@ def test_diagnostic_dispatch_cannot_feed_scheduled_incident(monkeypatch):
     assert diagnostic["status"] == "green"
     with pytest.raises(Hold, match="unavailable"):
         shadow.incident_observation(diagnostic)
+
+
+def test_older_run_on_previous_sha_does_not_hide_missed_slot():
+    provider = Provider()
+    provider.branch = "b" * 40
+    provider.run["created_at"] = "2026-11-13T03:18:00Z"
+    after_grace = datetime.fromisoformat("2026-11-14T04:03:00Z")
+    assert shadow.inspect(provider, now=after_grace)["status"] == "incomplete"
+
+
+def test_unregistered_job_can_still_be_pending(monkeypatch):
+    provider = Provider()
+    provider.run.update(status="queued", conclusion=None)
+    pages = provider.pages
+    monkeypatch.setattr(
+        provider,
+        "pages",
+        lambda endpoint, key: [] if key == "jobs" else pages(endpoint, key),
+    )
+    assert observe(provider)["status"] == "pending"
+
+
+def test_canonical_creation_drift_during_readback_prevents_green(monkeypatch):
+    provider = Provider()
+    pages = provider.pages
+    reads = iter(("2026-11-14T03:18:00Z", "2026-11-14T03:19:00Z"))
+
+    def drift(endpoint, key):
+        if key == "workflow_runs":
+            return [{**provider.run, "created_at": next(reads)}]
+        return pages(endpoint, key)
+
+    monkeypatch.setattr(provider, "pages", drift)
+    monkeypatch.setattr(shadow, "verify_artifact", lambda *args: {"id": 3})
+    assert observe(provider)["status"] == "stale"
