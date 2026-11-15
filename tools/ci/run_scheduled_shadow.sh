@@ -32,6 +32,17 @@ run_profile() {
   AITM_CI_PYTEST_EVIDENCE="$out/$name-execution.json"     "$python" -m pytest "${args[@]}" --basetemp "$fixtures/$name" --durations=15 -q "$targets" || status=1
 }
 run_profile product packages/aitm-usage/tests
+# The verifier's offline signature tests require the reviewed GitHub CLI.
+gh_asset=gh_2.97.0_macOS_arm64.zip
+curl --fail --silent --show-error --location --retry 3 \
+  "https://github.com/cli/cli/releases/download/v2.97.0/$gh_asset" -o "$fixtures/$gh_asset"
+(
+  cd "$fixtures"
+  printf '%s  %s\n' a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e "$gh_asset" | shasum -a 256 -c -
+  unzip -q "$gh_asset"
+)
+export PATH="$fixtures/gh_2.97.0_macOS_arm64/bin:$PATH"
+gh --version
 run_profile helpers tools/ci/tests
 test "$status" = 0
 "$python" tools/ci/ci_scheduled_shadow.py --emit "$out"
