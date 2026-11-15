@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -80,3 +80,7 @@ Held for the reported source findings. The preserved exact hosted pass does not 
 ## Canonical row control and retest
 
 The candidate adds the exact valid-row reconstruction control requested by the source recovery. Further independent review requires explicit authorization. Exact PR #308 returned to Test on current trunk. [Local retest](plan/coverage-local-canonical-control.json).
+
+## Exact hosted Test
+
+The candidate passed signed hosted Test and the raw replay of the established policy. A further independent source review requires explicit authorization. [Signed receipt](plan/coverage-signed-hosted-receipt-confirmation.json) · [Replay](plan/coverage-hosted-policy-replay-confirmation.json).
