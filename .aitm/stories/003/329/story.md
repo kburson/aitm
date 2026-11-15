@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -46,3 +46,5 @@ The exact candidate passed 1,450 locked local tests. The earlier run identified 
 [Signed hosted Test](plan/grok-capture-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
 
 [Independent source review](plan/grok-capture-independent-source.md) returned **HOLD** on the exact signed candidate. [Receipt](plan/grok-capture-independent-source-receipt.json).
+
+The [exact recovery candidate](plan/grok-capture-local-recovery-test.json) passed 1,459 locked local tests and 111 focused tests. The source findings on mixed cuts, held terminal handling and the receipt matrix are reproduced and corrected in the accepted four paths.

@@ -1,0 +1,17 @@
+{
+  "story": 329,
+  "mode": "locked-local",
+  "head": "ac93b96e575b7598f10e058e698761a9cbea414f",
+  "base": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "tree": "f69375a6eb87abbbf527adb4b621c3c644044fc0",
+  "count": 1459,
+  "focused_count": 111,
+  "failed_reproductions": 3,
+  "coverage": {
+    "covered_lines": 13981,
+    "num_statements": 15391
+  },
+  "locked_log_sha256": "566b8c89c3f784964d5932d335d106b1481938ccd97e06e748d2ed482ebcd427",
+  "red_log_sha256": "b92297302c11b65d49a92832e795e44d545fa39cb1939f6e8e756f5e6008b453",
+  "focused_sha256": "195b56bb7e31f45f56eba675d1e5d249d523619d5363e4763502e3dcb6322431"
+}
