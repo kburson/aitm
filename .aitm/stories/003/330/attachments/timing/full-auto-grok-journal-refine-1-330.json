@@ -1,0 +1,52 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 330,
+  "batch": "full-auto-grok-journal-refine-1",
+  "recorded_at_utc": "2026-11-15T21:29:41.546Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "7c092d80e2c911c60ec9a8d71a19e9a9a2d05d584bedde7e6374316c8384632b"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.1b20d8e0b73e69b0c26fb6ee",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T21:19:51.066Z",
+      "end_utc": "2026-11-15T21:20:00.797Z"
+    },
+    {
+      "observation_id": "codex.item.96aa767d2b52e42ac093140e",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T21:20:06.168Z",
+      "end_utc": "2026-11-15T21:20:18.574Z"
+    },
+    {
+      "observation_id": "codex.item.702ce80e7e7d7b74c9d8505c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T21:27:26.585Z",
+      "end_utc": "2026-11-15T21:27:27.561Z"
+    }
+  ]
+}
