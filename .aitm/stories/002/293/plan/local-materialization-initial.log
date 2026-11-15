@@ -1,0 +1,14 @@
+collection exit 0 elapsed seconds 2.45
+full exit 1 elapsed seconds 9.78
+projected exit 1 elapsed seconds 9.24
+Traceback (most recent call last):
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/delivery-293/lab/experiment.py", line 387, in <module>
+    run(branch, Path(workdir), Path(artifact))
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/delivery-293/lab/experiment.py", line 379, in run
+    verify_archive(source, exact["source_tree"])
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/delivery-293/lab/experiment.py", line 120, in verify_archive
+    assert actual == manifest, "Materialized source is not the exact tested tree"
+           ^^^^^^^^^^^^^^^^^^
+AssertionError: Materialized source is not the exact tested tree

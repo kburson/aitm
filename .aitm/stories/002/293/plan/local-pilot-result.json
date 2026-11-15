@@ -1,0 +1,26 @@
+{
+  "mode": "selected",
+  "inventory_size": 1839,
+  "cohorts": {
+    "full": {
+      "assignment_count": 40,
+      "red": [
+        "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+      ],
+      "children": [
+        "service-one-shot",
+        "cli-help"
+      ]
+    },
+    "projected": {
+      "assignment_count": 28,
+      "red": [
+        "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+      ],
+      "children": [
+        "service-one-shot",
+        "cli-help"
+      ]
+    }
+  }
+}

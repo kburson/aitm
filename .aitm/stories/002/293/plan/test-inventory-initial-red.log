@@ -1,0 +1,110 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______________ test_modeled_inventory_rejects_unknown_input_model ______________
+
+    def test_modeled_inventory_rejects_unknown_input_model():
+>       unknown = replace(_grok_usage(), model=None)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_grok_pricing.py:222: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+obj = GrokObservation(provider=<MonitorProvider.GROK: 'grok'>, native_surface=<NativeSurface.GROK_BUILD_MACOS: 'grok-build-m...ity.COMPLETE: 'complete'>, model=<MonitorModel.GROK_4_7: 'grok-4.7'>, provider_cost=ProviderCostEvidence(ticks=123456))
+changes = {'model': None}
+
+    def replace(obj, /, **changes):
+        """Return a new object replacing specified fields with new values.
+    
+        This is especially useful for frozen classes.  Example usage::
+    
+          @dataclass(frozen=True)
+          class C:
+              x: int
+              y: int
+    
+          c = C(1, 2)
+          c1 = replace(c, x=3)
+          assert c1.x == 3 and c1.y == 2
+        """
+        if not _is_dataclass_instance(obj):
+            raise TypeError("replace() should be called on dataclass instances")
+>       return _replace(obj, **changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../../../.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/lib/python3.13/dataclasses.py:1596: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = GrokObservation(provider=<MonitorProvider.GROK: 'grok'>, native_surface=<NativeSurface.GROK_BUILD_MACOS: 'grok-build-m...ity.COMPLETE: 'complete'>, model=<MonitorModel.GROK_4_7: 'grok-4.7'>, provider_cost=ProviderCostEvidence(ticks=123456))
+changes = {'model': None, 'provider': <MonitorProvider.GROK: 'grok'>, 'native_surface': <NativeSurface.GROK_BUILD_MACOS: 'grok-build-macos'>, 'observed_at': datetime.datetime(2026, 11, 10, 18, 0, tzinfo=datetime.timezone.utc), ...}
+
+    def _replace(self, /, **changes):
+        # We're going to mutate 'changes', but that's okay because it's a
+        # new dict, even if called with 'replace(self, **my_changes)'.
+    
+        # It's an error to have init=False fields in 'changes'.
+        # If a field is not in 'changes', read its value from the provided 'self'.
+    
+        for f in getattr(self, _FIELDS).values():
+            # Only consider normal fields or InitVars.
+            if f._field_type is _FIELD_CLASSVAR:
+                continue
+    
+            if not f.init:
+                # Error if this field is specified in changes.
+                if f.name in changes:
+                    raise TypeError(f'field {f.name} is declared with '
+                                    f'init=False, it cannot be specified with '
+                                    f'replace()')
+                continue
+    
+            if f.name not in changes:
+                if f._field_type is _FIELD_INITVAR and f.default is MISSING:
+                    raise TypeError(f"InitVar {f.name!r} "
+                                    f'must be specified with replace()')
+                changes[f.name] = getattr(self, f.name)
+    
+        # Create the new object, which calls __init__() and
+        # __post_init__() (if defined), using all of the init fields we've
+        # added and/or left in 'changes'.  If there are values supplied in
+        # changes that aren't fields, this will correctly raise a
+        # TypeError.
+>       return self.__class__(**changes)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../../../../.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/lib/python3.13/dataclasses.py:1630: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = GrokObservation(provider=<MonitorProvider.GROK: 'grok'>, native_surface=<NativeSurface.GROK_BUILD_MACOS: 'grok-build-m...okens=700), coverage=<Availability.COMPLETE: 'complete'>, model=None, provider_cost=ProviderCostEvidence(ticks=123456))
+provider = <MonitorProvider.GROK: 'grok'>
+native_surface = <NativeSurface.GROK_BUILD_MACOS: 'grok-build-macos'>
+observed_at = datetime.datetime(2026, 11, 10, 18, 0, tzinfo=datetime.timezone.utc)
+time_basis = <ObservationTimeBasis.NATIVE_COMPLETION: 'native-completion'>
+tokens = GrokTokenCounts(uncached_input_tokens=100, cache_read_tokens=400, cache_creation_tokens=0, output_tokens=200, reasoning_output_tokens=150, total_tokens=700)
+coverage = <Availability.COMPLETE: 'complete'>, model = None
+provider_cost = ProviderCostEvidence(ticks=123456)
+
+>   ???
+
+<string>:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = GrokObservation(provider=<MonitorProvider.GROK: 'grok'>, native_surface=<NativeSurface.GROK_BUILD_MACOS: 'grok-build-m...okens=700), coverage=<Availability.COMPLETE: 'complete'>, model=None, provider_cost=ProviderCostEvidence(ticks=123456))
+
+    def __post_init__(self) -> None:
+        if (
+            self.provider is not MonitorProvider.GROK
+            or self.native_surface is not NativeSurface.GROK_BUILD_MACOS
+            or self.model
+            not in (
+                MonitorModel.UNKNOWN,
+                MonitorModel.GROK_4_7,
+                MonitorModel.GROK_4_7_BUILD,
+            )
+        ):
+>           raise ValueError("Invalid Grok provider, surface or model")
+E           ValueError: Invalid Grok provider, surface or model
+
+packages/aitm-usage/src/aitm_usage/monitor_types.py:143: ValueError
+=========================== short test summary info ============================
+FAILED packages/aitm-usage/tests/test_grok_pricing.py::test_modeled_inventory_rejects_unknown_input_model
+1 failed in 0.08s

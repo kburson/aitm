@@ -1,0 +1,13 @@
+{
+  "inventory": {
+    "helpers": {
+      "count": 545,
+      "ordered_ids_sha256": "446b51efa8dcb2d0bc14ae2684d905a778a398918b7d56e04472d10a5efb8723"
+    },
+    "product": {
+      "count": 1294,
+      "ordered_ids_sha256": "150426fa0b3daa410417e4cdd3652e8ec1a5a1bc9fc2a148c5576ec165e8ce31"
+    }
+  },
+  "sha": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f"
+}
