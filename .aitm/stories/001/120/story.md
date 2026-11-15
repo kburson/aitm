@@ -7,7 +7,7 @@ state: "refine"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
-blocking: [121]
+blocking: [121, 320]
 blocked-by: [115, 119]
 created: "2026-11-10T13:58:03Z"
 updated: "2026-11-10T14:00:46Z"
@@ -45,3 +45,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 The native Close records for #115 and #119 release M10 at Rank 240. [Wake and park refinement](plan/2026-11-15-120-wake-park-refine.md) is queued for its initial independent review.
 
 The first independent Refine estimated six hours for the unsplit leaf and returned HOLD at its four-hour cap. The Board Estimate is provisional while the scheduler and installer split is reviewed. [Refine receipt](plan/wake-park-independent-refine-r1-receipt.json).
+
+## Accepted scheduler-only scope
+
+The [independently accepted split](plan/2026-11-15-120-wake-scheduler-installer-split.md) assigns the native installers to [#320](../../003/320/story.md). #120 retains its scheduler, private ingress and generic sender. [Native graph readback](plan/wake-installer-split-native-readback.json).

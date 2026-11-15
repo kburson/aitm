@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/125"
 parent: 100
 children: []
 blocking: [126]
-blocked-by: [121, 124, 304]
+blocked-by: [121, 124, 304, 320]
 created: "2026-11-10T13:58:11Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
@@ -41,3 +41,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_second_service_and_legacy_writer_refuse_activation`, `test_stale_pid_and_heartbeat_do_not_certify_readiness`, and `test_no_systemd_user_bus_and_unapproved_linger_are_explicit`. Exercise isolated install, stop and restart using controlled manager fixtures.
 - [ ] Run red. Implement supervisor selection and exact-runtime evidence. Run green with `test_install.py` and `test_service_process.py`. Commit M15. Real OS proofs occur in M18 and M19.
+
+## Native installer prerequisite
+
+[#320](../../003/320/story.md) delivers the owned native hook installers before this rehearsal. [Accepted M10 split](../120/plan/2026-11-15-120-wake-scheduler-installer-split.md).

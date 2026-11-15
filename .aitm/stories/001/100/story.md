@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303, 304, 310, 320]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -111,3 +111,7 @@ R2 independently passed. The current native graph stays authoritative until the 
 ## Verified isolated issuer ownership
 
 #304 owns the actual isolated installation's executable and authorization evidence. #303 owns the closed contract. [Accepted amendment](https://github.com/kburson/aitm/blob/79aecafe17c5dc0417fd00c2ecd37cdfe3651d58/.aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md).
+
+## Accepted M10 split
+
+[#120](../120/story.md) owns the wake scheduler and private ingress. [#320](../../003/320/story.md) owns the native installers before #125. [Exact accepted amendment](../120/plan/2026-11-15-120-wake-scheduler-installer-split.md).
