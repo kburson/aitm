@@ -1,0 +1,1 @@
+{"baseline_tests": 1240, "coverage": {"helpers": {"covered_lines": 806, "num_statements": 849}, "product": {"covered_lines": 11532, "num_statements": 12546}}, "failures": [], "passed": true, "tests": 1272}

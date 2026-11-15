@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -56,3 +56,7 @@ Exact JIT passed. Verified both native prerequisites closed and the Project Dev 
 ## Test
 
 All locked local product and CLI tests passed on the exact package tree. [PR #308](https://github.com/kburson/aitm/pull/308) is in hosted Test. [Local verification](plan/coverage-local-verification.json).
+
+## Exact hosted Test
+
+The candidate passed signed hosted Test and the raw replay of the established policy. Independent source review is active. [Signed receipt](plan/coverage-signed-hosted-receipt.json) · [Replay](plan/coverage-hosted-policy-replay.json).
