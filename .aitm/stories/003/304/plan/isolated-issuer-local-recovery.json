@@ -1,0 +1,42 @@
+{
+  "story": 304,
+  "head": "d511c866c0b3c6e994685e098c751a8ae6afdf5f",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "tree": "d2168c629f5bd3df2895f8c5d5e0a7f777752316",
+  "local_locked_tests": 1292,
+  "local_product_coverage": {
+    "num_statements": 12780,
+    "covered_lines": 11738
+  },
+  "local_red_and_green_sha256": [
+    "b9899c067a9fb26d5ed4d754a3a6256a486ad4531d4076fb31740924f6ead369",
+    "8528aa763723e67c91d4ab38600a8a2b8d69c1ca601939e589e6ed5c5a8cbad7"
+  ],
+  "native_pilot": {
+    "architecture": "arm64",
+    "build": "50ca579fa996",
+    "executable_sha256": "197c66a63e5ac46e07450b0ca21d141ce665050a412180f185dadfae1c7a5b2a",
+    "journal_cursor_exercised": false,
+    "live_owned_image": true,
+    "native_format": 1,
+    "post_revoke_refused": true,
+    "provider": "grok",
+    "qualified_scope_boundaries": 1,
+    "qualified_scope_observations": 1,
+    "receipt_closure_join": true,
+    "schema": "aitm.isolated-grok-pilot/v1",
+    "signed_owner_generation": true,
+    "source": {
+      "commit": "d511c866c0b3c6e994685e098c751a8ae6afdf5f",
+      "issuer_sha256": "272fbe60fcb316b18597a370fc75026ffbf58fe1d16a4dd3eadc5854db7498dd",
+      "runner_sha256": "75d0039f412e481c71e63bf5185f7b47f962c082a5ddf89e1524f57756f5da7e",
+      "tree": "d2168c629f5bd3df2895f8c5d5e0a7f777752316"
+    },
+    "status": "pass",
+    "system": "Darwin",
+    "version": "1.0.77",
+    "writer_sealed_current_revision": true
+  },
+  "native_pilot_sha256": "36bf97ca2c92c1447dc2b1b358af1d0cb2bd0a38eb2cae80ff9ced6266a47a42",
+  "scratch_writer_ordering": "The issuer is bound to its own writer thread. Other threads and writers cannot use that issuer or produce an active generation. Normal Registry writers retain their established behavior."
+}

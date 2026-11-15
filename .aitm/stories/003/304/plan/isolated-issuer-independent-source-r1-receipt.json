@@ -1,0 +1,14 @@
+{
+  "story": 304,
+  "verdict": "HOLD",
+  "attempt": 1,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "6870413b797657a124874846017ce05263d5f625",
+  "tree": "d9823db8efdec2f612c24d58169c5a36bb781b43",
+  "response_sha256": "1ff1f4c2e0da3d79a6d60479674885daca0046e68c9b35d9cef9e264c9eec38e",
+  "input_sha256": "59871e58998229ee0e00eed79f85b5f7906082bcd45bf765b7c9ef4fa311c160",
+  "verdict_sha256": "7ceb3a4855a067c41421afbdf57bed1ab5aca376795f5bc9ee0141f9d80b7d07"
+}

@@ -1,0 +1,30 @@
+{
+  "story": 304,
+  "exact_hosted_base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "signed_candidate_tests": 1290,
+  "signed_inventory_base_tests": 1277,
+  "new_node_ids": [
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_currentness_preserves_cancellation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[prepare]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[staged]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_product_issuer_and_exclusion_consumers_have_fixed_entry_points",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[KeyError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[TypeError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_valid_owner_signature_is_bound_to_revision_and_lease",
+    "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+  ],
+  "parent_merge_tree_identical_to_reviewed_300": true,
+  "accepted_admission_audit_sha256": "94be3ccc7c531bf361aca057bc1c8ebfd898e1f4a6759147962c278cf747a28e",
+  "exact_merged_base_audit_sha256": "327a8701b15adc50f41145d19d9796b3cc217058a8c7a1244061f20d8ac8fa7d",
+  "exact_text_match_except_commit_label": true,
+  "first_local_failure": {
+    "observed": "Existing paired-settlement test stopped before reading the damaged row because the native scan returned no cursor.",
+    "isolated_reproduction": "Both exact base and candidate passed, then a fresh full locked run passed.",
+    "underlying_cause": "Not reproduced."
+  }
+}
