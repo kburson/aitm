@@ -1,0 +1,251 @@
+bounded-fast-story-shadow	Set up job	﻿2026-11-15T14:07:08.2261170Z Current runner version: '2.338.2'
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2284060Z ##[group]Runner Image Provisioner
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2284940Z Hosted Compute Agent
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2285360Z Version: 20261028.624
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2285900Z Commit: 54898b74c23fde5556c9b3c3a2290865feef0dfe
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2286450Z Build Date: 2026-10-28T21:51:42Z
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2287010Z Worker ID: {c760fa81-3785-41f3-a41a-618714abb7ef}
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2287550Z Region: westus
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2287990Z Cloud: MacCloud
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2288470Z ##[endgroup]
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2290360Z ##[group]Operating System
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2290810Z macOS
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2291140Z 26.7.2
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2291470Z 25G332
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2291860Z ##[endgroup]
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2292260Z ##[group]Runner Image
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2292760Z Image: macos-26-arm64
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2293160Z Version: 20261102.0473.1
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2293940Z Included Software: https://github.com/actions/runner-images/blob/macos-26-arm64/20261102.0473/images/macos/macos-26-arm64-Readme.md
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2295210Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-26-arm64%2F20261102.0473
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2296040Z ##[endgroup]
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2297040Z ##[group]GITHUB_TOKEN Permissions
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2298690Z Contents: read
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2299120Z Metadata: read
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2299520Z PullRequests: read
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2299990Z ##[endgroup]
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2301930Z Secret source: Actions
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2302640Z Cache mode: write
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2303230Z Prepare workflow directory
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2614770Z Prepare all required actions
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.2672350Z Getting action download info
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.4341080Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:08.7904930Z Download action repository 'astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2' (SHA:68559e99cc807c1eb7e9238fd43a15bba460eec2)
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:09.6214430Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+bounded-fast-story-shadow	Set up job	2026-11-15T14:07:09.7711920Z Complete job name: bounded-fast-story-shadow
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T14:07:09.8371060Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8371780Z with:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8372150Z   ref: 454bddcea742fe048b42e95b707fb7a40096d76e
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8372590Z   persist-credentials: false
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8372960Z   repository: kburson/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8376180Z   token: ***
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8376540Z   ssh-strict: true
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8376980Z   ssh-user: git
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8377340Z   clean: true
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8377780Z   sparse-checkout-cone-mode: true
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8378190Z   fetch-depth: 1
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8378550Z   fetch-tags: false
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8378930Z   show-progress: true
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8379360Z   lfs: false
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8379800Z   submodules: false
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8380140Z   set-safe-directory: true
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8380550Z   allow-unsafe-pr-checkout: false
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:09.8381190Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3098490Z Syncing repository: kburson/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3100420Z ##[group]Getting Git version info
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3101150Z Working directory is '/Users/runner/work/aitm/aitm'
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3102510Z [command]/opt/homebrew/bin/git version
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3695760Z git version 2.56.0
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3707110Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3714050Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/9ecc4e25-1a0d-4253-bc08-1835fa87dce3/.gitconfig'
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3722510Z Temporarily overriding HOME='/Users/runner/work/_temp/9ecc4e25-1a0d-4253-bc08-1835fa87dce3' before making global git config changes
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3725650Z Adding repository directory to the temporary git global config as a safe directory
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3729460Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/aitm/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3866960Z Deleting the contents of '/Users/runner/work/aitm/aitm'
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3869220Z ##[group]Determining repository object format
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3870030Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3870760Z ##[group]Initializing the repository
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.3873450Z [command]/opt/homebrew/bin/git init /Users/runner/work/aitm/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4090990Z hint: Using 'master' as the name for the initial branch. This default branch name
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4092120Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4092970Z hint: to use in all of your new repositories, which will suppress this warning,
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4095190Z hint: call:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4095610Z hint:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4096030Z hint: 	git config --global init.defaultBranch <name>
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4096510Z hint:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4096950Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4097670Z hint: 'development'. The just-created branch can be renamed via this command:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4098480Z hint:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4098940Z hint: 	git branch -m <name>
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4099300Z hint:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4099800Z hint: Disable this message with "git config set advice.defaultBranchName false"
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4101020Z Initialized empty Git repository in /Users/runner/work/aitm/aitm/.git/
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4110510Z [command]/opt/homebrew/bin/git remote add origin https://github.com/kburson/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4192410Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4193170Z ##[group]Disabling automatic garbage collection
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4195250Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4263320Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4263940Z ##[group]Setting up auth
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4264380Z Removing SSH command configuration
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4266540Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.4334450Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.5445950Z Removing HTTP extra header
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.5450960Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.5527850Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.6332330Z Removing includeIf entries pointing to credentials config files
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.6336460Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.6400480Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7248860Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7338120Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/aitm/aitm/.git.path /Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7412630Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/aitm/aitm/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7485070Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7547110Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7606210Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7606940Z ##[group]Fetching the repository
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:10.7610600Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 454bddcea742fe048b42e95b707fb7a40096d76e
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6649100Z From https://github.com/kburson/aitm
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6650840Z  * branch            454bddcea742fe048b42e95b707fb7a40096d76e -> FETCH_HEAD
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6655200Z [command]/opt/homebrew/bin/git rev-parse --verify --quiet 454bddcea742fe048b42e95b707fb7a40096d76e^{object}
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6726370Z 454bddcea742fe048b42e95b707fb7a40096d76e
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6731740Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6732960Z ##[group]Determining the checkout info
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6734290Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6735070Z [command]/opt/homebrew/bin/git sparse-checkout disable
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6837540Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6919290Z ##[group]Checking out the ref
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.6922930Z [command]/opt/homebrew/bin/git checkout --progress --force 454bddcea742fe048b42e95b707fb7a40096d76e
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7371190Z HEAD is now at 454bddc Merge pull request #314 from kburson/codex/aitm-292-fast-story-shadow
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7385160Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7485960Z [command]/opt/homebrew/bin/git log -1 --format=%H
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7561070Z 454bddcea742fe048b42e95b707fb7a40096d76e
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7577630Z ##[group]Removing auth
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7580380Z Removing SSH command configuration
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7583970Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.7654360Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.8660730Z Removing HTTP extra header
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.8679130Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.8730830Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9749130Z Removing includeIf entries pointing to credentials config files
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9750960Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9815100Z includeif.gitdir:/Users/runner/work/aitm/aitm/.git.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9816160Z includeif.gitdir:/Users/runner/work/aitm/aitm/.git/worktrees/*.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9816880Z includeif.gitdir:/github/workspace/.git.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9817510Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9824310Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/aitm/aitm/.git.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9887360Z /Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:11.9895590Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/aitm/aitm/.git.path \/Users\/runner\/work\/_temp\/git\-credentials\-cd0a7c0c\-e50e\-44d0\-acd5\-08d972dda516\.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0003180Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/aitm/aitm/.git/worktrees/*.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0138350Z /Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0146350Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/aitm/aitm/.git/worktrees/*.path \/Users\/runner\/work\/_temp\/git\-credentials\-cd0a7c0c\-e50e\-44d0\-acd5\-08d972dda516\.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0215950Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0280080Z /github/runner_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0284800Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-cd0a7c0c\-e50e\-44d0\-acd5\-08d972dda516\.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0363690Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0429280Z /github/runner_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0437030Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-cd0a7c0c\-e50e\-44d0\-acd5\-08d972dda516\.config
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.0538570Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.1396060Z Removing credentials config '/Users/runner/work/_temp/git-credentials-cd0a7c0c-e50e-44d0-acd5-08d972dda516.config'
+bounded-fast-story-shadow	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:12.1420420Z ##[endgroup]
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	﻿2026-11-15T14:07:12.1730740Z ##[group]Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1731270Z with:
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1731520Z   version: 0.10.6
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1731790Z   python-version: 3.13.9
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1732080Z   enable-cache: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1732370Z   activate-environment: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1732670Z   no-project: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1732990Z   working-directory: /Users/runner/work/aitm/aitm
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1735510Z   github-token: ***
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1736110Z   cache-dependency-glob: **/*requirements*.txt
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/*requirements*.in
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/*constraints*.txt
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/*constraints*.in
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/pyproject.toml
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/uv.lock
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	**/*.py.lock
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1736840Z   restore-cache: true
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1737110Z   save-cache: auto
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1737370Z   prune-cache: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1737640Z   cache-python: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1737930Z   ignore-nothing-to-cache: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1738250Z   ignore-empty-workdir: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1738850Z   download-from-astral-mirror: true
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1739210Z   add-problem-matchers: true
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1739490Z   quiet: false
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1739760Z   resolution-strategy: highest
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.1740080Z ##[endgroup]
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.3481900Z Fetching manifest data from https://releases.astral.sh/github/versions/main/v1/uv.ndjson ...
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.4362530Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.10.6/uv-aarch64-apple-darwin.tar.gz" ...
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.6900320Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/a6117285-e219-4bb7-87b8-8d178734ea42 -f /Users/runner/work/_temp/f1e6295e-a579-48c6-ac7e-2c8ca74317f3
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9812560Z Added /Users/runner/.local/bin to the path
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9821230Z Added /Users/runner/hostedtoolcache/uv/0.10.6/aarch64 to the path
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9826230Z Set UV_PYTHON_INSTALL_DIR to /Users/runner/work/_temp/uv-python-dir
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9835390Z Added /Users/runner/work/_temp/uv-python-dir to the path
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9836930Z Set UV_PYTHON to 3.13.9
+bounded-fast-story-shadow	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:12.9870610Z Successfully installed uv version 0.10.6
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	﻿2026-11-15T14:07:13.1070120Z ##[group]Run set -euo pipefail
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1070470Z ^[[36;1mset -euo pipefail^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1070680Z ^[[36;1mtest "$(uname -sm)" = "Darwin arm64"^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1070990Z ^[[36;1mdevice=$(df -P "$RUNNER_TEMP" | awk 'NR==2 {print $1}')^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1071440Z ^[[36;1mtest "$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)" = apfs^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1071870Z ^[[36;1mwork=$(mktemp -d "$RUNNER_TEMP/aitm-fast-shadow.XXXXXXXX")^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1072640Z ^[[36;1mmkdir "$RUNNER_TEMP/aitm-fast-evidence"^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1073010Z ^[[36;1muv run --no-project --python 3.13.9 python tools/ci/ci_fast_story_shadow.py \^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1073450Z ^[[36;1m  "$ADMISSION" "$work" "$RUNNER_TEMP/aitm-fast-evidence/receipt.json"^[[0m
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1126110Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1126400Z env:
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1126660Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1127120Z   UV_PYTHON: 3.13.9
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1127480Z   ADMISSION: 1835a056c26d71fb57b1b0754bd6ad66e0ce46fa
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1130140Z   GH_TOKEN: ***
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:13.1130350Z ##[endgroup]
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:15.6173470Z Downloading cpython-3.13.9-macos-aarch64-none (download) (16.2MiB)
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:16.0891290Z  Downloaded cpython-3.13.9-macos-aarch64-none (download)
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:22.8487310Z From https://github.com/kburson/aitm
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:22.8490630Z  * branch            refs/pull/316/merge -> FETCH_HEAD
+bounded-fast-story-shadow	Verify reviewed input and run bounded shadow	2026-11-15T14:07:24.4286580Z Fast story shadow for PR 316 returned full-required
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	﻿2026-11-15T14:07:24.4645340Z ##[group]Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4645930Z with:
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4646200Z   name: aitm-fast-shadow-a1
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4646640Z   path: /Users/runner/work/_temp/aitm-fast-evidence/receipt.json
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4647030Z   if-no-files-found: error
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4647360Z   retention-days: 14
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4647650Z   compression-level: 6
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4648090Z   overwrite: false
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4648500Z   include-hidden-files: false
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4648760Z   archive: true
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4649030Z env:
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4649320Z   UV_PYTHON_INSTALL_DIR: /Users/runner/work/_temp/uv-python-dir
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4649770Z   UV_PYTHON: 3.13.9
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.4650040Z ##[endgroup]
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.8513920Z With the provided path, there will be 1 file uploaded
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.8514700Z Artifact name is valid!
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:24.8515090Z Root directory input is valid!
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.0909590Z Uploading artifact: aitm-fast-shadow-a1.zip
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.0911840Z Beginning upload of artifact content to blob storage
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.1299670Z Uploaded bytes 480
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.1445010Z Finished uploading artifact content to blob storage!
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.1446110Z SHA256 digest of uploaded artifact is ee539c727c56ab3badbe332de4fa37c03d5f9d698b9056bb713e796c6c11e022
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.1446760Z Finalizing artifact upload
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.6666320Z Artifact aitm-fast-shadow-a1 successfully finalized. Artifact ID 14165156387
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.6668670Z Artifact aitm-fast-shadow-a1 has been successfully uploaded! Final size is 480 bytes. Artifact ID is 14165156387
+bounded-fast-story-shadow	Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9	2026-11-15T14:07:25.6670580Z Artifact download URL: https://github.com/kburson/aitm/actions/runs/43722007566/artifacts/14165156387
+bounded-fast-story-shadow	Post Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	﻿2026-11-15T14:07:25.6907380Z Post job cleanup.
+bounded-fast-story-shadow	Post Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T14:07:25.8056440Z UV_PYTHON_INSTALL_DIR is already set to /Users/runner/work/_temp/uv-python-dir
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T14:07:25.8187040Z Post job cleanup.
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:25.9389460Z [command]/opt/homebrew/bin/git version
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:25.9515500Z git version 2.56.0
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0009690Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/bc89a315-4783-493e-84ad-4e6ecf4c33d4/.gitconfig'
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0037000Z Temporarily overriding HOME='/Users/runner/work/_temp/bc89a315-4783-493e-84ad-4e6ecf4c33d4' before making global git config changes
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0047090Z Adding repository directory to the temporary git global config as a safe directory
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0047840Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/aitm/aitm
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0060940Z Removing SSH command configuration
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0061470Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0075170Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0902950Z Removing HTTP extra header
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0907930Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.0996720Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.2244510Z Removing includeIf entries pointing to credentials config files
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.2345640Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+bounded-fast-story-shadow	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T14:07:26.2649090Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+bounded-fast-story-shadow	Complete job	﻿2026-11-15T14:07:26.3861290Z Cleaning up orphan processes

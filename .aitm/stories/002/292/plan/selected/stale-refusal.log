@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/delivery-292/verify-hosted-shadow.py", line 94, in <module>
+    print(json.dumps(verify(GitHub(REPO), Path(root), int(run_id), int(number)), indent=2, sort_keys=True))
+                     ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/delivery-292/verify-hosted-shadow.py", line 57, in verify
+    verify_live_subject(github, subject)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/trusted-trunk/tools/ci/ci_fast_story_shadow.py", line 166, in verify_live_subject
+    require(
+    ~~~~~~~^
+        branch["protected"] is True
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<8 lines>...
+        "live pull request no longer matches the reviewed subject",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/kpburson/projects/aitm-workspace/review/aitm-wave30.l1cAdl/trusted-trunk/tools/ci/verify_pr.py", line 72, in require
+    raise Hold(reason)
+verify_pr.Hold: live pull request no longer matches the reviewed subject

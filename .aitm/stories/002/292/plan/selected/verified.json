@@ -1,0 +1,31 @@
+{
+  "artifact": 14164961703,
+  "artifact_sha256": "sha256:0594b0a2c8cc3aaab8fd6207f3ed7ae60ec930a23480064295bc8c789c32b435",
+  "attempt": 1,
+  "children": [
+    {
+      "label": "service-one-shot",
+      "pid": 2163,
+      "returncode": 0
+    },
+    {
+      "label": "cli-help",
+      "pid": 2336,
+      "returncode": 0
+    }
+  ],
+  "inventory": 1825,
+  "job": 132835796053,
+  "mode": "selected",
+  "planning_commit": "d60412ee5b79ede166a36fdea136e43e5b5887d4",
+  "run": 43721995748,
+  "scope": "advisory",
+  "selected": 7,
+  "subject": {
+    "base": "454bddcea742fe048b42e95b707fb7a40096d76e",
+    "head": "66191c8f1596bc6c82f47ee6a88ba42a1879b143",
+    "pr": 315,
+    "tested": "32adf94a1974cc754cd26d6dc2e9e5f5adaf3880",
+    "tree": "70286508b550c39011ab46fbfed08006408666ce"
+  }
+}

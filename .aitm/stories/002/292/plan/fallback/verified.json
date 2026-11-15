@@ -1,0 +1,18 @@
+{
+  "artifact": 14165156387,
+  "artifact_sha256": "sha256:ee539c727c56ab3badbe332de4fa37c03d5f9d698b9056bb713e796c6c11e022",
+  "attempt": 1,
+  "job": 132835830011,
+  "mode": "full-required",
+  "planning_commit": "1835a056c26d71fb57b1b0754bd6ad66e0ce46fa",
+  "run": 43722007566,
+  "scope": "advisory",
+  "selected": 0,
+  "subject": {
+    "base": "454bddcea742fe048b42e95b707fb7a40096d76e",
+    "head": "f9b5a7c138f456d08457002fc44ecac5b901e000",
+    "pr": 316,
+    "tested": "5f5650e0e6d95cb190aeb01ebcd48ff464a031c1",
+    "tree": "e5c87fc298f39dcea49cd6422638aef06304e5e3"
+  }
+}
