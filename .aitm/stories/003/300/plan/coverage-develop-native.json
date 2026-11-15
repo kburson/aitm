@@ -1,0 +1,28 @@
+{
+  "story": 300,
+  "branch": "codex/aitm-300-journal-coverage",
+  "base": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "accepted_jit_publication": "6e0383b77ef6ab53120cc4edeef609bbb7cc425c",
+  "prerequisites": [
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 303,
+      "state": "closed"
+    }
+  ],
+  "project": {
+    "actual": 0.0196,
+    "coverage": "Partial coordinator Refine progress. Provider, tool and wait time excluded.",
+    "estimate": 3.2,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0J7k",
+    "issue": 300,
+    "rank": 229.06,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Dev"
+  }
+}

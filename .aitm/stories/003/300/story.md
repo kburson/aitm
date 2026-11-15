@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -48,3 +48,7 @@ Passed independent Refine at 2.5 implementation hours after #303 delivered. The 
 ## Independent exact JIT
 
 The recovery passed at 3.2 implementation hours. It defines stable policy denial, source metadata revalidation, lease loss and a single lazy migration transaction. [Initial hold](plan/qualified-coverage-independent-jit-r1.md) · [Passing exact review](plan/qualified-coverage-independent-jit-r2.md).
+
+## Develop
+
+Exact JIT passed. Verified both native prerequisites closed and the Project Dev transition. [Native readback](plan/coverage-develop-native.json).
