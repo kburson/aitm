@@ -1742,6 +1742,7 @@ class RoutingJournal:
                 if change not in self._settlements(connection, change.sequence):
                     raise LedgerError("Paired settlement failed committed readback")
                 for side in sides:
+                    side._issuer._require_batch_qualification(side._batch)
                     cursor = _source_checkpoint(side.progress.cursor).cursor
                     _capture_position(
                         side._batch._locator._source, cursor, fixed=cursor

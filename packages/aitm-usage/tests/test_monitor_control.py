@@ -9,6 +9,8 @@ import pytest
 from aitm_usage import cli, ledger, monitor_control, monitor_registry
 from aitm_usage.monitor_registry import CaptureChange, ControlCommand, Registry
 
+pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
+
 PROJECT = UUID("1a65f88f-3825-4a7b-9689-c7fbd9eaf36d")
 SOURCE = UUID("bc6bb0a1-f29d-4ca6-9cf1-65b4b645d318")
 REQUEST = UUID("c586044a-d0b0-4200-a226-c129344af29f")

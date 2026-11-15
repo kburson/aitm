@@ -37,6 +37,8 @@ from aitm_usage.sources.adapter import ProviderAdapter, SourceRoot
 from aitm_usage.sources.scan import checkout_anchor_reference
 from aitm_usage.types import BoundaryKind, DiagnosticCode, ItemKey, ItemKind, WorkPhase
 
+pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
+
 A, B, C, UNKNOWN, SOURCE = (UUID(int=i) for i in range(1, 6))
 
 

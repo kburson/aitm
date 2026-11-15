@@ -13,8 +13,10 @@ from pathlib import Path
 from uuid import UUID
 from weakref import WeakValueDictionary
 
+from ._monitor_qualification import _LiveSourceProof
 from .ledger import ConflictError, Ledger, LedgerError, _path_exists, _pin_directory
 from .monitor_registry import (
+    ApprovedSource,
     Registry,
     RegistryView,
     _check_capture_root,
@@ -340,6 +342,7 @@ class VerifiedScopeBatch:
     _locator: SourceLocator = field(repr=False)
     _native_cursor: SourceCursor | None = field(repr=False)
     _registry: RegistryView = field(repr=False)
+    _live_source: _LiveSourceProof = field(repr=False, compare=False)
     _revision_witnesses: tuple[
         tuple[NativeObservation, _NativeRevisionWitness], ...
     ] = field(default=(), repr=False, compare=False)
@@ -935,10 +938,11 @@ class ScopeState:
         self,
         source_id: UUID,
         locator: SourceLocator,
-    ) -> tuple[SourceLocator, AdapterBatch]:
+    ) -> tuple[SourceLocator, AdapterBatch, _LiveSourceProof]:
         if type(self._grok_reader) is not GrokAdapter:
             raise LedgerError("Grok scope reader is unavailable")
-        approved = _source(self.registry.view(), source_id)
+        view = self.registry.view()
+        approved = _source(view, source_id)
         _check_capture_root(approved.directory)
         source = locator._source
         evidence = self.registry.source_evidence()
@@ -981,6 +985,13 @@ class ScopeState:
             )
         ):
             raise LedgerError("Grok scope source tuple changed")
+        authority = self.registry._require_live_source(
+            approved,
+            observed=any(
+                self.registry.source_read_allowed(project.project_id, source_id)
+                for project in view.projects
+            ),
+        )
         result = self._grok_reader.read_delta(current, None)
         _check_capture_root(approved.directory)
         if (
@@ -988,7 +999,7 @@ class ScopeState:
             or type(result.cursor.checkpoint) is not GrokCheckpoint
         ):
             raise LedgerError("Grok scope source proof is unavailable")
-        return current, result
+        return current, result, authority
 
     def _anchor(self, view: RegistryView, checkout: SourceRef | None) -> UUID | None:
         if checkout is None:
@@ -1095,7 +1106,7 @@ class ScopeState:
         if self._codex_quota_binding is not None:
             raise LedgerError("Codex quota authority is already bound")
         view = self.registry.view()
-        _, current = self.registry._approved_candidate(view, source_id, locator)
+        _, current, _ = self.registry._approved_candidate(view, source_id, locator)
         key = _quota_source_key(current)
         self.registry.source_evidence().validate_source_ref(account)
         if (
@@ -1176,8 +1187,8 @@ class ScopeState:
                 for project in view.projects
             ):
                 raise LedgerError("Native scope source has no admitted unbounded read")
-            approved, current = self.registry._approved_candidate(
-                view, source_id, locator
+            approved, current, authority = self.registry._approved_candidate(
+                view, source_id, locator, observed=True
             )
             admitted = self._admitted_readers(view, source_id, current)
             if cursor is not None:
@@ -1234,11 +1245,12 @@ class ScopeState:
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
         else:
-            current, batch = self._read_grok(source_id, locator)
+            current, batch, authority = self._read_grok(source_id, locator)
             surface = NativeSurface.GROK_BUILD_MACOS
             admitted = frozenset()
             native_cursor = None
 
+        self.registry._require_live_source(_source(view, source_id), prior=authority)
         proofs = self._observation_proofs(
             source_id, locator, surface, batch.observations, view, admitted
         )
@@ -1266,6 +1278,7 @@ class ScopeState:
             _locator=current,
             _native_cursor=native_cursor,
             _registry=view,
+            _live_source=authority,
             _revision_witnesses=tuple(revision_witnesses),
             _completion_witnesses=tuple(completion_witnesses or ()),
             _completion_progress=completion_progress,
@@ -1571,7 +1584,7 @@ class ScopeState:
                 return False
             witness = prior
 
-    def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
+    def _require_batch_qualification(self, batch: VerifiedScopeBatch) -> ApprovedSource:
         self.registry.lease
         if (
             self._batches.get(id(batch)) is not batch
@@ -1579,6 +1592,11 @@ class ScopeState:
         ):
             raise LedgerError("Scope registry or issuer changed since the native read")
         approved = _source(batch._registry, batch.source_id)
+        self.registry._require_live_source(approved, prior=batch._live_source)
+        return approved
+
+    def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
+        approved = self._require_batch_qualification(batch)
         _check_capture_root(approved.directory)
         native = batch._locator._source
         try:
@@ -2378,6 +2396,11 @@ class ScopeState:
     def _require_settlement_side(
         self, proof: _VerifiedSettlementSide, request: _TypedDisposition
     ) -> None:
+        if (
+            type(proof) is _VerifiedSettlementSide
+            and self._settlement_sides.get(id(proof)) is proof
+        ):
+            self._require_batch_qualification(proof._batch)
         if (
             type(proof) is not _VerifiedSettlementSide
             or self._settlement_sides.get(id(proof)) is not proof

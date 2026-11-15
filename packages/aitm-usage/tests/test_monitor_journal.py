@@ -48,6 +48,8 @@ from aitm_usage.types import (
     WorkPhase,
 )
 
+pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
+
 A, B, LIVE, COPY = (UUID(int=number) for number in range(1, 5))
 
 
@@ -2987,3 +2989,47 @@ def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journa
         assert prepared.progress != prior
     assert journal.as_of(change.sequence) == historical
     assert journal.as_of().settlements == (change,)
+
+
+def test_paired_history_survives_live_revocation_after_commit(
+    journal_pair, monkeypatch, legacy_monitor_qualification
+):
+    from contextlib import contextmanager
+    from types import MethodType
+
+    from test_monitor_qualification import qualify
+
+    case = journal_pair
+    monkeypatch.setattr(
+        case.writer,
+        "_require_live_source",
+        MethodType(legacy_monitor_qualification, case.writer),
+    )
+    qualify(case.writer)
+    owner, rival = case.owner.prove(), case.rival.prove()
+    journal = case.journal
+    before = journal.as_of()
+    transaction = journal._store.transaction
+
+    @contextmanager
+    def revoke_after_commit(*, write=False):
+        with transaction(write=write) as connection:
+            yield connection
+        if write:
+            case.writer._live_profile = None
+
+    monkeypatch.setattr(journal._store, "transaction", revoke_after_commit)
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.settle_disposition(case.key, owner, rival)
+
+    after = journal.as_of()
+    assert len(after.settlements) == 1
+    assert after.settlements[0].sequence == before.sequence + 1
+    assert all(claim in after.claims for claim in before.claims)
+    for proof in (owner, rival):
+        assert journal.cursor_for(proof._batch.source_id, proof._batch._locator) == (
+            proof.progress.cursor
+        )
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.settle_disposition(case.key, owner, rival)
+    assert journal.as_of() == after

@@ -15,6 +15,8 @@ from test_monitor_adapters import source as source
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.types import Eligibility
 
+pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
+
 PROJECT_A = UUID(int=116)
 PROJECT_B = UUID(int=117)
 SOURCE = UUID(int=118)
