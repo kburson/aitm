@@ -17,11 +17,6 @@ from aitm_usage import host_watch
 from aitm_usage.host_watch import WatchError, WatchKind, WatchRoot, WatchSet
 from aitm_usage.types import SourceRef
 
-SUPPORTED = {"Darwin", "Linux"}
-pytestmark = pytest.mark.skipif(
-    platform.system() not in SUPPORTED, reason="Darwin and Linux watch interfaces"
-)
-
 
 def _root(path, label="root"):
     path = path.resolve()
@@ -117,78 +112,6 @@ def test_close_wakes_blocked_consumer(tmp_path):
         assert results == [()]
 
 
-@pytest.mark.skipif(platform.system() != "Linux", reason="native inotify")
-def test_linux_new_and_moved_directories_reconcile(tmp_path):
-    watched = tmp_path / "watched"
-    watched.mkdir()
-    root = _root(watched)
-    target = root.path / "nested"
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        target.mkdir()
-        _next(watches, lambda item: item.reason == "enrollment")
-        (target / "native.jsonl").touch()
-        assert (
-            _next(watches, lambda item: item.kind is WatchKind.CHANGED).key == root.key
-        )
-        outside = tmp_path / "moved-out"
-        target.rename(outside)
-        _next(watches, lambda item: item.reason == "enrollment")
-        (outside / "outside.jsonl").touch()
-        assert not any(item.kind is WatchKind.CHANGED for item in watches.events(0.05))
-        restored = root.path / "moved-in"
-        outside.rename(restored)
-        _next(watches, lambda item: item.reason == "enrollment")
-        (restored / "moved.jsonl").touch()
-        assert (
-            _next(watches, lambda item: item.kind is WatchKind.CHANGED).key == root.key
-        )
-
-
-@pytest.mark.skipif(platform.system() != "Linux", reason="native inotify")
-def test_linux_reports_real_queue_overflow_and_rebuilds(tmp_path):
-    maximum = int(Path("/proc/sys/fs/inotify/max_queued_events").read_text())
-    assert 0 < maximum <= 65536
-    root = _root(tmp_path)
-    path = root.path / "churn"
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        limit = monotonic() + 8
-        for _ in range(maximum // 2 + 16):
-            assert monotonic() < limit
-            path.touch()
-            path.unlink()
-        overflow = _next(watches, lambda item: item.reason == "overflow")
-        assert overflow.key == root.key
-        path.touch()
-        assert (
-            _next(watches, lambda item: item.kind is WatchKind.CHANGED).key == root.key
-        )
-
-
-@pytest.mark.skipif(platform.system() != "Linux", reason="native inotify")
-def test_linux_registration_bound_falls_back_for_one_root(tmp_path):
-    crowded, quiet = (tmp_path / name for name in ("crowded", "quiet"))
-    crowded.mkdir()
-    quiet.mkdir()
-    (crowded / "nested").mkdir()
-    first, second = _root(crowded, "first"), _root(quiet, "second")
-    with WatchSet(
-        (first, second), max_directories_per_root=1, fallback_interval=0.05
-    ) as watches:
-        initial = watches.events(0)
-        assert {item.key for item in initial if item.reason == "startup"} == {
-            first.key,
-            second.key,
-        }
-        assert _next(watches, lambda item: item.reason == "fallback").key == first.key
-        (quiet / "file.jsonl").touch()
-        assert (
-            _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-            == second.key
-        )
-
-
 def test_native_watch_opens_directories_and_no_payloads(tmp_path):
     root = _root(tmp_path)
     payload = root.path / "transcript.jsonl"
@@ -250,168 +173,246 @@ print(json.dumps({"observed": observed,
         }
 
 
-@pytest.mark.skipif(platform.system() != "Linux", reason="native inotify")
-def test_linux_overlapping_roots_share_descriptor_without_weakening_mask(
-    tmp_path, monkeypatch
-):
-    inner = tmp_path / "inner"
-    inner.mkdir()
-    outer, child = _root(tmp_path, "outer"), _root(inner, "inner")
-    bind = host_watch._bind
-    registrations = []
+# Each host collects its own native ABI cases. Both hosts run the shared cases.
+if platform.system() == "Linux":
 
-    def inspect_registration(library, name, result, *arguments):
-        native = bind(library, name, result, *arguments)
-        if name != "inotify_add_watch":
-            return native
+    def test_linux_new_and_moved_directories_reconcile(tmp_path):
+        watched = tmp_path / "watched"
+        watched.mkdir()
+        root = _root(watched)
+        target = root.path / "nested"
+        with WatchSet((root,)) as watches:
+            _startup(watches, root)
+            target.mkdir()
+            _next(watches, lambda item: item.reason == "enrollment")
+            (target / "native.jsonl").touch()
+            assert (
+                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
+                == root.key
+            )
+            outside = tmp_path / "moved-out"
+            target.rename(outside)
+            _next(watches, lambda item: item.reason == "enrollment")
+            (outside / "outside.jsonl").touch()
+            assert not any(
+                item.kind is WatchKind.CHANGED for item in watches.events(0.05)
+            )
+            restored = root.path / "moved-in"
+            outside.rename(restored)
+            _next(watches, lambda item: item.reason == "enrollment")
+            (restored / "moved.jsonl").touch()
+            assert (
+                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
+                == root.key
+            )
 
-        def add(fd, path, mask):
-            info = os.stat(path)
-            watch = native(fd, path, mask)
-            registrations.append((info.st_ino, path, mask, watch))
-            return watch
+    def test_linux_reports_real_queue_overflow_and_rebuilds(tmp_path):
+        maximum = int(Path("/proc/sys/fs/inotify/max_queued_events").read_text())
+        assert 0 < maximum <= 65536
+        root = _root(tmp_path)
+        path = root.path / "churn"
+        with WatchSet((root,)) as watches:
+            _startup(watches, root)
+            limit = monotonic() + 8
+            for _ in range(maximum // 2 + 16):
+                assert monotonic() < limit
+                path.touch()
+                path.unlink()
+            overflow = _next(watches, lambda item: item.reason == "overflow")
+            assert overflow.key == root.key
+            path.touch()
+            assert (
+                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
+                == root.key
+            )
 
-        return add
+    def test_linux_registration_bound_falls_back_for_one_root(tmp_path):
+        crowded, quiet = (tmp_path / name for name in ("crowded", "quiet"))
+        crowded.mkdir()
+        quiet.mkdir()
+        (crowded / "nested").mkdir()
+        first, second = _root(crowded, "first"), _root(quiet, "second")
+        with WatchSet(
+            (first, second), max_directories_per_root=1, fallback_interval=0.05
+        ) as watches:
+            initial = watches.events(0)
+            assert {item.key for item in initial if item.reason == "startup"} == {
+                first.key,
+                second.key,
+            }
+            assert (
+                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            )
+            (quiet / "file.jsonl").touch()
+            assert (
+                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
+                == second.key
+            )
 
-    monkeypatch.setattr(host_watch, "_bind", inspect_registration)
-    with WatchSet((outer, child)) as watches:
-        watches.events(0)
-        inside = [record for record in registrations if record[0] == child.identity[1]]
-        assert len(inside) == 2 and inside[0][3] == inside[1][3]
-        assert all(path.startswith(b"/proc/self/fd/") for _, path, _, _ in inside)
-        masks = {mask for _, _, mask, _ in inside}
-        assert len(masks) == 1
-        (mask,) = masks
-        assert mask & 0x01000000 and not mask & 0x02000000
-        (inner / "both.jsonl").touch()
-        assert {item.key for item in watches.events(1)} == {outer.key, child.key}
-        backend = watches._linux
-        assert backend is not None
-        descriptors = (backend.fd, *watches._wake_fds)
-    for fd in descriptors:
-        with pytest.raises(OSError) as retired:
-            os.fstat(fd)
-        assert retired.value.errno == errno.EBADF
+    def test_linux_overlapping_roots_share_descriptor_without_weakening_mask(
+        tmp_path, monkeypatch
+    ):
+        inner = tmp_path / "inner"
+        inner.mkdir()
+        outer, child = _root(tmp_path, "outer"), _root(inner, "inner")
+        bind = host_watch._bind
+        registrations = []
 
+        def inspect_registration(library, name, result, *arguments):
+            native = bind(library, name, result, *arguments)
+            if name != "inotify_add_watch":
+                return native
 
-@pytest.mark.skipif(platform.system() != "Linux", reason="native inotify")
-def test_linux_kernel_capacity_retires_partial_root_only(tmp_path, monkeypatch):
-    limited, healthy = (tmp_path / name for name in ("limited", "healthy"))
-    limited.mkdir()
-    healthy.mkdir()
-    refused = limited / "nested"
-    refused.mkdir()
-    first, second = _root(limited, "first"), _root(healthy, "second")
-    denied = refused.stat()
-    bind = host_watch._bind
+            def add(fd, path, mask):
+                info = os.stat(path)
+                watch = native(fd, path, mask)
+                registrations.append((info.st_ino, path, mask, watch))
+                return watch
 
-    def inject_limit(library, name, result, *arguments):
-        native = bind(library, name, result, *arguments)
-        if name != "inotify_add_watch":
-            return native
+            return add
 
-        def add(fd, path, mask):
-            if os.path.samestat(denied, os.stat(path)):
-                host_watch.ct.set_errno(errno.ENOSPC)
-                return -1
-            return native(fd, path, mask)
+        monkeypatch.setattr(host_watch, "_bind", inspect_registration)
+        with WatchSet((outer, child)) as watches:
+            watches.events(0)
+            inside = [
+                record for record in registrations if record[0] == child.identity[1]
+            ]
+            assert len(inside) == 2 and inside[0][3] == inside[1][3]
+            assert all(path.startswith(b"/proc/self/fd/") for _, path, _, _ in inside)
+            masks = {mask for _, _, mask, _ in inside}
+            assert len(masks) == 1
+            (mask,) = masks
+            assert mask & 0x01000000 and not mask & 0x02000000
+            (inner / "both.jsonl").touch()
+            assert {item.key for item in watches.events(1)} == {outer.key, child.key}
+            backend = watches._linux
+            assert backend is not None
+            descriptors = (backend.fd, *watches._wake_fds)
+        for fd in descriptors:
+            with pytest.raises(OSError) as retired:
+                os.fstat(fd)
+            assert retired.value.errno == errno.EBADF
 
-        return add
+    def test_linux_kernel_capacity_retires_partial_root_only(tmp_path, monkeypatch):
+        limited, healthy = (tmp_path / name for name in ("limited", "healthy"))
+        limited.mkdir()
+        healthy.mkdir()
+        refused = limited / "nested"
+        refused.mkdir()
+        first, second = _root(limited, "first"), _root(healthy, "second")
+        denied = refused.stat()
+        bind = host_watch._bind
 
-    monkeypatch.setattr(host_watch, "_bind", inject_limit)
-    with WatchSet((first, second), fallback_interval=0.02) as watches:
-        initial = watches.events(0)
-        assert {item.key for item in initial} == {first.key, second.key}
-        backend = watches._linux
-        assert backend is not None
-        assert all(first.key not in members for members in backend.watches.values())
-        assert _next(watches, lambda item: item.reason == "fallback").key == first.key
-        (healthy / "available.jsonl").touch()
-        assert (
-            _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-            == second.key
-        )
+        def inject_limit(library, name, result, *arguments):
+            native = bind(library, name, result, *arguments)
+            if name != "inotify_add_watch":
+                return native
 
+            def add(fd, path, mask):
+                if os.path.samestat(denied, os.stat(path)):
+                    host_watch.ct.set_errno(errno.ENOSPC)
+                    return -1
+                return native(fd, path, mask)
 
-@pytest.mark.skipif(platform.system() != "Darwin", reason="native FSEvents")
-@pytest.mark.parametrize(
-    "flags", [0x01, 0x02, 0x04, 0x08, 0x20, 0x40, 0x80, 0x80000000]
-)
-def test_darwin_drop_wrap_and_mount_flags_reconcile(tmp_path, flags):
-    root = _root(tmp_path)
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        watches._darwin_hint(root.key, flags)
-        assert (
-            _next(watches, lambda event: event.reason == "native-rescan").key
-            == root.key
-        )
+            return add
 
-
-@pytest.mark.skipif(platform.system() != "Darwin", reason="native FSEvents")
-def test_darwin_start_failure_retires_owned_resources(tmp_path, monkeypatch):
-    root = _root(tmp_path)
-    bind = host_watch._bind
-    retired = []
-
-    def fail_start(library, name, result, *arguments):
-        native = bind(library, name, result, *arguments)
-        if name == "FSEventStreamStart":
-            return lambda _: False
-        if name not in {"FSEventStreamInvalidate", "FSEventStreamRelease", "CFRelease"}:
-            return native
-
-        def cleanup(handle):
-            native(handle)
-            retired.append(name)
-
-        return cleanup
-
-    monkeypatch.setattr(host_watch, "_bind", fail_start)
-    with pytest.raises(WatchError, match="did not start"):
-        WatchSet((root,))
-    assert retired == [
-        "FSEventStreamInvalidate",
-        "FSEventStreamRelease",
-        "CFRelease",
-        "CFRelease",
-        "CFRelease",
-    ]
-
-
-@pytest.mark.skipif(platform.system() != "Darwin", reason="native FSEvents")
-def test_darwin_join_timeout_keeps_callback_until_verified_close(tmp_path, monkeypatch):
-    root = _root(tmp_path)
-    with WatchSet((root,)) as watches:
-        backend = watches._darwin
-        assert backend is not None and backend._callbacks
-        with monkeypatch.context() as patch:
-            patch.setattr(backend._thread, "join", lambda _: None)
-            patch.setattr(backend._thread, "is_alive", lambda: True)
-            with pytest.raises(WatchError, match="owner did not retire"):
-                watches.close()
-            assert watches._darwin is backend and backend._callbacks
-        watches.close()
-        assert not backend._callbacks and not backend.alive()
+        monkeypatch.setattr(host_watch, "_bind", inject_limit)
+        with WatchSet((first, second), fallback_interval=0.02) as watches:
+            initial = watches.events(0)
+            assert {item.key for item in initial} == {first.key, second.key}
+            backend = watches._linux
+            assert backend is not None
+            assert all(first.key not in members for members in backend.watches.values())
+            assert (
+                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            )
+            (healthy / "available.jsonl").touch()
+            assert (
+                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
+                == second.key
+            )
 
 
-@pytest.mark.skipif(platform.system() != "Darwin", reason="native FSEvents")
-def test_darwin_busy_consumer_coalesces_without_blocking_callback(tmp_path):
-    root = _root(tmp_path)
-    with WatchSet((root,)) as watches:
-        _startup(watches, root)
-        returned = Event()
+if platform.system() == "Darwin":
 
-        def deliver():
-            watches._darwin_hint(root.key, 0x02)
-            returned.set()
+    @pytest.mark.parametrize(
+        "flags", [0x01, 0x02, 0x04, 0x08, 0x20, 0x40, 0x80, 0x80000000]
+    )
+    def test_darwin_drop_wrap_and_mount_flags_reconcile(tmp_path, flags):
+        root = _root(tmp_path)
+        with WatchSet((root,)) as watches:
+            _startup(watches, root)
+            watches._darwin_hint(root.key, flags)
+            assert (
+                _next(watches, lambda event: event.reason == "native-rescan").key
+                == root.key
+            )
 
-        sender = Thread(target=deliver, daemon=True)
-        with watches._condition:
-            sender.start()
-            assert returned.wait(1)
-        sender.join(1)
-        assert (
-            _next(watches, lambda item: item.reason == "callback-pressure").key
-            == root.key
-        )
+    def test_darwin_start_failure_retires_owned_resources(tmp_path, monkeypatch):
+        root = _root(tmp_path)
+        bind = host_watch._bind
+        retired = []
+
+        def fail_start(library, name, result, *arguments):
+            native = bind(library, name, result, *arguments)
+            if name == "FSEventStreamStart":
+                return lambda _: False
+            if name not in {
+                "FSEventStreamInvalidate",
+                "FSEventStreamRelease",
+                "CFRelease",
+            }:
+                return native
+
+            def cleanup(handle):
+                native(handle)
+                retired.append(name)
+
+            return cleanup
+
+        monkeypatch.setattr(host_watch, "_bind", fail_start)
+        with pytest.raises(WatchError, match="did not start"):
+            WatchSet((root,))
+        assert retired == [
+            "FSEventStreamInvalidate",
+            "FSEventStreamRelease",
+            "CFRelease",
+            "CFRelease",
+            "CFRelease",
+        ]
+
+    def test_darwin_join_timeout_keeps_callback_until_verified_close(
+        tmp_path, monkeypatch
+    ):
+        root = _root(tmp_path)
+        with WatchSet((root,)) as watches:
+            backend = watches._darwin
+            assert backend is not None and backend._callbacks
+            with monkeypatch.context() as patch:
+                patch.setattr(backend._thread, "join", lambda _: None)
+                patch.setattr(backend._thread, "is_alive", lambda: True)
+                with pytest.raises(WatchError, match="owner did not retire"):
+                    watches.close()
+                assert watches._darwin is backend and backend._callbacks
+            watches.close()
+            assert not backend._callbacks and not backend.alive()
+
+    def test_darwin_busy_consumer_coalesces_without_blocking_callback(tmp_path):
+        root = _root(tmp_path)
+        with WatchSet((root,)) as watches:
+            _startup(watches, root)
+            returned = Event()
+
+            def deliver():
+                watches._darwin_hint(root.key, 0x02)
+                returned.set()
+
+            sender = Thread(target=deliver, daemon=True)
+            with watches._condition:
+                sender.start()
+                assert returned.wait(1)
+            sender.join(1)
+            assert (
+                _next(watches, lambda item: item.reason == "callback-pressure").key
+                == root.key
+            )
