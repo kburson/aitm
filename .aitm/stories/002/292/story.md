@@ -10,12 +10,12 @@ children: []
 blocking: [293]
 blocked-by: [147, 288]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T13:57:49Z"
+updated: "2026-11-15T14:00:41Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-292-fast-story-shadow-plan.md", "plan/local-corrected.json", "plan/local-corrected.log", "plan/quality-first.log", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-292-fast-story-shadow-plan.md", "plan/local-corrected.json", "plan/local-corrected.log", "plan/quality-first.log", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/shadow-admission.json", "plan/shadow-admission.json.sig", "plan/shadow-admission-review.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,7 @@ Build a bounded hosted fast-path shadow runner on reviewed inputs. Bind exact ba
 ## Delivery
 
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
+
+## Hosted selected admission
+
+[Signed admission](plan/shadow-admission.json) · [Independent review](plan/shadow-admission-review.md). This exact record authorizes the shadow probe.

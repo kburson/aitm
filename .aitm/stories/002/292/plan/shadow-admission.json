@@ -1,0 +1,9 @@
+{
+  "base": "454bddcea742fe048b42e95b707fb7a40096d76e",
+  "head": "66191c8f1596bc6c82f47ee6a88ba42a1879b143",
+  "pr": 315,
+  "review_sha256": "6781b01594450cd89a23e64255dd4d251f8b71cb175eed28a87b1c4ca117026e",
+  "schema": "aitm.fast-story-admission/v1",
+  "tested": "32adf94a1974cc754cd26d6dc2e9e5f5adaf3880",
+  "tree": "70286508b550c39011ab46fbfed08006408666ce"
+}
