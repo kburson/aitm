@@ -1807,6 +1807,17 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
                     (record.key.value,),
                 ).fetchone()
                 payload = _decode(raw, _ContentDisputePayload)
+                noncanonical = raw + b" "
+                assert _decode(noncanonical, _ContentDisputePayload) == payload
+                connection.execute(
+                    "UPDATE content_disputes SET payload=? WHERE key=?",
+                    (noncanonical, record.key.value),
+                )
+            with pytest.raises(LedgerError, match="Verified journal-only publication"):
+                journal.publication_candidate(content_change)
+            with pytest.raises(LedgerError, match="Verified journal-only publication"):
+                journal.dispute_changes(saved.sequence)
+            with journal._store.transaction(write=True) as connection:
                 altered = replace(
                     payload,
                     accepted=replace(
@@ -1820,6 +1831,8 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
                         record.key.value,
                     ),
                 )
+            with pytest.raises(LedgerError, match="Verified journal-only publication"):
+                journal.publication_candidate(content_change)
             with pytest.raises(LedgerError, match="Stored content dispute"):
                 journal.as_of()
             assert journal.as_of(saved.sequence) == saved
@@ -3166,14 +3179,52 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
             for _ in range(2):
                 with pytest.raises(LedgerError):
                     journal.publication_candidate(replace(first, dispute=false))
+        from aitm_usage._monitor_journal_store import _open
+        from aitm_usage.monitor_journal import ClaimEvidence
+        from aitm_usage.types import _decode
+
+        key = first.dispute.record.key.value
         with journal._store.transaction(write=True) as connection:
+            (raw,) = connection.execute(
+                "SELECT evidence FROM disputes WHERE key=?", (key,)
+            ).fetchone()
+            noncanonical = raw + b" "
+            assert _decode(noncanonical, ClaimEvidence) == first.dispute.record.evidence
             connection.execute(
-                "UPDATE disputes SET evidence=? WHERE key=?",
-                (b"{}", first.dispute.record.key.value),
+                "UPDATE disputes SET evidence=? WHERE key=?", (noncanonical, key)
             )
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
+        with pytest.raises(LedgerError, match="Verified journal-only publication"):
+            journal.dispute_changes(0)
         assert journal.publication_candidate(second) == two
+
+        previous_commit = first.sequence - 1
+        with journal._store.transaction(write=True) as connection:
+            assert connection.execute(
+                "SELECT sequence FROM commits WHERE sequence=?", (previous_commit,)
+            ).fetchone() == (previous_commit,)
+            connection.execute(
+                "UPDATE disputes SET sequence=?,evidence=? WHERE key=?",
+                (previous_commit, raw, key),
+            )
+        moved, unchanged = journal.dispute_changes(0)
+        assert moved.sequence == previous_commit and unchanged == second
+        assert journal.publication_candidate(moved).identity != one.identity
+        with pytest.raises(LedgerError, match="Verified journal-only publication"):
+            journal.publication_candidate(first)
+
+        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
+        with _open(database, write=True) as connection:
+            connection.execute("PRAGMA user_version = 7")
+        for read in (
+            lambda: journal.dispute_changes(0),
+            lambda: journal.publication_candidate(second),
+        ):
+            with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
+                read()
+        with _open(database, write=False) as connection:
+            assert connection.execute("PRAGMA user_version").fetchone() == (7,)
 
 
 def test_journal_only_candidates_refuse_pre_content_dispute_schema(native):
