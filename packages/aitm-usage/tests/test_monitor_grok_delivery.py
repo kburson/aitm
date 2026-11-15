@@ -470,15 +470,14 @@ def test_retained_legacy_journal_snapshot_restores_for_both_readers(
         )
 
         with closing(sqlite3.connect(backup_path)) as snapshot:
-            (claim,) = snapshot.execute(
-                "SELECT payload FROM claims ORDER BY sequence LIMIT 1"
-            ).fetchone()
+            stored = {
+                key: _decode(payload, _LegacyClaim).material.usage
+                for key, payload in snapshot.execute("SELECT key,payload FROM claims")
+            }
             (progress,) = snapshot.execute(
                 "SELECT cursor FROM progress ORDER BY sequence DESC LIMIT 1"
             ).fetchone()
-            assert (
-                _decode(claim, _LegacyClaim).material.usage == earlier.claims[0].usage
-            )
+            assert stored == {claim.key.value: claim.usage for claim in earlier.claims}
             assert _decode(progress, StreamCursor) == prior
 
         native.append(LIVE, native.turn(4))
