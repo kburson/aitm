@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 331
 title: "[M11e] Enroll new Grok streams under existing capture grants"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/331"
 parent: 100
 children: []
@@ -54,3 +54,7 @@ The exact candidate passed 1,487 locked local tests. The regressions cover quiet
 [Signed hosted Test](plan/grok-enrollment-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
 
 [Independent source review](plan/grok-enrollment-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-enrollment-independent-source-r2-receipt.json).
+
+## Verified Close
+
+[PR #334](https://github.com/kburson/aitm/pull/334) delivered the exact reviewed tree on trunk at 4ba4354f603ad861c897111dcaaf2342fc68da86. The native issue is Closed and Project 24 is Done. [Delivery proof](plan/grok-enrollment-verified-delivery.json) · [Native Close proof](plan/grok-enrollment-native-close.json).
