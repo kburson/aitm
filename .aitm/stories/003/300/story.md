@@ -84,3 +84,7 @@ The candidate adds the exact valid-row reconstruction control requested by the s
 ## Exact hosted Test
 
 The candidate passed signed hosted Test and the raw replay of the established policy. A further independent source review requires explicit authorization. [Signed receipt](plan/coverage-signed-hosted-receipt-confirmation.json) · [Replay](plan/coverage-hosted-policy-replay-confirmation.json).
+
+## Authorized independent source confirmation
+
+Passed for the exact signed candidate. Delivery still requires current trunk and merge readback. [Review](plan/coverage-independent-source-confirmation.md).
