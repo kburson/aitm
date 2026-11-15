@@ -1,0 +1,29 @@
+{
+  "story": 325,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "f235fe00e0ee5d2f15eabae673308e13071c3d25",
+    "headRefOid": "4df14d9e952d0f4fbd9b8bdd943f72099c3ff481",
+    "number": 327,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/327"
+  },
+  "tests": 1410,
+  "focused_tests": 19,
+  "linux_native_tests": 12,
+  "verified_tree": "c6469cd6313646e080fc20357d06ecb6b78f600c",
+  "product_coverage": {
+    "covered_lines": 13278,
+    "num_statements": 14628
+  },
+  "evidence_sha256": {
+    "product.log": "dec99aff9a7d9ab654296c6d95856f2ded52048d1ba4af477d64e920bc8f2c62",
+    "product-coverage.json": "20f76965be387f8961e05563822474a6e4003ef686e0c70987ff8661da2cafd5",
+    "correction.diff": "b8ea4b523e654929014f7aa7e37daf7fceb3e148b90fe17cea49c1c0dc0b7a8e",
+    "retiring-owner-red.log": "e1e1385e65c1501f8380a385919fde927ea4d27c6b31c4f638d91b8f9ae0ae74",
+    "macos-native.log": "1bb9d0c9de2d4dc440ba3ccb6e27b9bdad7e17c07a7255225242e10e0fc185c1",
+    "exact-linux-native.json": "cd2a78e426ba8b93d6b16fc56505f191c434de784b79fdc20e08d6835343cdd2",
+    "exact-linux-native.log": "678e3e164efa6f94eb45cbf63902c48e8106118bdeb0c0c4b73e2f6ef78308e9"
+  }
+}

@@ -40,3 +40,5 @@ Independent JIT passed. [Signed-off plan boundary](plan/native-watch-independent
 ## Test
 
 Both native watchers delivered events and retired their resources. Linux proved actual overflow and recovery. Both host groups proved zero transcript payload opens. The exact candidate passed 1,409 locked local tests. [Test proof](plan/native-watch-local-test.json) · [PR #327](https://github.com/kburson/aitm/pull/327).
+
+The Darwin watcher now retires its native owner after the last authorized root is lost. The corrected exact candidate passed 1,410 locked local tests. [Corrected Test proof](plan/native-watch-owner-retirement-local-test.json).
