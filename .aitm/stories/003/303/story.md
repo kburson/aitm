@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -72,3 +72,7 @@ Held for the reported source findings. The preserved exact hosted pass does not 
 ## Source-review corrections and retest
 
 The recovery candidate adds tests covering the four source-review findings. Exact PR #306 returned to Test on current trunk. [Local retest](plan/qualification-local-retest.json).
+
+## Exact hosted retest
+
+The corrected candidate passed signed hosted Test and the raw replay of the established policy. Independent source recovery is active. [Signed receipt](plan/qualification-signed-hosted-receipt-r2.json) · [Replay](plan/qualification-hosted-policy-replay-r2.json).
