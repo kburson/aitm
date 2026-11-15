@@ -1,0 +1,25 @@
+{
+  "IDs": 1825,
+  "children": [
+    {
+      "label": "service-one-shot",
+      "pid": 58957,
+      "returncode": 0
+    },
+    {
+      "label": "cli-help",
+      "pid": 59134,
+      "returncode": 0
+    }
+  ],
+  "outcomes": {
+    "packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl": "passed",
+    "packages/aitm-usage/tests/test_install.py::test_restore_fences_publication_until_atomic_swap": "passed",
+    "packages/aitm-usage/tests/test_ledger.py::test_atomic_cursor_and_revisions": "passed",
+    "packages/aitm-usage/tests/test_ledger.py::test_writer_refusal_read_snapshot_and_release_on_process_exit": "passed",
+    "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid": "passed",
+    "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state": "passed",
+    "tools/ci/tests/test_cli_evidence.py::test_usage_console_help": "passed"
+  },
+  "source": "3cb2ba833a81edf663d00e1898789a371358bf80"
+}

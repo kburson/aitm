@@ -1,0 +1,322 @@
+quality	Set up job	﻿2026-11-15T13:37:54.7385267Z Current runner version: '2.338.2'
+quality	Set up job	2026-11-15T13:37:54.7403733Z ##[group]Runner Image Provisioner
+quality	Set up job	2026-11-15T13:37:54.7404658Z Hosted Compute Agent
+quality	Set up job	2026-11-15T13:37:54.7405117Z Version: 20261103.629
+quality	Set up job	2026-11-15T13:37:54.7405568Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+quality	Set up job	2026-11-15T13:37:54.7406157Z Build Date: 2026-11-03T17:26:59Z
+quality	Set up job	2026-11-15T13:37:54.7406682Z Worker ID: {37c93b7f-3f70-4e49-90f5-fa73625636d8}
+quality	Set up job	2026-11-15T13:37:54.7407202Z Region: us-west-2
+quality	Set up job	2026-11-15T13:37:54.7407612Z Cloud: AWS
+quality	Set up job	2026-11-15T13:37:54.7408228Z ##[endgroup]
+quality	Set up job	2026-11-15T13:37:54.7409301Z ##[group]Operating System
+quality	Set up job	2026-11-15T13:37:54.7409746Z Ubuntu
+quality	Set up job	2026-11-15T13:37:54.7410132Z 24.04.5
+quality	Set up job	2026-11-15T13:37:54.7410523Z LTS
+quality	Set up job	2026-11-15T13:37:54.7410887Z ##[endgroup]
+quality	Set up job	2026-11-15T13:37:54.7411286Z ##[group]Runner Image
+quality	Set up job	2026-11-15T13:37:54.7411724Z Image: ubuntu-24.04
+quality	Set up job	2026-11-15T13:37:54.7412125Z Version: 20261111.127.1
+quality	Set up job	2026-11-15T13:37:54.7412913Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261111.127/images/ubuntu/Ubuntu2404-Readme.md
+quality	Set up job	2026-11-15T13:37:54.7414178Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261111.127
+quality	Set up job	2026-11-15T13:37:54.7414863Z ##[endgroup]
+quality	Set up job	2026-11-15T13:37:54.7415658Z ##[group]GITHUB_TOKEN Permissions
+quality	Set up job	2026-11-15T13:37:54.7417275Z Contents: read
+quality	Set up job	2026-11-15T13:37:54.7417907Z Metadata: read
+quality	Set up job	2026-11-15T13:37:54.7418366Z ##[endgroup]
+quality	Set up job	2026-11-15T13:37:54.7419875Z Secret source: Actions
+quality	Set up job	2026-11-15T13:37:54.7420596Z Cache mode: write
+quality	Set up job	2026-11-15T13:37:54.7421073Z Prepare workflow directory
+quality	Set up job	2026-11-15T13:37:54.7684991Z Prepare all required actions
+quality	Set up job	2026-11-15T13:37:54.7721798Z Getting action download info
+quality	Set up job	2026-11-15T13:37:55.1125101Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+quality	Set up job	2026-11-15T13:37:57.1458858Z Download action repository 'astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2' (SHA:68559e99cc807c1eb7e9238fd43a15bba460eec2)
+quality	Set up job	2026-11-15T13:37:57.5836130Z Complete job name: quality
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:37:57.6410336Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6411007Z with:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6411331Z   ref: 6b0c077e01cd3eb0986af3af64439bc893919c7e
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6411710Z   persist-credentials: false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6412056Z   repository: kburson/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6414342Z   token: ***
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6414615Z   ssh-strict: true
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6414910Z   ssh-user: git
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6415186Z   clean: true
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6415503Z   sparse-checkout-cone-mode: true
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6415828Z   fetch-depth: 1
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6416087Z   fetch-tags: false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6416392Z   show-progress: true
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6416709Z   lfs: false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6416995Z   submodules: false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6417276Z   set-safe-directory: true
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6417580Z   allow-unsafe-pr-checkout: false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6418301Z env:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6418588Z   PYTHON_VERSION: 3.13.9
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6418901Z   UV_VERSION: 0.10.6
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6419371Z   BOOTSTRAP_BASE: f80f22645e2008c4cac9dc6e4003640bba976b5f
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6419828Z   BOOTSTRAP_OBSERVER_BLOB: 839b73cdcc1e44f45af78bcebdbf53e9adfeee67
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6420455Z   BOOTSTRAP_OBSERVER_SHA: dd08c448cafe1ef0e6f5b8eba660d8485bfe76657c109c5249e86efd735025d1
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6421012Z   BOOTSTRAP_POLICY_BLOB: b93942fb31a999702ed1c2ad14035b1a5a1d22a4
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6421600Z   BOOTSTRAP_POLICY_SHA: dae97b53685c6c5f079de479ef49a0dfb5c522f4c2aae9a8bfdc5618286c71a2
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:37:57.6422064Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.6972360Z Syncing repository: kburson/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.6973536Z ##[group]Getting Git version info
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.6973870Z Working directory is '/home/runner/work/aitm/aitm'
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.6974312Z [command]/usr/bin/git version
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9115142Z git version 2.56.1
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9136672Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9149129Z Temporarily overriding HOME='/home/runner/work/_temp/3473ad20-c571-440f-a880-0a2ceea1b834' before making global git config changes
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9150010Z Adding repository directory to the temporary git global config as a safe directory
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9150470Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9501503Z Deleting the contents of '/home/runner/work/aitm/aitm'
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9504207Z ##[group]Determining repository object format
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9504996Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9505456Z ##[group]Initializing the repository
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:01.9508811Z [command]/usr/bin/git init /home/runner/work/aitm/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0612705Z hint: Using 'master' as the name for the initial branch. This default branch name
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0613405Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0613824Z hint: to use in all of your new repositories, which will suppress this warning,
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0614301Z hint: call:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0614558Z hint:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0614813Z hint: 	git config --global init.defaultBranch <name>
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0615078Z hint:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0615335Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0615733Z hint: 'development'. The just-created branch can be renamed via this command:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0616045Z hint:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0616238Z hint: 	git branch -m <name>
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0616485Z hint:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0616785Z hint: Disable this message with "git config set advice.defaultBranchName false"
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0619081Z Initialized empty Git repository in /home/runner/work/aitm/aitm/.git/
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0626925Z [command]/usr/bin/git remote add origin https://github.com/kburson/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0679202Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0679655Z ##[group]Disabling automatic garbage collection
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0681573Z [command]/usr/bin/git config --local gc.auto 0
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0707505Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0708549Z ##[group]Setting up auth
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0708947Z Removing SSH command configuration
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0712887Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.0739706Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4171755Z Removing HTTP extra header
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4176610Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4204871Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4352220Z Removing includeIf entries pointing to credentials config files
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4356957Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4381559Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4535287Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4563298Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm/aitm/.git.path /home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4585650Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm/aitm/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4608520Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4631737Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4652113Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4652531Z ##[group]Fetching the repository
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:02.4657317Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 6b0c077e01cd3eb0986af3af64439bc893919c7e
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0560703Z From https://github.com/kburson/aitm
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0561162Z  * branch            6b0c077e01cd3eb0986af3af64439bc893919c7e -> FETCH_HEAD
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0568785Z [command]/usr/bin/git rev-parse --verify --quiet 6b0c077e01cd3eb0986af3af64439bc893919c7e^{object}
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0590222Z 6b0c077e01cd3eb0986af3af64439bc893919c7e
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0592163Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0592572Z ##[group]Determining the checkout info
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0593333Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0596724Z [command]/usr/bin/git sparse-checkout disable
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0659611Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0680444Z ##[group]Checking out the ref
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0683002Z [command]/usr/bin/git checkout --progress --force 6b0c077e01cd3eb0986af3af64439bc893919c7e
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0830411Z Note: switching to '6b0c077e01cd3eb0986af3af64439bc893919c7e'.
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0830697Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0830860Z You are in 'detached HEAD' state. You can look around, make experimental
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0831220Z changes and commit them, and you can discard any commits you make in this
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0831592Z state without impacting any branches by switching back to a branch.
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0831792Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0831934Z If you want to create a new branch to retain commits you create, you may
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0832288Z do so (now or later) by using -c with the switch command. Example:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0832661Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0832745Z   git switch -c <new-branch-name>
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0832879Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0832958Z Or undo this operation with:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833151Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833216Z   git switch -
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833314Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833470Z Turn off this advice by setting config variable advice.detachedHead to false
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833690Z 
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0833931Z HEAD is now at 6b0c077 Merge 79258792b0173c1078f1c4bdee7f57c95c2bd888 into 1ae0c08c9fc2a4c884800c663ba42cc4a6bb37a2
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0842253Z ##[endgroup]
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0875615Z [command]/usr/bin/git log -1 --format=%H
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0893967Z 6b0c077e01cd3eb0986af3af64439bc893919c7e
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0899422Z ##[group]Removing auth
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0899710Z Removing SSH command configuration
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0902080Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.0925397Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1074482Z Removing HTTP extra header
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1077011Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1100369Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1244966Z Removing includeIf entries pointing to credentials config files
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1247460Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1272772Z includeif.gitdir:/home/runner/work/aitm/aitm/.git.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1273281Z includeif.gitdir:/home/runner/work/aitm/aitm/.git/worktrees/*.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1273933Z includeif.gitdir:/github/workspace/.git.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1274337Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1281791Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm/aitm/.git.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1300560Z /home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1307955Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm/aitm/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-e2d87f55\-47ae\-4509\-9900\-27556b3522cc\.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1332541Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm/aitm/.git/worktrees/*.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1349714Z /home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1355122Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm/aitm/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-e2d87f55\-47ae\-4509\-9900\-27556b3522cc\.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1380329Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1398332Z /github/runner_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1402725Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-e2d87f55\-47ae\-4509\-9900\-27556b3522cc\.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1427140Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1444800Z /github/runner_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1449855Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-e2d87f55\-47ae\-4509\-9900\-27556b3522cc\.config
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1474295Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1621867Z Removing credentials config '/home/runner/work/_temp/git-credentials-e2d87f55-47ae-4509-9900-27556b3522cc.config'
+quality	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:03.1627504Z ##[endgroup]
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	﻿2026-11-15T13:38:03.1846722Z ##[group]Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1847101Z with:
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1847386Z   version: 0.10.6
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1847619Z   python-version: 3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1848046Z   enable-cache: true
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1848350Z   cache-dependency-glob: packages/aitm-usage/uv.lock
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1848674Z   cache-suffix: ubuntu-24.04-python-3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1848988Z   activate-environment: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1849258Z   no-project: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1849580Z   working-directory: /home/runner/work/aitm/aitm
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1851453Z   github-token: ***
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1851684Z   restore-cache: true
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1851991Z   save-cache: auto
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1852221Z   prune-cache: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1852448Z   cache-python: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1852652Z   ignore-nothing-to-cache: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1852859Z   ignore-empty-workdir: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1853067Z   download-from-astral-mirror: true
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1853326Z   add-problem-matchers: true
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1853511Z   quiet: false
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1853679Z   resolution-strategy: highest
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1853861Z env:
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1854013Z   PYTHON_VERSION: 3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1854186Z   UV_VERSION: 0.10.6
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1854391Z   BOOTSTRAP_BASE: f80f22645e2008c4cac9dc6e4003640bba976b5f
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1854703Z   BOOTSTRAP_OBSERVER_BLOB: 839b73cdcc1e44f45af78bcebdbf53e9adfeee67
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1855099Z   BOOTSTRAP_OBSERVER_SHA: dd08c448cafe1ef0e6f5b8eba660d8485bfe76657c109c5249e86efd735025d1
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1855479Z   BOOTSTRAP_POLICY_BLOB: b93942fb31a999702ed1c2ad14035b1a5a1d22a4
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1855951Z   BOOTSTRAP_POLICY_SHA: dae97b53685c6c5f079de479ef49a0dfb5c522f4c2aae9a8bfdc5618286c71a2
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.1856270Z ##[endgroup]
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.3932858Z Fetching manifest data from https://releases.astral.sh/github/versions/main/v1/uv.ndjson ...
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.5177885Z Downloading uv from "https://releases.astral.sh/github/uv/releases/download/0.10.6/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:03.8715971Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/68613904-1ff8-4f41-9902-436b9d54c559 -f /home/runner/work/_temp/47648282-5d55-44e5-806e-842297bfd8a6
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2529871Z Added /home/runner/.local/bin to the path
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2531738Z Added /opt/hostedtoolcache/uv/0.10.6/x86_64 to the path
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2532630Z Set UV_PYTHON_INSTALL_DIR to /home/runner/work/_temp/uv-python-dir
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2533082Z Added /home/runner/work/_temp/uv-python-dir to the path
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2533445Z Set UV_PYTHON to 3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2554791Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2555236Z Successfully installed uv version 0.10.6
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2555746Z Searching files using cache dependency glob: /home/runner/work/aitm/aitm/packages/aitm-usage/uv.lock
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2578119Z /home/runner/work/aitm/aitm/packages/aitm-usage/uv.lock
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2589672Z Found 1 files to hash.
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.2643007Z Trying to restore cache from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.13.9-1a79d67382c3e6b47b7f4590007672719411034ad2c03540b2916af64b95baca-ubuntu-24.04-python-3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:04.5298078Z Cache hit for: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.13.9-1a79d67382c3e6b47b7f4590007672719411034ad2c03540b2916af64b95baca-ubuntu-24.04-python-3.13.9
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:05.8734968Z Received 92370 of 12675282 (0.7%), 0.1 MBs/sec
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:06.6043199Z Received 12675282 of 12675282 (100.0%), 7.0 MBs/sec
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:06.6043689Z Cache Size: ~12 MB (12675282 B)
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:06.6065595Z [command]/usr/bin/tar -xf /home/runner/work/_temp/650aaeef-6066-4711-8591-e7dfff3a8ad1/cache.tzst -P -C /home/runner/work/aitm/aitm --use-compress-program unzstd
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:06.6569911Z Cache restored successfully
+quality	Run astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2	2026-11-15T13:38:06.6576432Z cache restored from GitHub Actions cache with key: setup-uv-2-x86_64-unknown-linux-gnu-ubuntu-24.04-3.13.9-1a79d67382c3e6b47b7f4590007672719411034ad2c03540b2916af64b95baca-ubuntu-24.04-python-3.13.9
+quality	Lint and format checks	﻿2026-11-15T13:38:06.7683484Z ##[group]Run test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+quality	Lint and format checks	2026-11-15T13:38:06.7683900Z ^[[36;1mtest "$(git rev-parse HEAD)" = "$GITHUB_SHA"^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7684248Z ^[[36;1muv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7684742Z ^[[36;1mruff=packages/aitm-usage/.venv/bin/ruff^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7685095Z ^[[36;1m(cd packages/aitm-usage && .venv/bin/ruff check . && .venv/bin/ruff format --check .)^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7685519Z ^[[36;1m"$ruff" check --config packages/aitm-usage/pyproject.toml tools/ci^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7685880Z ^[[36;1m"$ruff" format --check --config packages/aitm-usage/pyproject.toml tools/ci^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.7686244Z ^[[36;1mgo run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12^[[0m
+quality	Lint and format checks	2026-11-15T13:38:06.9831190Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+quality	Lint and format checks	2026-11-15T13:38:06.9831513Z env:
+quality	Lint and format checks	2026-11-15T13:38:06.9831696Z   PYTHON_VERSION: 3.13.9
+quality	Lint and format checks	2026-11-15T13:38:06.9831927Z   UV_VERSION: 0.10.6
+quality	Lint and format checks	2026-11-15T13:38:06.9832232Z   BOOTSTRAP_BASE: f80f22645e2008c4cac9dc6e4003640bba976b5f
+quality	Lint and format checks	2026-11-15T13:38:06.9832545Z   BOOTSTRAP_OBSERVER_BLOB: 839b73cdcc1e44f45af78bcebdbf53e9adfeee67
+quality	Lint and format checks	2026-11-15T13:38:06.9832950Z   BOOTSTRAP_OBSERVER_SHA: dd08c448cafe1ef0e6f5b8eba660d8485bfe76657c109c5249e86efd735025d1
+quality	Lint and format checks	2026-11-15T13:38:06.9833343Z   BOOTSTRAP_POLICY_BLOB: b93942fb31a999702ed1c2ad14035b1a5a1d22a4
+quality	Lint and format checks	2026-11-15T13:38:06.9833722Z   BOOTSTRAP_POLICY_SHA: dae97b53685c6c5f079de479ef49a0dfb5c522f4c2aae9a8bfdc5618286c71a2
+quality	Lint and format checks	2026-11-15T13:38:06.9834260Z   UV_PYTHON_INSTALL_DIR: /home/runner/work/_temp/uv-python-dir
+quality	Lint and format checks	2026-11-15T13:38:06.9834519Z   UV_PYTHON: 3.13.9
+quality	Lint and format checks	2026-11-15T13:38:06.9834720Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+quality	Lint and format checks	2026-11-15T13:38:06.9834957Z ##[endgroup]
+quality	Lint and format checks	2026-11-15T13:38:07.3014275Z Downloading cpython-3.13.9-linux-x86_64-gnu (download) (32.7MiB)
+quality	Lint and format checks	2026-11-15T13:38:07.8286900Z  Downloaded cpython-3.13.9-linux-x86_64-gnu (download)
+quality	Lint and format checks	2026-11-15T13:38:07.9449474Z Using CPython 3.13.9
+quality	Lint and format checks	2026-11-15T13:38:07.9450356Z Creating virtual environment at: packages/aitm-usage/.venv
+quality	Lint and format checks	2026-11-15T13:38:07.9466418Z Resolved 12 packages in 0.51ms
+quality	Lint and format checks	2026-11-15T13:38:07.9474730Z    Building aitm-usage @ file:///home/runner/work/aitm/aitm/packages/aitm-usage
+quality	Lint and format checks	2026-11-15T13:38:07.9482176Z       Built aitm-usage @ file:///home/runner/work/aitm/aitm/packages/aitm-usage
+quality	Lint and format checks	2026-11-15T13:38:07.9495909Z Prepared 1 package in 2ms
+quality	Lint and format checks	2026-11-15T13:38:07.9546222Z Installed 11 packages in 4ms
+quality	Lint and format checks	2026-11-15T13:38:07.9546731Z  + aitm-usage==0.1.0 (from file:///home/runner/work/aitm/aitm/packages/aitm-usage)
+quality	Lint and format checks	2026-11-15T13:38:07.9547137Z  + coverage==7.17.2
+quality	Lint and format checks	2026-11-15T13:38:07.9547347Z  + execnet==2.1.2
+quality	Lint and format checks	2026-11-15T13:38:07.9547549Z  + iniconfig==2.3.1
+quality	Lint and format checks	2026-11-15T13:38:07.9548061Z  + packaging==26.3
+quality	Lint and format checks	2026-11-15T13:38:07.9548272Z  + pluggy==1.7.0
+quality	Lint and format checks	2026-11-15T13:38:07.9548478Z  + pygments==2.21.0
+quality	Lint and format checks	2026-11-15T13:38:07.9548700Z  + pytest==9.2.0
+quality	Lint and format checks	2026-11-15T13:38:07.9548900Z  + pytest-cov==7.1.0
+quality	Lint and format checks	2026-11-15T13:38:07.9549129Z  + pytest-xdist==3.8.0
+quality	Lint and format checks	2026-11-15T13:38:07.9549365Z  + ruff==0.15.22
+quality	Lint and format checks	2026-11-15T13:38:07.9845106Z All checks passed!
+quality	Lint and format checks	2026-11-15T13:38:08.0206004Z 61 files already formatted
+quality	Lint and format checks	2026-11-15T13:38:08.0334023Z I001 [*] Import block is un-sorted or un-formatted
+quality	Lint and format checks	2026-11-15T13:38:08.0334466Z   --> tools/ci/ci_fast_story_shadow.py:2:1
+quality	Lint and format checks	2026-11-15T13:38:08.0335133Z    |
+quality	Lint and format checks	2026-11-15T13:38:08.0335451Z  1 |   """Run bounded, read-only story validation for an exact reviewed input."""
+quality	Lint and format checks	2026-11-15T13:38:08.0335801Z  2 | / import argparse
+quality	Lint and format checks	2026-11-15T13:38:08.0335972Z  3 | | import json
+quality	Lint and format checks	2026-11-15T13:38:08.0336129Z  4 | | import os
+quality	Lint and format checks	2026-11-15T13:38:08.0336282Z  5 | | import re
+quality	Lint and format checks	2026-11-15T13:38:08.0336464Z  6 | | import subprocess
+quality	Lint and format checks	2026-11-15T13:38:08.0336640Z  7 | | import tarfile
+quality	Lint and format checks	2026-11-15T13:38:08.0336820Z  8 | | from collections import Counter
+quality	Lint and format checks	2026-11-15T13:38:08.0337033Z  9 | | from hashlib import sha256
+quality	Lint and format checks	2026-11-15T13:38:08.0337242Z 10 | | from io import BytesIO
+quality	Lint and format checks	2026-11-15T13:38:08.0337438Z 11 | | from pathlib import Path
+quality	Lint and format checks	2026-11-15T13:38:08.0337619Z 12 | |
+quality	Lint and format checks	2026-11-15T13:38:08.0338263Z 13 | | from ci_advisory import REPO, REPOSITORY_ID, TARGET
+quality	Lint and format checks	2026-11-15T13:38:08.0338531Z 14 | | from python_gate import _outcomes
+quality	Lint and format checks	2026-11-15T13:38:08.0338892Z 15 | | from verify_pr import GitHub, blob, commit, digest, positive, regular_blob, require, tree_entries
+quality	Lint and format checks	2026-11-15T13:38:08.0339307Z    | |_________________________________________________________________________________________________^
+quality	Lint and format checks	2026-11-15T13:38:08.0339579Z 16 |
+quality	Lint and format checks	2026-11-15T13:38:08.0339776Z 17 |   PATH = ".github/workflows/fast-story-shadow.yml"
+quality	Lint and format checks	2026-11-15T13:38:08.0340004Z    |
+quality	Lint and format checks	2026-11-15T13:38:08.0340150Z help: Organize imports
+quality	Lint and format checks	2026-11-15T13:38:08.0340266Z 
+quality	Lint and format checks	2026-11-15T13:38:08.0340368Z I001 [*] Import block is un-sorted or un-formatted
+quality	Lint and format checks	2026-11-15T13:38:08.0340636Z  --> tools/ci/tests/test_ci_fast_story_shadow.py:1:1
+quality	Lint and format checks	2026-11-15T13:38:08.0340855Z   |
+quality	Lint and format checks	2026-11-15T13:38:08.0341014Z 1 | / import pytest
+quality	Lint and format checks	2026-11-15T13:38:08.0341172Z 2 | |
+quality	Lint and format checks	2026-11-15T13:38:08.0341449Z 3 | | from ci_fast_story_shadow import classify_diff, phase_evidence, reviewed_tuple
+quality	Lint and format checks	2026-11-15T13:38:08.0341757Z 4 | | from verify_pr import Hold
+quality	Lint and format checks	2026-11-15T13:38:08.0341947Z   | |__________________________^
+quality	Lint and format checks	2026-11-15T13:38:08.0342115Z 5 |
+quality	Lint and format checks	2026-11-15T13:38:08.0342256Z 6 |   BASE = "1" * 40
+quality	Lint and format checks	2026-11-15T13:38:08.0342419Z   |
+quality	Lint and format checks	2026-11-15T13:38:08.0342564Z help: Organize imports
+quality	Lint and format checks	2026-11-15T13:38:08.0342669Z 
+quality	Lint and format checks	2026-11-15T13:38:08.0342735Z Found 2 errors.
+quality	Lint and format checks	2026-11-15T13:38:08.0342915Z [*] 2 fixable with the `--fix` option.
+quality	Lint and format checks	2026-11-15T13:38:08.0357403Z ##[error]Process completed with exit code 1.
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:38:08.0461578Z Post job cleanup.
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1107586Z [command]/usr/bin/git version
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1124940Z git version 2.56.1
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1180116Z Temporarily overriding HOME='/home/runner/work/_temp/72dfc05f-6c89-4411-aaa2-ff8453ff3ec7' before making global git config changes
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1180987Z Adding repository directory to the temporary git global config as a safe directory
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1183733Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm/aitm
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1208372Z Removing SSH command configuration
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1213418Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1237226Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1391170Z Removing HTTP extra header
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1394542Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1416136Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1563274Z Removing includeIf entries pointing to credentials config files
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1569098Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+quality	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:38:08.1592467Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+quality	Complete job	﻿2026-11-15T13:38:08.1883802Z Evaluate and set job outputs
+quality	Complete job	2026-11-15T13:38:08.1889656Z Set output 'checkout'
+quality	Complete job	2026-11-15T13:38:08.1891144Z Cleaning up orphan processes

@@ -1,0 +1,27 @@
+Using CPython 3.13.9
+Creating virtual environment at: /Users/kpburson/Library/Caches/aitm292-pilot-co_rv5zc/venv
+Resolved 12 packages in 1ms
+   Building aitm-usage @ file:///Users/kpburson/Library/Caches/aitm292-pilot-co_rv5zc/source/packages/aitm-usage
+      Built aitm-usage @ file:///Users/kpburson/Library/Caches/aitm292-pilot-co_rv5zc/source/packages/aitm-usage
+Downloading pygments (1.2MiB)
+Downloading ruff (10.0MiB)
+ Downloaded pygments
+ Downloaded ruff
+Prepared 11 packages in 1.08s
+Installed 11 packages in 12ms
+ + aitm-usage==0.1.0 (from file:///Users/kpburson/Library/Caches/aitm292-pilot-co_rv5zc/source/packages/aitm-usage)
+ + coverage==7.17.2
+ + execnet==2.1.2
+ + iniconfig==2.3.1
+ + packaging==26.3
+ + pluggy==1.7.0
+ + pygments==2.21.0
+ + pytest==9.2.0
+ + pytest-cov==7.1.0
+ + pytest-xdist==3.8.0
+ + ruff==0.15.22
+trusted reported 1825 collected IDs
+tested reported 1825 collected IDs
+.......                                                                  [100%]
+7 passed in 8.91s
+selected reported 7 collected IDs
