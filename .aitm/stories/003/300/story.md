@@ -72,3 +72,7 @@ The recovery candidate adds tests covering the four source-review findings. Exac
 ## Exact hosted Test
 
 The candidate passed signed hosted Test and the raw replay of the established policy. Independent source recovery is active. [Signed receipt](plan/coverage-signed-hosted-receipt-r2.json) · [Replay](plan/coverage-hosted-policy-replay-r2.json).
+
+## Independent source review recovery
+
+Held for the reported source findings. The preserved exact hosted pass does not authorize delivery. [Review](plan/coverage-independent-source-r2.md).
