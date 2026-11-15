@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -60,3 +60,7 @@ Exact independent JIT passed and GitHub confirms #210 closed, the current depend
 ## Test
 
 The scoped controls and complete locked local validation passed, and https://github.com/kburson/aitm/pull/306 opened against literal trunk. Signed hosted Test and independent source review follow. [Local verification](plan/qualification-local-verification.json) · [Project](plan/project-test.json).
+
+## Review
+
+The exact PR candidate has a trusted signed hosted pass and the raw replay retained every baseline test. Independent source review is active. [Signed receipt](plan/qualification-signed-hosted-receipt.json) · [Policy replay](plan/qualification-hosted-policy-replay.json).
