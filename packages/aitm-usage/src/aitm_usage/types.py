@@ -915,3 +915,5 @@ def encode_command(command: InboxCommand) -> bytes:
 
 def decode_command(data: bytes) -> InboxCommand:
     return _decode(data, InboxCommand)
+
+# Temporary full-path shadow probe for issue 292.
