@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -52,3 +52,7 @@ The [exact recovery candidate](plan/grok-capture-local-recovery-test.json) passe
 [Signed hosted recovery](plan/grok-capture-signed-hosted-recovery.json) verified the exact corrected tree and unchanged controls. The ordinary source recovery is submitted.
 
 [Independent source review](plan/grok-capture-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-capture-independent-source-r2-receipt.json).
+
+## Verified Close
+
+[PR #332](https://github.com/kburson/aitm/pull/332) delivered the exact reviewed tree on trunk at 30e1a13d64a88d43e7447e2199c0e389324a0857. The native issue is Closed and Project 24 is Done. [Delivery proof](plan/grok-capture-verified-delivery.json) · [Native Close proof](plan/grok-capture-native-close.json).

@@ -1,0 +1,59 @@
+{
+  "story": 329,
+  "parent": 100,
+  "native": {
+    "created_at": "2026-11-15T19:50:35Z",
+    "html_url": "https://github.com/kburson/aitm/issues/329",
+    "id": 6408686473,
+    "number": 329,
+    "state": "closed",
+    "title": "[M11c] Prove positive Grok capture and scope authority"
+  },
+  "project": {
+    "actual": 0.0712,
+    "coverage": "partial",
+    "estimate": 3.75,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI9PgM",
+    "issue": 329,
+    "rank": 248,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "delivery": {
+    "baseRefName": "trunk",
+    "headRefOid": "ac93b96e575b7598f10e058e698761a9cbea414f",
+    "mergeCommit": {
+      "oid": "30e1a13d64a88d43e7447e2199c0e389324a0857"
+    },
+    "mergedAt": "2026-11-15T21:24:42Z",
+    "number": 332,
+    "state": "MERGED",
+    "url": "https://github.com/kburson/aitm/pull/332",
+    "literalBase": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+    "deliveredTree": "f69375a6eb87abbbf527adb4b621c3c644044fc0",
+    "remoteTrunk": "30e1a13d64a88d43e7447e2199c0e389324a0857",
+    "orderedParentsVerified": true,
+    "zeroDiffVerified": true,
+    "mergeMethod": "merge"
+  },
+  "unblocked": {
+    "330": [
+      {
+        "number": 119,
+        "state": "closed"
+      },
+      {
+        "number": 329,
+        "state": "closed"
+      }
+    ],
+    "331": [
+      {
+        "number": 329,
+        "state": "closed"
+      }
+    ]
+  }
+}
