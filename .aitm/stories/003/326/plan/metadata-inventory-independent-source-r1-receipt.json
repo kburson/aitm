@@ -1,0 +1,28 @@
+{
+  "base": "d7552d6ab06c6b8c1159d853657dc5d742d786c0",
+  "head": "2e1c8f1f8c45de5c389de67df008374eb4e61c7e",
+  "tree": "aac61dee826944882901ad29aa8a5b886a0c5d86",
+  "run": "https://github.com/kburson/aitm/actions/runs/43752283937/attempts/1",
+  "run_id": 43752283937,
+  "story": 326,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "434c2a96698c698b1dd5a5c6515b0e8ac58eb5a9d04513c068b8bd10956726aa",
+  "response_sha256": "1c40a696ca3efa4e9f9e97b246a082cee33971f74b9793f5f16fcf6bcf15ead3",
+  "review_sha256": "b40a38f8ae4fae4188875d00719672e1cfdcc0a1e0b3bcb67f43d005adef6f67",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "b007eda632009a18327e939c82dc58d996ae81eb7746dd1a279bbe8b891f0b7b",
+    "native-inventory-red.log": "57555ae89a2877e39487909ba4ffdc8075de08a6642442896bf3e2e84cb68fb0",
+    "inventory-final-focused.log": "6429725d85b1b7b212c9f133c922e3c9faa8598463d332eed568105a57028865",
+    "exact-open-audits.json": "5e2c7d032436efa6a133476aec6353230ce1d05c44daf46b1de38ec17045066a",
+    "signed-tree-blobs.txt": "ebb8cd91d172ded7c69fb45fadcd0c65887ff8ad8ba0c324d19bde6d96134393",
+    "parked-before-grok-checkpoint.json": "01c3daa4ddf129b804a5733ab787d3a927c99b6b3ca7fb0e1368edd0879173ff",
+    "legacy-body-pins.txt": "bdf7df1621edba140616bed413ed98e61fe85dadca14fc795b7cd861ba94c9ed",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product.log": "4d8e44ba71f08186c20162f79c855aa44cc846afe56fea61d4e74a3009815e4e",
+    "product-coverage.json": "78c2ed19b6732e3b962f017cab60d389e73fa10ee7497fb334130399d63f85cd"
+  }
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 326
 title: "[M11b] Authenticate sources through a shared metadata inventory"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/326"
 parent: 100
 children: []
@@ -42,3 +42,7 @@ Independent JIT passed. Develop starts on the verified compatible watcher delive
 ## Test
 
 Actual native and Grok selected-read audits found zero opens of unchanged parked siblings. Changed transcripts and a changed Grok origin witness forced reauthentication. The existing journal entry exercised the same explicit cycle. The exact candidate passed 1,424 locked local tests. [Test proof](plan/metadata-inventory-local-test.json) · [PR #328](https://github.com/kburson/aitm/pull/328).
+
+## Independent source
+
+The exact selected-source inventory passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/metadata-inventory-signed-hosted-r1.json) · [Source receipt](plan/metadata-inventory-independent-source-r1-receipt.json).
