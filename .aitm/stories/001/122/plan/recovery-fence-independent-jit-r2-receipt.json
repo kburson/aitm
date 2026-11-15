@@ -1,0 +1,19 @@
+{
+  "story": 122,
+  "gate": "JIT",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "estimate": 3.8,
+  "checkpoint_hours": 2.4,
+  "cap_hours": 4.0,
+  "sha256": {
+    "jit-r2-result.json": "4eed949c9a864213eeefa7b1817c0d42a3c935736d7ff686dff92ed5de7c33d4",
+    "recovery-fence-independent-jit-r2.md": "b342fd9a079f4ac1c00253dcb11bedada01af0c1d6188e1bcdf9ae9b379b6831",
+    "jit-r2-input.md": "3d7e1311595b3d7fe0a5f9072dedbad84bf9d1752d344c4457b006a2b0d56dde",
+    "2026-11-15-122-recovery-publication-fence-jit-r2.md": "53952eb1432a85d49daf37d10d00ddc4b11b8cf4e32f03a35c6ae394a9149619",
+    "jit-r2-exact-proof.txt": "4e5725765f571d056dac08cb52d241453f495087818065e2773064a9c5cdd821"
+  }
+}

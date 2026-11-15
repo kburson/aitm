@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -47,3 +47,7 @@ Verified #119 Close releases this leaf at Rank 260. [Refine packet](plan/2026-11
 [Initial Refine](plan/recovery-fence-independent-refine-r1-receipt.json) held on candidate authority. [The recovery packet](plan/2026-11-15-122-recovery-publication-fence-refine-r2.md) binds the existing candidate and exact closed #310 to #119 chain.
 
 Independent Refine recovery passed at 3.8 hours, Size M. The exact delivered coverage control and candidate custody enter [JIT](plan/2026-11-15-122-recovery-publication-fence-jit.md). [Refine receipt](plan/recovery-fence-independent-refine-r2-receipt.json).
+
+## Develop
+
+Independent JIT recovery passed. The two allowed paths and 2.4-hour witness checkpoint are bound to the [exact plan](plan/2026-11-15-122-recovery-publication-fence-jit-r2.md) and [JIT receipt](plan/recovery-fence-independent-jit-r2-receipt.json).
