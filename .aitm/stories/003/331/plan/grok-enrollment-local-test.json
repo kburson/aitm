@@ -1,0 +1,25 @@
+{
+  "story": 331,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "8be6d460dd7df8c4a1708e3b21fb71ab7be0fb73",
+    "headRefOid": "b55786b6e766bf1ad486693d66dc501af85e0ad4",
+    "isDraft": true,
+    "number": 334,
+    "url": "https://github.com/kburson/aitm/pull/334"
+  },
+  "tests": 1484,
+  "tree": "e932cc746c89f96b3707db6aae4e353c7afe69a3",
+  "product_lines": {
+    "covered_lines": 14208,
+    "num_statements": 15628
+  },
+  "evidence_sha256": {
+    "grok-enrollment-focused.log": "3a4debbd09511210ecbb339628ba2f6dc6d7effe18822657479a72a810216fe5",
+    "grok-enrollment-red.log": "14b67542f6404671516fecdcbf05e603ece83cc46d7022329ea899ee9a5fdbe0",
+    "reissue-incarnation-red.log": "5396014a5ca60714ef1570114901e6eafae85888b6cb4574da3bc60ccaacdfe0",
+    "local-current/product.log": "7ae5726575625c7b73544a289a8a62879287c26e1b1971aaeb2d44340404cf8e"
+  },
+  "local_invariant": "Legacy Grok capture and registry codec tests stayed unchanged. The new tests authenticate same-edge commands and retain prospective gaps independently of live admission."
+}
