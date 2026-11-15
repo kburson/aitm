@@ -1,0 +1,17 @@
+{
+  "story": 120,
+  "pull_request": {
+    "baseRefName": "trunk",
+    "baseRefOid": "3675e9898e17a5a112eb403831c340f1a574b764",
+    "headRefOid": "b1713c7b6b17a2e24751aef8d8618f9b3734a870",
+    "number": 322,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/322"
+  },
+  "stage": "test",
+  "focused_passes": 36,
+  "red_log_sha256": "d6c0509ec356af212ea59c9220e53b109f8a0f0fe762d38f7525df0f5fa692c7",
+  "green_log_sha256": "61ec7b7cd3912e2c96e948664da826b21f0e1db4a2507f70153199c9c1671a68",
+  "recovery_diff_sha256": "3f68db4997b35c7f7908f4bdf2aba980ba5de587160f581fbd74308fdb8eca8b",
+  "base_refresh_sha256": "8a649af9532cedd8eecee2a180d5b3b9f9cfffc17dd16d16b2ad5e2e6bcd9d72"
+}
