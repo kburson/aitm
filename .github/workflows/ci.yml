@@ -54,7 +54,9 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-base"
           mkdir -p "$out/observer" "$out/evidence"
+          workers=0
           if [[ -f tools/ci/pytest_evidence.py && -f tools/ci/policy.json ]]; then
+            workers=3
             git show HEAD:tools/ci/pytest_evidence.py > "$out/observer/pytest_evidence.py"
             git show HEAD:tools/ci/policy.json > "$out/observer/policy.json"
           else
@@ -68,11 +70,30 @@ jobs:
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
-          # Keep native fixtures away from the shared system temp directory and evidence output.
-          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-base-fixtures.XXXXXXXX")
-          PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json" \
+          # Keep ancestors stable for the native custody checks during pytest.
+          fixtures=$(mktemp -d "$HOME/aitm-base-fixtures.XXXXXXXX")
+          device=$(df -P "$fixtures" | awk 'NR==2 {print $1}')
+          filesystem=$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)
+          test "$filesystem" = apfs
+          export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
+          if (( workers > 0 )); then
+            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+              --basetemp "$fixtures/pytest" -q -n "$workers" --dist worksteal -p no:cacheprovider \
+              packages/aitm-usage/tests
+            uv run --project packages/aitm-usage --locked python - "$AITM_CI_PYTEST_EVIDENCE" "$workers" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from pytest_evidence import reconcile_workers
+
+          destination = Path(sys.argv[1])
+          evidence = reconcile_workers(destination, int(sys.argv[2]))
+          destination.write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+          PY
+          else
             uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
               --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
+          fi
           cd packages/aitm-usage
           sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
           jq -n --arg base "$BASE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
