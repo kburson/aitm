@@ -1,0 +1,74 @@
+Literal trunk 30e1a13d64a88d43e7447e2199c0e389324a0857
+100644 blob e64622a3d5a6b287b49f5b2ffcf9488c3992be90	packages/aitm-usage/src/aitm_usage/monitor_journal.py
+30e1a13d64a88d43e7447e2199c0e389324a0857:packages/aitm-usage/src/aitm_usage/monitor_journal.py:202:class PendingClaim:
+class PendingClaim:
+    key: SourceRef
+    project_id: UUID
+    usage: UsageObservation
+    scope: Scope | None
+    time_basis: ObservationTimeBasis
+    evidence: ClaimEvidence
+    sequence: int
+    revision: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class _DeliveryClaim:
+    def _delivery_claim(
+        self, conn: sqlite3.Connection, key: SourceRef, revision: int
+    ) -> _DeliveryClaim:
+        evidence = self._store.evidence
+        evidence.validate_source_ref(key)
+        if type(revision) is not int or revision <= 0:
+            raise _DeliveryRefused("Destination claim is unavailable")
+        row = conn.execute(
+            "SELECT c.project,c.payload,c.digest,c.sequence FROM claims c"
+            " JOIN commits t ON t.sequence=c.sequence WHERE c.key=?"
+            " AND NOT EXISTS (SELECT 1 FROM content_disputes d WHERE d.key=c.key)",
+            (key.value,),
+        ).fetchone()
+        if row is None:
+            raise _DeliveryRefused("Destination claim is unavailable")
+        project, raw, digest, sequence = row
+        payload = _stored_claim(raw, digest)
+        owner = UUID(project)
+        if str(owner) != project or (
+            payload.material.scope is not None
+            and payload.material.scope.project_id != owner
+        ):
+            raise _DeliveryRefused("Destination claim identity changed")
+        latest = _revision_head(conn, key, _tip(conn), evidence)
+        if latest is None:
+            recorded_revision, usage = 1, payload.material.usage
+        else:
+            sequence, recorded_revision, usage = (
+                latest.sequence,
+                latest.payload.revision,
+                latest.payload.usage,
+            )
+        if (
+            revision != recorded_revision
+            or conn.execute(
+                "SELECT 1 FROM commits WHERE sequence=?", (sequence,)
+            ).fetchone()
+            is None
+        ):
+            raise _DeliveryRefused("Destination claim is no longer current")
+        claim = PendingClaim(
+            key,
+            owner,
+            usage,
+            payload.material.scope,
+            payload.material.time_basis,
+            payload.evidence,
+            sequence,
+            recorded_revision,
+        )
+        canonical = _encode(
+            claim, PendingClaim, validate_ref=evidence.validate_source_ref
+        )
+        return _DeliveryClaim(
+            claim, evidence.key_id, sha256(canonical.encode()).hexdigest()
+        )
+
+    def reserve_delivery(self, key: SourceRef, revision: int) -> _DeliveryClaim:
