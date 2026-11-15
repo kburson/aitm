@@ -507,7 +507,7 @@ def test_journal_disposition_projects_each_matching_origin_once(journal_disposit
 
 
 class NativeJournalFixture:
-    def __init__(self, base, monkeypatch):
+    def __init__(self, base, monkeypatch, *, independent_copy=False):
         monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
         monkeypatch.setattr(
             "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
@@ -515,6 +515,7 @@ class NativeJournalFixture:
         monkeypatch.setattr(
             "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
         )
+        self.independent_copy = independent_copy
         self.registry = Registry(base / "monitor")
         self.adapter = ProviderAdapter()
         self.anchors = {key: base / f"checkout-{key.int}" for key in (A, B)}
@@ -544,12 +545,16 @@ class NativeJournalFixture:
                 self.roots[source_id] = SourceRoot(
                     root, CUTOFF, tuple(self.anchors.values()), self.evidence
                 )
+                checkout = B if source_id == COPY and independent_copy else A
                 write(
                     path,
-                    [
-                        startup(self.anchors[A], originator="Codex Desktop"),
-                        *self.turn(1),
-                    ],
+                    self._source_rows(
+                        source_id,
+                        [
+                            startup(self.anchors[checkout], originator="Codex Desktop"),
+                            *self.turn(1, checkout=checkout),
+                        ],
+                    ),
                 )
                 writer.approve_source(
                     SourceApprovalRequest(
@@ -568,7 +573,7 @@ class NativeJournalFixture:
                     for project in (A, B)
                     for change in (CaptureChange(project, source_id, True),)
                 ]
-                self.append(source_id, self.turn(2))
+                self.append(source_id, self.turn(2, checkout=checkout))
                 for change, frontier in armed:
                     proof = writer.verify_boundary(
                         change, self.locator(source_id), frontier
@@ -588,8 +593,24 @@ class NativeJournalFixture:
             end(turn, time=time),
         ]
 
+    def _source_rows(self, source, rows):
+        if source != COPY or not self.independent_copy:
+            return rows
+        replacement = str(UUID(int=0x1190))
+        prepared = []
+        for row in rows:
+            payload = dict(row["payload"])
+            fields = (
+                ("id", "session_id")
+                if row["type"] == "session_meta"
+                else ("session_id", "thread_id")
+            )
+            payload.update({name: replacement for name in fields if name in payload})
+            prepared.append({**row, "payload": payload})
+        return prepared
+
     def append(self, source, rows):
-        write(self.paths[source], rows, append=True)
+        write(self.paths[source], self._source_rows(source, rows), append=True)
 
     def locator(self, source=LIVE):
         (locator,) = self.adapter.discover(self.roots[source])
@@ -3179,7 +3200,7 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
             for _ in range(2):
                 with pytest.raises(LedgerError):
                     journal.publication_candidate(replace(first, dispute=false))
-        from aitm_usage._monitor_journal_store import _open
+        from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
         from aitm_usage.monitor_journal import ClaimEvidence
         from aitm_usage.types import _decode
 
@@ -3214,9 +3235,14 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
 
+        with journal._store.transaction(write=True) as connection:
+            journal._store._enable_coverage(connection)
+        journal.enable_delivery(journal.as_of().sequence)
+        assert journal.dispute_changes(0) == (moved, second)
+        assert journal.publication_candidate(second) == two
         database = writer.root / "routing-journal-v1" / "journal.sqlite3"
         with _open(database, write=True) as connection:
-            connection.execute("PRAGMA user_version = 7")
+            connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
         for read in (
             lambda: journal.dispute_changes(0),
             lambda: journal.publication_candidate(second),
@@ -3224,7 +3250,9 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
             with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
                 read()
         with _open(database, write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (7,)
+            assert connection.execute("PRAGMA user_version").fetchone() == (
+                _DELIVERY_SCHEMA_VERSION + 1,
+            )
 
 
 def test_journal_only_candidates_refuse_pre_content_dispute_schema(native):

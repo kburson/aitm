@@ -1,5 +1,6 @@
 """Writer-bound private routing claims and native replay checkpoints."""
 
+import hmac
 import json
 import re
 import sqlite3
@@ -8,17 +9,19 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from hashlib import sha256
 from itertools import chain
+from typing import TYPE_CHECKING
 from uuid import UUID
 from weakref import WeakValueDictionary
 
 from ._monitor_journal_store import (
     _CONTENT_DISPUTE_SCHEMA_VERSION,
     _COVERAGE_SCHEMA_VERSION,
+    _DELIVERY_SCHEMA_VERSION,
     _PAIRED_SCHEMA_VERSION,
     JournalStore,
 )
 from ._monitor_qualification import _LiveExclusion, _LiveSourceUnavailable
-from .ledger import ConflictError, LedgerError
+from .ledger import ConflictError, LedgerError, _DeliveryReceipt
 from .monitor_registry import Registry, RegistryView, _ServiceEvidence
 from .monitor_scope import (
     HandoffStatus,
@@ -70,7 +73,17 @@ from .types import (
     _positive,
 )
 
+if TYPE_CHECKING:
+    from .monitor_writer import ProjectDelivery
+
+
 _Stream = tuple[str, str, str, str, str]
+_DELIVERY_ACK_ROWS = (
+    "SELECT a.project,a.destination_key,a.claim_key,a.revision,a.claim_sequence,"
+    " a.ack_sequence,a.payload,a.seal,c.sequence,t.sequence FROM delivery_acks a"
+    " LEFT JOIN commits c ON c.sequence=a.ack_sequence"
+    " LEFT JOIN commits t ON t.sequence=a.claim_sequence"
+)
 _DISPOSITION_ROWS = (
     "SELECT d.command,d.hold,d.sequence,c.sequence,d.payload"
     " FROM route_dispositions d LEFT JOIN commits c ON c.sequence=d.sequence"
@@ -195,6 +208,24 @@ class PendingClaim:
     evidence: ClaimEvidence
     sequence: int
     revision: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class _DeliveryClaim:
+    claim: PendingClaim
+    service_key: str
+    digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class _DeliveryAck:
+    claim_key: SourceRef
+    receipt: _DeliveryReceipt
+    sequence: int
+
+
+class _DeliveryRefused(LedgerError):
+    """No current, authenticated destination delivery can be acknowledged."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -950,7 +981,12 @@ def _verified_content_change(
 class RoutingJournal:
     """Stage exact observations under the existing coordinator writer lease."""
 
-    def __init__(self, writer: Registry, scopes: ScopeState) -> None:
+    def __init__(
+        self, writer: Registry, scopes: ScopeState, *, pending_per_project: int = 64
+    ) -> None:
+        if type(pending_per_project) is not int or pending_per_project <= 0:
+            raise ValueError("Expected a positive destination capacity")
+        self._pending_per_project = pending_per_project
         writer.lease
         if scopes.registry is not writer:
             raise LedgerError("Journal and scope state require the same coordinator")
@@ -1121,7 +1157,7 @@ class RoutingJournal:
         if (
             not _CONTENT_DISPUTE_SCHEMA_VERSION
             <= self._store._current_version(connection)
-            <= _COVERAGE_SCHEMA_VERSION
+            <= _DELIVERY_SCHEMA_VERSION
         ):
             raise LedgerError("Routing journal dispute schema is unavailable")
         evidence = self._store.evidence
@@ -1183,7 +1219,7 @@ class RoutingJournal:
                 if type(change.coverage) is JournalCoverage:
                     if (
                         self._store._current_version(connection)
-                        != _COVERAGE_SCHEMA_VERSION
+                        < _COVERAGE_SCHEMA_VERSION
                     ):
                         raise ValueError("Coverage schema is unavailable")
                     (row,) = connection.execute(
@@ -1251,6 +1287,290 @@ class RoutingJournal:
                 raise LedgerError(
                     "Verified journal-only publication is unavailable"
                 ) from None
+
+    def enable_delivery(self, expected_tip: int) -> None:
+        """Explicitly opt the current coordinator journal into destination delivery."""
+        with self._store.transaction(write=True) as conn:
+            if type(expected_tip) is not int or expected_tip != _tip(conn):
+                raise ConflictError("Journal changed before delivery schema upgrade")
+            self._store._enable_delivery(conn)
+
+    def _require_delivery_schema(self, conn: sqlite3.Connection) -> None:
+        if self._store._current_version(conn) != _DELIVERY_SCHEMA_VERSION:
+            raise _DeliveryRefused("Destination delivery is unavailable")
+
+    def _delivery_claim(
+        self, conn: sqlite3.Connection, key: SourceRef, revision: int
+    ) -> _DeliveryClaim:
+        evidence = self._store.evidence
+        evidence.validate_source_ref(key)
+        if type(revision) is not int or revision <= 0:
+            raise _DeliveryRefused("Destination claim is unavailable")
+        row = conn.execute(
+            "SELECT c.project,c.payload,c.digest,c.sequence FROM claims c"
+            " JOIN commits t ON t.sequence=c.sequence WHERE c.key=?"
+            " AND NOT EXISTS (SELECT 1 FROM content_disputes d WHERE d.key=c.key)",
+            (key.value,),
+        ).fetchone()
+        if row is None:
+            raise _DeliveryRefused("Destination claim is unavailable")
+        project, raw, digest, sequence = row
+        payload = _stored_claim(raw, digest)
+        owner = UUID(project)
+        if str(owner) != project or (
+            payload.material.scope is not None
+            and payload.material.scope.project_id != owner
+        ):
+            raise _DeliveryRefused("Destination claim identity changed")
+        latest = _revision_head(conn, key, _tip(conn), evidence)
+        if latest is None:
+            recorded_revision, usage = 1, payload.material.usage
+        else:
+            sequence, recorded_revision, usage = (
+                latest.sequence,
+                latest.payload.revision,
+                latest.payload.usage,
+            )
+        if (
+            revision != recorded_revision
+            or conn.execute(
+                "SELECT 1 FROM commits WHERE sequence=?", (sequence,)
+            ).fetchone()
+            is None
+        ):
+            raise _DeliveryRefused("Destination claim is no longer current")
+        claim = PendingClaim(
+            key,
+            owner,
+            usage,
+            payload.material.scope,
+            payload.material.time_basis,
+            payload.evidence,
+            sequence,
+            recorded_revision,
+        )
+        canonical = _encode(
+            claim, PendingClaim, validate_ref=evidence.validate_source_ref
+        )
+        return _DeliveryClaim(
+            claim, evidence.key_id, sha256(canonical.encode()).hexdigest()
+        )
+
+    def reserve_delivery(self, key: SourceRef, revision: int) -> _DeliveryClaim:
+        """Read a current deliverable revision without creating a reservation row."""
+        with self._store.transaction() as conn:
+            self._require_delivery_schema(conn)
+            return self._delivery_claim(conn, key, revision)
+
+    def _ack_payload(self, result: _DeliveryAck) -> str:
+        # Only the outer claim key belongs to the service. The nested receipt
+        # holds a project-key reference authenticated by its original Ledger.
+        self._store.evidence.validate_source_ref(result.claim_key)
+        return _encode(result, _DeliveryAck)
+
+    def _stored_ack(self, row: tuple) -> _DeliveryAck:
+        (
+            project,
+            destination,
+            key,
+            revision,
+            claim_seq,
+            ack_seq,
+            raw,
+            seal,
+            ack_commit,
+            claim_commit,
+        ) = row
+        evidence = self._store.evidence
+        try:
+            result = _decode(raw, _DeliveryAck)
+            expected_seal = evidence.pseudonymize("monitor-delivery-ack-v1", raw).value
+        except (ValueError, TypeError):
+            raise _DeliveryRefused(
+                "Invalid private destination acknowledgment"
+            ) from None
+        receipt = result.receipt
+        if (
+            self._ack_payload(result) != raw
+            or not hmac.compare_digest(expected_seal, seal)
+            or (str(receipt.project_id), receipt.destination_key)
+            != (project, destination)
+            or (result.claim_key.value, receipt.revision) != (key, revision)
+            or (receipt.claim_sequence, result.sequence) != (claim_seq, ack_seq)
+            or (claim_commit, ack_commit) != (claim_seq, ack_seq)
+            or not 0 < claim_seq < ack_seq
+        ):
+            raise _DeliveryRefused("Invalid private destination acknowledgment")
+        return result
+
+    def _acknowledged(
+        self, conn: sqlite3.Connection, project: UUID, key: SourceRef, revision: int
+    ) -> _DeliveryAck | None:
+        entries = conn.execute(
+            _DELIVERY_ACK_ROWS + " WHERE (a.project,a.claim_key,a.revision)=(?,?,?)",
+            (str(project), key.value, revision),
+        ).fetchall()
+        if len(entries) > 1:
+            raise _DeliveryRefused("Ambiguous private destination acknowledgment")
+        return self._stored_ack(entries[0]) if entries else None
+
+    def _require_destination_in(
+        self, conn: sqlite3.Connection, project: UUID, destination_key: str
+    ) -> None:
+        self._require_delivery_schema(conn)
+        if any(
+            row != (destination_key,)
+            for row in conn.execute(
+                "SELECT DISTINCT destination_key FROM delivery_acks WHERE project=?",
+                (str(project),),
+            )
+        ):
+            raise _DeliveryRefused("Destination ledger key changed")
+
+    def _require_delivery_destination(
+        self, project: UUID, destination_key: str
+    ) -> None:
+        with self._store.transaction() as conn:
+            self._require_destination_in(conn, project, destination_key)
+
+    def ack(
+        self,
+        delivery: "ProjectDelivery",
+        issued: _DeliveryClaim,
+        receipt: _DeliveryReceipt,
+    ) -> _DeliveryAck:
+        """Acknowledge the exact append-only effect under its existing custody."""
+        from .monitor_writer import ProjectDelivery
+
+        try:
+            if type(delivery) is not ProjectDelivery or delivery._journal is not self:
+                raise ValueError("Delivery belongs to another coordinator")
+            if (
+                type(issued) is not _DeliveryClaim
+                or type(receipt) is not _DeliveryReceipt
+            ):
+                raise ValueError("Invalid destination proof")
+            claim = issued.claim
+            if (
+                issued.service_key != self._store.evidence.key_id
+                or issued.digest != receipt.claim_digest
+                or sha256(
+                    _encode(
+                        claim,
+                        PendingClaim,
+                        validate_ref=self._store.evidence.validate_source_ref,
+                    ).encode()
+                ).hexdigest()
+                != issued.digest
+                or (claim.project_id, claim.revision, claim.sequence)
+                != (receipt.project_id, receipt.revision, receipt.claim_sequence)
+            ):
+                raise ValueError("Destination receipt claim identity changed")
+            verified = delivery._readback(issued, receipt)
+            if verified != receipt:
+                raise ValueError("Destination receipt does not match durable usage")
+            with self._store.transaction(write=True) as conn:
+                self._require_destination_in(
+                    conn, claim.project_id, receipt.destination_key
+                )
+                existing = self._acknowledged(
+                    conn, claim.project_id, claim.key, claim.revision
+                )
+                if existing is not None:
+                    if existing.receipt != verified:
+                        raise ValueError("Destination acknowledgment changed")
+                    delivery._require_current()
+                    return existing
+                if self._delivery_claim(conn, claim.key, claim.revision) != issued:
+                    raise ValueError("Destination claim changed before acknowledgment")
+                sequence = _tip(conn) + 1
+                result = _DeliveryAck(claim.key, verified, sequence)
+                raw = self._ack_payload(result)
+                seal = self._store.evidence.pseudonymize(
+                    "monitor-delivery-ack-v1", raw
+                ).value
+                self._record_sequence(conn, sequence)
+                conn.execute(
+                    "INSERT INTO delivery_acks (project,destination_key,claim_key,revision,"
+                    " claim_sequence,ack_sequence,payload,seal) VALUES (?,?,?,?,?,?,?,?)",
+                    (
+                        str(claim.project_id),
+                        verified.destination_key,
+                        claim.key.value,
+                        claim.revision,
+                        claim.sequence,
+                        sequence,
+                        raw,
+                        seal,
+                    ),
+                )
+                delivery._require_current()
+                return result
+        except (LedgerError, ValueError, sqlite3.Error, AttributeError):
+            raise _DeliveryRefused(
+                "Verified destination acknowledgment is unavailable"
+            ) from None
+
+    def delivery_tail(self, project: UUID, destination_key: str) -> int:
+        """Return the verified destination high-water mark."""
+        with self._store.transaction() as conn:
+            self._require_destination_in(conn, project, destination_key)
+            top = conn.execute(
+                _DELIVERY_ACK_ROWS + " WHERE a.project=? AND a.destination_key=?"
+                " ORDER BY a.claim_sequence DESC LIMIT 1",
+                (str(project), destination_key),
+            ).fetchone()
+            return 0 if top is None else self._stored_ack(top).receipt.claim_sequence
+
+    def _delivery_capacity(
+        self, conn: sqlite3.Connection, project: UUID, replaces: SourceRef | None = None
+    ) -> bool:
+        if conn.execute("PRAGMA user_version").fetchone() != (
+            _DELIVERY_SCHEMA_VERSION,
+        ):
+            return True
+        count, already_pending = 0, False
+        evidence = self._store.evidence
+        head = _tip(conn)
+        for key_value, sequence, disputed_at, dispute in conn.execute(
+            "SELECT c.key,c.sequence,d.sequence,d.payload FROM claims c"
+            " LEFT JOIN content_disputes d ON d.key=c.key WHERE c.project=?",
+            (str(project),),
+        ):
+            key = SourceRef(key_value)
+            evidence.validate_source_ref(key)
+            if dispute is not None:
+                raw, digest = conn.execute(
+                    "SELECT payload,digest FROM claims WHERE key=?", (key.value,)
+                ).fetchone()
+                _stored_content_dispute(
+                    conn,
+                    key,
+                    _stored_claim(raw, digest).evidence,
+                    disputed_at,
+                    dispute,
+                    evidence,
+                )
+                continue
+            latest = _revision_head(conn, key, head, evidence)
+            if latest is None:
+                revision = 1
+            else:
+                sequence, revision = latest.sequence, latest.payload.revision
+            ack = self._acknowledged(conn, project, key, revision)
+            if ack is not None:
+                if ack.receipt.claim_sequence != sequence:
+                    raise _DeliveryRefused(
+                        "Destination acknowledgment sequence changed"
+                    )
+                continue
+            count += 1
+            already_pending |= key == replaces
+            if count >= self._pending_per_project and (
+                replaces is None or already_pending
+            ):
+                return already_pending
+        return already_pending or count < self._pending_per_project
 
     def _fresh_view(
         self, connection: sqlite3.Connection, read: _Read, *, confirm: bool = True
@@ -1443,6 +1763,10 @@ class RoutingJournal:
         )
 
         if existing is None:
+            if not self._delivery_capacity(connection, project):
+                return ClaimDisposition(
+                    ClaimStatus.HELD, key, project, _tip(connection)
+                )
             self._record_sequence(connection, sequence)
             payload = _encode(_ClaimPayload(material, position), _ClaimPayload).encode()
             connection.execute(
@@ -1583,6 +1907,8 @@ class RoutingJournal:
             ):
                 return held
 
+        if not self._delivery_capacity(connection, owner, replaces=key):
+            return held
         assert type(observation.usage) is UsageObservation
         payload = _RevisionPayload(
             observation.usage,

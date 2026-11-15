@@ -14,6 +14,7 @@ from uuid import UUID
 from .host_fs import HostFilesystemError, exchange_entries, publish_noreplace
 from .ledger import (
     DATABASE_NAME,
+    DELIVERY_SCHEMA_VERSION,
     KEY_NAME,
     LOCK_NAME,
     MONITOR_SCHEMA_VERSION,
@@ -194,8 +195,10 @@ def _candidate(root: Path, identity: LedgerIdentity) -> Ledger:
     candidate = Ledger.open(root, identity.project_id)
     if candidate.identity != identity:
         raise BackupError("Backup project or key identity mismatch")
-    if identity.schema_version == MONITOR_SCHEMA_VERSION:
+    if identity.schema_version >= MONITOR_SCHEMA_VERSION:
         candidate.monitor_as_of(sequence)
+    if identity.schema_version == DELIVERY_SCHEMA_VERSION:
+        candidate._validate_delivery_receipts()
     return candidate
 
 

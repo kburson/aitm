@@ -37,6 +37,7 @@ _CONTENT_DISPUTE_SCHEMA_VERSION = 3
 _SCHEMA_VERSION = 4
 _PAIRED_SCHEMA_VERSION = 5
 _COVERAGE_SCHEMA_VERSION = 6
+_DELIVERY_SCHEMA_VERSION = 7
 _SCHEMA = """
 CREATE TABLE identity (
     singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
@@ -120,6 +121,23 @@ CREATE TABLE source_coverage (
 """
 
 
+_DELIVERY_SCHEMA = (
+    """CREATE TABLE delivery_acks (
+    project TEXT NOT NULL,
+    destination_key TEXT NOT NULL,
+    claim_key TEXT NOT NULL REFERENCES claims (key),
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    claim_sequence INTEGER NOT NULL REFERENCES commits,
+    ack_sequence INTEGER NOT NULL REFERENCES commits,
+    payload TEXT NOT NULL,
+    seal TEXT NOT NULL,
+    PRIMARY KEY (project, destination_key, claim_key, revision)
+) STRICT""",
+    "CREATE INDEX delivery_ack_tail ON delivery_acks (project, destination_key, claim_sequence)",
+    "CREATE INDEX delivery_claim_project ON claims (project, key)",
+)
+
+
 @cache
 def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], ...]:
     if version not in {
@@ -129,6 +147,7 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
         _SCHEMA_VERSION,
         _PAIRED_SCHEMA_VERSION,
         _COVERAGE_SCHEMA_VERSION,
+        _DELIVERY_SCHEMA_VERSION,
     }:
         raise LedgerError("Unsupported routing journal schema version")
     with closing(sqlite3.connect(":memory:")) as conn:
@@ -143,6 +162,9 @@ def _supported_schema(version: int) -> tuple[tuple[str, str, str, str | None], .
             conn.execute(_PAIRED_SCHEMA)
         if version >= _COVERAGE_SCHEMA_VERSION:
             conn.execute(_COVERAGE_SCHEMA)
+        if version == _DELIVERY_SCHEMA_VERSION:
+            for statement in _DELIVERY_SCHEMA:
+                conn.execute(statement)
         return _schema_objects(conn)
 
 
@@ -160,6 +182,7 @@ def _validate_identity(
             (_SCHEMA_VERSION,),
             (_PAIRED_SCHEMA_VERSION,),
             (_COVERAGE_SCHEMA_VERSION,),
+            (_DELIVERY_SCHEMA_VERSION,),
         } or (version is not None and stored != (version,)):
             raise LedgerError("Unsupported routing journal schema version")
         stored_version = stored[0]
@@ -427,7 +450,7 @@ class JournalStore:
         if not conn.in_transaction:
             raise LedgerError("Source coverage requires a journal transaction")
         version = self._current_version(conn)
-        if version == _COVERAGE_SCHEMA_VERSION:
+        if version >= _COVERAGE_SCHEMA_VERSION:
             return
         _validate_foreign_keys(conn)
         if version == _SCHEMA_VERSION:
@@ -435,6 +458,22 @@ class JournalStore:
         conn.execute(_COVERAGE_SCHEMA)
         conn.execute(f"PRAGMA user_version = {_COVERAGE_SCHEMA_VERSION}")
         _validate_identity(conn, self._key_id, version=_COVERAGE_SCHEMA_VERSION)
+        _validate_foreign_keys(conn)
+
+    def _enable_delivery(self, conn: sqlite3.Connection) -> None:
+        self._writer.lease
+        if not conn.in_transaction:
+            raise LedgerError("Delivery requires a journal write transaction")
+        version = self._current_version(conn)
+        if version == _DELIVERY_SCHEMA_VERSION:
+            return
+        if version != _COVERAGE_SCHEMA_VERSION:
+            raise LedgerError("Delivery requires journal coverage schema")
+        _validate_foreign_keys(conn)
+        for statement in _DELIVERY_SCHEMA:
+            conn.execute(statement)
+        conn.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION}")
+        _validate_identity(conn, self._key_id, version=_DELIVERY_SCHEMA_VERSION)
         _validate_foreign_keys(conn)
 
     def _current_version(self, conn: sqlite3.Connection) -> int:

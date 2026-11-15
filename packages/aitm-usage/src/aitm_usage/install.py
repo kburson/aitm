@@ -36,6 +36,7 @@ from .backup import (
 )
 from .ledger import (
     APPLICATION_ID,
+    DELIVERY_SCHEMA_VERSION,
     MONITOR_SCHEMA_VERSION,
     SCHEMA_VERSION,
     SUPPORTED_SCHEMA_VERSIONS,
@@ -106,6 +107,9 @@ schema = legacy
 if hasattr(ledger, 'MONITOR_SCHEMA_VERSION'):
     version = ledger.MONITOR_SCHEMA_VERSION
     schema = [legacy, fingerprint(version, ledger._supported_schema(version))]
+if hasattr(ledger, 'DELIVERY_SCHEMA_VERSION'):
+    version = ledger.DELIVERY_SCHEMA_VERSION
+    schema.append(fingerprint(version, ledger._supported_schema(version)))
 print(json.dumps({
     'version': package.version,
     'interpreter_version': platform.python_version(),
@@ -705,7 +709,10 @@ def _probe_runtime(
         return [APPLICATION_ID, version, hashlib.sha256(data).hexdigest()]
 
     legacy_schema = fingerprint(SCHEMA_VERSION)
-    supported = [json.dumps([legacy_schema, fingerprint(MONITOR_SCHEMA_VERSION)])]
+    monitor_schema = [legacy_schema, fingerprint(MONITOR_SCHEMA_VERSION)]
+    supported = [json.dumps([*monitor_schema, fingerprint(DELIVERY_SCHEMA_VERSION)])]
+    if schema_version in (SCHEMA_VERSION, MONITOR_SCHEMA_VERSION):
+        supported.append(json.dumps(monitor_schema))
     if schema_version == SCHEMA_VERSION:
         supported.append(json.dumps(legacy_schema))
     expected = {
