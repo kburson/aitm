@@ -1,0 +1,41 @@
+{
+  "issue": {
+    "closedAt": "2026-11-15T19:46:09Z",
+    "number": 326,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/326"
+  },
+  "project": {
+    "actual": 0.1103,
+    "coverage": "Partial coordinator Refine and Develop progress. Provider, tool and wait intervals excluded.",
+    "estimate": 3.5,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI8Uko",
+    "issue": 326,
+    "rank": 247.5,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "prerequisites": [
+    {
+      "number": 115,
+      "state": "closed"
+    },
+    {
+      "number": 120,
+      "state": "closed"
+    },
+    {
+      "number": 304,
+      "state": "closed"
+    }
+  ],
+  "dependents": [
+    {
+      "number": 121,
+      "state": "open"
+    }
+  ]
+}
