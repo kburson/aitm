@@ -1,0 +1,45 @@
+.........................................                                [100%]
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_missing_artifact_cannot_claim_green
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_authenticated_failure_survives_missing_artifact
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_delayed_or_stale_attempt_does_not_claim_green
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_foreign_event_cannot_enter_schedule_route
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_same_attempt_binding_and_green_requires_complete_receipt
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_pending_run_cannot_claim_green
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_collection_and_phase_outcomes_must_match
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_old_rerun_cannot_supply_missed_current_slot
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_scheduled_shadow_warning_and_explicit_infrastructure_recovery
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_diagnostic_dispatch_cannot_feed_scheduled_incident
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_older_run_on_previous_sha_does_not_hide_missed_slot
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_unregistered_job_can_still_be_pending
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_canonical_creation_drift_during_readback_prevents_green
+PASSED tools/ci/tests/test_ci_scheduled_shadow.py::test_timely_active_run_past_slot_grace_remains_pending
+PASSED tools/ci/tests/test_ci_incident.py::test_readback_failure_is_retained_until_confirmed
+PASSED tools/ci/tests/test_ci_incident.py::test_restart_after_write_and_before_acknowledgment
+PASSED tools/ci/tests/test_ci_incident.py::test_same_attempt_preserves_all_failures_without_duplicate_warning
+PASSED tools/ci/tests/test_ci_incident.py::test_newer_pending_revokes_nomination_and_rejects_old_green
+PASSED tools/ci/tests/test_ci_incident.py::test_competing_nominations_keep_exactly_one
+PASSED tools/ci/tests/test_ci_incident.py::test_shadow_cannot_enter_live_store
+PASSED tools/ci/tests/test_ci_incident.py::test_repeated_pending_does_not_change_incident_version
+PASSED tools/ci/tests/test_ci_incident.py::test_incorrect_delivery_ack_remains_pending
+PASSED tools/ci/tests/test_ci_incident.py::test_verified_pending_target_without_a_run_revokes_nomination
+PASSED tools/ci/tests/test_ci_incident.py::test_stale_failures_are_retained_without_reopening_incident
+PASSED tools/ci/tests/test_ci_incident.py::test_bound_sink_revalidates_and_has_separate_provenance
+PASSED tools/ci/tests/test_ci_incident.py::test_flush_only_current_warning_with_explicit_prior_failure
+PASSED tools/ci/tests/test_ci_incident.py::test_existing_public_directory_is_rejected
+PASSED tools/ci/tests/test_ci_incident.py::test_exact_failure_observation_keeps_original_authenticated_job
+PASSED tools/ci/tests/test_ci_incident.py::test_inherited_failure_now_current_refreshes_exact_warning
+PASSED tools/ci/tests/test_ci_recovery.py::test_infrastructure_only_requires_fresh_same_sha_and_manual_ack
+PASSED tools/ci/tests/test_ci_recovery.py::test_known_failure_excludes_infrastructure_recovery
+PASSED tools/ci/tests/test_ci_recovery.py::test_nominated_repair_needs_exact_current_green_and_ack
+PASSED tools/ci/tests/test_ci_recovery.py::test_rollback_invalidates_recovery_without_acknowledging
+PASSED tools/ci/tests/test_ci_recovery.py::test_new_red_revokes_old_ack_even_when_attempt_is_repeated
+PASSED tools/ci/tests/test_ci_recovery.py::test_acknowledgment_survives_later_independent_incident
+PASSED tools/ci/tests/test_ci_recovery.py::test_provider_loss_revokes_proof_and_requires_new_check
+PASSED tools/ci/tests/test_ci_recovery.py::test_late_authenticated_failure_prevents_same_sha_infrastructure_recovery
+PASSED tools/ci/tests/test_ci_recovery.py::test_ack_does_not_restore_a_revoked_token
+PASSED tools/ci/tests/test_ci_recovery.py::test_ack_binds_artifact_id_and_start_time
+PASSED tools/ci/tests/test_ci_recovery.py::test_fresh_check_after_evidence_loss_issues_new_token
+PASSED tools/ci/tests/test_ci_recovery.py::test_unverified_newer_failure_revokes_persisted_recovery
+41 passed in 0.21s

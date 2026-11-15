@@ -21,6 +21,7 @@
     }
   },
   "head": "2a990e506abe57642c0b60b9bdd4e3d147582994",
+  "issue": 289,
   "jobs": {
     "aitm-ci": 132682646887,
     "collect-evidence": 132682609125,
@@ -29,22 +30,34 @@
     "python-base": 132681067541,
     "quality": 132681067593
   },
+  "merge": "a76eecf856bdd42fbaeb7fdf13b57a0ec404d334",
   "pr": 307,
   "repository": "kburson/aitm",
   "repository_id": 1450406435,
+  "review": "plan/reviews/formal-review.md",
+  "review_sha256": "16bf7cff53e23e16eaf3dbbd3611ace23f1d2565318deea1b0f61a6452f06088",
   "reviewed_tree": "ddd8a3ca53c336a5c0e1d2c5d40724e7156159d4",
   "run": "https://github.com/kburson/aitm/actions/runs/43671088390/attempts/1",
   "run_attempt": 1,
   "run_id": 43671088390,
+  "scheduled_qualification": {
+    "artifact_digest": "sha256:4fd846bc5b4e98fb2ad62fd1b704f8f10f3af62e44ee25412c93c9dd87c50530",
+    "artifact_id": 14159443976,
+    "attempt": 1,
+    "current_slot_status": "incomplete",
+    "evidence": "plan/scheduled-historical.json",
+    "evidence_sha256": "3d3c908fcd5446846197a8bfee121ee1e4e532ccf751dabb8f736e227c65d941",
+    "independent_review": "plan/schedule-late-review.md",
+    "independent_review_sha256": "add29028188379dacf1188229a5cb4a4e513f177ab2e352765765a6d6fa57c1b",
+    "run_id": 43709222718,
+    "sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+    "status": "historical execution accepted"
+  },
   "status": "accepted",
   "subject_digest": "7de57d0de4bf464d49f986092b0f5cb48edecddca32d5fcebc8648b743d0fd85",
   "target": "trunk",
   "tested": "07d4f209a71dd10c674fd30202a81a1e7860af67",
   "tree": "ddd8a3ca53c336a5c0e1d2c5d40724e7156159d4",
   "verified_at": "2026-11-15T03:19:02.304667+00:00",
-  "workflow_id": 412848571,
-  "issue": 289,
-  "merge": "a76eecf856bdd42fbaeb7fdf13b57a0ec404d334",
-  "review": "plan/reviews/formal-review.md",
-  "review_sha256": "16bf7cff53e23e16eaf3dbbd3611ace23f1d2565318deea1b0f61a6452f06088"
+  "workflow_id": 412848571
 }

@@ -1,0 +1,27 @@
+{
+  "full_hosted_log_sha256": "f78c770c6d2f0029fe52944fe7c0b7647a932cab239d5ca8c9a1c2ee6be45b3c",
+  "job": {
+    "completed_at": "2026-11-15T11:41:21Z",
+    "conclusion": "success",
+    "head_sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+    "id": 132796956442,
+    "name": "full-suite-shadow",
+    "started_at": "2026-11-15T11:30:17Z",
+    "status": "completed"
+  },
+  "retained_suite_log_sha256": "48109776a1ba1c4f9074d4d18f3eab309da1c7f21b0a6a4ed37fc94c4868e5f0",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-11-15T11:30:14Z",
+    "event": "schedule",
+    "head_branch": "trunk",
+    "head_sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+    "html_url": "https://github.com/kburson/aitm/actions/runs/43709222718",
+    "id": 43709222718,
+    "run_attempt": 1,
+    "run_started_at": "2026-11-15T11:30:14Z",
+    "status": "completed",
+    "updated_at": "2026-11-15T11:41:22Z",
+    "workflow_id": 418826440
+  }
+}

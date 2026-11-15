@@ -1,0 +1,9 @@
+# #289 Scheduled run delay
+
+The protected default branch configured the November 15, 2026 slot for 03:47 UTC. Workflow 418826440 was active, Actions were enabled, and the corrected diagnostic dispatch succeeded before the slot. The post-grace readback at 04:32 UTC found no registered scheduled run. [Retained cutoff evidence](scheduled-gap-provider.json)
+
+GitHub registered [run 43709222718](https://github.com/kburson/aitm/actions/runs/43709222718/attempts/1) at 11:30:14 UTC, 27,794 seconds after the configured slot. GitHub reports the genuine `schedule` event in the same workflow on protected default `trunk` at `4cfb41813199f9fa483447a61c65b9ca664fb97e`. The workflow file and its sole cron expression were unchanged across the slot and late run. The GitHub Actions job began at 11:30:17 UTC and completed successfully. [Provider attempt and job](scheduled-historical-provider.json)
+
+The elapsed time accumulated before GitHub exposed an Actions run. GitHub documents that scheduled events can be delayed or dropped. The run and job records contain no scheduler decision or original enqueue timestamp, and the available public incident history supplies no matching outage. The underlying provider cause is undetermined. [GitHub's schedule guidance](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) · [GitHub Status incident history](https://www.githubstatus.com/history)
+
+The reviewed run passed 1,277 product tests and 540 helper tests. The current-slot reader continued to report incomplete. The late result supplies historical execution and receipt evidence, and the incident adapter rejects the unverified current-slot result. [Verified historical execution](scheduled-historical.json) · [Retained runtime log](scheduled-historical-runtime.log)

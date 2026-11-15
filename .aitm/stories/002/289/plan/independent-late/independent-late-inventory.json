@@ -1,0 +1,12 @@
+{
+  "helpers": {
+    "count": 540,
+    "ordered_ids_sha256": "2a5a25cac3772acf287c8cf7ed09c689640a9a6a9538f900e66b95e964f31a7d"
+  },
+  "product": {
+    "count": 1277,
+    "ordered_ids_sha256": "10fd4bdb865a340b252233abcf5853f7fbc6e6f05427dfd1aee6abe15b9abe97"
+  },
+  "sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "tree": "10d90c79a27472ac81543fa5ddad25d2ec8b203d"
+}
