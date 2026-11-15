@@ -410,10 +410,16 @@ class _NativeWalk:
 
     def read(self, data: bytes, offset: int) -> int:
         for raw in data.splitlines(keepends=True):
+            update = None
+            byte_end = offset + len(raw)
             try:
                 update = self._row(raw, self.origin)
-                self.advance(update, offset, offset + len(raw))
+                self.advance(update, offset, byte_end)
             except _Held as hold:
+                if self.trace and self._remember_held_terminal(
+                    update, offset, byte_end
+                ):
+                    return byte_end
                 if not self.strict:
                     raise
                 resume = offset if self.start is None else self.start
@@ -429,6 +435,22 @@ class _NativeWalk:
             )
             return self.start
         return offset
+
+    def _remember_held_terminal(
+        self, update: _Update | None, offset: int, byte_end: int
+    ) -> bool:
+        # A verified row can identify the end of the already-armed native
+        # turn even if it cannot prove successful accounting for that turn.
+        if update is None or update.kind != "turn_completed" or self.start is None:
+            return False
+        try:
+            prompt = _uuid(update.fields.get("prompt_id"))
+        except ValueError:
+            return False
+        if self.prompt is not None and self.prompt != prompt:
+            return False
+        self.terminals.append(_GrokTerminalSpan(self.start, offset, byte_end, False))
+        return True
 
     def advance(self, update: _Update, offset: int, byte_end: int) -> None:
         kind = update.kind
@@ -521,8 +543,6 @@ class _NativeWalk:
         verified = not attempted or receipt is not None and receipt not in self.receipts
         if self.strict and not verified:
             raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED, key)
-        if self.trace and start is not None:
-            self.terminals.append(_GrokTerminalSpan(start, offset, byte_end, verified))
         complete = GrokCompletion(
             key,
             offset,
@@ -545,9 +565,15 @@ class _NativeWalk:
                 and old.receipt_ref != receipt
             ):
                 raise _Held(DiagnosticCode.IDENTITY_CONFLICT, key)
+            if self.trace and start is not None:
+                self.terminals.append(
+                    _GrokTerminalSpan(start, offset, byte_end, verified)
+                )
             self._finish_turn()
             return
         self.remember(complete)
+        if self.trace and start is not None:
+            self.terminals.append(_GrokTerminalSpan(start, offset, byte_end, verified))
         self.new.append(complete)
         if receipt is not None:
             self.receipts.add(receipt)

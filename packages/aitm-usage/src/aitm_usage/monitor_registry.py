@@ -483,7 +483,7 @@ def _grok_span_disposition(
     for record in _grok_records(view):
         if type(record) is _GrokPending and _edge(record.change) == identity.edge:
             cut = next(
-                (cut.ordinal for current, cut in record.cuts if current == identity),
+                (item.cut.ordinal for item in record.cuts if item.identity == identity),
                 None,
             )
             if cut is None:

@@ -258,7 +258,17 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
 
 
 @pytest.mark.parametrize(
-    "receipt_case", ["missing", "invalid", "wrong-verifier", "failed"]
+    "receipt_case",
+    [
+        "missing",
+        "invalid",
+        "wrong-verifier",
+        "failed",
+        "no-issuer",
+        "multi",
+        "late",
+        "mismatch",
+    ],
 )
 def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_case):
     from aitm_usage.sources import grok
@@ -532,6 +542,13 @@ def isolated_grok_capture(tmp_path, monkeypatch):
             refs=refs,
             find_origin=find_origin,
             add_stream=add_stream,
+            replace_incarnation=lambda: origins.__setitem__(
+                updates,
+                replace(
+                    origin,
+                    incarnation=evidence.pseudonymize("grok-incarnation", "replaced"),
+                ),
+            ),
         )
     with control.writer() as reopened:
         if registry._grok_records(reopened.view()):
@@ -702,15 +719,28 @@ def test_grok_open_enable_excludes_open_turn_at_cut(isolated_grok_capture):
     assert batch.cursor.checkpoint.completions[0].observation is None
 
 
-def test_grok_bad_open_terminal_closes_disable_at_verified_start(isolated_grok_capture):
+@pytest.mark.parametrize("failure", ["receipt", "cancelled", "malformed"])
+def test_grok_bad_open_terminal_closes_disable_at_verified_start(
+    isolated_grok_capture, failure
+):
     f = isolated_grok_capture
     f.submit(61, True)
     assert f.evaluate()
     f.write(f.rows[:2], 0)
     disable = f.submit(62, False)
     assert f.evaluate() == ()
-    f.refs.clear()
-    f.write(f.rows, 2)
+    rows = f.rows.copy()
+    if failure == "receipt":
+        f.refs.clear()
+    else:
+        entry = json.loads(rows[4])
+        native = entry["params"]["update"]
+        if failure == "cancelled":
+            native["stop_reason"] = "cancelled"
+        else:
+            native["usage"] = None
+        rows[4] = json.dumps(entry).encode() + b"\n"
+    f.write(rows, 2)
     assert f.evaluate()[0].command_id == disable.command_id
     batch = f.state.read_source(f.source_id, f.locator())
     assert batch.observations == ()
@@ -827,3 +857,60 @@ def test_prior_grok_offer_cannot_be_reused_by_another_command(
         assert f.evaluate() == ()
         assert f.writer.command_status(disable.command_id) is None
     assert f.evaluate()[0].command_id == disable.command_id
+
+
+def test_grok_pending_mixed_stream_reads_each_verified_bound(isolated_grok_capture):
+    f = isolated_grok_capture
+    new_locator, write_new = f.add_stream()
+    f.submit(111, True)
+    assert f.evaluate()
+    f.write(f.rows[1:5], 1)
+    write_new(f.rows[1:2], 0)
+    f.submit(112, False)
+    assert f.evaluate() == ()
+    f.write([*f.rows[1:6], *f.rows[7:]], 2)
+    quiet = f.state.read_source(f.source_id, f.locator())
+    armed = f.state.read_source(f.source_id, new_locator())
+    assert len(quiet.observations) == 1
+    assert _routes(f.state, quiet)[0].project_id == f.project
+    assert quiet.cursor.checkpoint.offset == len(b"".join(f.rows[1:5]))
+    assert armed.observations == () and armed.cursor.checkpoint.offset == 0
+
+
+def test_grok_replaced_incarnation_has_no_previous_capture_authority(
+    isolated_grok_capture,
+):
+    f = isolated_grok_capture
+    f.submit(121, True)
+    assert f.evaluate()
+    f.write(f.rows[1:5], 1)
+    older = f.state.read_source(f.source_id, f.locator())
+    assert older.observations
+    f.replace_incarnation()
+    with pytest.raises(scope._GrokCaptureHeld, match="incarnation"):
+        f.state.read_source(f.source_id, f.locator(), cursor=older.cursor)
+
+
+def test_another_scope_reader_cannot_change_current_grok_receipt_verifier(
+    isolated_grok_capture,
+):
+    from aitm_usage.sources.grok import GrokAdapter
+    from aitm_usage.types import DiagnosticCode
+
+    f = isolated_grok_capture
+    f.submit(131, True)
+    assert f.evaluate()
+    f.write(f.rows[:5], 1)
+
+    def different_verifier(*parts):
+        return f.verifier(*parts)
+
+    alternate = scope.ScopeState(
+        f.writer, grok_reader=GrokAdapter(f.find_origin, different_verifier)
+    )
+    held = alternate.read_source(f.source_id, f.locator())
+    assert held.observations == () and held.cursor.checkpoint.offset == 0
+    assert DiagnosticCode.BOUNDARY_UNVERIFIED in {
+        entry.code for entry in held.diagnostics
+    }
+    assert f.state.read_source(f.source_id, f.locator()).observations
