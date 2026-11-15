@@ -1,0 +1,22 @@
+{
+  "story": 134,
+  "actual_hours": 0.0309,
+  "coverage": "partial",
+  "milliseconds": 111371,
+  "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
+  "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
+  "evidence": [
+    {
+      "path": "full-auto-linux-source-recovery-134.json",
+      "sha256": "6335546a3a40095736c9ee954351aca0c9e606cdce8b082de513f9b2a2434049"
+    },
+    {
+      "path": "full-auto-linux-refine-1-134.json",
+      "sha256": "95aebbe6f203eb9465503f2fb82073ab90a742d3cce7bcd08765e9a415f5f748"
+    },
+    {
+      "path": "full-auto-linux-develop-1-134.json",
+      "sha256": "211e313bd0f76ce7f398c985d6365194f23a26614669c9b4b6a1cb83a0cc36e0"
+    }
+  ]
+}
