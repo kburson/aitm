@@ -1,0 +1,11 @@
+{
+  "story": 335,
+  "gate": "Refine",
+  "verdict": "PASS",
+  "attempt": 1,
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+  "packet_sha256": "eeb50e659c5674f6288fd1efece7ba1cf147d45af2acb5dc05f127d724e1d0da",
+  "response_sha256": "a54e0c94ec4c057f73a2561a55b8c68388c89680ca83df327deb52f8f296df48"
+}
