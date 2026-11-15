@@ -34,3 +34,5 @@ Run independent Refine and JIT, ordinary local tests, signed hosted checks, inde
 [Exact qualified-cost R2 scope](https://github.com/kburson/aitm/blob/planning/.aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md). Epic #2, C01 and production cutover are excluded.
 
 Project 24 Rank 229.06.
+
+[Independent Refine HOLD](plan/qualified-source-independent-refine-r1.md). Separate the closed profile and authority seam from durable coverage storage under independently re-accepted scope.

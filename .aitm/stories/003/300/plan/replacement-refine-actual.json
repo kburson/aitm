@@ -1,0 +1,20 @@
+{
+  "story": 300,
+  "sources": [
+    {
+      "path": "full-auto-qualified-policy-refine-1-300.json",
+      "sha256": "9d1d782af445ed9f0cb0a77a4c9aa89bada6d32dd4102bb7ad1bd99ddb4364cb"
+    }
+  ],
+  "observation_count": 3,
+  "milliseconds": 4433,
+  "actual_hours": "0.0012",
+  "coverage": "partial",
+  "evidence_through_utc": "2026-11-15T02:20:53.243Z",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "unmeasured": [
+    "unbounded progress gaps",
+    "reviewer engagement",
+    "tool intervals"
+  ]
+}
