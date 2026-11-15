@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 286
 title: "[#133] Define the Core behavior-driven test standard"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/286"
 parent: 133
 children: []
 blocking: [287, 288]
 blocked-by: [143]
 created: "2026-11-14T13:09:49Z"
-updated: "2026-11-14T13:12:59Z"
+updated: "2026-11-15T02:12:15Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "M"}
 priority: "P2"

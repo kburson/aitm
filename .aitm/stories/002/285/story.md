@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 285
 title: "[#133] Audit existing tests for behavioral value and execution cost"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/285"
 parent: 133
 children: []
 blocking: [287, 288, 290]
 blocked-by: [267]
 created: "2026-11-14T13:09:48Z"
-updated: "2026-11-14T13:12:59Z"
+updated: "2026-11-15T02:12:12Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
