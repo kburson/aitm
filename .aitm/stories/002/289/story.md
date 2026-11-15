@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 289
 title: "[#133] Qualify scheduled full-suite validation on trunk in shadow"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/289"
 parent: 133
 children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T11:44:15Z"
+updated: "2026-11-15T11:44:38Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md", "plan/reviews/toolchain-source-assessment.md", "plan/toolchain-local-tests.log", "plan/dispatch-green.json", "plan/scheduled-gap-pending.json", "plan/scheduled-gap.json", "plan/scheduled-gap-provider.json", "plan/reviews/schedule-gap-review.md", "plan/reviews/independent-schedule-gap.json", "plan/reviews/independent-schedule-gap-provider.json", "plan/2026-11-15-289-scheduled-qualification-amendment.md", "plan/schedule-delay-diagnosis.md", "plan/scheduled-historical.json", "plan/scheduled-historical-provider.json", "plan/scheduled-historical-runtime.log", "plan/verify-late-schedule.py", "plan/schedule-late-review.md", "plan/independent-late/independent-late-provider-run.json", "plan/independent-late/independent-late-provider-job.json", "plan/independent-late/independent-late-attempt.json", "plan/independent-late/independent-late.zip", "plan/independent-late/independent-late-runtime.log", "plan/independent-late/independent-late-inventory.json", "plan/independent-late/github-status-projection.json", "plan/independent-late/independent-late-reader.json", "plan/independent-late/independent-late-rejection.json", "plan/independent-late/independent-late-fixtures.log"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md", "plan/reviews/toolchain-source-assessment.md", "plan/toolchain-local-tests.log", "plan/dispatch-green.json", "plan/scheduled-gap-pending.json", "plan/scheduled-gap.json", "plan/scheduled-gap-provider.json", "plan/reviews/schedule-gap-review.md", "plan/reviews/independent-schedule-gap.json", "plan/reviews/independent-schedule-gap-provider.json", "plan/2026-11-15-289-scheduled-qualification-amendment.md", "plan/schedule-delay-diagnosis.md", "plan/scheduled-historical.json", "plan/scheduled-historical-provider.json", "plan/scheduled-historical-runtime.log", "plan/verify-late-schedule.py", "plan/schedule-late-review.md", "plan/independent-late/independent-late-provider-run.json", "plan/independent-late/independent-late-provider-job.json", "plan/independent-late/independent-late-attempt.json", "plan/independent-late/independent-late.zip", "plan/independent-late/independent-late-runtime.log", "plan/independent-late/independent-late-inventory.json", "plan/independent-late/github-status-projection.json", "plan/independent-late/independent-late-reader.json", "plan/independent-late/independent-late-rejection.json", "plan/independent-late/independent-late-fixtures.log", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -83,3 +83,7 @@ GitHub had no scheduled event for the November 15 03:47 UTC slot when the 45-min
 [Qualification amendment](plan/2026-11-15-289-scheduled-qualification-amendment.md) · [Delay diagnosis](plan/schedule-delay-diagnosis.md) · [Exact execution and custody](plan/scheduled-historical.json) · [Signed independent review](plan/schedule-late-review.md).
 
 GitHub's genuine scheduled run passed the complete suite on exact protected trunk. The post-deadline reader still reports the daily slot incomplete. The late receipt cannot authorize recovery. Production #103 and effective trunk rules matched the baseline.
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
