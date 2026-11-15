@@ -439,7 +439,18 @@ def _marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
             )
     except (ValueError, RecursionError):
         return None
-    if (
+    if _canonical_scope_arguments(cmd, parts, project_root) and parts[3:6] in (
+        ["scope", "mark", "--marker"],
+        ["development", "bind", "--binding"],
+    ):
+        return _Marker.LEGACY
+    return None
+
+
+def _canonical_scope_arguments(
+    command: str, parts: list[str], project_root: Path | None
+) -> bool:
+    return (
         len(parts) == 8
         and parts[:2] == ["aitm-usage", "--project"]
         and (
@@ -447,20 +458,13 @@ def _marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
             if project_root is None
             else parts[2] == str(project_root)
         )
-        and parts[3:6]
-        in (
-            ["scope", "mark", "--marker"],
-            ["development", "bind", "--binding"],
-        )
         and Path(parts[6]).is_absolute()
         and parts[7] == "--json"
-        and cmd == shlex.join(parts)
-    ):
-        return _Marker.LEGACY
-    return None
+        and command == shlex.join(parts)
+    )
 
 
-def _linux_marker_command(payload: dict) -> _Marker | None:
+def _linux_marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
     source = payload.get("input")
     if (
         payload.get("type") != "custom_tool_call"
@@ -476,14 +480,9 @@ def _linux_marker_command(payload: dict) -> _Marker | None:
     except (ValueError, RecursionError):
         return None
     if (
-        len(parts) == 8
-        and parts[:2] == ["aitm-usage", "--project"]
-        and Path(parts[2]).is_absolute()
+        _canonical_scope_arguments(command, parts, project_root)
         and parts[3:6] == ["scope", "mark", "--marker"]
-        and Path(parts[6]).is_absolute()
-        and parts[7] == "--json"
         and "\0" not in command
-        and command == shlex.join(parts)
     ):
         return _Marker.MONITOR_SCOPE
     return None
@@ -547,6 +546,7 @@ class _Walk:
         self.state = state
         self.linux_cli = linux_cli
         self.linux_unsettled: int | None = None
+        self.linux_gap: int | None = None
         self.marker_root = None if state.neutral_markers else state.ledger.root
         self.record_usage = eligibility is Eligibility.ELIGIBLE
         state.ledger.validate_source_ref(batch.cursor.source_ref)
@@ -682,16 +682,32 @@ class _Walk:
         self.seen_requests.add(request)
         return new
 
+    def retain_linux_gap(self, frame: SourceFrame, commit: bool) -> None:
+        # An older excluded prefix can seed counter history. A new unverified
+        # segment cannot become merely historical because a later turn closes.
+        if (
+            self.linux_cli
+            and commit
+            and not frame.pre_cutoff
+            and self.linux_gap is None
+        ):
+            self.linux_gap = (
+                frame.ordinal if self.linux_unsettled is None else self.linux_unsettled
+            )
+
     def turn_start(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
-        if self.linux_cli:
-            self.linux_unsettled = frame.ordinal
         context = self.context
+        if self.linux_cli:
+            if context.turn is not None and context.turn.post_cutoff:
+                self.retain_linux_gap(frame, commit)
+            self.linux_unsettled = frame.ordinal
         raw_id = _identifier(payload.get("turn_id"))
         raw_root = payload.get("root_turn_id")
         root_id = (
             raw_id if raw_root is None and not self.linux_cli else _identifier(raw_root)
         )
         if raw_id is None or root_id is None:
+            self.retain_linux_gap(frame, commit)
             if commit:
                 self.gap(frame, DiagnosticCode.MALFORMED_USAGE)
                 self.baseline = None
@@ -764,6 +780,7 @@ class _Walk:
                 or payload.get("permission_profile") != {"type": "disabled"}
             )
         ):
+            self.retain_linux_gap(frame, commit)
             if commit:
                 self.gap(frame, DiagnosticCode.BOUNDARY_UNVERIFIED)
             self.context = _Context(
@@ -829,17 +846,19 @@ class _Walk:
         turn = context.turn
         matches = self.matches_turn(frame, payload, turn, require_root=self.linux_cli)
         unsettled = context.response is not None or (turn is not None and not matches)
-        if (
-            self.linux_cli
-            and matches
-            and turn.seen_context
-            and turn.seen_counter
-            and not unsettled
-            and not context.conflict
-            and not context.ambiguous
-            and context.receipt is None
-        ):
-            self.linux_unsettled = None
+        if self.linux_cli:
+            if (
+                matches
+                and turn.seen_context
+                and turn.seen_counter
+                and not unsettled
+                and not context.conflict
+                and not context.ambiguous
+                and context.receipt is None
+            ):
+                self.linux_unsettled = None
+            else:
+                self.retain_linux_gap(frame, commit)
         if commit and (not matches or not turn.seen_counter or unsettled):
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
         if commit and self.completion is not None:
@@ -967,7 +986,7 @@ class _Walk:
                     and turn.seen_context
                     and frame.segment_ref == turn.segment_ref
                 ):
-                    marker = _linux_marker_command(payload)
+                    marker = _linux_marker_command(payload, self.marker_root)
                 else:
                     marker = None
                 context.call = _Call(ref, frame.segment_ref, marker)
@@ -1015,6 +1034,7 @@ class _Walk:
     def reject_response(
         self, frame: SourceFrame, code: DiagnosticCode, commit: bool
     ) -> None:
+        self.retain_linux_gap(frame, commit)
         context = self.context
         context.conflict = True
         context.call = None
@@ -1476,6 +1496,7 @@ class _Walk:
         ):
             raise ValueError("Expected a verified Codex frame")
         if self.ordinal is not None and frame.ordinal != self.ordinal + 1:
+            self.retain_linux_gap(frame, commit)
             self.context = _Context(ambiguous=True)
             if commit:
                 self.baseline = None
@@ -1487,7 +1508,7 @@ class _Walk:
         item = item if type(item) is str else None
         if (
             self.linux_cli
-            and self.linux_unsettled is None
+            and (self.context.turn is None or not self.context.turn.seen_context)
             and (
                 kind == "token_usage_record"
                 or (
@@ -1497,9 +1518,9 @@ class _Walk:
                 )
             )
         ):
-            # Counters without an active verified turn can seed later history,
-            # but cannot advance the persisted standalone carrier cursor.
-            self.linux_unsettled = frame.ordinal
+            self.retain_linux_gap(frame, commit)
+            if commit and not frame.pre_cutoff:
+                self.gap(frame, DiagnosticCode.BOUNDARY_UNVERIFIED)
         self.continue_compaction(frame, kind, item, payload)
         if commit and self.completion is not None:
             if kind == "event_msg" and item == "task_started":
@@ -1540,6 +1561,7 @@ class _Walk:
         elif kind == "response_item" and item in (_CALLS | _OUTPUTS):
             self.tool(frame, payload, item, commit)
         elif kind == "event_msg" and item in _ATTEMPT_ERRORS:
+            self.retain_linux_gap(frame, commit)
             if self.linux_cli and self.context.turn is not None:
                 self.context.turn = replace(self.context.turn, seen_context=False)
             self.context.ambiguous = True
@@ -1665,9 +1687,12 @@ def _read_codex(
         checkpoint = None
         turn = walk.context.turn
         unsettled = walk.ordinal if turn is None else turn.start.ordinal
-    if walk.linux_unsettled is not None:
+    linux_frontier = (
+        walk.linux_gap if walk.linux_gap is not None else walk.linux_unsettled
+    )
+    if linux_frontier is not None:
         checkpoint = None
-        unsettled = walk.linux_unsettled
+        unsettled = linux_frontier
     walk.lookahead_total = walk.baseline
     for frame in batch.frames[len(batch.commit_frames) :]:
         walk.step(frame, commit=False)
@@ -1676,7 +1701,12 @@ def _read_codex(
         AdapterResult(
             tuple(walk.revisions),
             tuple(dict.fromkeys(walk.diagnostics)),
-            tuple(entry for entry in walk.boundaries if entry.ordinal in ordinals),
+            tuple(
+                entry
+                for entry in walk.boundaries
+                if entry.ordinal in ordinals
+                and (walk.linux_gap is None or entry.ordinal < walk.linux_gap)
+            ),
             checkpoint,
             tuple(walk.quota),
         ),
