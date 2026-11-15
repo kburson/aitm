@@ -50,3 +50,5 @@ The exact candidate passed 1,450 locked local tests. The earlier run identified 
 The [exact recovery candidate](plan/grok-capture-local-recovery-test.json) passed 1,459 locked local tests and 111 focused tests. The source findings on mixed cuts, held terminal handling and the receipt matrix are reproduced and corrected in the accepted four paths.
 
 [Signed hosted recovery](plan/grok-capture-signed-hosted-recovery.json) verified the exact corrected tree and unchanged controls. The ordinary source recovery is submitted.
+
+[Independent source review](plan/grok-capture-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-capture-independent-source-r2-receipt.json).
