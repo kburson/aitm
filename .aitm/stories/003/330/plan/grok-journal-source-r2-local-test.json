@@ -1,0 +1,26 @@
+{
+  "story": 330,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "30e1a13d64a88d43e7447e2199c0e389324a0857",
+    "headRefOid": "bc1a43f9deb42d57133b74c6d62607880a170089",
+    "isDraft": false,
+    "number": 333,
+    "url": "https://github.com/kburson/aitm/pull/333"
+  },
+  "tests": 1473,
+  "tree": "9571299738b8bafd124ba04a9febb3f5417a9364",
+  "product_lines": {
+    "covered_lines": 14051,
+    "num_statements": 15462
+  },
+  "evidence_sha256": {
+    "grok-final-focused.log": "15ab376bccfd70c0d7a517de31c56565ebc61700a8c1d7c594ffadbfe86f07e5",
+    "local-current/product.log": "2c3cac60bf33c3093520b55beeaa0ea7f5f0f77ee00f2412f14023fb990562bf",
+    "legacy-snapshot-order-failure/local-current/product.log": "821fabe3508f7b5ddeb40371a503bad579bad7c2fa80cc544667da26b8a1695a"
+  },
+  "correction": "Test-only proof of legacy and Grok journal snapshots, fresh writer lease, rival owner conflict, read and coverage refusals, and private stored receipts. The first local recovery exposed a test sorting ambiguity on claims in one transaction. The correction compares each restored claim by its exact key.",
+  "r1_head": "0ead2c6ee79693d0eb27c0716cf91e7d6e04803d",
+  "r1_source_hold_sha256": "4a35daf0e5aeb90f6fe87f228c821478a7eac14945194b785e8a72b864f58b72"
+}
