@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -85,3 +85,7 @@ The first source review accepted the implementation and held on test evidence. [
 ## Independent source recovery
 
 The test-only correction passed exact locked and signed hosted Test. Independent source recovery returned **PASS**. [Signed Test](plan/delivery-signed-hosted-r2.json) · [Source receipt](plan/delivery-independent-source-r2-receipt.json).
+
+## Close
+
+PR #318 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/delivery-verified-delivery.json) · [Native Close](plan/delivery-native-close.json).
