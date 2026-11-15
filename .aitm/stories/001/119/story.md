@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
 blocking: [120, 122, 296]
-blocked-by: [118, 199, 201, 202, 203, 209, 210, 300, 303]
+blocked-by: [118, 199, 201, 202, 203, 209, 210, 300, 303, 310]
 created: "2026-11-10T13:58:01Z"
 updated: "2026-11-11T02:41:48+00:00"
 last-branch: "planning"
@@ -59,3 +59,5 @@ The [exact R3 amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.m
 ## Refine and split re-acceptance
 
 Refine identified new durable state for destination receipts and ACK. Independent re-acceptance approved a separate journal-only candidate story in Epic #100. #119 remains in Refine until that verified replacement prerequisite closes. [Refine](plan/destination-writes-independent-refine.md) · [Accepted split](plan/2026-11-15-119-destination-writes-split.md) · [Independent acceptance](plan/destination-writes-independent-split.md).
+
+[#310](https://github.com/kburson/aitm/issues/310) is the verified M09a prerequisite. #119 retains guarded destination custody, ACK and bounded queues. [Native readback](../../003/310/plan/native-split-readback.json).
