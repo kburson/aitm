@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 320
 title: "[M10b] Install owned native wake hooks"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/320"
 parent: 100
 children: []
@@ -26,3 +26,7 @@ plan-origin: {"kind":"accepted-parent-plan-amendment","source-story":120,"key":"
 Epic #100 · Rank 285 · Estimate 2.5 implementation hours, pending independent Refine and JIT.
 
 Own the three native installer descriptors, isolated install qualification and the M05/M07 Grok prompt-scoped producer defined in the [independently accepted amendment](../../001/120/plan/2026-11-15-120-wake-scheduler-installer-split.md). Use the #120 generic sender and launcher. #125 owns installed service rehearsal and deployment evidence.
+
+## Refine
+
+Verified #120 Close and its approved M10b split release this leaf at Rank 285. [Independent refinement packet](plan/2026-11-15-320-native-wake-installers-refine.md).
