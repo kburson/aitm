@@ -1,0 +1,17 @@
+{
+  "story": 122,
+  "gate": "Refine",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "estimate": 3.8,
+  "size": "M",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "refine-r2-result.json": "8a522377ef9c13b109953938464f4ea0a484907eeee2f79ed431e68999ce52d6",
+    "recovery-fence-independent-refine-r2.md": "2e1ecafcda066755909d60b3c62bfc67a7f8e9a28e376369d651ec985487a31c",
+    "refine-r2-input.md": "e3f7e3b09bcb4bbfe97dda45bf6ce09f1d9cf5c076774e25b68daa329d6cfea9",
+    "jit-entry-proof.txt": "698fd8c88a39addcf8d67631b1e1ed776fb098ea022f114545cf8333fdfcaf89"
+  }
+}

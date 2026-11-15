@@ -1,0 +1,95 @@
+Literal trunk ab9db80098849e323d5122eb47bf48f377107058
+
+Exact candidate fields, construction and service identity
+    def __post_init__(self) -> None:
+        if type(self.record) not in (OwnershipDispute, ContentDispute):
+            raise ValueError("Expected one routing journal dispute")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationCandidate:
+    """A private verified journal-only candidate awaiting the recovery fence."""
+
+    sequence: int
+    basis: _CandidateBasis
+    identity: SourceRef
+
+
+@dataclass(frozen=True, slots=True)
+                    ):
+                        raise ValueError("Dispute differs from its durable row")
+                    basis = (
+                        _CandidateBasis.OWNERSHIP
+                        if type(verified.dispute.record) is OwnershipDispute
+                        else _CandidateBasis.CONTENT
+                    )
+                    material = verified.dispute.identity.value
+                else:
+                    raise ValueError("Unexpected journal change type")
+                identity = _publication_reference(
+                    evidence,
+                    "monitor-journal-publication-v1",
+                    basis,
+                    change.sequence,
+                    material,
+                )
+                return PublicationCandidate(change.sequence, basis, identity)
+@dataclass(frozen=True, slots=True)
+class _ServiceEvidence:
+    """Stable source-only references independent of destination project keys."""
+
+    key: bytes = field(repr=False)
+
+    @property
+    def key_id(self) -> str:
+        return sha256(self.key).hexdigest()
+
+    def as_of(self) -> LedgerView:
+        namespace = UUID(
+            bytes=hmac.digest(self.key, b"monitor-source-namespace/v1", "sha256")[:16]
+        )
+        return LedgerView(namespace, 0, (), ())
+
+    def _tag(self, digest: str) -> str:
+        return hmac.digest(
+            self.key, b"monitor-source-proof/v1\0" + bytes.fromhex(digest), "sha256"
+        ).hex()
+
+    def pseudonymize(self, namespace: str, raw_reference: str) -> SourceRef:
+        if not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", namespace) or not raw_reference:
+            raise ValueError("Expected a monitor source namespace and identifier")
+        message = f"monitor-source-ref/v1\0{namespace}\0{raw_reference}".encode()
+        digest = hmac.digest(self.key, message, "sha256").hex()
+        return SourceRef(f"hmac-sha256:{digest}:{self._tag(digest)}")
+
+    def validate_source_ref(self, reference: SourceRef) -> None:
+        if type(reference) is not SourceRef:
+            raise LedgerError("Unverified monitor source reference")
+        _, digest, tag = reference.value.split(":")
+        if not hmac.compare_digest(tag, self._tag(digest)):
+            raise LedgerError("Unverified monitor source reference")
+
+
+
+Existing private proof, publication and rollback source
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:165:def _copy_snapshot(reader: sqlite3.Connection, destination: Path) -> None:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:220:def _authority_names(ledger: Ledger, view: LedgerView) -> tuple[str, ...]:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/backup.py:581:def _swap_store(project: _PinnedPath, staged: _PinnedPath) -> None:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/ledger.py:278:def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/ledger.py:335:def _physical_ancestry(
+ab9db80098849e323d5122eb47bf48f377107058:packages/aitm-usage/src/aitm_usage/scopes.py:274:def _publish(
+
+Delivered exact node control
+Commit ab9db80098849e323d5122eb47bf48f377107058
+Tree 1344a37f6d5133a734781fe58dbc4ab70d39ee5a
+Working directory packages/aitm-usage
+Command uv run --locked pytest -q -p no:cacheprovider --basetemp "$runtime/pytest" tests/test_monitor_coverage.py::test_unqualified_source_gap_publishes_without_project_write_or_ack
+.                                                                        [100%]
+1 passed in 1.05s
+
+M16 monitor snapshot and separate current tail boundary
+### M16. Coordinated backup, legacy adoption and rollback
+
+**Files** Extend `S/backup.py`, `S/monitor_recovery.py`, `S/install.py` and `S/cli.py`. Add `T/test_monitor_cutover.py`.
+
+**Contract** `capture_monitor_backup(store: MonitorStore, destination: Path) -> MonitorBackupReceipt` and `adopt_legacy(request: LegacyAdoption, receipt: MonitorBackupReceipt) -> LegacyBaseline`. Back up the journal, keys and ledger vector with pending routes. Verify the separate current recovery tail. Adopt the existing UUID, key, cutoff and ledger sequence under the original writer guard. Fence new projects behind proven enrollment baselines and reconcile provider activity during stop exactly once. `CutoverController.activate(request: ApprovedCutover, qualification: TargetQualification) -> ActivationReceipt` owns the ordered sequence. Confirm exact runtime and target qualification, verify independent recovery currentness, capture and verify the legacy backup, stop legacy collection, acquire the original guard, confirm the final checkpoint and frozen export, then verify the rollback bundle matches that stopped checkpoint. If the legacy writer advanced after backup, capture and verify a matching replacement bundle under the guard or refuse before schema migration. Record and transfer exact pending legacy commands and freeze ingress, then adopt the schema under the guard and verify the replacement in write-disabled readiness mode. Install production hooks only within the authorized cutover. Rollback removes exact owned hook entries and preserves foreign changes. If an owned entry cannot be safely removed, prove it inert under legacy service and record it. Enable writes only after the authorized cutover receipt binds those results. Before enabling writes, persist the adopted project ledger identities, head sequences and journal checkpoint as the rollback fence. Recovery checks the guarded durable project and journal state against that fence. A project commit beyond the fence is a write even if ACK or a separate marker was interrupted. Restore and restart legacy only when the absence of new durable usage writes and publication is proven. If a write exists or absence cannot be verified, preserve the state and require proven compatible rollback or forward recovery. A portable restore needs independently authenticated current-tail evidence outside the restored material.

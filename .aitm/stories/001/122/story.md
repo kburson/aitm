@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [119]
 created: "2026-11-10T13:58:06Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.8, "size": "M", "scope": "provisional"}
+estimate: {"agent-hours": 3.8, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -45,3 +45,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 Verified #119 Close releases this leaf at Rank 260. [Refine packet](plan/2026-11-15-122-recovery-publication-fence-refine.md) carries the accepted coverage-only amendment.
 
 [Initial Refine](plan/recovery-fence-independent-refine-r1-receipt.json) held on candidate authority. [The recovery packet](plan/2026-11-15-122-recovery-publication-fence-refine-r2.md) binds the existing candidate and exact closed #310 to #119 chain.
+
+Independent Refine recovery passed at 3.8 hours, Size M. The exact delivered coverage control and candidate custody enter [JIT](plan/2026-11-15-122-recovery-publication-fence-jit.md). [Refine receipt](plan/recovery-fence-independent-refine-r2-receipt.json).
