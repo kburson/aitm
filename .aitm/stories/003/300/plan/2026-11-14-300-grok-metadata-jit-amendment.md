@@ -1,0 +1,5 @@
+# #300 Grok metadata preflight amendment
+
+The exact JIT recovery described observing an unqualified Grok error from normal journal prepare. The implementation red test exposed an earlier existing guard. RoutingJournal._stream rejects a Grok locator before it can reach ScopeState.read_source. PR #308 shares ScopeState._grok_admission between the existing reader and prepare. Prepare consults the Grok metadata and policy before the cursor guard. A qualified Grok, an ordinary metadata failure or other unsupported location still reaches the existing cursor refusal. A stable, currently authorized exclusion can produce the private journal event. A Grok denial without consent carries no eligible coverage decision. The no-payload behavior, absence of journal progress and preservation of the qualified cursor refusal are covered by the focused tests.
+
+This is the recorded limited implementation amendment requested by the independent source reviewer. It changes no acceptance gate, native provider qualification, admission, scope projection, reporting, ACK, or production cutover. The signed exact candidate and the single independent source recovery include the amended path.
