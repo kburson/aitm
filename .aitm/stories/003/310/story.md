@@ -36,3 +36,7 @@ Recovery passed at 1.25 implementation hours. The exact plan pins the journal SQ
 ## Local Test
 
 Exact locked validation passed for the read-only candidate and destination-isolation path. [Evidence](plan/local-publication-test.json).
+
+## Independent source and recovery
+
+Initial source review held on tests for future schema, full-row substitution and noncanonical-but-decodable stored bytes. The updated test-only candidate returned to Test. [Initial source receipt](plan/publication-independent-source-r1-receipt.json).

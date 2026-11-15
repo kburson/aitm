@@ -1,0 +1,15 @@
+{
+  "story": 310,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "2e8236c6d17e831c17a65623708a52fd73e68b87",
+  "tree": "798ed1c8bf1216c0a716714bfbc6bec680a128ee",
+  "run": "https://github.com/kburson/aitm/actions/runs/43715173789/attempts/1",
+  "submission_sha256": "28f0f6d96f821ecd70300f6ff6a99dc313c52403a7446a62b8adc2dd4f2d368e",
+  "response_sha256": "e12cdf3c9ad8f6b88995f48e69a25cbb1e982cf966ae9ac23fdedc0a0f92c2ea",
+  "review_sha256": "413d6b7d75e23b387a19f608b4fcc5d1e50d14f5cde02de65cbeade53542f4a2"
+}
