@@ -1,0 +1,28 @@
+{
+  "archive_digest": "sha256:21aa6754796500815082952b14bf6fc4d50b004cb68eff875057b78f6e955c4a",
+  "artifact_id": 14164217793,
+  "base": "1ae0c08c9fc2a4c884800c663ba42cc4a6bb37a2",
+  "gate_disposition": "requires-separate-trusted-verifier",
+  "head": "3cb2ba833a81edf663d00e1898789a371358bf80",
+  "jobs": {
+    "aitm-ci": 132833843789,
+    "collect-evidence": 132833785060,
+    "file-checks": 132830799670,
+    "python": 132830799537,
+    "python-base": 132830799580,
+    "quality": 132830799425
+  },
+  "kind": "diagnostic-authenticated-job-and-signature-readback",
+  "pr": 314,
+  "run": "https://github.com/kburson/aitm/actions/runs/43720329396/attempts/1",
+  "run_attempt": 1,
+  "run_id": 43720329396,
+  "subject_digest": "f5150f7dad6bba2affa9465e7edad48c471c1874ca0421f18c4feae3cee17d36",
+  "tested_merge": "401a1e5bcf4c35025eadd59c60b49a0b63bf278f",
+  "tree": "acbbc009f9a2ea03969df2aedbe8b0645520f248",
+  "workflow_id": 412848571,
+  "disposition": "approved",
+  "authority": "Standing evidence-based delegation for exact-candidate admission",
+  "change_scope": "A\t.github/workflows/fast-story-shadow.yml\nA\ttools/ci/ci_fast_story_shadow.py\nA\ttools/ci/tests/test_ci_fast_story_shadow.py\n",
+  "basis": "Authenticated canonical CI and signed artifact with exact candidate scope. Existing #103 controls preserved; independent PR review is a separate gate."
+}
