@@ -1,0 +1,13 @@
+{
+  "story": 119,
+  "role": "refine",
+  "verdict": "HOLD",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "literal_trunk_reviewed": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "draft_sha256": "5eeef8647aa9f636e2a25e5550ad9ea28e2e119726b7609cf8a6355dc1da1e54",
+  "input_sha256": "e90fdac8617e86c62d1476a094ecd8cd450b99a200b5fe69be37eebeb64688f1",
+  "response_sha256": "c953457d86fc3b206f05abf9499b14b439a72f5c9f3a17ba4e8ba6bc8cf3d1ee",
+  "verdict_sha256": "08a32a00085cc43acd4501b0c676dc68249ca7f41e5d1113460ba6316ed3ac4f"
+}

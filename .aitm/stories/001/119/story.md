@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -55,3 +55,7 @@ The [exact R3 amendment](plan/2026-11-13-119-qualified-sources-reacceptance-r3.m
 ## Current qualified-cost prerequisite
 
 [#300](https://github.com/kburson/aitm/issues/300) is the verified direct first-release prerequisite. Its scope is the source exclusion and sanitized coverage proof. All remaining downstream delivery gates apply.
+
+## Refine and split re-acceptance
+
+Refine identified new durable state for destination receipts and ACK. Independent re-acceptance approved a separate journal-only candidate story in Epic #100. #119 remains in Refine until that verified replacement prerequisite closes. [Refine](plan/destination-writes-independent-refine.md) · [Accepted split](plan/2026-11-15-119-destination-writes-split.md) · [Independent acceptance](plan/destination-writes-independent-split.md).

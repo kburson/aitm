@@ -1,0 +1,13 @@
+{
+  "story": 119,
+  "role": "split",
+  "verdict": "PASS",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "literal_trunk_reviewed": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "draft_sha256": "3c05590d7d951bba947396d1d725ae3a9735b7b255336f499e3b3ce14a331163",
+  "input_sha256": "cef25574269ffe3b5ddad8a333f2b0c912f48720e3d49c450b717024c7880a56",
+  "response_sha256": "a8b6f6cdd8778df161063b09f36be3808dbf4229d0c56b0d0afaf8e2456140ec",
+  "verdict_sha256": "fe8f0c41a3e1fffab6830e9730895859270fc0aebdc19d20c1549bec1ad49bbe"
+}
