@@ -1,0 +1,11 @@
+{
+  "story": 121,
+  "epic": 100,
+  "gate": "accepted-plan amendment",
+  "attempt": 1,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "packet_sha256": "0cd9c41303dd4ac0686e0ca67e4fc6866d1123d3416a4cfe02ad4bf456df285d",
+  "plan_sha256": "745f65c5e8549a9b7cdbbe30876b13b1c4551831771772c116dad3c62b68168d"
+}
