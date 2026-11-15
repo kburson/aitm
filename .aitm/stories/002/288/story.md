@@ -10,12 +10,12 @@ children: []
 blocking: [292]
 blocked-by: [142, 285, 286]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:29:36Z"
+updated: "2026-11-15T02:31:37Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-288-grok-fixture-edge-plan.md", "plan/local-validation.md", "plan/replay-summary.json", "plan/local-test.log", "plan/reviews/plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-288-grok-fixture-edge-plan.md", "plan/local-validation.md", "plan/replay-summary.json", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -31,3 +31,7 @@ Improve one measured gap in dependency selection for fixtures, imports or child 
 ## Exact fixture dependency
 
 [Reviewed plan](plan/2026-11-14-288-grok-fixture-edge-plan.md) · [Local and seeded evidence](plan/local-validation.md) · [PR #302](https://github.com/kburson/aitm/pull/302).
+
+## Independent source assessment
+
+[Exact-source assessment](plan/reviews/source-assessment.md) independently reran the selected and full fallback comparisons.
