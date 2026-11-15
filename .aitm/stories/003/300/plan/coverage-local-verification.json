@@ -1,0 +1,25 @@
+{
+  "story": 300,
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+    "headRefOid": "7647e8919bfd76d2276d57a2420cdba032b346a1",
+    "number": 308,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/308"
+  },
+  "test": {
+    "base": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+    "head": "7647e8919bfd76d2276d57a2420cdba032b346a1",
+    "tree": "bbac5a857af293b78eac8177e201195e6bc4aacc",
+    "package-tree": "8f706e4f1d2b20b0563d021286cd655bd0deedbb"
+  },
+  "locked_suite": "1272 passed in 229.65s (0:03:49)",
+  "product_coverage": {
+    "covered_lines": 11532,
+    "num_statements": 12546
+  },
+  "focused": "31 coverage, migration, authority and paired-history cases passed",
+  "output_sha256": "caeee3426dc796c9c856fba0e0d70e12aaad5efa544c0abaa70e3ee552bd0e4f",
+  "grok_metadata_preflight": "Existing journal cursor check rejects Grok before read_source. Coverage uses existing metadata authority before this error, with no Grok payload, cursor, admission or ACK."
+}

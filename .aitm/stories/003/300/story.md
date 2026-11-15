@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -52,3 +52,7 @@ The recovery passed at 3.2 implementation hours. It defines stable policy denial
 ## Develop
 
 Exact JIT passed. Verified both native prerequisites closed and the Project Dev transition. [Native readback](plan/coverage-develop-native.json).
+
+## Test
+
+All locked local product and CLI tests passed on the exact package tree. [PR #308](https://github.com/kburson/aitm/pull/308) is in hosted Test. [Local verification](plan/coverage-local-verification.json).
