@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -80,3 +80,7 @@ The corrected candidate passed signed hosted Test and the raw replay of the esta
 ## Independent source review recovery
 
 Passed for the exact signed candidate. Delivery still requires current trunk and merge readback. [Review](plan/qualification-independent-source-r2.md).
+
+## Close
+
+Signed and independently reviewed PR #306 was verified on trunk. GitHub issue state is Closed Completed, Project is Done, and #300's prerequisites are both closed. [Delivery](plan/qualification-verified-delivery.json) · [Native Close](plan/qualification-native-close.json).
