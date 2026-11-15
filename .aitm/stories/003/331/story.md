@@ -32,3 +32,5 @@ Rank 249.5, provisional Estimate 2.75 implementation hours. #329 must close befo
 Verified #329 Close and the M11e split release this leaf at Rank 249.5. [Independent refinement packet](plan/2026-11-15-331-grok-prospective-enrollment-refine.md).
 
 [First independent Refine](plan/grok-enrollment-independent-refine-r1.md) held the durable gap and proof derivation. [Recovery](plan/2026-11-15-331-grok-prospective-enrollment-refine-r2.md) pins the exact committed command publication and present control APIs.
+
+[Independent Refine recovery passed](plan/grok-enrollment-independent-refine-r2.md) on the exact applied-command proof, durable prospective gap and disjoint three-file ownership.
