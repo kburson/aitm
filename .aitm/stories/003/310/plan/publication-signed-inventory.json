@@ -1,0 +1,14 @@
+{
+  "base": 1277,
+  "candidate": 1281,
+  "candidate_only_node_ids": [
+    "packages/aitm-usage/tests/test_monitor_coverage.py::test_unqualified_source_gap_publishes_without_project_write_or_ack",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence",
+    "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidates_refuse_pre_content_dispute_schema",
+    "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
+  ],
+  "preexisting_candidate_only_wheel_smoke": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+  "baseline_nodes_missing": [],
+  "base_report_sha256": "b33bd8cfbc41ec177b64cee34859f54cb50474f7590b4b76a0443ec1b5d6f39e",
+  "candidate_report_sha256": "734e437562e1bb2e3101185726e50e32877cd4fecd1ef6ef8f9f26566238aefe"
+}

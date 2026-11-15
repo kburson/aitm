@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 310
 title: "Create verified journal-only publication candidates"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/310"
 parent: 100
 children: []
@@ -40,3 +40,7 @@ Exact locked validation passed for the read-only candidate and destination-isola
 ## Independent source and recovery
 
 Initial source review held on tests for future schema, full-row substitution and noncanonical-but-decodable stored bytes. The updated test-only candidate returned to Test. [Initial source receipt](plan/publication-independent-source-r1-receipt.json).
+
+## Exact recovery
+
+The refusal tests passed on the exact local and signed hosted candidate. Independent source recovery returned **PASS**. [Source receipt](plan/publication-independent-source-r2-receipt.json) · [Signed Test](plan/publication-signed-hosted-r2.json).

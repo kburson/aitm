@@ -1,0 +1,30 @@
+{
+  "story": 310,
+  "gate": "source",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "300fba8199599f40279997dddb0df47778bbd738",
+  "tree": "84028ef049a48f5ae9c916eb790b59c57bd0f2af",
+  "run": "https://github.com/kburson/aitm/actions/runs/43716904794/attempts/1",
+  "submission_sha256": "01b9eca80f248f69b0638d1eed644482aa552d01e3020e0d244543259d6683a3",
+  "response_sha256": "7812809cfdb5fa6bfbb63e4028c9e5ca555ca9c918f8b5cf176f14d080d6f3a4",
+  "review_sha256": "a709f8eed978baeab87bbe4a660c44aa9a8754159c79175049c3c05a9ed2a704",
+  "tests": 1281,
+  "local_coverage": {
+    "covered_lines": 11633,
+    "num_statements": 12655
+  },
+  "hashes": {
+    "local/product.log": "2c3d81fd7e0b77d9613e565c257ace5a8753b90ff951a899fde96fea7174b19a",
+    "focused.log": "bbe4d23f9f10bd31e49cc11778688fec838b8608fe14b9d9f188e9793b10c442",
+    "canonical-mutation-red.log": "c58ce32e2db23ceac359f432469b63962ffb703a579d3b7876036db9bf96db29",
+    "producer-source-exact.diff": "509fb4b1a815eecbb483d9ddcc9d4ca564fd52b695753b8578de2c965b97637e",
+    "producer-source-recovery.diff": "94d8686464a50f31f1cbc3f7749290910ded02d3ab2f61f35eac2b0f17cd7b6a",
+    "signed-inventory.json": "63307e9317c267e42b147680bda40b9b0ee9500071c4b10fcd74608163b82eef",
+    "exact-tested-synthetic-merge.json": "a0759ba43e55c42967b3858ec9afeb98c05ba9741f2196d3f367a20f935d056a",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
