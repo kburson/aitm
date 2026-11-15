@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 326
 title: "[M11b] Authenticate sources through a shared metadata inventory"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/326"
 parent: 100
 children: []
@@ -50,3 +50,7 @@ The exact selected-source inventory passed signed Test. Independent source retur
 ## Source recovery
 
 Test-only proof now covers root and nested-directory supersession, inventory reuse and current key refusal, and exact Grok descriptor-relative opens. [Exact candidate](plan/metadata-inventory-source-recovery-candidate.json).
+
+## Independent source recovery
+
+The exact selected-source inventory passed signed Test. Independent source returned **PASS**. [Signed Test](plan/metadata-inventory-signed-hosted-r2.json) · [Source receipt](plan/metadata-inventory-independent-source-r2-receipt.json).
