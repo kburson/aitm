@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -69,3 +69,7 @@ The narrowed destination and ACK slice passed Refine after #310 closed. The boar
 ## Destination delivery JIT
 
 The exact destination delivery plan passed independent JIT. The accepted conditions bind the versioned guards and initial red tests. [Plan](plan/2026-11-15-119-destination-delivery-jit.md) · [Conditions](plan/jit-accepted-conditions.md) · [Receipt](plan/destination-delivery-independent-jit-receipt.json).
+
+## Local Test
+
+Exact locked delivery, restart, ACK, queue and legacy compatibility checks passed. [Evidence](plan/delivery-local-test.json).
