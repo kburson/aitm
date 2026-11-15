@@ -1,0 +1,21 @@
+{
+  "story": 134,
+  "status": "test-running",
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+    "headRefOid": "7c8c76e6f622b22ae00a853f1dddfb11161870bf",
+    "number": 313,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/313"
+  },
+  "focused_tests": 14,
+  "result": "A malformed committed frame holds the cold cursor or preserves the exact admitted cursor on restart. Removing that frame restores the later verified observation. This behavior passed on the existing production source.",
+  "cause": "The main frame loop retains a gap on the first discontinuous post-cutoff frame. The later diagnostic branch handles only rejected trailing frames.",
+  "sha256": {
+    "recovery.diff": "b510445de60a51a43088dbef38dfe3e86cbb8bd55943ea39b57a099970c0188c",
+    "focused.log": "dba1ffa0398b8e9bdf3eb597d23188c007cd10e0046e0c41577a8e9a2d56c8af",
+    "exact-native-replay.json": "9749478f5f77d6ee33ba340fc9ab5f9f01a7aab450e806645af1e9a423e057b9",
+    "invalid-frame-source.txt": "890f8475d9a4d8f4907ca4fc7f421f458f348451b8cee8fad2c2efa508c69d77"
+  }
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -70,3 +70,7 @@ The unverified post-cutoff frontier stays held across later turns. The recovery 
 ## Independent source recovery
 
 The exact local and signed hosted carrier built against trunk. Independent source recovery returned **HOLD**. [Signed Test](plan/carrier-signed-hosted-r2.json) · [Source receipt](plan/carrier-independent-source-r2-receipt.json).
+
+## Malformed-frame confirmation
+
+[Focused tests](plan/carrier-malformed-frame-confirmation.json) now prove an invalid committed row holds both cold and resumed reads before a later verified turn. The two ordinary source-review attempts remain recorded. Any additional paid source review needs owner authorization.
