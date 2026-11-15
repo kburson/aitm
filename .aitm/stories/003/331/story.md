@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 331
 title: "[M11e] Enroll new Grok streams under existing capture grants"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/331"
 parent: 100
 children: []
@@ -26,3 +26,7 @@ plan-origin: {"kind": "accepted-parent-plan-amendment", "source-story": 121, "ke
 [Native issue](https://github.com/kburson/aitm/issues/331) · [Accepted parent plan](../../001/121/plan/2026-11-15-121-grok-prospective-enrollment-amendment.md)
 
 Rank 249.5, provisional Estimate 2.75 implementation hours. #329 must close before independent Refine and JIT. #121 owns the coordinator call.
+
+## Refine
+
+Verified #329 Close and the M11e split release this leaf at Rank 249.5. [Independent refinement packet](plan/2026-11-15-331-grok-prospective-enrollment-refine.md).
