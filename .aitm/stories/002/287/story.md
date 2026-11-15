@@ -10,12 +10,12 @@ children: []
 blocking: [293]
 blocked-by: [285, 286]
 created: "2026-11-14T13:09:49Z"
-updated: "2026-11-15T02:17:08Z"
+updated: "2026-11-15T02:23:28Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-287-test-consolidation-plan.md", "plan/local-validation.md", "plan/timing.json", "plan/bench.sh", "plan/measure_journal.py", "plan/family.log", "plan/parent-paired.log", "plan/candidate-paired.log", "plan/candidate-nodeids.txt", "plan/reviews/plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-287-test-consolidation-plan.md", "plan/local-validation.md", "plan/timing.json", "plan/bench.sh", "plan/measure_journal.py", "plan/family.log", "plan/parent-paired.log", "plan/candidate-paired.log", "plan/candidate-nodeids.txt", "plan/reviews/plan-review.md", "plan/reviews/source-assessment.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -31,3 +31,7 @@ Apply one high-cost audit finding in a reviewed PR under #103. Preserve behavior
 ## Exact test consolidation
 
 [Reviewed plan](plan/2026-11-14-287-test-consolidation-plan.md) · [Local evidence](plan/local-validation.md) · [PR #299](https://github.com/kburson/aitm/pull/299).
+
+## Independent source assessment
+
+[Independent exact-source assessment](plan/reviews/source-assessment.md) includes the full 136-case monitor journal module, inventory parity and local measurements.
