@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 323
 title: "[#133] Qualify explicit recovery after a missed full-suite slot"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/323"
 parent: 133
 children: []
 blocking: []
 blocked-by: [294]
 created: "2026-11-15T17:24:59Z"
-updated: "2026-11-15T17:52:21Z"
+updated: "2026-11-15T17:52:34Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/002/294/plan/2026-11-15-294-cutover-and-rollback-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-323-missed-slot-recovery-plan.md", "plan/2026-11-15-323-missed-slot-recovery-results.md", "plan/qualification-summary.json", "plan/rehearsal-evidence.zip", "plan/reproduction.md", "plan/recipe/acknowledge.py", "plan/recipe/capture.py", "plan/recipe/collect-reference.sh", "plan/recipe/dispatch.py", "plan/recipe/evidence_io.py", "plan/recipe/prepare-packet.py", "plan/recipe/probe-green-hold.sh", "plan/recipe/probe-hold.sh", "plan/recipe/production.py", "plan/recipe/profiles.py", "plan/recipe/repin-lab.sh", "plan/recipe/replay-native.py", "plan/recipe/replay_controls.py", "plan/recipe/setup-lab.sh", "plan/recipe/verify_recovery.py", "plan/recipe/wait-terminal.sh", "plan/recipe/source/operator-recovery.yml", "plan/recipe/source/operator_recovery.py", "plan/recipe/source/run-recovery.sh", "plan/SHA256SUMS", "plan/test-board.json", "plan/in-review-board.json", "plan/missed-slot-recovery-review.md", "plan/delivery.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-323-missed-slot-recovery-plan.md", "plan/2026-11-15-323-missed-slot-recovery-results.md", "plan/qualification-summary.json", "plan/rehearsal-evidence.zip", "plan/reproduction.md", "plan/recipe/acknowledge.py", "plan/recipe/capture.py", "plan/recipe/collect-reference.sh", "plan/recipe/dispatch.py", "plan/recipe/evidence_io.py", "plan/recipe/prepare-packet.py", "plan/recipe/probe-green-hold.sh", "plan/recipe/probe-hold.sh", "plan/recipe/production.py", "plan/recipe/profiles.py", "plan/recipe/repin-lab.sh", "plan/recipe/replay-native.py", "plan/recipe/replay_controls.py", "plan/recipe/setup-lab.sh", "plan/recipe/verify_recovery.py", "plan/recipe/wait-terminal.sh", "plan/recipe/source/operator-recovery.yml", "plan/recipe/source/operator_recovery.py", "plan/recipe/source/run-recovery.sh", "plan/SHA256SUMS", "plan/test-board.json", "plan/in-review-board.json", "plan/missed-slot-recovery-review.md", "plan/delivery.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,7 @@ Native Project readbacks record Test and In review before disposition.
 ## Independent acceptance
 
 The [signed independent review](plan/missed-slot-recovery-review.md) accepts the exact disposable recovery. The production slot remains incomplete and #103 remains authoritative. [Delivered decision](plan/delivery.json).
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
