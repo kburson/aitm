@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 120
 title: "[M10] Wake and park scheduler"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
@@ -39,3 +39,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_park_final_catchup_then_late_write_reopens`, `test_stale_stop_cannot_park_newer_turn`, and `test_duplicate_and_missing_hooks_keep_idempotent_progress`. Verify concurrent turns, resume, retained cursors and bounded quiet backoff. A lost or refused wake must allow the provider to proceed and leave native reconciliation able to recover. Test an approved install with unchanged tracked files, consumed wake retirement and explicit park without scope change.
 - [ ] Run red. Implement the scheduler using monotonic deadlines and bounded work units. Run green with `test_monitor_delivery.py`. Commit M10.
+
+## Refine
+
+The native Close records for #115 and #119 release M10 at Rank 240. [Wake and park refinement](plan/2026-11-15-120-wake-park-refine.md) is queued for its initial independent review.
