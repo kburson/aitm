@@ -30,3 +30,5 @@ Rank 248 and provisional Estimate 3.5 implementation hours. Complete the indepen
 ## Refine
 
 Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at Rank 248. [Independent refinement packet](plan/2026-11-15-329-positive-grok-capture-refine.md).
+
+[Independent Refine passed](plan/grok-capture-independent-refine.md), with 14 conditions for exact JIT.
