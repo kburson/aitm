@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 120
 title: "[M10] Wake and park scheduler"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
@@ -75,3 +75,7 @@ The recovery schedules a verified stop-only current turn, rotates streams within
 ## Independent source recovery
 
 The exact scheduler and private wake ingress passed signed Test. Independent source returned **PASS**. [Signed Test](plan/wake-park-signed-hosted-r2.json) · [Source receipt](plan/wake-park-independent-source-r2-receipt.json).
+
+## Close
+
+PR #322 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/wake-park-verified-delivery.json) · [Native Close](plan/wake-park-native-close.json).
