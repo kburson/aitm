@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -26,3 +26,7 @@ plan-origin: {"kind": "accepted-parent-plan-amendment", "source-story": 121, "ke
 [Native issue #329](https://github.com/kburson/aitm/issues/329) · [Epic #100](../../001/100/story.md) · [Accepted M11 amendment](../../001/121/plan/2026-11-15-121-grok-guarded-delivery-amendment.md)
 
 Rank 248 and provisional Estimate 3.5 implementation hours. Complete the independent Refine and JIT before Develop. The existing signed Test, independent source review, verified delivery and native Close apply.
+
+## Refine
+
+Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at Rank 248. [Independent refinement packet](plan/2026-11-15-329-positive-grok-capture-refine.md).
