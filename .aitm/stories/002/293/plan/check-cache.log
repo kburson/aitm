@@ -1,0 +1,30 @@
+WARN `--no-project` was provided, but no project was found
+Using CPython 3.13.9
+Creating virtual environment at: /Users/kpburson/Library/Caches/aitm293-cache-bdww28nf/venv
+Resolved 12 packages in 4ms
+   Building aitm-usage @ file:///Users/kpburson/Library/Caches/aitm293-cache-bdww28nf/source/packages/aitm-usage
+      Built aitm-usage @ file:///Users/kpburson/Library/Caches/aitm293-cache-bdww28nf/source/packages/aitm-usage
+Downloading pygments (1.2MiB)
+Downloading ruff (10.0MiB)
+ Downloaded pygments
+ Downloaded ruff
+Prepared 11 packages in 1.07s
+Installed 11 packages in 12ms
+ + aitm-usage==0.1.0 (from file:///Users/kpburson/Library/Caches/aitm293-cache-bdww28nf/source/packages/aitm-usage)
+ + coverage==7.17.2
+ + execnet==2.1.2
+ + iniconfig==2.3.1
+ + packaging==26.3
+ + pluggy==1.7.0
+ + pygments==2.21.0
+ + pytest==9.2.0
+ + pytest-cov==7.1.0
+ + pytest-xdist==3.8.0
+ + ruff==0.15.22
+before exit 0 elapsed seconds 3.19
+Tested archive drift. Missing [], extra [b'.pytest_cache/.gitignore', b'.pytest_cache/CACHEDIR.TAG', b'.pytest_cache/README.md', b'.pytest_cache/v/cache/nodeids'], changed []
+after exit 0 elapsed seconds 2.8
+Tested archive drift. Missing [], extra [b'unexpected.txt'], changed []
+Tested archive drift. Missing [], extra [], changed [b'README.md']
+Tested archive drift. Missing [], extra [], changed [b'.pytest_cache']
+Both source-bound nested test variants passed. Cache escaped source, and verifier rejected extra file, changed tracked bytes and changed sealed link.
