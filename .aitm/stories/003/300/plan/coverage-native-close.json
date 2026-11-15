@@ -1,0 +1,27 @@
+{
+  "issue": {
+    "closedAt": "2026-11-15T11:25:11Z",
+    "number": 300,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/300"
+  },
+  "project": {
+    "actual": 0.1122,
+    "coverage": "Partial coordinator progress through verified delivery. Review, tool and wait time excluded.",
+    "estimate": 3.2,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0J7k",
+    "issue": 300,
+    "rank": 229.06,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Done"
+  },
+  "nextStoryPrerequisites": [
+    {
+      "number": 303,
+      "state": "closed"
+    }
+  ]
+}

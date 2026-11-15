@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -88,3 +88,7 @@ The candidate passed signed hosted Test and the raw replay of the established po
 ## Authorized independent source confirmation
 
 Passed for the exact signed candidate. Delivery still requires current trunk and merge readback. [Review](plan/coverage-independent-source-confirmation.md).
+
+## Close
+
+Signed and independently reviewed PR #308 was verified on trunk. GitHub issue state is Closed Completed, Project is Done, and #304 is the next eligible release child by Rank. [Delivery](plan/coverage-verified-delivery.json) · [Native Close](plan/coverage-native-close.json).
