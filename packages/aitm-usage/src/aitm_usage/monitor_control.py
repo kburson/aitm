@@ -1,14 +1,20 @@
 """Private owner-command publication and enqueue-only monitor CLI handlers."""
 
 import argparse
+import ctypes
+import errno
 import json
 import os
+import socket
 import sqlite3
+import stat
+import sys
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import MISSING, dataclass, field, fields, replace
 from datetime import UTC, datetime
 from pathlib import Path
+from time import monotonic
 from uuid import UUID, uuid4
 
 from . import monitor_registry
@@ -34,6 +40,7 @@ from .monitor_registry import (
     Registry,
     SourceApprovalRequest,
 )
+from .monitor_scheduler import Scheduler, WakeResolver
 from .monitor_scope import Scope
 from .scope_admission import (
     REQUEST_TYPES,
@@ -61,6 +68,18 @@ from .scopes import (
     _publication,
     _publish,
     _read_private,
+)
+from .sources.hooks import (
+    _SOCKET,
+    _SOCKET_SECONDS,
+    HookEvent,
+    HookSender,
+    WakeDisposition,
+    WakeKind,
+    _endpoint,
+    _parse_frame,
+    _read_frame,
+    _socket_entry,
 )
 from .types import (
     InboxCommand,
@@ -584,8 +603,181 @@ def _submission(
     parser.set_defaults(handler=_enqueue_command, payload_factory=factory)
 
 
+class _LinuxPeer(ctypes.Structure):
+    _fields_ = [("pid", ctypes.c_int), ("uid", ctypes.c_uint), ("gid", ctypes.c_uint)]
+
+
+def _peer_uid(connection: socket.socket) -> int:
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+        if sys.platform == "darwin":
+            function = libc.getpeereid
+            function.argtypes = [
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_uint),
+                ctypes.POINTER(ctypes.c_uint),
+            ]
+            function.restype = ctypes.c_int
+            uid, gid = ctypes.c_uint(), ctypes.c_uint()
+            if function(connection.fileno(), ctypes.byref(uid), ctypes.byref(gid)) == 0:
+                return uid.value
+        elif sys.platform == "linux":
+            function = libc.getsockopt
+            function.argtypes = [
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_int,
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_uint),
+            ]
+            function.restype = ctypes.c_int
+            peer = _LinuxPeer()
+            expected = ctypes.sizeof(peer)
+            size = ctypes.c_uint(expected)
+            if (
+                function(
+                    connection.fileno(),
+                    socket.SOL_SOCKET,
+                    socket.SO_PEERCRED,
+                    ctypes.byref(peer),
+                    ctypes.byref(size),
+                )
+                == 0
+                and size.value == expected
+                and peer.pid > 0
+            ):
+                return peer.uid
+    except (AttributeError, OSError):
+        pass
+    raise LedgerError("Private wake peer credentials are unavailable")
+
+
+@dataclass(frozen=True, slots=True)
+class _WakeListener:
+    scheduler: Scheduler
+    resolver: WakeResolver
+    directory: _PinnedPath
+    server: socket.socket
+    identity: os.stat_result
+
+    def serve_once(self) -> bool:
+        """Handle one bounded connection, without creating native scope."""
+        try:
+            lease = self.scheduler.lease
+            current = _socket_entry(self.directory)
+            if (
+                not os.path.samestat(self.identity, current)
+                or stat.S_IMODE(current.st_mode) != 0o600
+            ):
+                return False
+            client, _ = self.server.accept()
+            with client:
+                if _peer_uid(client) != os.geteuid():
+                    return False
+                client.setblocking(False)
+                event = _parse_frame(
+                    _read_frame(client.fileno(), monotonic() + _SOCKET_SECONDS)
+                )
+            lease.check()
+            self.directory.check()
+            return self.scheduler._admit(event, self.resolver)
+        except (LedgerError, OSError, ValueError):
+            return False
+
+
+class WakeIngress:
+    """The dormant same-account endpoint for a leased coordinator."""
+
+    def __init__(self, scheduler: Scheduler, resolver: WakeResolver) -> None:
+        self._scheduler = scheduler
+        self._resolver = resolver
+
+    @contextmanager
+    def listen(self) -> Iterator[_WakeListener]:
+        lease = self._scheduler.lease
+        with (
+            _pin_directory(self._scheduler.root) as directory,
+            socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server,
+        ):
+            address = _endpoint(directory)
+            try:
+                self._reclaim(directory, lease, address)
+                lease.check()
+                directory.check()
+                server.bind(address)
+                created = _socket_entry(directory)
+            except (OSError, ValueError):
+                raise LedgerError("Private wake socket is unavailable") from None
+            try:
+                try:
+                    if not os.path.samestat(created, _socket_entry(directory)):
+                        raise LedgerError("Private wake socket changed")
+                    os.chmod(_SOCKET, 0o600, dir_fd=directory.fd, follow_symlinks=False)
+                    current = _socket_entry(directory)
+                    if (
+                        not os.path.samestat(created, current)
+                        or stat.S_IMODE(current.st_mode) != 0o600
+                    ):
+                        raise LedgerError("Private wake socket changed")
+                    lease.check()
+                    server.listen(8)
+                    server.setblocking(False)
+                except (NotImplementedError, OSError, ValueError):
+                    raise LedgerError("Private wake socket is unavailable") from None
+                yield _WakeListener(
+                    self._scheduler, self._resolver, directory, server, created
+                )
+            finally:
+                self._retire(directory, lease, created)
+
+    @staticmethod
+    def _retire(
+        directory: _PinnedPath, lease: _PinnedPath, created: os.stat_result
+    ) -> None:
+        with suppress(OSError, LedgerError):
+            lease.check()
+            if os.path.samestat(created, _socket_entry(directory)):
+                os.unlink(_SOCKET, dir_fd=directory.fd)
+                os.fsync(directory.fd)
+
+    @staticmethod
+    def _reclaim(directory: _PinnedPath, lease: _PinnedPath, address: str) -> None:
+        try:
+            previous = _socket_entry(directory)
+        except FileNotFoundError:
+            return
+        if stat.S_IMODE(previous.st_mode) != 0o600:
+            raise LedgerError("Unverified wake socket requires owner removal")
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
+            probe.setblocking(False)
+            if probe.connect_ex(address) != errno.ECONNREFUSED:
+                raise LedgerError("Private wake endpoint is active or unavailable")
+        if not os.path.samestat(previous, _socket_entry(directory)):
+            raise LedgerError("Private wake socket changed")
+        lease.check()
+        os.unlink(_SOCKET, dir_fd=directory.fd)
+        os.fsync(directory.fd)
+
+
+def _park_session(args: argparse.Namespace) -> int:
+    try:
+        event = HookEvent(WakeKind.PARK, session=SourceRef(args.session_ref))
+        disposition = HookSender().notify(event)
+    except (ValueError, LedgerError, OSError):
+        disposition = WakeDisposition.UNAVAILABLE
+    if args.json:
+        print(json.dumps({"status": disposition.value}))
+    else:
+        print(disposition.value)
+    return 0 if disposition is WakeDisposition.SENT else 1
+
+
 def configure_monitor_commands(monitor_subparsers: argparse._SubParsersAction) -> None:
     """Register owner submissions and the lease-free status query."""
+    park = monitor_subparsers.add_parser("park")
+    park.add_argument("--session-ref", required=True)
+    park.add_argument("--json", action="store_true")
+    park.set_defaults(handler=_park_session)
     project = monitor_subparsers.add_parser("project").add_subparsers(required=True)
     _submission(
         project.add_parser("register"),
