@@ -1,0 +1,26 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 119,
+  "batch": "full-auto-m09-measured-119",
+  "recorded_at_utc": "2026-11-15T12:18:41.925723+00:00",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "a6836277a09c8136065427229bf14a64c39f6cfc03b01e2fad88959b33abd47c"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.a2c391aefa6de6c6d2ff158f",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T11:45:43.720Z",
+      "end_utc": "2026-11-15T11:45:50.171Z"
+    }
+  ]
+}

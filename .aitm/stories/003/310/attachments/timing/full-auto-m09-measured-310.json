@@ -1,0 +1,52 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 310,
+  "batch": "full-auto-m09-measured-310",
+  "recorded_at_utc": "2026-11-15T12:18:41.925723+00:00",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "464243460aeafedb1cc2b64d0f50a068df5fe479d30d95a648a151027744d697"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.03da733c60a93d28c935a11c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Development",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T12:09:23.932Z",
+      "end_utc": "2026-11-15T12:09:26.379Z"
+    },
+    {
+      "observation_id": "codex.item.62aaf28afef07193308a6c4f",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Development",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T12:10:46.650Z",
+      "end_utc": "2026-11-15T12:11:25.641Z"
+    },
+    {
+      "observation_id": "codex.item.5b284dbcbd88b4d3d310c271",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Development",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T12:11:28.033Z",
+      "end_utc": "2026-11-15T12:11:32.597Z"
+    }
+  ]
+}
