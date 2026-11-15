@@ -1,0 +1,16 @@
+{
+  "story": 119,
+  "status": "test-running",
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+    "headRefOid": "e1a9d71c1aa298e038f470745a3ebbf99f46e8d2",
+    "number": 318,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/318"
+  },
+  "focused_tests": 24,
+  "recovery": "Test-only. Exact schema refusal, interrupted destination write, wrong owner and key custody, row tamper, content and ownership disputes, both scoped histories, exact journal-only candidate, v3 restore and installer compatibility.",
+  "diff_sha256": "a2425eebd0232020377a2fc1d58a3c0952117c025448d6b5907d768bdb08fa0e",
+  "focused_log_sha256": "07f682ba9d1fe8fd27dcb4a12dfbfa37c6f319c3092c37441015086939d84701"
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -77,3 +77,7 @@ Exact locked delivery, restart, ACK, queue and legacy compatibility checks passe
 ## Independent source
 
 The exact destination custody and ACK candidate passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/delivery-signed-hosted-r1.json) · [Source receipt](plan/delivery-independent-source-r1-receipt.json).
+
+## Source review recovery
+
+The first source review accepted the implementation and held on test evidence. [Test-only recovery](plan/delivery-source-recovery-tests.json) covers each blocking case. The candidate entered Test before the ordinary recovery review.
