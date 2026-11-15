@@ -1,0 +1,16 @@
+{
+  "base": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+  "head": "875b9d5b5c220d270843777438c8da5d365880a4",
+  "tree": "8a2ee6352e71508c275d7938c1f4f2e6ac078483",
+  "run_id": 43774468381,
+  "story": 335,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "NO_VERDICT",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "packet_sha256": "21432c7ee39a9adb729952b5e44437d111cf163a97db5e2532631244faea5c09",
+  "raw_sha256": "a4f5dcf86b3402e15c3a847800cae4384b33fe1136f6aa6abaae970d1cdf4222",
+  "model_turns": 1,
+  "facts": "Provider returned a narrative of tool use and no accepted verdict. Outer run configured no tools and returned no independent tool output. The candidate and the cited checkout were clean at inspection. The previous candidate remains unaccepted."
+}
