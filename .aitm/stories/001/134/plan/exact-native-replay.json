@@ -12,7 +12,7 @@
   "replayed_observations": 0,
   "stable_keyed_checkpoint": true,
   "qualifies_live_cursor": false,
-  "source_commit": "10cc7df724613c2ccbeefd8cfd69efc93144c9b8",
-  "source_tree": "abfb7b1545fb4385fd9e5559305a4e0d491c91e1",
+  "source_commit": "b0569f51fb28c05a686705ced6771a5f67dcac22",
+  "source_tree": "f4ca29a1ff4d6a6d6742658124e5a7cc194ecb02",
   "sanitized_fixture_sha256": "a63358dcaad34ee47567f3298144c63f9933572d24f0daf94f5b41e37f084ecd"
 }

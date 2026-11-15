@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -54,3 +54,7 @@ Recovery passed at 3.25 implementation hours. Develop uses the potential Linux a
 ## Linux carrier Develop evidence
 
 The committed reader replayed the captured bytes on Linux arm64, located the marked request, preserved the archive prefix and maintained a stable keyed checkpoint across cold retry. The sanitized replay is separate from private transcript custody. The scratch Codex login was retired after replay. The host-level release qualification remains with #129. [Native replay](plan/exact-native-replay.json) · [Fixture audit](plan/sanitized-fixture-audit.json) · [Actual](plan/measured-actual.json).
+
+## Local Test
+
+Locked testing passed on the exact candidate. The native replay confirmed the keyed receipt and replay-safe checkpoint. [Evidence](plan/carrier-local-test.json).
