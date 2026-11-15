@@ -60,3 +60,7 @@ All locked local product and CLI tests passed on the exact package tree. [PR #30
 ## Exact hosted Test
 
 The candidate passed signed hosted Test and the raw replay of the established policy. Independent source review is active. [Signed receipt](plan/coverage-signed-hosted-receipt.json) · [Replay](plan/coverage-hosted-policy-replay.json).
+
+## Independent source review
+
+Held for the reported source findings. The preserved exact hosted pass does not authorize delivery. [Review](plan/coverage-independent-source-r1.md).
