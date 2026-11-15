@@ -740,13 +740,63 @@ def scope_receipt_ref(evidence: _ServiceEvidence, command_id: UUID) -> SourceRef
     return evidence.pseudonymize("scope-receipt", str(command_id))
 
 
-def grok_mark(request: MarkRequest, evidence: _ServiceEvidence) -> Mark:
-    return Mark(
-        request.command_id,
-        request.scope,
-        scope_receipt_ref(evidence, request.command_id),
-        request.destination_binding,
-    )
+@contextmanager
+def grok_mark(
+    writer: Registry,
+    request: MarkRequest,
+    source_id: UUID,
+    checkout: Path,
+) -> Iterator[Mark]:
+    """Keep the original grant current through the coordinator's first application."""
+    from .monitor_control import ControlInbox
+
+    lease = writer.lease
+    with (
+        ControlInbox(writer.root).publication() as locked,
+        _pin_directory(writer.root) as root,
+        _private_child(root, _GROK_RECEIPTS, create=False) as directory,
+        _grok_mark_proposal(
+            writer, locked.directory, request.command_id, require_current_witness=False
+        ) as (envelope, _),
+    ):
+        if directory is None or envelope.body.request != request:
+            raise LedgerError("Original Grok mark proposal is unavailable")
+        evidence = _authority(writer, root)
+        approved, source = _grok_approved_ref(writer, evidence, source_id)
+        live = writer._require_live_source(approved)
+        checkout_ref = _grok_checkout_ref(
+            writer, evidence, request.scope.project_id, checkout
+        )
+        original = next(
+            (
+                item
+                for item in _grok_receipts(directory, evidence)
+                if item.command_id == request.command_id
+            ),
+            None,
+        )
+        if (
+            original is None
+            or original.prompt is None
+            or original.proposal_digest != envelope.payload_digest
+            or (
+                original.source_id,
+                original.source,
+                original.profile,
+                original.checkout,
+            )
+            != (source_id, source, live.profile.generation, checkout_ref)
+        ):
+            raise LedgerError("Original Grok mark receipt is unavailable")
+        lease.check()
+        yield Mark(
+            request.command_id,
+            request.scope,
+            scope_receipt_ref(evidence, request.command_id),
+            request.destination_binding,
+        )
+        lease.check()
+        writer._require_live_source(approved, prior=live)
 
 
 def _grok_process_ref(

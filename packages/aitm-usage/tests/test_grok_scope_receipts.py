@@ -12,7 +12,7 @@ from aitm_usage import install, scope_admission
 from aitm_usage.ledger import ConflictError, LedgerError
 from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
 from aitm_usage.monitor_scope import HandoffStatus, Scope, resolve_route
-from aitm_usage.types import ItemKey, ItemKind, WorkPhase
+from aitm_usage.types import DiagnosticCode, ItemKey, ItemKind, WorkPhase
 
 
 @pytest.fixture
@@ -76,11 +76,11 @@ def test_one_use_receipt_routes_only_the_original_verified_mark(
     f.write([*f.rows[:6], *f.rows[7:]], 2)
     batch = f.state.read_source(f.source_id, f.locator())
     (boundary,) = batch.boundaries
-    mark = scope_admission.grok_mark(command, f.writer.source_evidence())
-    owner = f.state.operator(f.project)
-    f.state.authorize(mark, owner)
-    proof = f.state.verify_boundary(mark, owner, batch, boundary)
-    assert f.state.apply_mark(mark, proof).status is HandoffStatus.APPLIED
+    with scope_admission.grok_mark(f.writer, command, f.source_id, checkout) as mark:
+        owner = f.state.operator(f.project)
+        f.state.authorize(mark, owner)
+        proof = f.state.verify_boundary(mark, owner, batch, boundary)
+        assert f.state.apply_mark(mark, proof).status is HandoffStatus.APPLIED
     view = f.state.view(batch)
     marked, hookless = (
         resolve_route(row, f.writer.view(), view) for row in batch.observations
@@ -234,7 +234,8 @@ def test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope(
     batch = f.state.read_source(f.source_id, f.locator())
     (boundary,) = batch.boundaries
     evidence = f.writer.source_evidence()
-    mark = scope_admission.grok_mark(request, evidence)
+    with scope_admission.grok_mark(f.writer, request, f.source_id, checkout) as mark:
+        pass
     wrong = replace(
         mark,
         receipt_ref=evidence.pseudonymize(
@@ -268,7 +269,11 @@ def test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt(
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
     f.write([f.rows[0], *f.rows[:5]], 1)
     duplicate = f.state.read_source(f.source_id, f.locator())
-    assert duplicate.boundaries == () and duplicate.diagnostics
+    assert duplicate.boundaries == ()
+    assert any(
+        diagnostic.code is DiagnosticCode.OVERLAP_UNVERIFIED
+        for diagnostic in duplicate.diagnostics
+    )
     f.write(f.rows, 2)
     later = f.state.read_source(f.source_id, f.locator())
     assert len(later.boundaries) == 1 and len(later.observations) == 1
@@ -455,3 +460,60 @@ def test_expired_first_bind_keeps_exact_original_scope_unpublished(
         )
     callback = scope_admission.grok_receipt_lookup(f.writer, f.source_id, checkout)
     assert callback(SESSION, PROMPT_A, "native") is None
+
+
+def test_grant_revoked_after_native_read_refuses_first_application(
+    staged_scope, monkeypatch
+):
+    f, reader, request, checkout, attempt, _, bind = _ready_scope(
+        staged_scope, monkeypatch
+    )
+    assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    f.write(f.rows[:5], 1)
+    batch = f.state.read_source(f.source_id, f.locator())
+    (boundary,) = batch.boundaries
+    reader.revoke(request.grant_id)
+    before = f.state._snapshot()
+    with pytest.raises(LedgerError, match="producer grant is unavailable"):
+        with scope_admission.grok_mark(
+            f.writer, request, f.source_id, checkout
+        ) as mark:
+            owner = f.state.operator(f.project)
+            f.state.authorize(mark, owner)
+            f.state.apply_mark(
+                mark, f.state.verify_boundary(mark, owner, batch, boundary)
+            )
+    assert f.state._snapshot() == before
+
+
+def test_native_marker_cannot_be_applied_by_a_different_scope_owner(
+    staged_scope,
+    monkeypatch,
+    tmp_path,
+):
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.monitor_registry import ProjectRegistrationRequest
+
+    f, _, request, checkout, attempt, _, bind = _ready_scope(staged_scope, monkeypatch)
+    assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    rival = UUID(int=33543)
+    rival_state = tmp_path / "rival-state"
+    Ledger.initialize(rival_state, rival)
+    f.writer.register_project(
+        ProjectRegistrationRequest(rival, str(rival_state), "Rival")
+    )
+    f.write(f.rows[:5], 1)
+    batch = f.state.read_source(f.source_id, f.locator())
+    (boundary,) = batch.boundaries
+    before = f.state._snapshot()
+    with scope_admission.grok_mark(f.writer, request, f.source_id, checkout) as mark:
+        authority = f.state.operator(rival)
+        with pytest.raises(LedgerError):
+            f.state.authorize(mark, authority)
+        with pytest.raises(LedgerError):
+            f.state.verify_boundary(mark, authority, batch, boundary)
+    forged_scope = replace(request, scope=replace(request.scope, project_id=rival))
+    with pytest.raises(LedgerError, match="proposal is unavailable"):
+        with scope_admission.grok_mark(f.writer, forged_scope, f.source_id, checkout):
+            pytest.fail("foreign owner converted the original receipt")
+    assert f.state._snapshot() == before
