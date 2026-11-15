@@ -1,0 +1,24 @@
+{
+  "base": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+  "head": "e1a9d71c1aa298e038f470745a3ebbf99f46e8d2",
+  "tree": "1344a37f6d5133a734781fe58dbc4ab70d39ee5a",
+  "run": "https://github.com/kburson/aitm/actions/runs/43731237387/attempts/1",
+  "run_id": 43731237387,
+  "story": 119,
+  "gate": "source",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "f17886fb8d356bf7ae730affb5133e5226ba5f0d2fdde37d24ace3c7d5056453",
+  "response_sha256": "47578aad9d129f4d4337f2357a3e821f576410bee3b4c2137b477755e21b0dca",
+  "review_sha256": "9848537533865dfeea53d98e9837038e01d96a3a0fb3bd7eadfd443dc59139f9",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "2783205fb7492db22a542cf512dbaa67d001372207e65c14498c411f342c733a",
+    "focused-2.log": "07f682ba9d1fe8fd27dcb4a12dfbfa37c6f319c3092c37441015086939d84701",
+    "unchanged-controls.diff": "1ba63c99207f585d1c3ba000a663198dbb275445050570b0511b4980170406cf",
+    "recovery.diff": "a2425eebd0232020377a2fc1d58a3c0952117c025448d6b5907d768bdb08fa0e",
+    "product.log": "29a998a030841924441af153416a5d5fb62d1653f3813e13eda117546f55a473",
+    "product-coverage.json": "2bf841db3de956a6dc0ccd63bbb87a5d308a5e68d76b521e6f3579489e585cd9"
+  }
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -81,3 +81,7 @@ The exact destination custody and ACK candidate passed signed Test. Independent 
 ## Source review recovery
 
 The first source review accepted the implementation and held on test evidence. [Test-only recovery](plan/delivery-source-recovery-tests.json) covers each blocking case. The candidate entered Test before the ordinary recovery review.
+
+## Independent source recovery
+
+The test-only correction passed exact locked and signed hosted Test. Independent source recovery returned **PASS**. [Signed Test](plan/delivery-signed-hosted-r2.json) · [Source receipt](plan/delivery-independent-source-r2-receipt.json).
