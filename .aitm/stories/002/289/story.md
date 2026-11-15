@@ -10,7 +10,7 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:46:03Z"
+updated: "2026-11-15T02:47:22Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -31,3 +31,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Scheduled full-GitHub shadow candidate
 
 [Reviewed plan](plan/2026-11-14-289-scheduled-full-shadow-plan.md) · [Local controls](plan/local-validation.md) · [PR #305](https://github.com/kburson/aitm/pull/305).
+
+## Final candidate freshness handling
+
+[Updated exact candidate evidence](plan/local-validation.md) includes a still-active timely run past grace. Provider completion remains the source for its disposition.
