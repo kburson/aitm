@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sqlite3
 import sys
@@ -218,6 +219,115 @@ def test_schema_tag_requires_its_exact_tables(project, version):
         ledger.Ledger.open(project.root, PROJECT)
 
 
+@pytest.mark.parametrize(
+    ("version", "mutation"),
+    [
+        (3, "PRAGMA user_version = 4"),
+        (3, "DROP TABLE monitor_delivery_receipts"),
+        (2, "CREATE TABLE monitor_delivery_receipts (wrong TEXT)"),
+        (3, None),
+    ],
+    ids=["future-version", "missing-table", "incompatible-v2-layout", "stale-head"],
+)
+def test_delivery_upgrade_refuses_unknown_or_incomplete_catalog(
+    project, version, mutation
+):
+    sequence = project.as_of().sequence
+    project.upgrade_monitor_schema(sequence)
+    store = ledger.Ledger.open(project.root, PROJECT)
+    if version == 3:
+        store.upgrade_delivery_schema(sequence)
+        store = ledger.Ledger.open(project.root, PROJECT)
+    if mutation is not None:
+        with store.writer() as writer, writer._write_transaction() as conn:
+            conn.execute(mutation)
+    before = _durable_bytes(store)
+    with pytest.raises(ledger.LedgerError):
+        store.upgrade_delivery_schema(sequence + int(mutation is None))
+    assert _durable_bytes(store) == before
+
+
+def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
+    from aitm_usage.monitor_types import (
+        MonitorModel,
+        MonitorObservation,
+        MonitorProvider,
+        MonitorRevision,
+        NativeSurface,
+        ObservationTimeBasis,
+    )
+
+    class StoppedLaunchControl:
+        plist_directory = tmp_path / "LaunchAgents"
+
+        def job(self, label):
+            return None
+
+    monkeypatch.setattr(install, "LaunchControl", StoppedLaunchControl)
+    sequence = project.as_of().sequence
+    project.upgrade_monitor_schema(sequence)
+    store = ledger.Ledger.open(project.root, PROJECT)
+    store.upgrade_delivery_schema(sequence)
+    store = ledger.Ledger.open(project.root, PROJECT)
+
+    def revision(number):
+        return MonitorRevision(
+            store.pseudonymize("fixture", f"delivery-{number}"),
+            1,
+            MonitorObservation(
+                MonitorProvider.CODEX,
+                NativeSurface.CODEX_DESKTOP_MACOS,
+                MOMENT,
+                ObservationTimeBasis.NATIVE_COMPLETION,
+                TokenCounts(input_tokens=20, output_tokens=2, total_tokens=22),
+                Availability.COMPLETE,
+                MonitorModel.GPT_6_1_SOL,
+            ),
+        )
+
+    saved = tmp_path / "v3-backup"
+    first, later = revision(1), revision(2)
+    with store.writer() as writer:
+        receipt = writer._commit_monitor_delivery(first, 1, "a" * 64)
+    saved_receipt = backup.backup(store, saved)
+    with store.writer() as writer:
+        writer._commit_monitor_delivery(later, 2, "b" * 64)
+    restored = backup.restore(saved, store.root, store.identity)
+    assert restored.sequence == saved_receipt.sequence == receipt.sequence
+    assert restored.schema_version == 3
+    assert store.monitor_as_of(receipt.sequence).revisions == (first,)
+    assert store._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
+
+    copy = saved / ledger.STORE_NAME / ledger.DATABASE_NAME
+    with closing(sqlite3.connect(copy)) as conn, conn:
+        conn.execute("UPDATE monitor_delivery_receipts SET seal=?", ("forged",))
+    with closing(sqlite3.connect(copy)) as conn:
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    # Preserve the public bundle shape and verify that the staged receipt itself
+    # fails while the original live store remains available.
+    for suffix in ("-wal", "-shm"):
+        copy.with_name(copy.name + suffix).unlink(missing_ok=True)
+    check = ledger.Ledger._validate_delivery_receipts
+    invoked = []
+
+    def verify_receipts(candidate):
+        try:
+            check(candidate)
+        except ledger.LedgerError as exc:
+            invoked.append((candidate.root, str(exc)))
+            raise
+
+    monkeypatch.setattr(ledger.Ledger, "_validate_delivery_receipts", verify_receipts)
+    before = _durable_bytes(store)
+    with pytest.raises(backup.BackupError):
+        backup.restore(saved, store.root, store.identity)
+    ((staged, reason),) = invoked
+    assert staged != store.root
+    assert reason == "Invalid committed project delivery receipt"
+    assert _durable_bytes(store) == before
+    assert store._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
+
+
 def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     project, tmp_path, monkeypatch
 ):
@@ -261,6 +371,23 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     observed["schema"][1:] = [1, "0" * 64]
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=1)
+
+    def fingerprint(version):
+        data = json.dumps(ledger._supported_schema(version), separators=(",", ":"))
+        return [
+            ledger.APPLICATION_ID,
+            version,
+            hashlib.sha256(data.encode()).hexdigest(),
+        ]
+
+    observed["schema"] = [fingerprint(1), fingerprint(2)]
+    for version in (1, 2):
+        assert install._probe_runtime(*args, schema_version=version).witness_capable
+    with pytest.raises(install.InstallError, match="schema is incompatible"):
+        install._probe_runtime(*args, schema_version=3)
+    observed["schema"].append(fingerprint(3))
+    for version in (1, 2, 3):
+        assert install._probe_runtime(*args, schema_version=version).witness_capable
 
 
 def test_legacy_global_state_and_report_project_uuid_are_separate(
