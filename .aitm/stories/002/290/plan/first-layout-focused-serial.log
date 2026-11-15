@@ -1,0 +1,28 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0 -- /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+rootdir: /private/tmp/aitm290-benchmark.78dm7YKh/source-3
+configfile: packages/aitm-usage/pyproject.toml
+collecting ... collected 20 items
+
+packages/aitm-usage/tests/test_monitor_journal.py::test_causal_revision_survives_stale_replay_after_restart PASSED [  5%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor PASSED [ 10%]
+packages/aitm-usage/tests/test_claude.py::test_late_processing_contradiction_revokes_price_with_original_scope[unchanged] PASSED [ 15%]
+packages/aitm-usage/tests/test_codex.py::test_usage_remains_measured_when_model_context_is_missing PASSED [ 20%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[after] PASSED [ 25%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_project_wide_mark_is_distinct_from_anchor_only_scope PASSED [ 30%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_late_claude_revision_keeps_original_scope_after_ordinary_mark PASSED [ 35%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_claude_cost_state_checks_its_physical_row[disabled] PASSED [ 40%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[head-child] PASSED [ 45%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_claude_rewritten_common_prefix_cannot_create_a_content_dispute PASSED [ 50%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage PASSED [ 55%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[legacy-resolution] PASSED [ 60%]
+packages/aitm-usage/tests/test_monitor_coverage.py::test_coverage_readback_rejects_corrupted_event_binding[commit] PASSED [ 65%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_ordinary_mark_routes_unanchored_usage_after_native_rescan PASSED [ 70%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_claude_terminal_proof_cannot_depend_on_other_disabled_counters PASSED [ 75%]
+packages/aitm-usage/tests/test_monitor_scope.py::test_grok_scope_proves_native_target_and_holds_without_capture[handoff] PASSED [ 80%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[second-tool-rival] PASSED [ 85%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[duplicate-output-rival] PASSED [ 90%]
+packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[backdated-counter-owner] PASSED [ 95%]
+packages/aitm-usage/tests/test_monitor_qualification.py::test_reserve_revalidates_the_exact_prepared_authority[False-verifier-unavailable] PASSED [100%]
+
+============================= 20 passed in 26.19s ==============================

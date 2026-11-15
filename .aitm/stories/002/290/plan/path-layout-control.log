@@ -1,0 +1,1 @@
+Adding coverage under a fixture ancestor invalidates native custody. A sibling fixture path stays stable.

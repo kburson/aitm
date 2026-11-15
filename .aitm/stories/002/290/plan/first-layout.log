@@ -1,0 +1,3617 @@
+bringing up nodes...
+bringing up nodes...
+
+........................................................................ [  3%]
+........................................................................ [  7%]
+..................FF.................................................... [ 11%]
+................................E....................................... [ 15%]
+..............................................................F......... [ 19%]
+........................................................................ [ 23%]
+......F.......E..........................................F.............. [ 27%]
+........................................................................ [ 31%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+........................................................................ [ 43%]
+........................................................................ [ 47%]
+........................................................................ [ 51%]
+....E......E............................................................ [ 55%]
+......................................E................................. [ 59%]
+........................................................................ [ 63%]
+........................................................................ [ 67%]
+........................................................................ [ 71%]
+........................................................................ [ 75%]
+........................................................................ [ 79%]
+..........................FE..F....EF...................E............... [ 83%]
+.....................E.....E......................E..................... [ 87%]
+........................................................................ [ 91%]
+........................................................................ [ 95%]
+..............E......................................................... [ 99%]
+.................                                                        [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_verified_claude_branches_record_one_durable_content_dispute[head-child] _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_verified_claude_branches_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b1fee0>
+
+    @pytest.fixture
+    def journal_claude(tmp_path, monkeypatch):
+        from test_monitor_scope import ClaudeScopeFixture, NativeScopeFixture
+    
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:1101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x1083260d0>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_verified_claude_branches_0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b1fee0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+>               frontier = writer.capture_frontier(change, self.locator())
+                                                           ^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x1083260d0>
+
+    def locator(self):
+>       (locator,) = self.adapter.discover(self.root)
+        ^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+packages/aitm-usage/tests/test_monitor_scope.py:105: ValueError
+_ ERROR at setup of test_claude_rewritten_common_prefix_cannot_create_a_content_dispute _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_claude_rewritten_common_p0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1079077e0>
+
+    @pytest.fixture
+    def journal_claude(tmp_path, monkeypatch):
+        from test_monitor_scope import ClaudeScopeFixture, NativeScopeFixture
+    
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:1101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x108d84b90>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_claude_rewritten_common_p0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1079077e0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+                frontier = writer.capture_frontier(change, self.locator())
+                self.append()
+>               proof = writer.verify_boundary(change, self.locator(), frontier)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10922fcd0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:2f09ca737bc5dc...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10922fcd0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='1d952bb3c5af2e6807b4e8188f136cbe40cbb42e05e3a70ea7c9d44d56ab495b', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:2f09ca737bc5dc...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10922fcd0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='1d952bb3c5af2e6807b4e8188f136cbe40cbb42e05e3a70ea7c9d44d56ab495b', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:2f09ca737bc5dc...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ ERROR at setup of test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_committed_pair_survives_e0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1079bed60>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+>       return NativeJournalFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:601: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.NativeJournalFixture object at 0x109fc75d0>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_committed_pair_survives_e0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1079bed60>
+
+    def __init__(self, base, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.registry = Registry(base / "monitor")
+        self.adapter = ProviderAdapter()
+        self.anchors = {key: base / f"checkout-{key.int}" for key in (A, B)}
+        self.ledgers = {}
+        self.paths = {}
+        self.roots = {}
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            for key, anchor in self.anchors.items():
+                anchor.mkdir()
+                ledger = self.ledgers[key] = Ledger.initialize(
+                    base / f"project-{key.int}", key
+                )
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(ledger.root),
+                        f"Project {key.int}",
+                        anchors=(str(anchor),),
+                    )
+                )
+    
+            for source_id in (LIVE, COPY):
+                root = base / f"transcripts-{source_id.int}"
+                root.mkdir()
+                path = self.paths[source_id] = root / "desktop.jsonl"
+                self.roots[source_id] = SourceRoot(
+                    root, CUTOFF, tuple(self.anchors.values()), self.evidence
+                )
+                write(
+                    path,
+                    [
+                        startup(self.anchors[A], originator="Codex Desktop"),
+                        *self.turn(1),
+                    ],
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source_id,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root),
+                    )
+                )
+                armed = [
+>                   (change, writer.capture_frontier(change, self.locator(source_id)))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    for project in (A, B)
+                    for change in (CaptureChange(project, source_id, True),)
+                ]
+
+packages/aitm-usage/tests/test_monitor_journal.py:567: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10a2324d0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10a2324d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='5a71ce3b4f20cd7b676e224a7f9ab9b94e9451c8f9e8ac27d391b4a52634a9d5', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10a2324d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='5a71ce3b4f20cd7b676e224a7f9ab9b94e9451c8f9e8ac27d391b4a52634a9d5', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator(), prior = None, arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ ERROR at setup of test_committed_pair_conflict_stalls_affected_source_without_regressing_history[legacy-resolution] _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_committed_pair_conflict_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b8c1a0>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+>       return NativeJournalFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:601: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.NativeJournalFixture object at 0x109b10650>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_committed_pair_conflict_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b8c1a0>
+
+    def __init__(self, base, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.registry = Registry(base / "monitor")
+        self.adapter = ProviderAdapter()
+        self.anchors = {key: base / f"checkout-{key.int}" for key in (A, B)}
+        self.ledgers = {}
+        self.paths = {}
+        self.roots = {}
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            for key, anchor in self.anchors.items():
+                anchor.mkdir()
+                ledger = self.ledgers[key] = Ledger.initialize(
+                    base / f"project-{key.int}", key
+                )
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(ledger.root),
+                        f"Project {key.int}",
+                        anchors=(str(anchor),),
+                    )
+                )
+    
+            for source_id in (LIVE, COPY):
+                root = base / f"transcripts-{source_id.int}"
+                root.mkdir()
+                path = self.paths[source_id] = root / "desktop.jsonl"
+                self.roots[source_id] = SourceRoot(
+                    root, CUTOFF, tuple(self.anchors.values()), self.evidence
+                )
+                write(
+                    path,
+                    [
+                        startup(self.anchors[A], originator="Codex Desktop"),
+                        *self.turn(1),
+                    ],
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source_id,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root),
+                    )
+                )
+                armed = [
+                    (change, writer.capture_frontier(change, self.locator(source_id)))
+                    for project in (A, B)
+                    for change in (CaptureChange(project, source_id, True),)
+                ]
+                self.append(source_id, self.turn(2))
+                for change, frontier in armed:
+>                   proof = writer.verify_boundary(
+                        change, self.locator(source_id), frontier
+                    )
+
+packages/aitm-usage/tests/test_monitor_journal.py:573: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109b109d0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:f48f57120e1970...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109b109d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='f96901660633d195af5b78f176817ab5a9d9e163e2dd320a75585a0892147fb0', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:f48f57120e1970...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109b109d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='f96901660633d195af5b78f176817ab5a9d9e163e2dd320a75585a0892147fb0', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:f48f57120e1970...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
+            item.usage.boundary
+            for item in batch.observations
+            if item.native_surface.value == approval.surface
+            and item.usage.boundary.provider.value == approval.provider
+            and item.usage.client_version.value == approval.client_version
+            and item.usage.format_version == approval.format_version
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+>           raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture position is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:906: BoundaryUnavailable
+_ ERROR at setup of test_coverage_readback_rejects_corrupted_event_binding[commit] _
+[gw0] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_coverage_readback_rejects2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b34b8c0>
+
+    @pytest.fixture
+    def admitted_sources(tmp_path, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+        authority = object()
+        with monkeypatch.context() as setup:
+            setup.setattr(Registry, "_require_live_source", lambda *_, **__: authority)
+>           native = NativeScopeFixture(tmp_path, monkeypatch)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_coverage.py:21: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x10d614730>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_coverage_readback_rejects2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b34b8c0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+>               frontier = writer.capture_frontier(change, self.locator())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10caf3250>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10caf3250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='cd1a6624a24887b64e18f63d1c560ba4c7df1e5ef58c471323b6bd4b42dd496e', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10caf3250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='cd1a6624a24887b64e18f63d1c560ba4c7df1e5ef58c471323b6bd4b42dd496e', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator(), prior = None, arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ ERROR at setup of test_ordinary_mark_routes_unanchored_usage_after_native_rescan _
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_ordinary_mark_routes_unan0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c7c0>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return NativeScopeFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x10a2ec650>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_ordinary_mark_routes_unan0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c7c0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+>               frontier = writer.capture_frontier(change, self.locator())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093b7250>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093b7250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='0da8e3735e1a713040ecb82010601f0364e8d012fcb91adca29d98bd7cc957f0', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093b7250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='0da8e3735e1a713040ecb82010601f0364e8d012fcb91adca29d98bd7cc957f0', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator(), prior = None, arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ ERROR at setup of test_claude_terminal_proof_cannot_depend_on_other_disabled_counters _
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_claude_terminal_proof_can1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799cad0>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return NativeScopeFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x10a27a990>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_claude_terminal_proof_can1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799cad0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+                frontier = writer.capture_frontier(change, self.locator())
+                self.append()
+>               proof = writer.verify_boundary(change, self.locator(), frontier)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109335fd0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:8cf1e67bfe5773...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109335fd0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='080db5c6190321881f7051e42d6f8cbac19786ca5bab23df10a7e46212c34cdc', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:8cf1e67bfe5773...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109335fd0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='080db5c6190321881f7051e42d6f8cbac19786ca5bab23df10a7e46212c34cdc', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:8cf1e67bfe5773...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
+            item.usage.boundary
+            for item in batch.observations
+            if item.native_surface.value == approval.surface
+            and item.usage.boundary.provider.value == approval.provider
+            and item.usage.client_version.value == approval.client_version
+            and item.usage.format_version == approval.format_version
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+>           raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture position is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:906: BoundaryUnavailable
+_ ERROR at setup of test_grok_scope_proves_native_target_and_holds_without_capture[handoff] _
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_grok_scope_proves_native_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c8a0>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return NativeScopeFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:226: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.NativeScopeFixture object at 0x10a27a2b0>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_grok_scope_proves_native_1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c8a0>
+creator_account = None
+
+    def __init__(self, base, monkeypatch, *, creator_account=None):
+        self.creator_account = creator_account
+        self.registry = Registry(base / "monitor")
+        self.transcripts = base / "transcripts"
+        self.transcripts.mkdir()
+        self.path = self.transcripts / "desktop.jsonl"
+        self.anchors = {key: base / f"worktree-{key.int}" for key in (A, B, C)}
+        self.ledgers = {}
+        for key, anchor in self.anchors.items():
+            anchor.mkdir()
+            self.ledgers[key] = Ledger.initialize(base / f"state-{key.int}", key)
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.adapter = ProviderAdapter()
+        self.total = 0
+        self.turn = 0
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        write(self.path, [native_start])
+        self.append()
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            self.root = SourceRoot(
+                self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
+            )
+            for key in self.anchors:
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(self.ledgers[key].root),
+                        f"Project {key.int}",
+                        anchors=(str(self.anchors[key]),),
+                    )
+                )
+            writer.approve_source(
+                SourceApprovalRequest(
+                    SOURCE,
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                    str(self.transcripts),
+                )
+            )
+            for key in self.anchors:
+                change = CaptureChange(key, SOURCE, True)
+                frontier = writer.capture_frontier(change, self.locator())
+                self.append()
+>               proof = writer.verify_boundary(change, self.locator(), frontier)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093169d0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:6740b64f7763f6...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093169d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='904b3e4bc1d1318b9c7ea3de95627c4de6632ab0019e2c71c284d2ee51affdba', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:6740b64f7763f6...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093169d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='904b3e4bc1d1318b9c7ea3de95627c4de6632ab0019e2c71c284d2ee51affdba', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000003'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:6740b64f7763f6...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=15)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+>       source, current, _ = self._approved_candidate(view, change.source_id, locator)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:839: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093169d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='904b3e4bc1d1318b9c7ea3de95627c4de6632ab0019e2c71c284d2ee51affdba', format='aitm.usage.monitor-registry/v1')
+source_id = UUID('00000000-0000-0000-0000-000000000005')
+locator = SourceLocator(), observed = False
+
+    def _approved_candidate(
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        observed: bool = False,
+    ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
+>       source, current = self._current_candidate(view, source_id, locator)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:780: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1093169d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='904b3e4bc1d1318b9c7ea3de95627c4de6632ab0019e2c71c284d2ee51affdba', format='aitm.usage.monitor-registry/v1')
+source_id = UUID('00000000-0000-0000-0000-000000000005')
+locator = SourceLocator()
+
+    def _current_candidate(
+        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+    ) -> tuple[ApprovedSource, SourceLocator]:
+        source = _source(view, source_id)
+        _check_capture_root(source.directory)
+        candidate = locator._source
+        approval = source.approval
+        if (
+            type(candidate) is not CandidateSource
+            or candidate._registration.path.resolve() != Path(source.directory.path)
+            or not candidate._path.is_relative_to(candidate._registration.path)
+        ):
+            raise LedgerError("Source is outside the approved installation")
+        evidence = candidate._ledger
+        if (
+            type(evidence) is not _ServiceEvidence
+            or view.source_key_id != evidence.key_id
+        ):
+            raise LedgerError("Capture requires the monitor source namespace")
+        pinned = self.source_evidence()
+        if not hmac.compare_digest(pinned.key, evidence.key):
+            raise LedgerError("Capture source key changed")
+        evidence.validate_source_ref(locator.stream_ref)
+        matches = [
+            item
+            for item in ProviderAdapter().discover(candidate._registration)
+            if item.stream_ref == locator.stream_ref
+        ]
+        if len(matches) != 1 or matches[0]._source._path != candidate._path:
+>           raise BoundaryUnavailable("Expected the unique current native stream")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Expected the unique current native stream
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:812: BoundaryUnavailable
+_ ERROR at setup of test_pair_preserves_frontiers_when_one_native_completion_is_invalid[second-tool-rival] _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+native = <test_monitor_journal.NativeJournalFixture object at 0x108d94dd0>
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_pair_preserves_frontiers_39')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b97850>
+capsys = <_pytest.capture.CaptureFixture object at 0x108d95350>
+
+    @pytest.fixture
+    def journal_pair(native, tmp_path, monkeypatch, capsys):
+        from test_monitor_scope import (
+            NativeScopeFixture,
+            _append_completed_disposition,
+            _issue,
+            _sealed_disposition,
+        )
+    
+        from aitm_usage.monitor_journal import RoutingJournal
+        from aitm_usage.monitor_scope import Disposition, Handoff
+        from aitm_usage.sources.scan import checkout_anchor_reference
+    
+        class Carrier(NativeScopeFixture):
+            def __init__(self, source_id, project, clock):
+                self.source_id, self.project, self.clock = source_id, project, clock
+                self.registry, self.evidence = native.registry, native.evidence
+                self.anchors, self.ledgers = native.anchors, native.ledgers
+                self.path = native.paths[source_id]
+                self.total, self.turn = 8, 2
+                self.creator_account = None
+    
+            def locator(self):
+                return native.locator(self.source_id)
+    
+            def append(self, command_id=None, *, checkout=None, **kwargs):
+                return super().append(command_id, checkout=self.project, **kwargs)
+    
+            def append_boundary(self, command_id, *, shared=False):
+                def append_turn(name, *, command=None):
+                    self.turn += 1
+                    turn = UUID(int=0x200 + self.turn)
+                    when = AFTER + timedelta(seconds=self.turn)
+                    self.total += 4
+                    delta, total = usage(4, 4), usage(self.total, self.total)
+                    rows = begin(self.anchors[self.project], turn, time=when)
+                    if command is not None:
+                        call = tool_call(self.ledgers[self.project])
+                        call["timestamp"] = when.isoformat()
+                        rows.append(call)
+                    rows += [
+                        response(name, total, delta, time=when, turn=turn),
+                        counter(total, delta, time=when),
+                    ]
+                    if command is not None:
+                        output = tool_output(command)
+                        output["timestamp"] = when.isoformat()
+                        rows.append(output)
+                    write(self.path, [*rows, end(turn, time=when)], append=True)
+    
+                append_turn(f"boundary-tool-{command_id}", command=command_id)
+                if shared and self.project == A:
+                    self.padding(1)
+                ordinal = len(self.path.read_bytes().splitlines())
+                append_turn(
+                    "paired-obligation" if shared else f"boundary-usage-{command_id}"
+                )
+                return ordinal
+    
+            def padding(self, count):
+                when = AFTER + timedelta(seconds=self.turn)
+                rows = [
+                    {
+                        "type": "response_item",
+                        "timestamp": when.isoformat(),
+                        "payload": {"type": "reasoning", "summary": []},
+                    }
+                    for _ in range(count)
+                ]
+                write(self.path, rows, append=True)
+    
+            def prepare(self, writer, journal):
+                state = ScopeState(writer, clock=lambda: self.clock[0])
+                auth = state.operator(self.project)
+                mark_id, hold_id, self.command_id = (
+                    UUID(int=0x900 + 0x10 * self.source_id.int + i) for i in range(3)
+                )
+                mark = Mark(mark_id, _issue(self.project, 210), self.receipt_ref(mark_id))
+                if self.project == B:
+                    self.turn = 5
+                    self.padding(1)
+                state.authorize(mark, auth)
+                ordinal = self.append_boundary(mark_id)
+                batch = state.read_source(self.source_id, self.locator())
+                assert (
+                    state.apply_mark(
+                        mark,
+                        state.verify_boundary(
+                            mark, auth, batch, self.target(batch, mark_id, ordinal)
+                        ),
+                    ).status
+                    == "applied"
+                )
+    
+                handoff = Handoff(
+                    hold_id,
+                    self.project,
+                    _issue(B if self.project == A else A, 210),
+                    1,
+                    checkout_anchor_reference(self.evidence, self.anchors[self.project]),
+                    self.receipt_ref(hold_id),
+                )
+                state.authorize(handoff, auth)
+                self.turn = 9
+                ordinal = self.append_boundary(hold_id, shared=True)
+                batch = state.read_source(self.source_id, self.locator())
+                receipt = state.verify_boundary(
+                    handoff, auth, batch, self.target(batch, hold_id, ordinal)
+                )
+                prepared = journal.prepare(self.source_id, self.locator())
+                candidate = next(
+                    item
+                    for item in prepared.candidates
+                    if item.observation.usage.boundary.ordinal == ordinal + 2
+                )
+                result = journal.reserve(candidate, prepared.progress)
+                self.hold = state.hold(receipt, retain_route_target=True)
+                self.state, self.auth = state, auth
+                self.command = Disposition(
+                    self.command_id,
+                    self.project,
+                    self.hold.command_id,
+                    self.receipt_ref(self.command_id),
+                    True,
+                )
+                return result
+    
+            def complete(self, writer):
+                if self.project == B:
+                    self.turn = 12
+                    self.padding(10)
+    
+                def append(carrier, command, request, stdout):
+                    return _append_completed_disposition(
+                        carrier, command, request, stdout, project_id=self.project
+                    )
+    
+                with monkeypatch.context() as patch:
+                    patch.setattr("test_monitor_scope._append_ordered_disposition", append)
+                    _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+                        _sealed_disposition(
+                            self,
+                            writer,
+                            self.state,
+                            self.command,
+                            tmp_path,
+                            patch,
+                            capsys,
+                            source_id=self.source_id,
+                            grant_id=UUID(int=0xA00 + self.source_id.int),
+                        )
+                    )
+    
+            def prove(self):
+                batch = self.state.read_source(
+                    self.source_id, self.locator(), qualify_completion=True
+                )
+                target = self.target(batch, self.command_id)
+                return self.state.verify_settlement_side(
+                    self.command, self.auth, batch, target
+                )
+    
+            def late_usage(self):
+                self.total += 4
+                total, delta = usage(self.total, self.total), usage(4, 4)
+                write(
+                    self.path,
+                    [
+                        response(
+                            "same-turn-after-close",
+                            total,
+                            delta,
+                            time=self.when,
+                            turn=self.closed_turn,
+                        ),
+                        counter(total, delta, time=self.when),
+                    ],
+                    append=True,
+                )
+    
+        clock = [datetime(2026, 11, 10, tzinfo=UTC)]
+        owner, rival = Carrier(LIVE, A, clock), Carrier(COPY, B, clock)
+        with ExitStack() as leases:
+            writer = leases.enter_context(native.registry.writer())
+    
+            def restart():
+                leases.close()
+                current = leases.enter_context(native.registry.writer())
+                return RoutingJournal(current, ScopeState(current, clock=lambda: clock[0]))
+    
+            journal = RoutingJournal(writer, ScopeState(writer))
+            for side in (owner, rival):
+                prepared = journal.prepare(side.source_id, side.locator())
+                journal.reserve_batch(prepared)
+                assert (
+                    journal.cursor_for(side.source_id, side.locator()) == prepared.progress
+                )
+            first, dispute = owner.prepare(writer, journal), rival.prepare(writer, journal)
+            assert first.status == "pending" and dispute.status == "disputed"
+            assert first.key == dispute.key
+            for side in (owner, rival):
+>               side.complete(writer)
+
+packages/aitm-usage/tests/test_monitor_journal.py:2619: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.journal_pair.<locals>.Carrier object at 0x10a400050>
+writer = <aitm_usage.monitor_registry.Registry object at 0x109c91750>
+
+    def complete(self, writer):
+        if self.project == B:
+            self.turn = 12
+            self.padding(10)
+    
+        def append(carrier, command, request, stdout):
+            return _append_completed_disposition(
+                carrier, command, request, stdout, project_id=self.project
+            )
+    
+        with monkeypatch.context() as patch:
+            patch.setattr("test_monitor_scope._append_ordered_disposition", append)
+            _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+>               _sealed_disposition(
+                    self,
+                    writer,
+                    self.state,
+                    self.command,
+                    tmp_path,
+                    patch,
+                    capsys,
+                    source_id=self.source_id,
+                    grant_id=UUID(int=0xA00 + self.source_id.int),
+                )
+            )
+
+packages/aitm-usage/tests/test_monitor_journal.py:2558: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+native = <test_monitor_journal.journal_pair.<locals>.Carrier object at 0x10a400050>
+writer = <aitm_usage.monitor_registry.Registry object at 0x109c91750>
+state = <aitm_usage.monitor_scope.ScopeState object at 0x109f8acb0>
+command = Disposition(command_id=UUID('00000000-0000-0000-0000-000000000932'), project_id=UUID('00000000-0000-0000-0000-00000000...009eb270368196476db064902c0f:33b44a2db4c5e0f9ee09da24a63132fbd7a025cd329fc69478ab19010f1b8144'), release_previous=True)
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_pair_preserves_frontiers_39')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b9d710>
+capsys = <_pytest.capture.CaptureFixture object at 0x108d95350>
+wrong_type = False, grant_id = UUID('00000000-0000-0000-0000-000000000a03')
+source_id = UUID('00000000-0000-0000-0000-000000000003')
+
+    def _sealed_disposition(
+        native,
+        writer,
+        state,
+        command,
+        tmp_path,
+        monkeypatch,
+        capsys,
+        *,
+        wrong_type=False,
+        grant_id=None,
+        source_id=SOURCE,
+    ):
+        from argparse import Namespace
+    
+        from aitm_usage.monitor_control import (
+            ControlInbox,
+            ScopeInboxReader,
+            _enqueue_scope,
+        )
+        from aitm_usage.scope_admission import DispositionRequest, MarkRequest
+    
+        monkeypatch.setattr(
+            "aitm_usage.monitor_registry.default_monitor_root", lambda: native.registry.root
+        )
+    
+        grant = grant_id or UUID(int=0x603)
+        inbox = ControlInbox(writer.root)
+        reader = ScopeInboxReader(writer, inbox)
+        request = DispositionRequest(
+            command.command_id,
+            grant,
+            command.project_id,
+            command.hold_id,
+            command.release_previous,
+        )
+        if wrong_type:
+            request = MarkRequest(command.command_id, grant, _issue(A, 203))
+        reader.register(grant, command.project_id, ("mark" if wrong_type else "dispose",))
+        reader.advertise(reader.probe(request))
+        request_path = tmp_path / f"disposition-{command.command_id}.json"
+        if wrong_type:
+            assert inbox.enqueue_scope(request)
+            stdout = (
+                json.dumps({"command_id": str(command.command_id), "status": "queued"})
+                + "\n"
+            )
+        else:
+            request_path.write_text(
+                json.dumps(
+                    {
+                        "command_id": str(request.command_id),
+                        "grant_id": str(grant),
+                        "project_id": str(request.project_id),
+                        "hold_id": str(request.hold_id),
+                        "release_previous": request.release_previous,
+                    }
+                )
+            )
+            request_path.chmod(0o600)
+            assert (
+                _enqueue_scope(
+                    Namespace(
+                        request=request_path, scope_request=DispositionRequest, json=True
+                    )
+                )
+                == 0
+            )
+            stdout = capsys.readouterr().out
+        assert json.loads(stdout) == {
+            "command_id": str(command.command_id),
+            "status": "queued",
+        }
+        with inbox.publication() as locked:
+            envelope = next(
+                item
+                for item in reader.iter_verified(locked)
+                if item.command_id == command.command_id
+            )
+            assert envelope.body.request == request
+        owner = state.operator(command.project_id)
+        state.authorize(command, owner)
+        followup, when = _append_ordered_disposition(
+            native, command.command_id, request_path, stdout
+        )
+        batch = state.read_source(source_id, native.locator())
+>       target = native.target(batch, command.command_id)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:2229: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.journal_pair.<locals>.Carrier object at 0x10a400050>
+batch = VerifiedScopeBatch(source_id=UUID('00000000-0000-0000-0000-000000000003'), surface=<NativeSurface.CODEX_DESKTOP_MACOS:...4e9e8f6f4f38856c219ae:482a723a961a51e529258be0159ff2d35c7b5490b7d79ee121f0f12a5f309f42'), ordinal=None),), cursor=None)
+command_id = UUID('00000000-0000-0000-0000-000000000932'), ordinal = None
+
+    def target(self, batch, command_id, ordinal=None):
+>       (target,) = (
+        ^^^^^^^^^
+            item
+            for item in batch.boundaries
+            if item.boundary.receipt_ref == self.receipt_ref(command_id)
+            and (ordinal is None or item.boundary.ordinal == ordinal)
+        )
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+packages/aitm-usage/tests/test_monitor_scope.py:199: ValueError
+_ ERROR at setup of test_pair_preserves_frontiers_when_one_native_completion_is_invalid[duplicate-output-rival] _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_pair_preserves_frontiers_41')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b94fa0>
+
+    @pytest.fixture
+    def native(tmp_path, monkeypatch):
+>       return NativeJournalFixture(tmp_path, monkeypatch)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:601: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.NativeJournalFixture object at 0x108dbb1d0>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_pair_preserves_frontiers_41')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b94fa0>
+
+    def __init__(self, base, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.registry = Registry(base / "monitor")
+        self.adapter = ProviderAdapter()
+        self.anchors = {key: base / f"checkout-{key.int}" for key in (A, B)}
+        self.ledgers = {}
+        self.paths = {}
+        self.roots = {}
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            for key, anchor in self.anchors.items():
+                anchor.mkdir()
+                ledger = self.ledgers[key] = Ledger.initialize(
+                    base / f"project-{key.int}", key
+                )
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(ledger.root),
+                        f"Project {key.int}",
+                        anchors=(str(anchor),),
+                    )
+                )
+    
+            for source_id in (LIVE, COPY):
+                root = base / f"transcripts-{source_id.int}"
+                root.mkdir()
+                path = self.paths[source_id] = root / "desktop.jsonl"
+                self.roots[source_id] = SourceRoot(
+                    root, CUTOFF, tuple(self.anchors.values()), self.evidence
+                )
+                write(
+                    path,
+                    [
+                        startup(self.anchors[A], originator="Codex Desktop"),
+                        *self.turn(1),
+                    ],
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source_id,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root),
+                    )
+                )
+                armed = [
+>                   (change, writer.capture_frontier(change, self.locator(source_id)))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    for project in (A, B)
+                    for change in (CaptureChange(project, source_id, True),)
+                ]
+
+packages/aitm-usage/tests/test_monitor_journal.py:567: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10916c0d0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10916c0d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='8d98d2d160257bdf627346a6a78944ec627eb6a17bffebd943fccc21665ce771', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x10916c0d0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='8d98d2d160257bdf627346a6a78944ec627eb6a17bffebd943fccc21665ce771', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000003'), enabled=True)
+locator = SourceLocator(), prior = None, arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ ERROR at setup of test_pair_preserves_frontiers_when_one_native_completion_is_invalid[backdated-counter-owner] _
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+native = <test_monitor_journal.NativeJournalFixture object at 0x10a233250>
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw1/test_pair_preserves_frontiers_44')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107b96ac0>
+capsys = <_pytest.capture.CaptureFixture object at 0x108d97250>
+
+    @pytest.fixture
+    def journal_pair(native, tmp_path, monkeypatch, capsys):
+        from test_monitor_scope import (
+            NativeScopeFixture,
+            _append_completed_disposition,
+            _issue,
+            _sealed_disposition,
+        )
+    
+        from aitm_usage.monitor_journal import RoutingJournal
+        from aitm_usage.monitor_scope import Disposition, Handoff
+        from aitm_usage.sources.scan import checkout_anchor_reference
+    
+        class Carrier(NativeScopeFixture):
+            def __init__(self, source_id, project, clock):
+                self.source_id, self.project, self.clock = source_id, project, clock
+                self.registry, self.evidence = native.registry, native.evidence
+                self.anchors, self.ledgers = native.anchors, native.ledgers
+                self.path = native.paths[source_id]
+                self.total, self.turn = 8, 2
+                self.creator_account = None
+    
+            def locator(self):
+                return native.locator(self.source_id)
+    
+            def append(self, command_id=None, *, checkout=None, **kwargs):
+                return super().append(command_id, checkout=self.project, **kwargs)
+    
+            def append_boundary(self, command_id, *, shared=False):
+                def append_turn(name, *, command=None):
+                    self.turn += 1
+                    turn = UUID(int=0x200 + self.turn)
+                    when = AFTER + timedelta(seconds=self.turn)
+                    self.total += 4
+                    delta, total = usage(4, 4), usage(self.total, self.total)
+                    rows = begin(self.anchors[self.project], turn, time=when)
+                    if command is not None:
+                        call = tool_call(self.ledgers[self.project])
+                        call["timestamp"] = when.isoformat()
+                        rows.append(call)
+                    rows += [
+                        response(name, total, delta, time=when, turn=turn),
+                        counter(total, delta, time=when),
+                    ]
+                    if command is not None:
+                        output = tool_output(command)
+                        output["timestamp"] = when.isoformat()
+                        rows.append(output)
+                    write(self.path, [*rows, end(turn, time=when)], append=True)
+    
+                append_turn(f"boundary-tool-{command_id}", command=command_id)
+                if shared and self.project == A:
+                    self.padding(1)
+                ordinal = len(self.path.read_bytes().splitlines())
+                append_turn(
+                    "paired-obligation" if shared else f"boundary-usage-{command_id}"
+                )
+                return ordinal
+    
+            def padding(self, count):
+                when = AFTER + timedelta(seconds=self.turn)
+                rows = [
+                    {
+                        "type": "response_item",
+                        "timestamp": when.isoformat(),
+                        "payload": {"type": "reasoning", "summary": []},
+                    }
+                    for _ in range(count)
+                ]
+                write(self.path, rows, append=True)
+    
+            def prepare(self, writer, journal):
+                state = ScopeState(writer, clock=lambda: self.clock[0])
+                auth = state.operator(self.project)
+                mark_id, hold_id, self.command_id = (
+                    UUID(int=0x900 + 0x10 * self.source_id.int + i) for i in range(3)
+                )
+                mark = Mark(mark_id, _issue(self.project, 210), self.receipt_ref(mark_id))
+                if self.project == B:
+                    self.turn = 5
+                    self.padding(1)
+                state.authorize(mark, auth)
+                ordinal = self.append_boundary(mark_id)
+                batch = state.read_source(self.source_id, self.locator())
+                assert (
+                    state.apply_mark(
+                        mark,
+                        state.verify_boundary(
+                            mark, auth, batch, self.target(batch, mark_id, ordinal)
+                        ),
+                    ).status
+                    == "applied"
+                )
+    
+                handoff = Handoff(
+                    hold_id,
+                    self.project,
+                    _issue(B if self.project == A else A, 210),
+                    1,
+                    checkout_anchor_reference(self.evidence, self.anchors[self.project]),
+                    self.receipt_ref(hold_id),
+                )
+                state.authorize(handoff, auth)
+                self.turn = 9
+                ordinal = self.append_boundary(hold_id, shared=True)
+                batch = state.read_source(self.source_id, self.locator())
+                receipt = state.verify_boundary(
+                    handoff, auth, batch, self.target(batch, hold_id, ordinal)
+                )
+                prepared = journal.prepare(self.source_id, self.locator())
+                candidate = next(
+                    item
+                    for item in prepared.candidates
+                    if item.observation.usage.boundary.ordinal == ordinal + 2
+                )
+                result = journal.reserve(candidate, prepared.progress)
+                self.hold = state.hold(receipt, retain_route_target=True)
+                self.state, self.auth = state, auth
+                self.command = Disposition(
+                    self.command_id,
+                    self.project,
+                    self.hold.command_id,
+                    self.receipt_ref(self.command_id),
+                    True,
+                )
+                return result
+    
+            def complete(self, writer):
+                if self.project == B:
+                    self.turn = 12
+                    self.padding(10)
+    
+                def append(carrier, command, request, stdout):
+                    return _append_completed_disposition(
+                        carrier, command, request, stdout, project_id=self.project
+                    )
+    
+                with monkeypatch.context() as patch:
+                    patch.setattr("test_monitor_scope._append_ordered_disposition", append)
+                    _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+                        _sealed_disposition(
+                            self,
+                            writer,
+                            self.state,
+                            self.command,
+                            tmp_path,
+                            patch,
+                            capsys,
+                            source_id=self.source_id,
+                            grant_id=UUID(int=0xA00 + self.source_id.int),
+                        )
+                    )
+    
+            def prove(self):
+                batch = self.state.read_source(
+                    self.source_id, self.locator(), qualify_completion=True
+                )
+                target = self.target(batch, self.command_id)
+                return self.state.verify_settlement_side(
+                    self.command, self.auth, batch, target
+                )
+    
+            def late_usage(self):
+                self.total += 4
+                total, delta = usage(self.total, self.total), usage(4, 4)
+                write(
+                    self.path,
+                    [
+                        response(
+                            "same-turn-after-close",
+                            total,
+                            delta,
+                            time=self.when,
+                            turn=self.closed_turn,
+                        ),
+                        counter(total, delta, time=self.when),
+                    ],
+                    append=True,
+                )
+    
+        clock = [datetime(2026, 11, 10, tzinfo=UTC)]
+        owner, rival = Carrier(LIVE, A, clock), Carrier(COPY, B, clock)
+        with ExitStack() as leases:
+            writer = leases.enter_context(native.registry.writer())
+    
+            def restart():
+                leases.close()
+                current = leases.enter_context(native.registry.writer())
+                return RoutingJournal(current, ScopeState(current, clock=lambda: clock[0]))
+    
+            journal = RoutingJournal(writer, ScopeState(writer))
+            for side in (owner, rival):
+                prepared = journal.prepare(side.source_id, side.locator())
+>               journal.reserve_batch(prepared)
+
+packages/aitm-usage/tests/test_monitor_journal.py:2611: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_journal.RoutingJournal object at 0x107b8df60>
+prepared = PreparedRouting(candidates=(RoutedRevision(observation=NativeObservation(key=SourceRef(value='hmac-sha256:e0982df28550...prefix=(), version=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1))))
+
+    def reserve_batch(self, prepared: PreparedRouting) -> tuple[ClaimDisposition, ...]:
+        """Stage all verified claims and eligible same-read progress atomically."""
+        if (
+            type(prepared) is not PreparedRouting
+            or self._batches.get(id(prepared)) is not prepared
+        ):
+            raise LedgerError("Journal batch was not issued by this writer")
+>       return self._reserve(prepared._read, prepared.candidates)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:1476: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_journal.RoutingJournal object at 0x107b8df60>
+read = _Read()
+selected = (RoutedRevision(observation=NativeObservation(key=SourceRef(value='hmac-sha256:e0982df28550ab5aa702ad6e42c8983d82c3da5... 'routed'>, project_id=UUID('00000000-0000-0000-0000-000000000001'), scope=None, generation=0, affected_projects=())),)
+
+    def _reserve(
+        self, read: _Read, selected: tuple[RoutedRevision, ...]
+    ) -> tuple[ClaimDisposition, ...]:
+        with self._store.transaction(write=True) as connection:
+            current = self._cursor(connection, read.stream)
+            if current != read.prior and current != read.progress:
+                raise ConflictError("Journal cursor changed after preparation")
+            if read.prior is not None and read.prior != read.progress:
+                old = _source_checkpoint(read.prior).cursor
+                new = _source_checkpoint(read.progress).cursor
+                if new.offset <= old.offset:
+                    raise ConflictError(
+                        "Journal cursor did not advance its verified physical prefix"
+                    )
+>           view, registry = self._fresh_view(connection, read)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:1429: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_journal.RoutingJournal object at 0x107b8df60>
+connection = <sqlite3.Connection object at 0x108dfe2f0>, read = _Read()
+confirm = True
+
+    def _fresh_view(
+        self, connection: sqlite3.Connection, read: _Read, *, confirm: bool = True
+    ) -> tuple[ScopeView, RegistryView]:
+        self._writer.lease
+        releases, conflicts = self._effective_releases(connection)
+>       view = self._scopes._journal_view(
+            read.batch, releases, conflicts, confirm=confirm
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_journal.py:983: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_scope.ScopeState object at 0x10a410910>
+batch = VerifiedScopeBatch(source_id=UUID('00000000-0000-0000-0000-000000000003'), surface=<NativeSurface.CODEX_DESKTOP_MACOS:...prefix=(), version=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1))))
+releases = (), conflicts = frozenset(), progress = None, confirm = True
+
+    def _journal_view(
+        self,
+        batch: VerifiedScopeBatch,
+        releases: tuple[_JournalScopeRelease, ...],
+        conflicts: frozenset[UUID],
+        *,
+        progress: _CompletionProgress | None = None,
+        confirm: bool = True,
+    ) -> ScopeView:
+        state = self._snapshot(confirm=confirm)
+>       self._recheck_batch(batch)
+
+packages/aitm-usage/src/aitm_usage/monitor_scope.py:2675: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_scope.ScopeState object at 0x10a410910>
+batch = VerifiedScopeBatch(source_id=UUID('00000000-0000-0000-0000-000000000003'), surface=<NativeSurface.CODEX_DESKTOP_MACOS:...prefix=(), version=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1))))
+
+    def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
+        approved = self._require_batch_qualification(batch)
+        _check_capture_root(approved.directory)
+        native = batch._locator._source
+        try:
+            if batch._native_cursor is not None:
+                _capture_position(
+                    native, batch._native_cursor, fixed=batch._native_cursor
+                )
+            else:
+                assert batch.cursor is not None
+                checkpoint = batch.cursor.checkpoint
+                origin = native.origin
+                if (
+                    origin is None
+                    or self._grok_reader.verify_origin(native.path) != origin
+                ):
+                    raise LedgerError("Grok scope origin changed")
+                data = _read_grok_file(
+                    native.path, native.snapshot.identity, _MAX_NATIVE_BYTES
+                )
+                _validate_grok_prior(native, origin, data, checkpoint)
+        except (_CaptureDiscontinuity, _GrokHeld, OSError, ValueError):
+>           raise LedgerError("Verified native scope source changed") from None
+E           aitm_usage.ledger.LedgerError: Verified native scope source changed
+
+packages/aitm-usage/src/aitm_usage/monitor_scope.py:1680: LedgerError
+_ ERROR at setup of test_reserve_revalidates_the_exact_prepared_authority[False-verifier-unavailable] _
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+tmp_path = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_reserve_revalidates_the_e2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c9f0>
+
+    @pytest.fixture
+    def previously_admitted(tmp_path, monkeypatch):
+        from test_monitor_journal import NativeJournalFixture
+    
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+        authority = object()
+        with monkeypatch.context() as setup:
+            setup.setattr(Registry, "_require_live_source", lambda *_, **__: authority)
+>           return NativeJournalFixture(tmp_path, monkeypatch)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_qualification.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_journal.NativeJournalFixture object at 0x10a239d30>
+base = PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw2/test_reserve_revalidates_the_e2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10799c9f0>
+
+    def __init__(self, base, monkeypatch):
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        self.registry = Registry(base / "monitor")
+        self.adapter = ProviderAdapter()
+        self.anchors = {key: base / f"checkout-{key.int}" for key in (A, B)}
+        self.ledgers = {}
+        self.paths = {}
+        self.roots = {}
+        with self.registry.writer() as writer:
+            self.evidence = writer.source_evidence()
+            for key, anchor in self.anchors.items():
+                anchor.mkdir()
+                ledger = self.ledgers[key] = Ledger.initialize(
+                    base / f"project-{key.int}", key
+                )
+                writer.register_project(
+                    ProjectRegistrationRequest(
+                        key,
+                        str(ledger.root),
+                        f"Project {key.int}",
+                        anchors=(str(anchor),),
+                    )
+                )
+    
+            for source_id in (LIVE, COPY):
+                root = base / f"transcripts-{source_id.int}"
+                root.mkdir()
+                path = self.paths[source_id] = root / "desktop.jsonl"
+                self.roots[source_id] = SourceRoot(
+                    root, CUTOFF, tuple(self.anchors.values()), self.evidence
+                )
+                write(
+                    path,
+                    [
+                        startup(self.anchors[A], originator="Codex Desktop"),
+                        *self.turn(1),
+                    ],
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source_id,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root),
+                    )
+                )
+                armed = [
+                    (change, writer.capture_frontier(change, self.locator(source_id)))
+                    for project in (A, B)
+                    for change in (CaptureChange(project, source_id, True),)
+                ]
+                self.append(source_id, self.turn(2))
+                for change, frontier in armed:
+>                   proof = writer.verify_boundary(
+                        change, self.locator(source_id), frontier
+                    )
+
+packages/aitm-usage/tests/test_monitor_journal.py:573: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1081a7250>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000004'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:90529fc90fd2ea...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1081a7250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='e8b1a46236a126215f61d61e428f2e9426360e2012ec7814460bde03511e4233', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000004'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:90529fc90fd2ea...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1081a7250>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='e8b1a46236a126215f61d61e428f2e9426360e2012ec7814460bde03511e4233', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000004'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:90529fc90fd2ea...ion=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=5)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
+            item.usage.boundary
+            for item in batch.observations
+            if item.native_surface.value == approval.surface
+            and item.usage.boundary.provider.value == approval.provider
+            and item.usage.client_version.value == approval.client_version
+            and item.usage.format_version == approval.format_version
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+>           raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture position is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:906: BoundaryUnavailable
+=================================== FAILURES ===================================
+___________ test_causal_revision_survives_stale_replay_after_restart ___________
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+journal_claude = <test_monitor_scope.ClaudeScopeFixture object at 0x109e35e80>
+
+    def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
+        from test_claude import usage as claude_usage
+    
+        from aitm_usage.monitor_journal import RoutingJournal
+    
+        native = journal_claude
+        registry = native.native.registry
+        with registry.writer() as writer:
+            native.approve(writer)
+            ordinal = native.append(native.request(3, stop=None))
+            journal = RoutingJournal(writer, ScopeState(writer))
+>           first = journal.prepare(native.source_id, native.locator())
+                                                      ^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:1164: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x109e35e80>
+
+    def locator(self):
+>       (locator,) = self.native.adapter.discover(self.root)
+        ^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+packages/aitm-usage/tests/test_monitor_scope.py:748: ValueError
+______ test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor ______
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+journal_claude = <test_monitor_scope.ClaudeScopeFixture object at 0x107bb96d0>
+
+    def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
+>       _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=False)
+
+packages/aitm-usage/tests/test_monitor_journal.py:1222: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+native = <test_monitor_scope.ClaudeScopeFixture object at 0x107bb96d0>
+explicit_quota = False
+
+    def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
+        from test_claude import MODEL, cost, model_counts, rate_event
+        from test_claude import usage as claude_usage
+    
+        from aitm_usage.monitor_journal import RoutingJournal
+    
+        registry = native.native.registry
+        with registry.writer() as writer:
+>           native.approve(writer)
+
+packages/aitm-usage/tests/test_monitor_journal.py:1237: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x107bb96d0>
+writer = <aitm_usage.monitor_registry.Registry object at 0x107af9450>
+
+    def approve(self, writer):
+        writer.approve_source(
+            SourceApprovalRequest(
+                self.source_id,
+                "claude",
+                "claude-code-macos",
+                "Darwin",
+                "arm64",
+                "2.1.318",
+                1,
+                str(self.root.path),
+            )
+        )
+        self.apply_capture(writer, A, True, 1)
+>       self.apply_capture(writer, B, True, 2)
+
+packages/aitm-usage/tests/test_monitor_scope.py:789: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x107bb96d0>
+writer = <aitm_usage.monitor_registry.Registry object at 0x107af9450>
+project = UUID('00000000-0000-0000-0000-000000000002'), enabled = True
+number = 2
+
+    def apply_capture(self, writer, project, enabled, number):
+        change = CaptureChange(project, self.source_id, enabled)
+>       frontier = writer.capture_frontier(change, self.locator())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:770: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x107af9450>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x107af9450>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='0224a1c87b191c2d859d0f49db6b4729117994e9450cdd54c9090dca2c26b2cc', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x107af9450>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='0224a1c87b191c2d859d0f49db6b4729117994e9450cdd54c9090dca2c26b2cc', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator(), prior = None, arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+_ test_late_processing_contradiction_revokes_price_with_original_scope[unchanged] _
+[gw0] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+project = (Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_late_proce...rivate/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_late_processing_contradic0/outside'))
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10d8a7b60>
+capsys = <_pytest.capture.CaptureFixture object at 0x10d5ae150>, late_output = 4
+
+    @pytest.mark.parametrize(
+        "late_output", [4, 5, 3, True], ids=["unchanged", "increase", "decrease", "invalid"]
+    )
+    def test_late_processing_contradiction_revokes_price_with_original_scope(
+        project, monkeypatch, capsys, late_output
+    ):
+        claude = adapter()
+        ledger, registration, path, checkout, _ = project
+        session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
+        item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
+        marker_path = ledger.root / "marker.json"
+        marker = ScopeMarker(
+            COMMAND,
+            Provider.CLAUDE,
+            session,
+            1,
+            BoundaryKind.REQUEST,
+            claude.claude_request_boundary_reference(ledger, session, COMMAND),
+            AFTER,
+            item,
+            WorkPhase.PLANNING,
+            ledger.pseudonymize("participant", "fixture"),
+            PROJECT,
+            receipt_ref=claude.claude_receipt_reference(ledger, session, COMMAND),
+        )
+        marker_path.write_bytes(encode_marker(marker))
+        marker_path.chmod(0o600)
+        arguments = [
+            "aitm-usage",
+            "--project",
+            str(ledger.root),
+            "scope",
+            "mark",
+            "--marker",
+            str(marker_path),
+            "--session-id",
+            str(SESSION),
+            "--json",
+        ]
+        monkeypatch.setattr(sys, "argv", arguments)
+        assert main() == 0
+        output = capsys.readouterr().out.strip()
+        rows = _native_tool_turn(checkout, shlex.join(arguments), output)
+        write(path, [user(checkout), *rows, cost(**{MODEL: model_counts(8, 4, 10, 6, 8)})])
+        candidate = source(registration)
+        first, prior, priced_sequence = _accounted_scan(
+            claude, ledger, candidate, reserved_session_id=SESSION
+        )
+        priced = first.revisions[-1]
+        assert priced.record.boundary.receipt_ref == marker.receipt_ref
+        assert priced.record.availability is Availability.COMPLETE
+        assert rollup(item, ledger.as_of(priced_sequence)).direct.known_usd == Decimal(
+            "0.000136"
+        )
+    
+        ledger = Ledger.open(ledger.root, PROJECT)
+        counts = _with_processing(usage(late_output), {"speed": "fast"})
+        write(
+            path,
+            [
+                request(
+                    checkout, req="req-next", msg="msg-next", counts=counts, effort="max"
+                )
+            ],
+            append=True,
+        )
+        result, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+        (downgraded,) = result.revisions
+        assert (downgraded.key, downgraded.revision) == (priced.key, priced.revision + 1)
+        assert downgraded.record == replace(priced.record, processing_tier=None)
+        current = rollup(item, ledger.as_of())
+        assert current.direct.known_usd == 0
+        assert current.direct.unknown_price_count == 1
+        assert current.direct.tokens["output_tokens"] == 4
+        assert rollup(item, ledger.as_of(priced_sequence)).direct.known_usd == Decimal(
+            "0.000136"
+        )
+    
+        ledger = Ledger.open(ledger.root, PROJECT)
+        write(path, [request(checkout, req="req-next", msg="msg-next")], append=True)
+>       ordinary, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_claude.py:1548: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+claude = <module 'aitm_usage.sources.claude' from '/private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/src/aitm_usage/sources/claude.py'>
+ledger = Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_late_proces...00-000000000200'), key_id='sha256:ebab9707d67c756786a9252db5b8ad449e1080fbda0790fdebfad2871ce75817', schema_version=1))
+candidate = CandidateSource(provider=<Provider.CLAUDE: 'claude'>, session_ref=SourceRef(value='hmac-sha256:a32768fe316259912937552...30c27ec12ee7d3c0bcf4aee5d4c44cd3dc95cad96c249721010:7e21e8368c761ef77d79b033ff5ee5c1cebcf11248cc2ece384888f2ca46784f'))
+prior = SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:38185b6f2c1f3d56dbe64b543436e1f88fe479b73...al_tokens=18), complete=True)), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1))
+reserved_session_id = None
+
+    def _accounted_scan(claude, ledger, candidate, prior=None, *, reserved_session_id=None):
+        with ledger.writer() as writer:
+            batch, result = read(
+                claude,
+                candidate,
+                claude.ClaudeState(writer, reserved_session_id=reserved_session_id),
+                prior,
+            )
+            if reserved_session_id is not None:
+                drain_inbox(
+                    writer,
+                    [batch.scope_evidence(boundary) for boundary in result.boundaries],
+                )
+            checkpoint = SourceCheckpoint(batch.cursor, result.provider_checkpoint)
+            accounting = account_observations(result, load_rate_card(), ledger=writer)
+>           sequence = writer.apply(
+                replace(accounting, checkpoint=checkpoint, prior_checkpoint=prior)
+            )
+
+packages/aitm-usage/tests/test_claude.py:1366: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_late_proces...00-000000000200'), key_id='sha256:ebab9707d67c756786a9252db5b8ad449e1080fbda0790fdebfad2871ce75817', schema_version=1))
+batch = LedgerBatch(revisions=(Revision(key=SourceRef(value='hmac-sha256:8861d9d37c80f213321b2533c028bf733e58efe6062a477304ed1...l_tokens=18), complete=True)), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)))
+
+    def apply(self, batch: LedgerBatch) -> int:
+        # Reject malformed envelopes before the writer opens a transaction.
+>       _encode(batch, LedgerBatch, validate_ref=self.validate_source_ref)
+
+packages/aitm-usage/src/aitm_usage/ledger.py:915: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = LedgerBatch(revisions=(Revision(key=SourceRef(value='hmac-sha256:8861d9d37c80f213321b2533c028bf733e58efe6062a477304ed1...l_tokens=18), complete=True)), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)))
+model = <class 'aitm_usage.types.LedgerBatch'>
+validate_ref = <bound method Ledger.validate_source_ref of Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-c...0-000000000200'), key_id='sha256:ebab9707d67c756786a9252db5b8ad449e1080fbda0790fdebfad2871ce75817', schema_version=1))>
+
+    def _encode(
+        value: object,
+        model: type,
+        *,
+        validate_ref: Callable[[SourceRef], None] | None = None,
+    ) -> str:
+        return json.dumps(
+>           _wire(value, model, decode=False, validate_ref=validate_ref),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+packages/aitm-usage/src/aitm_usage/types.py:868: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = LedgerBatch(revisions=(Revision(key=SourceRef(value='hmac-sha256:8861d9d37c80f213321b2533c028bf733e58efe6062a477304ed1...l_tokens=18), complete=True)), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)))
+expected = <class 'aitm_usage.types.LedgerBatch'>, decode = False
+validate_ref = <bound method Ledger.validate_source_ref of Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-c...0-000000000200'), key_id='sha256:ebab9707d67c756786a9252db5b8ad449e1080fbda0790fdebfad2871ce75817', schema_version=1))>
+
+    def _wire(
+        value: object,
+        expected: type,
+        *,
+        decode: bool,
+        validate_ref: Callable[[SourceRef], None] | None = None,
+    ) -> object:
+        """Convert only the exact fields and scalar types declared in a wire model."""
+    
+        def convert(item: object, kind: type) -> object:
+            return _wire(item, kind, decode=decode, validate_ref=validate_ref)
+    
+        origin = get_origin(expected)
+        if expected in _TAGGED_CODECS:
+            field_name, types, tags = _TAGGED_CODECS[expected]
+            if decode and type(value) is dict and value.keys() == {"kind", field_name}:
+                tag = value["kind"]
+                if type(tag) is str and tag in types:
+                    return convert(value[field_name], types[tag])
+            if not decode and type(value) in tags:
+                return {
+                    "kind": tags[type(value)],
+                    field_name: convert(value, type(value)),
+                }
+        elif origin is UnionType:
+            for choice in get_args(expected):
+                try:
+                    return convert(value, choice)
+                except (TypeError, ValueError):
+                    continue
+        elif origin is tuple:
+            if type(value) is (list if decode else tuple):
+                item_type, _ = get_args(expected)
+                items = (convert(item, item_type) for item in value)
+                return tuple(items) if decode else list(items)
+        elif expected in (str, int, bool, type(None)):
+            if type(value) is expected:
+                return value
+        elif expected is Decimal:
+            if decode and type(value) is str and _DECIMAL_TEXT.fullmatch(value):
+                return Decimal(value)
+            if not decode:
+                return _decimal_text(value)
+        elif expected is SourceRef:
+            reference = SourceRef(value) if decode and type(value) is str else value
+            if type(reference) is SourceRef:
+                if validate_ref is not None:
+                    validate_ref(reference)
+                return reference if decode else reference.value
+        elif expected in (datetime, UUID) or issubclass(expected, StrEnum):
+            if decode and type(value) is str:
+                if expected is datetime:
+                    moment = datetime.fromisoformat(value)
+                    if moment.utcoffset() is not None:
+                        return moment
+                else:
+                    return expected(value)
+            elif not decode and type(value) is expected:
+                if isinstance(value, datetime):
+                    if value.utcoffset() is not None:
+                        return value.astimezone(UTC).isoformat()
+                else:
+                    return str(value)
+        elif is_dataclass(expected):
+            schema = _fields(expected)
+            if decode and type(value) is dict and value.keys() == schema.keys():
+                return expected(
+                    **{name: convert(value[name], kind) for name, kind in schema.items()}
+                )
+            if not decode and type(value) is expected:
+                return {
+>                   name: convert(getattr(value, name), kind)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    for name, kind in schema.items()
+                }
+
+packages/aitm-usage/src/aitm_usage/types.py:848: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+item = SourceCheckpoint(cursor=None, provider=None)
+kind = aitm_usage.types.SourceCheckpoint | None
+
+    def convert(item: object, kind: type) -> object:
+>       return _wire(item, kind, decode=decode, validate_ref=validate_ref)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/types.py:787: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+value = SourceCheckpoint(cursor=None, provider=None)
+expected = aitm_usage.types.SourceCheckpoint | None, decode = False
+validate_ref = <bound method Ledger.validate_source_ref of Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-c...0-000000000200'), key_id='sha256:ebab9707d67c756786a9252db5b8ad449e1080fbda0790fdebfad2871ce75817', schema_version=1))>
+
+    def _wire(
+        value: object,
+        expected: type,
+        *,
+        decode: bool,
+        validate_ref: Callable[[SourceRef], None] | None = None,
+    ) -> object:
+        """Convert only the exact fields and scalar types declared in a wire model."""
+    
+        def convert(item: object, kind: type) -> object:
+            return _wire(item, kind, decode=decode, validate_ref=validate_ref)
+    
+        origin = get_origin(expected)
+        if expected in _TAGGED_CODECS:
+            field_name, types, tags = _TAGGED_CODECS[expected]
+            if decode and type(value) is dict and value.keys() == {"kind", field_name}:
+                tag = value["kind"]
+                if type(tag) is str and tag in types:
+                    return convert(value[field_name], types[tag])
+            if not decode and type(value) in tags:
+                return {
+                    "kind": tags[type(value)],
+                    field_name: convert(value, type(value)),
+                }
+        elif origin is UnionType:
+            for choice in get_args(expected):
+                try:
+                    return convert(value, choice)
+                except (TypeError, ValueError):
+                    continue
+        elif origin is tuple:
+            if type(value) is (list if decode else tuple):
+                item_type, _ = get_args(expected)
+                items = (convert(item, item_type) for item in value)
+                return tuple(items) if decode else list(items)
+        elif expected in (str, int, bool, type(None)):
+            if type(value) is expected:
+                return value
+        elif expected is Decimal:
+            if decode and type(value) is str and _DECIMAL_TEXT.fullmatch(value):
+                return Decimal(value)
+            if not decode:
+                return _decimal_text(value)
+        elif expected is SourceRef:
+            reference = SourceRef(value) if decode and type(value) is str else value
+            if type(reference) is SourceRef:
+                if validate_ref is not None:
+                    validate_ref(reference)
+                return reference if decode else reference.value
+        elif expected in (datetime, UUID) or issubclass(expected, StrEnum):
+            if decode and type(value) is str:
+                if expected is datetime:
+                    moment = datetime.fromisoformat(value)
+                    if moment.utcoffset() is not None:
+                        return moment
+                else:
+                    return expected(value)
+            elif not decode and type(value) is expected:
+                if isinstance(value, datetime):
+                    if value.utcoffset() is not None:
+                        return value.astimezone(UTC).isoformat()
+                else:
+                    return str(value)
+        elif is_dataclass(expected):
+            schema = _fields(expected)
+            if decode and type(value) is dict and value.keys() == schema.keys():
+                return expected(
+                    **{name: convert(value[name], kind) for name, kind in schema.items()}
+                )
+            if not decode and type(value) is expected:
+                return {
+                    name: convert(getattr(value, name), kind)
+                    for name, kind in schema.items()
+                }
+>       raise ValueError("Value does not match the allowlisted usage fields")
+E       ValueError: Value does not match the allowlisted usage fields
+
+packages/aitm-usage/src/aitm_usage/types.py:851: ValueError
+__________ test_usage_remains_measured_when_model_context_is_missing ___________
+[gw0] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+project = (Ledger(root=PosixPath('/private/tmp/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_usage_rema...p/aitm290-benchmark.78dm7YKh/workers-3-cold/full/fixtures/popen-gw0/test_usage_remains_measured_wh0/unrelated-secret'))
+
+    def test_usage_remains_measured_when_model_context_is_missing(project):
+        codex = adapter()
+        ledger, registration, path, checkout, _ = project
+        amount = usage(8, 2)
+        write(
+            path,
+            [
+                startup(checkout),
+                event("task_started", turn_id=str(TURN)),
+                response("model-unavailable", amount, amount),
+                counter(amount, amount),
+                end(),
+            ],
+        )
+>       _, result = read(codex, source(registration), codex.CodexState(ledger))
+                                ^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_codex.py:1146: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+registration = Registration(project_id=UUID('00000000-0000-0000-0000-000000000100'), state_root=PosixPath('/private/tmp/aitm290-bench...e_remains_measured_wh0/checkout-secret'),), cutoff=datetime.datetime(2026, 11, 9, 16, 0, tzinfo=datetime.timezone.utc))
+
+    def source(registration):
+>       (candidate,) = discover(registration)
+        ^^^^^^^^^^^^
+E       ValueError: not enough values to unpack (expected 1, got 0)
+
+packages/aitm-usage/tests/test_codex.py:160: ValueError
+______ test_claude_content_and_ownership_disputes_remain_separate[after] _______
+[gw1] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+journal_claude = <test_monitor_scope.ClaudeScopeFixture object at 0x108dafd90>
+ownership_first = False
+
+    @pytest.mark.parametrize("ownership_first", [True, False], ids=["before", "after"])
+    def test_claude_content_and_ownership_disputes_remain_separate(
+        journal_claude, ownership_first
+    ):
+        from test_claude import usage as claude_usage
+    
+        native = journal_claude
+        source_id, other_source = UUID(int=7), UUID(int=8)
+        with native.native.registry.writer() as writer:
+>           journal, ordinal, prefix = _common_claude_revision(native, writer)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:1889: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+native = <test_monitor_scope.ClaudeScopeFixture object at 0x108dafd90>
+writer = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+
+    def _common_claude_revision(native, writer):
+        from test_claude import usage as claude_usage
+    
+        from aitm_usage.monitor_journal import RoutingJournal
+    
+>       native.approve(writer)
+
+packages/aitm-usage/tests/test_monitor_journal.py:1632: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x108dafd90>
+writer = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+
+    def approve(self, writer):
+        writer.approve_source(
+            SourceApprovalRequest(
+                self.source_id,
+                "claude",
+                "claude-code-macos",
+                "Darwin",
+                "arm64",
+                "2.1.318",
+                1,
+                str(self.root.path),
+            )
+        )
+        self.apply_capture(writer, A, True, 1)
+>       self.apply_capture(writer, B, True, 2)
+
+packages/aitm-usage/tests/test_monitor_scope.py:789: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x108dafd90>
+writer = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+project = UUID('00000000-0000-0000-0000-000000000002'), enabled = True
+number = 2
+
+    def apply_capture(self, writer, project, enabled, number):
+        change = CaptureChange(project, self.source_id, enabled)
+        frontier = writer.capture_frontier(change, self.locator())
+        self.append(self.request(number))
+>       boundary = writer.verify_boundary(change, self.locator(), frontier)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:772: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:b9e069c65ddc25...plete=True),), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)), last_ordinal=1)
+
+    def verify_boundary(
+        self, change: CaptureChange, locator: SourceLocator, frontier: CaptureFrontier
+    ) -> VerifiedBoundary:
+        """Prove the first qualified native boundary after this armed frontier."""
+        self.lease
+        key = _capture_key(change, locator.stream_ref)
+        armed = self._frontiers.get(key)
+        if armed is None or armed[0] != change or armed[1] is not frontier:
+            raise LedgerError("Expected this capture change's current armed frontier")
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+>       proof = self._verify_next(view, change, locator, frontier)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:1023: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='00da859a0d0aed9730d43eb01b52cd79f978911a30e2fce0ecf46cf47b1b4f3b', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator()
+frontier = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:b9e069c65ddc25...plete=True),), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)), last_ordinal=1)
+
+    def _verify_next(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        frontier: CaptureFrontier,
+    ) -> VerifiedBoundary:
+>       observed, boundaries = self._native_delta(view, change, locator, frontier)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:984: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x109fc4ad0>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='00da859a0d0aed9730d43eb01b52cd79f978911a30e2fce0ecf46cf47b1b4f3b', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:b9e069c65ddc25...plete=True),), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)), last_ordinal=1)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
+            item.usage.boundary
+            for item in batch.observations
+            if item.native_surface.value == approval.surface
+            and item.usage.boundary.provider.value == approval.provider
+            and item.usage.client_version.value == approval.client_version
+            and item.usage.format_version == approval.format_version
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+>           raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture position is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:906: BoundaryUnavailable
+__________ test_project_wide_mark_is_distinct_from_anchor_only_scope ___________
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+native = <test_monitor_scope.NativeScopeFixture object at 0x10a2ec890>
+
+    def test_project_wide_mark_is_distinct_from_anchor_only_scope(native):
+        from aitm_usage.monitor_scope import Mark, Scope, ScopeState
+    
+        command_id = UUID(int=0x301)
+        project_scope = Scope(A, ItemKey(ItemKind.PROJECT), WorkPhase.PLANNING)
+        with native.registry.writer() as writer:
+            state = ScopeState(writer)
+            command = Mark(command_id, project_scope, native.receipt_ref(command_id))
+            owner = state.operator(A)
+            state.authorize(command, owner)
+            _, anchor_only = native.append()
+            _, marked = native.append(command_id)
+            batch = state.read_source(SOURCE, native.locator())
+            state.apply_mark(command, _verify(state, native, command, owner, batch, marked))
+            unassigned = native.routed(state, batch, anchor_only)
+>           assert unassigned.project_id == A
+E           AssertionError: assert None == UUID('00000000-0000-0000-0000-000000000001')
+E            +  where None = RouteDecision(status=<RouteStatus.HELD: 'held'>, project_id=None, scope=None, generation=None, affected_projects=(UUID('00000000-0000-0000-0000-000000000001'),)).project_id
+
+packages/aitm-usage/tests/test_monitor_scope.py:688: AssertionError
+______ test_late_claude_revision_keeps_original_scope_after_ordinary_mark ______
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+claude_scope = <test_monitor_scope.ClaudeScopeFixture object at 0x1092f3390>
+
+    def test_late_claude_revision_keeps_original_scope_after_ordinary_mark(claude_scope):
+>       _assert_late_claude_revision_preserves_scope(claude_scope, same_project=True)
+
+packages/aitm-usage/tests/test_monitor_scope.py:821: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+claude_scope = <test_monitor_scope.ClaudeScopeFixture object at 0x1092f3390>
+same_project = True
+
+    def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
+        from test_claude import AFTER as CLAUDE_AFTER
+        from test_claude import SESSION as CLAUDE_SESSION
+        from test_claude import _native_tool_turn
+        from test_claude import usage as claude_usage
+    
+        from aitm_usage.monitor_scope import Mark, ScopeState
+    
+        native = claude_scope.native
+        command_id = UUID(int=0x301)
+        path, anchor = claude_scope.path, claude_scope.anchor
+    
+        with native.registry.writer() as writer:
+            claude_scope.approve(writer)
+            state = ScopeState(writer)
+            original_ordinal = claude_scope.append(claude_scope.request(3, stop=None))
+            early = claude_scope.read(state)
+            original = native.observation(early, original_ordinal)
+            assert native.routed(state, early, original_ordinal).project_id == A
+    
+            destination = _issue(A if same_project else B, 117)
+            if same_project:
+                command = Mark(command_id, destination, native.receipt_ref(command_id))
+                owner = state.operator(A)
+                state.authorize(command, owner)
+            else:
+                command, owner = _authorize_handoff(
+                    state, native, command_id, A, destination, 0
+                )
+            shell_command = shlex.join(
+                [
+                    "aitm-usage",
+                    "--project",
+                    str(native.ledgers[A].root),
+                    "scope",
+                    "mark",
+                    "--marker",
+                    "/private/tmp/marker.json",
+                    "--session-id",
+                    str(CLAUDE_SESSION),
+                    "--json",
+                ]
+            )
+            carrier = _native_tool_turn(
+                anchor,
+                shell_command,
+                json.dumps({"command_id": str(command_id), "status": "queued"}),
+            )
+            write(path, carrier, append=True)
+            handoff_batch = claude_scope.read(state)
+            target = native.target(handoff_batch, command_id)
+            boundary = state.verify_boundary(command, owner, handoff_batch, target)
+            apply = state.apply_mark if same_project else state.apply_handoff
+            assert apply(command, boundary).status == "applied"
+    
+            claude_scope.append(
+                claude_scope.request(
+                    3,
+                    counts=claude_usage(output=6),
+                    time=CLAUDE_AFTER + timedelta(seconds=10),
+                )
+            )
+            current = claude_scope.read(state)
+            (revised,) = (
+                observation
+                for observation in current.observations
+                if observation.key == original.key
+                and observation.revision > original.revision
+            )
+            assert revised.usage.boundary.ordinal == original_ordinal
+            from aitm_usage.monitor_scope import resolve_route
+    
+            decision = resolve_route(revised, native.registry.view(), state.view(current))
+            assert decision.project_id == A and decision.scope is None
+            assert (
+                native.routed(state, current, target.boundary.ordinal).scope == destination
+            )
+    
+            proof = state.verified_revision(current, revised)
+            assert proof is not None and proof.route == decision
+            assert proof.original.ordinal == original_ordinal
+            assert proof.later.ordinal == len(path.read_bytes().splitlines()) - 1
+            assert proof.observation is revised
+            assert revised.usage.observed_at == original.usage.observed_at
+            with pytest.raises(LedgerError):
+                state.verified_revision(replace(current), revised)
+            with pytest.raises(LedgerError):
+                ScopeState(writer).verified_revision(current, revised)
+            assert state.verified_revision(current, replace(revised)) is None
+    
+>           claude_scope.apply_capture(writer, A, False, 4)
+
+packages/aitm-usage/tests/test_monitor_scope.py:914: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x1092f3390>
+writer = <aitm_usage.monitor_registry.Registry object at 0x108e07550>
+project = UUID('00000000-0000-0000-0000-000000000001'), enabled = False
+number = 4
+
+    def apply_capture(self, writer, project, enabled, number):
+        change = CaptureChange(project, self.source_id, enabled)
+>       frontier = writer.capture_frontier(change, self.locator())
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:770: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x108e07550>
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=False)
+locator = SourceLocator()
+
+    def capture_frontier(
+        self, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        """Arm a direct capture change at the current complete native frontier."""
+        self.lease
+        view = self.view()
+        _encode(change, CaptureChange)
+        _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
+>       frontier = self._capture_frontier(view, change, locator)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x108e07550>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='45cf88bf351dcd1bfbd940cc3c0d230290938afbc82a5332af658ce131b5b793', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=False)
+locator = SourceLocator()
+
+    def _capture_frontier(
+        self, view: RegistryView, change: CaptureChange, locator: SourceLocator
+    ) -> CaptureFrontier:
+        previous = self._latest_epoch(view, change, locator.stream_ref)
+>       frontier, _ = self._native_delta(
+            view,
+            change,
+            locator,
+            None if previous is None else previous.observed,
+            arm=True,
+        )
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:934: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_registry.Registry object at 0x108e07550>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='45cf88bf351dcd1bfbd940cc3c0d230290938afbc82a5332af658ce131b5b793', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000001'), source_id=UUID('00000000-0000-0000-0000-000000000006'), enabled=False)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:9ce9f6f0917efb...plete=True),), version=1, client_version=<ClientVersion.CLAUDE_2_1_318: '2.1.318'>, format_version=1)), last_ordinal=1)
+arm = True
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+>           raise BoundaryUnavailable("Native capture frontier is unavailable")
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture frontier is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:868: BoundaryUnavailable
+___________ test_claude_cost_state_checks_its_physical_row[disabled] ___________
+[gw2] darwin -- Python 3.13.9 /private/tmp/aitm290-benchmark.78dm7YKh/source-3/packages/aitm-usage/.venv/bin/python
+
+claude_scope = <test_monitor_scope.ClaudeScopeFixture object at 0x108e90b90>
+reenable = False
+
+    @pytest.mark.parametrize("reenable", [False, True], ids=["disabled", "reenabled"])
+    def test_claude_cost_state_checks_its_physical_row(claude_scope, reenable):
+        from test_claude import MODEL, cost, model_counts
+        from test_claude import user as claude_user
+    
+        from aitm_usage.monitor_scope import ScopeState
+        from aitm_usage.types import Availability, Eligibility
+    
+        native = claude_scope.native
+        with native.registry.writer() as writer:
+            claude_scope.approve(writer)
+            state = ScopeState(writer)
+            original_ordinal = claude_scope.append(claude_scope.request(3))
+>           early = claude_scope.read(state)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:1055: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_monitor_scope.ClaudeScopeFixture object at 0x108e90b90>
+state = <aitm_usage.monitor_scope.ScopeState object at 0x109f9b250>
+
+    def read(self, state):
+>       return state.read_source(self.source_id, self.locator())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_scope.py:792: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <aitm_usage.monitor_scope.ScopeState object at 0x109f9b250>
+source_id = UUID('00000000-0000-0000-0000-000000000006')
+locator = SourceLocator(), cursor = None, qualify_completion = False
+
+    def read_source(
+        self,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        cursor: StreamCursor | None = None,
+        qualify_completion: bool = False,
+    ) -> VerifiedScopeBatch:
+        """Read one exact pinned native stream and retain provenance for its results."""
+        self.registry.lease
+        view = self.registry.view()
+        revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]] = []
+        completion_witnesses: list[_CodexCompletionWitness] | None = (
+            [] if qualify_completion else None
+        )
+        completion_frontiers: list[_CompletionFrontier] | None = (
+            [] if qualify_completion else None
+        )
+        quota_binding = None
+        if type(locator._source) is CandidateSource:
+            if not any(
+                self.registry.capture_read_limit(
+                    project.project_id, source_id, locator.stream_ref
+                )
+                is None
+                for project in view.projects
+            ):
+                raise LedgerError("Native scope source has no admitted unbounded read")
+            approved, current, authority = self.registry._approved_candidate(
+                view, source_id, locator, observed=True
+            )
+            admitted = self._admitted_readers(view, source_id, current)
+            if cursor is not None:
+                if not isinstance(checkpoint := cursor.checkpoint, SourceCheckpoint):
+                    raise LedgerError("Expected a native scope checkpoint")
+                try:
+                    _capture_position(
+                        current._source, checkpoint.cursor, fixed=checkpoint.cursor
+                    )
+                except (_CaptureDiscontinuity, OSError, ValueError):
+                    raise LedgerError("Native scope checkpoint changed") from None
+            try:
+                physical = _capture_position(current._source, None)
+            except (_CaptureDiscontinuity, OSError, ValueError):
+>               raise LedgerError(
+                    "Native scope physical prefix is unavailable"
+                ) from None
+E               aitm_usage.ledger.LedgerError: Native scope physical prefix is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_scope.py:1222: LedgerError
+============================= slowest 20 durations =============================
+18.30s call     packages/aitm-usage/tests/test_install.py::test_owned_launchagent_and_recoverable_upgrade
+11.72s call     packages/aitm-usage/tests/test_install.py::test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues
+11.52s call     tools/ci/tests/test_tia_local.py::test_selection_failure_runs_entire_applicable_suite
+9.76s call     packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity
+8.87s call     tools/ci/tests/test_tia_local.py::test_missing_child_is_not_a_local_pass
+8.74s call     tools/ci/tests/test_tia_local.py::test_selected_run_reports_real_failure_and_plan_identity
+7.49s call     packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state
+6.19s call     tools/ci/tests/test_tia_local.py::test_stops_on_checkout_drift_before_execution
+6.11s call     tools/ci/tests/test_tia_local.py::test_local_dirty_snapshot_never_mints_hosted_proof
+5.40s call     packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[later-head]
+5.27s call     packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel
+3.67s call     packages/aitm-usage/tests/test_install.py::test_upgrade_refuses_witness_incapable_running_prior
+3.25s call     packages/aitm-usage/tests/test_install.py::test_same_pid_with_different_start_cannot_certify_health
+3.25s call     packages/aitm-usage/tests/test_rollup.py::test_item_inbox_refuses_alias_conflicts_and_canonical_cycles
+3.05s call     packages/aitm-usage/tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free
+2.78s call     packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_preserves_old_projection_when_late_claim_arrives
+2.74s call     tools/ci/tests/test_tia_local.py::test_candidate_collection_that_mutates_copy_is_refused
+2.31s call     tools/ci/tests/test_tia_local.py::test_native_fixtures_avoid_the_shared_temporary_ancestor
+2.29s call     tools/ci/tests/test_tia_local.py::test_nested_pytest_cache_stays_outside_bound_source
+2.26s call     packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[v4-proposal]
+=========================== short test summary info ============================
+FAILED packages/aitm-usage/tests/test_monitor_journal.py::test_causal_revision_survives_stale_replay_after_restart
+FAILED packages/aitm-usage/tests/test_monitor_journal.py::test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor
+FAILED packages/aitm-usage/tests/test_claude.py::test_late_processing_contradiction_revokes_price_with_original_scope[unchanged]
+FAILED packages/aitm-usage/tests/test_codex.py::test_usage_remains_measured_when_model_context_is_missing
+FAILED packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[after]
+FAILED packages/aitm-usage/tests/test_monitor_scope.py::test_project_wide_mark_is_distinct_from_anchor_only_scope
+FAILED packages/aitm-usage/tests/test_monitor_scope.py::test_late_claude_revision_keeps_original_scope_after_ordinary_mark
+FAILED packages/aitm-usage/tests/test_monitor_scope.py::test_claude_cost_state_checks_its_physical_row[disabled]
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[head-child]
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_claude_rewritten_common_prefix_cannot_create_a_content_dispute
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[legacy-resolution]
+ERROR packages/aitm-usage/tests/test_monitor_coverage.py::test_coverage_readback_rejects_corrupted_event_binding[commit]
+ERROR packages/aitm-usage/tests/test_monitor_scope.py::test_ordinary_mark_routes_unanchored_usage_after_native_rescan
+ERROR packages/aitm-usage/tests/test_monitor_scope.py::test_claude_terminal_proof_cannot_depend_on_other_disabled_counters
+ERROR packages/aitm-usage/tests/test_monitor_scope.py::test_grok_scope_proves_native_target_and_holds_without_capture[handoff]
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[second-tool-rival]
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[duplicate-output-rival]
+ERROR packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[backdated-counter-owner]
+ERROR packages/aitm-usage/tests/test_monitor_qualification.py::test_reserve_revalidates_the_exact_prepared_authority[False-verifier-unavailable]
+8 failed, 1797 passed, 12 errors in 254.22s (0:04:14)
