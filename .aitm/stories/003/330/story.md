@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 330
 title: "[M11d] Deliver verified Grok usage through the guarded journal"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/330"
 parent: 100
 children: []
@@ -32,3 +32,5 @@ Rank 249 and provisional Estimate 3.75 implementation hours. Complete the indepe
 Verified #119 and #329 Close and the M11d split release this leaf at Rank 249. [Independent refinement packet](plan/2026-11-15-330-guarded-grok-journal-refine.md).
 
 [Independent Refine passed](plan/grok-journal-independent-refine.md) with exact three-file scope and ten conditions for JIT.
+
+[Exact JIT](plan/2026-11-15-330-guarded-grok-journal-jit.md) is submitted for independent acceptance.
