@@ -17,8 +17,8 @@ ISSUE_FIELD_ID = "IFT_kgDOAvni2w"
 PROJECTION = ".aitm/board/blocked-by.json"
 STORY_PATH = re.compile(r"\.aitm/stories/[0-9]{3}/([1-9][0-9]*)/story\.md")
 ISSUES = """
-query($endCursor: String) {
-  repository(owner: "kburson", name: "aitm") {
+query($endCursor: String, $owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
     issues(first: 75, after: $endCursor) {
       totalCount
       pageInfo { endCursor hasNextPage }
@@ -39,9 +39,9 @@ query($endCursor: String) {
 }
 """
 HEAD = """
-query {
-  repository(owner: "kburson", name: "aitm") {
-    ref(qualifiedName: "refs/heads/planning") { target { oid } }
+query($owner: String!, $name: String!, $ref: String!) {
+  repository(owner: $owner, name: $name) {
+    ref(qualifiedName: $ref) { target { oid } }
   }
 }
 """
@@ -146,61 +146,105 @@ def project(
 
 def command(*args: str, data: str | None = None) -> bytes:
     result = subprocess.run(
-        args, input=data, capture_output=True, text=True, timeout=120, check=False
+        args,
+        input=data.encode() if data is not None else None,
+        capture_output=True,
+        timeout=120,
+        check=False,
     )
     if result.returncode:
         raise RuntimeError(
-            result.stderr.strip() or f"{args[0]} exited with {result.returncode}"
+            result.stderr.decode(errors="replace").strip()
+            or f"{args[0]} exited with {result.returncode}"
         )
-    return result.stdout.encode()
+    return result.stdout
 
 
 def git(*args: str) -> str:
     return command("git", *args).decode()
 
 
-def read_planning() -> tuple[str, dict[int, Story], str | None]:
+def read_planning_files(
+    remote: str, ref: str, extra_paths: tuple[str, ...] = ()
+) -> tuple[str, dict[str, str]]:
+    if remote.startswith("-"):
+        raise ValueError("Planning remote must be a Git remote name or URL")
     depth = (
         ("--depth=1",)
         if git("rev-parse", "--is-shallow-repository").strip() == "true"
         else ()
     )
-    git("fetch", "--no-tags", *depth, "origin", BRANCH)
+    git("fetch", "--no-tags", *depth, remote, ref)
     head = git("rev-parse", "--verify", "FETCH_HEAD^{commit}").strip()
-    listing = git("ls-tree", "-r", "-z", head, "--", ".aitm/stories", PROJECTION)
-    stories = {}
-    snapshot = None
+    listing = git(
+        "ls-tree", "-r", "-z", head, "--", ".aitm/stories", PROJECTION, *extra_paths
+    )
+    files = {}
     for entry in listing.rstrip("\0").split("\0"):
         if not entry:
             continue
         metadata, path = entry.split("\t", 1)
         match = STORY_PATH.fullmatch(path)
-        if not match and path != PROJECTION:
+        if not match and path not in (PROJECTION, *extra_paths):
             continue
         mode, kind, blob = metadata.split()
         if mode != "100644" or kind != "blob":
             raise ValueError(f"Expected a regular file at {path}")
-        content = git("cat-file", "blob", blob)
-        if path == PROJECTION:
-            snapshot = content
+        files[path] = git("cat-file", "blob", blob)
+    return head, files
+
+
+def story_paths(files: dict[str, str]) -> dict[int, str]:
+    paths = {}
+    for path in files:
+        if not (match := STORY_PATH.fullmatch(path)):
             continue
         number = int(match[1])
-        if number in stories:
+        if number in paths:
             raise ValueError(f"Unexpected story path {path}")
-        stories[number] = read_story(content, number)
-    if not stories:
+        paths[number] = path
+    if not paths:
         raise ValueError("The planning commit contains no story records")
-    return head, stories, snapshot
+    return paths
+
+
+def read_planning() -> tuple[str, dict[int, Story], str | None]:
+    head, files = read_planning_files("origin", BRANCH)
+    stories = {
+        number: read_story(files[path], number)
+        for number, path in story_paths(files).items()
+    }
+    return head, stories, files.get(PROJECTION)
 
 
 class GitHub:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        repository: str = REPOSITORY,
+        ref: str = BRANCH,
+        field: str = ISSUE_FIELD_ID,
+    ) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
+            raise ValueError("Expected a GitHub repository as OWNER/REPO")
+        if not ref.startswith("refs/heads/") or ref == "refs/heads/":
+            raise ValueError("Expected a planning branch ref")
+        self.repository = repository
+        self.ref = ref
+        self.field = field
+        self.repo_vars = dict(
+            zip(("owner", "name"), repository.split("/"), strict=True)
+        )
         self.last_write = None
 
     def graphql(
         self, query: str, variables: dict | None = None, *, paginate: bool = False
     ):
         if paginate:
+            fields = [
+                part
+                for name, value in (variables or {}).items()
+                for part in ("-f", f"{name}={value}")
+            ]
             data = json.loads(
                 command(
                     "gh",
@@ -210,6 +254,7 @@ class GitHub:
                     "--slurp",
                     "-f",
                     f"query={query}",
+                    *fields,
                 )
             )
             if not data or any(page.get("errors") for page in data):
@@ -230,11 +275,14 @@ class GitHub:
         return data["data"]
 
     def branch_head(self) -> str:
-        return self.graphql(HEAD)["repository"]["ref"]["target"]["oid"]
+        return self.graphql(HEAD, {**self.repo_vars, "ref": self.ref})["repository"][
+            "ref"
+        ]["target"]["oid"]
 
     def issues(self, required: set[int]) -> dict[int, Issue]:
         pages = [
-            page["repository"]["issues"] for page in self.graphql(ISSUES, paginate=True)
+            page["repository"]["issues"]
+            for page in self.graphql(ISSUES, self.repo_vars, paginate=True)
         ]
         nodes = [issue for page in pages for issue in page["nodes"]]
         counts = {page["totalCount"] for page in pages}
@@ -260,7 +308,7 @@ class GitHub:
             values = [
                 field["value"]
                 for field in field_values["nodes"]
-                if (field.get("field") or {}).get("id") == ISSUE_FIELD_ID
+                if (field.get("field") or {}).get("id") == self.field
             ]
             if len(values) > 1:
                 raise RuntimeError(f"Ambiguous Blocked-By field on #{number}")
@@ -273,17 +321,21 @@ class GitHub:
             )
         return result
 
-    def commit_snapshot(self, head: str, content: str) -> str:
+    def commit_files(self, head: str, files: dict[str, str], message: str) -> str:
         payload = {
-            "branch": {"repositoryNameWithOwner": REPOSITORY, "branchName": "planning"},
+            "branch": {
+                "repositoryNameWithOwner": self.repository,
+                "branchName": self.ref.removeprefix("refs/heads/"),
+            },
             "expectedHeadOid": head,
-            "message": {"headline": "chore: reconcile the Blocked-By board projection"},
+            "message": {"headline": message},
             "fileChanges": {
                 "additions": [
                     {
-                        "path": PROJECTION,
+                        "path": path,
                         "contents": base64.b64encode(content.encode()).decode(),
                     }
+                    for path, content in sorted(files.items())
                 ]
             },
         }
@@ -291,10 +343,21 @@ class GitHub:
             "commit"
         ]["oid"]
 
-    def write_blockers(self, issue: str, text: str | None) -> None:
+    def commit_snapshot(self, head: str, content: str) -> str:
+        return self.commit_files(
+            head,
+            {PROJECTION: content},
+            "chore: reconcile the Blocked-By board projection",
+        )
+
+    def pace_write(self) -> None:
         if self.last_write is not None:
             time.sleep(max(0, 1.05 - (time.monotonic() - self.last_write)))
-        variables = {"issue": issue, "field": ISSUE_FIELD_ID}
+        self.last_write = time.monotonic()
+
+    def write_blockers(self, issue: str, text: str | None) -> None:
+        self.pace_write()
+        variables = {"issue": issue, "field": self.field}
         if text is None:
             result = self.graphql(CLEAR_FIELD, variables)["deleteIssueFieldValue"]
             confirmed = result["success"] is True
@@ -302,7 +365,7 @@ class GitHub:
             result = self.graphql(SET_FIELD, {**variables, "text": text})[
                 "setIssueFieldValue"
             ]
-            confirmed = {"value": text, "field": {"id": ISSUE_FIELD_ID}} in result[
+            confirmed = {"value": text, "field": {"id": self.field}} in result[
                 "issueFieldValues"
             ]
         self.last_write = time.monotonic()
@@ -310,6 +373,15 @@ class GitHub:
             raise RuntimeError(
                 f"GitHub did not confirm the Blocked-By update for {issue}"
             )
+
+
+def projection_text(desired: dict[int, tuple[int, ...]]) -> str:
+    return (
+        json.dumps(
+            {"schema": "aitm.board-blocked-by/v1", "blocked_by": desired}, indent=2
+        )
+        + "\n"
+    )
 
 
 def publish(
@@ -321,12 +393,7 @@ def publish(
     *,
     apply: bool,
 ) -> None:
-    snapshot = (
-        json.dumps(
-            {"schema": "aitm.board-blocked-by/v1", "blocked_by": desired}, indent=2
-        )
-        + "\n"
-    )
+    snapshot = projection_text(desired)
     changes = {}
     for number, blockers in desired.items():
         text = ", ".join(f"#{blocker}" for blocker in blockers) or None

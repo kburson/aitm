@@ -1,8 +1,14 @@
 PYTHON_BIN ?= python3.13
 export PYTHON_BIN
 
-.PHONY: dashboard
-dashboard:
+.PHONY: backlog sync-blocked-by dashboard
+backlog:
+	@"$$PYTHON_BIN" -m tools.board_sync.local_sync backlog
+
+sync-blocked-by:
+	@"$$PYTHON_BIN" -m tools.board_sync.local_sync open
+
+dashboard: sync-blocked-by
 	@set -eu; \
 	"$$PYTHON_BIN" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 13) else "Python 3.13 or later is required")'; \
 	git fetch origin refs/heads/planning:refs/remotes/origin/planning; \
