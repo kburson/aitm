@@ -741,6 +741,7 @@ class Registry:
         self._writer = _writer
         self._live_profile: _LiveProfile | None = None
         self._grok_verifiers: dict[tuple[UUID, SourceRef], object] = {}
+        self._grok_offer_sink: dict[int, _GrokCaptureOffer] | None = None
         self._active_inventory: _InventoryCycle | None = None
         self._inventory_lock = Lock()
         self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
@@ -2008,6 +2009,15 @@ class Registry:
         )
         raise _CaptureArmed(replace(view, pending_capture=(*remaining, pending)))
 
+    def _issue_grok_capture_offer(self, offer: _GrokCaptureOffer) -> _GrokCaptureOffer:
+        issued = self._grok_offer_sink
+        if issued is None or offer.lease is not self.lease:
+            raise BoundaryUnavailable(
+                "Grok capture evidence is outside its writer request"
+            )
+        issued[id(offer)] = offer
+        return offer
+
     def _grok_capture_offers(
         self,
         approved: ApprovedSource,
@@ -2017,14 +2027,27 @@ class Registry:
         evidence_for: _GrokCaptureEvidence,
         live: _LiveSourceProof,
     ) -> tuple[_GrokCaptureOffer, ...]:
-        offers = evidence_for(change, active, pending)
+        if self._grok_offer_sink is not None:
+            raise BoundaryUnavailable("Grok capture evidence request is already active")
+        issued: dict[int, _GrokCaptureOffer] = {}
+        self._grok_offer_sink = issued
+        try:
+            offers = evidence_for(change, active, pending)
+        finally:
+            self._grok_offer_sink = None
         evidence = self.source_evidence()
         streams = set()
         for offer in offers:
-            identity = offer.identity
             if (
                 type(offer) is not _GrokCaptureOffer
-                or offer.lease is not self.lease
+                or issued.get(id(offer)) is not offer
+            ):
+                raise BoundaryUnavailable(
+                    "Grok capture evidence was not issued at this boundary"
+                )
+            identity = offer.identity
+            if (
+                offer.lease is not self.lease
                 or offer.live.profile is not live.profile
                 or offer.live.installation is not live.installation
                 or identity.edge != _edge(change)

@@ -1081,22 +1081,19 @@ class ScopeState:
         approved, current = self._current_grok(
             view, source_id, locator, inventory=inventory
         )
+        observed = any(
+            self.registry.source_read_allowed(project.project_id, source_id)
+            for project in view.projects
+        )
         try:
-            authority = self.registry._require_live_source(
-                approved,
-                observed=any(
-                    self.registry.source_read_allowed(project.project_id, source_id)
-                    for project in view.projects
-                ),
+            authority = self.registry._require_live_source(approved, observed=observed)
+        except _LiveSourceUnavailable:
+            had_capture = any(
+                type(item) is _GrokEpoch and item.identity.source_id == source_id
+                for item in _grok_records(view)
             )
-        except _LiveSourceUnavailable as refusal:
-            if (
-                any(
-                    type(item) is _GrokEpoch and item.identity.source_id == source_id
-                    for item in _grok_records(view)
-                )
-                or refusal.decision is not None
-                and not self.registry._stable_live_exclusion(approved)
+            if had_capture or (
+                observed and not self.registry._stable_live_exclusion(approved)
             ):
                 raise _GrokCaptureHeld(
                     "Grok live capture authority is unavailable"
@@ -1242,8 +1239,14 @@ class ScopeState:
             and admission.reader.verify_origin(material.source.path) != material.origin
         ):
             raise _GrokCaptureHeld("Grok capture origin changed")
-        return _GrokCaptureOffer(
-            identity, admission.live, registry.lease, cut, arm if cut is None else None
+        return registry._issue_grok_capture_offer(
+            _GrokCaptureOffer(
+                identity,
+                admission.live,
+                registry.lease,
+                cut,
+                arm if cut is None else None,
+            )
         )
 
     def _grok_capture_evidence(

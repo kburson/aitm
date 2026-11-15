@@ -802,3 +802,28 @@ def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_captur
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.prepare(f.source_id, f.locator())
     assert journal.as_of() == before
+
+
+def test_prior_grok_offer_cannot_be_reused_by_another_command(
+    isolated_grok_capture, monkeypatch
+):
+    f = isolated_grok_capture
+    original = f.state._grok_capture_evidence
+    saved = []
+
+    def observe(*args):
+        offers = original(*args)
+        saved.extend(offers)
+        return offers
+
+    with monkeypatch.context() as patch:
+        patch.setattr(f.state, "_grok_capture_evidence", observe)
+        f.submit(101, True)
+        assert f.evaluate()
+    assert len(saved) == 1
+    disable = f.submit(102, False)
+    with monkeypatch.context() as patch:
+        patch.setattr(f.state, "_grok_capture_evidence", lambda *_: tuple(saved))
+        assert f.evaluate() == ()
+        assert f.writer.command_status(disable.command_id) is None
+    assert f.evaluate()[0].command_id == disable.command_id
