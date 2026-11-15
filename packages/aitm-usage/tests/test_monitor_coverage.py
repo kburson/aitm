@@ -104,55 +104,82 @@ def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(admitted_so
 
 
 @pytest.mark.parametrize(
-    "case",
+    ("case", "use_claude", "records"),
     (
-        "omitted",
-        "duplicates",
-        "missing-verifier",
-        "rejected-verifier",
-        "verifier-error",
-        "foreign-root",
-        "foreign-generation",
-        "foreign-lease",
+        ("omitted", False, True),
+        ("valid-matrix-exclusion", True, True),
+        ("duplicates", True, False),
+        ("missing-verifier", True, False),
+        ("foreign-root", True, False),
+        ("replaced-root", True, False),
+        ("foreign-generation", True, False),
+        ("foreign-lease", True, False),
+        ("wrong-profile-type", True, False),
+        ("rejected-verifier", False, False),
+        ("verifier-error", False, False),
     ),
 )
-def test_only_stable_profile_denials_become_coverage(admitted_sources, tmp_path, case):
-    native, _ = admitted_sources
+def test_only_stable_profile_denials_become_coverage(
+    admitted_sources, tmp_path, case, use_claude, records
+):
+    native, claude = admitted_sources
+    source = claude.source_id if use_claude else SOURCE
 
     def unavailable(_):
         raise OSError("verifier unavailable")
+
+    old_root = _directory(str(native.registry.root), private=True)
+    if case == "replaced-root":
+        previous = tmp_path / "previous-monitor"
+        native.registry.root.rename(previous)
+        copytree(previous, native.registry.root)
 
     other = Registry(tmp_path / "other-monitor")
     with native.registry.writer() as writer, other.writer() as foreign:
         qualify(writer)
         profile = writer._live_profile
-        approved = next(s for s in writer.view().sources if s.source_id == SOURCE)
+        approved = next(s for s in writer.view().sources if s.source_id == source)
         item = next(
             i for i in profile.installations if i.directory == approved.directory
         )
         fields = {
             "omitted": {"installations": ()},
+            "valid-matrix-exclusion": {},
             "duplicates": {"installations": (item, item)},
             "missing-verifier": {"current": None},
             "rejected-verifier": {"current": lambda _: False},
             "verifier-error": {"current": unavailable},
             "foreign-root": {"root": _directory(str(foreign.root), private=True)},
+            "replaced-root": {"root": old_root},
             "foreign-generation": {
                 "generation": foreign.source_evidence().pseudonymize(
                     "generation", "other"
                 ),
             },
             "foreign-lease": {"lease": foreign.lease},
+            "wrong-profile-type": {},
         }[case]
+        if case == "wrong-profile-type":
+
+            class DifferentProfile(type(profile)):
+                pass
+
+            profile = DifferentProfile(
+                profile.root,
+                profile.lease,
+                profile.generation,
+                profile.installations,
+                profile.current,
+            )
         writer._live_profile = replace(profile, **fields)
-        locator = native.locator()
+        locator = claude.locator() if use_claude else native.locator()
         journal = RoutingJournal(writer, ScopeState(writer))
         with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(SOURCE, locator)
+            journal.prepare(source, locator)
         changes = journal.coverage_changes(0)
-        assert len(changes) == (1 if case == "omitted" else 0)
-        assert store_version(journal) == (6 if changes else 4)
-        assert journal.cursor_for(SOURCE, locator) is None
+        assert len(changes) == int(records)
+        assert store_version(journal) == (6 if records else 4)
+        assert journal.cursor_for(source, locator) is None
 
 
 @pytest.mark.parametrize("failure", ("policy", "consent", "location"))
@@ -231,9 +258,17 @@ def test_coverage_rejects_reserved_variants_even_with_a_valid_row_seal(
             altered = json.dumps(
                 json.loads(raw) | override, separators=(",", ":"), sort_keys=True
             ).encode()
-            seal = _coverage_seal(sequence, altered, journal._store.evidence)
+            evidence = journal._store.evidence
+            identity_fields = json.loads(altered)
+            del identity_fields["observed_at"]
+            identity = evidence.pseudonymize(
+                "journal-coverage-key-v1",
+                json.dumps(identity_fields, separators=(",", ":"), sort_keys=True),
+            )
+            seal = _coverage_seal(sequence, altered, evidence)
             connection.execute(
-                "UPDATE source_coverage SET payload=?,seal=?", (altered, seal.value)
+                "UPDATE source_coverage SET identity=?,payload=?,seal=?",
+                (identity.value, altered, seal.value),
             )
         with pytest.raises(LedgerError, match="Invalid private journal coverage"):
             journal.coverage_changes(0)
@@ -447,3 +482,21 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
         with pytest.raises(LedgerError, match="no verified native session"):
             journal.prepare(source, locator)
         assert len(journal.coverage_changes(0)) == int(consent)
+
+
+def test_coverage_readback_requires_the_original_live_writer(admitted_sources):
+    native, claude = admitted_sources
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        with pytest.raises(LedgerError, match="qualification"):
+            journal.prepare(claude.source_id, claude.locator())
+        (event,) = journal.coverage_changes(0)
+
+    with pytest.raises(LedgerError, match="coordinator lease is required"):
+        journal.coverage_changes(0)
+    with native.registry.writer() as reopened:
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
+            journal.coverage_changes(0)
+        assert RoutingJournal(reopened, ScopeState(reopened)).coverage_changes(0) == (
+            event,
+        )
