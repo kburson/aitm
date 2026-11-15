@@ -234,12 +234,13 @@ def test_changed_authority_rolls_back_any_migration_and_event(
 @pytest.mark.parametrize(
     "override",
     (
+        {},
         {"extent": "known"},
         {"reason": "UNVERIFIED"},
         {"root": "broader-root"},
     ),
 )
-def test_coverage_rejects_reserved_variants_even_with_a_valid_row_seal(
+def test_coverage_rejects_only_reserved_variants_with_matching_key_and_seal(
     admitted_sources, override
 ):
     import json
@@ -251,6 +252,7 @@ def test_coverage_rejects_reserved_variants_even_with_a_valid_row_seal(
         journal = RoutingJournal(writer, ScopeState(writer))
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(claude.source_id, claude.locator())
+        (original,) = journal.coverage_changes(0)
         with journal._store.transaction(write=True) as connection:
             sequence, raw = connection.execute(
                 "SELECT sequence,payload FROM source_coverage"
@@ -270,8 +272,11 @@ def test_coverage_rejects_reserved_variants_even_with_a_valid_row_seal(
                 "UPDATE source_coverage SET identity=?,payload=?,seal=?",
                 (identity.value, altered, seal.value),
             )
-        with pytest.raises(LedgerError, match="Invalid private journal coverage"):
-            journal.coverage_changes(0)
+        if override:
+            with pytest.raises(LedgerError, match="Invalid private journal coverage"):
+                journal.coverage_changes(0)
+        else:
+            assert journal.coverage_changes(0) == (original,)
         assert journal.as_of().sequence == sequence
 
 
