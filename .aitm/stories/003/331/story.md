@@ -52,3 +52,5 @@ The exact candidate passed 1,484 locked local tests. The focused regressions cov
 The exact candidate passed 1,487 locked local tests. The regressions cover quiet and in-flight reissue gaps, and retired gap readback after the source approval set changes. [Exact local Test](plan/grok-enrollment-source-r2-local-test.json) · [PR #334](https://github.com/kburson/aitm/pull/334).
 
 [Signed hosted Test](plan/grok-enrollment-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
+
+[Independent source review](plan/grok-enrollment-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-enrollment-independent-source-r2-receipt.json).
