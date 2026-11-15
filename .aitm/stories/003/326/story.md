@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 326
 title: "[M11b] Authenticate sources through a shared metadata inventory"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/326"
 parent: 100
 children: []
@@ -32,3 +32,5 @@ Rank 247.5 and provisional Estimate 3.5 implementation hours. Complete the indep
 Verified #115, #120 and #304 Close and the M11b split release this leaf at Rank 247.5. [Independent refinement packet](plan/2026-11-15-326-metadata-inventory-refine.md).
 
 Independent Refine accepted the six-file inventory scope at 3.5 implementation hours. [Refine receipt](plan/metadata-inventory-independent-refine-receipt.json).
+
+[Exact JIT](plan/2026-11-15-326-metadata-inventory-jit.md) is submitted for independent acceptance.
