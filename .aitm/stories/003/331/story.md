@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 331
 title: "[M11e] Enroll new Grok streams under existing capture grants"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/331"
 parent: 100
 children: []
@@ -50,3 +50,5 @@ The exact candidate passed 1,484 locked local tests. The focused regressions cov
 ## Source review recovery
 
 The exact candidate passed 1,487 locked local tests. The regressions cover quiet and in-flight reissue gaps, and retired gap readback after the source approval set changes. [Exact local Test](plan/grok-enrollment-source-r2-local-test.json) · [PR #334](https://github.com/kburson/aitm/pull/334).
+
+[Signed hosted Test](plan/grok-enrollment-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
