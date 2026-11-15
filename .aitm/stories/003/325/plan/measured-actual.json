@@ -1,11 +1,15 @@
 {
   "story": 325,
-  "actual_hours": 0.0594,
+  "actual_hours": 0.0672,
   "coverage": "partial",
-  "milliseconds": 213977,
+  "milliseconds": 241766,
   "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
   "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
   "evidence": [
+    {
+      "path": "full-auto-native-watch-owner-retirement-1-325.json",
+      "sha256": "7a843b616bfbfb201fb7b5f2182d5bec568b5e6aceaaa1ac36df347bc61eeb8a"
+    },
     {
       "path": "full-auto-native-watch-develop-1-325.json",
       "sha256": "1bd1bab9bbebffb5756a475b77b3c6ece5f11c272d4d088fe82f4431363e0e27"
