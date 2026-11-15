@@ -56,3 +56,5 @@ The [exact recovery candidate](plan/grok-capture-local-recovery-test.json) passe
 ## Verified Close
 
 [PR #332](https://github.com/kburson/aitm/pull/332) delivered the exact reviewed tree on trunk at 30e1a13d64a88d43e7447e2199c0e389324a0857. The native issue is Closed and Project 24 is Done. [Delivery proof](plan/grok-capture-verified-delivery.json) · [Native Close proof](plan/grok-capture-native-close.json).
+
+Close rechecked that the journal Refine predecessor [PR #328](https://github.com/kburson/aitm/pull/328) merged at the exact #329 test base. [Literal native readback](plan/grok-capture-inventory-parent-close-readback.json).

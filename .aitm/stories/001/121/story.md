@@ -57,3 +57,5 @@ Independent Refine held the integrated proposal because current admission reread
 The ordered Grok capture callback and missing-callback refusal are specified in [#329’s recovery JIT](../../003/329/plan/2026-11-15-329-positive-grok-capture-jit-r2.md). #121 owns supplying it from the running coordinator.
 
 [#331](../../003/331/story.md) owns prospective Grok enrollment and blocks coordinator integration. [Exact native graph](plan/grok-prospective-enrollment-native-readback.json).
+
+Apply the exact authorized #117 receipt verifier in the #329 capture callback for each approved source and live profile generation. The new [#329 independent source recovery](../../003/329/plan/grok-capture-independent-source-r2.md) and its same-writer wrong-verifier test bind this #121 integration obligation.
