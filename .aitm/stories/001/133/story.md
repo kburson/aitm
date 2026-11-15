@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
-children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294]
+children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323]
 blocking: [2]
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-14T13:12:59Z"
+updated: "2026-11-15T17:24:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -148,3 +148,7 @@ Preserve #103 as the merge gate. Retain the signed #146 exact-scope observations
 ## Verified ranked pickup
 
 [Project and dependency readback](plan/2026-11-14-133-behavior-validation-readback.json) · [Behavior audit #285](../../002/285/story.md) · [Core standard #286](../../002/286/story.md).
+
+## Missed-slot qualification
+
+Rank 150 [#323](../../003/323/story.md) follows the delivered #294 decision. #103 remains authoritative.

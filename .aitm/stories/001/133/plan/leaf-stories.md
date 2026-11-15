@@ -51,3 +51,5 @@ Verified 41 open Backlog items and 64 reciprocal direct dependencies. The estima
 | [T41](https://github.com/kburson/aitm/blob/dbe0d68b3e7b977c9fbf51e26d9ae8c6f629af84/.aitm/stories/001/133/plan/test-impact-analysis-implementation-plan.md#L837) | [#178 Rehearse rollback with a live stop](../../178/story.md) | 3 | [T35 #172](../../172/story.md), [T39 #176](../../176/story.md), [T40 #177](../../177/story.md) |
 
 A completed spike report satisfies a dependent capability only when it qualifies the route.
+
+Rank 150 [#323 Missed-slot recovery qualification](../../../003/323/story.md) follows #294.
