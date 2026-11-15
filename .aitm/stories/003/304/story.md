@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [303]
 created: "2026-11-15T02:38:03Z"
 updated: "2026-11-15T02:38:32Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -34,3 +34,7 @@ Requires its own independently accepted Refine and JIT, signed hosted validation
 [Accepted amendment](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md) SHA-256 `cbfbf8a37edf0d4114380928d991a696629f9d5954f33374fd8c0e87ac87b377`.
 
 Project 24 Rank 229.065.
+
+## Independent Refine
+
+Passed at 3.5 implementation hours with a single real macOS arm64 Grok pilot. The exact independent JIT binds the native witness and currentness contract. [Refine](plan/isolated-issuer-independent-refine-r1.md).

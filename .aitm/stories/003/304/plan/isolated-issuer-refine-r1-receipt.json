@@ -1,0 +1,16 @@
+{
+  "story": 304,
+  "verdict": "PASS",
+  "attempt": 1,
+  "basis": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "estimate_hours": 3.5,
+  "size": "M",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "spec_sha256": "f81a967a514d5259b4bfb85e2ffee1e07fd5fab43242219bdd3d231c9a49ab9c",
+  "input_sha256": "e46b0809a6d45486fc6c49e1a8dcaf127eda4bcd95ea42ea9a0d5475cf87a777",
+  "response_sha256": "d6292d22018dd37789c83972a3f150e87485e366121a77ce70f7acf852847dac",
+  "verdict_sha256": "49b9c809781ab327d6c68471884a05d175b28184274cadd7eefa4599a3554ce0",
+  "real_positive": "macOS arm64 Grok CLI"
+}
