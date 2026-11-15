@@ -1,0 +1,29 @@
+{
+  "story": 310,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+    "headRefOid": "2e8236c6d17e831c17a65623708a52fd73e68b87",
+    "number": 311,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/311"
+  },
+  "tree": "798ed1c8bf1216c0a716714bfbc6bec680a128ee",
+  "locked_product_tests": 1281,
+  "helper_tests": 539,
+  "product_coverage": {
+    "num_statements": 12655,
+    "covered_lines": 11629
+  },
+  "macos_reruns": "Earlier runs hit existing native fixture setup failures. Exact cases passed on isolated baseline and candidate; the exact locked candidate rerun passed.",
+  "logs_sha256": {
+    "310-serial/product.log": "ba38e4385c821231805878f0c1a3d597e8423d17d7484d6afc6b9036a1c59f12",
+    "310-delivery/helper.log": "6fad4dfe1dcab9564d3c06d307cb141a7d903f0b50c499b69bded82c903a4feb",
+    "310-refine/complete-green.log": "e503a4a163413599ef1f87d9f02be9efdde6f1f5ed5f370ca5cdc2fa85f8a05b",
+    "310-local-first-run/product.log": "0cff017c6879056eb4bec7a5cc3e2a74533b5e882620811aec62459621b7443c",
+    "310-recheck/product.log": "5cbfc0e1004dddc9327da9cc4525d2a57582ab8ab5365bc0be180d3c5c38fe84",
+    "310-recheck/base-disposition-recheck.txt": "96a8cb52be1ed2c3302d2e9f6528eca38c1cf7c2462ec7201e826ec440278f9d",
+    "310-recheck/candidate-disposition-recheck.txt": "f198f860ca02de44cb948b656eb5540efce07ed67ca9fdf1bda5638bc1ad39a4"
+  }
+}

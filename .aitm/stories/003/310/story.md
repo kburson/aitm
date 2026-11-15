@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 310
 title: "Create verified journal-only publication candidates"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/310"
 parent: 100
 children: []
@@ -32,3 +32,7 @@ Passed at 1.25 implementation hours. JIT will freeze complete committed row iden
 ## Independent JIT
 
 Recovery passed at 1.25 implementation hours. The exact plan pins the journal SQL, schema gates and non-persisted identities. [Verdict](plan/independent-jit-r2.md).
+
+## Local Test
+
+Exact locked validation passed for the read-only candidate and destination-isolation path. [Evidence](plan/local-publication-test.json).
