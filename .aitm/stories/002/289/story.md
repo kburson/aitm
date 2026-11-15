@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 289
 title: "[#133] Qualify scheduled full-suite validation on trunk in shadow"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/289"
 parent: 133
 children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T03:11:32Z"
+updated: "2026-11-15T03:18:26Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -59,3 +59,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Toolchain correction evidence
 
 [Independent exact-source assessment](plan/reviews/toolchain-source-assessment.md) · [105 planned focused checks with the checksum-verified CLI](plan/toolchain-local-tests.log).
+
+## Exact candidate and review
+
+[Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
