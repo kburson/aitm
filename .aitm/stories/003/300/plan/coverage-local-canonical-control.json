@@ -1,0 +1,36 @@
+{
+  "story": 300,
+  "candidate": 3,
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+    "headRefOid": "0542848b0c8f680e11d5f443707835170b04c8f1",
+    "number": 308,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/308"
+  },
+  "project": {
+    "actual": 0.1075,
+    "coverage": "Partial coordinator progress through retest. Provider, tool and wait time excluded.",
+    "estimate": 3.2,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0J7k",
+    "issue": 300,
+    "rank": 229.06,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Test"
+  },
+  "base": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "head": "0542848b0c8f680e11d5f443707835170b04c8f1",
+  "tree": "10d90c79a27472ac81543fa5ddad25d2ec8b203d",
+  "product_package_tree": "d326b58ecf0532126d1e54bc5c0de66fb9074e30",
+  "product_source_matches_first_review": true,
+  "locked_product_summary": "1278 passed in 232.39s (0:03:52)",
+  "coverage": {
+    "covered_lines": 11532,
+    "num_statements": 12546
+  },
+  "tests_added": "known-good canonical reconstruction through the same key, payload and seal path as three reserved variants",
+  "output_sha256": "73419cb00043b41ed1c78c37c1d2b19a5ae1d9e3bacb5beaac054341867c0f69"
+}
