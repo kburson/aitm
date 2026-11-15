@@ -1,5 +1,6 @@
 """Writer-bound private routing claims and native replay checkpoints."""
 
+import json
 import re
 import sqlite3
 from dataclasses import dataclass, field, replace
@@ -11,6 +12,7 @@ from uuid import UUID
 from weakref import WeakValueDictionary
 
 from ._monitor_journal_store import (
+    _CONTENT_DISPUTE_SCHEMA_VERSION,
     _COVERAGE_SCHEMA_VERSION,
     _PAIRED_SCHEMA_VERSION,
     JournalStore,
@@ -78,6 +80,16 @@ _DISPOSITION_ROWS = (
 _COVERAGE_ROWS = (
     "SELECT s.identity,s.sequence,c.sequence,s.payload,s.seal"
     " FROM source_coverage s LEFT JOIN commits c ON c.sequence=s.sequence"
+)
+
+
+_OWNERSHIP_DISPUTE_ROWS = (
+    "SELECT d.key,d.contender,c.project,d.digest,d.evidence,d.sequence,c.payload,c.digest"
+    " FROM disputes d LEFT JOIN claims c ON c.key=d.key"
+)
+_CONTENT_DISPUTE_ROWS = (
+    "SELECT d.key,c.project,c.payload,c.digest,d.sequence,d.payload"
+    " FROM content_disputes d LEFT JOIN claims c ON c.key=d.key"
 )
 
 
@@ -261,18 +273,50 @@ class JournalCoverage(_CoverageIdentity):
     observed_at: datetime
 
 
+class _CandidateBasis(StrEnum):
+    COVERAGE = "coverage"
+    OWNERSHIP = "ownership"
+    CONTENT = "content"
+
+
+@dataclass(frozen=True, slots=True)
+class _JournalDispute:
+    record: OwnershipDispute | ContentDispute
+    identity: SourceRef
+    original_project: UUID
+    row_digest: str
+
+    def __post_init__(self) -> None:
+        if type(self.record) not in (OwnershipDispute, ContentDispute):
+            raise ValueError("Expected one routing journal dispute")
+
+
+@dataclass(frozen=True, slots=True)
+class PublicationCandidate:
+    """A private verified journal-only candidate awaiting the recovery fence."""
+
+    sequence: int
+    basis: _CandidateBasis
+    identity: SourceRef
+
+
 @dataclass(frozen=True, slots=True)
 class JournalChange:
     sequence: int
     disposition: _JournalDispositionPayload | None = None
     paired: _PairedSettlement | None = None
     coverage: JournalCoverage | None = None
+    dispute: _JournalDispute | None = None
 
     def __post_init__(self) -> None:
         if self.coverage is not None and (
             self.disposition is not None or self.paired is not None
         ):
             raise ValueError("Coverage must be a distinct journal change")
+        if self.dispute is not None and any(
+            item is not None for item in (self.coverage, self.disposition, self.paired)
+        ):
+            raise ValueError("A dispute must be a distinct journal change")
 
 
 @dataclass(frozen=True, slots=True)
@@ -810,6 +854,99 @@ def _original_capture(
     return True
 
 
+def _publication_reference(
+    evidence: _ServiceEvidence, namespace: str, *fields: object
+) -> SourceRef:
+    canonical = json.dumps(
+        fields, ensure_ascii=True, separators=(",", ":"), allow_nan=False
+    )
+    return evidence.pseudonymize(namespace, canonical)
+
+
+def _dispute_original(
+    values: tuple[str | None, bytes | None, str | None], evidence: _ServiceEvidence
+) -> tuple[UUID, ClaimEvidence]:
+    project, payload, digest = values
+    if project is None or payload is None or digest is None:
+        raise LedgerError("Stored dispute is missing its first claim")
+    project_id = UUID(project)
+    if project != str(project_id):
+        raise ValueError("Noncanonical original project")
+    original = _stored_claim(payload, digest)
+    _encode(original, _ClaimPayload, validate_ref=evidence.validate_source_ref)
+    return project_id, original.evidence
+
+
+def _verified_ownership_change(row: tuple, evidence: _ServiceEvidence) -> JournalChange:
+    key, contender, project, digest, raw, sequence, first, first_digest = row
+    _positive(sequence)
+    key = SourceRef(key)
+    evidence.validate_source_ref(key)
+    contender_id = UUID(contender)
+    if contender != str(contender_id) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        raise ValueError("Noncanonical stored ownership dispute")
+    project_id, _ = _dispute_original((project, first, first_digest), evidence)
+    captured = _decode(raw, ClaimEvidence, validate_ref=evidence.validate_source_ref)
+    if (
+        _encode(
+            captured, ClaimEvidence, validate_ref=evidence.validate_source_ref
+        ).encode()
+        != raw
+    ):
+        raise ValueError("Noncanonical stored dispute evidence")
+    identity = _publication_reference(
+        evidence,
+        "monitor-journal-dispute-row-v1",
+        _CandidateBasis.OWNERSHIP,
+        sequence,
+        key.value,
+        str(project_id),
+        str(contender_id),
+        digest,
+        raw.hex(),
+    )
+    dispute = OwnershipDispute(key, contender_id, captured, sequence)
+    return JournalChange(
+        sequence, dispute=_JournalDispute(dispute, identity, project_id, digest)
+    )
+
+
+def _verified_content_change(
+    connection: sqlite3.Connection, row: tuple, evidence: _ServiceEvidence
+) -> JournalChange:
+    key, project, first, first_digest, sequence, raw = row
+    key = SourceRef(key)
+    evidence.validate_source_ref(key)
+    project_id, original = _dispute_original((project, first, first_digest), evidence)
+    payload = _stored_content_dispute(
+        connection, key, original, sequence, raw, evidence
+    )
+    if (
+        _encode(
+            payload, _ContentDisputePayload, validate_ref=evidence.validate_source_ref
+        ).encode()
+        != raw
+    ):
+        raise ValueError("Noncanonical stored content dispute")
+    digest = sha256(raw).hexdigest()
+    identity = _publication_reference(
+        evidence,
+        "monitor-journal-dispute-row-v1",
+        _CandidateBasis.CONTENT,
+        sequence,
+        key.value,
+        str(project_id),
+        digest,
+        raw.hex(),
+    )
+    dispute = ContentDispute(
+        key, project_id, payload.common, payload.accepted, payload.contender, sequence
+    )
+    return JournalChange(
+        sequence, dispute=_JournalDispute(dispute, identity, project_id, digest)
+    )
+
+
 class RoutingJournal:
     """Stage exact observations under the existing coordinator writer lease."""
 
@@ -974,6 +1111,146 @@ class RoutingJournal:
                     (after_sequence,),
                 )
             )
+
+    def _dispute_changes_in(
+        self,
+        connection: sqlite3.Connection,
+        sequence: int,
+        key: SourceRef | None = None,
+    ) -> tuple[JournalChange, ...]:
+        if (
+            not _CONTENT_DISPUTE_SCHEMA_VERSION
+            <= self._store._current_version(connection)
+            <= _COVERAGE_SCHEMA_VERSION
+        ):
+            raise LedgerError("Routing journal dispute schema is unavailable")
+        evidence = self._store.evidence
+        where, args = (
+            (" WHERE d.sequence > ?", (sequence,))
+            if key is None
+            else (" WHERE d.sequence=? AND d.key=?", (sequence, key.value))
+        )
+        ownership = connection.execute(
+            _OWNERSHIP_DISPUTE_ROWS
+            + where
+            + " ORDER BY d.sequence,d.key,d.contender,d.digest,d.evidence",
+            args,
+        )
+        content = connection.execute(
+            _CONTENT_DISPUTE_ROWS + where + " ORDER BY d.sequence,d.key", args
+        )
+        return tuple(
+            sorted(
+                chain(
+                    (_verified_ownership_change(row, evidence) for row in ownership),
+                    (
+                        _verified_content_change(connection, row, evidence)
+                        for row in content
+                    ),
+                ),
+                key=lambda change: change.sequence,
+            )
+        )
+
+    def dispute_changes(self, after_sequence: int) -> tuple[JournalChange, ...]:
+        """Read exact stored disputes while preserving the public historical projection."""
+        with self._store.transaction() as connection:
+            try:
+                if type(after_sequence) is not int or not 0 <= after_sequence <= _tip(
+                    connection
+                ):
+                    raise ValueError("Invalid journal watermark")
+                return self._dispute_changes_in(connection, after_sequence)
+            except (ValueError, LedgerError):
+                raise LedgerError(
+                    "Verified journal-only publication is unavailable"
+                ) from None
+
+    def publication_candidate(self, change: JournalChange) -> PublicationCandidate:
+        """Issue a stable reference after private committed-change verification."""
+        with self._store.transaction() as connection:
+            try:
+                if (
+                    type(change) is not JournalChange
+                    or type(change.sequence) is not int
+                    or not 0 < change.sequence <= _tip(connection)
+                    or change.disposition is not None
+                    or change.paired is not None
+                    or (change.coverage is None) == (change.dispute is None)
+                ):
+                    raise ValueError("Invalid publication change")
+                evidence = self._store.evidence
+                if type(change.coverage) is JournalCoverage:
+                    if (
+                        self._store._current_version(connection)
+                        != _COVERAGE_SCHEMA_VERSION
+                    ):
+                        raise ValueError("Coverage schema is unavailable")
+                    (row,) = connection.execute(
+                        _COVERAGE_ROWS + " WHERE s.sequence=?", (change.sequence,)
+                    ).fetchall()
+                    verified = _stored_coverage(row, evidence)
+                    if verified != change or _encode(
+                        change.coverage,
+                        JournalCoverage,
+                        validate_ref=evidence.validate_source_ref,
+                    ) != _encode(
+                        verified.coverage,
+                        JournalCoverage,
+                        validate_ref=evidence.validate_source_ref,
+                    ):
+                        raise ValueError("Coverage differs from its durable row")
+                    basis = _CandidateBasis.COVERAGE
+                    material = (
+                        _encode(
+                            verified.coverage,
+                            JournalCoverage,
+                            validate_ref=evidence.validate_source_ref,
+                        )
+                        .encode()
+                        .hex()
+                    )
+                elif type(change.dispute) is _JournalDispute:
+                    dispute = change.dispute
+                    evidence.validate_source_ref(dispute.record.key)
+                    evidence.validate_source_ref(dispute.identity)
+                    (verified,) = (
+                        stored
+                        for stored in self._dispute_changes_in(
+                            connection, change.sequence, dispute.record.key
+                        )
+                        if stored == change
+                    )
+                    if _encode(
+                        dispute,
+                        _JournalDispute,
+                        validate_ref=evidence.validate_source_ref,
+                    ) != _encode(
+                        verified.dispute,
+                        _JournalDispute,
+                        validate_ref=evidence.validate_source_ref,
+                    ):
+                        raise ValueError("Dispute differs from its durable row")
+                    basis = (
+                        _CandidateBasis.OWNERSHIP
+                        if type(verified.dispute.record) is OwnershipDispute
+                        else _CandidateBasis.CONTENT
+                    )
+                    material = verified.dispute.identity.value
+                else:
+                    raise ValueError("Unexpected journal change type")
+                identity = _publication_reference(
+                    evidence,
+                    "monitor-journal-publication-v1",
+                    basis,
+                    change.sequence,
+                    material,
+                )
+                return PublicationCandidate(change.sequence, basis, identity)
+            except (ValueError, LedgerError):
+                raise LedgerError(
+                    "Verified journal-only publication is unavailable"
+                ) from None
 
     def _fresh_view(
         self, connection: sqlite3.Connection, read: _Read, *, confirm: bool = True
