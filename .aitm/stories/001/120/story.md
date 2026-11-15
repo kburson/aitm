@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 120
 title: "[M10] Wake and park scheduler"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
@@ -53,3 +53,7 @@ The [independently accepted split](plan/2026-11-15-120-wake-scheduler-installer-
 [The narrowed Refine](plan/2026-11-15-120-wake-park-narrowed-refine.md) carries a provisional 3.5-hour estimate and Size M. The second paid Refine reached the runner's turn limit on a tool request before returning a verdict. [Attempt receipt](plan/wake-park-independent-refine-r2-receipt.json).
 
 The owner-authorized third Refine passed at 3.5 hours, Size M. [Refine receipt](plan/wake-park-independent-refine-r3-receipt.json) · [Exact JIT](plan/2026-11-15-120-wake-park-jit.md).
+
+## Develop
+
+Independent JIT recovery passed. Start the accepted four-path scheduler and ingress slice at the [exact plan](plan/2026-11-15-120-wake-park-jit-r2.md) and [JIT receipt](plan/wake-park-independent-jit-r2-receipt.json).

@@ -1,0 +1,20 @@
+{
+  "story": 120,
+  "gate": "JIT",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "e9b92172aee21eaab728e1a313d94f0bea38279b",
+  "estimate": 3.5,
+  "ingress_trigger_hours": 1.75,
+  "cap_hours": 4.0,
+  "sha256": {
+    "jit-r2-result.json": "4af69667776379e151b1fca3d6d5c832d182221e0632b43d276916d9b389b515",
+    "wake-park-independent-jit-r2.md": "4252c929aabaafb2de730f4764d6b723e7b45f110e85b5bc6d122283723ffaaa",
+    "jit-r2-input.md": "4bc4e580a61ebfab4c66e065cc552f664d82e10fb840f25ed3407c37ca3e4cb7",
+    "2026-11-15-120-wake-park-jit-r2.md": "d99ae3a4f88ab470ba67341d629bdd6d13986ce9d22b1459c2bc64c757db047e",
+    "jit-r2-proof.txt": "787f6cba8681f964ffcd7c5242726b8c22f502ef08ba6b97a0f771810b39b07b",
+    "develop-symbol-proof.txt": "eb573d8e4cb7842a4ea1d22fd1e1c6207d7ba217b3bb8fc603bebcc6e11ef0fc"
+  }
+}
