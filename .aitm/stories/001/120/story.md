@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 120
 title: "[M10] Wake and park scheduler"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
@@ -63,3 +63,7 @@ Independent JIT recovery passed. Start the accepted four-path scheduler and ingr
 The scheduler and same-account wake ingress passed focused tests and native peer credential probes. The exact candidate passed 1,385 locked local tests. [Test proof](plan/wake-park-local-test.json) · [PR #322](https://github.com/kburson/aitm/pull/322).
 
 The wake listener now refuses a malformed frame when decoding exceeds the recursion limit and continues taking valid work. The corrected exact candidate passed 1,386 locked local tests. [Corrected Test proof](plan/wake-park-frame-decoder-local-test.json).
+
+## Independent source
+
+The exact scheduler and private wake ingress passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/wake-park-signed-hosted-r1.json) · [Source receipt](plan/wake-park-independent-source-r1-receipt.json).

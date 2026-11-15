@@ -1,0 +1,29 @@
+{
+  "base": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+  "head": "519e470c7ec2bae8f6f0b524296f1cc66fd508a0",
+  "tree": "1f04e6093efe4e6f1afbd85f223d14fd88dabcd7",
+  "run": "https://github.com/kburson/aitm/actions/runs/43741359310/attempts/1",
+  "run_id": 43741359310,
+  "story": 120,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "3a32047ab485d8f5f70d8901b3a8ec801bfe1b80de4af01f2b394dbb8e5aba80",
+  "response_sha256": "83b289b1c700f9e281acc847218427b69040e66c8ff549dea16bc0c3853f227f",
+  "review_sha256": "e3593f6e74aaa8f5ccdbea2a104ebf226beac6057969070084d7f5156e04dd36",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "6a4958b1b1d38a1ad509139885974ed746ef2cd02505c33d6b2e971584bf40c3",
+    "frame-decoder-red.log": "8fe6b43883e1b4b1fd0dc2a4b3144184bac2c8761cebfd703c778f77ed356c7a",
+    "frame-decoder-green.log": "09e06e804bad2c05416e05cc3fda4a7c96e20e3d800b4fcc95300ff1ca474072",
+    "frame-decoder.diff": "e03730504d964019927c17919e7e8c1af3d6709b651bf2a582bef0f25967b282",
+    "current-base-helper-proof.txt": "deb29604d8305f9aa0482f5139fd09723bae311d55fbf5b59fd5d120bd16cc56",
+    "peer-socket-darwin.json": "7d736cf7d2476450d5674f98060e339dc7e5339e82b00b2757a60743a627603b",
+    "peer-socket-linux.json": "e9df4ac65f4c3c3f40e5028fab7697b6de5a9fe8bc4d00e0f2d8c48038d2f028",
+    "product-linux-peer.json": "da2611f259ff577ce0439113e7bf6254ba6d459c9cd80ef64748c5ca1321f1e5",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product.log": "9b28b7502ab52d093207081e8abf7096af250df829f25972d4fcedaedd108649",
+    "product-coverage.json": "0252781a5493c88a719aa64713d45f884119c1d1d7917f67c62b20c59f442ebf"
+  }
+}
