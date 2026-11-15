@@ -64,6 +64,8 @@ from .sources.scan import (
     _capture_position,
     _CaptureDiscontinuity,
     _hash_prefix,
+    _InventoryCycle,
+    _InventoryUnavailable,
     _open_snapshot,
     _origin,
     _source_prefix_reference,
@@ -939,7 +941,12 @@ class ScopeState:
         self._authorized[command.command_id] = digest, authority
 
     def _current_grok(
-        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[ApprovedSource, SourceLocator]:
         if type(self._grok_reader) is not GrokAdapter:
             raise LedgerError("Grok scope reader is unavailable")
@@ -954,11 +961,22 @@ class ScopeState:
             or not source.path.is_relative_to(source.root.path)
         ):
             raise LedgerError("Grok scope locator is outside the approved source")
-        matches = tuple(
-            entry
-            for entry in self._grok_reader.discover(source.root)
-            if entry.stream_ref == locator.stream_ref
-        )
+        try:
+            active = self.registry._current_inventory(inventory)
+            discoveries = (
+                self._grok_reader.discover(source.root)
+                if active is None
+                else self._grok_reader._inventory_discover(
+                    source.root, active, profile=approved.approval
+                )
+            )
+            matches = tuple(
+                entry for entry in discoveries if entry.stream_ref == locator.stream_ref
+            )
+        except _InventoryUnavailable:
+            raise LedgerError(
+                "Complete Grok metadata inventory is unavailable"
+            ) from None
         if len(matches) != 1:
             raise LedgerError("Expected one approved Grok scope stream")
         (current,) = matches
@@ -989,9 +1007,16 @@ class ScopeState:
         return approved, current
 
     def _grok_admission(
-        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
-        approved, current = self._current_grok(view, source_id, locator)
+        approved, current = self._current_grok(
+            view, source_id, locator, inventory=inventory
+        )
         authority = self.registry._require_live_source(
             approved,
             observed=any(
@@ -1005,9 +1030,13 @@ class ScopeState:
         self,
         source_id: UUID,
         locator: SourceLocator,
+        *,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[SourceLocator, AdapterBatch, _LiveSourceProof]:
         view = self.registry.view()
-        approved, current, authority = self._grok_admission(view, source_id, locator)
+        approved, current, authority = self._grok_admission(
+            view, source_id, locator, inventory=inventory
+        )
         result = self._grok_reader.read_delta(current, None)
         _check_capture_root(approved.directory)
         if (
@@ -1182,6 +1211,7 @@ class ScopeState:
         *,
         cursor: StreamCursor | None = None,
         qualify_completion: bool = False,
+        inventory: _InventoryCycle | None = None,
     ) -> VerifiedScopeBatch:
         """Read one exact pinned native stream and retain provenance for its results."""
         self.registry.lease
@@ -1204,7 +1234,7 @@ class ScopeState:
             ):
                 raise LedgerError("Native scope source has no admitted unbounded read")
             approved, current, authority = self.registry._approved_candidate(
-                view, source_id, locator, observed=True
+                view, source_id, locator, observed=True, inventory=inventory
             )
             admitted = self._admitted_readers(view, source_id, current)
             if cursor is not None:
@@ -1261,7 +1291,9 @@ class ScopeState:
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
         else:
-            current, batch, authority = self._read_grok(source_id, locator)
+            current, batch, authority = self._read_grok(
+                source_id, locator, inventory=inventory
+            )
             surface = NativeSurface.GROK_BUILD_MACOS
             admitted = frozenset()
             native_cursor = None

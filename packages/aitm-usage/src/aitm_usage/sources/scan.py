@@ -5,13 +5,16 @@ import hashlib
 import json
 import os
 import stat
-from collections.abc import Iterable, Iterator
+from collections import OrderedDict
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import BinaryIO, Protocol
+from threading import Lock
+from time import time_ns
+from typing import BinaryIO, Protocol, cast
 from uuid import UUID
 
 from ..ledger import Ledger, LedgerError
@@ -900,6 +903,339 @@ def _origin(stream: BinaryIO, size: int, ledger: SourceEvidence) -> _Origin | No
     if found_complete or size > limit:
         return _Origin(None, None, issue=DiagnosticCode.UNSUPPORTED_FORMAT)
     return None
+
+
+_INVENTORY_MAX_ROOTS = 32
+_INVENTORY_MAX_DIRECTORIES = 1024
+_INVENTORY_MAX_ENTRIES = 8192
+_INVENTORY_MAX_DEPTH = 32
+_INVENTORY_MAX_PATH_BYTES = 4096
+_INVENTORY_MAX_ORIGINS = 32768
+# Use a conservative bound for coarse timestamp filesystems on supported hosts.
+_INVENTORY_TIMESTAMP_GRANULARITY_NS = 2_000_000_000
+
+
+class _InventoryUnavailable(LedgerError):
+    """The complete current metadata evidence did not establish a source."""
+
+
+def _fingerprint(snapshot: _Snapshot, *, directories: bool) -> tuple:
+    info = snapshot.stat
+    return (
+        snapshot.identity,
+        snapshot.directory_ctimes if directories else (),
+        info.st_size,
+        info.st_mtime_ns,
+        info.st_ctime_ns,
+        info.st_nlink,
+        stat.S_IFMT(info.st_mode),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _DirectoryCatalog:
+    chain: tuple[_FileID, ...]
+    witness: tuple[_FileID, int, int]
+    files: dict[Path, _Snapshot]
+
+
+@dataclass(frozen=True, slots=True)
+class _OriginEntry:
+    fingerprint: tuple
+    origin: object
+
+
+class _OriginCache:
+    """Reusable typed origins with no authority outside a verified inventory."""
+
+    def __init__(self) -> None:
+        self._namespace: tuple | None = None
+        self._lock = Lock()
+        self._entries: OrderedDict[tuple, _OriginEntry] = OrderedDict()
+
+    @contextmanager
+    def _use(self, namespace: tuple) -> Iterator[None]:
+        if not self._lock.acquire(blocking=False):
+            raise _InventoryUnavailable("Origin cache belongs to another inventory")
+        try:
+            if self._namespace not in (None, namespace):
+                raise _InventoryUnavailable("Origin cache belongs to another inventory")
+            self._namespace = namespace
+            yield
+        finally:
+            self._lock.release()
+
+    def _store(self, key: tuple, entry: _OriginEntry) -> None:
+        self._entries[key] = entry
+        self._entries.move_to_end(key)
+        if len(self._entries) > _INVENTORY_MAX_ORIGINS:
+            self._entries.popitem(last=False)
+
+
+def _complete_catalog(
+    path: Path, expected: tuple[int, int]
+) -> dict[Path, _DirectoryCatalog]:
+    catalog: dict[Path, _DirectoryCatalog] = {}
+    seen: set[_FileID] = set()
+    entries = 0
+
+    def walk(
+        fd: int,
+        directory: Path,
+        chain: tuple[_FileID, ...],
+        ctimes: tuple[int, ...],
+        depth: int,
+    ) -> None:
+        nonlocal entries
+        if (
+            depth > _INVENTORY_MAX_DEPTH
+            or len(catalog) >= _INVENTORY_MAX_DIRECTORIES
+            or len(os.fsencode(directory)) > _INVENTORY_MAX_PATH_BYTES
+        ):
+            raise _InventoryUnavailable("Metadata inventory directory limit exceeded")
+        before = _directory_witness(os.fstat(fd))
+        files: dict[Path, _Snapshot] = {}
+        catalog[directory] = _DirectoryCatalog(chain, before, files)
+        with os.scandir(fd) as contents:
+            for entry in contents:
+                entries += 1
+                if entries > _INVENTORY_MAX_ENTRIES:
+                    raise _InventoryUnavailable(
+                        "Metadata inventory entry limit exceeded"
+                    )
+                info = entry.stat(follow_symlinks=False)
+                item = directory / entry.name
+                identity = _file_id(info)
+                if stat.S_ISDIR(info.st_mode):
+                    child = os.open(entry.name, _DIRECTORY_FLAGS, dir_fd=fd)
+                    try:
+                        opened = os.fstat(child)
+                        if _file_id(opened) != identity or identity in chain:
+                            raise _InventoryUnavailable(
+                                "Metadata inventory directory changed"
+                            )
+                        walk(
+                            child,
+                            item,
+                            (*chain, identity),
+                            (*ctimes, opened.st_ctime_ns),
+                            depth + 1,
+                        )
+                    finally:
+                        os.close(child)
+                elif entry.name.endswith(".jsonl"):
+                    if (
+                        not stat.S_ISREG(info.st_mode)
+                        or info.st_nlink != 1
+                        or identity in seen
+                        or len(os.fsencode(item)) > _INVENTORY_MAX_PATH_BYTES
+                    ):
+                        raise _InventoryUnavailable(
+                            "Metadata inventory file is ambiguous"
+                        )
+                    seen.add(identity)
+                    files[item] = _Snapshot((*chain, identity), ctimes, info)
+        if _directory_witness(os.fstat(fd)) != before:
+            raise _InventoryUnavailable("Metadata inventory directory changed")
+
+    with _directory(path) as (fd, chain, ctimes):
+        if chain[-1][:2] != expected:
+            raise _InventoryUnavailable("Metadata inventory root changed")
+        walk(fd, path, chain, ctimes, 0)
+    return catalog
+
+
+def _revalidate_catalog(catalog: dict[Path, _DirectoryCatalog]) -> None:
+    for path, directory in catalog.items():
+        with _directory(path) as (fd, chain, ctimes):
+            if (
+                chain != directory.chain
+                or _directory_witness(os.fstat(fd)) != directory.witness
+            ):
+                raise _InventoryUnavailable("Metadata inventory directory changed")
+            for item, expected in directory.files.items():
+                info = _regular_info(fd, item.name)
+                observed = _Snapshot((*chain, _file_id(info)), ctimes, info)
+                if _fingerprint(observed, directories=True) != _fingerprint(
+                    expected, directories=True
+                ):
+                    raise _InventoryUnavailable("Metadata inventory file changed")
+            if _directory_witness(os.fstat(fd)) != directory.witness:
+                raise _InventoryUnavailable("Metadata inventory directory changed")
+
+
+class _InventoryCycle:
+    def __init__(
+        self,
+        writer: object,
+        evidence: SourceEvidence,
+        guard: Callable[[], None],
+        approved: Callable[[Path], tuple[int, int]],
+        cache: _OriginCache,
+    ) -> None:
+        self._writer = writer
+        self._evidence = evidence
+        self._guard = guard
+        self._approved = approved
+        self._cache = cache
+        self._active = True
+        self._catalogs: dict[Path, dict[Path, _DirectoryCatalog]] = {}
+        self._roots: dict[tuple[int, int], Path] = {}
+        self._held: set[Path] = set()
+
+    def _close(self) -> None:
+        self._active = False
+        self._catalogs.clear()
+        self._roots.clear()
+        self._held.clear()
+
+    def _check(self) -> None:
+        if not self._active:
+            raise _InventoryUnavailable("Metadata inventory cycle has expired")
+        self._guard()
+
+    def _require_writer(self, writer: object) -> None:
+        if self._writer is not writer:
+            raise _InventoryUnavailable("Metadata inventory belongs to another writer")
+        self._check()
+
+    def _catalog(
+        self, root: Path, expected: tuple[int, int]
+    ) -> dict[Path, _DirectoryCatalog]:
+        if root in self._held:
+            raise _InventoryUnavailable("Metadata inventory requires a fresh cycle")
+        catalog = self._catalogs.get(root)
+        if catalog is None:
+            catalog = self._catalogs[root] = _complete_catalog(root, expected)
+        if catalog[root].chain[-1][:2] != expected:
+            raise _InventoryUnavailable("Metadata inventory root changed")
+        return catalog
+
+    def _origin_for[T](
+        self,
+        path: Path,
+        snapshot: _Snapshot,
+        parser: tuple,
+        load: Callable[[Path, _Snapshot], T],
+        *,
+        reuse: bool,
+        staged: list[tuple[tuple, _OriginEntry]],
+    ) -> T:
+        key = (path, *parser)
+        before = time_ns()
+        cacheable = reuse and max(
+            snapshot.stat.st_mtime_ns, snapshot.stat.st_ctime_ns
+        ) < (before - _INVENTORY_TIMESTAMP_GRANULARITY_NS)
+        retained = self._cache._entries.get(key) if cacheable else None
+        fingerprint = _fingerprint(snapshot, directories=False)
+        if retained is not None and retained.fingerprint == fingerprint:
+            self._cache._entries.move_to_end(key)
+            return cast(T, retained.origin)
+        expected = _fingerprint(snapshot, directories=True)
+        if _fingerprint(_probe(path), directories=True) != expected:
+            raise _InventoryUnavailable("Metadata inventory file changed")
+        value = load(path, snapshot)
+        if _fingerprint(_probe(path), directories=True) != expected:
+            raise _InventoryUnavailable("Metadata inventory file changed")
+        if cacheable:
+            staged.append((key, _OriginEntry(fingerprint, value)))
+        return value
+
+    def _origins[T](
+        self,
+        root: Path,
+        evidence: SourceEvidence,
+        parser: tuple,
+        load: Callable[[Path, _Snapshot], T],
+        *,
+        layout_name: str | None = None,
+        reuse: bool = True,
+        witness: Callable[[], bool] | None = None,
+    ) -> tuple[tuple[Path, _Snapshot, T], ...]:
+        self._check()
+        if evidence != self._evidence:
+            raise _InventoryUnavailable("Metadata inventory source key changed")
+        expected = self._approved(root)
+        if (
+            root not in self._catalogs
+            and root not in self._held
+            and len(self._catalogs) + len(self._held) >= _INVENTORY_MAX_ROOTS
+        ):
+            raise _InventoryUnavailable("Metadata inventory root limit exceeded")
+        if self._roots.setdefault(expected, root) != root:
+            raise _InventoryUnavailable("Metadata inventory root has a physical alias")
+        staged: list[tuple[tuple, _OriginEntry]] = []
+        try:
+            catalog = self._catalog(root, expected)
+            matches = tuple(
+                (
+                    path,
+                    snapshot,
+                    self._origin_for(
+                        path, snapshot, parser, load, reuse=reuse, staged=staged
+                    ),
+                )
+                for directory in catalog.values()
+                for path, snapshot in directory.files.items()
+                if layout_name is None or path.name == layout_name
+            )
+            _revalidate_catalog(catalog)
+            if witness is not None and not witness():
+                raise _InventoryUnavailable("Metadata inventory origin witness changed")
+            self._check()
+        except (OSError, _InventoryUnavailable, ValueError):
+            self._catalogs.pop(root, None)
+            self._held.add(root)
+            raise _InventoryUnavailable(
+                "Complete metadata inventory is unavailable"
+            ) from None
+        for key, entry in staged:
+            self._cache._store(key, entry)
+        return tuple(sorted(matches, key=lambda match: match[0]))
+
+
+def _inventory_sources(
+    registration: SourceConfiguration,
+    ledger: SourceEvidence,
+    inventory: _InventoryCycle,
+) -> Iterator[CandidateSource]:
+    def load(path: Path, expected: _Snapshot) -> _Origin | None:
+        with _open_snapshot(path, identity_prefix=expected.identity) as (
+            stream,
+            observed,
+        ):
+            if _fingerprint(observed, directories=True) != _fingerprint(
+                expected, directories=True
+            ):
+                raise _InventoryUnavailable("Metadata origin file changed")
+            return _origin(stream, observed.stat.st_size, ledger)
+
+    for root in registration.source_roots:
+        for path, snapshot, origin in inventory._origins(
+            root, ledger, ("native",), load
+        ):
+            if origin is None:
+                continue
+            locator = _locator_reference(ledger, path)
+            stream_ref = (
+                ledger.pseudonymize(
+                    f"{origin.provider.value}-stream", origin.session_ref.value
+                )
+                if origin.session_ref is not None and origin.provider is not None
+                else locator
+            )
+            yield CandidateSource(
+                origin.provider,
+                origin.session_ref,
+                stream_ref,
+                locator,
+                _incarnation_reference(ledger, snapshot.identity[-1]),
+                path,
+                snapshot.identity,
+                registration,
+                ledger,
+                _native_surface=origin.native_surface,
+            )
 
 
 def discover(registration: Registration) -> Iterator[CandidateSource]:

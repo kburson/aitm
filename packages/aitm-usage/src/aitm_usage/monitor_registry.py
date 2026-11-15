@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
+from threading import Lock
 from typing import TYPE_CHECKING, Never
 from uuid import UUID
 
@@ -43,6 +44,9 @@ from .sources.scan import (
     _capture_position,
     _CaptureDiscontinuity,
     _CapturePosition,
+    _InventoryCycle,
+    _InventoryUnavailable,
+    _OriginCache,
     _probe,
 )
 from .types import (
@@ -503,6 +507,8 @@ class Registry:
         self.root = root.absolute()
         self._writer = _writer
         self._live_profile: _LiveProfile | None = None
+        self._active_inventory: _InventoryCycle | None = None
+        self._inventory_lock = Lock()
         self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
         self._frontiers: dict[_CaptureKey, tuple[CaptureChange, CaptureFrontier]] = {}
         self._verified: dict[_CaptureKey, VerifiedBoundary] = {}
@@ -524,6 +530,61 @@ class Registry:
             raise LedgerError("Monitor coordinator lease is required")
         self._writer.check()
         return self._writer
+
+    @contextmanager
+    def _inventory_cycle(self, cache: _OriginCache) -> Iterator[_InventoryCycle]:
+        lease = self.lease
+        key_id = self.view().source_key_id
+        if key_id is None or type(cache) is not _OriginCache:
+            raise BoundaryUnavailable("Expected an established monitor inventory key")
+        evidence = self.source_evidence()
+        digest = sha256(evidence.key).digest()
+
+        def guard() -> None:
+            if self.lease is not lease or self.view().source_key_id != key_id:
+                raise BoundaryUnavailable("Monitor inventory authority changed")
+            current = self.source_evidence()
+            if current.key_id != key_id or not hmac.compare_digest(
+                digest, sha256(current.key).digest()
+            ):
+                raise BoundaryUnavailable("Monitor inventory key changed")
+
+        def approved(path: Path) -> tuple[int, int]:
+            matches = {
+                row.directory.identity
+                for row in self.view().sources
+                if Path(row.directory.path) == path
+            }
+            if len(matches) != 1:
+                raise BoundaryUnavailable(
+                    "Expected an approved metadata inventory root"
+                )
+            return next(iter(matches))
+
+        guard()
+        if not self._inventory_lock.acquire(blocking=False):
+            raise BoundaryUnavailable("A metadata inventory cycle is already active")
+        try:
+            with cache._use((lease.identities, key_id, digest)):
+                cycle = _InventoryCycle(self, evidence, guard, approved, cache)
+                self._active_inventory = cycle
+                try:
+                    yield cycle
+                finally:
+                    self._active_inventory = None
+                    cycle._close()
+        finally:
+            self._inventory_lock.release()
+
+    def _current_inventory(
+        self, inventory: _InventoryCycle | None
+    ) -> _InventoryCycle | None:
+        current = self._active_inventory if inventory is None else inventory
+        if current is not None:
+            if type(current) is not _InventoryCycle:
+                raise BoundaryUnavailable("Expected a current metadata inventory")
+            current._require_writer(self)
+        return current
 
     def view(self, *, _confirm_publication: bool = False) -> RegistryView:
         if not _path_exists(self.root):
@@ -776,12 +837,20 @@ class Registry:
         locator: SourceLocator,
         *,
         observed: bool = False,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
-        source, current = self._current_candidate(view, source_id, locator)
+        source, current = self._current_candidate(
+            view, source_id, locator, inventory=inventory
+        )
         return source, current, self._require_live_source(source, observed=observed)
 
     def _current_candidate(
-        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[ApprovedSource, SourceLocator]:
         source = _source(view, source_id)
         _check_capture_root(source.directory)
@@ -803,11 +872,21 @@ class Registry:
         if not hmac.compare_digest(pinned.key, evidence.key):
             raise LedgerError("Capture source key changed")
         evidence.validate_source_ref(locator.stream_ref)
-        matches = [
-            item
-            for item in ProviderAdapter().discover(candidate._registration)
-            if item.stream_ref == locator.stream_ref
-        ]
+        reader = ProviderAdapter()
+        try:
+            active = self._current_inventory(inventory)
+            discoveries = (
+                reader.discover(candidate._registration)
+                if active is None
+                else reader._inventory_discover(candidate._registration, active)
+            )
+            matches = [
+                item for item in discoveries if item.stream_ref == locator.stream_ref
+            ]
+        except _InventoryUnavailable:
+            raise BoundaryUnavailable(
+                "Complete metadata inventory is unavailable"
+            ) from None
         if len(matches) != 1 or matches[0]._source._path != candidate._path:
             raise BoundaryUnavailable("Expected the unique current native stream")
         current = matches[0]
@@ -835,8 +914,11 @@ class Registry:
         prior: CaptureFrontier | None,
         *,
         arm: bool = False,
+        inventory: _InventoryCycle | None = None,
     ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
-        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        source, current, _ = self._approved_candidate(
+            view, change.source_id, locator, inventory=inventory
+        )
         approval = source.approval
         candidate = current._source
         reader = ProviderAdapter()

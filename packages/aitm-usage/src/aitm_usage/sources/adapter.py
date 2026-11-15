@@ -48,6 +48,8 @@ from .scan import (
     SourceEvidence,
     SourceFrame,
     _discover_sources,
+    _inventory_sources,
+    _InventoryCycle,
     _Snapshot,
     scan,
 )
@@ -308,6 +310,12 @@ class ProviderAdapter:
 
     def discover(self, root: SourceRoot) -> Iterator[SourceLocator]:
         for candidate in _discover_sources(root, root.evidence):
+            yield SourceLocator(replace(candidate, _monitor=True))
+
+    def _inventory_discover(
+        self, root: SourceRoot, inventory: _InventoryCycle
+    ) -> Iterator[SourceLocator]:
+        for candidate in _inventory_sources(root, root.evidence, inventory):
             yield SourceLocator(replace(candidate, _monitor=True))
 
     def _capture_gap_start(

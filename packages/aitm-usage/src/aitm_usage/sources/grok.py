@@ -43,9 +43,12 @@ from .adapter import (
 from .adapter import GrokOrigin as GrokOrigin
 from .scan import (
     _directory,
+    _InventoryCycle,
+    _InventoryUnavailable,
     _nonfinite,
     _open_snapshot,
     _probe,
+    _Snapshot,
     _transcripts,
     _verify_snapshot,
 )
@@ -601,10 +604,15 @@ class GrokAdapter:
         verify_origin: Callable[[Path], GrokOrigin | None],
         verify_receipt: _VerifyReceipt | None = None,
         read_headless: _ReadHeadless | None = None,
+        *,
+        inventory_witness: Callable[[SourceRoot], SourceRef] | None = None,
     ) -> None:
         self.verify_origin = verify_origin
         self.verify_receipt = verify_receipt
         self.read_headless = read_headless
+        self._inventory_witness = inventory_witness
+        self._inventory_verifier = verify_origin
+        self._inventory_parser = object()
 
     def discover(self, root: SourceRoot) -> Iterator[SourceLocator]:
         try:
@@ -629,6 +637,49 @@ class GrokAdapter:
                     )
         except OSError:
             return
+
+    def _inventory_discover(
+        self, root: SourceRoot, inventory: _InventoryCycle, *, profile: object
+    ) -> Iterator[SourceLocator]:
+        witness_for = self._inventory_witness
+        if witness_for is None:
+            raise _InventoryUnavailable(
+                "Grok metadata inventory witness is unavailable"
+            )
+        verifier = self.verify_origin
+        if verifier is not self._inventory_verifier:
+            self._inventory_parser = object()
+            self._inventory_verifier = verifier
+        witness = witness_for(root)
+        root.evidence.validate_source_ref(witness)
+
+        def load(path: Path, _snapshot: _Snapshot) -> GrokOrigin | None:
+            origin = verifier(path)
+            if origin is not None and type(origin) is not GrokOrigin:
+                raise _InventoryUnavailable("Grok metadata origin is unavailable")
+            return origin
+
+        def current() -> bool:
+            return (
+                self.verify_origin is verifier
+                and self._inventory_witness is witness_for
+                and witness_for(root) == witness
+            )
+
+        for path, snapshot, origin in inventory._origins(
+            root.path,
+            root.evidence,
+            ("grok", self._inventory_parser, profile, witness),
+            load,
+            layout_name="updates.jsonl",
+            witness=current,
+        ):
+            lineage = origin.lineage_id if origin is not None else None
+            stream = root.evidence.pseudonymize(
+                "grok-stream" if lineage else "grok-unverified-source",
+                lineage or str(path),
+            )
+            yield SourceLocator(_GrokSource(path, origin, root, snapshot, stream))
 
     def read_delta(
         self, locator: SourceLocator, cursor: StreamCursor | None
