@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -58,3 +58,7 @@ The candidate passed exact signed hosted Test and the unchanged policy. [Signed 
 ## Independent source hold and exact recovery
 
 The first source review held. The recovery candidate binds the live pilot to its CI head and tree, documents the exact base and test inventory, and proves issuer activation, reachability and private refusal under the existing gates. [Hold](plan/isolated-issuer-independent-source-r1.md) · [Exact retest](plan/isolated-issuer-local-recovery.json).
+
+## Signed recovery Test
+
+The corrected candidate passed exact signed hosted Test and the unchanged policy. [Signed receipt](plan/isolated-issuer-signed-hosted-receipt-r2.json) · [Replay](plan/isolated-issuer-hosted-policy-replay-r2.json).
