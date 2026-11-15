@@ -243,3 +243,11 @@ def test_canonical_creation_drift_during_readback_prevents_green(monkeypatch):
     monkeypatch.setattr(provider, "pages", drift)
     monkeypatch.setattr(shadow, "verify_artifact", lambda *args: {"id": 3})
     assert observe(provider)["status"] == "stale"
+
+
+def test_timely_active_run_past_slot_grace_remains_pending():
+    provider = Provider()
+    provider.run.update(status="in_progress", conclusion=None)
+    provider.job.update(status="in_progress", conclusion=None)
+    now = datetime.fromisoformat("2026-11-14T04:03:00Z")
+    assert shadow.inspect(provider, now=now)["status"] == "pending"

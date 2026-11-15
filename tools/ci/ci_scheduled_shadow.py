@@ -293,6 +293,13 @@ def inspect(github, *, expected=None, event="schedule", now=None):
         "current_verified": False,
         "gaps": [],
     }
+    if run:
+        result["observed_run"] = {
+            "id": run["id"],
+            "attempt": run["run_attempt"],
+            "sha": run["head_sha"],
+            "created_at": run["created_at"],
+        }
     deadline = slot + timedelta(minutes=45)
     if expected and (not run or expected != (run["id"], run["run_attempt"])):
         result["status"] = "stale"
@@ -328,7 +335,7 @@ def inspect(github, *, expected=None, event="schedule", now=None):
             result.update(status="red", failed_job=job["id"])
         elif successful(job) and successful(run) and successful(suite):
             result.update(status="green", artifact=verify_artifact(github, run, job))
-        elif run["status"] == "completed" or (event == "schedule" and now >= deadline):
+        elif run["status"] == "completed":
             result.update(status="incomplete")
             result["gaps"].append("scheduled completion unavailable")
     except EVIDENCE_ERRORS as exc:
