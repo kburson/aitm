@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -50,3 +50,7 @@ The authorized confirmation passed at 3.8 implementation hours. The delivered #3
 ## Local Test and real pilot
 
 The exact local candidate passed locked validation and the real isolated macOS Grok scope read and revocation test. [Local evidence](plan/isolated-issuer-local-test.json).
+
+## Signed hosted Test
+
+The candidate passed exact signed hosted Test and the unchanged policy. [Signed receipt](plan/isolated-issuer-signed-hosted-receipt.json) · [Policy replay](plan/isolated-issuer-hosted-policy-replay.json).
