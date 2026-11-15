@@ -1,0 +1,12 @@
+remote: error: GH013: Repository rule violations found for refs/heads/trunk.        
+remote: Review all repository rules at https://github.com/kburson/aitm-stl-rehearsal-291/rules?ref=refs%2Fheads%2Ftrunk        
+remote: 
+remote: - Cannot update this protected ref.        
+remote: 
+remote: - When rebase and squash merges are not allowed, a merge commit must be used.        
+remote: 
+remote: - Required status check "fixture-ci" is failing.        
+remote: 
+To github.com:kburson/aitm-stl-rehearsal-291.git
+ ! [remote rejected] 342a7ec0e63dc5d271d93dc52207c7bb28506dc5 -> trunk (push declined due to repository rule violations)
+error: failed to push some refs to 'github.com:kburson/aitm-stl-rehearsal-291.git'

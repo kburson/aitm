@@ -1,0 +1,38 @@
+{
+  "branch_protection_mutation": null,
+  "explicit_operator_simulation_acknowledged": true,
+  "fixture_attestation": "local projection of exact disposable GitHub run metadata",
+  "fresh_green_left_hold_active": true,
+  "nomination_pr": 1,
+  "old_green": {
+    "conclusion": "success",
+    "head_sha": "0dcc847bc3936119fe2983b751546ba49d0c2c63",
+    "id": 43718360953,
+    "run_attempt": 1,
+    "run_number": 1,
+    "run_started_at": "2026-11-15T13:19:06Z",
+    "workflow_id": 419156696
+  },
+  "old_green_rejected": true,
+  "operator_id": 1082467,
+  "red": {
+    "conclusion": "failure",
+    "head_sha": "9a3962d81309e44f08a522b155bf3f83078ec640",
+    "id": 43718383807,
+    "run_attempt": 1,
+    "run_number": 2,
+    "run_started_at": "2026-11-15T13:19:21Z",
+    "workflow_id": 419156696
+  },
+  "repaired_green": {
+    "conclusion": "success",
+    "head_sha": "d42a06b6ff4579602f15ba354e5fc61b6482dee3",
+    "id": 43718852472,
+    "run_attempt": 1,
+    "run_number": 6,
+    "run_started_at": "2026-11-15T13:24:36Z",
+    "workflow_id": 419156696
+  },
+  "repaired_sha": "d42a06b6ff4579602f15ba354e5fc61b6482dee3",
+  "scope": "disposable shadow replay with provider fixture outcomes as inputs"
+}

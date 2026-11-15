@@ -1,0 +1,22 @@
+{
+  "merge": "d42a06b6ff4579602f15ba354e5fc61b6482dee3",
+  "merged_at": "2026-11-15T13:24:34Z",
+  "nomination": {
+    "attempt": 1,
+    "base": "9a3962d81309e44f08a522b155bf3f83078ec640",
+    "head": "d094a105a01b771a063bb856eb8c36de93bc3ade",
+    "hold_ruleset": 27314377,
+    "normal_ruleset": 27314376,
+    "operator_id": 1082467,
+    "ordinary_probe": 43718586152,
+    "pr": 1,
+    "repository": "kburson/aitm-stl-rehearsal-291",
+    "run_id": 43718593693,
+    "target": "trunk",
+    "tested": "c64d14e0dd982f141e3a7a55f22c76824e20a05c",
+    "tree": "bb1b9a683e1c3cf4668a3bdcdcce99c24ee1115b"
+  },
+  "operator_id": 1082467,
+  "repair_review_sha256": "2b425191917d72dc256bf9bd62c336fc0d0ca1dd974d65f1a667d85e0bc531b9",
+  "scope": "simulated operator on disposable target"
+}

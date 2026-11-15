@@ -1,0 +1,42 @@
+[
+  {
+    "ruleset_id": 27314377,
+    "ruleset_source": "kburson/aitm-stl-rehearsal-291",
+    "ruleset_source_type": "Repository",
+    "type": "update"
+  },
+  {
+    "parameters": {
+      "allowed_merge_methods": [
+        "merge"
+      ],
+      "dismiss_stale_reviews_on_push": true,
+      "require_code_owner_review": false,
+      "require_extra_approval_for_unattributed_changes": true,
+      "require_last_push_approval": false,
+      "required_approving_review_count": 0,
+      "required_review_thread_resolution": false,
+      "required_reviewers": []
+    },
+    "ruleset_id": 27314376,
+    "ruleset_source": "kburson/aitm-stl-rehearsal-291",
+    "ruleset_source_type": "Repository",
+    "type": "pull_request"
+  },
+  {
+    "parameters": {
+      "do_not_enforce_on_create": false,
+      "required_status_checks": [
+        {
+          "context": "fixture-ci",
+          "integration_id": 15368
+        }
+      ],
+      "strict_required_status_checks_policy": true
+    },
+    "ruleset_id": 27314376,
+    "ruleset_source": "kburson/aitm-stl-rehearsal-291",
+    "ruleset_source_type": "Repository",
+    "type": "required_status_checks"
+  }
+]

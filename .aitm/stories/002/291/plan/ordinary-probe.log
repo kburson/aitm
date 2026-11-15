@@ -1,0 +1,224 @@
+ordinary	Set up job	﻿2026-11-15T13:21:38.2885175Z Current runner version: '2.338.2'
+ordinary	Set up job	2026-11-15T13:21:38.2907313Z ##[group]Runner Image Provisioner
+ordinary	Set up job	2026-11-15T13:21:38.2908025Z Hosted Compute Agent
+ordinary	Set up job	2026-11-15T13:21:38.2908578Z Version: 20261103.629
+ordinary	Set up job	2026-11-15T13:21:38.2909292Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+ordinary	Set up job	2026-11-15T13:21:38.2909942Z Build Date: 2026-11-03T17:26:59Z
+ordinary	Set up job	2026-11-15T13:21:38.2910566Z Worker ID: {ef1cab62-2c47-4534-9ffe-e7d5f83a1df8}
+ordinary	Set up job	2026-11-15T13:21:38.2911136Z Region: westus2
+ordinary	Set up job	2026-11-15T13:21:38.2911619Z Cloud: Azure
+ordinary	Set up job	2026-11-15T13:21:38.2912101Z ##[endgroup]
+ordinary	Set up job	2026-11-15T13:21:38.2913250Z ##[group]Operating System
+ordinary	Set up job	2026-11-15T13:21:38.2913822Z Ubuntu
+ordinary	Set up job	2026-11-15T13:21:38.2914254Z 26.04.1
+ordinary	Set up job	2026-11-15T13:21:38.2914700Z LTS
+ordinary	Set up job	2026-11-15T13:21:38.2915165Z ##[endgroup]
+ordinary	Set up job	2026-11-15T13:21:38.2915615Z ##[group]Runner Image
+ordinary	Set up job	2026-11-15T13:21:38.2916140Z Image: ubuntu-26.04
+ordinary	Set up job	2026-11-15T13:21:38.2916607Z Version: 20261111.196.1
+ordinary	Set up job	2026-11-15T13:21:38.2917445Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+ordinary	Set up job	2026-11-15T13:21:38.2918951Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+ordinary	Set up job	2026-11-15T13:21:38.2920096Z ##[endgroup]
+ordinary	Set up job	2026-11-15T13:21:38.2921132Z ##[group]GITHUB_TOKEN Permissions
+ordinary	Set up job	2026-11-15T13:21:38.2922741Z Contents: write
+ordinary	Set up job	2026-11-15T13:21:38.2923237Z Metadata: read
+ordinary	Set up job	2026-11-15T13:21:38.2924211Z PullRequests: write
+ordinary	Set up job	2026-11-15T13:21:38.2924698Z ##[endgroup]
+ordinary	Set up job	2026-11-15T13:21:38.2926435Z Secret source: Actions
+ordinary	Set up job	2026-11-15T13:21:38.2927310Z Cache mode: write
+ordinary	Set up job	2026-11-15T13:21:38.2927912Z Prepare workflow directory
+ordinary	Set up job	2026-11-15T13:21:38.3342332Z Prepare all required actions
+ordinary	Set up job	2026-11-15T13:21:38.3395582Z Getting action download info
+ordinary	Set up job	2026-11-15T13:21:38.6725323Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+ordinary	Set up job	2026-11-15T13:21:38.8313100Z Complete job name: ordinary
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:21:38.9017695Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9018545Z with:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9018922Z   persist-credentials: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9019551Z   repository: kburson/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9023025Z   token: ***
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9023393Z   ssh-strict: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9023768Z   ssh-user: git
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9024127Z   clean: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9024513Z   sparse-checkout-cone-mode: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9024962Z   fetch-depth: 1
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9025328Z   fetch-tags: false
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9025708Z   show-progress: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9026091Z   lfs: false
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9026448Z   submodules: false
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9026836Z   set-safe-directory: true
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9027270Z   allow-unsafe-pr-checkout: false
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9027842Z env:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9031237Z   GH_TOKEN: ***
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9031598Z   PULL: 2
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9031999Z   TARGET_SHA: 9a3962d81309e44f08a522b155bf3f83078ec640
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9032535Z   HOLD_ID: 27314377
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:38.9032907Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1443368Z Syncing repository: kburson/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1445292Z ##[group]Getting Git version info
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1446229Z Working directory is '/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291'
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1447340Z [command]/usr/bin/git version
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1454514Z git version 2.56.1
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1472331Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1482232Z Temporarily overriding HOME='/home/runner/work/_temp/72cbf1f4-a188-40a5-b827-0fbb617c7bf0' before making global git config changes
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1484340Z Adding repository directory to the temporary git global config as a safe directory
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1487408Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1541038Z Deleting the contents of '/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291'
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1543138Z ##[group]Determining repository object format
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1544468Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1545086Z ##[group]Initializing the repository
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1548424Z [command]/usr/bin/git init /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1637700Z hint: Using 'master' as the name for the initial branch. This default branch name
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1639004Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1640310Z hint: to use in all of your new repositories, which will suppress this warning,
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1641131Z hint: call:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1641582Z hint:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1642121Z hint: 	git config --global init.defaultBranch <name>
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1642754Z hint:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1643328Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1644186Z hint: 'development'. The just-created branch can be renamed via this command:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1644975Z hint:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1645608Z hint: 	git branch -m <name>
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1646310Z hint:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1647215Z hint: Disable this message with "git config set advice.defaultBranchName false"
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1648792Z Initialized empty Git repository in /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1657452Z [command]/usr/bin/git remote add origin https://github.com/kburson/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1704213Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1705195Z ##[group]Disabling automatic garbage collection
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1706534Z [command]/usr/bin/git config --local gc.auto 0
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1735912Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1737160Z ##[group]Setting up auth
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1740759Z Removing SSH command configuration
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1741784Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.1770922Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2166243Z Removing HTTP extra header
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2171557Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2203736Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2436813Z Removing includeIf entries pointing to credentials config files
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2441780Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2478743Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2725031Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2760273Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path /home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2788985Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2820340Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2847617Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2873536Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2874448Z ##[group]Fetching the repository
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.2878833Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +9a3962d81309e44f08a522b155bf3f83078ec640:refs/remotes/origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6084502Z From https://github.com/kburson/aitm-stl-rehearsal-291
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6085756Z  * [new ref]         9a3962d81309e44f08a522b155bf3f83078ec640 -> origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6093426Z [command]/usr/bin/git branch --list --remote origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6118709Z   origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6126019Z [command]/usr/bin/git rev-parse refs/remotes/origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6148118Z 9a3962d81309e44f08a522b155bf3f83078ec640
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6152236Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6153179Z ##[group]Determining the checkout info
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6154245Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6156790Z [command]/usr/bin/git sparse-checkout disable
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6202944Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6277069Z ##[group]Checking out the ref
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6280437Z [command]/usr/bin/git checkout --progress --force -B trunk refs/remotes/origin/trunk
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6600995Z Switched to a new branch 'trunk'
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6605610Z branch 'trunk' set up to track 'origin/trunk'.
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6611442Z ##[endgroup]
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6656663Z [command]/usr/bin/git log -1 --format=%H
+ordinary	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:39.6681277Z 9a3962d81309e44f08a522b155bf3f83078ec640
+ordinary	Exercise the ordinary role against the disposable target	﻿2026-11-15T13:21:39.6865666Z ##[group]Run set -euo pipefail
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6866222Z ^[[36;1mset -euo pipefail^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6866768Z ^[[36;1mtest "$GITHUB_REPOSITORY" = kburson/aitm-stl-rehearsal-291^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6867483Z ^[[36;1m[[ "$PULL" =~ ^[0-9]+$ && "$HOLD_ID" =~ ^[0-9]+$ && "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6868073Z ^[[36;1mroute="repos/$GITHUB_REPOSITORY"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6868674Z ^[[36;1mtest "$(gh api "$route/branches/trunk" --jq .commit.sha)" = "$TARGET_SHA"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6869644Z ^[[36;1mheading=$(gh api "$route/pulls/$PULL" --jq .head.sha)^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6870288Z ^[[36;1mtest "$(gh api "$route/pulls/$PULL" --jq .base.ref)" = trunk^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6870855Z ^[[36;1mgit fetch origin "pull/$PULL/head"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6871363Z ^[[36;1mtest "$(git rev-parse FETCH_HEAD)" = "$heading"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6871839Z ^[[36;1m^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6872308Z ^[[36;1mgit push origin "$heading:refs/heads/agent-proof-$GITHUB_RUN_ID"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6873041Z ^[[36;1mif git push origin "$heading:refs/heads/trunk" > push.log 2>&1; then^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6873668Z ^[[36;1m  echo "Held ref accepted direct push"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6874140Z ^[[36;1m  exit 1^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6874480Z ^[[36;1mfi^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6874813Z ^[[36;1mcat push.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6875290Z ^[[36;1mgrep -E 'GH013|protected branch hook declined' push.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6876137Z ^[[36;1mif gh api "$route/pulls/$PULL/merge" --method PUT -f sha="$heading" -f merge_method=merge > merge.log 2>&1; then^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6876912Z ^[[36;1m  echo "Held ref accepted ordinary merge"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6877372Z ^[[36;1m  exit 1^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6877710Z ^[[36;1mfi^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6878042Z ^[[36;1mcat merge.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6878441Z ^[[36;1mgrep -Ei 'rule|protect|405' merge.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6879301Z ^[[36;1mif gh api "$route/rulesets/$HOLD_ID" --method PUT -f enforcement=disabled > admin.log 2>&1; then^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6880103Z ^[[36;1m  echo "Ordinary role changed the hold"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6880754Z ^[[36;1m  exit 1^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6881248Z ^[[36;1mfi^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6881732Z ^[[36;1mcat admin.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6882320Z ^[[36;1mgrep -E 'HTTP (403|404)' admin.log^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6883185Z ^[[36;1mtest "$(gh api "$route/branches/trunk" --jq .commit.sha)" = "$TARGET_SHA"^[[0m
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6932766Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6933522Z env:
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6936815Z   GH_TOKEN: ***
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6937168Z   PULL: 2
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6937549Z   TARGET_SHA: 9a3962d81309e44f08a522b155bf3f83078ec640
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6938024Z   HOLD_ID: 27314377
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:39.6938366Z ##[endgroup]
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:41.4331252Z From https://github.com/kburson/aitm-stl-rehearsal-291
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:41.4332083Z  * branch            refs/pull/2/head -> FETCH_HEAD
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6593146Z remote: 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6594194Z remote: Create a pull request for 'agent-proof-43718586152' on GitHub by visiting:        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6595305Z remote:      https://github.com/kburson/aitm-stl-rehearsal-291/pull/new/agent-proof-43718586152        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6595952Z remote: 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6599434Z To https://github.com/kburson/aitm-stl-rehearsal-291
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:42.6600440Z  * [new branch]      fafa34799c4b3f546813a2ef66a37a8ec36028fe -> agent-proof-43718586152
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7445467Z remote: error: GH013: Repository rule violations found for refs/heads/trunk.        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7446779Z remote: Review all repository rules at https://github.com/kburson/aitm-stl-rehearsal-291/rules?ref=refs%2Fheads%2Ftrunk        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7447312Z remote: 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7447638Z remote: - Cannot update this protected ref.        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7447943Z remote: 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7448287Z remote: - When rebase and squash merges are not allowed, a merge commit must be used.        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7449339Z remote: 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7449899Z To https://github.com/kburson/aitm-stl-rehearsal-291
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7450888Z  ! [remote rejected] fafa34799c4b3f546813a2ef66a37a8ec36028fe -> trunk (push declined due to repository rule violations)
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7451721Z error: failed to push some refs to 'https://github.com/kburson/aitm-stl-rehearsal-291'
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:49.7462335Z remote: error: GH013: Repository rule violations found for refs/heads/trunk.        
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3533046Z {"message":"Repository rule violations found\n\nCannot update this protected ref.\n\n","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Repository rule violations found
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3534136Z 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3534278Z Cannot update this protected ref.
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3534447Z 
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3534545Z  (HTTP 405)
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3548631Z {"message":"Repository rule violations found\n\nCannot update this protected ref.\n\n","documentation_url":"https://docs.github.com/rest/pulls/pulls#merge-a-pull-request","status":"405"}gh: Repository rule violations found
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3549901Z Cannot update this protected ref.
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.3554739Z  (HTTP 405)
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.5823319Z {"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/repos/rules#update-a-repository-ruleset","status":"403"}gh: Resource not accessible by integration (HTTP 403)
+ordinary	Exercise the ordinary role against the disposable target	2026-11-15T13:21:51.5837796Z {"message":"Resource not accessible by integration","documentation_url":"https://docs.github.com/rest/repos/rules#update-a-repository-ruleset","status":"403"}gh: Resource not accessible by integration (HTTP 403)
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:21:51.8793966Z Post job cleanup.
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9526464Z [command]/usr/bin/git version
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9601399Z git version 2.56.1
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9631452Z Temporarily overriding HOME='/home/runner/work/_temp/59b6750d-3373-4cc4-93dc-e002c784cf55' before making global git config changes
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9632669Z Adding repository directory to the temporary git global config as a safe directory
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9635625Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9671815Z Removing SSH command configuration
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9680137Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9712891Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9973053Z Removing HTTP extra header
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:51.9978458Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0014000Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0272232Z Removing includeIf entries pointing to credentials config files
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0277787Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0304371Z includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0305337Z includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0306139Z includeif.gitdir:/github/workspace/.git.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0306610Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0313283Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0335795Z /home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0344988Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-a23558bb\-b6c3\-4f0d\-ad6d\-db3aeef821a1\.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0375953Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0396850Z /home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0404738Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-a23558bb\-b6c3\-4f0d\-ad6d\-db3aeef821a1\.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0438781Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0458522Z /github/runner_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0464837Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-a23558bb\-b6c3\-4f0d\-ad6d\-db3aeef821a1\.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0494201Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0513733Z /github/runner_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0519470Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-a23558bb\-b6c3\-4f0d\-ad6d\-db3aeef821a1\.config
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0548414Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+ordinary	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:52.0789633Z Removing credentials config '/home/runner/work/_temp/git-credentials-a23558bb-b6c3-4f0d-ad6d-db3aeef821a1.config'
+ordinary	Complete job	﻿2026-11-15T13:21:52.0977243Z Cleaning up orphan processes

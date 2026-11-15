@@ -1,0 +1,178 @@
+fixture-ci	Set up job	﻿2026-11-15T13:21:42.7830198Z Current runner version: '2.338.2'
+fixture-ci	Set up job	2026-11-15T13:21:42.7856054Z ##[group]Runner Image Provisioner
+fixture-ci	Set up job	2026-11-15T13:21:42.7857124Z Hosted Compute Agent
+fixture-ci	Set up job	2026-11-15T13:21:42.7857815Z Version: 20261103.629
+fixture-ci	Set up job	2026-11-15T13:21:42.7858564Z Commit: 15dbd9ccb5dbf34fae002b6ed1a2670f52df37bc
+fixture-ci	Set up job	2026-11-15T13:21:42.7859487Z Build Date: 2026-11-03T17:26:59Z
+fixture-ci	Set up job	2026-11-15T13:21:42.7860276Z Worker ID: {1a89064d-7180-4c91-90c2-68775dd02535}
+fixture-ci	Set up job	2026-11-15T13:21:42.7861341Z Region: westus3
+fixture-ci	Set up job	2026-11-15T13:21:42.7861992Z Cloud: Azure
+fixture-ci	Set up job	2026-11-15T13:21:42.7862618Z ##[endgroup]
+fixture-ci	Set up job	2026-11-15T13:21:42.7864399Z ##[group]Operating System
+fixture-ci	Set up job	2026-11-15T13:21:42.7865138Z Ubuntu
+fixture-ci	Set up job	2026-11-15T13:21:42.7865770Z 26.04.1
+fixture-ci	Set up job	2026-11-15T13:21:42.7866525Z LTS
+fixture-ci	Set up job	2026-11-15T13:21:42.7867168Z ##[endgroup]
+fixture-ci	Set up job	2026-11-15T13:21:42.7867822Z ##[group]Runner Image
+fixture-ci	Set up job	2026-11-15T13:21:42.7868469Z Image: ubuntu-26.04
+fixture-ci	Set up job	2026-11-15T13:21:42.7869104Z Version: 20261111.196.1
+fixture-ci	Set up job	2026-11-15T13:21:42.7870351Z Included Software: https://github.com/actions/runner-images/blob/ubuntu26/20261111.196/images/ubuntu/Ubuntu2604-Readme.md
+fixture-ci	Set up job	2026-11-15T13:21:42.7872635Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu26%2F20261111.196
+fixture-ci	Set up job	2026-11-15T13:21:42.7873809Z ##[endgroup]
+fixture-ci	Set up job	2026-11-15T13:21:42.7875240Z ##[group]GITHUB_TOKEN Permissions
+fixture-ci	Set up job	2026-11-15T13:21:42.7877441Z Contents: read
+fixture-ci	Set up job	2026-11-15T13:21:42.7877981Z Metadata: read
+fixture-ci	Set up job	2026-11-15T13:21:42.7878551Z ##[endgroup]
+fixture-ci	Set up job	2026-11-15T13:21:42.7880401Z Secret source: Actions
+fixture-ci	Set up job	2026-11-15T13:21:42.7881548Z Cache mode: write
+fixture-ci	Set up job	2026-11-15T13:21:42.7882424Z Prepare workflow directory
+fixture-ci	Set up job	2026-11-15T13:21:42.8178217Z Prepare all required actions
+fixture-ci	Set up job	2026-11-15T13:21:42.8229831Z Getting action download info
+fixture-ci	Set up job	2026-11-15T13:21:43.1016478Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+fixture-ci	Set up job	2026-11-15T13:21:43.3410982Z Complete job name: fixture-ci
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:21:43.4113105Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4113949Z with:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4114342Z   persist-credentials: false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4114798Z   repository: kburson/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4118139Z   token: ***
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4118496Z   ssh-strict: true
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4118897Z   ssh-user: git
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4119253Z   clean: true
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4119622Z   sparse-checkout-cone-mode: true
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4120045Z   fetch-depth: 1
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4120399Z   fetch-tags: false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4121077Z   show-progress: true
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4121445Z   lfs: false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4121786Z   submodules: false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4122153Z   set-safe-directory: true
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4122566Z   allow-unsafe-pr-checkout: false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.4123209Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8057053Z Syncing repository: kburson/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8059209Z ##[group]Getting Git version info
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8060591Z Working directory is '/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291'
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8061895Z [command]/usr/bin/git version
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8066846Z git version 2.56.1
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8085731Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8094473Z Temporarily overriding HOME='/home/runner/work/_temp/13b27b24-7aa8-4ca8-b2ff-4b809bf56531' before making global git config changes
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8096627Z Adding repository directory to the temporary git global config as a safe directory
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8100192Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8208598Z Deleting the contents of '/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291'
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8211867Z ##[group]Determining repository object format
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8213600Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8214718Z ##[group]Initializing the repository
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8218509Z [command]/usr/bin/git init /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8318215Z hint: Using 'master' as the name for the initial branch. This default branch name
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8320378Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8321985Z hint: to use in all of your new repositories, which will suppress this warning,
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8323289Z hint: call:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8324045Z hint:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8324925Z hint: 	git config --global init.defaultBranch <name>
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8325970Z hint:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8326979Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8328436Z hint: 'development'. The just-created branch can be renamed via this command:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8329665Z hint:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8330418Z hint: 	git branch -m <name>
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8331381Z hint:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8332359Z hint: Disable this message with "git config set advice.defaultBranchName false"
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8335526Z Initialized empty Git repository in /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8342088Z [command]/usr/bin/git remote add origin https://github.com/kburson/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8420184Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8421832Z ##[group]Disabling automatic garbage collection
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8424535Z [command]/usr/bin/git config --local gc.auto 0
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8466901Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8468299Z ##[group]Setting up auth
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8469261Z Removing SSH command configuration
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8474041Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8536106Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8993158Z Removing HTTP extra header
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.8998395Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9027891Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9262928Z Removing includeIf entries pointing to credentials config files
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9264499Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9294080Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9534531Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9569342Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path /home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9598326Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9630059Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9667928Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9695867Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9696602Z ##[group]Fetching the repository
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:43.9701707Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +c64d14e0dd982f141e3a7a55f22c76824e20a05c:refs/remotes/pull/1/merge
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3288688Z From https://github.com/kburson/aitm-stl-rehearsal-291
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3290171Z  * [new ref]         c64d14e0dd982f141e3a7a55f22c76824e20a05c -> pull/1/merge
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3292924Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3294011Z ##[group]Determining the checkout info
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3295244Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3298595Z [command]/usr/bin/git sparse-checkout disable
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3345045Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3371751Z ##[group]Checking out the ref
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3374825Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/1/merge
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3419687Z Note: switching to 'refs/remotes/pull/1/merge'.
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3420363Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3421118Z You are in 'detached HEAD' state. You can look around, make experimental
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3422103Z changes and commit them, and you can discard any commits you make in this
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3422947Z state without impacting any branches by switching back to a branch.
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3423432Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3423751Z If you want to create a new branch to retain commits you create, you may
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3424463Z do so (now or later) by using -c with the switch command. Example:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3424871Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3425062Z   git switch -c <new-branch-name>
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3425354Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3425543Z Or undo this operation with:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3425818Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3425990Z   git switch -
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3426202Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3426546Z Turn off this advice by setting config variable advice.detachedHead to false
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3427013Z 
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3427583Z HEAD is now at c64d14e Merge d094a105a01b771a063bb856eb8c36de93bc3ade into 9a3962d81309e44f08a522b155bf3f83078ec640
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3436187Z ##[endgroup]
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3477838Z [command]/usr/bin/git log -1 --format=%H
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3502056Z c64d14e0dd982f141e3a7a55f22c76824e20a05c
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3509552Z ##[group]Removing auth
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3510174Z Removing SSH command configuration
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3512703Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3539778Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3775086Z Removing HTTP extra header
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3777769Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.3805955Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4039158Z Removing includeIf entries pointing to credentials config files
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4041417Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4064115Z includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4066285Z includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4067878Z includeif.gitdir:/github/workspace/.git.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4069044Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4073734Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4094034Z /home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4104484Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-f7d40791\-cdd2\-4ff9\-bcee\-2696bca7cb0a\.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4136708Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4157452Z /home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.4166532Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-f7d40791\-cdd2\-4ff9\-bcee\-2696bca7cb0a\.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5147741Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5174619Z /github/runner_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5182028Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-f7d40791\-cdd2\-4ff9\-bcee\-2696bca7cb0a\.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5215064Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5237300Z /github/runner_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5245027Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-f7d40791\-cdd2\-4ff9\-bcee\-2696bca7cb0a\.config
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5496469Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5738297Z Removing credentials config '/home/runner/work/_temp/git-credentials-f7d40791-cdd2-4ff9-bcee-2696bca7cb0a.config'
+fixture-ci	Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.5745853Z ##[endgroup]
+fixture-ci	Run grep -Fxq 'fixture=healthy' fixture.env	﻿2026-11-15T13:21:44.5966222Z ##[group]Run grep -Fxq 'fixture=healthy' fixture.env
+fixture-ci	Run grep -Fxq 'fixture=healthy' fixture.env	2026-11-15T13:21:44.5967665Z ^[[36;1mgrep -Fxq 'fixture=healthy' fixture.env^[[0m
+fixture-ci	Run grep -Fxq 'fixture=healthy' fixture.env	2026-11-15T13:21:44.6017738Z shell: /usr/bin/bash -e {0}
+fixture-ci	Run grep -Fxq 'fixture=healthy' fixture.env	2026-11-15T13:21:44.6018769Z ##[endgroup]
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	﻿2026-11-15T13:21:44.6413175Z Post job cleanup.
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7118880Z [command]/usr/bin/git version
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7158044Z git version 2.56.1
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7189036Z Temporarily overriding HOME='/home/runner/work/_temp/1dfab4b3-62f9-48a4-9338-08f430dd7abd' before making global git config changes
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7193425Z Adding repository directory to the temporary git global config as a safe directory
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7197278Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/aitm-stl-rehearsal-291/aitm-stl-rehearsal-291
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7226347Z Removing SSH command configuration
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7231453Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7264782Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7537908Z Removing HTTP extra header
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7544945Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7597899Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7852332Z Removing includeIf entries pointing to credentials config files
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7856592Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+fixture-ci	Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1	2026-11-15T13:21:44.7887046Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+fixture-ci	Complete job	﻿2026-11-15T13:21:44.8274700Z Cleaning up orphan processes

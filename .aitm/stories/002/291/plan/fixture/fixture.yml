@@ -1,0 +1,16 @@
+name: Rehearsal fixture
+on:
+  push:
+    branches: [trunk]
+  pull_request:
+    branches: [trunk]
+permissions:
+  contents: read
+jobs:
+  fixture-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: grep -Fxq 'fixture=healthy' fixture.env

@@ -1,0 +1,15 @@
+{
+  "repository": "kburson/aitm-stl-rehearsal-291",
+  "pr": 1,
+  "target": "trunk",
+  "base": "9a3962d81309e44f08a522b155bf3f83078ec640",
+  "head": "d094a105a01b771a063bb856eb8c36de93bc3ade",
+  "tested": "c64d14e0dd982f141e3a7a55f22c76824e20a05c",
+  "tree": "bb1b9a683e1c3cf4668a3bdcdcce99c24ee1115b",
+  "run_id": 43718593693,
+  "attempt": 1,
+  "ordinary_probe": 43718586152,
+  "operator_id": 1082467,
+  "hold_ruleset": 27314377,
+  "normal_ruleset": 27314376
+}

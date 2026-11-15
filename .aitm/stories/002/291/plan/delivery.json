@@ -1,0 +1,10 @@
+{
+  "issue": 291,
+  "normal_rules_after_release": "plan/effective-after-release.json",
+  "recovery": "plan/recovery-replay.json",
+  "repair": "plan/verified-repair.json",
+  "repository": "kburson/aitm-stl-rehearsal-291",
+  "review": "plan/hold-review.md",
+  "review_sha256": "fffa6d01108c25d31d9cfa3b9791a73a5540717c6c899ba4ab242f5c842cd6a5",
+  "status": "accepted"
+}

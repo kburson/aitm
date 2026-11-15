@@ -1,0 +1,61 @@
+name: Ordinary role probe
+on:
+  workflow_dispatch:
+    inputs:
+      pull:
+        required: true
+        type: string
+      target_sha:
+        required: true
+        type: string
+      hold_id:
+        required: true
+        type: string
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  ordinary:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PULL: ${{ inputs.pull }}
+      TARGET_SHA: ${{ inputs.target_sha }}
+      HOLD_ID: ${{ inputs.hold_id }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: true
+      - name: Exercise the ordinary role against the disposable target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = kburson/aitm-stl-rehearsal-291
+          [[ "$PULL" =~ ^[0-9]+$ && "$HOLD_ID" =~ ^[0-9]+$ && "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          route="repos/$GITHUB_REPOSITORY"
+          test "$(gh api "$route/branches/trunk" --jq .commit.sha)" = "$TARGET_SHA"
+          heading=$(gh api "$route/pulls/$PULL" --jq .head.sha)
+          test "$(gh api "$route/pulls/$PULL" --jq .base.ref)" = trunk
+          git fetch origin "pull/$PULL/head"
+          test "$(git rev-parse FETCH_HEAD)" = "$heading"
+
+          git push origin "$heading:refs/heads/agent-proof-$GITHUB_RUN_ID"
+          if git push origin "$heading:refs/heads/trunk" > push.log 2>&1; then
+            echo "Held ref accepted direct push"
+            exit 1
+          fi
+          cat push.log
+          grep -E 'GH013|protected branch hook declined' push.log
+          if gh api "$route/pulls/$PULL/merge" --method PUT -f sha="$heading" -f merge_method=merge > merge.log 2>&1; then
+            echo "Held ref accepted ordinary merge"
+            exit 1
+          fi
+          cat merge.log
+          grep -Ei 'rule|protect|405' merge.log
+          if gh api "$route/rulesets/$HOLD_ID" --method PUT -f enforcement=disabled > admin.log 2>&1; then
+            echo "Ordinary role changed the hold"
+            exit 1
+          fi
+          cat admin.log
+          grep -E 'HTTP (403|404)' admin.log
+          test "$(gh api "$route/branches/trunk" --jq .commit.sha)" = "$TARGET_SHA"
