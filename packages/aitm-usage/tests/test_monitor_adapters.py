@@ -440,6 +440,8 @@ def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, so
     rows[0]["payload"]["cli_version"] = "0.167.0-ALPHA.3.2"
     _write(path, rows)
     (alias,) = adapter.discover(root)
+    alias_frames = scan(alias._source, None, CUTOFF)
+    assert alias_frames.provider_checkpoint.client_version is pin
     assert alias._source._native_surface is None
     result = adapter.read_delta(alias, None)
     assert result.cursor is None
@@ -522,6 +524,52 @@ def test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn(
     assert any(
         item.code is DiagnosticCode.BOUNDARY_UNVERIFIED for item in result.diagnostics
     )
+
+
+@pytest.mark.parametrize("resume", [False, True], ids=["cold", "restart"])
+def test_linux_codex_malformed_frame_holds_later_verified_turn(
+    monkeypatch, source, resume
+):
+    module, adapter, root = _adapter(
+        monkeypatch, source, system="Linux", arch="aarch64"
+    )
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:22])
+    prior = None
+    if resume:
+        (locator,) = adapter.discover(root)
+        prior = adapter.read_delta(locator, None).cursor
+        assert prior is not None
+
+    with path.open("ab") as stream:
+        stream.write(b"{malformed\n")
+    if resume:
+        (locator,) = adapter.discover(root)
+        tail = adapter.read_delta(locator, prior)
+        assert tail.cursor == prior
+        assert not tail.observations
+        assert any(
+            item.code is DiagnosticCode.MALFORMED_USAGE for item in tail.diagnostics
+        )
+    with path.open("ab") as stream:
+        for row in rows[22:]:
+            stream.write(json.dumps(row).encode() + b"\n")
+
+    (locator,) = adapter.discover(root)
+    result = module.ProviderAdapter().read_delta(locator, prior)
+    assert result.cursor == prior
+    assert not result.observations
+    assert any(
+        item.code is DiagnosticCode.MALFORMED_USAGE for item in result.diagnostics
+    )
+
+    _write(path, rows)
+    (repaired,) = adapter.discover(root)
+    confirmed = module.ProviderAdapter().read_delta(repaired, prior)
+    assert confirmed.cursor is not None and confirmed.cursor != prior
+    assert any(item.usage.boundary.ordinal == 29 for item in confirmed.observations)
 
 
 def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
@@ -652,6 +700,9 @@ def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
     result = adapter.read_delta(locator, None)
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
     assert not any(item.usage.boundary.receipt_ref for item in result.observations)
+    assert not any(
+        item.code is DiagnosticCode.UNSUPPORTED_FORMAT for item in result.diagnostics
+    )
 
 
 def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
