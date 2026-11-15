@@ -1,0 +1,13 @@
+{
+  "story": 122,
+  "status": "pass",
+  "checkpoint_hours": 2.4,
+  "conservative_elapsed_upper_hours": 0.1051,
+  "projected_total_hours": 3.8,
+  "named_tests": [
+    "test_view_cannot_escape_before_recovery_fsync",
+    "test_restore_with_only_old_witness_holds_replay",
+    "test_claude_coverage_gap_cannot_escape_before_recovery_fsync"
+  ],
+  "log_sha256": "5eee3bb519fea187b79587cb721408e257ce0d422d571dc16b5fb09338254dbc"
+}

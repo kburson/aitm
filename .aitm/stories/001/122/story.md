@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -51,3 +51,7 @@ Independent Refine recovery passed at 3.8 hours, Size M. The exact delivered cov
 ## Develop
 
 Independent JIT recovery passed. The two allowed paths and 2.4-hour witness checkpoint are bound to the [exact plan](plan/2026-11-15-122-recovery-publication-fence-jit-r2.md) and [JIT receipt](plan/recovery-fence-independent-jit-r2-receipt.json).
+
+## Test
+
+The witness passed the checkpoint before receiver work. The exact candidate passed 1,366 locked local tests. [Test proof](plan/recovery-fence-local-test.json) · [PR #321](https://github.com/kburson/aitm/pull/321).

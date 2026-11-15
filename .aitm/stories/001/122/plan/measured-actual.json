@@ -1,11 +1,15 @@
 {
   "story": 122,
-  "actual_hours": 0.0105,
+  "actual_hours": 0.0735,
   "coverage": "partial",
-  "milliseconds": 37865,
-  "basis": "Union of completed coordinator progress inside the attributed Refine and prior recorded story windows.",
+  "milliseconds": 264422,
+  "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
   "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
   "evidence": [
+    {
+      "path": "full-auto-recovery-fence-develop-1-122.json",
+      "sha256": "1cd69cbcce60026ee6e979d9ea3add0fef2fb8ef9235aeda13e0db79c0d672c8"
+    },
     {
       "path": "full-auto-recovery-fence-refine-1-122.json",
       "sha256": "2af87ad59880f97b469aef71e5bcf3af3b22445c8cf2d130d2ffa09ae4b7880e"
