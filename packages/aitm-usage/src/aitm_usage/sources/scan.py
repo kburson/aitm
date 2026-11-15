@@ -693,6 +693,26 @@ def _origin_from(row: _Row, ordinal: int, ledger: SourceEvidence) -> _Origin | N
             and metadata.get("source") == "vscode"
         ):
             surface = NativeSurface.CODEX_DESKTOP_MACOS
+        elif (
+            metadata.get("originator") == "codex_exec"
+            and metadata.get("source") == "exec"
+            and raw_client == "0.167.0-alpha.3.2"
+        ):
+            native_id = _native_uuid(metadata.get("id"))
+            if (
+                native_id is not None
+                and metadata.get("id") == metadata.get("session_id") == str(native_id)
+                and all(
+                    metadata.get(name) is None
+                    for name in (
+                        "forked_from_id",
+                        "history_base",
+                        "parent_thread_id",
+                        "subagent_history_start_ordinal",
+                    )
+                )
+            ):
+                surface = NativeSurface.CODEX_CLI_LINUX
     elif kind in _CLAUDE_SESSION_ROWS and ("sessionId" in row or "session_id" in row):
         provider = Provider.CLAUDE
         metadata = row

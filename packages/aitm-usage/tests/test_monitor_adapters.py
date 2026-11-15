@@ -34,7 +34,7 @@ from test_codex import (
 from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
-from aitm_usage.sources.scan import _capture_position
+from aitm_usage.sources.scan import _capture_position, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
@@ -44,6 +44,10 @@ from aitm_usage.types import (
     Revision,
     _decode,
     _encode,
+)
+
+LINUX_CODEX_FIXTURE = (
+    Path(__file__).parent / "fixtures/codex/linux-arm64-0.167.0-alpha.3.2.jsonl"
 )
 
 CLAUDE_FIXTURE = Path(__file__).parent / "fixtures/claude/usage.jsonl"
@@ -306,6 +310,399 @@ def test_codex_receipt_usage_span_includes_the_later_native_counter(
     ]
     assert observation.usage.boundary.ordinal == 7
     assert observation.span_end == 10
+
+
+def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
+    module, adapter, root = _adapter(
+        monkeypatch, source, system="Linux", arch="aarch64"
+    )
+    key, directory, checkout = source
+    fixture = LINUX_CODEX_FIXTURE.read_bytes()
+    assert sha256(fixture).hexdigest() == (
+        "a63358dcaad34ee47567f3298144c63f9933572d24f0daf94f5b41e37f084ecd"
+    )
+    literal_prefix = b"".join(fixture.splitlines(keepends=True)[:22])
+    assert literal_prefix.count(b"\n") == 22 and literal_prefix.endswith(b"\n")
+    assert sha256(literal_prefix).hexdigest() == (
+        "b5d00e459824edc55bf516f1d2a19bc8408dd1a3c3053a52c0e69aedfe8f6889"
+    )
+    data = fixture.replace(b"CHECKOUT", str(checkout).encode())
+    lines = data.splitlines(keepends=True)
+    archived = b"".join(lines[:22])
+    path = directory / "cli.jsonl"
+    path.write_bytes(archived)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+
+    boundary = _receipt_request(result)
+    assert boundary.ordinal == 19
+    assert boundary.receipt_ref == key.pseudonymize(
+        "scope-receipt", str(UUID(int=0x134C))
+    )
+    mark = [obs for obs in result.observations if obs.usage.boundary == boundary]
+    assert len(mark) == 1
+    assert mark[0].usage.tokens.total_tokens == 20836
+    assert mark[0].usage.availability is Availability.COMPLETE
+    assert not any(obs.usage.boundary.ordinal < 6 for obs in result.observations)
+    assert result.cursor.checkpoint.cursor.offset == len(archived)
+    saved = _decode(_encode(result.cursor, module.StreamCursor), module.StreamCursor)
+
+    with path.open("ab") as stream:
+        stream.write(b"".join(lines[22:]))
+    assert (
+        sha256(path.read_bytes()[: saved.checkpoint.cursor.offset]).digest()
+        == sha256(archived).digest()
+    )
+    cold = module.ProviderAdapter()
+    resumed = cold.read_delta(next(cold.discover(root)), saved)
+    assert not any(item.boundary.receipt_ref for item in resumed.boundaries)
+    assert len(resumed.observations) == 1
+    assert resumed.observations[0].usage.boundary.ordinal == 29
+    one_read = cold.read_delta(locator, None)
+    assert resumed.cursor == one_read.cursor
+    assert (*result.observations, *resumed.observations) == one_read.observations
+    replay = cold.read_delta(locator, resumed.cursor)
+    assert replay.cursor == resumed.cursor
+    assert not replay.observations
+
+
+def test_linux_codex_fixed_capture_fence_has_only_visible_receipt(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:17])
+    (locator,) = adapter.discover(root)
+    fixed = scan(locator._source, None, CUTOFF)
+    held = adapter.read_delta(locator, None)
+    assert not any(item.boundary.receipt_ref for item in held.boundaries)
+    assert held.cursor is None
+
+    _write(path, rows)
+    replay = adapter.read_delta(locator, None, _capture_limit=fixed.cursor)
+    assert replay == held
+    final = adapter.read_delta(locator, None)
+    assert final.cursor is not None
+    assert _receipt_request(final).ordinal == 19
+
+
+def test_linux_codex_fixed_capture_reports_pending_turn_only_on_linux(
+    monkeypatch, source
+):
+    module, adapter, root = _adapter(
+        monkeypatch, source, system="Linux", arch="aarch64"
+    )
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:22])
+    (locator,) = adapter.discover(root)
+    prior = adapter.read_delta(locator, None).cursor.checkpoint
+    _write(path, rows[:30])
+    fixed = scan(locator._source, prior, CUTOFF).cursor
+    assert (
+        adapter._capture_gap_start(locator, prior, first_unverified=22, limit=fixed)
+        == 23
+    )
+    with monkeypatch.context() as patch:
+        patch.setattr(module.platform, "system", lambda: "Darwin")
+        patch.setattr(module.platform, "machine", lambda: "arm64")
+        with pytest.raises(ValueError, match="capture-qualified"):
+            adapter._capture_gap_start(locator, prior, first_unverified=22, limit=fixed)
+
+
+def test_linux_codex_pins_raw_client_surface_and_implicit_format(monkeypatch, source):
+    from importlib import import_module
+
+    from aitm_usage.monitor_types import NativeSurface
+    from aitm_usage.sources import codex
+    from aitm_usage.types import ClientVersion, Provider, normalize_client_version
+
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows)
+    (locator,) = adapter.discover(root)
+    assert locator._source._native_surface is NativeSurface.CODEX_CLI_LINUX
+    pin = ClientVersion.CODEX_0_167_0_ALPHA_3_2
+    assert rows[0]["payload"]["cli_version"] == "0.167.0-alpha.3.2"
+    assert normalize_client_version("0.167.0-alpha.3.2") is pin
+    scanner = import_module("aitm_usage.sources.scan")
+    assert codex._CLIENT is scanner._SUPPORTED_CLIENTS[Provider.CODEX] is pin
+    assert "format_version" not in rows[0]["payload"]
+    frames = scan(locator._source, None, CUTOFF)
+    assert frames.provider_checkpoint.format_version == 1
+    assert frames.provider_checkpoint.client_version is pin
+
+    # A normalization alias alone cannot expand the accepted raw carrier.
+    monkeypatch.setattr(scanner, "normalize_client_version", lambda value: pin)
+    rows[0]["payload"]["cli_version"] = "0.167.0-ALPHA.3.2"
+    _write(path, rows)
+    (alias,) = adapter.discover(root)
+    alias_frames = scan(alias._source, None, CUTOFF)
+    assert alias_frames.provider_checkpoint.client_version is pin
+    assert alias._source._native_surface is None
+    result = adapter.read_delta(alias, None)
+    assert result.cursor is None
+    assert result.diagnostics[0].code is DiagnosticCode.UNSUPPORTED_FORMAT
+
+
+@pytest.mark.parametrize("linux_carrier", [False, True])
+def test_codex_wrapper_does_not_cross_native_surfaces(
+    monkeypatch, source, linux_carrier
+):
+    _, adapter, root = _adapter(
+        monkeypatch,
+        source,
+        system="Linux" if linux_carrier else "Darwin",
+        arch="aarch64" if linux_carrier else "arm64",
+    )
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    if linux_carrier:
+        desktop = tool_call(SimpleNamespace(root=checkout), "/private/tmp/marker-file")
+        rows[12]["payload"]["input"] = desktop["payload"]["input"]
+    else:
+        rows[0]["payload"].update(originator="Codex Desktop", source="vscode")
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert result.cursor is not None
+    assert not any(item.boundary.receipt_ref for item in result.boundaries)
+
+
+def test_linux_codex_scope_command_can_bind_the_project(monkeypatch, source):
+    from aitm_usage.sources.codex import _linux_marker_command, _Marker
+
+    _, _, checkout = source
+    mark_call = _rows(LINUX_CODEX_FIXTURE, checkout)[12]["payload"]
+    assert (
+        _linux_marker_command(mark_call, Path("/pilot-state/state"))
+        is _Marker.MONITOR_SCOPE
+    )
+    assert _linux_marker_command(mark_call, checkout) is None
+
+
+@pytest.mark.parametrize("replacement", ["no-lf", "extra-lf", "failed", "extra-field"])
+def test_linux_codex_requires_the_exact_queued_body(monkeypatch, source, replacement):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    block = rows[15]["payload"]["output"][1]
+    if replacement == "no-lf":
+        block["text"] = block["text"].removesuffix("\n")
+    elif replacement == "extra-lf":
+        block["text"] += "\n"
+    else:
+        receipt = json.loads(block["text"])
+        if replacement == "failed":
+            receipt["status"] = "failed"
+        else:
+            receipt["extra"] = True
+        block["text"] = json.dumps(receipt) + "\n"
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert result.cursor is not None
+    assert not any(item.boundary.receipt_ref for item in result.boundaries)
+
+
+def test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn(
+    monkeypatch, source
+):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    rows[7]["payload"]["permission_profile"] = {"type": "managed"}
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert result.cursor is None
+    assert not result.observations
+    assert not any(item.boundary.receipt_ref for item in result.boundaries)
+    assert any(
+        item.code is DiagnosticCode.BOUNDARY_UNVERIFIED for item in result.diagnostics
+    )
+
+
+@pytest.mark.parametrize("resume", [False, True], ids=["cold", "restart"])
+def test_linux_codex_malformed_frame_holds_later_verified_turn(
+    monkeypatch, source, resume
+):
+    module, adapter, root = _adapter(
+        monkeypatch, source, system="Linux", arch="aarch64"
+    )
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:22])
+    prior = None
+    if resume:
+        (locator,) = adapter.discover(root)
+        prior = adapter.read_delta(locator, None).cursor
+        assert prior is not None
+
+    with path.open("ab") as stream:
+        stream.write(b"{malformed\n")
+    if resume:
+        (locator,) = adapter.discover(root)
+        tail = adapter.read_delta(locator, prior)
+        assert tail.cursor == prior
+        assert not tail.observations
+        assert any(
+            item.code is DiagnosticCode.MALFORMED_USAGE for item in tail.diagnostics
+        )
+    with path.open("ab") as stream:
+        for row in rows[22:]:
+            stream.write(json.dumps(row).encode() + b"\n")
+
+    (locator,) = adapter.discover(root)
+    result = module.ProviderAdapter().read_delta(locator, prior)
+    assert result.cursor == prior
+    assert not result.observations
+    assert any(
+        item.code is DiagnosticCode.MALFORMED_USAGE for item in result.diagnostics
+    )
+
+    _write(path, rows)
+    (repaired,) = adapter.discover(root)
+    confirmed = module.ProviderAdapter().read_delta(repaired, prior)
+    assert confirmed.cursor is not None and confirmed.cursor != prior
+    assert any(item.usage.boundary.ordinal == 29 for item in confirmed.observations)
+
+
+def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:22])
+    (locator,) = adapter.discover(root)
+    previous = adapter.read_delta(locator, None)
+    assert previous.cursor is not None
+
+    _write(path, [*rows[:22], rows[30]])
+    result = adapter.read_delta(locator, previous.cursor)
+    assert result.cursor == previous.cursor
+    assert not result.observations
+    assert not result.boundaries
+
+
+@pytest.mark.parametrize(
+    "system,arch,metadata",
+    [
+        ("Darwin", "arm64", {}),
+        ("Linux", "x86_64", {}),
+        ("Linux", "arm64", {}),
+        ("Linux", "aarch64", {"originator": "Codex Desktop", "source": "vscode"}),
+        ("Linux", "aarch64", {"originator": "codex_cli_rs", "source": "cli"}),
+        ("Linux", "aarch64", {"originator": "other"}),
+        ("Linux", "aarch64", {"source": "cli"}),
+        ("Linux", "aarch64", {"cli_version": "0.167.0-alpha.3.3"}),
+        ("Linux", "aarch64", {"format_version": 2}),
+        (
+            "Linux",
+            "aarch64",
+            {"forked_from_id": "00000000-0000-0000-0000-000000013500"},
+        ),
+    ],
+)
+def test_linux_codex_rejects_unverified_origin(
+    monkeypatch, source, system, arch, metadata
+):
+    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    rows[0]["payload"].update(metadata)
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert result.cursor is None
+    assert not result.boundaries
+    assert not result.observations
+    assert [item.code for item in result.diagnostics] == [
+        DiagnosticCode.UNSUPPORTED_FORMAT
+    ]
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("permission_profile", {"type": "managed"}),
+        ("sandbox_policy", {"type": "workspace-write"}),
+        ("root_turn_id", None),
+        ("turn_id", "foreign-turn"),
+    ],
+)
+def test_linux_codex_unverified_mode_cannot_advance_cursor(
+    monkeypatch, source, field, value
+):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)[:22]
+    rows[7]["payload"][field] = value
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert not result.observations
+    assert not any(boundary.boundary.receipt_ref for boundary in result.boundaries)
+    assert result.cursor is None
+
+
+@pytest.mark.parametrize(
+    "variation",
+    [
+        "no_response",
+        "wrong_session",
+        "wrong_thread",
+        "wrong_turn",
+        "wrong_root",
+        "duplicate_response",
+        "detached_output",
+        "duplicate_output",
+        "unforwarded",
+        "extra_statement",
+        "parallel_tool",
+    ],
+)
+def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    # Leave a later clean turn so a rejected marker cannot leak to its response.
+    id_field = {
+        "wrong_session": "session_id",
+        "wrong_thread": "thread_id",
+        "wrong_turn": "turn_id",
+        "wrong_root": "root_turn_id",
+    }.get(variation)
+    if id_field:
+        rows[19]["payload"][id_field] = "foreign-native-id"
+    elif variation == "no_response":
+        del rows[19]
+    elif variation == "duplicate_response":
+        rows[19]["payload"]["response_id"] = rows[13]["payload"]["response_id"]
+    elif variation == "detached_output":
+        rows[15]["payload"]["call_id"] = "foreign-call"
+    elif variation == "duplicate_output":
+        rows.insert(16, rows[15])
+    elif variation == "unforwarded":
+        rows[15]["payload"]["output"][1]["text"] = ""
+    elif variation == "extra_statement":
+        rows[12]["payload"]["input"] += "text('extra');\n"
+    else:
+        second = json.loads(json.dumps(rows[12]))
+        second["payload"]["call_id"] = "other-tool"
+        rows.insert(13, second)
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert not any(item.boundary.receipt_ref for item in result.boundaries)
+    assert not any(item.usage.boundary.receipt_ref for item in result.observations)
+    assert not any(
+        item.code is DiagnosticCode.UNSUPPORTED_FORMAT for item in result.diagnostics
+    )
 
 
 def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
