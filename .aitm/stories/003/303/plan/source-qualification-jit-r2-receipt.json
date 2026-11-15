@@ -1,0 +1,13 @@
+{
+  "story": 303,
+  "verdict": "PASS",
+  "attempt": 2,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "basis": "ea73031baedfb37e9e6336b064ac34a1f57059a6",
+  "draft_sha256": "41ce86a76ec148c9e3bbc1d9d014ac523056f9c100fa22ca555c7a799e8ee916",
+  "input_sha256": "66e107cee6ebb0e97afd1a8a29364a6270a687db6edad9ebbbf946d04d166e04",
+  "response_sha256": "ce54b5d18fc4f18d8d027f040ab29ff68150c15677c2151a9961208e0fb3b828",
+  "verdict_sha256": "2c57c8c918dd1deac35067bde16db1ed37c2df921cd74e1bf054645530a36776"
+}

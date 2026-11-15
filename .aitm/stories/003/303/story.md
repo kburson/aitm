@@ -48,3 +48,7 @@ Passed at 2.7 implementation hours, with #304 owning real issuer proof. Exact JI
 ## Independent JIT attempt 1
 
 The exact plan remains in Planning while the reviewed blockers are addressed. [Review](plan/source-qualification-independent-jit-r1.md).
+
+## Independent JIT attempt 2
+
+Passed on the exact attached plan. Develop follows the current native graph and trunk readback. [Review](plan/source-qualification-independent-jit-r2.md).

@@ -1,0 +1,39 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 303,
+  "batch": "full-auto-qualified-profile-jit-2",
+  "recorded_at_utc": "2026-11-15T02:48:52.358Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "9ee11a03171f836fadef4513a4fdbbc2b6c1388c79a9610f033430047a389429"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.709e0af0eb55fbf13959f922",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.08d0824f1147a387f7a1f78b",
+      "phase": "Planning",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T02:45:33.162Z",
+      "end_utc": "2026-11-15T02:45:43.167Z"
+    },
+    {
+      "observation_id": "codex.item.267e21f18776c17d29fdc009",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.08d0824f1147a387f7a1f78b",
+      "phase": "Planning",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T02:45:43.171Z",
+      "end_utc": "2026-11-15T02:45:44.830Z"
+    }
+  ]
+}
