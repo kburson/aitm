@@ -12,7 +12,7 @@ blocked-by: [210, 303]
 created: "2026-11-15T02:18:55Z"
 updated: "2026-11-15T02:19:53Z"
 last-branch: "planning"
-estimate: {"agent-hours": 2.5, "size": "M"}
+estimate: {"agent-hours": 3.2, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -44,3 +44,7 @@ Project 24 Rank 229.06.
 ## Journal coverage Refine recovery
 
 Passed independent Refine at 2.5 implementation hours after #303 delivered. The exact JIT covers authority, lazy v6 and ordered custody. [Review](plan/qualified-coverage-independent-refine-r2.md).
+
+## Independent exact JIT
+
+The recovery passed at 3.2 implementation hours. It defines stable policy denial, source metadata revalidation, lease loss and a single lazy migration transaction. [Initial hold](plan/qualified-coverage-independent-jit-r1.md) · [Passing exact review](plan/qualified-coverage-independent-jit-r2.md).
