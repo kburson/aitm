@@ -1,0 +1,17 @@
+{
+  "story": 120,
+  "gate": "Refine",
+  "attempt": 3,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "estimate": 3.5,
+  "size": "M",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "refine-r3-result.json": "e0babb7d55c88d238bf8cd8fecb12172655e43db4c9141f33e31e3901570ee38",
+    "wake-park-independent-refine-r3.md": "a1c2efd67bf5f457202ada7e372e05160eb08bf2cf6a251cf9112a63cc73049d",
+    "refine-r3-input.md": "c6c9792bbb1bb5b8143fd447275475653fdb841d2c75f8d570d6c2aa9c470f04",
+    "refine-r3-owner.json": "fab5d02acb6974e1709b7e58e432b1725f05da3062ed53aa305bc982bfecaf76"
+  }
+}

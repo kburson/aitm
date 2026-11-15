@@ -1,0 +1,49 @@
+Current exact trunk e9b92172aee21eaab728e1a313d94f0bea38279b
+Refine source ab9db80098849e323d5122eb47bf48f377107058
+Registry, scope, host path, publication and CLI source blobs match Refine. The inherited #134 merge adds its separate Linux native carrier.
+
+Native peer and inode feasibility
+{"platform": "darwin", "credentials_match": true, "checked_pinned_socket_inode": true, "mode": "0600", "address_bytes": 85}
+{"platform": "linux", "credentials_match": true, "checked_pinned_socket_inode": true, "mode": "0600", "address_bytes": 33}
+
+Current per-account Darwin endpoint length
+{"native_default_endpoint_bytes": 80, "path_not_persisted": true}
+
+Current private credentials and stable owner commands
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/export.py:305:def _publish(destination: Path, files: dict[str, bytes]) -> None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/host_fs.py:99:def account_control_root(uid: int) -> Path:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/ledger.py:278:def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/ledger.py:335:def _physical_ancestry(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_control.py:587:def configure_monitor_commands(monitor_subparsers: argparse._SubParsersAction) -> None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_registry.py:91:def default_monitor_root() -> Path:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_registry.py:772:    def _approved_candidate(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_scope.py:991:    def _grok_admission(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:181:def _private_child(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:218:def _read_private(directory: _PinnedPath, name: str) -> bytes | None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:274:def _publish(
+
+Previously accepted native dependencies and ranks
+[
+  {
+    "issue": 120,
+    "rank": 240,
+    "status": "Refine"
+  },
+  {
+    "issue": 121,
+    "rank": 250,
+    "status": "Backlog"
+  },
+  {
+    "issue": 124,
+    "rank": 280,
+    "status": "Backlog"
+  },
+  {
+    "issue": 125,
+    "rank": 290,
+    "status": "Backlog"
+  }
+]
+[{"number":115,"state":"closed"},{"number":119,"state":"closed"}]
+[{"number":121,"state":"open"},{"number":320,"state":"open"}]

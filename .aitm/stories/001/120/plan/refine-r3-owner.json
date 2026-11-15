@@ -1,0 +1,8 @@
+{
+  "story": 120,
+  "gate": "Refine",
+  "attempt": 3,
+  "authorized": true,
+  "owner_answer": "Authorize one more #120 Refine review",
+  "source": "owner response in current Codex chat"
+}
