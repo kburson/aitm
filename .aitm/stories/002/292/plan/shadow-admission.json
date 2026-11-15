@@ -1,9 +1,9 @@
 {
   "base": "454bddcea742fe048b42e95b707fb7a40096d76e",
-  "head": "66191c8f1596bc6c82f47ee6a88ba42a1879b143",
-  "pr": 315,
-  "review_sha256": "6781b01594450cd89a23e64255dd4d251f8b71cb175eed28a87b1c4ca117026e",
+  "head": "f9b5a7c138f456d08457002fc44ecac5b901e000",
+  "pr": 316,
+  "review_sha256": "23c380ce6e839b969b84430a4b11425ced30adfe7c911c5ee35205412a3ac100",
   "schema": "aitm.fast-story-admission/v1",
-  "tested": "32adf94a1974cc754cd26d6dc2e9e5f5adaf3880",
-  "tree": "70286508b550c39011ab46fbfed08006408666ce"
+  "tested": "5f5650e0e6d95cb190aeb01ebcd48ff464a031c1",
+  "tree": "e5c87fc298f39dcea49cd6422638aef06304e5e3"
 }

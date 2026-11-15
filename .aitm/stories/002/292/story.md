@@ -10,7 +10,7 @@ children: []
 blocking: [293]
 blocked-by: [147, 288]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T14:00:41Z"
+updated: "2026-11-15T14:00:48Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -45,5 +45,9 @@ Build a bounded hosted fast-path shadow runner on reviewed inputs. Bind exact ba
 [Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
 
 ## Hosted selected admission
+
+[Signed admission](plan/shadow-admission.json) · [Independent review](plan/shadow-admission-review.md). This exact record authorizes the shadow probe.
+
+## Hosted fallback admission
 
 [Signed admission](plan/shadow-admission.json) · [Independent review](plan/shadow-admission-review.md). This exact record authorizes the shadow probe.
