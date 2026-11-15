@@ -66,3 +66,7 @@ The corrected candidate passed exact signed hosted Test and the unchanged policy
 ## Exact source confirmation
 
 Independent source recovery held on the inventory, audit comparison and lexical handler evidence. The test-only correction passed exact local and signed hosted verification. A further source review awaits authorization. [Recovery](plan/isolated-issuer-independent-source-r2-receipt.json) · [Exact confirmation](plan/isolated-issuer-exact-confirmation.json).
+
+## Owner-authorized source review
+
+The unchanged source delta was refreshed onto current trunk. It passed locked local Test, signed hosted Test and the exact controlled Grok pilot. Independent source returned **PASS**. [Source receipt](plan/isolated-issuer-independent-source-r3-receipt.json) · [Signed Test](plan/isolated-issuer-signed-hosted-final.json).

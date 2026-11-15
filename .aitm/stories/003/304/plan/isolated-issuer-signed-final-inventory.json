@@ -1,0 +1,28 @@
+{
+  "base": "454bddcea742fe048b42e95b707fb7a40096d76e",
+  "head": "a79ac1d322ce8a6a4d92bbf2a032b8d015f5e644",
+  "tree": "58e5970d63b8e7da41aa90790d03450517331174",
+  "run": "https://github.com/kburson/aitm/actions/runs/43722234709/attempts/1",
+  "base_count": 1280,
+  "candidate_count": 1295,
+  "issuer_test_nodes": [
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_closed_resolver_cannot_copy_the_unpatched_codex_fixture",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_currentness_preserves_cancellation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[prepare]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[staged]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_product_issuer_and_exclusion_consumers_have_fixed_entry_points",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[KeyError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[TypeError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_valid_owner_signature_is_bound_to_revision_and_lease"
+  ],
+  "baseline_missing": [],
+  "preexisting_candidate_only_wheel_smoke": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+  "baseline_report_sha256": "9bb06f94a793e2831e7641f29ca2e5c589ac0545f79c41331b134a763c16934b",
+  "candidate_report_sha256": "041b6215033dba13714a01fea8df7f06b07909d95418aaed2d371bf8d75e8637"
+}

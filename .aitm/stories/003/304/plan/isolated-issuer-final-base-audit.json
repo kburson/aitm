@@ -1,0 +1,37 @@
+{
+  "previous_base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "current_base": "454bddcea742fe048b42e95b707fb7a40096d76e",
+  "comparisons": {
+    "monitor_registry.py": {
+      "old_blob_sha256": "d603082ed0eaaedfe1a81709e4ca02f3b138a534c0e66801004842ad443d84bd",
+      "new_blob_sha256": "d603082ed0eaaedfe1a81709e4ca02f3b138a534c0e66801004842ad443d84bd",
+      "unchanged_ast": [
+        "_current_candidate",
+        "_require_live_source"
+      ]
+    },
+    "monitor_scope.py": {
+      "old_blob_sha256": "0ddcff7d3827cd2cb39ec59971d3fcbb03cb510da474f82d30a492b21f2c91db",
+      "new_blob_sha256": "0ddcff7d3827cd2cb39ec59971d3fcbb03cb510da474f82d30a492b21f2c91db",
+      "unchanged_ast": [
+        "VerifiedScopeBatch",
+        "_admitted_readers",
+        "_recheck_batch",
+        "_require_batch_qualification",
+        "read_source"
+      ]
+    },
+    "monitor_journal.py": {
+      "old_blob_sha256": "9f3e95a237e3df92fc8121359924cb8a1fef7ab6dea5474065fab0d08c0b6774",
+      "new_blob_sha256": "bf15a91c579a9d55cd4c5a4732e04416c76fe370c212113152b8448b66efec65",
+      "unchanged_ast": [
+        "_fresh_view",
+        "_record_live_exclusion",
+        "_reserve",
+        "_settled_side",
+        "prepare",
+        "settle_disposition"
+      ]
+    }
+  }
+}
