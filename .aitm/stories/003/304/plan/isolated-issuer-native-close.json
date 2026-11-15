@@ -1,0 +1,45 @@
+{
+  "issue": {
+    "closedAt": "2026-11-15T14:16:09Z",
+    "number": 304,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/304"
+  },
+  "project": {
+    "actual": 0.131,
+    "coverage": "Partial coordinator Refine, JIT and Develop intervals. Provider, tool and wait time excluded.",
+    "estimate": 3.8,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0SeA",
+    "issue": 304,
+    "rank": 229.065,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "prerequisites": [
+    {
+      "number": 303,
+      "state": "closed"
+    }
+  ],
+  "dependents": [
+    {
+      "number": 121,
+      "state": "open"
+    },
+    {
+      "number": 125,
+      "state": "open"
+    },
+    {
+      "number": 128,
+      "state": "open"
+    },
+    {
+      "number": 129,
+      "state": "open"
+    }
+  ]
+}

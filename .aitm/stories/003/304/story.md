@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -70,3 +70,7 @@ Independent source recovery held on the inventory, audit comparison and lexical 
 ## Owner-authorized source review
 
 The unchanged source delta was refreshed onto current trunk. It passed locked local Test, signed hosted Test and the exact controlled Grok pilot. Independent source returned **PASS**. [Source receipt](plan/isolated-issuer-independent-source-r3-receipt.json) · [Signed Test](plan/isolated-issuer-signed-hosted-final.json).
+
+## Close
+
+PR #309 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/isolated-issuer-verified-delivery.json) · [Native Close](plan/isolated-issuer-native-close.json).
