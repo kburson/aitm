@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/128"
 parent: 100
 children: []
 blocking: [129]
-blocked-by: [127]
+blocked-by: [127, 304]
 created: "2026-11-10T13:58:16Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
@@ -40,4 +40,8 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 **Files** Extend `S/qualification.py`, `T/test_activation_receipt.py` and `README.md`. Retain sanitized evidence outside the product checkout until the declared delivery step.
 
 - [ ] Add receipt validation `test_monitor_mac_receipt_requires_exact_provider_and_service_proof`. It rejects wrong builds, insufficient overlap, a stale heartbeat, missing production scope-carrier proof or any missing NA-1 outcome. Run red, implement and run green with the activation and installer tests.
-- [ ] Run on an isolated candidate with actual Codex Desktop, Claude Code and Grok Build CLI. Run NA-1 and the exact legacy marker invocation against adopted state. Verify a parked resume with two distinctly story-bound Grok turns through production admission, late writes, a separately eligible hookless Grok completion counted once in its interval without a story, fork and folded overlap, one LaunchAgent, crash catch-up and fixed #83 export parity. Keep private raw traces and publish only a sanitized receipt. Commit M18.
+- [ ] Run on an isolated candidate with actual Codex Desktop and Grok Build CLI with the separately observed negative Claude source. Run NA-1 and the exact legacy marker invocation against adopted state. Verify a parked resume with two distinctly story-bound Grok turns through production admission, late writes, a separately eligible hookless Grok completion counted once in its interval without a story, fork overlap and the exact excluded Claude target case from amended NA-1, one LaunchAgent, crash catch-up and fixed #83 export parity. Keep private raw traces and publish only a sanitized receipt. Commit M18.
+
+Require the exact-build sanitized negative Claude refusal and isolation evidence in the macOS receipt. The admitted allowlist has no Claude tuple. Preserve all other controlled macOS qualification requirements.
+
+#304 supplies the isolated issuer's host executable and current authorization evidence. #128 owns the final native macOS installation, target acceptance and signed catalog. [Qualified-cost R2](https://github.com/kburson/aitm/blob/47228b4bdace19f25627814cd50b1664342bcca8/.aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md) governs the controlled qualification matrix. [Issuer amendment](https://github.com/kburson/aitm/blob/79aecafe17c5dc0417fd00c2ecd37cdfe3651d58/.aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md).

@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/129"
 parent: 100
 children: []
 blocking: []
-blocked-by: [128, 134, 137, 300, 303]
+blocked-by: [128, 134, 137, 300, 303, 304]
 created: "2026-11-10T13:58:18Z"
 updated: "2026-11-10T16:41:02+00:00"
 last-branch: "planning"
