@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 122
 title: "[M12] Recovery and publication fence"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/122"
 parent: 100
 children: []
@@ -63,3 +63,7 @@ The exact recovery and receiver fence passed signed Test. Independent source ret
 ## Source recovery
 
 The first source review held on the physical rollback root and current-base helper proof. The candidate pins the derived journal store and revalidates its custody. [Exact-base proof](plan/recovery-fence-exact-base-helpers.txt).
+
+## Independent source recovery
+
+The exact recovery and receiver fence passed signed Test. Independent source returned **PASS**. [Signed Test](plan/recovery-fence-signed-hosted-r2.json) · [Source receipt](plan/recovery-fence-independent-source-r2-receipt.json).
