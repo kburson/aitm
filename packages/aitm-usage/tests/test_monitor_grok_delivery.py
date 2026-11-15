@@ -1,7 +1,9 @@
 """Exact guarded delivery for a currently verified Grok capture interval."""
 
 import json
-from dataclasses import replace
+import sqlite3
+from contextlib import closing
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
@@ -11,17 +13,29 @@ import pytest
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
 from aitm_usage import backup, install, service
-from aitm_usage.ledger import Ledger, LedgerError
+from aitm_usage._monitor_journal_store import _DATABASE, _STORE
+from aitm_usage.ledger import Ledger, LedgerError, _connection
+from aitm_usage.monitor_control import ControlInbox
 from aitm_usage.monitor_journal import (
     ClaimEvidence,
     ClaimStatus,
+    PendingClaim,
     RoutingJournal,
     _ClaimPayload,
+    _DeliveryRefused,
     _GrokProgress,
     _RevisionPayload,
+    _source_checkpoint,
     _UsageMaterial,
 )
-from aitm_usage.monitor_registry import ProjectRegistrationRequest, _project
+from aitm_usage.monitor_registry import (
+    CaptureChange,
+    ControlCommand,
+    ControlStatus,
+    ProjectRegistrationRequest,
+    Registry,
+    _project,
+)
 from aitm_usage.monitor_scope import HandoffStatus, Mark, Scope, ScopeState
 from aitm_usage.monitor_types import (
     GrokCheckpoint,
@@ -32,6 +46,7 @@ from aitm_usage.monitor_types import (
 from aitm_usage.monitor_writer import ProjectDelivery
 from aitm_usage.sources.adapter import StreamCursor
 from aitm_usage.sources.grok import GrokAdapter
+from aitm_usage.sources.scan import checkout_anchor_reference
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
@@ -390,3 +405,287 @@ def test_pinned_grok_destination_restore_preserves_row_and_lost_ack(
         assert row.observation == first_ticket.claim.usage
         assert delivery.commit(first_ticket) == receipt
         journal.ack(delivery, first_ticket, receipt)
+
+
+@dataclass(frozen=True, slots=True)
+class _LegacyUsageMaterial:
+    usage: UsageObservation
+    scope: Scope | None
+    time_basis: ObservationTimeBasis
+
+
+@dataclass(frozen=True, slots=True)
+class _LegacyClaim:
+    material: _LegacyUsageMaterial
+    evidence: ClaimEvidence
+
+
+@dataclass(frozen=True, slots=True)
+class _LegacyPendingClaim:
+    key: SourceRef
+    project_id: UUID
+    usage: UsageObservation
+    scope: Scope | None
+    time_basis: ObservationTimeBasis
+    evidence: ClaimEvidence
+    sequence: int
+    revision: int = 1
+
+
+def _save_test_journal_snapshot(journal, target):
+    with journal._store.transaction() as live, closing(sqlite3.connect(target)) as copy:
+        live.backup(copy)
+
+
+def _restore_test_journal_snapshot(registry, source):
+    database = registry.root / _STORE / _DATABASE
+    with (
+        closing(sqlite3.connect(source)) as source_copy,
+        _connection(database, write=True) as live,
+    ):
+        source_copy.backup(live)
+
+
+@pytest.mark.usefixtures("legacy_monitor_qualification")
+def test_retained_legacy_journal_snapshot_restores_for_both_readers(
+    tmp_path,
+    monkeypatch,
+):
+    from test_monitor_journal import LIVE, NativeJournalFixture
+
+    native = NativeJournalFixture(tmp_path, monkeypatch)
+    native.append(LIVE, native.turn(3))
+    backup_path = tmp_path / "prior-journal.sqlite3"
+    with native.registry.writer() as registry:
+        journal = RoutingJournal(registry, ScopeState(registry))
+        locator = native.locator(LIVE)
+        journal.reserve_batch(journal.prepare(LIVE, locator))
+        earlier = journal.as_of()
+        prior = journal.cursor_for(LIVE, locator)
+        assert earlier.claims and prior is not None
+        _save_test_journal_snapshot(journal, backup_path)
+        assert (
+            _decode(_encode(earlier.claims[0], PendingClaim), _LegacyPendingClaim).usage
+            == earlier.claims[0].usage
+        )
+
+        with closing(sqlite3.connect(backup_path)) as snapshot:
+            (claim,) = snapshot.execute(
+                "SELECT payload FROM claims ORDER BY sequence LIMIT 1"
+            ).fetchone()
+            (progress,) = snapshot.execute(
+                "SELECT cursor FROM progress ORDER BY sequence DESC LIMIT 1"
+            ).fetchone()
+            assert (
+                _decode(claim, _LegacyClaim).material.usage == earlier.claims[0].usage
+            )
+            assert _decode(progress, StreamCursor) == prior
+
+        native.append(LIVE, native.turn(4))
+        journal.reserve_batch(journal.prepare(LIVE, native.locator(LIVE)))
+        assert journal.as_of().sequence > earlier.sequence
+        _restore_test_journal_snapshot(registry, backup_path)
+        reopened = RoutingJournal(registry, ScopeState(registry))
+        assert reopened.as_of() == earlier
+        assert reopened.cursor_for(LIVE, native.locator(LIVE)) == prior
+
+
+def test_grok_journal_snapshot_restores_private_rows_and_new_writer_holds(
+    tmp_path,
+    monkeypatch,
+):
+    # Exhausting the fixture releases the original physical coordinator lease.
+    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch)
+    f = next(retained)
+    prompt_text = "synthetic private prompt"
+    user = json.loads(f.rows[1])
+    user["params"]["update"]["content"] = {"type": "text", "text": prompt_text}
+    f.rows[1] = json.dumps(user).encode() + b"\n"
+    _load_turns(f)
+    assert prompt_text.encode() in f.locator()._source.path.read_bytes()
+    journal = RoutingJournal(f.writer, f.state)
+    prepared = journal.prepare(f.source_id, f.locator())
+    outcomes = journal.reserve_batch(prepared)
+    _enable_delivery(f, journal)
+    ticket = journal.reserve_delivery(outcomes[0].key, 1)
+    with _ledger(f).writer() as writer:
+        delivery = ProjectDelivery.attach(journal, writer)
+        receipt = delivery.commit(ticket)
+        journal.ack(delivery, ticket, receipt)
+    before = journal.as_of()
+    snapshot = tmp_path / "grok-journal.sqlite3"
+    _save_test_journal_snapshot(journal, snapshot)
+
+    with closing(sqlite3.connect(snapshot)) as copy:
+        rows = copy.execute("SELECT payload FROM claims").fetchall()
+        (checkpoint,) = copy.execute("SELECT cursor FROM progress").fetchone()
+        (ack,) = copy.execute("SELECT payload FROM delivery_acks").fetchone()
+        for (claim,) in rows:
+            with pytest.raises(ValueError):
+                _decode(claim, _LegacyClaim)
+        with pytest.raises(ValueError):
+            _decode(_encode(before.claims[0], PendingClaim), _LegacyPendingClaim)
+        with pytest.raises(ValueError):
+            _decode(checkpoint, StreamCursor)
+        persisted = b"".join(claim for (claim,) in rows) + checkpoint + ack.encode()
+        native = f.locator()._source
+        for sensitive in (
+            str(native.path),
+            native.origin.session_id,
+            "synthetic-event-1",
+        ):
+            assert sensitive.encode() not in persisted
+        assert prompt_text.encode() not in persisted
+
+    # The staged copy predates a second durable ACK.
+    second = journal.reserve_delivery(outcomes[1].key, 1)
+    with _ledger(f).writer() as writer:
+        delivery = ProjectDelivery.attach(journal, writer)
+        journal.ack(delivery, second, delivery.commit(second))
+    assert journal.as_of().sequence > before.sequence
+    _restore_test_journal_snapshot(f.writer, snapshot)
+    with pytest.raises(StopIteration):
+        next(retained)
+
+    with Registry(f.writer.root).writer() as writer:
+        state = ScopeState(writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+        reopened = RoutingJournal(writer, state)
+        with pytest.raises(LedgerError, match="authority"):
+            reopened.prepare(f.source_id, f.locator())
+        assert reopened.as_of() == before
+        assert _stored_progress(reopened, prepared) == prepared.progress
+        with _ledger(f).writer() as destination:
+            delivery = ProjectDelivery.attach(reopened, destination)
+            assert reopened.ack(delivery, ticket, receipt).sequence == before.sequence
+
+
+def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
+    isolated_grok_capture,
+    tmp_path,
+    monkeypatch,
+):
+    f = isolated_grok_capture
+    f.submit(204, True)
+    assert f.evaluate()[0].status is ControlStatus.APPLIED
+    first_turn = f.rows[1:5]
+    f.write(first_turn, 1)
+    journal = RoutingJournal(f.writer, f.state)
+    (original,) = journal.reserve_batch(journal.prepare(f.source_id, f.locator()))
+    assert original.status is ClaimStatus.PENDING
+    f.submit(205, False)
+    assert f.evaluate()[0].status is ControlStatus.APPLIED
+    _enable_delivery(f, journal)
+    ticket = journal.reserve_delivery(original.key, 1)
+    with _ledger(f).writer() as writer:
+        delivered = ProjectDelivery.attach(journal, writer)
+        journal.ack(delivered, ticket, delivered.commit(ticket))
+
+    rival = UUID(int=39)
+    root, checkout = (
+        tmp_path / name for name in ("competing-project", "competing-checkout")
+    )
+    checkout.mkdir(mode=0o700)
+    Ledger.initialize(root, rival)
+    f.writer.register_project(
+        ProjectRegistrationRequest(rival, str(root), "Rival", anchors=(str(checkout),))
+    )
+    evidence = f.writer.source_evidence()
+    original_origin = f.find_origin(f.locator()._source.path)
+    rival_origin = replace(
+        original_origin,
+        checkout=checkout_anchor_reference(evidence, checkout),
+        incarnation=evidence.pseudonymize("grok-incarnation", "same-lineage-rival"),
+    )
+    monkeypatch.setattr(
+        f.reader,
+        "verify_origin",
+        lambda path: rival_origin if f.find_origin(path) else None,
+    )
+    f.write([], 0)
+    enabled = ControlCommand(UUID(int=206), CaptureChange(rival, f.source_id, True))
+    ControlInbox(f.writer.root).enqueue(enabled)
+    (applied,) = f.evaluate()
+    assert (
+        applied.command_id == enabled.command_id
+        and applied.status is ControlStatus.APPLIED
+    )
+    f.write(first_turn, 1)
+    candidate = journal.prepare(f.source_id, f.locator())
+    (contender,) = candidate.candidates
+    assert contender.route.project_id == rival
+    assert contender.observation.key == original.key
+    (disputed,) = journal.reserve_batch(candidate)
+    assert disputed.status is ClaimStatus.DISPUTED and disputed.project_id == f.project
+    assert _stored_progress(journal, candidate) is None
+    view = journal.as_of()
+    assert [(claim.key, claim.project_id) for claim in view.claims] == [
+        (original.key, f.project)
+    ]
+    assert [row.contender for row in view.disputes] == [rival]
+    assert Ledger.open(root, rival).as_of().sequence == 0
+
+
+def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
+    tmp_path,
+    monkeypatch,
+):
+    from aitm_usage._monitor_qualification import _LiveSourceUnavailable
+
+    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch)
+    f = next(retained)
+    journal = RoutingJournal(f.writer, f.state)
+    monkeypatch.setattr(
+        GrokAdapter,
+        "read_delta",
+        lambda *a, **kw: pytest.fail("unauthenticated Grok read"),
+    )
+    with pytest.raises(LedgerError, match="no verified native session"):
+        journal.prepare(f.source_id, f.locator())
+    assert journal.coverage_changes(0) == ()
+    # An old consent bit can persist without native enrollment and cannot
+    # substitute for an admitted source or turn.
+    view = f.writer.view()
+    f.writer._save(
+        replace(view, permissions=(CaptureChange(f.project, f.source_id, True),))
+    )
+    with pytest.raises(StopIteration):
+        next(retained)
+    with Registry(f.writer.root).writer() as writer:
+        scopes = ScopeState(writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+        journal = RoutingJournal(writer, scopes)
+        with pytest.raises(_LiveSourceUnavailable):
+            journal.prepare(f.source_id, f.locator())
+        (exclusion,) = journal.coverage_changes(0)
+        assert exclusion.coverage.reason == "UNQUALIFIED_SOURCE"
+        assert exclusion.coverage.extent == "unknown"
+        assert journal.as_of().claims == ()
+        with journal._store.transaction() as conn:
+            assert conn.execute("SELECT count(*) FROM progress").fetchone() == (0,)
+
+
+def test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed(
+    isolated_grok_capture,
+):
+    f = isolated_grok_capture
+    _load_turns(f, second=False)
+    journal = RoutingJournal(f.writer, f.state)
+    verified = journal.prepare(f.source_id, f.locator())
+    observational = f.reader.read_delta(f.locator(), None).cursor
+    assert type(observational.checkpoint) is GrokCheckpoint
+    assert observational != verified.progress
+    with pytest.raises(LedgerError, match="not issued together"):
+        journal.reserve(verified.candidates[0], observational)
+    with pytest.raises(LedgerError, match="requires a verified native cursor"):
+        _source_checkpoint(verified.progress)
+    assert _stored_progress(journal, verified) is None
+    (reserved,) = journal.reserve_batch(verified)
+    _enable_delivery(f, journal)
+    ticket = journal.reserve_delivery(reserved.key, 1)
+    mismatched = replace(ticket, claim=replace(ticket.claim, revision=2))
+    with _ledger(f).writer() as writer:
+        delivery = ProjectDelivery.attach(journal, writer)
+        with pytest.raises(_DeliveryRefused, match="Grok usage proof changed"):
+            delivery._monitor_revision(mismatched)
+        with pytest.raises(_DeliveryRefused):
+            delivery.commit(mismatched)
+        assert writer.as_of().sequence == 0
