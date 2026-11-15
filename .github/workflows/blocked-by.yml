@@ -20,7 +20,10 @@ permissions: {}
 
 jobs:
   verify:
-    if: github.repository == 'kburson/aitm' && github.event_name == 'pull_request'
+    if: >-
+      github.repository == 'kburson/aitm' &&
+      (github.event_name == 'pull_request' ||
+       (github.ref == 'refs/heads/trunk' && github.event_name == 'workflow_dispatch' && !inputs.apply))
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -38,7 +41,9 @@ jobs:
         run: python3 -m tools.board_sync.blocked_by
 
   reconcile:
-    if: github.repository == 'kburson/aitm' && github.ref == 'refs/heads/trunk' && github.event_name != 'pull_request'
+    if: >-
+      github.repository == 'kburson/aitm' && github.ref == 'refs/heads/trunk' &&
+      github.event_name != 'pull_request' && (github.event_name != 'workflow_dispatch' || inputs.apply)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     concurrency:
@@ -51,13 +56,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Check without publishing
-        if: github.event_name == 'workflow_dispatch' && !inputs.apply
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 -m tools.board_sync.blocked_by
       - name: Publish and verify field updates
-        if: github.event_name != 'workflow_dispatch' || inputs.apply
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 -m tools.board_sync.blocked_by --apply
+        run: |
+          if ! python3 -m tools.board_sync.blocked_by --apply; then
+            sleep 2
+            python3 -m tools.board_sync.blocked_by --apply
+          fi
