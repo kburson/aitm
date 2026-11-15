@@ -677,11 +677,7 @@ class Registry:
             and profile.current is not None
             and self.view().source_key_id is not None
         ):
-            installations = [
-                item
-                for item in profile.installations
-                if item.source == source and item.directory == approved.directory
-            ]
+            installations = profile.matching_installations(source, approved.directory)
             if len(installations) == 1:
                 (installation,) = installations
                 if prior is None or (
@@ -714,6 +710,27 @@ class Registry:
             )
             decision = _LiveExclusion(approved.source_id, generation, identity)
         raise _LiveSourceUnavailable(decision)
+
+    def _stable_live_exclusion(self, approved: ApprovedSource) -> bool:
+        lease = self.lease
+        if self.view().source_key_id is None or not _pinned(approved.directory):
+            return False
+        evidence = self.source_evidence()
+        profile = self._live_profile
+        if profile is None:
+            return True
+        if (
+            type(profile) is not _LiveProfile
+            or profile.lease is not lease
+            or profile.root.path != str(self.root)
+            or not _pinned(profile.root)
+            or not callable(profile.current)
+        ):
+            return False
+        evidence.validate_source_ref(profile.generation)
+        source = _LiveSourceTuple.from_approval(approved)
+        matches = profile.matching_installations(source, approved.directory)
+        return len(matches) <= 1 and (not source.supported() or not matches)
 
     def _approve(
         self, view: RegistryView, request: SourceApprovalRequest
@@ -760,6 +777,12 @@ class Registry:
         *,
         observed: bool = False,
     ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
+        source, current = self._current_candidate(view, source_id, locator)
+        return source, current, self._require_live_source(source, observed=observed)
+
+    def _current_candidate(
+        self, view: RegistryView, source_id: UUID, locator: SourceLocator
+    ) -> tuple[ApprovedSource, SourceLocator]:
         source = _source(view, source_id)
         _check_capture_root(source.directory)
         candidate = locator._source
@@ -802,7 +825,7 @@ class Registry:
             or str(native.provider) != approval.provider
         ):
             raise _CaptureSourceLost("Native capture source tuple changed")
-        return source, current, self._require_live_source(source, observed=observed)
+        return source, current
 
     def _native_delta(
         self,

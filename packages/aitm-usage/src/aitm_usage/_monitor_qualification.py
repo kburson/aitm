@@ -66,6 +66,15 @@ class _LiveProfile:
     installations: tuple[_InstallationProof, ...]
     current: Callable[[_InstallationProof], bool] | None = field(repr=False)
 
+    def matching_installations(
+        self, source: _LiveSourceTuple, directory: _PhysicalDirectory
+    ) -> tuple[_InstallationProof, ...]:
+        return tuple(
+            installation
+            for installation in self.installations
+            if installation.source == source and installation.directory == directory
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class _LiveSourceProof:
