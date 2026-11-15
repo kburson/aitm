@@ -2643,9 +2643,10 @@ def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
     change = journal.settle_disposition(case.key, owner, rival)
     assert change.sequence == before.sequence + 1
     assert journal.as_of(before.sequence) == before
-    assert journal.as_of().settlements == (change,)
-    assert journal.as_of().disputes == before.disputes
-    assert all(claim in journal.as_of().claims for claim in before.claims)
+    settled = journal.as_of()
+    assert settled.settlements == (change,)
+    assert settled.disputes == before.disputes
+    assert all(claim in settled.claims for claim in before.claims)
     assert change.paired.owner.release.hold.project_id == A
     assert change.paired.rival.release.hold.project_id == B
     assert scope.read_bytes() == scope_bytes
