@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/129"
 parent: 100
 children: []
 blocking: []
-blocked-by: [128, 134, 135, 137]
+blocked-by: [128, 134, 137, 300]
 created: "2026-11-10T13:58:18Z"
 updated: "2026-11-10T16:41:02+00:00"
 last-branch: "planning"
@@ -46,3 +46,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 The verified Linux carrier prerequisites are [#134 M04-LC](../134/story.md) and [#135 M04-LA](../135/story.md), alongside M18 #128. [Reviewed split](../114/plan/jit.md#host-evidence-and-split).
 
 [#137 M05-LG](../137/story.md) is the Linux Grok carrier prerequisite alongside M18 and the two M04 Linux leaves. [Reviewed M05 split](../115/plan/jit.md#carrier-and-ownership).
+
+## Current qualified-cost prerequisite
+
+[#300](https://github.com/kburson/aitm/issues/300) is the verified direct first-release prerequisite. Its scope is the source exclusion and sanitized coverage proof. All remaining downstream delivery gates apply.

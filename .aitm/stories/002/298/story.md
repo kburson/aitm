@@ -5,7 +5,7 @@ title: "Qualify supervised ordinary Claude CLI cursor evidence"
 kind: "story"
 state: "refine"
 issue: "https://github.com/kburson/aitm/issues/298"
-parent: 100
+parent: 301
 children: []
 blocking: [295]
 blocked-by: [210]
@@ -34,3 +34,7 @@ Use the independently accepted supervisor, account and transcript authority, pro
 Project 24 Rank 229.05. [Independent Refine input](plan/2026-11-14-298-claude-carrier-refine.md) · [Native preflight](plan/three-process-preflight.json).
 
 [Independent Refine HOLD](plan/claude-carrier-independent-refine-r1.md) · [Native origin evidence and remaining gate](plan/2026-11-14-298-claude-origin-refine-findings.md).
+
+## Current enhancement scope
+
+This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.

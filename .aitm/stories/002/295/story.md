@@ -5,9 +5,9 @@ title: "[M08b6] Contain unqualified Claude Agent overlap at the routing journal"
 kind: "story"
 state: "refine"
 issue: "https://github.com/kburson/aitm/issues/295"
-parent: 100
+parent: 301
 children: []
-blocking: [119]
+blocking: []
 blocked-by: [210, 298]
 created: "2026-11-14T13:11:34Z"
 updated: "2026-11-14T13:13:56Z"
@@ -66,3 +66,7 @@ The [joined-evidence qualification](plan/2026-11-14-295-claude-joined-evidence.m
 [Carrier R2](design/2026-11-14-295-claude-evidence-design-r2.md) passed independent design and parent-plan scope insertion review. The separately owned carrier must deliver a genuine ordinary cursor before #295 resumes. [Exact activation requirements](design/claude-carrier-activation.md).
 
 The [verified native prerequisite #298](../298/story.md) owns the ordinary cursor proof and is in Refine. #295 still directly gates #119.
+
+## Current enhancement scope
+
+This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.

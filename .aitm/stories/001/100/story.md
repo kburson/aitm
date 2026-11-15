@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 295, 298]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -99,3 +99,7 @@ The independently accepted [#298 carrier](../../002/298/story.md) precedes [#295
 ## Qualified-cost release re-acceptance
 
 R2 independently passed. The current native graph stays authoritative until the replacement blockers, sibling parentage and final exact edge sets are verified. [Exact amendment](plan/2026-11-14-100-qualified-cost-acceptance-r2.md) · [Receipts](plan/qualified-cost-reacceptance-receipt.json).
+
+## Verified qualified-cost release scope
+
+[#300](https://github.com/kburson/aitm/issues/300) directly blocks #119 and #129. The live Claude work now belongs to [#301](https://github.com/kburson/aitm/issues/301). #297 retains the folded scope. See the [current graph and exact release child set](plan/qualified-cost-release-graph.json).

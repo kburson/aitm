@@ -7,7 +7,7 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/210"
 parent: 100
 children: []
-blocking: [119, 204, 295, 298]
+blocking: [119, 204, 295, 298, 300]
 blocked-by: [209]
 created: "2026-11-11T02:38:35Z"
 updated: "2026-11-12T16:20:55+00:00"
@@ -80,3 +80,7 @@ The [native Close readback](plan/settlement-native-close.json) verified Closed C
 [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) also makes #210 the completed prerequisite of [#295](../../002/295/story.md).
 
 [Independently accepted #298 carrier](../../002/298/story.md) follows this completed story.
+
+## Qualified-cost release prerequisite
+
+[#300](https://github.com/kburson/aitm/issues/300) uses this closed predecessor. The carried original Claude prerequisites remain linked.

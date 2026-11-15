@@ -1,0 +1,551 @@
+{
+  "schema": "aitm.qualified-cost-release-native-graph/v1",
+  "replacement": 300,
+  "future_ordinary_claude_epic": 301,
+  "folded_epic": 297,
+  "acceptance_publication": "47228b4bdace19f25627814cd50b1664342bcca8",
+  "verified_at": "2026-11-15T02:19:53Z",
+  "100_children_before": [
+    {
+      "number": 111,
+      "state": "closed",
+      "title": "[M01] Host path security"
+    },
+    {
+      "number": 112,
+      "state": "closed",
+      "title": "[M02] Atomic filesystem operations"
+    },
+    {
+      "number": 113,
+      "state": "closed",
+      "title": "[M03] Versioned project persistence"
+    },
+    {
+      "number": 114,
+      "state": "closed",
+      "title": "[M04] Adapter contract and existing providers"
+    },
+    {
+      "number": 115,
+      "state": "closed",
+      "title": "[M05] Grok evidence adapter"
+    },
+    {
+      "number": 116,
+      "state": "closed",
+      "title": "[M06] Registry and capture epochs"
+    },
+    {
+      "number": 117,
+      "state": "closed",
+      "title": "[M07] Native scope and handoff"
+    },
+    {
+      "number": 118,
+      "state": "closed",
+      "title": "[M08] Service journal and claim order"
+    },
+    {
+      "number": 119,
+      "state": "open",
+      "title": "[M09] Project writes and ACK"
+    },
+    {
+      "number": 120,
+      "state": "open",
+      "title": "[M10] Wake and park scheduler"
+    },
+    {
+      "number": 121,
+      "state": "open",
+      "title": "[M11] Root watches and coordinator"
+    },
+    {
+      "number": 122,
+      "state": "open",
+      "title": "[M12] Recovery and publication fence"
+    },
+    {
+      "number": 123,
+      "state": "open",
+      "title": "[M13] Snapshot reports"
+    },
+    {
+      "number": 124,
+      "state": "open",
+      "title": "[M14] Compatible export and reconciliation"
+    },
+    {
+      "number": 125,
+      "state": "open",
+      "title": "[M15] Host service lifecycle"
+    },
+    {
+      "number": 126,
+      "state": "open",
+      "title": "[M16] Backup, legacy adoption and rollback"
+    },
+    {
+      "number": 127,
+      "state": "open",
+      "title": "[M17] Privacy and scale integration"
+    },
+    {
+      "number": 128,
+      "state": "open",
+      "title": "[M18] Native macOS qualification"
+    },
+    {
+      "number": 129,
+      "state": "open",
+      "title": "[M19] Native Linux qualification"
+    },
+    {
+      "number": 134,
+      "state": "open",
+      "title": "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
+    },
+    {
+      "number": 135,
+      "state": "open",
+      "title": "[M04-LA] Linux Claude Code linked request and adapter bridge"
+    },
+    {
+      "number": 137,
+      "state": "open",
+      "title": "[M05-LG] Linux Grok Build native carrier and adapter bridge"
+    },
+    {
+      "number": 182,
+      "state": "closed",
+      "title": "[M07b] Scope command admission and legacy compatibility"
+    },
+    {
+      "number": 194,
+      "state": "closed",
+      "title": "[M07c] Installed scope launcher compatibility"
+    },
+    {
+      "number": 199,
+      "state": "closed",
+      "title": "[M08b1] Verified Claude revision proof"
+    },
+    {
+      "number": 201,
+      "state": "closed",
+      "title": "[M08b2] Durable causal revision succession"
+    },
+    {
+      "number": 202,
+      "state": "closed",
+      "title": "[M08b3] Verified incomparable-content disputes"
+    },
+    {
+      "number": 203,
+      "state": "closed",
+      "title": "[M08b4a] Verified native disposition proof"
+    },
+    {
+      "number": 209,
+      "state": "closed",
+      "title": "[M08b4b] Atomic journal disposition and coverage projection"
+    },
+    {
+      "number": 210,
+      "state": "closed",
+      "title": "[M08b4c] Verified paired disposition settlement"
+    },
+    {
+      "number": 269,
+      "state": "closed",
+      "title": "[Spike] Prove Claude folded origin and original scope"
+    },
+    {
+      "number": 282,
+      "state": "closed",
+      "title": "[Spike] Measure Claude subagent telemetry coverage and story impact"
+    },
+    {
+      "number": 295,
+      "state": "open",
+      "title": "[M08b6] Contain unqualified Claude Agent overlap at the routing journal"
+    },
+    {
+      "number": 298,
+      "state": "open",
+      "title": "Qualify supervised ordinary Claude CLI cursor evidence"
+    }
+  ],
+  "100_children_after": [
+    {
+      "number": 111,
+      "state": "closed",
+      "title": "[M01] Host path security"
+    },
+    {
+      "number": 112,
+      "state": "closed",
+      "title": "[M02] Atomic filesystem operations"
+    },
+    {
+      "number": 113,
+      "state": "closed",
+      "title": "[M03] Versioned project persistence"
+    },
+    {
+      "number": 114,
+      "state": "closed",
+      "title": "[M04] Adapter contract and existing providers"
+    },
+    {
+      "number": 115,
+      "state": "closed",
+      "title": "[M05] Grok evidence adapter"
+    },
+    {
+      "number": 116,
+      "state": "closed",
+      "title": "[M06] Registry and capture epochs"
+    },
+    {
+      "number": 117,
+      "state": "closed",
+      "title": "[M07] Native scope and handoff"
+    },
+    {
+      "number": 118,
+      "state": "closed",
+      "title": "[M08] Service journal and claim order"
+    },
+    {
+      "number": 119,
+      "state": "open",
+      "title": "[M09] Project writes and ACK"
+    },
+    {
+      "number": 120,
+      "state": "open",
+      "title": "[M10] Wake and park scheduler"
+    },
+    {
+      "number": 121,
+      "state": "open",
+      "title": "[M11] Root watches and coordinator"
+    },
+    {
+      "number": 122,
+      "state": "open",
+      "title": "[M12] Recovery and publication fence"
+    },
+    {
+      "number": 123,
+      "state": "open",
+      "title": "[M13] Snapshot reports"
+    },
+    {
+      "number": 124,
+      "state": "open",
+      "title": "[M14] Compatible export and reconciliation"
+    },
+    {
+      "number": 125,
+      "state": "open",
+      "title": "[M15] Host service lifecycle"
+    },
+    {
+      "number": 126,
+      "state": "open",
+      "title": "[M16] Backup, legacy adoption and rollback"
+    },
+    {
+      "number": 127,
+      "state": "open",
+      "title": "[M17] Privacy and scale integration"
+    },
+    {
+      "number": 128,
+      "state": "open",
+      "title": "[M18] Native macOS qualification"
+    },
+    {
+      "number": 129,
+      "state": "open",
+      "title": "[M19] Native Linux qualification"
+    },
+    {
+      "number": 134,
+      "state": "open",
+      "title": "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
+    },
+    {
+      "number": 137,
+      "state": "open",
+      "title": "[M05-LG] Linux Grok Build native carrier and adapter bridge"
+    },
+    {
+      "number": 182,
+      "state": "closed",
+      "title": "[M07b] Scope command admission and legacy compatibility"
+    },
+    {
+      "number": 194,
+      "state": "closed",
+      "title": "[M07c] Installed scope launcher compatibility"
+    },
+    {
+      "number": 199,
+      "state": "closed",
+      "title": "[M08b1] Verified Claude revision proof"
+    },
+    {
+      "number": 201,
+      "state": "closed",
+      "title": "[M08b2] Durable causal revision succession"
+    },
+    {
+      "number": 202,
+      "state": "closed",
+      "title": "[M08b3] Verified incomparable-content disputes"
+    },
+    {
+      "number": 203,
+      "state": "closed",
+      "title": "[M08b4a] Verified native disposition proof"
+    },
+    {
+      "number": 209,
+      "state": "closed",
+      "title": "[M08b4b] Atomic journal disposition and coverage projection"
+    },
+    {
+      "number": 210,
+      "state": "closed",
+      "title": "[M08b4c] Verified paired disposition settlement"
+    },
+    {
+      "number": 269,
+      "state": "closed",
+      "title": "[Spike] Prove Claude folded origin and original scope"
+    },
+    {
+      "number": 282,
+      "state": "closed",
+      "title": "[Spike] Measure Claude subagent telemetry coverage and story impact"
+    },
+    {
+      "number": 300,
+      "state": "open",
+      "title": "Refuse unqualified sources and retain sanitized coverage evidence"
+    }
+  ],
+  "sibling_children": [
+    {
+      "number": 135,
+      "state": "open",
+      "title": "[M04-LA] Linux Claude Code linked request and adapter bridge"
+    },
+    {
+      "number": 295,
+      "state": "open",
+      "title": "[M08b6] Contain unqualified Claude Agent overlap at the routing journal"
+    },
+    {
+      "number": 298,
+      "state": "open",
+      "title": "Qualify supervised ordinary Claude CLI cursor evidence"
+    }
+  ],
+  "119_verified_before_removing_old": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 295,
+      "state": "open"
+    },
+    {
+      "number": 300,
+      "state": "open"
+    }
+  ],
+  "129_verified_before_removing_old": [
+    {
+      "number": 128,
+      "state": "open"
+    },
+    {
+      "number": 134,
+      "state": "open"
+    },
+    {
+      "number": 135,
+      "state": "open"
+    },
+    {
+      "number": 137,
+      "state": "open"
+    },
+    {
+      "number": 300,
+      "state": "open"
+    }
+  ],
+  "119_after": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 300,
+      "state": "open"
+    }
+  ],
+  "129_after": [
+    {
+      "number": 128,
+      "state": "open"
+    },
+    {
+      "number": 134,
+      "state": "open"
+    },
+    {
+      "number": 137,
+      "state": "open"
+    },
+    {
+      "number": 300,
+      "state": "open"
+    }
+  ],
+  "replacement_incoming": [
+    {
+      "number": 210,
+      "state": "closed"
+    }
+  ],
+  "replacement_outgoing": [
+    {
+      "number": 119,
+      "state": "open"
+    },
+    {
+      "number": 129,
+      "state": "open"
+    }
+  ],
+  "replacement_project_at_verification": {
+    "actual": null,
+    "coverage": null,
+    "estimate": null,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0J7k",
+    "issue": 300,
+    "rank": 229.06,
+    "repository": "kburson/aitm",
+    "size": null,
+    "start": null,
+    "status": "Backlog"
+  },
+  "100_dependencies": {
+    "incoming": [
+      {
+        "number": 101,
+        "state": "closed"
+      },
+      {
+        "number": 102,
+        "state": "closed"
+      }
+    ],
+    "outgoing": [
+      {
+        "number": 2,
+        "state": "open"
+      }
+    ]
+  },
+  "204_state": "open",
+  "297_children_unchanged": [
+    {
+      "number": 204,
+      "state": "open",
+      "title": "[M08b5] Qualified folded usage intent"
+    },
+    {
+      "number": 270,
+      "state": "open",
+      "title": "[M08b5 prerequisite] Admit Claude foreground Agent source spans in the writer"
+    },
+    {
+      "number": 296,
+      "state": "open",
+      "title": "[M09-Folded] Qualify atomic Claude Agent replacement delivery"
+    }
+  ],
+  "open_first_release_children": [
+    119,
+    120,
+    121,
+    122,
+    123,
+    124,
+    125,
+    126,
+    127,
+    128,
+    129,
+    134,
+    137,
+    300
+  ]
+}

@@ -2,7 +2,7 @@
   "schema": "aitm.qualified-cost-independent-reacceptance/v1",
   "epic": 100,
   "verdict": "PASS",
-  "activation": "pending",
+  "activation": "verified",
   "codex_legacy_peer_review_route": "isolated Claude CLI; package manual check unavailable",
   "model": "claude-opus-5-5",
   "effort": "high",
@@ -27,5 +27,6 @@
     }
   ],
   "replacement_issue_body_sha256": "9a4191643533376d0cccf7edf61acd94d2ad02dfad5cb284f9bebc8c3279ca45",
-  "sibling_issue_body_sha256": "fd6e074965a95abfaea7ec3c8e732581411120bfc0c2c113d841747c8a4a9a65"
+  "sibling_issue_body_sha256": "fd6e074965a95abfaea7ec3c8e732581411120bfc0c2c113d841747c8a4a9a65",
+  "graph_receipt": "qualified-cost-release-graph.json"
 }

@@ -5,9 +5,9 @@ title: "[M04-LA] Linux Claude Code linked request and adapter bridge"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/135"
-parent: 100
+parent: 301
 children: []
-blocking: [129]
+blocking: []
 blocked-by: [114]
 created: "2026-11-10T15:38:59Z"
 updated: "2026-11-10T15:46:34+00:00"
@@ -38,3 +38,7 @@ Reopen planning if authentic Linux evidence requires changing the #114 contract.
 Project 24 shows Refine. The local Linux host works and the native Claude Code evidence requires an authenticated sandbox. Proposed estimate is 3.25 hours, size M, conditional on the actual carrier fitting the delivered adapter contract. Independent Refine and exact JIT remain pending. [Refine packet](plan/2026-11-11-135-refine.md)
 
 Partial Actual is 0.0381 hours from the assigned Codex worker’s bounded Refine progress. [Timing receipt](attachments/timing/full-auto-linux-refine-1-135.json)
+
+## Current enhancement scope
+
+This work stays open under [#301](https://github.com/kburson/aitm/issues/301). The qualified-cost first release excludes live Claude. Current native parent and dependencies supersede earlier delivery links.
