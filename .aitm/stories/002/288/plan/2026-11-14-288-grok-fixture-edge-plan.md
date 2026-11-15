@@ -1,0 +1,3 @@
+# #288 Add the measured Grok fixture dependency
+
+The #267 headless JSON change caused the exact predeclared Grok corroboration test to fail, but the advisory plan lacked a declared fixture path. Add a reviewed fixture edge from the Grok test module to that exact input. The module fixture reads the file, so associate it conservatively with the module's collected tests. Keep existing unknown import fallback. Exercise the real manifest in a minimal bound selection fixture, then replay the #267 change in disposable exact parent and candidate checkouts and compare witnesses and fallback. Keep #103 and production scheduling intact.

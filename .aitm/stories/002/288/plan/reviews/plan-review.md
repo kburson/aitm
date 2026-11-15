@@ -1,0 +1,7 @@
+# #288 independent fixture-edge plan review
+
+**Verdict: ACCEPTED.** Signed by OpenAI Codex, independent review agent `/root/review148`. Reviewed plan SHA-256 `25ccb712970cbf1a6b91a904eaacd216419ceec38aee0f33cc7d6b15b521769d`. [#288](https://github.com/kburson/aitm/issues/288)
+
+I verified that #288 is Rank 110 and its prerequisites #142, #285 and #286 are Closed as completed. The #267 comparison recorded a failure at `test_headless_projection_is_only_corroboration` after changing the synthetic headless JSON. The pinned source's `grok_source` fixture reads and parses that exact file before supplying the data to tests. The existing manifest parser supports exact repository-relative `fixture` edges and binds a declaration to its reviewed identifier. A module-level edge is a conservative statement of that dependency. [#267](https://github.com/kburson/aitm/issues/267)
+
+The minimal bound selection case can isolate the new positive witness, while the exact parent/candidate CLI comparison measures whether the real workload still falls back. A full result can be correct in both real runs if existing unresolved imports remain relevant. The candidate should retain the fixture-to-module witness for the predeclared test in the CLI output even when it conservatively runs the full workload. Verify that unrelated or unclassified changes still fall back, and retain exact node and mode evidence. The plan preserves local advisory scope, production scheduling and the #103 gate. [#103](https://github.com/kburson/aitm/issues/103)

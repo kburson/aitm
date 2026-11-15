@@ -1,0 +1,123 @@
+{
+  "after": {
+    "changes": [
+      {
+        "new": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "old": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "status": "M"
+      }
+    ],
+    "expected_test_witnesses": [
+      {
+        "hops": [
+          {
+            "consumer": {
+              "display": "packages/aitm-usage/tests/test_grok.py",
+              "hex": "7061636b616765732f6169746d2d75736167652f74657374732f746573745f67726f6b2e7079"
+            },
+            "input": {
+              "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+              "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+            },
+            "kind": "fixture",
+            "rules": [
+              "grok-headless-fixture"
+            ]
+          }
+        ],
+        "key": [
+          "pytest",
+          "aitm-usage",
+          "darwin-apfs",
+          "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+        ],
+        "path": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "side": "before"
+      },
+      {
+        "hops": [
+          {
+            "consumer": {
+              "display": "packages/aitm-usage/tests/test_grok.py",
+              "hex": "7061636b616765732f6169746d2d75736167652f74657374732f746573745f67726f6b2e7079"
+            },
+            "input": {
+              "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+              "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+            },
+            "kind": "fixture",
+            "rules": [
+              "grok-headless-fixture"
+            ]
+          }
+        ],
+        "key": [
+          "pytest",
+          "aitm-usage",
+          "darwin-apfs",
+          "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+        ],
+        "path": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "side": "after"
+      }
+    ],
+    "mode": "full",
+    "raw_sha256": "15b94ba18994b9b5db491528788921f281866dd9047b56d6839001b94ca99f99",
+    "reasons": [
+      "uncertain impact for 1 changed path(s): dynamic-import, unresolved-import"
+    ],
+    "selected": 1412,
+    "snapshot": {
+      "after": "d7cecb55e58df5a762f708c512a4b14a77bb10b1543a434c685ddb4a2d74b070",
+      "base": "4c9f4428fe12ffb320e3f618eed6dac6ebedbe36",
+      "base_tree": "678b3920ae1b6de96947e979f1c80f90ec310caf",
+      "before": "a8b0ae33d705428932deb1636913e2a6cc306ad973a2c952c0f485f7c91134f1",
+      "repository": "kburson/aitm",
+      "worktree": "e1083194d009ecc926e0cea37e7ee44106c5105eebf7354175bd56797bea12d5"
+    },
+    "witnesses": 636
+  },
+  "before": {
+    "changes": [
+      {
+        "new": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "old": {
+          "display": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+          "hex": "7061636b616765732f6169746d2d75736167652f74657374732f66697874757265732f67726f6b2f686561646c6573732e6a736f6e"
+        },
+        "status": "M"
+      }
+    ],
+    "expected_test_witnesses": [],
+    "mode": "full",
+    "raw_sha256": "5158d5ddfe1c3e228f76f4d2a8fcd608e812d8c4cdc13c112b0af004fd6ca732",
+    "reasons": [
+      "uncertain impact for 1 changed path(s): dynamic-import, unresolved-import"
+    ],
+    "selected": 1412,
+    "snapshot": {
+      "after": "c2b6a25aed762272eee1d195b7c650deaf8b2928c0b6d208112471a2f70d668c",
+      "base": "8d794c548f4ee48910ed32cdb9447b28969cebb6",
+      "base_tree": "acd6409a2722558c82c62dfe4647c36c8439dc90",
+      "before": "91d1a230c9b40f5fd437279762cbc86b6c328c4fd916932f9f0fffc9670c8302",
+      "repository": "kburson/aitm",
+      "worktree": "1a6a3a4515128e60f957e961b73a60956d0d8fb43c7a0acb2f671883eba5d489"
+    },
+    "witnesses": 0
+  }
+}
