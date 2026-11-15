@@ -1,5 +1,4 @@
 import pytest
-
 from ci_fast_story_shadow import classify_diff, phase_evidence, reviewed_tuple
 from verify_pr import Hold
 
@@ -70,8 +69,68 @@ def test_exact_outcomes_require_all_phases_and_required_children():
     }
     assert phase_evidence(document, [node], ["cli-help"]) == {node: "passed"}
     with pytest.raises(Hold, match="outcomes"):
-        phase_evidence({**document, "reports": document["reports"][1:]}, [node], ["cli-help"])
+        phase_evidence(
+            {**document, "reports": document["reports"][1:]}, [node], ["cli-help"]
+        )
     with pytest.raises(Hold, match="children"):
         phase_evidence({**document, "children": []}, [node], ["cli-help"])
     with pytest.raises(Hold, match="inventory"):
         phase_evidence(document, [node, "x.py::test_missing"], ["cli-help"])
+
+
+def test_signature_must_bind_exact_manifest_and_designated_issuer(
+    tmp_path, monkeypatch
+):
+    import subprocess
+
+    import ci_fast_story_shadow as shadow
+
+    key = tmp_path / "key"
+    wrong = tmp_path / "wrong"
+    for path in (key, wrong):
+        subprocess.run(
+            ["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-f", str(path)],
+            check=True,
+        )
+    raw = b'{"review_sha256":"accepted fixture"}\n'
+    manifest = tmp_path / "manifest"
+    manifest.write_bytes(raw)
+    subprocess.run(
+        [
+            "ssh-keygen",
+            "-Y",
+            "sign",
+            "-f",
+            str(key),
+            "-n",
+            "aitm-fast-story-admission",
+            str(manifest),
+        ],
+        check=True,
+        capture_output=True,
+    )
+    signature = manifest.with_suffix(".sig").read_bytes()
+    monkeypatch.setattr(shadow, "SIGNER", key.with_suffix(".pub").read_text())
+    shadow.verify_admission_signature(raw, signature)
+    with pytest.raises(Hold, match="signature"):
+        shadow.verify_admission_signature(raw + b" ", signature)
+    monkeypatch.setattr(shadow, "SIGNER", wrong.with_suffix(".pub").read_text())
+    with pytest.raises(Hold, match="signature"):
+        shadow.verify_admission_signature(raw, signature)
+
+
+def test_checkout_refuses_case_alias_or_wrong_content(tmp_path):
+    from hashlib import sha1
+
+    from ci_fast_story_shadow import verify_checkout
+
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "Guide.md").write_bytes(b"old")
+    good = sha1(b"blob 3\0old").hexdigest()
+    wrong = sha1(b"blob 3\0new").hexdigest()
+    verify_checkout(tmp_path, f"100644 blob {good}\tdocs/Guide.md\0".encode())
+    with pytest.raises(Hold, match="archive"):
+        verify_checkout(tmp_path, f"100644 blob {good}\tdocs/guide.md\0".encode())
+    with pytest.raises(Hold, match="archive"):
+        verify_checkout(tmp_path, f"100644 blob {wrong}\tdocs/Guide.md\0".encode())
