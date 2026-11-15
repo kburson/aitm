@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [210]
 created: "2026-11-15T02:29:56Z"
 updated: "2026-11-15T02:30:19Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.7, "size": "M"}
 priority: null
 origin: ".aitm/stories/003/300/plan/2026-11-14-300-qualified-policy-split.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -40,3 +40,7 @@ Held on missing authenticated provider executable identity and policy generation
 ## Current accepted enforcement scope
 
 Independent acceptance assigned the real issuer to #304. Refine recovery is scoped to the closed policy and writer-local custody contract. [Accepted amendment](https://github.com/kburson/aitm/blob/79aecafe17c5dc0417fd00c2ecd37cdfe3651d58/.aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md).
+
+## Independent Refine recovery
+
+Passed at 2.7 implementation hours, with #304 owning real issuer proof. Exact JIT is active. [Review](plan/qualified-source-profile-independent-refine-r2.md).
