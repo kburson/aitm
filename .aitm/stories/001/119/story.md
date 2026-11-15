@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 119
 title: "[M09] Project writes and ACK"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/119"
 parent: 100
 children: []
@@ -73,3 +73,7 @@ The exact destination delivery plan passed independent JIT. The accepted conditi
 ## Local Test
 
 Exact locked delivery, restart, ACK, queue and legacy compatibility checks passed. [Evidence](plan/delivery-local-test.json).
+
+## Independent source
+
+The exact destination custody and ACK candidate passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/delivery-signed-hosted-r1.json) · [Source receipt](plan/delivery-independent-source-r1-receipt.json).
