@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 331
 title: "[M11e] Enroll new Grok streams under existing capture grants"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/331"
 parent: 100
 children: []
@@ -42,3 +42,5 @@ Verified #329 Close and the M11e split release this leaf at Rank 249.5. [Indepen
 ## Test
 
 The exact candidate passed 1,484 locked local tests. The focused regressions cover grant reconstruction, empty roots, late discovery and in-flight turns, profile and incarnation changes, the pending-disable fence, and preserved gap readback. [Exact local Test](plan/grok-enrollment-local-test.json) · [PR #334](https://github.com/kburson/aitm/pull/334).
+
+[Signed hosted Test](plan/grok-enrollment-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
