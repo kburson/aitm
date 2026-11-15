@@ -34,7 +34,7 @@ from test_codex import (
 from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
-from aitm_usage.sources.scan import _capture_position
+from aitm_usage.sources.scan import _capture_position, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
@@ -44,6 +44,10 @@ from aitm_usage.types import (
     Revision,
     _decode,
     _encode,
+)
+
+LINUX_CODEX_FIXTURE = (
+    Path(__file__).parent / "fixtures/codex/linux-arm64-0.167.0-alpha.3.2.jsonl"
 )
 
 CLAUDE_FIXTURE = Path(__file__).parent / "fixtures/claude/usage.jsonl"
@@ -306,6 +310,198 @@ def test_codex_receipt_usage_span_includes_the_later_native_counter(
     ]
     assert observation.usage.boundary.ordinal == 7
     assert observation.span_end == 10
+
+
+def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
+    module, adapter, root = _adapter(
+        monkeypatch, source, system="Linux", arch="aarch64"
+    )
+    key, directory, checkout = source
+    data = LINUX_CODEX_FIXTURE.read_bytes().replace(b"CHECKOUT", str(checkout).encode())
+    lines = data.splitlines(keepends=True)
+    archived = b"".join(lines[:22])
+    path = directory / "cli.jsonl"
+    path.write_bytes(archived)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+
+    boundary = _receipt_request(result)
+    assert boundary.ordinal == 19
+    assert boundary.receipt_ref == key.pseudonymize(
+        "scope-receipt", str(UUID(int=0x134C))
+    )
+    mark = [obs for obs in result.observations if obs.usage.boundary == boundary]
+    assert len(mark) == 1
+    assert mark[0].usage.tokens.total_tokens == 20836
+    assert mark[0].usage.availability is Availability.COMPLETE
+    assert not any(obs.usage.boundary.ordinal < 6 for obs in result.observations)
+    assert result.cursor.checkpoint.cursor.offset == len(archived)
+    saved = _decode(_encode(result.cursor, module.StreamCursor), module.StreamCursor)
+
+    with path.open("ab") as stream:
+        stream.write(b"".join(lines[22:]))
+    assert (
+        sha256(path.read_bytes()[: saved.checkpoint.cursor.offset]).digest()
+        == sha256(archived).digest()
+    )
+    cold = module.ProviderAdapter()
+    resumed = cold.read_delta(next(cold.discover(root)), saved)
+    assert not any(item.boundary.receipt_ref for item in resumed.boundaries)
+    assert len(resumed.observations) == 1
+    assert resumed.observations[0].usage.boundary.ordinal == 29
+    one_read = cold.read_delta(locator, None)
+    assert resumed.cursor == one_read.cursor
+    assert (*result.observations, *resumed.observations) == one_read.observations
+    replay = cold.read_delta(locator, resumed.cursor)
+    assert replay.cursor == resumed.cursor
+    assert not replay.observations
+
+
+def test_linux_codex_fixed_capture_fence_has_only_visible_receipt(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:17])
+    (locator,) = adapter.discover(root)
+    fixed = scan(locator._source, None, CUTOFF)
+    held = adapter.read_delta(locator, None)
+    assert not any(item.boundary.receipt_ref for item in held.boundaries)
+    assert held.cursor is None
+
+    _write(path, rows)
+    replay = adapter.read_delta(locator, None, _capture_limit=fixed.cursor)
+    assert replay == held
+    final = adapter.read_delta(locator, None)
+    assert final.cursor is not None
+    assert _receipt_request(final).ordinal == 19
+
+
+def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    path = directory / "cli.jsonl"
+    _write(path, rows[:22])
+    (locator,) = adapter.discover(root)
+    previous = adapter.read_delta(locator, None)
+    assert previous.cursor is not None
+
+    _write(path, [*rows[:22], rows[30]])
+    result = adapter.read_delta(locator, previous.cursor)
+    assert result.cursor == previous.cursor
+    assert not result.observations
+    assert not result.boundaries
+
+
+@pytest.mark.parametrize(
+    "system,arch,metadata",
+    [
+        ("Darwin", "arm64", {}),
+        ("Linux", "x86_64", {}),
+        ("Linux", "arm64", {}),
+        ("Linux", "aarch64", {"originator": "Codex Desktop", "source": "vscode"}),
+        ("Linux", "aarch64", {"originator": "codex_cli_rs", "source": "cli"}),
+        ("Linux", "aarch64", {"originator": "other"}),
+        ("Linux", "aarch64", {"source": "cli"}),
+        ("Linux", "aarch64", {"cli_version": "0.167.0-alpha.3.3"}),
+        ("Linux", "aarch64", {"format_version": 2}),
+        (
+            "Linux",
+            "aarch64",
+            {"forked_from_id": "00000000-0000-0000-0000-000000013500"},
+        ),
+    ],
+)
+def test_linux_codex_rejects_unverified_origin(
+    monkeypatch, source, system, arch, metadata
+):
+    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    rows[0]["payload"].update(metadata)
+    _write(directory / "cli.jsonl", rows)
+    for locator in adapter.discover(root):
+        result = adapter.read_delta(locator, None)
+        assert result.cursor is None
+        assert not result.boundaries
+        assert not result.observations
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("permission_profile", {"type": "managed"}),
+        ("sandbox_policy", {"type": "workspace-write"}),
+        ("root_turn_id", None),
+        ("turn_id", "foreign-turn"),
+    ],
+)
+def test_linux_codex_unverified_mode_cannot_advance_cursor(
+    monkeypatch, source, field, value
+):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)[:22]
+    rows[7]["payload"][field] = value
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert not result.observations
+    assert not any(boundary.boundary.receipt_ref for boundary in result.boundaries)
+    assert result.cursor is None
+
+
+@pytest.mark.parametrize(
+    "variation",
+    [
+        "no_response",
+        "wrong_session",
+        "wrong_thread",
+        "wrong_turn",
+        "wrong_root",
+        "duplicate_response",
+        "detached_output",
+        "duplicate_output",
+        "unforwarded",
+        "extra_statement",
+        "parallel_tool",
+    ],
+)
+def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
+    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
+    _, directory, checkout = source
+    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+    # Leave a later clean turn so a rejected marker cannot leak to its response.
+    id_field = {
+        "wrong_session": "session_id",
+        "wrong_thread": "thread_id",
+        "wrong_turn": "turn_id",
+        "wrong_root": "root_turn_id",
+    }.get(variation)
+    if id_field:
+        rows[19]["payload"][id_field] = "foreign-native-id"
+    elif variation == "no_response":
+        del rows[19]
+    elif variation == "duplicate_response":
+        rows[19]["payload"]["response_id"] = rows[13]["payload"]["response_id"]
+    elif variation == "detached_output":
+        rows[15]["payload"]["call_id"] = "foreign-call"
+    elif variation == "duplicate_output":
+        rows.insert(16, rows[15])
+    elif variation == "unforwarded":
+        rows[15]["payload"]["output"][1]["text"] = ""
+    elif variation == "extra_statement":
+        rows[12]["payload"]["input"] += "text('extra');\n"
+    else:
+        second = json.loads(json.dumps(rows[12]))
+        second["payload"]["call_id"] = "other-tool"
+        rows.insert(13, second)
+    _write(directory / "cli.jsonl", rows)
+    (locator,) = adapter.discover(root)
+    result = adapter.read_delta(locator, None)
+    assert not any(item.boundary.receipt_ref for item in result.boundaries)
+    assert not any(item.usage.boundary.receipt_ref for item in result.observations)
 
 
 def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(

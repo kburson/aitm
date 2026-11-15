@@ -78,6 +78,11 @@ _OUTPUTS = {"function_call_output", "custom_tool_call_output"}
 _MARKER_WRAPPER = re.compile(
     r"const marker = await tools\.exec_command\((\{.*\})\); text\(marker\.output\);"
 )
+_LINUX_MARKER_WRAPPER = re.compile(
+    r"const result = await tools\.exec_command\(\{cmd:"
+    r'("(?:[^"\\\x00-\x1f]|\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4}))*")'
+    r",max_output_tokens:1000\}\);\ntext\(result\.output\);\n"
+)
 _DESKTOP_OUTPUT = re.compile(
     r"Script completed\nWall time \d+(?:\.\d+)? seconds\nOutput:\n"
 )
@@ -455,14 +460,49 @@ def _marker_command(payload: dict, project_root: Path | None) -> _Marker | None:
     return None
 
 
-def _marker_output(payload: dict, marker: _Marker) -> UUID | None:
+def _linux_marker_command(payload: dict) -> _Marker | None:
+    source = payload.get("input")
+    if (
+        payload.get("type") != "custom_tool_call"
+        or payload.get("name") != "exec"
+        or type(source) is not str
+        or len(source) > 8192
+        or (wrapper := _LINUX_MARKER_WRAPPER.fullmatch(source)) is None
+    ):
+        return None
+    try:
+        command = json.loads(wrapper[1])
+        parts = shlex.split(command)
+    except (ValueError, RecursionError):
+        return None
+    if (
+        len(parts) == 8
+        and parts[:2] == ["aitm-usage", "--project"]
+        and Path(parts[2]).is_absolute()
+        and parts[3:6] == ["scope", "mark", "--marker"]
+        and Path(parts[6]).is_absolute()
+        and parts[7] == "--json"
+        and "\0" not in command
+        and command == shlex.join(parts)
+    ):
+        return _Marker.MONITOR_SCOPE
+    return None
+
+
+def _marker_output(
+    payload: dict, marker: _Marker, *, linux_cli: bool = False
+) -> UUID | None:
     if payload.get("type") != "custom_tool_call_output":
         return None
     blocks = payload.get("output")
     if type(blocks) is not list or len(blocks) != 2:
         return None
     header, body = (_object(block) for block in blocks)
-    if any(block.get("type") != "input_text" for block in (header, body)):
+    if any(
+        block.get("type") != "input_text"
+        or (linux_cli and block.keys() != {"type", "text"})
+        for block in (header, body)
+    ):
         return None
     prefix, content = header.get("text"), body.get("text")
     if (
@@ -502,8 +542,11 @@ class _Walk:
         eligibility: Eligibility,
         *,
         qualify_completion: bool = False,
+        linux_cli: bool = False,
     ):
         self.state = state
+        self.linux_cli = linux_cli
+        self.linux_unsettled: int | None = None
         self.marker_root = None if state.neutral_markers else state.ledger.root
         self.record_usage = eligibility is Eligibility.ELIGIBLE
         state.ledger.validate_source_ref(batch.cursor.source_ref)
@@ -640,10 +683,14 @@ class _Walk:
         return new
 
     def turn_start(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
+        if self.linux_cli:
+            self.linux_unsettled = frame.ordinal
         context = self.context
         raw_id = _identifier(payload.get("turn_id"))
         raw_root = payload.get("root_turn_id")
-        root_id = raw_id if raw_root is None else _identifier(raw_root)
+        root_id = (
+            raw_id if raw_root is None and not self.linux_cli else _identifier(raw_root)
+        )
         if raw_id is None or root_id is None:
             if commit:
                 self.gap(frame, DiagnosticCode.MALFORMED_USAGE)
@@ -710,7 +757,13 @@ class _Walk:
         turn = context.turn
         if commit and not self.eligible(frame):
             context.tainted = True
-        if not self.matches_turn(frame, payload, turn):
+        if not self.matches_turn(frame, payload, turn, require_root=self.linux_cli) or (
+            self.linux_cli
+            and (
+                payload.get("sandbox_policy") != {"type": "danger-full-access"}
+                or payload.get("permission_profile") != {"type": "disabled"}
+            )
+        ):
             if commit:
                 self.gap(frame, DiagnosticCode.BOUNDARY_UNVERIFIED)
             self.context = _Context(
@@ -774,8 +827,19 @@ class _Walk:
     def turn_end(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
         context = self.context
         turn = context.turn
-        matches = self.matches_turn(frame, payload, turn)
+        matches = self.matches_turn(frame, payload, turn, require_root=self.linux_cli)
         unsettled = context.response is not None or (turn is not None and not matches)
+        if (
+            self.linux_cli
+            and matches
+            and turn.seen_context
+            and turn.seen_counter
+            and not unsettled
+            and not context.conflict
+            and not context.ambiguous
+            and context.receipt is None
+        ):
+            self.linux_unsettled = None
         if commit and (not matches or not turn.seen_counter or unsettled):
             self.gap(frame, DiagnosticCode.COVERAGE_GAP)
         if commit and self.completion is not None:
@@ -895,9 +959,18 @@ class _Walk:
                 context.call = None
                 context.parallel = True
             else:
-                context.call = _Call(
-                    ref, frame.segment_ref, _marker_command(payload, self.marker_root)
-                )
+                turn = context.turn
+                if not self.linux_cli:
+                    marker = _marker_command(payload, self.marker_root)
+                elif (
+                    turn is not None
+                    and turn.seen_context
+                    and frame.segment_ref == turn.segment_ref
+                ):
+                    marker = _linux_marker_command(payload)
+                else:
+                    marker = None
+                context.call = _Call(ref, frame.segment_ref, marker)
             return
 
         call = context.call
@@ -914,7 +987,7 @@ class _Walk:
         self.discard_serial_output()
         context.serial_output = frame.segment_ref if not frame.pre_cutoff else None
         command = (
-            _marker_output(payload, call.marker)
+            _marker_output(payload, call.marker, linux_cli=self.linux_cli)
             if call.marker is not None and not frame.pre_cutoff
             else None
         )
@@ -926,7 +999,8 @@ class _Walk:
                     self.ledger, frame.session_ref, command
                 ),
             )
-            context.next_turn_receipt = context.receipt
+            if not self.linux_cli:
+                context.next_turn_receipt = context.receipt
             if (
                 commit
                 and self.completion is not None
@@ -947,6 +1021,8 @@ class _Walk:
         self.discard_serial_output()
         context.next_turn_receipt = None
         context.compaction = None
+        if self.linux_cli and context.turn is not None:
+            context.turn = replace(context.turn, seen_context=False)
         if commit:
             self.gap(frame, code)
 
@@ -1004,7 +1080,11 @@ class _Walk:
         if commit:
             self.thread_counts = thread_counts
         serial = context.serial_output == frame.segment_ref and not frame.pre_cutoff
-        same_turn = turn is not None and turn.segment_ref == frame.segment_ref
+        same_turn = (
+            turn is not None
+            and turn.segment_ref == frame.segment_ref
+            and (not self.linux_cli or turn.seen_context)
+        )
         receipt = (
             context.receipt
             if serial and same_turn and not context.ambiguous and not context.conflict
@@ -1167,7 +1247,7 @@ class _Walk:
         context.ambiguous = context.conflict = False
 
     def counter(self, frame: SourceFrame, payload: dict, commit: bool) -> None:
-        if commit:
+        if commit and not self.linux_cli:
             self.rate_limits(frame, payload.get("rate_limits"))
         raw_info = payload.get("info")
         if raw_info is None and "info" in payload:
@@ -1250,7 +1330,12 @@ class _Walk:
             context.turn = replace(turn, seen_counter=True)
         if response is None and not conflict:
             self.thread_counts = None
-        if not self.record_usage or not eligible or conflict:
+        if (
+            not self.record_usage
+            or not eligible
+            or conflict
+            or (self.linux_cli and response is None)
+        ):
             return
         safe = (
             response.eligible
@@ -1400,6 +1485,21 @@ class _Walk:
         payload = _object(frame.row.get("payload"))
         item = payload.get("type")
         item = item if type(item) is str else None
+        if (
+            self.linux_cli
+            and self.linux_unsettled is None
+            and (
+                kind == "token_usage_record"
+                or (
+                    kind == "event_msg"
+                    and item == "token_count"
+                    and payload.get("info") is not None
+                )
+            )
+        ):
+            # Counters without an active verified turn can seed later history,
+            # but cannot advance the persisted standalone carrier cursor.
+            self.linux_unsettled = frame.ordinal
         self.continue_compaction(frame, kind, item, payload)
         if commit and self.completion is not None:
             if kind == "event_msg" and item == "task_started":
@@ -1413,6 +1513,8 @@ class _Walk:
                 self.completion.invalid = True
 
         if kind == "session_meta":
+            if self.linux_cli:
+                self.linux_unsettled = frame.ordinal
             self.startup(frame, payload, commit)
         elif self.epoch is None:
             if commit:
@@ -1438,6 +1540,8 @@ class _Walk:
         elif kind == "response_item" and item in (_CALLS | _OUTPUTS):
             self.tool(frame, payload, item, commit)
         elif kind == "event_msg" and item in _ATTEMPT_ERRORS:
+            if self.linux_cli and self.context.turn is not None:
+                self.context.turn = replace(self.context.turn, seen_context=False)
             self.context.ambiguous = True
             self.context.call = None
             self.discard_serial_output()
@@ -1481,6 +1585,8 @@ class _Walk:
         ]
         if invalid:
             self.ordinal = max(invalid)
+            if self.linux_cli and self.linux_unsettled is None:
+                self.linux_unsettled = min(invalid)
             self.baseline = None
             self.thread_counts = None
             self.context = _Context(ambiguous=True)
@@ -1520,6 +1626,7 @@ def _read_codex(
     eligibility: Eligibility,
     *,
     _completion_witnesses: list[_CodexCompletionWitness] | None = None,
+    _linux_cli: bool = False,
 ) -> tuple[AdapterResult, int | None, dict[SourceRef, int]]:
     if batch.cursor is None:
         return AdapterResult(diagnostics=batch.diagnostics), None, {}
@@ -1529,7 +1636,11 @@ def _read_codex(
     ):
         raise ValueError("Expected a Codex provider checkpoint")
     walk = _Walk(
-        batch, state, eligibility, qualify_completion=_completion_witnesses is not None
+        batch,
+        state,
+        eligibility,
+        qualify_completion=_completion_witnesses is not None and not _linux_cli,
+        linux_cli=_linux_cli,
     )
     walk.committed()
     if (
@@ -1554,6 +1665,9 @@ def _read_codex(
         checkpoint = None
         turn = walk.context.turn
         unsettled = walk.ordinal if turn is None else turn.start.ordinal
+    if walk.linux_unsettled is not None:
+        checkpoint = None
+        unsettled = walk.linux_unsettled
     walk.lookahead_total = walk.baseline
     for frame in batch.frames[len(batch.commit_frames) :]:
         walk.step(frame, commit=False)

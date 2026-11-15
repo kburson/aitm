@@ -229,6 +229,15 @@ def _codex_quota_reference(
     return account
 
 
+def _qualified_host(surface: NativeSurface | None) -> bool:
+    hosts = {
+        NativeSurface.CODEX_CLI_LINUX: ("Linux", "aarch64"),
+        NativeSurface.CODEX_DESKTOP_MACOS: ("Darwin", "arm64"),
+        NativeSurface.CLAUDE_CODE_MACOS: ("Darwin", "arm64"),
+    }
+    return hosts.get(surface) == (platform.system(), platform.machine())
+
+
 def _read_usage(
     source: CandidateSource,
     frames: FrameBatch,
@@ -248,6 +257,7 @@ def _read_usage(
             ),
             Eligibility.ELIGIBLE,
             _completion_witnesses=completion_witnesses,
+            _linux_cli=source._native_surface is NativeSurface.CODEX_CLI_LINUX,
         )
         return result, span_ends, True
     state = ClaudeState(source._ledger, neutral_markers=True)
@@ -294,7 +304,7 @@ def _native_observations(
 
 
 class ProviderAdapter:
-    """Bridge the qualified macOS Codex Desktop and Claude Code surfaces."""
+    """Bridge qualified native Codex and Claude Code transcripts."""
 
     def discover(self, root: SourceRoot) -> Iterator[SourceLocator]:
         for candidate in _discover_sources(root, root.evidence):
@@ -310,7 +320,9 @@ class ProviderAdapter:
     ) -> int | None:
         """Return the first native ordinal still unsettled at a capture fence."""
         source = locator._source
-        if not isinstance(source, CandidateSource):
+        if not isinstance(source, CandidateSource) or not _qualified_host(
+            source._native_surface
+        ):
             raise ValueError("Expected a capture-qualified native locator")
         # A registry fence has native evidence only. Claude's incremental walk
         # requires prior revisions, so rebuild them transiently from this exact prefix.
@@ -326,6 +338,7 @@ class ProviderAdapter:
                 batch,
                 CodexState(source._ledger, neutral_markers=True),
                 Eligibility.ELIGIBLE,
+                _linux_cli=source._native_surface is NativeSurface.CODEX_CLI_LINUX,
             )
             if unsettled is not None:
                 held.append(unsettled)
@@ -393,10 +406,7 @@ class ProviderAdapter:
             return AdapterBatch()
         surface = source._native_surface
         cutoff = source._registration.cutoff
-        if surface is None or (platform.system(), platform.machine()) != (
-            "Darwin",
-            "arm64",
-        ):
+        if not _qualified_host(surface) or surface is None:
             return AdapterBatch(
                 diagnostics=(
                     Diagnostic(
