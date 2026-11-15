@@ -1,0 +1,435 @@
+{
+  "all_paired_examples_reconciled": true,
+  "cases": {
+    "docs-add": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 7,
+          "full_assignments": 1839
+        },
+        "projected": {
+          "effective_assignments": 7,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [],
+        "projected": []
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "selected",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 1077.0,
+        "run": 43729740913,
+        "trigger_to_original_full_job_end": 607.0
+      },
+      "pr": 9,
+      "problems": [],
+      "run": 43731073456,
+      "timing": {
+        "edit_commit_to_effective": 222.0,
+        "first_trigger_to_effective": 219.0,
+        "first_trigger_to_full_reference": 633.0,
+        "job_seconds": {
+          "fast": 67.0,
+          "full": 611.0
+        },
+        "pytest_seconds": {
+          "fast": {
+            "full": 27.213,
+            "projected": 17.852
+          },
+          "full": {
+            "full": 343.33,
+            "projected": 230.473
+          }
+        },
+        "queues": {
+          "fast": 148.0,
+          "full": 18.0
+        },
+        "registration_delay": 4.0,
+        "registration_to_effective": 215.0
+      },
+      "verified_sha256": "a3d48557b0d4a7946905a325ec4c6a5c08e48a296bc1550b863ee7a4b1509a47"
+    },
+    "docs-edit": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 7,
+          "full_assignments": 1839
+        },
+        "projected": {
+          "effective_assignments": 7,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [],
+        "projected": []
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "selected",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 1264.0,
+        "run": 43729975404,
+        "trigger_to_original_full_job_end": 515.0
+      },
+      "pr": 10,
+      "problems": [],
+      "run": 43731167626,
+      "timing": {
+        "edit_commit_to_effective": 502.0,
+        "first_trigger_to_effective": 499.0,
+        "first_trigger_to_full_reference": 674.0,
+        "job_seconds": {
+          "fast": 51.0,
+          "full": 515.0
+        },
+        "pytest_seconds": {
+          "fast": {
+            "full": 13.915,
+            "projected": 13.978
+          },
+          "full": {
+            "full": 281.24,
+            "projected": 198.786
+          }
+        },
+        "queues": {
+          "fast": 445.0,
+          "full": 156.0
+        },
+        "registration_delay": 3.0,
+        "registration_to_effective": 496.0
+      },
+      "verified_sha256": "786ea87a9ce738b3acbb31e0795b7d37e8a4a5119998537b586d944e02506648"
+    },
+    "fixture-equivalent": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 40,
+          "full_assignments": 1839
+        },
+        "projected": {
+          "effective_assignments": 28,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [],
+        "projected": []
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "selected",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 1117.0,
+        "run": 43730291798,
+        "trigger_to_original_full_job_end": 516.0
+      },
+      "pr": 12,
+      "problems": [],
+      "run": 43731508178,
+      "timing": {
+        "edit_commit_to_effective": 338.0,
+        "first_trigger_to_effective": 335.0,
+        "first_trigger_to_full_reference": 935.0,
+        "job_seconds": {
+          "fast": 57.0,
+          "full": 667.0
+        },
+        "pytest_seconds": {
+          "fast": {
+            "full": 16.604,
+            "projected": 17.165
+          },
+          "full": {
+            "full": 370.578,
+            "projected": 251.507
+          }
+        },
+        "queues": {
+          "fast": 275.0,
+          "full": 265.0
+        },
+        "registration_delay": 3.0,
+        "registration_to_effective": 332.0
+      },
+      "verified_sha256": "b14cdab0229a58ea1a8622a47c415ea87f77e13cd85ef79def8cde4a87b06179"
+    },
+    "fixture-regression": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 40,
+          "full_assignments": 1839
+        },
+        "projected": {
+          "effective_assignments": 28,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [
+          "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+        ],
+        "projected": [
+          "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+        ]
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "selected",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 1365.0,
+        "run": 43729742880,
+        "trigger_to_original_full_job_end": 540.0
+      },
+      "pr": 11,
+      "problems": [],
+      "run": 43731244651,
+      "timing": {
+        "edit_commit_to_effective": 400.0,
+        "first_trigger_to_effective": 397.0,
+        "first_trigger_to_full_reference": 753.0,
+        "job_seconds": {
+          "fast": 68.0,
+          "full": 606.0
+        },
+        "pytest_seconds": {
+          "fast": {
+            "full": 22.11,
+            "projected": 23.328
+          },
+          "full": {
+            "full": 342.372,
+            "projected": 233.838
+          }
+        },
+        "queues": {
+          "fast": 326.0,
+          "full": 144.0
+        },
+        "registration_delay": 3.0,
+        "registration_to_effective": 394.0
+      },
+      "verified_sha256": "f35e0c8c709f74d13981d3ba76c7a1e8ea627bb9fd83ccf679205044d72464bc"
+    },
+    "source-regression": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 1839,
+          "full_assignments": 1839
+        },
+        "projected": {
+          "effective_assignments": 1181,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [
+          "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_rate_classes_do_not_use_claude_defaults"
+        ],
+        "projected": [
+          "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_rate_classes_do_not_use_claude_defaults"
+        ]
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "full-required",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 806.0,
+        "run": 43730498907,
+        "trigger_to_original_full_job_end": 519.0
+      },
+      "pr": 7,
+      "problems": [],
+      "run": 43730927567,
+      "timing": {
+        "edit_commit_to_effective": 537.0,
+        "first_trigger_to_effective": 535.0,
+        "first_trigger_to_full_reference": 535.0,
+        "job_seconds": {
+          "fast": 20.0,
+          "full": 528.0
+        },
+        "pytest_seconds": {
+          "fast": {},
+          "full": {
+            "full": 293.509,
+            "projected": 206.219
+          }
+        },
+        "queues": {
+          "fast": 4.0,
+          "full": 3.0
+        },
+        "registration_delay": 4.0,
+        "registration_to_effective": 531.0
+      },
+      "verified_sha256": "3ef94bd61ba76f7cf8422d4d42579d5e87b4c63ce60669f30698e6a3c848d40e"
+    },
+    "test-inventory-add": {
+      "assignment_counts": {
+        "full": {
+          "effective_assignments": 1840,
+          "full_assignments": 1840
+        },
+        "projected": {
+          "effective_assignments": 1181,
+          "full_assignments": 1181
+        }
+      },
+      "attempt": 1,
+      "attempt_records": [
+        "attempt-1"
+      ],
+      "extra_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "failures": {
+        "full": [],
+        "projected": []
+      },
+      "missed_failure_counts": {
+        "full": 0,
+        "projected": 0
+      },
+      "mode": "full-required",
+      "original_producer_diagnostic": {
+        "attempt": 1,
+        "full_conclusion": "failure",
+        "original_registration_to_corrected_effective_seconds": 864.0,
+        "run": 43730585660,
+        "trigger_to_original_full_job_end": 568.0
+      },
+      "pr": 8,
+      "problems": [],
+      "run": 43730994948,
+      "timing": {
+        "edit_commit_to_effective": 607.0,
+        "first_trigger_to_effective": 604.0,
+        "first_trigger_to_full_reference": 604.0,
+        "job_seconds": {
+          "fast": 22.0,
+          "full": 573.0
+        },
+        "pytest_seconds": {
+          "fast": {},
+          "full": {
+            "full": 297.629,
+            "projected": 237.334
+          }
+        },
+        "queues": {
+          "fast": 4.0,
+          "full": 28.0
+        },
+        "registration_delay": 3.0,
+        "registration_to_effective": 601.0
+      },
+      "verified_sha256": "4807d6822485dec1e545a7208843e76181f1444f34ce350cd1cabe69a4f0733b"
+    }
+  },
+  "catalog_sha256": "d50aaecf4d1b1fe3d1f4d843c020cd7d54f35277f9bd0644c3fd10cb82042449",
+  "fallback_rate": 0.3333333333333333,
+  "groups": {
+    "full-reference": {
+      "count": 6,
+      "edit_commit_to_verdict_p50_seconds": 636.0,
+      "edit_commit_to_verdict_p95_seconds": 938.0,
+      "samples_at_or_above_15_minutes": 1,
+      "trigger_to_verdict_p50_seconds": 633.0,
+      "trigger_to_verdict_p95_seconds": 935.0
+    },
+    "full-required": {
+      "count": 2,
+      "edit_commit_to_verdict_p50_seconds": 537.0,
+      "edit_commit_to_verdict_p95_seconds": 607.0,
+      "samples_at_or_above_15_minutes": 0,
+      "trigger_to_verdict_p50_seconds": 535.0,
+      "trigger_to_verdict_p95_seconds": 604.0
+    },
+    "selected": {
+      "count": 4,
+      "edit_commit_to_verdict_p50_seconds": 338.0,
+      "edit_commit_to_verdict_p95_seconds": 502.0,
+      "samples_at_or_above_15_minutes": 0,
+      "trigger_to_verdict_p50_seconds": 335.0,
+      "trigger_to_verdict_p95_seconds": 499.0
+    }
+  },
+  "lab_baseline": "598d0bc137e9c3101f5dd5e093ef8d586e872911",
+  "observed_effective_under_15_minutes": true,
+  "observed_selected_target_met": true,
+  "production_source": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+  "production_source_tree": "21a95846c7efbf7a4709dfcb1b0ce2e1b54baecb",
+  "workload": {
+    "baseline_distinct_ids": 1839,
+    "projected_repeat_assignments": 1181
+  },
+  "workload_sha256": "9b2f6f330fc23ce709d19773338df36ad2724af808eff23ffc8f901cfdccf2c2"
+}

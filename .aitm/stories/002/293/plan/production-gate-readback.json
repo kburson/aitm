@@ -1,0 +1,81 @@
+{
+  "effective_rules_after": [
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "deletion"
+    },
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "non_fast_forward"
+    },
+    {
+      "parameters": {
+        "allowed_merge_methods": [
+          "merge",
+          "squash",
+          "rebase"
+        ],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_extra_approval_for_unattributed_changes": true,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false,
+        "required_reviewers": []
+      },
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "pull_request"
+    }
+  ],
+  "effective_rules_before": [
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "deletion"
+    },
+    {
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "non_fast_forward"
+    },
+    {
+      "parameters": {
+        "allowed_merge_methods": [
+          "merge",
+          "squash",
+          "rebase"
+        ],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_extra_approval_for_unattributed_changes": true,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false,
+        "required_reviewers": []
+      },
+      "ruleset_id": 26821811,
+      "ruleset_source": "kburson/aitm",
+      "ruleset_source_type": "Repository",
+      "type": "pull_request"
+    }
+  ],
+  "issue": 103,
+  "same_trunk_head": true,
+  "trunk_baseline": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+  "trunk_readback": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
+  "verified_gate_sha256": {
+    ".github/workflows/ci.yml": "868d81ddcf374da2a98741bbee2a2ac0495da8041945af12b11bb85078d93e18",
+    "tools/ci/policy.json": "323498224344b7852da7c02299ff7e5812e3d9fbd1557c4e950de0b7dd8ba776",
+    "tools/ci/pytest_evidence.py": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+    "tools/ci/python_gate.py": "7dcc28e13db5a1dafb278f8d6d8029a19424bd72209cb48b6b999a99d404866c",
+    "tools/ci/verify_pr.py": "f167a834adfa56904290ac7fadcc32d45df1b742b36e9a3b4ed86e97c50b6517"
+  }
+}

@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 293
 title: "[#133] Qualify fast story validation above 3,000 tests"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/293"
 parent: 133
 children: []
 blocking: [294]
 blocked-by: [287, 290, 292]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T15:38:05Z"
+updated: "2026-11-15T16:00:09Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log", "plan/qualification-summary.json", "plan/benchmark-evidence.zip", "plan/2026-11-15-293-hosted-validation-results.md", "plan/production-gate-readback.json", "plan/read-hosted.py", "plan/summarize.py", "plan/pack-evidence.py", "plan/check-production.py"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ The local exact red reached its expected witness in both cohorts with both nativ
 ## Hosted fixture trace and runner correction
 
 The original full comparator withheld its verdict after a source-bound nested pytest created a cache. The exact path trace, reproduction, sealed scratch link, and negative archive controls are in the [cache isolation checkpoint](plan/2026-11-15-293-cache-isolation.md).
+
+## Hosted candidate comparisons
+
+[Results](plan/2026-11-15-293-hosted-validation-results.md) · [Exact readback](plan/qualification-summary.json) · [Retained original and corrected artifacts](plan/benchmark-evidence.zip) · [Production gate parity](plan/production-gate-readback.json).
