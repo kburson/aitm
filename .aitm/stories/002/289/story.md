@@ -10,7 +10,7 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T03:18:26Z"
+updated: "2026-11-15T03:19:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -63,3 +63,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Exact candidate and review
 
 [Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
+
+## Delivery
+
+[Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
