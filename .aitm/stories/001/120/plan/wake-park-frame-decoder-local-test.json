@@ -1,0 +1,35 @@
+{
+  "story": 120,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "headRefOid": "519e470c7ec2bae8f6f0b524296f1cc66fd508a0",
+    "number": 322,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/322"
+  },
+  "tests": 1386,
+  "focused_tests": 31,
+  "verified_tree": "1f04e6093efe4e6f1afbd85f223d14fd88dabcd7",
+  "product_coverage": {
+    "covered_lines": 12942,
+    "num_statements": 14111
+  },
+  "local_recovery": {
+    "initial_parallel_failure": "Existing service stop fixture exceeded its 15-second wait.",
+    "exact_node_pass": {
+      "frozen_base": "48d2a18feb033b6e6563a7a530a03119575477f750c546ccedf68ac4440f4da1",
+      "corrected_candidate": "fda24a62e3cf0a5147c350fa109dd1121af0454ea313f212751949715184fe8d"
+    },
+    "preserved_parallel_log_sha256": "70f2fe5a388cb0c3bc6cf7919e919a4c53450c5268ab035bbac05f0b3550be6a",
+    "successful_full_suite_workers": 1
+  },
+  "evidence_sha256": {
+    "product.log": "9b28b7502ab52d093207081e8abf7096af250df829f25972d4fcedaedd108649",
+    "product-coverage.json": "0252781a5493c88a719aa64713d45f884119c1d1d7917f67c62b20c59f442ebf",
+    "frame-decoder.diff": "e03730504d964019927c17919e7e8c1af3d6709b651bf2a582bef0f25967b282",
+    "frame-decoder-red.log": "8fe6b43883e1b4b1fd0dc2a4b3144184bac2c8761cebfd703c778f77ed356c7a",
+    "frame-decoder-green.log": "09e06e804bad2c05416e05cc3fda4a7c96e20e3d800b4fcc95300ff1ca474072"
+  }
+}

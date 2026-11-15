@@ -61,3 +61,5 @@ Independent JIT recovery passed. Start the accepted four-path scheduler and ingr
 ## Test
 
 The scheduler and same-account wake ingress passed focused tests and native peer credential probes. The exact candidate passed 1,385 locked local tests. [Test proof](plan/wake-park-local-test.json) · [PR #322](https://github.com/kburson/aitm/pull/322).
+
+The wake listener now refuses a malformed frame when decoding exceeds the recursion limit and continues taking valid work. The corrected exact candidate passed 1,386 locked local tests. [Corrected Test proof](plan/wake-park-frame-decoder-local-test.json).
