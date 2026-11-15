@@ -1,0 +1,14 @@
+{
+  "story": 326,
+  "status": "pass",
+  "conservative_elapsed_upper_hours": 0.1186,
+  "checkpoint_hours": 1.75,
+  "projected_total_hours": 3.5,
+  "trace": {
+    "baseline-parked": 1,
+    "unchanged-parked": 0,
+    "selected-opens": 2,
+    "changed-parked": 1
+  },
+  "trace_sha256": "94a2902953f71e8afcb975933ca9eb4fe2b718f6acbfc95939b0a68e21411622"
+}

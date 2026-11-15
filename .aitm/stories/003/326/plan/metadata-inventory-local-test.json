@@ -1,0 +1,30 @@
+{
+  "story": 326,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "d7552d6ab06c6b8c1159d853657dc5d742d786c0",
+    "headRefOid": "2e1c8f1f8c45de5c389de67df008374eb4e61c7e",
+    "number": 328,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/328"
+  },
+  "tests": 1424,
+  "verified_tree": "aac61dee826944882901ad29aa8a5b886a0c5d86",
+  "product_coverage": {
+    "covered_lines": 13515,
+    "num_statements": 14888
+  },
+  "evidence_sha256": {
+    "native-inventory-red.log": "57555ae89a2877e39487909ba4ffdc8075de08a6642442896bf3e2e84cb68fb0",
+    "focused.log": "fa31a4cb3c23a7936ec40084d1d6bfef4702ce603139ff30c219c32eaeaac29c",
+    "inventory-final-focused.log": "6429725d85b1b7b212c9f133c922e3c9faa8598463d332eed568105a57028865",
+    "exact-open-audits.json": "5e2c7d032436efa6a133476aec6353230ce1d05c44daf46b1de38ec17045066a",
+    "parked-before-grok-checkpoint.json": "01c3daa4ddf129b804a5733ab787d3a927c99b6b3ca7fb0e1368edd0879173ff",
+    "legacy-body-pins.txt": "bdf7df1621edba140616bed413ed98e61fe85dadca14fc795b7cd861ba94c9ed",
+    "legacy-grok-base-node.log": "0cddb2f9522c5fc98e9503738cea759bed811b3ad3b391083a46a5d5f403e174",
+    "legacy-grok-candidate-node.log": "e596cce97643441f2f2c7ef01ee068b6705ce1e028a07a32ba3bd3b3d35d7353",
+    "locked_log": "4d8e44ba71f08186c20162f79c855aa44cc846afe56fea61d4e74a3009815e4e",
+    "coverage": "78c2ed19b6732e3b962f017cab60d389e73fa10ee7497fb334130399d63f85cd"
+  }
+}

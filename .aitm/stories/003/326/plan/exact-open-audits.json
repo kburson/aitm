@@ -1,0 +1,19 @@
+{
+  "story": 326,
+  "head": "2e1c8f1f8c45de5c389de67df008374eb4e61c7e",
+  "tree": "aac61dee826944882901ad29aa8a5b886a0c5d86",
+  "native": {
+    "baseline-parked": 1,
+    "unchanged-parked": 0,
+    "selected-opens": 2,
+    "changed-parked": 1
+  },
+  "grok": {
+    "baseline-parked": 1,
+    "unchanged-parked": 0,
+    "selected-verifier-opens": 1,
+    "selected-native-opens": 1,
+    "changed-parked": 1,
+    "sideband-parked": 1
+  }
+}
