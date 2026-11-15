@@ -1,5 +1,6 @@
 {
-  "captured_at": "2026-11-15T16:50:06.313899+00:00",
+  "authenticated_identity_has_repository_admin_role": true,
+  "captured_at": "2026-11-15T16:55:15.314574+00:00",
   "current_scheduled_reader": {
     "artifact": null,
     "current_verified": false,
@@ -17,7 +18,7 @@
     "provenance": "shadow",
     "repository_id": 1450406435,
     "schema": "aitm.ci-scheduled-shadow/v1",
-    "sha": "ab9db80098849e323d5122eb47bf48f377107058",
+    "sha": "e9b92172aee21eaab728e1a313d94f0bea38279b",
     "slot": "2026-11-15T03:47:00+00:00",
     "status": "incomplete",
     "target": "trunk",
@@ -81,6 +82,8 @@
   ],
   "gate": {
     ".github/workflows/ci.yml": "98320b46e6e88144aa1a8e2dedd7763f0b70789e",
+    "packages/aitm-usage/pyproject.toml": "b17bd04fd19cc8117e41a405911c6b9720077274",
+    "packages/aitm-usage/uv.lock": "7033982318b761f49de77998aa970e7b9bbbe417",
     "tools/ci/file-lint": "39c22218bf49cd527655d8e38da5ba6368c7708a",
     "tools/ci/file_checks.py": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
     "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
@@ -199,6 +202,7 @@
     }
   },
   "repository": "kburson/aitm",
+  "retained_planning_commit": "f45459b8830449efe66f664bbc14a414abb3900d",
   "rulesets": [
     {
       "bypass_actors": [],
@@ -262,5 +266,5 @@
     "tools/ci/ci_scheduled_shadow.py": "f73cd10b4630dbec9bffe1384612ca303ca23434",
     "tools/ci/run_scheduled_shadow.sh": "5295eb1b146fa71a47c4026c0a4f2f40f915bef9"
   },
-  "trunk": "ab9db80098849e323d5122eb47bf48f377107058"
+  "trunk": "e9b92172aee21eaab728e1a313d94f0bea38279b"
 }

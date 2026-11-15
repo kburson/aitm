@@ -10,10 +10,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 REPO = "kburson/aitm"
+EVIDENCE_REV = "f45459b8830449efe66f664bbc14a414abb3900d"
 SCHEDULE_ID = 418826440
 FAST_ID = 419184012
 INPUTS = (
     ".github/workflows/ci.yml",
+    "packages/aitm-usage/pyproject.toml",
+    "packages/aitm-usage/uv.lock",
     "tools/ci/policy.json",
     "tools/ci/python_gate.py",
     "tools/ci/verify_pr.py",
@@ -48,12 +51,12 @@ def provider(path):
     return json.loads(run("gh", "api", endpoint))
 
 
-def digest(path):
-    return sha256(path.read_bytes()).hexdigest()
+def digest(data):
+    return sha256(data).hexdigest()
 
 
-def load(path):
-    return json.loads(path.read_bytes())
+def evidence(path):
+    return run("git", "show", f"{EVIDENCE_REV}:{path.as_posix()}")
 
 
 def sample(name, rows):
@@ -78,13 +81,13 @@ def scheduled_reader(head):
 def deliveries():
     result = {}
     for number in STORIES:
-        story = ROOT / f".aitm/stories/002/{number}"
-        receipt = story / "plan/delivery.json"
-        packet = load(receipt)
-        signed = story / packet["review"]
+        story = Path(f".aitm/stories/002/{number}")
+        receipt = evidence(story / "plan/delivery.json")
+        packet = json.loads(receipt)
+        signed = evidence(story / packet["review"])
         assert packet["issue"] == number and packet["status"] == "accepted"
         assert packet["review_sha256"] == digest(signed)
-        closure = load(story / "plan/closure-receipt.json")
+        closure = json.loads(evidence(story / "plan/closure-receipt.json"))
         assert closure["board"]["stateReason"] == "COMPLETED"
         result[number] = {
             "delivery_sha256": digest(receipt),
@@ -125,7 +128,8 @@ def readback():
     head = git("rev-parse", "origin/trunk")
     branch = provider("branches/trunk")
     assert branch["commit"]["sha"] == head and branch["protected"]
-    assert provider("")["default_branch"] == "trunk"
+    repo = provider("")
+    assert repo["default_branch"] == "trunk"
     rules = provider("rules/branches/trunk")
     ruleset_id = {r["ruleset_id"] for r in rules}
     rule_details = []
@@ -155,6 +159,9 @@ def readback():
     return {
         "repository": REPO,
         "trunk": head,
+        "authenticated_identity_has_repository_admin_role": repo["permissions"][
+            "admin"
+        ],
         "gate": {path: git("rev-parse", f"{head}:{path}") for path in INPUTS},
         "effective_rules": rules,
         "rulesets": rule_details,
@@ -166,13 +173,13 @@ def readback():
     }
 
 
-evidence_root = ROOT / ".aitm/stories/002"
+evidence_root = Path(".aitm/stories/002")
 plan293 = evidence_root / "293/plan"
-matrix_path = plan293 / "qualification-summary.json"
-matrix = load(matrix_path)
-data293 = load(plan293 / "delivery.json")
-assert data293["summary_sha256"] == digest(matrix_path)
-assert data293["archive_sha256"] == digest(plan293 / "benchmark-evidence.zip")
+matrix_bytes = evidence(plan293 / "qualification-summary.json")
+matrix = json.loads(matrix_bytes)
+data293 = json.loads(evidence(plan293 / "delivery.json"))
+assert data293["summary_sha256"] == digest(matrix_bytes)
+assert data293["archive_sha256"] == digest(evidence(plan293 / "benchmark-evidence.zip"))
 assert matrix["all_paired_examples_reconciled"]
 assert len(matrix["cases"]) == 6
 timings = [
@@ -205,10 +212,11 @@ print(
         {
             "schema": "aitm.294.readiness-audit/v1",
             "captured_at": datetime.now(UTC).isoformat(),
+            "retained_planning_commit": EVIDENCE_REV,
             **readback(),
             "predecessors": deliveries(),
             "qualification_293": {
-                "summary_sha256": digest(matrix_path),
+                "summary_sha256": digest(matrix_bytes),
                 "archive_sha256": data293["archive_sha256"],
                 "timings": timings,
                 "workload": matrix["workload"],

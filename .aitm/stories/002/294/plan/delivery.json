@@ -1,0 +1,16 @@
+{
+  "audit_source": "plan/readiness-audit.py",
+  "audit_source_sha256": "6471a098ed24549c309c42cc1afc17b642a18f8ee4b53bd964859426fe28fe52",
+  "cutover_readiness": "no-go",
+  "deliverable": "independent readiness decision and phased cutover and rollback proposal",
+  "issue": 294,
+  "owner_cutover_approval": false,
+  "plan": "plan/2026-11-15-294-cutover-and-rollback-plan.md",
+  "plan_sha256": "b0232cf251eb4f3d3911978ac99eca59c5589446c487d96e15530af73d42022e",
+  "production_gate": 103,
+  "readback": "plan/readiness-audit.json",
+  "readback_sha256": "4829b7881fe43daac63b4418d23f79597019a1e193d698981458d987f08fb085",
+  "review": "plan/readiness-review.md",
+  "review_sha256": "eec38ed9cabce41e1961d8d4243fc85d55eae995769e0af02eb650f74ae7fe4f",
+  "status": "accepted"
+}
