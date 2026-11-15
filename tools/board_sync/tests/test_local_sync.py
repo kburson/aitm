@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import Mock, call, patch
 
 from tools.board_sync import local_sync as sync
 from tools.board_sync.blocked_by import Issue
@@ -60,3 +61,43 @@ class FileTests(unittest.TestCase):
         self.assertEqual(sync.read_baseline(None, {(2, 1)}, {(2, 1)}), {(2, 1)})
         with self.assertRaisesRegex(ValueError, "baseline"):
             sync.read_baseline(None, {(2, 1)}, set())
+
+
+class PublicationTests(unittest.TestCase):
+    def test_reconciles_again_after_a_concurrent_close_overlaps_board_write(self):
+        baseline = '{"schema":"aitm.dependency-baseline/v1","edges":[[1,2]]}\n'
+        stories = {
+            ".aitm/stories/000/1/story.md": "---\nid: 1\nstate: backlog\nblocked-by: [2]\n---\n",
+            ".aitm/stories/000/2/story.md": "---\nid: 2\nstate: backlog\nblocked-by: []\n---\n",
+            sync.BASELINE: baseline,
+        }
+        hosted = {
+            **stories,
+            sync.board.PROJECTION: sync.board.projection_text({1: (), 2: ()}),
+        }
+        github = Mock(ref="refs/heads/planning")
+        github.branch_head.side_effect = [
+            "base",
+            "local",
+            "hosted",
+            "hosted",
+            "hosted",
+            "hosted",
+        ]
+        github.issues.side_effect = [
+            {1: Issue("a", True, None), 2: Issue("b", True, None)},
+            {1: Issue("a", True, "#2"), 2: Issue("b", False, None)},
+        ]
+        github.relationships.return_value = {(1, 2)}
+        github.commit_files.return_value = "local"
+        with patch.object(
+            sync.board,
+            "read_planning_files",
+            side_effect=[("base", stories), ("hosted", hosted)],
+        ):
+            self.assertEqual(sync.run(github, "origin", "open", None), {1: (), 2: ()})
+
+        self.assertEqual(
+            github.write_blockers.call_args_list, [call("a", "#2"), call("a", None)]
+        )
+        github.commit_files.assert_called_once()

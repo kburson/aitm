@@ -266,7 +266,11 @@ def project(
     )
 
 
-def run(
+class ProjectionDrift(RuntimeError):
+    """An overlapping publication changed the planning head during board writes."""
+
+
+def run_once(
     github: GitHub,
     remote: str,
     mode: str,
@@ -356,6 +360,8 @@ def run(
         head = github.commit_files(
             head, updates, "chore: sync AITM dependency declarations and board"
         )
+    if board_writes and github.branch_head() != head:
+        raise ProjectionDrift("Planning advanced before publishing board fields.")
     for number, text in board_writes.items():
         try:
             github.write_blockers(issues[number].node_id, text)
@@ -364,10 +370,30 @@ def run(
             if github.issues({number})[number].value != text:
                 raise
     if github.branch_head() != head:
-        raise RuntimeError(
-            "Planning advanced while publishing board fields. Rerun sync."
-        )
+        raise ProjectionDrift("Planning advanced while publishing board fields.")
     return desired
+
+
+def run(
+    github: GitHub,
+    remote: str,
+    mode: str,
+    issue: int | None,
+    *,
+    edit: Edge | None = None,
+    add: bool = False,
+    check: bool = False,
+) -> dict[int, tuple[int, ...]]:
+    try:
+        return run_once(github, remote, mode, issue, edit=edit, add=add, check=check)
+    except ProjectionDrift:
+        # The relationship and planning edit already landed. Refresh the current
+        # projection without reissuing the original intent over a newer edit.
+        print(
+            "Planning advanced during projection. Reconciling once from fresh data.",
+            file=sys.stderr,
+        )
+        return run_once(github, remote, mode, issue)
 
 
 def issue_number(text: str) -> int:
