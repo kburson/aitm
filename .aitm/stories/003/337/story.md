@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [323]
 created: "2026-11-15T23:37:40Z"
-updated: "2026-11-15T23:38:31Z"
+updated: "2026-11-15T23:49:35Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/323/plan/2026-11-15-323-missed-slot-recovery-results.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,7 @@ Production is read-only apart from issue, board and planning records. #103 remai
 ## Measurement and rehearsal
 
 [Bounded plan](plan/2026-11-15-337-full-pr-and-rollback-plan.md).
+
+## Production baseline
+
+Eight consecutive delivered PRs from the measurement window. [Timings](plan/production-readout.md) · [Native evidence and replay](plan/production-evidence.zip). The [rehearsal plan](plan/2026-11-15-337-full-pr-and-rollback-plan.md) binds all six canonical job contexts.
