@@ -1,0 +1,65 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 335,
+  "batch": "full-auto-marker-refine-1",
+  "recorded_at_utc": "2026-11-15T23:06:54.684Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "774848c5c1c1ee7549c5f77d2818a872dd0564d4c6a504ed38f58a29c64c941d"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.ab949f45e0645ca44580d577",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T23:00:26.771Z",
+      "end_utc": "2026-11-15T23:00:26.940Z"
+    },
+    {
+      "observation_id": "codex.item.68ed7cf26ed570c36d865a2c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T23:00:29.316Z",
+      "end_utc": "2026-11-15T23:00:45.233Z"
+    },
+    {
+      "observation_id": "codex.item.b03a17f082045ec318a10950",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T23:00:45.238Z",
+      "end_utc": "2026-11-15T23:00:45.357Z"
+    },
+    {
+      "observation_id": "codex.item.74518dad0e96a351e297ff4d",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T23:00:45.360Z",
+      "end_utc": "2026-11-15T23:00:47.575Z"
+    }
+  ]
+}
