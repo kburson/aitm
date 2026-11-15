@@ -10,12 +10,12 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:55:28Z"
+updated: "2026-11-15T02:56:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Independent source and native diagnostics
 
 [Exact source assessment](plan/reviews/source-assessment.md) · [Retained local setup diagnostics](plan/local-native-diagnostics.md). Local full-suite evidence remains incomplete.
+
+## Exact candidate and review
+
+[Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).

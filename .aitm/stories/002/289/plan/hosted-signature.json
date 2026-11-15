@@ -1,0 +1,24 @@
+{
+  "archive_digest": "sha256:0f109aa91da89d705b619c9ca931a0292527490f0a9a189569a9c0b720d9dd31",
+  "artifact_id": 14143786798,
+  "base": "ea73031baedfb37e9e6336b064ac34a1f57059a6",
+  "gate_disposition": "requires-separate-trusted-verifier",
+  "head": "2ca9aa063dcc6b19c1395c853615ffa19d0860b6",
+  "jobs": {
+    "aitm-ci": 132677421555,
+    "collect-evidence": 132677387188,
+    "file-checks": 132675742542,
+    "python": 132675742401,
+    "python-base": 132675742456,
+    "quality": 132675742244
+  },
+  "kind": "diagnostic-authenticated-job-and-signature-readback",
+  "pr": 305,
+  "run": "https://github.com/kburson/aitm/actions/runs/43669342596/attempts/1",
+  "run_attempt": 1,
+  "run_id": 43669342596,
+  "subject_digest": "404dabd5aee4d9e5de09820ea111919c3440f7cfae9c3a4febd5b6e54b3171c1",
+  "tested_merge": "62de115dc1132374ea6cf54761211fb8c658914a",
+  "tree": "30044a43e6ecd8f529d2fc94ca6296d24fdc6fd8",
+  "workflow_id": 412848571
+}
