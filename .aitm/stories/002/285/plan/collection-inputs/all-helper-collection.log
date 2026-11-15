@@ -1,0 +1,527 @@
+tools/ci/tests/test_ci_advisory.py::test_green_requires_exact_current_attempt
+tools/ci/tests/test_ci_advisory.py::test_delayed_attempt_is_stale[expected0]
+tools/ci/tests/test_ci_advisory.py::test_delayed_attempt_is_stale[expected1]
+tools/ci/tests/test_ci_advisory.py::test_moving_trunk_invalidates_green
+tools/ci/tests/test_ci_advisory.py::test_pending_does_not_look_like_green
+tools/ci/tests/test_ci_advisory.py::test_authenticated_failure_survives_missing_job_and_artifact
+tools/ci/tests/test_ci_advisory.py::test_green_jobs_without_artifact_is_incomplete
+tools/ci/tests/test_ci_advisory.py::test_unbound_check_cannot_supply_failure
+tools/ci/tests/test_ci_advisory.py::test_wrong_run_identity_holds[head_branch-planning]
+tools/ci/tests/test_ci_advisory.py::test_wrong_run_identity_holds[workflow_id-999]
+tools/ci/tests/test_ci_advisory.py::test_archive_reader_requires_exact_members
+tools/ci/tests/test_ci_advisory.py::test_artifact_digest_and_attempt_binding
+tools/ci/tests/test_ci_advisory.py::test_readback_failure_retains_authenticated_observation[True]
+tools/ci/tests/test_ci_advisory.py::test_readback_failure_retains_authenticated_observation[False]
+tools/ci/tests/test_ci_advisory.py::test_exact_attempt_endpoint_change_prevents_green
+tools/ci/tests/test_ci_advisory.py::test_malformed_sibling_keeps_red
+tools/ci/tests/test_ci_advisory.py::test_rerun_record_can_be_created_after_its_start
+tools/ci/tests/test_ci_advisory.py::test_empty_run_observation_reverifies_live_sha
+tools/ci/tests/test_ci_incident.py::test_readback_failure_is_retained_until_confirmed
+tools/ci/tests/test_ci_incident.py::test_restart_after_write_and_before_acknowledgment
+tools/ci/tests/test_ci_incident.py::test_same_attempt_preserves_all_failures_without_duplicate_warning
+tools/ci/tests/test_ci_incident.py::test_newer_pending_revokes_nomination_and_rejects_old_green
+tools/ci/tests/test_ci_incident.py::test_competing_nominations_keep_exactly_one
+tools/ci/tests/test_ci_incident.py::test_shadow_cannot_enter_live_store
+tools/ci/tests/test_ci_incident.py::test_repeated_pending_does_not_change_incident_version
+tools/ci/tests/test_ci_incident.py::test_incorrect_delivery_ack_remains_pending
+tools/ci/tests/test_ci_incident.py::test_verified_pending_target_without_a_run_revokes_nomination
+tools/ci/tests/test_ci_incident.py::test_stale_failures_are_retained_without_reopening_incident
+tools/ci/tests/test_ci_incident.py::test_bound_sink_revalidates_and_has_separate_provenance
+tools/ci/tests/test_ci_incident.py::test_flush_only_current_warning_with_explicit_prior_failure
+tools/ci/tests/test_ci_incident.py::test_existing_public_directory_is_rejected
+tools/ci/tests/test_ci_incident.py::test_exact_failure_observation_keeps_original_authenticated_job
+tools/ci/tests/test_ci_incident.py::test_inherited_failure_now_current_refreshes_exact_warning
+tools/ci/tests/test_ci_recovery.py::test_infrastructure_only_requires_fresh_same_sha_and_manual_ack
+tools/ci/tests/test_ci_recovery.py::test_known_failure_excludes_infrastructure_recovery
+tools/ci/tests/test_ci_recovery.py::test_nominated_repair_needs_exact_current_green_and_ack
+tools/ci/tests/test_ci_recovery.py::test_rollback_invalidates_recovery_without_acknowledging
+tools/ci/tests/test_ci_recovery.py::test_new_red_revokes_old_ack_even_when_attempt_is_repeated
+tools/ci/tests/test_ci_recovery.py::test_acknowledgment_survives_later_independent_incident
+tools/ci/tests/test_ci_recovery.py::test_provider_loss_revokes_proof_and_requires_new_check
+tools/ci/tests/test_ci_recovery.py::test_late_authenticated_failure_prevents_same_sha_infrastructure_recovery
+tools/ci/tests/test_ci_recovery.py::test_ack_does_not_restore_a_revoked_token
+tools/ci/tests/test_ci_recovery.py::test_ack_binds_artifact_id_and_start_time
+tools/ci/tests/test_ci_recovery.py::test_fresh_check_after_evidence_loss_issues_new_token
+tools/ci/tests/test_ci_recovery.py::test_unverified_newer_failure_revokes_persisted_recovery
+tools/ci/tests/test_cli_evidence.py::test_usage_console_help
+tools/ci/tests/test_file_checks.py::test_checks_only_tracked_files_and_reports_typescript_not_applicable
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"nested": {"a": 1, "a": 2}}-duplicate]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"a": [NaN]}-nonfinite]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"a": Infinity}-nonfinite]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"a": -Infinity}-nonfinite]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"a": "\xff"}-utf-8]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[\xff\xfe{\x00"\x00a\x00"\x00:\x00 \x001\x00}\x00-utf-8]
+tools/ci/tests/test_file_checks.py::test_refuses_new_malformed_tracked_json_even_in_fixture_directory[{"a": 1,}-invalid json]
+tools/ci/tests/test_file_checks.py::test_tooling_manifest_still_requires_strict_json
+tools/ci/tests/test_file_checks.py::test_refuses_json_that_disagrees_with_its_schema[tools/ci/policy.json-{}-policy]
+tools/ci/tests/test_file_checks.py::test_refuses_json_that_disagrees_with_its_schema[data/copied-policy.json-{"schema": "aitm.ci-policy/v1"}-policy]
+tools/ci/tests/test_file_checks.py::test_refuses_json_that_disagrees_with_its_schema[packages/aitm-usage/src/aitm_usage/rates/2026-11-09.json-{}-rate card]
+tools/ci/tests/test_file_checks.py::test_refuses_json_that_disagrees_with_its_schema[packages/aitm-usage/tests/fixtures/activation/receipt.json-{}-activation receipt]
+tools/ci/tests/test_file_checks.py::test_refuses_json_that_disagrees_with_its_schema[data/copied-receipt.json-{"schema": "aitm-usage-activation/v1"}-activation receipt]
+tools/ci/tests/test_file_checks.py::test_accepts_current_schema_documents
+tools/ci/tests/test_file_checks.py::test_refuses_rate_card_version_that_disagrees_with_its_filename
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/src/index.ts-export const answer = 42;]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/src/index.tsx-export const answer = 42;]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/src/index.mts-export const answer = 42;]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/src/index.cts-export const answer = 42;]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/tsconfig.json-{}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/tsconfig.build.json-{}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/package.json-{"devDependencies": {"typescript": "5"}}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/package.json-{"typings": "dist/index.d.ts"}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/package.json-{"main": "./src/index.ts"}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/package.json-{"module": "./src/index.tsx"}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[packages/web/package.json-{"scripts": {"typecheck": "tsc --noEmit"}}]
+tools/ci/tests/test_file_checks.py::test_holds_for_product_typescript_without_a_required_lane[tools/ci/file-lint/unrelated/package.json-{"peerDependencies": {"typescript": "*"}}]
+tools/ci/tests/test_file_checks.py::test_reports_typescript_detection_even_when_config_json_is_invalid
+tools/ci/tests/test_file_checks.py::test_refuses_nonzero_linter_result_and_surfaces_diagnostics[markdownlint-doc.md]
+tools/ci/tests/test_file_checks.py::test_refuses_nonzero_linter_result_and_surfaces_diagnostics[yamllint-.github/workflows/broken.yaml]
+tools/ci/tests/test_file_checks.py::test_missing_linter_fails_when_files_are_applicable
+tools/ci/tests/test_file_checks.py::test_missing_tracked_file_cannot_be_silently_skipped
+tools/ci/tests/test_file_checks.py::test_non_git_root_fails_closed
+tools/ci/tests/test_file_checks.py::test_git_subdirectory_cannot_narrow_tracked_scope
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-8]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-8-sig]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-16]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-32]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-16-le]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-16-be]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-32-le]
+tools/ci/tests/test_file_checks.py::test_yaml_file_wide_disable_cannot_skip_invalid_yaml[utf-32-be]
+tools/ci/tests/test_file_checks.py::test_yaml_directive_shaped_block_content_is_left_to_yamllint
+tools/ci/tests/test_pytest_evidence.py::test_base_records_actual_phase_outcomes_and_deselection
+tools/ci/tests/test_pytest_evidence.py::test_retains_duplicate_real_phase_reports
+tools/ci/tests/test_pytest_evidence.py::test_candidate_records_both_normally_exiting_subprocesses[serial]
+tools/ci/tests/test_pytest_evidence.py::test_candidate_records_both_normally_exiting_subprocesses[parallel]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[missing-worker receipts]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[extra-worker receipts]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[collection-worker inventory]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[deselection-worker inventory]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[failed-worker inventory]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[phase-phase reports]
+tools/ci/tests/test_pytest_evidence.py::test_reconcile_workers_rejects_incomplete_or_inconsistent_evidence[controller-controller evidence]
+tools/ci/tests/test_python_gate.py::test_exact_floor_accepts_behavior_and_counts
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-policy0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-policy1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-package]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-helper]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-product0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-helpers]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-product1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-pytest]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-inventory0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-inventory1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-setup]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-call0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-teardown]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-xfail]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-call1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-duplicate]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-skip]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-deselected]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-base0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-base1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-base2]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-base3]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-child0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-child1]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-child2]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-child3]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-Darwin0]
+tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-Darwin1]
+tools/ci/tests/test_python_gate.py::test_only_exact_documented_optional_capability_skip_is_allowed
+tools/ci/tests/test_python_gate.py::test_required_jobs_do_not_inherit_a_pass[failure]
+tools/ci/tests/test_python_gate.py::test_required_jobs_do_not_inherit_a_pass[skipped]
+tools/ci/tests/test_python_gate.py::test_required_jobs_do_not_inherit_a_pass[cancelled]
+tools/ci/tests/test_python_gate.py::test_required_jobs_do_not_inherit_a_pass[neutral]
+tools/ci/tests/test_python_gate.py::test_required_jobs_do_not_inherit_a_pass[None]
+tools/ci/tests/test_python_gate.py::test_real_needs_predicate_and_cli_reject_malformed_policy
+tools/ci/tests/test_python_gate.py::test_child_shards_use_exact_process_and_product_lines
+tools/ci/tests/test_python_gate.py::test_cli_checks_identity_and_supplies_exit_code
+tools/ci/tests/test_python_gate.py::test_an_omitted_product_module_cannot_raise_coverage
+tools/ci/tests/test_python_gate.py::test_baseline_cannot_borrow_candidates_skip_allowance
+tools/ci/tests/test_python_gate.py::test_separate_child_coverage_cannot_replace_observer_receipts[None]
+tools/ci/tests/test_python_gate.py::test_separate_child_coverage_cannot_replace_observer_receipts[mismatch1]
+tools/ci/tests/test_python_gate.py::test_separate_child_coverage_cannot_replace_observer_receipts[mismatch2]
+tools/ci/tests/test_python_gate.py::test_separate_child_coverage_cannot_replace_observer_receipts[mismatch3]
+tools/ci/tests/test_python_gate.py::test_needs_cli_refuses_duplicate_job_keys
+tools/ci/tests/test_python_gate.py::test_missing_or_malformed_documents_have_blocked_dispositions
+tools/ci/tests/test_python_gate.py::test_shipped_policy_requires_file_checks_when_other_lanes_pass[missing-pr]
+tools/ci/tests/test_python_gate.py::test_shipped_policy_requires_file_checks_when_other_lanes_pass[missing-push]
+tools/ci/tests/test_python_gate.py::test_shipped_policy_requires_file_checks_when_other_lanes_pass[skipped-pr]
+tools/ci/tests/test_python_gate.py::test_shipped_policy_requires_file_checks_when_other_lanes_pass[skipped-push]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_mixed_attempts[base-archive]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_mixed_attempts[python-archive]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_mixed_attempts[timing]
+tools/ci/tests/test_tia_baseline.py::test_baseline_projects_exact_pair
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path0-None-archive]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path1-None-receipt]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path2-99-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path3-refs/pull/42/merge-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path4-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path5-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path6-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path7-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path8-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path9-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path10-macos-latest-binding]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path11-None-job]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path12-cancelled-job]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path13-21-job]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path14-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-archive]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_incomplete_or_conflicting_proof[path15-expired-archive]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_signed_subject_digests[python-pytest.json-inventory]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_signed_subject_digests[python-product-inventory.json-source_inventory]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_signed_subject_digests[base-base.json-baseline]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[nested-duplicate]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[raw-duplicate]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[schema]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[nonfinite]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[source]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[member]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[coverage]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_noncanonical_or_unsafe_input[node]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unsupported_raw_receipt_schema
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[missing-None]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[tree-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[lock-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[observer-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[targets-replacement4]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[deselected-1]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[nodes-replacement6]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unqualified_helper_collection[sha256-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff]
+tools/ci/tests/test_tia_baseline.py::test_baseline_categorizes_malformed_helper_command
+tools/ci/tests/test_tia_baseline.py::test_baseline_distinguishes_unknown_and_observed_timing
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_cache_observation[key-other-key]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_cache_observation[profile-cold]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_cache_observation[job_id-20]
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_cache_observation[result-miss]
+tools/ci/tests/test_tia_baseline.py::test_baseline_unknown_timing_cannot_fill_missing_proof
+tools/ci/tests/test_tia_baseline.py::test_baseline_rejects_unbound_timing_boundary
+tools/ci/tests/test_tia_baseline.py::test_baseline_requires_canonical_envelopes_but_hashes_original_receipts
+tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[.github/workflows/ci.yml]
+tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[tools/ci/policy.json]
+tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[tools/ci/verify_pr.py]
+tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[tools/ci/tia/selection.py]
+tools/ci/tests/test_tia_controls.py::test_control_edit_requires_full_and_independent_disposition[packages/aitm-usage/src/aitm_usage/conftest.py]
+tools/ci/tests/test_tia_controls.py::test_control_changes_keep_raw_rename_and_mode_type_identity
+tools/ci/tests/test_tia_controls.py::test_disposition_refuses_conflicting_or_replayed_exact_binding
+tools/ci/tests/test_tia_controls.py::test_reference_inventory_requires_intervening_dispositions
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[missing]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[extra]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[reordered]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[duplicate-point]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[wrong-delivery]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[missing-review]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[same-evidence]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[policy-drift]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[wrong-before-row]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[wrong-result-digest]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[review-lane]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[delivery-lane]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[delivery-runner]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[reference-lane]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[anchor-lane]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[net-zero]
+tools/ci/tests/test_tia_controls.py::test_inventory_holds_on_unverified_or_mismatched_replay[different-target]
+tools/ci/tests/test_tia_controls.py::test_inventory_requires_qualified_hosted_full_reference[local]
+tools/ci/tests/test_tia_controls.py::test_inventory_requires_qualified_hosted_full_reference[partial]
+tools/ci/tests/test_tia_controls.py::test_inventory_requires_qualified_hosted_full_reference[derived]
+tools/ci/tests/test_tia_controls.py::test_inventory_requires_qualified_hosted_full_reference[wrong-hash]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[mandatory]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[child]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[capability]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[helper]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[skip-permission]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[allowed-skip]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[unexpected-xfail]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[deselected]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[wrong-owner]
+tools/ci/tests/test_tia_controls.py::test_even_reviewed_delta_cannot_weaken_required_inventory[wrong-key]
+tools/ci/tests/test_tia_controls.py::test_control_qualification_refuses_inexact_change_endpoint_and_target
+tools/ci/tests/test_tia_controls.py::test_control_approval_compares_canonical_lane_sets
+tools/ci/tests/test_tia_controls.py::test_exact_approvals_cannot_clear_invalid_full_control_scope[missing-helper]
+tools/ci/tests/test_tia_controls.py::test_exact_approvals_cannot_clear_invalid_full_control_scope[wrong-platform]
+tools/ci/tests/test_tia_controls.py::test_exact_approvals_cannot_clear_invalid_full_control_scope[wrong-owner]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[observer-None]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[observer-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[receipt_sha256-None]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[receipt_sha256-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[controls-None]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[controls-bad_value5]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[controls-bad_value6]
+tools/ci/tests/test_tia_controls.py::test_inventory_refuses_malformed_scope_provenance_with_exact_hash[controls-bad_value7]
+tools/ci/tests/test_tia_controls.py::test_control_qualification_requires_the_reviewed_policy_bytes
+tools/ci/tests/test_tia_controls.py::test_named_comparison_scope_keeps_control_changes_full
+tools/ci/tests/test_tia_controls.py::test_full_control_scope_checks_every_reviewed_profile_platform_pair
+tools/ci/tests/test_tia_controls.py::test_reviewed_addition_must_match_successor_policy[unregistered-module]
+tools/ci/tests/test_tia_controls.py::test_reviewed_addition_must_match_successor_policy[suite]
+tools/ci/tests/test_tia_controls.py::test_reviewed_addition_must_match_successor_policy[isolation-group]
+tools/ci/tests/test_tia_controls.py::test_anchor_requires_every_policy_helper_target_even_without_replay
+tools/ci/tests/test_tia_controls.py::test_replay_holds_when_exact_point_policy_is_unavailable[absent]
+tools/ci/tests/test_tia_controls.py::test_replay_holds_when_exact_point_policy_is_unavailable[wrong-bytes]
+tools/ci/tests/test_tia_controls.py::test_replay_holds_when_exact_point_policy_is_unavailable[wrong-workload]
+tools/ci/tests/test_tia_controls.py::test_successor_reconciles_policy_metadata_at_each_reviewed_revision
+tools/ci/tests/test_tia_inventory.py::test_classification_preserves_parametrized_platform_ids
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unknown-module-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[duplicate-node-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[repeated-scope-scope]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-scope-scope]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[extra-scope-scope]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-apfs-capability]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-native-acl-capability]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[inconsistent-runner-capability]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-mandatory-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unsafe-path-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unterminated-parameter-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[duplicate-override-policy]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[outside-module-override-policy]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[duplicate-policy-pair-policy]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[duplicate-json-key-malformed input]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[nonfinite-json-malformed input]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[nonzero-exit-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[incomplete-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[deselected-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unexpected-skip-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unexpected-xfail-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[wrong-skip-reason-collection]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unexpected-child-policy]
+tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[unknown-capability-policy]
+tools/ci/tests/test_tia_inventory.py::test_ci103_scope_and_child_mapping
+tools/ci/tests/test_tia_inventory.py::test_full_inventory_requires_all_policy_pairs
+tools/ci/tests/test_tia_inventory.py::test_hosted_and_advisory_preserve_distinct_provenance
+tools/ci/tests/test_tia_inventory.py::test_refreshed_scope_modules_share_native_process_isolation[nodeid0]
+tools/ci/tests/test_tia_inventory.py::test_refreshed_scope_modules_share_native_process_isolation[nodeid1]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/pull/139/merge..bad]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/pull/139/.hidden]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/trailing.]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/name.lock]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/middle.lock/child]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/has space]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/has@{sequence]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/caret^]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/tilde~]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/colon:]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/open[]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/wild?]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_rejects_malformed_git_ref[refs/heads/asterisk*]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_preserves_valid_git_ref[refs/heads/part./branch]]
+tools/ci/tests/test_tia_inventory.py::test_hosted_collection_preserves_valid_git_ref[refs/tags/\xe9t\xe9]
+tools/ci/tests/test_tia_inventory.py::test_policy_requires_exact_ci103_child_associations[transpose]
+tools/ci/tests/test_tia_inventory.py::test_policy_requires_exact_ci103_child_associations[omit]
+tools/ci/tests/test_tia_local.py::test_frozen_copy_rejects_changed_bytes_and_added_inputs
+tools/ci/tests/test_tia_local.py::test_local_dirty_snapshot_never_mints_hosted_proof
+tools/ci/tests/test_tia_local.py::test_selected_run_reports_real_failure_and_plan_identity
+tools/ci/tests/test_tia_local.py::test_selection_failure_runs_entire_applicable_suite
+tools/ci/tests/test_tia_local.py::test_stops_on_checkout_drift_before_execution
+tools/ci/tests/test_tia_local.py::test_unsupported_capability_refuses_before_pytest
+tools/ci/tests/test_tia_local.py::test_missing_child_is_not_a_local_pass
+tools/ci/tests/test_tia_local.py::test_bad_base_ref_reports_unavailable
+tools/ci/tests/test_tia_local.py::test_copy_recreates_a_relative_symlink_in_its_own_directory
+tools/ci/tests/test_tia_local.py::test_candidate_collection_that_mutates_copy_is_refused
+tools/ci/tests/test_tia_local.py::test_nested_pytest_cache_stays_outside_bound_source
+tools/ci/tests/test_tia_local.py::test_native_fixtures_avoid_the_shared_temporary_ancestor
+tools/ci/tests/test_tia_python_graph.py::test_import_alias_relative_reexport_cycle
+tools/ci/tests/test_tia_python_graph.py::test_dynamic_scope
+tools/ci/tests/test_tia_python_graph.py::test_importlib_dunder_import_reports_unresolved_scope[aliased-module]
+tools/ci/tests/test_tia_python_graph.py::test_importlib_dunder_import_reports_unresolved_scope[from-import]
+tools/ci/tests/test_tia_python_graph.py::test_ambiguous_owners_keep_possible_edges
+tools/ci/tests/test_tia_python_graph.py::test_wildcard_package_import_preserves_initializer_and_uncertainty
+tools/ci/tests/test_tia_python_graph.py::test_missing_namespace_from_import_preserves_known_child_and_uncertainty
+tools/ci/tests/test_tia_python_graph.py::test_ambiguous_relative_context_keeps_valid_dependency
+tools/ci/tests/test_tia_python_graph.py::test_pytest_scope_keeps_fixture_config_and_search_evidence
+tools/ci/tests/test_tia_python_graph.py::test_reviewed_package_dependencies_require_exact_endpoints
+tools/ci/tests/test_tia_python_graph.py::test_graph_binds_real_snapshot_pair
+tools/ci/tests/test_tia_python_graph.py::test_invalid_source_retains_uncertainty
+tools/ci/tests/test_tia_python_graph.py::test_bound_read_failure_refuses_graph
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules0]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules1]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules2]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules3]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules4]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules5]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules6]
+tools/ci/tests/test_tia_python_graph.py::test_invalid_policy_cannot_authorize_a_graph[rules7]
+tools/ci/tests/test_tia_selection.py::test_binds_independent_endpoint_inventories[local-effective]
+tools/ci/tests/test_tia_selection.py::test_binds_independent_endpoint_inventories[pr-tested]
+tools/ci/tests/test_tia_selection.py::test_binds_independent_endpoint_inventories[trunk-tested]
+tools/ci/tests/test_tia_selection.py::test_stale_hosted_collection_expectation_is_unavailable[ref-refs/pull/143/merge]
+tools/ci/tests/test_tia_selection.py::test_stale_hosted_collection_expectation_is_unavailable[run_id-111]
+tools/ci/tests/test_tia_selection.py::test_stale_hosted_collection_expectation_is_unavailable[run_attempt-4]
+tools/ci/tests/test_tia_selection.py::test_bad_before_expectation_runs_every_candidate_lane
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[digest]
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[canonical]
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[lane]
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[policy]
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[mandatory]
+tools/ci/tests/test_tia_selection.py::test_candidate_inventory_must_be_complete_and_exact[row]
+tools/ci/tests/test_tia_selection.py::test_renamed_module_selects_former_consumer
+tools/ci/tests/test_tia_selection.py::test_direct_and_multihop_exact_witnesses
+tools/ci/tests/test_tia_selection.py::test_cross_package_declared_subprocess_path
+tools/ci/tests/test_tia_selection.py::test_deleted_source_keeps_only_surviving_former_witnesses
+tools/ci/tests/test_tia_selection.py::test_known_edge_plus_unbounded_reader_runs_full
+tools/ci/tests/test_tia_selection.py::test_bounded_reader_matches_a_transitive_consumer_by_path_components[src/transit.py-full]
+tools/ci/tests/test_tia_selection.py::test_bounded_reader_matches_a_transitive_consumer_by_path_components[src/transit-selected]
+tools/ci/tests/test_tia_selection.py::test_missing_declaration_only_matters_when_an_endpoint_is_reached[src/transit.py-full]
+tools/ci/tests/test_tia_selection.py::test_missing_declaration_only_matters_when_an_endpoint_is_reached[other/file.py-selected]
+tools/ci/tests/test_tia_selection.py::test_changed_test_and_non_test_disposition
+tools/ci/tests/test_tia_selection.py::test_unsupported_no_impact_claims_run_full[unclassified]
+tools/ci/tests/test_tia_selection.py::test_unsupported_no_impact_claims_run_full[shared-input]
+tools/ci/tests/test_tia_selection.py::test_unsupported_no_impact_claims_run_full[conflicting-non-test]
+tools/ci/tests/test_tia_selection.py::test_no_tests_requires_positive_classification
+tools/ci/tests/test_tia_selection.py::test_required_row_removal_retains_verified_deleted_source[False]
+tools/ci/tests/test_tia_selection.py::test_required_row_removal_retains_verified_deleted_source[True]
+tools/ci/tests/test_tia_selection.py::test_allowed_skip_is_kept_and_same_key_disposition_change_runs_full
+tools/ci/tests/test_tia_selection.py::test_declared_fixture_cross_package
+tools/ci/tests/test_tia_selection.py::test_contradictory_pair_cannot_supply_before_witnesses[duplicate-change]
+tools/ci/tests/test_tia_selection.py::test_contradictory_pair_cannot_supply_before_witnesses[missing-change]
+tools/ci/tests/test_tia_selection.py::test_contradictory_pair_cannot_supply_before_witnesses[different-changes]
+tools/ci/tests/test_tia_selection.py::test_raw_hosted_path_never_matches_a_display_spelling
+tools/ci/tests/test_tia_selection.py::test_invalid_manifest_cannot_narrow_selection[manifest0]
+tools/ci/tests/test_tia_selection.py::test_invalid_manifest_cannot_narrow_selection[manifest1]
+tools/ci/tests/test_tia_selection.py::test_invalid_manifest_cannot_narrow_selection[manifest2]
+tools/ci/tests/test_tia_selection.py::test_invalid_manifest_cannot_narrow_selection[manifest3]
+tools/ci/tests/test_tia_selection.py::test_invalid_manifest_cannot_narrow_selection[{"schema":"aitm.tia-edges/v1","edges":[],"edges":[],"path_rules":[]}]
+tools/ci/tests/test_tia_selection.py::test_inventory_test_outside_all_qualified_pytest_scopes_forces_full
+tools/ci/tests/test_tia_shards.py::test_exact_union_balanced_and_no_isolation_group_split[local]
+tools/ci/tests/test_tia_shards.py::test_exact_union_balanced_and_no_isolation_group_split[hosted]
+tools/ci/tests/test_tia_shards.py::test_empty_selection_ties_and_reassignment[local]
+tools/ci/tests/test_tia_shards.py::test_empty_selection_ties_and_reassignment[hosted]
+tools/ci/tests/test_tia_shards.py::test_rejects_bad_digest_binding_lanes_and_comparison[local]
+tools/ci/tests/test_tia_shards.py::test_rejects_bad_digest_binding_lanes_and_comparison[hosted]
+tools/ci/tests/test_tia_shards.py::test_rejects_missing_required_or_requested_and_invalid_timing[local]
+tools/ci/tests/test_tia_shards.py::test_rejects_missing_required_or_requested_and_invalid_timing[hosted]
+tools/ci/tests/test_tia_shards.py::test_rejects_actual_incompatible_runner[local]
+tools/ci/tests/test_tia_shards.py::test_rejects_actual_incompatible_runner[hosted]
+tools/ci/tests/test_tia_shards.py::test_largest_first_tie_and_upper_median[local]
+tools/ci/tests/test_tia_shards.py::test_largest_first_tie_and_upper_median[hosted]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_diff_matches_tested_tree
+tools/ci/tests/test_tia_snapshot.py::test_hosted_full_uses_explicit_baseline
+tools/ci/tests/test_tia_snapshot.py::test_hosted_object_failures_and_raw_paths
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[failed-command_failure]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[truncated-malformed_data]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[valid-prefix-malformed_data]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[missing-path-malformed_data]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[duplicate-malformed_data]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[escape-unsafe_path]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_invalid_diff_output[rename-limit-rename_limit]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_unsupported_offline_profile_refuses
+tools/ci/tests/test_tia_snapshot.py::test_local_staged_untracked_rename_and_deleted_paths[False]
+tools/ci/tests/test_tia_snapshot.py::test_local_staged_untracked_rename_and_deleted_paths[True]
+tools/ci/tests/test_tia_snapshot.py::test_local_clean_and_cancelled_layers_bind_observation
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[head]
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[index]
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[bytes]
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[mode]
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[membership]
+tools/ci/tests/test_tia_snapshot.py::test_local_observation_drift_refuses[ignore]
+tools/ci/tests/test_tia_snapshot.py::test_local_captures_bytes_regardless_of_cached_stat
+tools/ci/tests/test_tia_snapshot.py::test_local_git_config_and_path_identity
+tools/ci/tests/test_tia_snapshot.py::test_local_unaccounted_ignore_inputs_refuse
+tools/ci/tests/test_tia_snapshot.py::test_local_unsafe_inputs_refuse[unmerged]
+tools/ci/tests/test_tia_snapshot.py::test_local_unsafe_inputs_refuse[fifo]
+tools/ci/tests/test_tia_snapshot.py::test_local_unsafe_inputs_refuse[ancestor]
+tools/ci/tests/test_tia_snapshot.py::test_local_unsafe_inputs_refuse[escape]
+tools/ci/tests/test_tia_snapshot.py::test_local_unsafe_inputs_refuse[target]
+tools/ci/tests/test_tia_snapshot.py::test_local_binds_a_symlink_to_observed_target
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_wrong_trunk_ref_and_boolean_binding[ref]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_wrong_trunk_ref_and_boolean_binding[boolean]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_duplicate_tree_commit_header
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_diff_records_that_misstate_change[wrong-type]
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_diff_records_that_misstate_change[split-modification]
+tools/ci/tests/test_tia_snapshot.py::test_local_ignored_parent_identity_is_rechecked
+tools/ci/tests/test_tia_snapshot.py::test_local_relative_symlink_reaches_checked_parent
+tools/ci/tests/test_tia_snapshot.py::test_local_directory_and_file_replacement_bind_effective_leaves
+tools/ci/tests/test_tia_snapshot.py::test_hosted_refuses_noncanonical_tree_order
+tools/ci/tests/test_verify_pr.py::test_rerun_accepts_original_or_attempt_creation_time[2026-11-11T16:25:48Z]
+tools/ci/tests/test_verify_pr.py::test_rerun_accepts_original_or_attempt_creation_time[2026-11-11T16:42:30Z]
+tools/ci/tests/test_verify_pr.py::test_attempt_rejects_inconsistent_creation_time[1-2026-11-11T16:42:30Z-first attempt creation disagrees]
+tools/ci/tests/test_verify_pr.py::test_attempt_rejects_inconsistent_creation_time[3-2026-11-11T16:25:47Z-rerun creation falls outside]
+tools/ci/tests/test_verify_pr.py::test_attempt_rejects_inconsistent_creation_time[3-2026-11-11T16:50:35Z-rerun creation falls outside]
+tools/ci/tests/test_verify_pr.py::test_rerun_start_cannot_predate_original_run
+tools/ci/tests/test_verify_pr.py::test_authentic_canonical_proof_passes_with_offline_signature
+tools/ci/tests/test_verify_pr.py::test_authentic_bootstrap_archive_verifies_as_its_own_signature
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[-path0-private-public]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[pulls/108-path1-109-PR identity]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[pulls/108-path2-999-same-repository]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[pulls/108-path3-trunk-target]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[pulls/108-path4-ffffffffffffffffffffffffffffffffffffffff-fixture API]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[git/ref/heads/ci-proof/103-integration-path5-ffffffffffffffffffffffffffffffffffffffff-target]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[git/ref/pull/108/merge-path6-ffffffffffffffffffffffffffffffffffffffff-merge ref]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/workflows/ci.yml-path7-.github/workflows/lookalike.yml-canonical workflow]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[endpoint8-path8-value8-association]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[endpoint9-path9-999-canonical run]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[endpoint10-path10-999-canonical run]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1-path11-2-selected attempt]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1-path12-in_progress-selected attempt]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[check-suites/115969504499-path13-lookalike-check suite]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[git/commits/0ab2aebd8e4ab78d93a1f010f84c5e811d714733-path14-value14-ordered]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1/jobs?per_page=100-path15-skipped-required job]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1/jobs?per_page=100-path16-cancelled-required job]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1/jobs?per_page=100-path17-2-required job]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1/jobs?per_page=100-path18-2020-01-01T00:00:00Z-required job]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/attempts/1/jobs?per_page=100-path19-unknown-job-required job]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/artifacts?per_page=100-path20-aitm-ci-unexpected-a1-artifact name]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/artifacts?per_page=100-path21-True-artifact custody]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/artifacts?per_page=100-path22-999-artifact custody]
+tools/ci/tests/test_verify_pr.py::test_fails_closed_on_one_bad_provider_field[actions/runs/42821747864/artifacts?per_page=100-path23-sha256:1111111111111111111111111111111111111111111111111111111111111111-archive]
+tools/ci/tests/test_verify_pr.py::test_missing_or_duplicate_required_attempt_jobs[remove]
+tools/ci/tests/test_verify_pr.py::test_missing_or_duplicate_required_attempt_jobs[duplicate]
+tools/ci/tests/test_verify_pr.py::test_missing_or_duplicate_final_attempt_artifact[remove]
+tools/ci/tests/test_verify_pr.py::test_missing_or_duplicate_final_attempt_artifact[duplicate]
+tools/ci/tests/test_verify_pr.py::test_incomplete_pagination_refuses_ambiguous_inventory
+tools/ci/tests/test_verify_pr.py::test_newer_pending_run_cannot_fall_back_to_signed_pass
+tools/ci/tests/test_verify_pr.py::test_older_run_in_second_page_does_not_replace_current
+tools/ci/tests/test_verify_pr.py::test_unchanged_candidate_recheck_detects_movement
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[issuer]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[sourceRepositoryIdentifier]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[buildSignerURI]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[buildSignerDigest]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[buildConfigURI]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[buildConfigDigest]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[buildTrigger]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[sourceRepositoryRef]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[sourceRepositoryDigest]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[runInvocationURI]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[sourceRepositoryURI]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[runnerEnvironment]
+tools/ci/tests/test_verify_pr.py::test_wrong_cryptographically_verified_claim_holds[sourceRepositoryVisibilityAtSigning]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path0-aitm.ci-candidate/v1-schema]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path1-ffffffffffffffffffffffffffffffffffffffff-candidate head]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path2-ffffffffffffffffffffffffffffffffffffffff-candidate base]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path3-ffffffffffffffffffffffffffffffffffffffff-candidate tested]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path4-ffffffffffffffffffffffffffffffffffffffff-candidate tree]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path5-42821747865-candidate run]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path6-2-candidate attempt]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path7-107-candidate pr]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path8-ffffffffffffffffffffffffffffffffffffffff-control]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path9-ffffffffffffffffffffffffffffffffffffffff-checkout]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path10-skipped-lane]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path11-False-Python evidence]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path12-value12-product coverage]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path13-value13-helpers coverage]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path14-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff-trusted base]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path15-0-child]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path16-other-Darwin]
+tools/ci/tests/test_verify_pr.py::test_signed_payload_claims_do_not_override_trusted_evidence[path17-invalid-wheel]
+tools/ci/tests/test_verify_pr.py::test_both_unrounded_coverage_floors_accept_exactly_ninety
+tools/ci/tests/test_verify_pr.py::test_gate_controls_require_matching_reviewed_tree_and_keep_existing_jobs
+tools/ci/tests/test_verify_pr.py::test_active_ci_hook_additions_require_review[packages/aitm-usage/conftest.py]
+tools/ci/tests/test_verify_pr.py::test_active_ci_hook_additions_require_review[tools/conftest.py]
+tools/ci/tests/test_verify_pr.py::test_active_ci_hook_additions_require_review[packages/aitm-usage/.coveragerc]
+tools/ci/tests/test_verify_pr.py::test_active_ci_hook_additions_require_review[packages/aitm-usage/sitecustomize.py]
+tools/ci/tests/test_verify_pr.py::test_reviewed_additive_policy_requires_the_new_job
+tools/ci/tests/test_verify_pr.py::test_reviewed_candidate_binds_added_verifier_blob
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_tampered_subject_with_real_signature
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_nonexact_member_names[../candidate.json]
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_nonexact_member_names[unexpected.json]
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_nonexact_member_names[candidate.json/]
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_nonexact_member_names[candidate.json\x00suffix]
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_symlink_and_overlarge_members
+tools/ci/tests/test_verify_pr.py::test_archive_rejects_malformed_zip
+tools/ci/tests/test_verify_pr.py::test_bounded_command_rejects_overlarge_output_and_failure
+tools/ci/tests/test_verify_pr.py::test_dirty_trusted_checkout_is_refused
+tools/ci/tests/test_verify_pr.py::test_untracked_executable_cannot_impersonate_delivered_verifier
+tools/ci/tests/test_verify_pr.py::test_executing_bytes_are_compared_to_trusted_git_blob
+tools/ci/tests/test_verify_pr.py::test_cli_writes_dated_blocker_for_invalid_repo
+
+525 tests collected in 0.33s

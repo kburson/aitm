@@ -1,0 +1,42 @@
+test_accounting	Usage units, rates and monetary boundaries	Keep distinct rates, units, and rounding cases.
+test_activation_receipt	Activation evidence identity, retained bundles, and recovery	Keep mismatch cases for separate identities. Inspect shared fixture cost before consolidation.
+test_claude	Claude event ingestion, attribution and usage normalization	Review repeated fixture permutations against event schema and exact attribution.
+test_codex	Codex event ingestion, turn attribution and usage normalization	Keep distinct event sources and attribution witnesses. Review repeated fixture trees.
+test_export	Published and redacted export shape and totals	Retain observable export and redaction boundaries.
+test_grok	Grok event ingestion, discovery and attribution	Keep headless fixture and corroboration boundaries.
+test_grok_pricing	Grok cost and known or unknown pricing disposition	Preserve configured, unpriced, and exact cost behaviors.
+test_host_fs_publication	Filesystem publication and recoverability	Keep real filesystem checks for atomic and durable publication.
+test_host_fs_security	Filesystem ownership, ACL and file identity boundaries	Keep real ACL and ownership witnesses.
+test_install	Installed CLI, launch-agent lifecycle, upgrade and backup/restore	Preserve distinct native and recovery risks. Measure repeated environment construction.
+test_ledger	Persisted history, cursor and writer integrity	Keep durable replay and actual concurrency witnesses.
+test_monitor_adapters	Provider-specific authority and observation adapters	Review parameter rows for distinct provider semantics.
+test_monitor_control	Monitor control operations and observable state transitions	Keep transition results and protective refusal cases.
+test_monitor_journal	Paired journal settlement, durable frontiers and rollback	Consolidate redundant snapshot reads at fixed state. Defer removing the equivalent swap row under the current inventory gate. Preserve distinct native and role boundaries.
+test_monitor_journal_store	Journal persistence, constraints and recoverability	Keep durable database state and restart witnesses.
+test_monitor_ledger_version	Schema-version compatibility and preservation	Keep upgrade and refusal cases separately.
+test_monitor_legacy	Compatibility with persisted legacy monitor inputs	Retain read and migration boundary cases.
+test_monitor_registry	Monitor registry authority, routing, and writer ownership	Keep distinct authority and durable state witnesses.
+test_monitor_scope	Scope enrollment, authorization, leases and release	149 cases. Review repeated fixture setup while preserving role and authority differences.
+test_rollup	Aggregation, linkage, totals and conflict refusal	Retain alias and cycle cases that protect distinct lineage.
+test_scan	Discovery, traversal, provider identification, and scan outcomes	Review file-layout permutations against distinct caller-facing outcomes.
+test_scope_admission	Admission against exact scope evidence and authority	Keep accepted and reason-specific refusal witnesses.
+test_scope_legacy	Legacy scope classification and compatibility	Keep distinct legacy records and compatibility behavior.
+test_scopes	Scope CLI, publication and authentication	Retain installed/real CLI evidence and publication boundaries.
+test_service	Service lifecycle, status and process controls	Keep distinct lifecycle and refusal outcomes. Review fixture setup.
+test_service_process	Real service crash, enrollment and private persistent state	Preserve the sole real crash and recovery witness.
+test_ci_advisory	Canonical CI attempt intake and stale/missing evidence	Keep confirmed red versus incomplete or stale distinctions.
+test_ci_incident	Warning durability, storage, nominations and lost acknowledgment	Keep actual file/store restart and deduplication cases.
+test_ci_recovery	Repair and infrastructure recovery, freshness, and manual acknowledgment	Keep stale token, late failure and explicit acknowledgment cases.
+test_cli_evidence	Installed CLI help through a required coverage child	Keep the unique child-process witness.
+test_file_checks	Tracked-file validation and tool/language diagnostics	Keep distinct file discovery, parse, encoding, and subprocess behaviors.
+test_pytest_evidence	Collection and worker outcome reconciliation	Keep worker outcome completeness and child evidence checks.
+test_python_gate	Required tests, evidence reconciliation and coverage policy	Keep numeric policy boundaries and required-child failures.
+test_tia_baseline	Versioned baseline and bound test inventory	Keep exact source/revision and omission cases.
+test_tia_controls	TIA control inventory and policy/source drift	Keep protective fallback/refusal cases for distinct controls.
+test_tia_inventory	T02 collection normalization and obligation classification	Keep native/full and policy-mandated inventory differences.
+test_tia_local	Local plan/run outcomes, isolation and refusal	Keep actual changed checkout, subprocess and missing-child witnesses.
+test_tia_python_graph	Python import resolution and uncertain dependencies	Keep resolver semantics and fallback when evidence is incomplete.
+test_tia_selection	Selection witnesses and conservative fallback	Keep reason-specific selection and fallback tests.
+test_tia_shards	Deterministic assignments and isolation groups	Keep both exact union and no-cross-lane behavior.
+test_tia_snapshot	Effective Git changes and bound snapshot evidence	Keep paths and status forms representing distinct changes.
+test_verify_pr	Exact PR evidence and independent hosted identity	Keep attempt, target, provenance and readback acceptance boundaries.

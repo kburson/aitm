@@ -1,0 +1,15 @@
+python	UNKNOWN STEP	2026-11-13T11:45:54.5812240Z 25.02s call     packages/aitm-usage/tests/test_install.py::test_owned_launchagent_and_recoverable_upgrade
+python	UNKNOWN STEP	2026-11-13T11:45:54.5813600Z 17.06s call     packages/aitm-usage/tests/test_install.py::test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues
+python	UNKNOWN STEP	2026-11-13T11:45:54.5814690Z 13.81s call     packages/aitm-usage/tests/test_activation_receipt.py::test_recovery_proves_exact_retained_bundle_and_fixed_parity
+python	UNKNOWN STEP	2026-11-13T11:45:54.5815780Z 12.14s call     packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state
+python	UNKNOWN STEP	2026-11-13T11:45:54.5818520Z 9.52s call     packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[later-head]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5823080Z 9.48s call     packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[head-child]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5824210Z 8.71s call     packages/aitm-usage/tests/test_activation_receipt.py::test_running_witness_rejects_same_pid_different_start_and_same_version_wrong_wheel
+python	UNKNOWN STEP	2026-11-13T11:45:54.5825180Z 6.29s call     packages/aitm-usage/tests/test_scopes.py::test_cli_publication_is_private_authenticated_and_lease_free
+python	UNKNOWN STEP	2026-11-13T11:45:54.5826000Z 5.53s call     packages/aitm-usage/tests/test_rollup.py::test_item_inbox_refuses_alias_conflicts_and_canonical_cycles
+python	UNKNOWN STEP	2026-11-13T11:45:54.5827650Z 5.13s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_pair_refuses_one_bad_side_without_moving_either_frontier[swap-owner]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5828520Z 5.08s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_pair_refuses_one_bad_side_without_moving_either_frontier[grant-rival]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5829700Z 4.99s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[abort-owner]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5830770Z 4.94s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[wrong-verb-owner]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5831690Z 4.88s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[counter-regression-rival]
+python	UNKNOWN STEP	2026-11-13T11:45:54.5832850Z 4.85s setup    packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage

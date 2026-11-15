@@ -1,0 +1,11 @@
+{
+  "artifacts": {
+    "plan/2026-11-14-285-behavior-audit.md": "c43dedceb8f25aa6ccc5e7ad5de30bed72956bbfde734f7b6dbbf2ca9f43b7e2",
+    "plan/audit-families.tsv": "2798ea9c0863eacb9593021a9b9f19578e504a081004ef53f1df9f9b95b9dc40",
+    "plan/audit-inventory.json": "ce2e0c22e3b7d1ed05a6663539a58c3613bfb07e43be5dcb2958b3df90f8e9d4"
+  },
+  "issue": 285,
+  "review": "plan/reviews/2026-11-14-285-behavior-audit-review.md",
+  "review_sha256": "9336b3aa967aa64a830e36db76cd955264447d4be748f6ac7185796f15572651",
+  "status": "accepted"
+}
