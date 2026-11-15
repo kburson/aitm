@@ -1,0 +1,16 @@
+{
+  "story": 325,
+  "gate": "Refine",
+  "attempt": 1,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "f235fe00e0ee5d2f15eabae673308e13071c3d25",
+  "estimate": 3,
+  "cap": 4,
+  "sha256": {
+    "refine-input.md": "7e59a442eec7d874da71c1b9d504d46fa77d956f68467f781570224c81f9ca0f",
+    "refine-result.json": "b876ae395894abe96f02278576660717da3b6edc93007acf6972b6675d477e55",
+    "native-watch-independent-refine.md": "0582b136705740f53b7d50b9add762155ab2ce208d814ff7b4f9f483e5dcfb66"
+  }
+}

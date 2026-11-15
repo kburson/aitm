@@ -1,0 +1,65 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 325,
+  "batch": "full-auto-native-watch-refine-1",
+  "recorded_at_utc": "2026-11-15T18:29:23.968Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "1430960564c8b51f5fdda5dc111081aca878b8bd8c7f71438cbe0b0703446bf9"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.0b46552c64aed912c00e40b7",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T18:22:50.868Z",
+      "end_utc": "2026-11-15T18:22:59.569Z"
+    },
+    {
+      "observation_id": "codex.item.d04a60a8b9621c0bf664b3cd",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T18:23:05.364Z",
+      "end_utc": "2026-11-15T18:23:13.933Z"
+    },
+    {
+      "observation_id": "codex.item.5478c85ea46ee802bba68b16",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T18:23:13.938Z",
+      "end_utc": "2026-11-15T18:23:15.563Z"
+    },
+    {
+      "observation_id": "codex.item.e14e99dd21dd64d9c94e9b25",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Refine",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T18:23:40.370Z",
+      "end_utc": "2026-11-15T18:23:45.823Z"
+    }
+  ]
+}

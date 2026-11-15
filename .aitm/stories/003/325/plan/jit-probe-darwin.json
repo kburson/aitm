@@ -1,0 +1,1 @@
+{"platform": "Darwin", "machine": "arm64", "callback_on_scratch_write": true, "dedicated_thread_stopped": true, "bounded_mode_wait": true}

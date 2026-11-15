@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 325
 title: "[M11a] Own native root watch resources and overflow hints"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/325"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [120]
 created: "2026-11-15T18:21:42Z"
 updated: "2026-11-15T18:22:18Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3, "size": "M", "scope": "provisional"}
+estimate: {"agent-hours": 3.0, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/121/plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -30,3 +30,5 @@ Rank 245 and provisional Estimate 3 implementation hours. Complete the independe
 ## Refine
 
 Verified #120 Close and the M11a split release this leaf at Rank 245. [Independent refinement packet](plan/2026-11-15-325-native-watch-refine.md).
+
+Independent Refine passed at 3.0 implementation hours. [Refine receipt](plan/native-watch-independent-refine-receipt.json) · [Exact JIT packet](plan/2026-11-15-325-native-watch-jit.md).
