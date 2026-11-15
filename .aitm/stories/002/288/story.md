@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 288
 title: "[#133] Improve dependency selection for a measured TIA gap"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/288"
 parent: 133
 children: []
 blocking: [292]
 blocked-by: [142, 285, 286]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-14T13:12:59Z"
+updated: "2026-11-15T02:26:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
