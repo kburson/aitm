@@ -1,0 +1,15 @@
+{
+  "schema": "aitm.isolated-source-issuer-amendment/v1",
+  "story": 303,
+  "verdict": "PASS",
+  "activation": "pending",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "amendment": "2026-11-14-303-isolated-source-issuer-amendment.md",
+  "amendment_sha256": "cbfbf8a37edf0d4114380928d991a696629f9d5954f33374fd8c0e87ac87b377",
+  "input_sha256": "15eedb666cfb6d7352d0b075b53d8dacfb45e6506e3af2bf958057e09713feef",
+  "response_sha256": "dfea0b45cf6f30654cf1e76d39d00dc55515ea645b1447b8c604bdd8671810f5",
+  "verdict_sha256": "214bdbc9e42780b312fe41f3ce16c774ebc16c796e20df23d18ea7710444ee2a",
+  "issue_body_sha256": "ba83d3fe27c8d1a3640c5730285ba75dafbe90bbeb7b7a13964bb64ef653b8bf",
+  "issue_body_citation": "review condition 1"
+}
