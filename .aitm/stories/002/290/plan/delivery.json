@@ -1,0 +1,14 @@
+{
+  "archive": "plan/benchmark-evidence.zip",
+  "archive_sha256": "ade7d3e0ba0ea6a3f4695017824a0da82eda60702282dd9465e013178fd00d9c",
+  "assignments_per_cell": 3020,
+  "issue": 290,
+  "readout": "plan/benchmark-readout.json",
+  "readout_sha256": "746792c30f58f75e591178205320a47249d373654acd76fddf9aec6baa210bc9",
+  "report": "plan/2026-11-15-290-benchmark-results.md",
+  "report_sha256": "72b4ac89326c86a66ed372231f1e58537be75935c93921030672c7b5ee7ee295",
+  "review": "plan/benchmark-review.md",
+  "review_sha256": "33e6973b64783579fc776eb95e36505581f4569672fc0bec2db2b27905f449e0",
+  "source": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "status": "accepted"
+}

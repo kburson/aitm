@@ -190,7 +190,7 @@ def measure(root, work, manifest, width, cache):
         evidence = attest_run(root, out, width, nodes)
         coverage = [str(py), "-m", "coverage"]
         run_logged([*coverage, "combine", "--keep"], root, cell_env, out / "coverage-combine.log")
-        run_logged([*coverage, "json", "-o", str(out / "coverage.json")], root, cell_env, out / "coverage-json.log")
+        run_logged([*coverage, "json", "--keep-combined", "-o", str(out / "coverage.json")], root, cell_env, out / "coverage-json.log")
         report = json.loads((out / "coverage.json").read_bytes())
         evidence["coverage"] = {
             category: {
