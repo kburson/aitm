@@ -7,7 +7,7 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
-blocking: [121, 320]
+blocking: [121, 320, 325, 326]
 blocked-by: [115, 119]
 created: "2026-11-10T13:58:03Z"
 updated: "2026-11-10T14:00:46Z"

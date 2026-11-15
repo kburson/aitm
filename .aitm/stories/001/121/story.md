@@ -8,11 +8,11 @@ issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
 blocking: [123, 125]
-blocked-by: [115, 120, 304]
+blocked-by: [115, 120, 304, 325, 326]
 created: "2026-11-10T13:58:05Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -45,3 +45,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 The native Close records for #115, #120 and #304 release M11 at Rank 250. [Root watch and coordinator refinement](plan/2026-11-15-121-watch-coordinator-refine.md) is queued for its initial independent review.
 
 Independent Refine held the integrated proposal because current admission rereads parked sibling transcripts. [Independent result](plan/m11-independent-refine-r1.md) · [Three-leaf recovery proposal](plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md).
+
+## Accepted coordinator scope
+
+[#325](../../003/325/story.md) and [#326](../../003/326/story.md) are verified native prerequisites. #121 owns coordinator integration, native command application and the dormant compatibility-preserving service entry. [Accepted amendment](plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md) · [Native readback](plan/m11-split-native-readback.json).

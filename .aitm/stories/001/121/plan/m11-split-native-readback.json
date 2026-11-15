@@ -1,0 +1,332 @@
+{
+  "source": "1c31ecbf2680b3c59e69a8fb06ae02590e593c83",
+  "amendment_sha256": "84ede6331b21b6e01347bda1bd9e027279bfc0b7b853da9dbab81e2b7ded747e",
+  "registered": {
+    "watch": {
+      "native": {
+        "created_at": "2026-11-15T18:21:42Z",
+        "html_url": "https://github.com/kburson/aitm/issues/325",
+        "id": 6407715246,
+        "number": 325,
+        "state": "open",
+        "title": "[M11a] Own native root watch resources and overflow hints"
+      },
+      "board": {
+        "actual": null,
+        "coverage": null,
+        "estimate": 3,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhI8Ubw",
+        "issue": 325,
+        "rank": 245,
+        "repository": "kburson/aitm",
+        "size": "M",
+        "start": null,
+        "status": "Backlog"
+      },
+      "in": [
+        {
+          "number": 120,
+          "state": "closed"
+        }
+      ],
+      "out": [
+        {
+          "number": 121,
+          "state": "open"
+        }
+      ]
+    },
+    "inventory": {
+      "native": {
+        "created_at": "2026-11-15T18:21:55Z",
+        "html_url": "https://github.com/kburson/aitm/issues/326",
+        "id": 6407717529,
+        "number": 326,
+        "state": "open",
+        "title": "[M11b] Authenticate sources through a shared metadata inventory"
+      },
+      "board": {
+        "actual": null,
+        "coverage": null,
+        "estimate": 3.5,
+        "id": "PVTI_lAHOABCEY84Bq1hZzhI8Uko",
+        "issue": 326,
+        "rank": 247.5,
+        "repository": "kburson/aitm",
+        "size": "M",
+        "start": null,
+        "status": "Backlog"
+      },
+      "in": [
+        {
+          "number": 115,
+          "state": "closed"
+        },
+        {
+          "number": 120,
+          "state": "closed"
+        },
+        {
+          "number": 304,
+          "state": "closed"
+        }
+      ],
+      "out": [
+        {
+          "number": 121,
+          "state": "open"
+        }
+      ]
+    }
+  },
+  "coordinator": {
+    "actual": 0.0107,
+    "coverage": "Partial coordinator Refine progress. Provider, tool and wait intervals excluded.",
+    "estimate": 3.5,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhHhVzk",
+    "issue": 121,
+    "rank": 250,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Refine"
+  },
+  "predecessors_before": [
+    {
+      "number": 115,
+      "state": "closed"
+    },
+    {
+      "number": 120,
+      "state": "closed"
+    },
+    {
+      "number": 304,
+      "state": "closed"
+    }
+  ],
+  "predecessors_after": [
+    {
+      "number": 115,
+      "state": "closed"
+    },
+    {
+      "number": 120,
+      "state": "closed"
+    },
+    {
+      "number": 304,
+      "state": "closed"
+    },
+    {
+      "number": 325,
+      "state": "open"
+    },
+    {
+      "number": 326,
+      "state": "open"
+    }
+  ],
+  "dependents": [
+    {
+      "number": 123,
+      "state": "open"
+    },
+    {
+      "number": 125,
+      "state": "open"
+    }
+  ],
+  "epic_children_after": [
+    {
+      "number": 111,
+      "state": "closed",
+      "title": "[M01] Host path security"
+    },
+    {
+      "number": 112,
+      "state": "closed",
+      "title": "[M02] Atomic filesystem operations"
+    },
+    {
+      "number": 113,
+      "state": "closed",
+      "title": "[M03] Versioned project persistence"
+    },
+    {
+      "number": 114,
+      "state": "closed",
+      "title": "[M04] Adapter contract and existing providers"
+    },
+    {
+      "number": 115,
+      "state": "closed",
+      "title": "[M05] Grok evidence adapter"
+    },
+    {
+      "number": 116,
+      "state": "closed",
+      "title": "[M06] Registry and capture epochs"
+    },
+    {
+      "number": 117,
+      "state": "closed",
+      "title": "[M07] Native scope and handoff"
+    },
+    {
+      "number": 118,
+      "state": "closed",
+      "title": "[M08] Service journal and claim order"
+    },
+    {
+      "number": 119,
+      "state": "closed",
+      "title": "[M09] Project writes and ACK"
+    },
+    {
+      "number": 120,
+      "state": "closed",
+      "title": "[M10] Wake and park scheduler"
+    },
+    {
+      "number": 121,
+      "state": "open",
+      "title": "[M11] Root watches and coordinator"
+    },
+    {
+      "number": 122,
+      "state": "closed",
+      "title": "[M12] Recovery and publication fence"
+    },
+    {
+      "number": 123,
+      "state": "open",
+      "title": "[M13] Snapshot reports"
+    },
+    {
+      "number": 124,
+      "state": "open",
+      "title": "[M14] Compatible export and reconciliation"
+    },
+    {
+      "number": 125,
+      "state": "open",
+      "title": "[M15] Host service lifecycle"
+    },
+    {
+      "number": 126,
+      "state": "open",
+      "title": "[M16] Backup, legacy adoption and rollback"
+    },
+    {
+      "number": 127,
+      "state": "open",
+      "title": "[M17] Privacy and scale integration"
+    },
+    {
+      "number": 128,
+      "state": "open",
+      "title": "[M18] Native macOS qualification"
+    },
+    {
+      "number": 129,
+      "state": "open",
+      "title": "[M19] Native Linux qualification"
+    },
+    {
+      "number": 134,
+      "state": "closed",
+      "title": "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
+    },
+    {
+      "number": 137,
+      "state": "open",
+      "title": "[M05-LG] Linux Grok Build native carrier and adapter bridge"
+    },
+    {
+      "number": 182,
+      "state": "closed",
+      "title": "[M07b] Scope command admission and legacy compatibility"
+    },
+    {
+      "number": 194,
+      "state": "closed",
+      "title": "[M07c] Installed scope launcher compatibility"
+    },
+    {
+      "number": 199,
+      "state": "closed",
+      "title": "[M08b1] Verified Claude revision proof"
+    },
+    {
+      "number": 201,
+      "state": "closed",
+      "title": "[M08b2] Durable causal revision succession"
+    },
+    {
+      "number": 202,
+      "state": "closed",
+      "title": "[M08b3] Verified incomparable-content disputes"
+    },
+    {
+      "number": 203,
+      "state": "closed",
+      "title": "[M08b4a] Verified native disposition proof"
+    },
+    {
+      "number": 209,
+      "state": "closed",
+      "title": "[M08b4b] Atomic journal disposition and coverage projection"
+    },
+    {
+      "number": 210,
+      "state": "closed",
+      "title": "[M08b4c] Verified paired disposition settlement"
+    },
+    {
+      "number": 269,
+      "state": "closed",
+      "title": "[Spike] Prove Claude folded origin and original scope"
+    },
+    {
+      "number": 282,
+      "state": "closed",
+      "title": "[Spike] Measure Claude subagent telemetry coverage and story impact"
+    },
+    {
+      "number": 300,
+      "state": "closed",
+      "title": "Refuse unqualified sources and retain sanitized coverage evidence"
+    },
+    {
+      "number": 303,
+      "state": "closed",
+      "title": "Enforce closed live-source qualification at approval and reserve"
+    },
+    {
+      "number": 304,
+      "state": "closed",
+      "title": "Authenticate controlled live-source qualification on isolated hosts"
+    },
+    {
+      "number": 310,
+      "state": "closed",
+      "title": "Create verified journal-only publication candidates"
+    },
+    {
+      "number": 320,
+      "state": "open",
+      "title": "[M10b] Install owned native wake hooks"
+    },
+    {
+      "number": 325,
+      "state": "open",
+      "title": "[M11a] Own native root watch resources and overflow hints"
+    },
+    {
+      "number": 326,
+      "state": "open",
+      "title": "[M11b] Authenticate sources through a shared metadata inventory"
+    }
+  ]
+}
