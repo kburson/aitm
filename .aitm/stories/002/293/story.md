@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 293
 title: "[#133] Qualify fast story validation above 3,000 tests"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/293"
 parent: 133
 children: []
 blocking: [294]
 blocked-by: [287, 290, 292]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T16:02:57Z"
+updated: "2026-11-15T16:03:48Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log", "plan/qualification-summary.json", "plan/benchmark-evidence.zip", "plan/2026-11-15-293-hosted-validation-results.md", "plan/production-gate-readback.json", "plan/read-hosted.py", "plan/summarize.py", "plan/pack-evidence.py", "plan/check-production.py", "plan/qualification-review.md", "plan/production-gate-final-check.json", "plan/delivery.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-293-hosted-validation-plan.md", "plan/current-inventory.json", "plan/local-pilot-result.json", "plan/local-materialization-initial.log", "plan/local-pilot.log", "plan/test-inventory-initial-red.log", "plan/test-inventory-add.log", "plan/2026-11-15-293-cache-isolation.md", "plan/check-cache.py", "plan/check-cache.log", "plan/qualification-summary.json", "plan/benchmark-evidence.zip", "plan/2026-11-15-293-hosted-validation-results.md", "plan/production-gate-readback.json", "plan/read-hosted.py", "plan/summarize.py", "plan/pack-evidence.py", "plan/check-production.py", "plan/qualification-review.md", "plan/production-gate-final-check.json", "plan/delivery.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -49,3 +49,7 @@ The original full comparator withheld its verdict after a source-bound nested py
 ## Independent review
 
 [Signed evidence review](plan/qualification-review.md) accepts the bounded hosted comparison. The [final gate check](plan/production-gate-final-check.json) confirms identical #103 files and rules after an unrelated trunk merge.
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
