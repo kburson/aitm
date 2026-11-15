@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 121
 title: "[M11] Root watches and coordinator"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
@@ -59,3 +59,5 @@ The ordered Grok capture callback and missing-callback refusal are specified in 
 [#331](../../003/331/story.md) owns prospective Grok enrollment and blocks coordinator integration. [Exact native graph](plan/grok-prospective-enrollment-native-readback.json).
 
 Apply the exact authorized #117 receipt verifier in the #329 capture callback for each approved source and live profile generation. The new [#329 independent source recovery](../../003/329/plan/grok-capture-independent-source-r2.md) and its same-writer wrong-verifier test bind this #121 integration obligation.
+
+[Exact coordinator JIT](plan/2026-11-15-121-root-watch-coordinator-jit.md) enters independent review after verified delivery of #330 and #331.
