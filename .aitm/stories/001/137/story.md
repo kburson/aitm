@@ -36,3 +36,7 @@ Extend the #115 adapter only for independently proven Linux client/build/format 
 Project 24 shows Refine. The local Linux host works and the native Grok Build CLI evidence requires an authenticated sandbox. Proposed estimate is 3.75 hours, size M, conditional on the actual carrier fitting the delivered adapter contract. Independent Refine and exact JIT remain pending. [Refine packet](plan/2026-11-11-137-linux-grok-refine.md)
 
 Partial Actual is 0.0248 hours from the assigned Codex worker’s bounded Refine progress. [Timing receipt](attachments/timing/full-auto-linux-refine-1-137.json)
+
+## Isolated Linux preflight
+
+The integrity-checked official arm64 candidate launched in a clean Linux sandbox. The provider device-code sign-in command is available. Authenticated native turn capture is still required before independent Refine and JIT. [Verified package and sign-in preflight](../134/plan/2026-11-14-134-137-linux-carrier-preflight.md).
