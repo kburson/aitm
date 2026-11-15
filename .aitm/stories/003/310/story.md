@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 310
 title: "Create verified journal-only publication candidates"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/310"
 parent: 100
 children: []
@@ -44,3 +44,7 @@ Initial source review held on tests for future schema, full-row substitution and
 ## Exact recovery
 
 The refusal tests passed on the exact local and signed hosted candidate. Independent source recovery returned **PASS**. [Source receipt](plan/publication-independent-source-r2-receipt.json) · [Signed Test](plan/publication-signed-hosted-r2.json).
+
+## Close
+
+PR #311 merged to trunk after signed Test and independent source review. The native issue is Closed Completed and the Project is Done. The #119 prerequisites now read as closed. [Delivery](plan/publication-verified-delivery.json) · [Native Close](plan/publication-native-close.json).

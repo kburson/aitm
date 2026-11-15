@@ -1,0 +1,63 @@
+{
+  "issue": {
+    "closedAt": "2026-11-15T13:19:14Z",
+    "number": 310,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED",
+    "url": "https://github.com/kburson/aitm/issues/310"
+  },
+  "project": {
+    "actual": 0.0236,
+    "coverage": "Partial coordinator progress intervals. Provider reviews, tools and wait time excluded.",
+    "estimate": 1.25,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI4TdA",
+    "issue": 310,
+    "rank": 229.9,
+    "repository": "kburson/aitm",
+    "size": "S",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "nextStoryPrerequisites": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 199,
+      "state": "closed"
+    },
+    {
+      "number": 201,
+      "state": "closed"
+    },
+    {
+      "number": 202,
+      "state": "closed"
+    },
+    {
+      "number": 203,
+      "state": "closed"
+    },
+    {
+      "number": 209,
+      "state": "closed"
+    },
+    {
+      "number": 210,
+      "state": "closed"
+    },
+    {
+      "number": 300,
+      "state": "closed"
+    },
+    {
+      "number": 303,
+      "state": "closed"
+    },
+    {
+      "number": 310,
+      "state": "closed"
+    }
+  ]
+}
