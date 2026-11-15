@@ -1,0 +1,36 @@
+{
+  "story": 303,
+  "attempt": 2,
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "a76eecf856bdd42fbaeb7fdf13b57a0ec404d334",
+    "headRefOid": "b01cb13b70a9af58087ce88a7759232a0e6dbdea",
+    "number": 306,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/306"
+  },
+  "project": {
+    "actual": 0.1043,
+    "coverage": "Partial coordinator Refine, JIT and Develop intervals. Review, tool and wait time excluded.",
+    "estimate": 2.7,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0O8A",
+    "issue": 303,
+    "rank": 229.055,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Test"
+  },
+  "base": "a76eecf856bdd42fbaeb7fdf13b57a0ec404d334",
+  "head": "b01cb13b70a9af58087ce88a7759232a0e6dbdea",
+  "tree": "7eba00e5b2fb7a41f215392978fc6eb56be1c49c",
+  "product_package_tree": "56c577f1f49fef0d1396bb98141ea8dbd6a7cd70",
+  "product_source_matches_first_review": true,
+  "locked_product_summary": "1241 passed in 242.23s (0:04:02)",
+  "coverage": {
+    "covered_lines": 11385,
+    "num_statements": 12394
+  },
+  "tests_added": "physical custody, exact source consent, held disable with healthy queued command, final settlement transaction rollback",
+  "output_sha256": "ed0a0e9303c6593eaaee26f3626064f870b8f6fa09bfafee7d6afb902aedb106"
+}
