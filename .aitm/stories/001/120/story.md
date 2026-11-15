@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 120
 title: "[M10] Wake and park scheduler"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/120"
 parent: 100
 children: []
@@ -57,3 +57,7 @@ The owner-authorized third Refine passed at 3.5 hours, Size M. [Refine receipt](
 ## Develop
 
 Independent JIT recovery passed. Start the accepted four-path scheduler and ingress slice at the [exact plan](plan/2026-11-15-120-wake-park-jit-r2.md) and [JIT receipt](plan/wake-park-independent-jit-r2-receipt.json).
+
+## Test
+
+The scheduler and same-account wake ingress passed focused tests and native peer credential probes. The exact candidate passed 1,385 locked local tests. [Test proof](plan/wake-park-local-test.json) · [PR #322](https://github.com/kburson/aitm/pull/322).
