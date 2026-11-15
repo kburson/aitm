@@ -1,0 +1,26 @@
+{
+  "story": 320,
+  "scope": "Desktop bundled carrier and local plugin discovery",
+  "no_provider_turn": true,
+  "production_app_or_profile_touched": false,
+  "distribution": "official OpenAI macOS arm64 appcast",
+  "archive_url": "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1103.60933.zip",
+  "appcast_version": "26.1103.60933",
+  "bundled_cli_version": "0.167.0-alpha.3.2",
+  "apple_code_signature_verified": true,
+  "apple_team": "2DC432GLL2",
+  "bundled_executable_sha256": "a636331ed87605efc4cf84028ac2884a75363f9d10ead63cffb57ea0016d486e",
+  "standalone_executable_sha256": "325a46934cee90c1efe0ca5ef5170d64e7c6599138dd8a31da969ad2037af5e8",
+  "bundled_and_standalone_equal": false,
+  "manifest": ".codex-plugin/plugin.json",
+  "marketplace": ".agents/plugins/marketplace.json",
+  "native_registration_and_install": true,
+  "hook": {
+    "eventName": "stop",
+    "source": "plugin",
+    "handlerType": "command",
+    "enabled": true,
+    "trustStatus": "untrusted"
+  },
+  "native_errors": []
+}
