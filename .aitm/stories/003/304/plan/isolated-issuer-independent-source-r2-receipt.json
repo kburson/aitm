@@ -1,0 +1,14 @@
+{
+  "story": 304,
+  "gate": "source",
+  "attempt": 2,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "d511c866c0b3c6e994685e098c751a8ae6afdf5f",
+  "tree": "d2168c629f5bd3df2895f8c5d5e0a7f777752316",
+  "input_sha256": "4e7967a5a52f4a0b70852dbe19b79dc850558d32a4ec8c5ee219b4dd60bbfb76",
+  "response_sha256": "a033a348896d37af85e189ffa4af4e00991ac302ede7681117ff114cb1d8f273",
+  "review_sha256": "07a7d49d8b192ca0138a899a290f2f7c9cdc5030bb426048d90bfd7dff60f84a"
+}

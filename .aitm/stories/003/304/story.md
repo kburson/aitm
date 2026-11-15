@@ -62,3 +62,7 @@ The first source review held. The recovery candidate binds the live pilot to its
 ## Signed recovery Test
 
 The corrected candidate passed exact signed hosted Test and the unchanged policy. [Signed receipt](plan/isolated-issuer-signed-hosted-receipt-r2.json) · [Replay](plan/isolated-issuer-hosted-policy-replay-r2.json).
+
+## Exact source confirmation
+
+Independent source recovery held on the inventory, audit comparison and lexical handler evidence. The test-only correction passed exact local and signed hosted verification. A further source review awaits authorization. [Recovery](plan/isolated-issuer-independent-source-r2-receipt.json) · [Exact confirmation](plan/isolated-issuer-exact-confirmation.json).

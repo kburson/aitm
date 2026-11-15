@@ -1,0 +1,30 @@
+{
+  "story": 304,
+  "verdict": "AWAITING_AUTHORIZED_INDEPENDENT_SOURCE_REVIEW",
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "63407ae5952d88737623b65c0955c02b19103a3d",
+  "tree": "42dccc32eab9cbfb9e7e2ffd28f2a6644f126f85",
+  "run": "https://github.com/kburson/aitm/actions/runs/43715306696/attempts/1",
+  "test_count": 1292,
+  "coverage": {
+    "num_statements": 12780,
+    "covered_lines": 11738
+  },
+  "source_delta_after_r2": "Only tests restore the existing lexical handler names alongside the expanded all-module and dynamic reference checks.",
+  "mutant": "Deliberately moved prepare method consumer rejected.",
+  "provenance": "Complete local single-worker rerun passed after two earlier runs hit fixture setup failures. The underlying cause was not reproduced.",
+  "logs_sha256": {
+    "local-serial/product.log": "f028a576576b3c6ddfa696412905ede57af3e8ce8d07edf6125724969bf8c1b3",
+    "local-serial/evidence/product-coverage.json": "270e04f93c2cf56a54704198544656cbdf7a01a8edc2225ae3f9279c9b33e904",
+    "focused.log": "813ea33ec18c97814b3e523569a06c85aeb28ee7c8c8999628de04d9607c62cf",
+    "handler-mutation-red.log": "59ed52827c425d8aadb39f67e6dceac52c0087f4ea137d374e12bfccea9d86f4",
+    "local/product.log": "aa3d001fa11312015486f7718ce68ac23d5bd22414d516b8a22e78612f6a8fe0",
+    "local-retry/product.log": "e51ca104929c8030523dbe410a6abdd40f86008c7593961983b19d4f9023f7df",
+    "native-pilot.json": "010258ff5e2f691b6534b16646511bd575c21227bbc882de25c68368d5bc34fd",
+    "signed-confirmation-inventory.json": "131eb9071c6bdec030d3984718e85e6b864e9d3928b229e887278f619b538a06",
+    "exact-base-audit.diff": "3632a8da09c77a3d40df9a03ab6f23fb44a246af9c1e45818be4a150884a85bb",
+    "signed-inventory-selectors.txt": "eef7d390a2fe071908dc4d5a4c98fd979b52b9596239cbcbef0559219da7735e",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "source_review_attempts_used": 2
+}

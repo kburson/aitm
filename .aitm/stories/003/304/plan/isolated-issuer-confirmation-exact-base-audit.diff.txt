@@ -1,0 +1,11 @@
+--- accepted-JIT-audit
++++ literal-merged-base-audit
+@@ -222,7 +222,7 @@
+ 715:             decision = _LiveExclusion(approved.source_id, generation, identity)
+ 716:         raise _LiveSourceUnavailable(decision)
+
+-Commit 0542848b0c8f680e11d5f443707835170b04c8f1
++Commit 4cfb41813199f9fa483447a61c65b9ca664fb97e
+ monitor_scope.py: _require_batch_qualification: _recheck_batch:1658, _require_settlement_side:2462
+ monitor_scope.py: _recheck_batch: _journal_view:2675, _require_boundary:1942, _verified_boundary:1822, view:2750
+ monitor_scope.py: _admitted_readers: _bind_codex_quota_account:1131, read_source:1209

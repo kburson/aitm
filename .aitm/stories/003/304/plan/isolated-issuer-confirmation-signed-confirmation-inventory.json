@@ -1,0 +1,30 @@
+{
+  "base": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "head": "63407ae5952d88737623b65c0955c02b19103a3d",
+  "tree": "42dccc32eab9cbfb9e7e2ffd28f2a6644f126f85",
+  "run": "https://github.com/kburson/aitm/actions/runs/43715306696/attempts/1",
+  "run_id": 43715306696,
+  "subject_digest": "4989ef4b1f06145ef852efa53e7315b0586a63d6e5fb150308721e6aae2e074a",
+  "baseline_report_sha256": "b33bd8cfbc41ec177b64cee34859f54cb50474f7590b4b76a0443ec1b5d6f39e",
+  "candidate_report_sha256": "b3a3e10fd1e6851ac62357fde2cb0ac39322af82afcf0d1b76ce609d4dfbb10f",
+  "base_selected_tests": 1277,
+  "candidate_selected_tests": 1292,
+  "issuer_test_nodes": [
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[False-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-False]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_admission_drives_private_denial_without_a_journal_change[True-True]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_closed_resolver_cannot_copy_the_unpatched_codex_fixture",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_currentness_preserves_cancellation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[prepare]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_late_recheck_refusal_is_private_and_rolls_back[staged]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_product_issuer_and_exclusion_consumers_have_fixed_entry_points",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[KeyError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed[TypeError]",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation",
+    "packages/aitm-usage/tests/test_isolated_qualification.py::test_valid_owner_signature_is_bound_to_revision_and_lease"
+  ],
+  "preexisting_candidate_only_wheel_smoke": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+  "missing_base_nodes": []
+}

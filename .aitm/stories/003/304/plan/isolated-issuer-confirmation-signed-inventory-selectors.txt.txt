@@ -1,0 +1,16 @@
+            test "$(shasum -a 256 "$out/observer/policy.json" | cut -d' ' -f1)" = "$BOOTSTRAP_POLICY_SHA"
+          fi
+          cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
+          uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
+          # Keep native fixtures away from the shared system temp directory and evidence output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-base-fixtures.XXXXXXXX")
+          export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
+          export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
+          # Keep native fixtures away from the shared system temp directory and coverage output.
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
+          uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
+            -n "$workers" --dist worksteal -p no:cacheprovider \
+            --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
+            --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
+          uv run --locked python - "$out" "$workers" <<'PY'
+          import json
