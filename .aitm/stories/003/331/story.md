@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 331
 title: "[M11e] Enroll new Grok streams under existing capture grants"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/331"
 parent: 100
 children: []
@@ -36,3 +36,5 @@ Verified #329 Close and the M11e split release this leaf at Rank 249.5. [Indepen
 [Independent Refine recovery passed](plan/grok-enrollment-independent-refine-r2.md) on the exact applied-command proof, durable prospective gap and disjoint three-file ownership.
 
 [Exact JIT](plan/2026-11-15-331-grok-prospective-enrollment-jit.md) is submitted for independent acceptance.
+
+[Independent JIT](plan/grok-enrollment-independent-jit.md) passed with pins J1–J10 for exact trunk. Develop uses the three accepted paths.
