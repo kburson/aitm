@@ -1,0 +1,17 @@
+{
+  "story": 120,
+  "epic": 100,
+  "gate": "accepted-plan amendment",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "activation": "pending",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "amendment-result.json": "169261e6f8cc9d57cbc87d9b8ff1fb6c88ce3e427525e6799a7c1ff1c4a17a4a",
+    "wake-installer-split-independent-review-r1.md": "0eb5ad2570669056545f2102abcf9267fb00133d0a241db88d0d01366b56fc56",
+    "2026-11-15-120-wake-scheduler-installer-split.md": "b7ff1118f19363c6d3cd55a1591f80144f95419373b80324381ea89b8bfabdd4",
+    "amendment-input.md": "0200d4deab47a099e8b64fcb3bcfaaa386fc53a54e78048f82563a68a631d917"
+  }
+}
