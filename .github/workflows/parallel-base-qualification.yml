@@ -1,0 +1,124 @@
+name: Qualify parallel literal base
+
+on:
+  push:
+    branches: [codex/qualify-parallel-base]
+
+permissions:
+  contents: read
+
+env:
+  QUALIFICATION_SOURCE: bfde496be4d21e78b5c96aa0e9300445f83822ca
+  PYTHON_VERSION: '3.13.9'
+  UV_VERSION: '0.10.6'
+
+jobs:
+  base:
+    name: Literal base ${{ matrix.mode }}
+    runs-on: macos-26
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: serial
+            timeout: 12
+          - mode: parallel
+            timeout: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.QUALIFICATION_SOURCE }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: false
+      - name: Run complete base inventory and outcomes
+        env:
+          MODE: ${{ matrix.mode }}
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$QUALIFICATION_SOURCE"
+          root=$(pwd -P)
+          out="$RUNNER_TEMP/aitm-base-qualification"
+          mkdir -p "$out/observer" "$out/evidence"
+          git show HEAD:tools/ci/pytest_evidence.py > "$out/observer/pytest_evidence.py"
+          git show HEAD:tools/ci/policy.json > "$out/evidence/base-policy.json"
+          # The custody checks include the ctime of every ancestor.
+          fixtures=$(mktemp -d "$HOME/aitm-base-fixtures.XXXXXXXX")
+          device=$(df -P "$fixtures" | awk 'NR==2 {print $1}')
+          filesystem=$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)
+          test "$filesystem" = apfs
+          uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
+          export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
+          if [[ "$MODE" == parallel ]]; then
+            workers=3
+            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+              --basetemp "$fixtures/pytest" -q -n "$workers" --dist worksteal -p no:cacheprovider \
+              packages/aitm-usage/tests
+            uv run --project packages/aitm-usage --locked python - "$AITM_CI_PYTEST_EVIDENCE" "$workers" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from pytest_evidence import reconcile_workers
+
+          destination = Path(sys.argv[1])
+          evidence = reconcile_workers(destination, int(sys.argv[2]))
+          destination.write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+          PY
+          else
+            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+              --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
+          fi
+          cd packages/aitm-usage
+          sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
+          jq -n --arg base "$QUALIFICATION_SOURCE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
+            --arg observer "$(sha "$out/observer/pytest_evidence.py")" \
+            --arg policy "$(sha "$out/evidence/base-policy.json")" \
+            --arg lock "$(sha uv.lock)" --arg configuration "$(sha pyproject.toml)" \
+            --arg runtime "$(uv run --locked python -c 'import platform; print(platform.python_version())')" \
+            --arg image "${ImageOS:?}:${ImageVersion:?}" --slurpfile evidence "$out/outcomes.json" \
+            '{identity:{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image},evidence:$evidence[0]}' \
+            > "$out/evidence/base.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: base-${{ matrix.mode }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/aitm-base-qualification/evidence/
+          if-no-files-found: error
+
+  parity:
+    needs: base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: base-*-a${{ github.run_attempt }}
+      - name: Compare exact inventory and phase outcomes
+        env:
+          ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python3 - "$ATTEMPT" <<'PY'
+          import json
+          import sys
+          from collections import Counter
+          from pathlib import Path
+
+          attempt = sys.argv[1]
+          serial, parallel = [
+              json.loads(Path(f"base-{mode}-a{attempt}/base.json").read_text())
+              for mode in ("serial", "parallel")
+          ]
+          assert serial["identity"] == parallel["identity"], "test inputs or runner image differ"
+          lhs, rhs = serial["evidence"], parallel["evidence"]
+          assert lhs["exit_code"] == rhs["exit_code"] == 0
+          assert lhs["deselected"] == rhs["deselected"] == []
+          assert lhs["collected"] and lhs["collected"] == rhs["collected"]
+          def reports(evidence):
+              return Counter(json.dumps(row, sort_keys=True) for row in evidence["reports"])
+          assert reports(lhs) == reports(rhs), "different test phase outcomes"
+          assert len(lhs["reports"]) == 3 * len(lhs["collected"])
+          print(f"Matched {len(lhs['collected'])} tests and {len(lhs['reports'])} phase outcomes")
+          PY
