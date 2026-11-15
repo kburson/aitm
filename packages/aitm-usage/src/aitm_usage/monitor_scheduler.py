@@ -128,6 +128,7 @@ class Scheduler:
         self._leased: dict[str, WorkItem] = {}
         self._retry: dict[str, float] = {}
         self._last_group = ""
+        self._last_stream_by_group: dict[str, str] = {}
         self._generation = 0
         with self._directory() as directory:
             for name in os.listdir(directory.fd):
@@ -253,12 +254,16 @@ class Scheduler:
         previous = self._records.get(name)
         if previous is not None and previous.facts.stream != facts.stream:
             return False
-        if stop and any(
-            item.facts.session == facts.session
-            and item.facts.provider is facts.provider
-            and item.facts.turn != facts.turn
-            and (previous is None or item.generation > previous.generation)
-            for item in self._records.values()
+        if (
+            stop
+            and previous is not None
+            and any(
+                item.facts.session == facts.session
+                and item.facts.provider is facts.provider
+                and item.facts.turn != facts.turn
+                and item.generation > previous.generation
+                for item in self._records.values()
+            )
         ):
             return False
         same_fact = previous is not None and previous.facts.fact == facts.fact
@@ -319,20 +324,30 @@ class Scheduler:
         for name, item in tuple(self._leased.items()):
             if item.lease_until <= now:
                 del self._leased[name]
-        by_group: dict[str, deque[str]] = defaultdict(deque)
+        by_group: dict[str, dict[str, deque[str]]] = {}
         for name, moment in sorted(
             self._due.items(), key=lambda item: (item[1], item[0])
         ):
             if moment <= now and name not in self._leased:
                 facts = self._records[name].facts
-                by_group[(facts.project or facts.stream).value].append(name)
+                group = (facts.project or facts.stream).value
+                streams = by_group.setdefault(group, defaultdict(deque))
+                streams[facts.stream.value].append(name)
         result = []
         while by_group and len(result) < limit:
             groups = sorted(by_group)
             group = groups[bisect_right(groups, self._last_group) % len(groups)]
             self._last_group = group
-            name = by_group[group].popleft()
-            if not by_group[group]:
+            group_streams = by_group[group]
+            streams = sorted(group_streams)
+            last_stream = self._last_stream_by_group.get(group, "")
+            stream = streams[bisect_right(streams, last_stream) % len(streams)]
+            self._last_stream_by_group[group] = stream
+            slots = group_streams[stream]
+            name = slots.popleft()
+            if not slots:
+                del group_streams[stream]
+            if not group_streams:
                 del by_group[group]
             item = self._records[name]
             facts = item.facts

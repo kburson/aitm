@@ -11,11 +11,14 @@ from time import monotonic
 
 import pytest
 from test_monitor_coverage import admitted_sources as admitted_sources
+from test_monitor_delivery import _enable, _journal, _reserve
+from test_monitor_delivery import independent as independent
+from test_monitor_journal import COPY, LIVE, A, B
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
 from aitm_usage import cli, monitor_control, monitor_registry
-from aitm_usage.ledger import LedgerError
+from aitm_usage.ledger import Ledger, LedgerError
 from aitm_usage.monitor_control import WakeIngress
 from aitm_usage.monitor_registry import Registry
 from aitm_usage.monitor_scheduler import (
@@ -27,6 +30,7 @@ from aitm_usage.monitor_scheduler import (
     WakeResolutionKind,
 )
 from aitm_usage.monitor_types import MonitorProvider
+from aitm_usage.monitor_writer import ProjectDelivery
 from aitm_usage.sources import hooks
 from aitm_usage.sources.hooks import (
     HookEvent,
@@ -124,6 +128,30 @@ def test_stale_stop_cannot_park_newer_turn(wake):
     ]
 
 
+def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake):
+    scheduler, resolver, ref, now = wake
+    assert _change(scheduler, resolver)
+    assert _change(scheduler, resolver, WakeKind.STOP)
+    (first,) = scheduler.take_due(now[0], 1)
+    assert scheduler.finish(first, caught_up=True)
+
+    _new_fact(resolver, turn=ref("stop-only-turn"), fact=ref("stop-only-fact"))
+    assert _change(scheduler, resolver, WakeKind.STOP)
+    (second,) = scheduler.take_due(now[0], 1)
+    assert second.turn != first.turn
+    assert second.generation > first.generation
+    assert second.state is ScheduleState.SETTLING
+    assert scheduler.finish(second, caught_up=True)
+    assert _change(scheduler, resolver, WakeKind.STOP)
+    restored = Scheduler(resolver.writer, clock=lambda: now[0])
+    assert restored.take_due(now[0], 2) == ()
+    states = {wake.facts.turn: wake.state for wake in restored._records.values()}
+    assert states == {
+        first.turn: ScheduleState.PARKED,
+        second.turn: ScheduleState.PARKED,
+    }
+
+
 def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake):
     scheduler, resolver, ref, now = wake
     assert _change(scheduler, resolver)
@@ -180,6 +208,95 @@ def test_full_project_does_not_starve_another_due_project(wake):
         assert scheduler.finish(item, caught_up=item.project != first_project)
     assert len(set(served)) == 3
     assert scheduler.take_due(now[0], 1) == ()
+
+
+def test_due_turns_rotate_by_stream_inside_one_project(wake):
+    scheduler, resolver, ref, now = wake
+    original = resolver.result.facts.stream
+    assert _change(scheduler, resolver)
+    now[0] += 1
+    _new_fact(resolver, turn=ref("second-turn"), fact=ref("second-fact"))
+    assert _change(scheduler, resolver)
+    now[0] += 1
+    other = ref("other-stream")
+    _new_fact(
+        resolver,
+        stream=other,
+        session=ref("other-session"),
+        turn=ref("other-turn"),
+        fact=ref("other-fact"),
+    )
+    assert _change(scheduler, resolver)
+    first, second, third = (scheduler.take_due(now[0], 1)[0] for _ in range(3))
+    assert {first.stream, second.stream} == {original, other}
+    assert third.stream == original
+
+
+@pytest.mark.usefixtures("legacy_monitor_qualification")
+def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
+    independent,
+):
+    native = independent
+    with native.registry.writer() as writer:
+        journal = _journal(writer, cap=1)
+        (original,) = _reserve(native, journal)
+        _enable(native, journal)
+        prior = journal.cursor_for(LIVE, native.locator(LIVE))
+        native.append(LIVE, native.turn(3))
+        now = [0.0]
+        scheduler = Scheduler(writer, clock=lambda: now[0])
+
+        def wake_source(source, project):
+            def ref(kind, value):
+                return native.evidence.pseudonymize(kind, str(value))
+
+            facts = ResolvedWake(
+                MonitorProvider.CODEX,
+                native.locator(source).stream_ref,
+                ref("wake-test-session", source),
+                None,
+                ref("wake-test-project", project),
+                ref("wake-test-fact", source),
+                current_stop=False,
+            )
+            assert _change(scheduler, Resolver(writer, facts))
+            (item,) = scheduler.take_due(now[0], 1)
+            assert item.stream == facts.stream
+            return item
+
+        blocked = wake_source(LIVE, A)
+        held = _reserve(native, journal)[-1]
+        assert held.status == "held"
+        assert journal.cursor_for(LIVE, native.locator(LIVE)) == prior
+        assert scheduler.finish(blocked, caught_up=False)
+
+        independent_item = wake_source(COPY, B)
+        (other,) = _reserve(native, journal, COPY)
+        assert (other.status, other.project_id) == ("pending", B)
+        with Ledger.open(native.ledgers[B].root, B).writer() as destination:
+            delivery = ProjectDelivery.attach(journal, destination)
+            ticket = journal.reserve_delivery(other.key, 1)
+            result = delivery.commit(ticket)
+            ack = journal.ack(delivery, ticket, result)
+            assert journal.ack(delivery, ticket, result) == ack
+            assert len(destination.monitor_as_of(result.sequence).revisions) == 1
+        assert scheduler.finish(independent_item, caught_up=True)
+        assert journal.cursor_for(LIVE, native.locator(LIVE)) == prior
+        assert scheduler.take_due(now[0], 1) == ()
+
+        with Ledger.open(native.ledgers[A].root, A).writer() as destination:
+            delivery = ProjectDelivery.attach(journal, destination)
+            original_ticket = journal.reserve_delivery(original.key, 1)
+            journal.ack(delivery, original_ticket, delivery.commit(original_ticket))
+        now[0] += 0.25
+        (retry,) = scheduler.take_due(now[0], 1)
+        assert (retry.stream, retry.generation) == (blocked.stream, blocked.generation)
+        (settled,) = (
+            item for item in _reserve(native, journal) if item.key == held.key
+        )
+        assert settled.status == "pending"
+        assert journal.cursor_for(LIVE, native.locator(LIVE)) != prior
+        assert scheduler.finish(retry, caught_up=True)
 
 
 def test_wire_cannot_notify_without_approved_resolution(wake, monkeypatch):
@@ -317,6 +434,31 @@ def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
     with WakeIngress(scheduler, resolver).listen() as listener:
         assert sender.notify(event) is WakeDisposition.SENT
         assert listener.serve_once()
+
+
+@pytest.mark.parametrize("replace_root", [False, True], ids=["socket", "root"])
+def test_replaced_endpoint_is_refused_and_preserved(wake, replace_root):
+    scheduler, resolver, _, now = wake
+    root = resolver.writer.root
+    endpoint = root / "wake.sock"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as foreign:
+        with WakeIngress(scheduler, resolver).listen() as listener:
+            if replace_root:
+                root.rename(root.with_name("previous"))
+                root.mkdir(mode=0o700)
+            else:
+                endpoint.unlink()
+            foreign.bind(str(endpoint))
+            endpoint.chmod(0o600)
+            replacement = endpoint.lstat()
+            assert not listener.serve_once()
+            assert resolver.calls == []
+        assert os.path.samestat(replacement, endpoint.lstat())
+    if replace_root:
+        with pytest.raises(LedgerError, match="Private ledger path"):
+            scheduler.take_due(now[0], 1)
+    else:
+        assert scheduler.take_due(now[0], 1) == ()
 
 
 def test_saturated_listener_is_preserved_and_sender_returns(wake, monkeypatch):
