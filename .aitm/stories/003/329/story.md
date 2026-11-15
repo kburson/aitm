@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -42,3 +42,5 @@ Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at
 ## Test
 
 The exact candidate passed 1,450 locked local tests. The earlier run identified an extra exclusion decision consumer. The correction passed the existing invariant and the same locked suite. The strict cursor and original-route proofs used retained bytes and the isolated issuer. [Exact local Test](plan/grok-capture-local-test.json) · [PR #332](https://github.com/kburson/aitm/pull/332).
+
+[Signed hosted Test](plan/grok-capture-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
