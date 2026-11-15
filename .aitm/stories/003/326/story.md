@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 326
 title: "[M11b] Authenticate sources through a shared metadata inventory"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/326"
 parent: 100
 children: []
@@ -46,3 +46,7 @@ Actual native and Grok selected-read audits found zero opens of unchanged parked
 ## Independent source
 
 The exact selected-source inventory passed signed Test. Independent source returned **HOLD**. [Signed Test](plan/metadata-inventory-signed-hosted-r1.json) · [Source receipt](plan/metadata-inventory-independent-source-r1-receipt.json).
+
+## Source recovery
+
+Test-only proof now covers root and nested-directory supersession, inventory reuse and current key refusal, and exact Grok descriptor-relative opens. [Exact candidate](plan/metadata-inventory-source-recovery-candidate.json).
