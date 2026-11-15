@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 330
 title: "[M11d] Deliver verified Grok usage through the guarded journal"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/330"
 parent: 100
 children: []
@@ -42,3 +42,5 @@ Verified #119 and #329 Close and the M11d split release this leaf at Rank 249. [
 ## Test
 
 The exact candidate passed 1,468 locked local tests. The focused regressions cover original marked and hookless claims, an independent stream, native prefix and locator custody, and the pinned destination restore with a lost ACK. [Exact local Test](plan/grok-journal-local-test.json) · [PR #333](https://github.com/kburson/aitm/pull/333).
+
+[Signed hosted Test](plan/grok-journal-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.

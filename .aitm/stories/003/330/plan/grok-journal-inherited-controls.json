@@ -1,0 +1,13 @@
+{
+  "prior_base": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "current_base": "30e1a13d64a88d43e7447e2199c0e389324a0857",
+  "scope": "Signed control blobs match the previous verified gate exactly.",
+  "controls": {
+    "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+    "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+    "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+    "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+    "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+    "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+  }
+}
