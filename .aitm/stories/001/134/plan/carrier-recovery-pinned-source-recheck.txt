@@ -1,0 +1,18 @@
+Accepted JIT base 4cfb41813199f9fa483447a61c65b9ca664fb97e
+100644 blob 2ad81edfb5da88cccca3241adaa12a503ebbc34e	packages/aitm-usage/src/aitm_usage/monitor_types.py
+100644 blob 5a20eab1bc29746cd25762818cf027163c5c7ccf	packages/aitm-usage/src/aitm_usage/sources/_scope_command.py
+100644 blob e4f226e75836bc7389434bd0d751b5455b0b0a57	packages/aitm-usage/src/aitm_usage/sources/adapter.py
+100644 blob c07648ff379e2c58591e18a1e3c336d8735eaadf	packages/aitm-usage/src/aitm_usage/sources/codex.py
+100644 blob c004f812d19be28fd7fa00f467694040b48ea566	packages/aitm-usage/src/aitm_usage/sources/scan.py
+100644 blob 5417678efdb2ef7f95d7180ef130f97b970a8f9e	packages/aitm-usage/src/aitm_usage/types.py
+Literal candidate base bfde496be4d21e78b5c96aa0e9300445f83822ca
+100644 blob 2ad81edfb5da88cccca3241adaa12a503ebbc34e	packages/aitm-usage/src/aitm_usage/monitor_types.py
+100644 blob 5a20eab1bc29746cd25762818cf027163c5c7ccf	packages/aitm-usage/src/aitm_usage/sources/_scope_command.py
+100644 blob e4f226e75836bc7389434bd0d751b5455b0b0a57	packages/aitm-usage/src/aitm_usage/sources/adapter.py
+100644 blob c07648ff379e2c58591e18a1e3c336d8735eaadf	packages/aitm-usage/src/aitm_usage/sources/codex.py
+100644 blob c004f812d19be28fd7fa00f467694040b48ea566	packages/aitm-usage/src/aitm_usage/sources/scan.py
+100644 blob 5417678efdb2ef7f95d7180ef130f97b970a8f9e	packages/aitm-usage/src/aitm_usage/types.py
+bfde496be4d21e78b5c96aa0e9300445f83822ca:packages/aitm-usage/src/aitm_usage/sources/_scope_command.py:35:def queued_monitor_scope_id(stdout: str) -> UUID | None:
+bfde496be4d21e78b5c96aa0e9300445f83822ca:packages/aitm-usage/src/aitm_usage/sources/codex.py:684:    def matches_turn(
+bfde496be4d21e78b5c96aa0e9300445f83822ca:packages/aitm-usage/src/aitm_usage/sources/scan.py:690:        raw_client = metadata.get("cli_version")
+bfde496be4d21e78b5c96aa0e9300445f83822ca:packages/aitm-usage/src/aitm_usage/sources/scan.py:700:        raw_client = row.get("version")
