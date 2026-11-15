@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 335
 title: "[M11f] Authenticate Grok scope marker receipts"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/335"
 parent: 100
 children: []
@@ -36,3 +36,5 @@ Rank 249.75, provisional Estimate 3.75 implementation hours. #182 and #329 are v
 ## Test
 
 The exact candidate passed 1,502 locked local tests. The focused regressions cover one-use publication, exact native marked and project-only hookless paths, physical ancestry, stale and wrong authority, the read-only receipt callback and prefix substitution. [Exact local Test](plan/marker-local-test.json) · [PR #336](https://github.com/kburson/aitm/pull/336).
+
+[Signed hosted Test](plan/marker-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
