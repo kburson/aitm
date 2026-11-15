@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -11,8 +11,8 @@ blocking: [330]
 blocked-by: [115, 117, 304, 326]
 created: "2026-11-15T19:50:35Z"
 updated: "2026-11-15T19:51:14Z"
-last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "M", "scope": "provisional"}
+last-branch: "codex/aitm-329-grok-capture"
+estimate: {"agent-hours": 3.75, "size": "M", "scope": "provisional"}
 priority: null
 origin: ".aitm/stories/001/121/plan/2026-11-15-121-grok-guarded-delivery-amendment.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -36,3 +36,5 @@ Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at
 [Exact JIT](plan/2026-11-15-329-positive-grok-capture-jit.md) is submitted for independent acceptance.
 
 [First JIT held](plan/grok-capture-independent-jit-r1.md) on the exact cut, codec and authority boundaries. [Recovery JIT](plan/2026-11-15-329-positive-grok-capture-jit-r2.md) is submitted on literal trunk.
+
+[Independent JIT recovery passed](plan/grok-capture-independent-jit-r2.md). [Develop entry evidence](plan/grok-capture-develop-entry.json) binds the actual #326 merge and exact legacy goldens.

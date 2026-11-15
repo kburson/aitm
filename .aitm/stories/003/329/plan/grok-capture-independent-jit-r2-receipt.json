@@ -1,0 +1,13 @@
+{
+  "story": 329,
+  "gate": "JIT",
+  "attempt": 2,
+  "verdict": "PASS",
+  "base": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "packet_sha256": "e2f6d07a608835b9b07ff8fc758796a703a05a3d96f6c100f8631a0c60ce4bb1",
+  "review_sha256": "40e607c551c4eef035fe5baff7bab3dd37c207bd9adbfaaf33a3addec61545f2",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "entry_conditions": 4,
+  "raw_review_sha256": "58634a5ff44828381790c5fc989e2552854e206bf8ca3368f1f11b2b5d011e63"
+}

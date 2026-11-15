@@ -1,0 +1,12 @@
+{
+  "story": 329,
+  "base": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "inventory_pr": 328,
+  "inventory_pr_merge_commit": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "registry_golden_sha256": "626314e3a9b303238fa9a720e025c8e78290f8f624e11bea0325a4a2e562cbd8",
+  "scope_golden_sha256": "7e56be80b8a9c9fbbded48c699640696422c36cee4cf27a7a8f8ec77bed5dcf7",
+  "alternate_registry_sha256": "badc4ff05d31f574111c6024adb6a4e98a9a0ed10a481dac4d4b40f80af8708c",
+  "alternate_registry_provenance": "scratch post-inventory refusal registry, codec experiment only",
+  "keep_verified_boundary_exact": true,
+  "use_runtime_grok_boundary_import": true
+}
