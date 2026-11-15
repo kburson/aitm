@@ -1,0 +1,14 @@
+{
+  "story": 120,
+  "actual_hours": 0.0136,
+  "coverage": "partial",
+  "milliseconds": 48804,
+  "basis": "Union of completed coordinator progress inside the attributed Refine and prior recorded story windows.",
+  "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
+  "evidence": [
+    {
+      "path": "full-auto-wake-park-refine-1-120.json",
+      "sha256": "67c2ed8d999902608e05559ed67c57a22d0a2b8fd5881b60ecc3233b0069baa4"
+    }
+  ]
+}

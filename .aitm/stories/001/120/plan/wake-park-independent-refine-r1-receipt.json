@@ -1,0 +1,17 @@
+{
+  "story": 120,
+  "gate": "Refine",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "estimate": 6.0,
+  "estimate_scope": "pre-split implementation estimate",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "refine-result.json": "5b74101c63220008434c7b10440b0d80da7177999ee4c5fd8455a0a409c211e9",
+    "refine-input.md": "99d1a08bca7868ae7b17a2746dbc4378edeeaca0288cf5003fa401dba815d582",
+    "wake-park-independent-refine-r1.md": "b264e64d8dc7ed08a2fc8a1e8820863cf059e654f6aecaa7ec53cee15d06428e",
+    "refine-hold-board.json": "99174bd0a5f1999ab53b5fd7fcd3703a7dcdd0d2ec85180db9d395577dd11f3c"
+  }
+}

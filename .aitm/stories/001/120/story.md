@@ -43,3 +43,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 ## Refine
 
 The native Close records for #115 and #119 release M10 at Rank 240. [Wake and park refinement](plan/2026-11-15-120-wake-park-refine.md) is queued for its initial independent review.
+
+The first independent Refine estimated six hours for the unsplit leaf and returned HOLD at its four-hour cap. The Board Estimate is provisional while the scheduler and installer split is reviewed. [Refine receipt](plan/wake-park-independent-refine-r1-receipt.json).
