@@ -1,0 +1,31 @@
+{
+  "schema": "aitm.qualified-cost-independent-reacceptance/v1",
+  "epic": 100,
+  "verdict": "PASS",
+  "activation": "pending",
+  "codex_legacy_peer_review_route": "isolated Claude CLI; package manual check unavailable",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "attempts": [
+    {
+      "attempt": 1,
+      "verdict": "HOLD",
+      "amendment": "2026-11-14-100-qualified-cost-acceptance-r1.md",
+      "amendment_sha256": "05d81bf8426bc61470c72ebc35fa6869e89056be5ae2802ac537106cae2a8e10",
+      "input_sha256": "e9a0ba8a4e8fb662b72c4738bf889b1d251ccc45459c32f1c9ecaabd7b85ea48",
+      "review_sha256": "b80392b6d27c922b49a782d662b05b2c82e384abf6864e7771c5f1eed4ed6bab",
+      "response_sha256": "efb0159b50a371045221df7d864b125d3bce42bb8bda3be2dae5cd226e4e1703"
+    },
+    {
+      "attempt": 2,
+      "verdict": "PASS",
+      "amendment": "2026-11-14-100-qualified-cost-acceptance-r2.md",
+      "amendment_sha256": "bc236b8c4f15527d7535d5d3c4301411125233be1bdb501409eb90126d55ca44",
+      "input_sha256": "c774cff9f5b6ce95ebe0cb5f7f490f33b344a790e2045917922011820c467eac",
+      "review_sha256": "d839f11e093afb98c825479f3d5127b68717d069c3ed8fb7fc571ee8da6b74e0",
+      "response_sha256": "2b3f9e7233fe32b14cfd6ec6a900a1f72dd48159bd25512464be496912b87652"
+    }
+  ],
+  "replacement_issue_body_sha256": "9a4191643533376d0cccf7edf61acd94d2ad02dfad5cb284f9bebc8c3279ca45",
+  "sibling_issue_body_sha256": "fd6e074965a95abfaea7ec3c8e732581411120bfc0c2c113d841747c8a4a9a65"
+}

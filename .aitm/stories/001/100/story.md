@@ -95,3 +95,7 @@ The independently accepted [completion amendment](plan/2026-11-14-100-qualified-
 ## Ordinary Claude CLI carrier
 
 The independently accepted [#298 carrier](../../002/298/story.md) precedes [#295 containment](../../002/295/story.md). [Current closure manifest](plan/qualified-monitor-carrier-readback.json).
+
+## Qualified-cost release re-acceptance
+
+R2 independently passed. The current native graph stays authoritative until the replacement blockers, sibling parentage and final exact edge sets are verified. [Exact amendment](plan/2026-11-14-100-qualified-cost-acceptance-r2.md) · [Receipts](plan/qualified-cost-reacceptance-receipt.json).
