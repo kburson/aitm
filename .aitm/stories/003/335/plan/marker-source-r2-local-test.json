@@ -1,0 +1,26 @@
+{
+  "story": 335,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "headRefOid": "a7856662fa5809332cfeab2da50efeca66088d8a",
+    "isDraft": false,
+    "number": 336,
+    "url": "https://github.com/kburson/aitm/pull/336"
+  },
+  "tests": 1504,
+  "tree": "2a52b8c134f1a33a87132ce1326f9d3426b877b4",
+  "product_lines": {
+    "covered_lines": 14469,
+    "num_statements": 15911
+  },
+  "evidence_sha256": {
+    "marker-exact-focused.log": "81aaf56d70f5bb19d266646ac605f29dd02ef4b40d176b134085b968d0fa9012",
+    "stale-mark-red.log": "b439e5fef2052c7ce4477b8f3e779825b4cc82d742c488c849caedeb8433a449",
+    "local-current/product.log": "4a9b949d01aad47cbeb1a3abc99b9756b1f7506649dc84d276b43769b96ebce4"
+  },
+  "correction": "Keep the proven owner grant under the existing publication lock through first application. The recovery adds an exact stale-batch revoke regression and verifies the original owner and native overlap.",
+  "r1_head": "875b9d5b5c220d270843777438c8da5d365880a4",
+  "r1_source_no_verdict_sha256": "a4f5dcf86b3402e15c3a847800cae4384b33fe1136f6aa6abaae970d1cdf4222"
+}
