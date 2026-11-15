@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 310
 title: "Create verified journal-only publication candidates"
 kind: "story"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/310"
 parent: 100
 children: []
@@ -24,3 +24,7 @@ plan-origin: {"kind":"accepted-parent-plan-amendment","source-story":119,"key":"
 # Create verified journal-only publication candidates
 
 Project 24 Rank 229.9. Implement the M09a contract from the [accepted split](../../001/119/plan/2026-11-15-119-destination-writes-split.md), independently reviewed at the exact linked revision. The implementation estimate of 1.25 hours is provisional pending independent Refine and JIT. The existing recovery fence remains #122.
+
+## Independent Refine
+
+Passed at 1.25 implementation hours. JIT will freeze complete committed row identity and verify candidate isolation. [Verdict](plan/independent-refine-r1.md).

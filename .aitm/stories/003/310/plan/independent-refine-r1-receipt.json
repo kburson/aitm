@@ -1,0 +1,15 @@
+{
+  "story": 310,
+  "verdict": "PASS",
+  "role": "Refine",
+  "estimate_hours": 1.25,
+  "route": "isolated Claude CLI",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "artifacts": {
+    "2026-11-15-310-journal-publication-refine.md": "6189bdbc38cf7f060171827f12185a2412462c20d77b5e41dea7913188ebb872",
+    "independent-refine-r1.md": "c0a0350faf7facc6b2e0bb50c08c6807a76c0fec3f5445f42e8b47fb1765e380",
+    "input.md": "bfd259e4e727505ebca96b521a7bb369a4bfab5e88c86593ea16b71a986aab48",
+    "result.json": "ea4ef5c27b1fb6c24a206b57714332e1c9d54347468b27037369f21f49c041bc"
+  }
+}
