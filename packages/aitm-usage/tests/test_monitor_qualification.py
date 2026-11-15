@@ -1,5 +1,7 @@
 from dataclasses import replace
 from datetime import UTC, datetime
+from pathlib import Path
+from shutil import copytree
 from uuid import UUID, uuid4
 
 import pytest
@@ -122,7 +124,7 @@ def previously_admitted(tmp_path, monkeypatch):
     authority = object()
     with monkeypatch.context() as setup:
         setup.setattr(Registry, "_require_live_source", lambda *_, **__: authority)
-        return NativeJournalFixture(tmp_path, setup)
+        return NativeJournalFixture(tmp_path, monkeypatch)
 
 
 def test_retained_codex_refuses_before_payload(previously_admitted, monkeypatch):
@@ -272,13 +274,26 @@ def test_revoked_capture_keeps_payload_dependent_disable_pending(previously_admi
         inbox = ControlInbox(writer.root)
         command = ControlCommand(UUID(int=987), disable)
         inbox.enqueue(command)
+        other_id = UUID(int=988)
+        state = writer.root.parent / "healthy-project"
+        state.mkdir(mode=0o700)
+        healthy = ControlCommand(
+            other_id,
+            ProjectRegistrationRequest(
+                UUID(int=989), str(state), "Independent project"
+            ),
+        )
+        inbox.enqueue(healthy)
 
         def locate(change, known):
             assert change == disable
             locator = previously_admitted.locator()
             return (locator,) if locator.stream_ref in known else ()
 
-        assert writer.apply_pending(inbox, writer.lease, locate) == ()
+        (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+        assert receipt.command_id == other_id
+        assert receipt.status is ControlStatus.APPLIED
+        assert writer.command_status(other_id) == receipt
         after = writer.view()
         assert after.epochs == before.epochs
         assert after.permissions == before.permissions
@@ -328,3 +343,121 @@ def test_old_capture_frontier_cannot_cross_a_profile_generation(previously_admit
         with pytest.raises(LedgerError, match="qualification"):
             writer.verify_boundary(change, locator, frontier)
         assert writer.view() == before
+
+
+@pytest.mark.parametrize(
+    "mismatch",
+    (
+        "replaced-profile-root",
+        "foreign-profile-root",
+        "foreign-installation-directory",
+        "replaced-approved-directory",
+        "missing-installation",
+        "ambiguous-installation",
+    ),
+)
+def test_unqualified_physical_custody_cannot_approve_or_read(
+    previously_admitted, tmp_path, mismatch
+):
+    from test_monitor_journal import LIVE
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import ScopeState
+
+    registry = previously_admitted.registry
+    expired_root = _directory(str(registry.root), private=True)
+    if mismatch == "replaced-profile-root":
+        prior_location = tmp_path / "previous-monitor"
+        registry.root.rename(prior_location)
+        copytree(prior_location, registry.root)
+
+    with registry.writer() as writer:
+        qualify(writer)
+        profile = writer._live_profile
+        approved = next(s for s in writer.view().sources if s.source_id == LIVE)
+        installation = next(
+            i for i in profile.installations if i.directory == approved.directory
+        )
+        locator = previously_admitted.locator()
+        state = ScopeState(writer)
+        journal = RoutingJournal(writer, state)
+        before = writer.view()
+        progress = journal.cursor_for(LIVE, locator)
+        if mismatch == "replaced-profile-root":
+            writer._live_profile = replace(profile, root=expired_root)
+        elif mismatch == "foreign-profile-root":
+            foreign = tmp_path / "foreign-registry"
+            foreign.mkdir(mode=0o700)
+            writer._live_profile = replace(
+                profile, root=_directory(str(foreign), private=True)
+            )
+        elif mismatch == "foreign-installation-directory":
+            sibling = tmp_path / "foreign-installation"
+            sibling.mkdir()
+            writer._live_profile = replace(
+                profile,
+                installations=(
+                    replace(installation, directory=_directory(str(sibling))),
+                ),
+            )
+        elif mismatch == "replaced-approved-directory":
+            retained = Path(approved.directory.path)
+            prior_location = retained.with_name("previous-installation")
+            retained.rename(prior_location)
+            copytree(prior_location, retained)
+        elif mismatch == "missing-installation":
+            writer._live_profile = replace(profile, installations=())
+        else:
+            writer._live_profile = replace(
+                profile, installations=(installation, installation)
+            )
+
+        with pytest.raises(LedgerError, match="qualification"):
+            writer.approve_source(approved.approval)
+        with pytest.raises(LedgerError):
+            state.read_source(LIVE, locator)
+        assert writer.view() == before
+        assert journal.cursor_for(LIVE, locator) == progress
+
+
+@pytest.mark.parametrize("with_cursor", (False, True))
+def test_codex_exclusion_requires_consent_for_its_exact_source(
+    previously_admitted, monkeypatch, with_cursor
+):
+    from test_monitor_journal import COPY, LIVE
+
+    from aitm_usage.monitor_journal import RoutingJournal
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.sources.adapter import ProviderAdapter
+
+    with previously_admitted.registry.writer() as writer:
+        qualify(writer)
+        state = ScopeState(writer)
+        journal = RoutingJournal(writer, state)
+        locator = previously_admitted.locator()
+        cursor = None
+        if with_cursor:
+            prepared = journal.prepare(LIVE, locator)
+            journal.reserve_batch(prepared)
+            cursor = journal.cursor_for(LIVE, locator)
+            assert cursor is not None
+
+        original = writer.view()
+        writer._save(
+            replace(
+                original,
+                permissions=tuple(
+                    p for p in original.permissions if p.source_id == COPY
+                ),
+            )
+        )
+        writer._live_profile = None
+        monkeypatch.setattr(
+            ProviderAdapter,
+            "read_delta",
+            lambda *a, **k: pytest.fail("unconsented read"),
+        )
+        with pytest.raises(LedgerError, match="no admitted unbounded read") as refusal:
+            state.read_source(LIVE, locator, cursor=cursor)
+        assert getattr(refusal.value, "decision", None) is None
+        assert journal.cursor_for(LIVE, locator) == cursor

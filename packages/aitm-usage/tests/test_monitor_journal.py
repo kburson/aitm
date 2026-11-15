@@ -2991,8 +2991,11 @@ def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journa
     assert journal.as_of().settlements == (change,)
 
 
-def test_paired_history_survives_live_revocation_after_commit(
-    journal_pair, monkeypatch, legacy_monitor_qualification
+@pytest.mark.parametrize(
+    "after_commit", (False, True), ids=("before-commit", "after-commit")
+)
+def test_paired_revocation_retains_only_committed_history(
+    journal_pair, monkeypatch, legacy_monitor_qualification, after_commit
 ):
     from contextlib import contextmanager
     from types import MethodType
@@ -3009,7 +3012,13 @@ def test_paired_history_survives_live_revocation_after_commit(
     owner, rival = case.owner.prove(), case.rival.prove()
     journal = case.journal
     before = journal.as_of()
+
+    def cursor(proof):
+        return journal.cursor_for(proof._batch.source_id, proof._batch._locator)
+
+    previous_cursors = tuple(map(cursor, (owner, rival)))
     transaction = journal._store.transaction
+    build = journal._build_settlement_change
 
     @contextmanager
     def revoke_after_commit(*, write=False):
@@ -3018,18 +3027,31 @@ def test_paired_history_survives_live_revocation_after_commit(
         if write:
             case.writer._live_profile = None
 
-    monkeypatch.setattr(journal._store, "transaction", revoke_after_commit)
+    def revoke_before_commit(*arguments):
+        result = build(*arguments)
+        assert result[1]
+        case.writer._live_profile = None
+        return result
+
+    if after_commit:
+        monkeypatch.setattr(journal._store, "transaction", revoke_after_commit)
+    else:
+        monkeypatch.setattr(journal, "_build_settlement_change", revoke_before_commit)
     with pytest.raises(LedgerError, match="qualification"):
         journal.settle_disposition(case.key, owner, rival)
 
     after = journal.as_of()
-    assert len(after.settlements) == 1
-    assert after.settlements[0].sequence == before.sequence + 1
-    assert all(claim in after.claims for claim in before.claims)
-    for proof in (owner, rival):
-        assert journal.cursor_for(proof._batch.source_id, proof._batch._locator) == (
-            proof.progress.cursor
+    if after_commit:
+        assert len(after.settlements) == 1
+        assert after.settlements[0].sequence == before.sequence + 1
+        assert all(claim in after.claims for claim in before.claims)
+        assert tuple(map(cursor, (owner, rival))) == (
+            owner.progress.cursor,
+            rival.progress.cursor,
         )
+    else:
+        assert after == before
+        assert tuple(map(cursor, (owner, rival))) == previous_cursors
     with pytest.raises(LedgerError, match="qualification"):
         journal.settle_disposition(case.key, owner, rival)
     assert journal.as_of() == after
