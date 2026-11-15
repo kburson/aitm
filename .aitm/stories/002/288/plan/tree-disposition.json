@@ -1,0 +1,28 @@
+{
+  "archive_digest": "sha256:3cd68ec0cdc5af9232014c1da455a6ece72b7c0edf6b93b2c0335ebc96f0ba52",
+  "artifact_id": 14143546008,
+  "base": "8d794c548f4ee48910ed32cdb9447b28969cebb6",
+  "gate_disposition": "requires-separate-trusted-verifier",
+  "head": "4c9f4428fe12ffb320e3f618eed6dac6ebedbe36",
+  "jobs": {
+    "aitm-ci": 132672848302,
+    "collect-evidence": 132672804572,
+    "file-checks": 132671290171,
+    "python": 132671290414,
+    "python-base": 132671290336,
+    "quality": 132671290395
+  },
+  "kind": "diagnostic-authenticated-job-and-signature-readback",
+  "pr": 302,
+  "run": "https://github.com/kburson/aitm/actions/runs/43667903008/attempts/1",
+  "run_attempt": 1,
+  "run_id": 43667903008,
+  "subject_digest": "9689856298ca4fd9242fdcf9c0699876ba02da5bc713f04530dcb0bd19d3dfd4",
+  "tested_merge": "f52d383bd362b89683db23b4ce25c48208241d3f",
+  "tree": "678b3920ae1b6de96947e979f1c80f90ec310caf",
+  "workflow_id": 412848571,
+  "disposition": "approved",
+  "authority": "Standing evidence-based delegation for exact-candidate admission",
+  "change_scope": "M\ttools/ci/tests/test_tia_selection.py\nM\ttools/ci/tia/edges.json\n",
+  "basis": "Authenticated canonical CI and signed artifact with exact candidate scope. Existing #103 controls preserved; independent PR review is a separate gate."
+}
