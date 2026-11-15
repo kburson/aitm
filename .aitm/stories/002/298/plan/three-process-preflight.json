@@ -1,0 +1,78 @@
+{
+  "schema": "aitm.claude-three-process-preflight/v1",
+  "subject": 298,
+  "epoch_ordinal": 32,
+  "genuine_native_process_invocations": 3,
+  "turns": [
+    {
+      "turn": "warmup",
+      "transcript_prefix_sha256": "f0646215f8f1825a95938f454fc363d234dfd90b8621d64813d6e2e1cad5e4aa",
+      "cli_pipe_sha256": "3fdb3942cc82308d5a52e0293d102902a0abcd07a1ae7c05457c876ada3047d7",
+      "quota_events": 1,
+      "exact_completion_and_otel_owner_join": true,
+      "full_request_span": [
+        17,
+        22
+      ],
+      "full_request_capture_disposition": "excluded",
+      "assistant_record_capture_disposition": "excluded"
+    },
+    {
+      "turn": "enroll",
+      "transcript_prefix_sha256": "8b6d937770ce6d6a26aa0e87e9d9e24575dd1be54a1742e872e88098871d7a87",
+      "cli_pipe_sha256": "206c109753aa95b0a7c3586d20f0c22557df5371c7dfaffa178980b3553cbc2e",
+      "quota_events": 1,
+      "exact_completion_and_otel_owner_join": true,
+      "full_request_span": [
+        31,
+        33
+      ],
+      "full_request_capture_disposition": "unknown",
+      "assistant_record_capture_disposition": "eligible"
+    },
+    {
+      "turn": "measured",
+      "transcript_prefix_sha256": "a12f6955e657af9226adbef3a07cec9c777f8abe8a02c8e8fc77c32ca715fad9",
+      "cli_pipe_sha256": "7c6a189100f1aa01dc13a0f2fd61dfa38386dd60a6fa295337991bc05ba1ce73",
+      "quota_events": 1,
+      "exact_completion_and_otel_owner_join": true,
+      "full_request_span": [
+        42,
+        44
+      ],
+      "full_request_capture_disposition": "eligible",
+      "assistant_record_capture_disposition": "eligible"
+    }
+  ],
+  "current_journal_live": {
+    "before_cursor_present": false,
+    "after_cursor_present": false,
+    "after_cursor_matches_prepared": false,
+    "diagnostics": {
+      "coverage-gap": 1,
+      "unreconciled-usage": 4
+    },
+    "claim_count": 2,
+    "prepared_candidates": 2,
+    "reservation_results": {
+      "pending": 2
+    },
+    "journal_sequence": 1
+  },
+  "current_journal_reopened": {
+    "before_cursor_present": false,
+    "after_cursor_present": false,
+    "after_cursor_matches_prepared": false,
+    "diagnostics": {
+      "coverage-gap": 1,
+      "unreconciled-usage": 4
+    },
+    "claim_count": 2,
+    "prepared_candidates": 2,
+    "reservation_results": {
+      "replay": 2
+    },
+    "journal_sequence": 1
+  },
+  "full_cursor_qualified": false
+}

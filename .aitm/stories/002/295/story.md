@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/295"
 parent: 100
 children: []
 blocking: [119]
-blocked-by: [210]
+blocked-by: [210, 298]
 created: "2026-11-14T13:11:34Z"
 updated: "2026-11-14T13:13:56Z"
 last-branch: "planning"
@@ -64,3 +64,5 @@ The [joined-evidence qualification](plan/2026-11-14-295-claude-joined-evidence.m
 ## Claude carrier design acceptance
 
 [Carrier R2](design/2026-11-14-295-claude-evidence-design-r2.md) passed independent design and parent-plan scope insertion review. The separately owned carrier must deliver a genuine ordinary cursor before #295 resumes. [Exact activation requirements](design/claude-carrier-activation.md).
+
+The [verified native prerequisite #298](../298/story.md) owns the ordinary cursor proof and is in Refine. #295 still directly gates #119.
