@@ -1,0 +1,36 @@
+{
+  "story": 300,
+  "attempt": 2,
+  "pr": {
+    "baseRefName": "trunk",
+    "baseRefOid": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+    "headRefOid": "b82eafa76425bc3c42f1050c65f72a482fe6c343",
+    "number": 308,
+    "state": "OPEN",
+    "url": "https://github.com/kburson/aitm/pull/308"
+  },
+  "project": {
+    "actual": 0.0771,
+    "coverage": "Partial coordinator progress through local Test. Provider, tool and wait time excluded.",
+    "estimate": 3.2,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0J7k",
+    "issue": 300,
+    "rank": 229.06,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Test"
+  },
+  "base": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "head": "b82eafa76425bc3c42f1050c65f72a482fe6c343",
+  "tree": "bb506ca7ed4f4b4241505714885f7bd06fa8f82f",
+  "product_package_tree": "42b74b70540eb67e2af1f1b2f17d11b339e0c2af",
+  "product_source_matches_first_review": true,
+  "locked_product_summary": "1277 passed in 232.35s (0:03:52)",
+  "coverage": {
+    "covered_lines": 11532,
+    "num_statements": 12546
+  },
+  "tests_added": "decisive stability guards, a new settlement after a coverage-first v6 upgrade, reader lease loss and strict reserved-variant decoding",
+  "output_sha256": "415bf308325d0725c043fc5f2d7c7afb9ca285520e7006a7e52ef48bd808fdd9"
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -64,3 +64,7 @@ The candidate passed signed hosted Test and the raw replay of the established po
 ## Independent source review
 
 Held for the reported source findings. The preserved exact hosted pass does not authorize delivery. [Review](plan/coverage-independent-source-r1.md).
+
+## Source-review corrections and retest
+
+The recovery candidate adds tests covering the four source-review findings. Exact PR #308 returned to Test on current trunk. [Local retest](plan/coverage-local-retest.json).
