@@ -1,0 +1,63 @@
+name: Sync Blocked-By
+
+on:
+  issues:
+    types: [closed, reopened]
+  repository_dispatch:
+    types: [aitm-planning-dependencies-changed]
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Publish to planning and update the issue field
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - '.github/workflows/blocked-by.yml'
+      - 'tools/board_sync/**'
+
+permissions: {}
+
+jobs:
+  verify:
+    if: github.repository == 'kburson/aitm' && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test the blocker projection
+        run: python3 -m unittest discover -s tools/board_sync/tests -v
+      - name: Read live planning and issue data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -m tools.board_sync.blocked_by
+
+  reconcile:
+    if: github.repository == 'kburson/aitm' && github.ref == 'refs/heads/trunk' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: aitm-blocked-by
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check without publishing
+        if: github.event_name == 'workflow_dispatch' && !inputs.apply
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -m tools.board_sync.blocked_by
+      - name: Publish and verify field updates
+        if: github.event_name != 'workflow_dispatch' || inputs.apply
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -m tools.board_sync.blocked_by --apply
