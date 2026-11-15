@@ -1,0 +1,29 @@
+{
+  "story": 121,
+  "epic": 100,
+  "attempt": 1,
+  "verdict": "PASS",
+  "gate": "accepted-plan amendment",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "conditions": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "C8"
+  ],
+  "graph_before": {
+    "children_sha256": "34236b7c8e896a74852b934bb7426f0c351ab6f2fa8500c66497c3ca9433cb2b"
+  },
+  "sha256": {
+    "grok-amendment-result.json": "af1b8451ed0bd2a0e4b247f5b9e06956ac03b4ab2a03f6c6ff7f2073052de3b2",
+    "grok-amendment-input.md": "b86476a0a7fdad735c2303f2eaf4d4f52cb21849b7f2999ca20d48680a01cbc3",
+    "2026-11-15-121-grok-guarded-delivery-amendment.md": "9ff468c70ce7c9ddec99858bbaaa4eb35761754fe282109b09a03bd8eb731732",
+    "grok-delivery-amendment-independent-review.md": "adf4327cc60a18f85753d0df0427959a67736a4d5723ca9d895166bd2b0bcf7b",
+    "post-inventory-grok-probe.json": "9426c61c4be2dfdbe80793f3382ef051017ebc20095f13b6efab164de212f554"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "observations_at_verified_read": 2,
+  "cursor_type": "GrokCheckpoint",
+  "journal_prepare": "held",
+  "reason": "Journal source has no verified native session",
+  "journal_view_unchanged": true,
+  "trunk": "84b936d17a9693df3bb0e85bafcd286cc049f2d6",
+  "tree": "4b322eddd2d2019d1ff91b5eabc0bcd5f4626563",
+  "journal_blob": "e64622a3d5a6b287b49f5b2ffcf9488c3992be90",
+  "scope_blob": "a69ff3b2a60bdffb85250e1ef22a461b3006686c",
+  "no_live_provider_turn": true
+}
