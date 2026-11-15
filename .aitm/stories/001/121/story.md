@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
 blocking: [123, 125]
-blocked-by: [115, 120, 304, 325, 326, 330]
+blocked-by: [115, 120, 304, 325, 326, 330, 331]
 created: "2026-11-10T13:58:05Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
@@ -55,3 +55,5 @@ Independent Refine held the integrated proposal because current admission reread
 [#329](../../003/329/story.md) qualifies selected Grok capture. [#330](../../003/330/story.md) depends on it and blocks #121 until verified Grok journal delivery closes. [Accepted amendment](plan/2026-11-15-121-grok-guarded-delivery-amendment.md) · [Native readback](plan/grok-delivery-split-native-readback.json).
 
 The ordered Grok capture callback and missing-callback refusal are specified in [#329’s recovery JIT](../../003/329/plan/2026-11-15-329-positive-grok-capture-jit-r2.md). #121 owns supplying it from the running coordinator.
+
+[#331](../../003/331/story.md) owns prospective Grok enrollment and blocks coordinator integration. [Exact native graph](plan/grok-prospective-enrollment-native-readback.json).
