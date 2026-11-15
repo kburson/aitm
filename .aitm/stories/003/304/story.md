@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 304
 title: "Authenticate controlled live-source qualification on isolated hosts"
 kind: "story"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/304"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [303]
 created: "2026-11-15T02:38:03Z"
 updated: "2026-11-15T02:38:32Z"
 last-branch: "planning"
-estimate: {"agent-hours": 3.5, "size": "M"}
+estimate: {"agent-hours": 3.8, "size": "M"}
 priority: null
 origin: ".aitm/stories/003/303/plan/2026-11-14-303-isolated-source-issuer-amendment.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -42,3 +42,7 @@ Passed at 3.5 implementation hours with a single real macOS arm64 Grok pilot. Th
 ## Independent JIT
 
 Two exact JIT reviews held. The recovery closed four findings and left admission provenance and reserve/retry coverage sign-off pending. The confirmation draft includes the retained admission predicate, source callers, and a four-case hosted proof. The accepted Project estimate is 3.5 hours and the draft proposes 3.8 hours. A further independent JIT review requires explicit authorization. [First review](plan/isolated-issuer-independent-jit-r1.md) · [Recovery](plan/isolated-issuer-independent-jit-r2.md) · [Confirmation draft](plan/2026-11-14-304-controlled-source-issuer-jit-r3.md).
+
+## Independent JIT confirmation and Develop
+
+The authorized confirmation passed at 3.8 implementation hours. The delivered #300 tree equals the separately reviewed candidate, including its existing first-read-only coverage recorder. Exercise single-candidate reserve unconditionally and prove the prior #300 recorder remains the only reachable decision-consuming path. [Exact JIT](plan/isolated-issuer-independent-jit-r3.md) · [Receipt](plan/isolated-issuer-jit-r3-receipt.json).

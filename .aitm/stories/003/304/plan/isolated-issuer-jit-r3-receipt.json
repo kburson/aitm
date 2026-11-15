@@ -1,0 +1,19 @@
+{
+  "story": 304,
+  "attempt": 3,
+  "role": "JIT",
+  "verdict": "PASS",
+  "estimate_hours": 3.8,
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "route": "isolated Claude CLI",
+  "reviewed_trunk": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "also_reviewed_source_tree": "0542848b0c8f680e11d5f443707835170b04c8f1",
+  "develop_trunk": "4cfb41813199f9fa483447a61c65b9ca664fb97e",
+  "develop_tree_matches_also_reviewed_tree": true,
+  "draft_sha256": "45723c5fe6f9449b37afca079a3fc44da0cac725eb31ccce5a9b000917055877",
+  "audit_sha256": "94be3ccc7c531bf361aca057bc1c8ebfd898e1f4a6759147962c278cf747a28e",
+  "reviewer_input_sha256": "3640d525b1ed3562d00e3f7809acbe9ca9940d43372dc1033fd44aa038d26865",
+  "response_sha256": "52b7782cea2fa1bb34960c1e81151383db7e58545a61b66e57542d3bb0ac7090",
+  "verdict_sha256": "3c6d1427045318063d444654b02cadde3875a126c2e6ae53d07033031f30d2d4"
+}
