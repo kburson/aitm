@@ -1,0 +1,115 @@
+_ ERROR at setup of test_claude_content_and_ownership_disputes_remain_separate[before] _
+
+tmp_path = PosixPath('<HOME>/Library/Caches/aitm-289.KWQlOk6r/aitm-shadow-fixtures.tnVTOa0N/product/test_claude_content_and_owners0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x1067e7d90>
+
+    @pytest.fixture
+    def journal_claude(tmp_path, monkeypatch):
+        from test_monitor_scope import ClaudeScopeFixture, NativeScopeFixture
+
+        monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+>       return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+packages/aitm-usage/tests/test_monitor_journal.py:1099:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+packages/aitm-usage/tests/test_monitor_scope.py:99: in __init__
+    proof = writer.verify_boundary(change, self.locator(), frontier)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:918: in verify_boundary
+    proof = self._verify_next(self.view(), change, locator, frontier)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:883: in _verify_next
+    observed, boundaries = self._native_delta(view, change, locator, frontier)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <aitm_usage.monitor_registry.Registry object at 0x1072ae190>
+view = RegistryView(projects=(RegisteredProject(project_id=UUID('00000000-0000-0000-0000-000000000001'), state=_PhysicalDirec...rce_key_id='91610942204c9f40bbb1b7adad77b1138e58eba6d0f867217cec3d531765b8c8', format='aitm.usage.monitor-registry/v1')
+change = CaptureChange(project_id=UUID('00000000-0000-0000-0000-000000000002'), source_id=UUID('00000000-0000-0000-0000-000000000005'), enabled=True)
+locator = SourceLocator()
+prior = CaptureFrontier(checkpoint=SourceCheckpoint(cursor=SourceCursor(source_ref=SourceRef(value='hmac-sha256:60e12c7cf9bb70...on=1, client_version=<ClientVersion.CODEX_0_167_0_ALPHA_3_2: '0.167.0-alpha.3.2'>, format_version=1)), last_ordinal=10)
+arm = False
+
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+        try:
+            before = _probe(candidate._path)
+            cursor = None if prior is None else StreamCursor(prior.checkpoint)
+            if prior is not None and candidate.provider is Provider.CLAUDE:
+                # The registry has source custody, with no prior destination revisions.
+                # Replay the native prefix after authenticating the last saved witness.
+                checkpoint = prior.checkpoint.cursor
+                _capture_position(candidate, checkpoint, fixed=checkpoint)
+                cursor = None
+            batch = reader.read_delta(current, cursor)
+            after = _probe(candidate._path)
+        except _CaptureDiscontinuity:
+            raise _CaptureSourceLost(
+                "Native capture position is discontinuous"
+            ) from None
+        except OSError:
+            raise BoundaryUnavailable(
+                "Native capture source is temporarily unavailable"
+            ) from None
+        checkpoint = None if batch.cursor is None else batch.cursor.checkpoint
+        if (
+            not isinstance(checkpoint, SourceCheckpoint)
+            or not before.same_path(after)
+            or checkpoint.cursor.source_ref != locator.stream_ref
+        ):
+            raise BoundaryUnavailable("Native capture frontier is unavailable")
+        if (
+            checkpoint.provider.provider.value != approval.provider
+            or checkpoint.provider.client_version.value != approval.client_version
+            or checkpoint.provider.format_version != approval.format_version
+        ):
+            raise _CaptureSourceLost(
+                "Native capture version differs from approved source"
+            )
+        if prior is not None:
+            earlier = prior.checkpoint.cursor
+            later = checkpoint.cursor
+            if (
+                prior.stream_ref != locator.stream_ref
+                or later.locator_ref != earlier.locator_ref
+                or later.incarnation_ref != earlier.incarnation_ref
+                or later.offset < earlier.offset
+            ):
+                raise BoundaryUnavailable("Native capture frontier is discontinuous")
+        if arm and not (
+            before.stat.st_size == after.stat.st_size == checkpoint.cursor.offset
+            and before.stat.st_mtime_ns == after.stat.st_mtime_ns
+        ):
+            raise BoundaryUnavailable("Current native capture frontier is incomplete")
+        boundaries = tuple(
+            item.usage.boundary
+            for item in batch.observations
+            if item.native_surface.value == approval.surface
+            and item.usage.boundary.provider.value == approval.provider
+            and item.usage.client_version.value == approval.client_version
+            and item.usage.format_version == approval.format_version
+            and item.usage.boundary.stream_ref == locator.stream_ref
+        )
+        try:
+            physical = _capture_position(
+                candidate, checkpoint.cursor, fixed=checkpoint.cursor
+            )
+        except (_CaptureDiscontinuity, OSError):
+>           raise BoundaryUnavailable(
+                "Native capture position is unavailable"
+            ) from None
+E           aitm_usage.monitor_registry.BoundaryUnavailable: Native capture position is unavailable
+
+packages/aitm-usage/src/aitm_usage/monitor_registry.py:810: BoundaryUnavailable

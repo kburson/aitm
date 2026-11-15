@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 289
 title: "[#133] Qualify scheduled full-suite validation on trunk in shadow"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/289"
 parent: 133
 children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T02:47:22Z"
+updated: "2026-11-15T02:55:28Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -35,3 +35,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Final candidate freshness handling
 
 [Updated exact candidate evidence](plan/local-validation.md) includes a still-active timely run past grace. Provider completion remains the source for its disposition.
+
+## Independent source and native diagnostics
+
+[Exact source assessment](plan/reviews/source-assessment.md) · [Retained local setup diagnostics](plan/local-native-diagnostics.md). Local full-suite evidence remains incomplete.
