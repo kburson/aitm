@@ -1,0 +1,3 @@
+# #289 Shadow toolchain correction
+
+Diagnostic dispatch 43670107921 passed all 1,215 product tests. The helper lane failed because the runner image GitHub CLI differs from the verifier's pinned 2.97.0. Install the same checksum-verified ARM64 release used by the existing #103 candidate helper job, inside private runner scratch before helper tests. Keep the production paths and rules unchanged. Move the daily shadow slot from 03:17 to 03:47 UTC in both the schedule and verifier to leave time for the exact-hosted requalification. Require this new tree to pass #103 and independent code review and keep #289 open until a genuine scheduled full green is independently reviewed.
