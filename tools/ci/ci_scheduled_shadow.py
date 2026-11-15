@@ -121,7 +121,7 @@ def run_key(row):
 
 
 def schedule_slot(now):
-    slot = now.replace(hour=3, minute=17, second=0, microsecond=0)
+    slot = now.replace(hour=3, minute=47, second=0, microsecond=0)
     return slot if now >= slot else slot - timedelta(days=1)
 
 
