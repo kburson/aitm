@@ -1651,7 +1651,9 @@ class ScopeState:
         ):
             raise LedgerError("Scope registry or issuer changed since the native read")
         approved = _source(batch._registry, batch.source_id)
-        self.registry._require_live_source(approved, prior=batch._live_source)
+        self.registry._require_live_source(
+            approved, prior=batch._live_source, observed=bool(batch._admitted)
+        )
         return approved
 
     def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
