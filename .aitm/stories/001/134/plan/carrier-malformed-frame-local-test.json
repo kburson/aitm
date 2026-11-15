@@ -3,25 +3,24 @@
   "status": "local-test-pass",
   "candidate": {
     "baseRefName": "trunk",
-    "baseRefOid": "75d4bc06657f93f77d6b07e3ae2605cb1c9a269f",
-    "headRefOid": "7c8c76e6f622b22ae00a853f1dddfb11161870bf",
+    "baseRefOid": "ab9db80098849e323d5122eb47bf48f377107058",
+    "headRefOid": "91fd55832ae4d9cf7daa79d56138050b63495092",
     "number": 313,
     "state": "OPEN",
     "url": "https://github.com/kburson/aitm/pull/313"
   },
-  "verified_tree": "d99037ae8d57976e04ebc90caa557e4ee2656411",
-  "tests": 1335,
-  "focused_tests": 14,
-  "coverage": {
-    "covered_lines": 11907,
-    "num_statements": 12953
+  "verified_tree": "eaecc1b6042f5477d2830d26117c946e97e33e01",
+  "tests": 1352,
+  "product_coverage": {
+    "covered_lines": 12194,
+    "num_statements": 13277
   },
-  "evidence_sha256": {
-    "product.log": "bcba3c72dc58295369b4f8d241e7340a0a95617c1e2608707a13780fda6d85eb",
-    "product-coverage.json": "d35128c0696549726ddf6a4bc9162bc3a2377b1a7ada4c3cfb15097c8f3e470c",
-    "focused.log": "dba1ffa0398b8e9bdf3eb597d23188c007cd10e0046e0c41577a8e9a2d56c8af",
-    "exact-native-replay.json": "9749478f5f77d6ee33ba340fc9ab5f9f01a7aab450e806645af1e9a423e057b9",
+  "logs_sha256": {
+    "product.log": "53e9b67ea0012a24431fa98e0dff1249135820572a9689ccc2eb5503287a0ae8",
+    "product-coverage.json": "c830e59059597287e0630f85f7de9baffdced965e15e2a774ef8fc6a1f2f5709",
+    "exact-native-replay.json": "10cd7489dc2cce9401d69063fe14a9493bc828e9aa9e793e2b987cea392fc80d",
+    "pinned-source-recheck.txt": "ce42879f9bf529db9906f23797d8359f92eb58bf80f16f1ae76717fbd10518dd",
     "invalid-frame-source.txt": "890f8475d9a4d8f4907ca4fc7f421f458f348451b8cee8fad2c2efa508c69d77",
-    "recovery.diff": "b510445de60a51a43088dbef38dfe3e86cbb8bd55943ea39b57a099970c0188c"
+    "focused.log": "dba1ffa0398b8e9bdf3eb597d23188c007cd10e0046e0c41577a8e9a2d56c8af"
   }
 }

@@ -1,0 +1,18 @@
+{
+  "host": "linux/aarch64",
+  "result": "pass",
+  "pre_mark_prefix_sha256": "e0c4902884122714b31e2ed2b13ccb777257606468b18340957b807ed10467a7",
+  "archived_prefix_sha256": "5b7b06b30934a6a2fd8e7764960d32c4657734d28856a6b08031de6a2ff49a76",
+  "reopened_prefix_sha256": "5b7b06b30934a6a2fd8e7764960d32c4657734d28856a6b08031de6a2ff49a76",
+  "complete_line_boundaries": true,
+  "archive_bytes": 267207,
+  "marked_receipt_ordinal": 147,
+  "marked_tokens": 20836,
+  "ordinary_observations_after_restart": 1,
+  "replayed_observations": 0,
+  "stable_keyed_checkpoint": true,
+  "qualifies_live_cursor": false,
+  "source_commit": "91fd55832ae4d9cf7daa79d56138050b63495092",
+  "source_tree": "eaecc1b6042f5477d2830d26117c946e97e33e01",
+  "sanitized_fixture_sha256": "a63358dcaad34ee47567f3298144c63f9933572d24f0daf94f5b41e37f084ecd"
+}
