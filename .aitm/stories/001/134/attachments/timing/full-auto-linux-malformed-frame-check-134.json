@@ -1,0 +1,39 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 134,
+  "batch": "full-auto-linux-malformed-frame-check",
+  "recorded_at_utc": "2026-11-15T15:52:57.153Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "cba8ce9d0d5fd073893c80e0f616a47ec4c8f6f00cfc06fdb01707a14dc71a95"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.34bde908f6fa83824c37732b",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Test",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T15:42:39.814Z",
+      "end_utc": "2026-11-15T15:42:44.774Z"
+    },
+    {
+      "observation_id": "codex.item.bc66248a7d136b835668b0e7",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.9a88036a552e052202aace2c",
+      "phase": "Test",
+      "role": "coordinator",
+      "attempt": "full-auto-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-15T15:43:07.797Z",
+      "end_utc": "2026-11-15T15:43:18.681Z"
+    }
+  ]
+}
