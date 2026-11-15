@@ -77,8 +77,9 @@ def current_target(github):
 
 
 def latest(github, workflow, event, since):
+    starting = since.strftime("%Y-%m-%dT%H:%M:%SZ")
     records = github.pages(
-        f"actions/workflows/{workflow}/runs?branch={TARGET}&event={event}&created=%3E%3D{since.isoformat()}&per_page=100",
+        f"actions/workflows/{workflow}/runs?branch={TARGET}&event={event}&created=%3E%3D{starting}&per_page=100",
         "workflow_runs",
     )
     require(len(records) < 1000, "scheduled run search is truncated")
@@ -138,7 +139,7 @@ def profile(collected, executed, optional):
     return outcomes
 
 
-def verify_document(receipt, run, optional):
+def verify_document(receipt, run, policy):
     require(
         receipt["schema"] == SCHEMA
         and receipt["binding"]
@@ -157,7 +158,9 @@ def verify_document(receipt, run, optional):
     counts = {}
     for label in PROFILES:
         pair = receipt["profiles"][label]
-        outcomes = profile(pair["collection"], pair["execution"], optional)
+        outcomes = profile(
+            pair["collection"], pair["execution"], policy["optional_skips"]
+        )
         require(not combined.intersection(outcomes), "overlapping scheduled profiles")
         root = "packages/aitm-usage/tests/" if label == "product" else "tools/ci/tests/"
         require(
@@ -166,6 +169,24 @@ def verify_document(receipt, run, optional):
         )
         counts[label] = len(outcomes)
         combined.update(outcomes)
+    require(
+        set(policy["required_tests"]) <= combined, "missing required scheduled test"
+    )
+    children = [
+        child
+        for label in PROFILES
+        for child in receipt["profiles"][label]["execution"]["children"]
+    ]
+    expected = set(policy["required_children"])
+    require(
+        len(children) == len(expected)
+        and {child["label"] for child in children} == expected
+        and all(
+            type(child["returncode"]) is int and child["returncode"] == 0
+            for child in children
+        ),
+        "missing or failed scheduled native child",
+    )
     return counts
 
 
@@ -227,7 +248,7 @@ def verify_artifact(github, run, job):
         "digest": item["digest"],
         "tree": tree,
         "controls": controls,
-        "counts": verify_document(receipt, run, policy["optional_skips"]),
+        "counts": verify_document(receipt, run, policy),
     }
 
 
@@ -279,7 +300,10 @@ def inspect(github, *, expected=None, event="schedule", now=None):
     ):
         result.update(status="stale")
         return result
-    if run is None or event == "schedule" and timestamp(run["created_at"]) < slot:
+    if run is None or (
+        event == "schedule"
+        and not slot <= timestamp(run["created_at"]) <= slot + timedelta(minutes=45)
+    ):
         result["gaps"].append("no run for the current schedule slot")
         if now >= slot + timedelta(minutes=45):
             result["status"] = "incomplete"
@@ -300,7 +324,9 @@ def inspect(github, *, expected=None, event="schedule", now=None):
             result.update(status="red", failed_job=job["id"])
         elif successful(job) and successful(run) and successful(suite):
             result.update(status="green", artifact=verify_artifact(github, run, job))
-        elif run["status"] == "completed":
+        elif run["status"] == "completed" or (
+            event == "schedule" and now >= slot + timedelta(minutes=45)
+        ):
             result.update(status="incomplete")
             result["gaps"].append("scheduled completion unavailable")
     except EVIDENCE_ERRORS as exc:

@@ -6,7 +6,7 @@ import pytest
 from verify_pr import Hold
 
 SHA = "a" * 40
-START = "2026-11-14T10:00:00Z"
+START = "2026-11-14T03:18:00Z"
 RUN = {
     "id": 34,
     "run_number": 4,
@@ -33,7 +33,7 @@ JOB = {
     "status": "completed",
     "conclusion": "success",
     "started_at": START,
-    "completed_at": "2026-11-14T10:02:00Z",
+    "completed_at": "2026-11-14T03:20:00Z",
 }
 APP = {"id": 15368, "slug": "github-actions"}
 
@@ -150,8 +150,13 @@ def observe(provider, **kwargs):
 
 def test_old_rerun_cannot_supply_missed_current_slot():
     provider = Provider()
-    provider.run["created_at"] = "2026-11-13T10:00:00Z"
-    assert observe(provider)["status"] == "incomplete"
+    provider.run["created_at"] = "2026-11-13T03:00:00Z"
+    assert (
+        shadow.inspect(provider, now=datetime.fromisoformat("2026-11-14T04:03:00Z"))[
+            "status"
+        ]
+        == "incomplete"
+    )
 
 
 def test_scheduled_shadow_warning_and_explicit_infrastructure_recovery(
@@ -172,11 +177,11 @@ def test_scheduled_shadow_warning_and_explicit_infrastructure_recovery(
         1,
         "shadow-operator",
         "Timed artifact recovery",
-        now=datetime.fromisoformat("2026-11-14T10:10:00Z"),
+        now=datetime.fromisoformat("2026-11-14T03:27:00Z"),
     )
     provider.run["run_attempt"] = provider.job["run_attempt"] = 3
-    provider.run["run_started_at"] = provider.job["started_at"] = "2026-11-14T10:12:00Z"
-    provider.job["completed_at"] = "2026-11-14T10:14:00Z"
+    provider.run["run_started_at"] = provider.job["started_at"] = "2026-11-14T03:29:00Z"
+    provider.job["completed_at"] = "2026-11-14T03:31:00Z"
     document = provider.document
     monkeypatch.setattr(
         provider,
