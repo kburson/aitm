@@ -14,6 +14,13 @@
       "input": "packages/aitm-usage/src/aitm_usage/cli.py",
       "kind": "subprocess",
       "rationale": "The smoke test starts the aitm-usage console script, whose entry point in packages/aitm-usage/pyproject.toml is aitm_usage.cli:main."
+    },
+    {
+      "id": "grok-headless-fixture",
+      "consumer": "packages/aitm-usage/tests/test_grok.py",
+      "input": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+      "kind": "fixture",
+      "rationale": "The grok_source fixture in test_grok.py reads headless.json for native usage corroboration."
     }
   ],
   "path_rules": []

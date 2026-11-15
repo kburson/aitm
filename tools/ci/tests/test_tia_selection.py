@@ -811,3 +811,45 @@ def test_inventory_test_outside_all_qualified_pytest_scopes_forces_full(repo):
         r.code == "pytest-collection-scope-missing"
         for r in result.paths[0].uncertainties
     )
+
+
+def test_project_manifest_traces_measured_grok_fixture(repo):
+    source = _PRODUCT + "test_grok.py"
+    fixture = _PRODUCT + "fixtures/grok/headless.json"
+    node = source + "::test_headless_projection_is_only_corroboration"
+    _write(repo, source, b"")
+    _write(repo, fixture, b"[]")
+    # The real manifest's other declarations must resolve on both snapshots.
+    manifest = (_CI / "tia/edges.json").read_bytes()
+    for declaration in json.loads(manifest)["edges"]:
+        for field in ("consumer", "input"):
+            endpoint = declaration[field]
+            if not (repo / endpoint).exists():
+                _write(repo, endpoint, b"")
+    base = _commit(repo)
+    _write(repo, fixture, b'[{"requestId":"changed"}]')
+    before, after = _snapshots(repo, base)
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    pair = InventoryPair(old, new)
+    policy = SelectionPolicy(old_expected, new_expected, _GRAPH, manifest)
+
+    assert select(before, after, pair, replace(policy, manifest=_EMPTY)).mode == "full"
+    result = select(before, after, pair, policy)
+    assert result.mode == "selected"
+    assert _key(node) in result.selected
+    assert _key(_NODE) not in result.selected
+    trace = _witnesses(result, fixture.encode(), _key(node))["after"]
+    assert [(hop.kind, hop.consumer, hop.rules) for hop in trace.hops] == [
+        ("fixture", source.encode(), ("grok-headless-fixture",)),
+    ]
+
+    unknown = UnresolvedScope(source.encode(), "runtime-input-unknown", "", None)
+    fallback = select(
+        before,
+        after,
+        pair,
+        replace(policy, provider=replace(_GRAPH, incomplete_inputs=(unknown,))),
+    )
+    assert fallback.mode == "full"
+    assert _key(node) in fallback.selected
