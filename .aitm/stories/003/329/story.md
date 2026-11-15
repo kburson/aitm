@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 329
 title: "[M11c] Prove positive Grok capture and scope authority"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/329"
 parent: 100
 children: []
@@ -38,3 +38,7 @@ Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at
 [First JIT held](plan/grok-capture-independent-jit-r1.md) on the exact cut, codec and authority boundaries. [Recovery JIT](plan/2026-11-15-329-positive-grok-capture-jit-r2.md) is submitted on literal trunk.
 
 [Independent JIT recovery passed](plan/grok-capture-independent-jit-r2.md). [Develop entry evidence](plan/grok-capture-develop-entry.json) binds the actual #326 merge and exact legacy goldens.
+
+## Test
+
+The exact candidate passed 1,450 locked local tests. The earlier run identified an extra exclusion decision consumer. The correction passed the existing invariant and the same locked suite. The strict cursor and original-route proofs used retained bytes and the isolated issuer. [Exact local Test](plan/grok-capture-local-test.json) · [PR #332](https://github.com/kburson/aitm/pull/332).
