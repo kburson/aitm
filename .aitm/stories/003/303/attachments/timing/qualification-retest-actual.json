@@ -1,0 +1,34 @@
+{
+  "story": 303,
+  "actual_hours": "0.1329",
+  "milliseconds": 478300,
+  "coverage": "partial",
+  "basis": "union of bounded Codex coordinator progress intervals",
+  "evidence_through_utc": "2026-11-15T03:28:00.224000+00:00",
+  "sources": [
+    {
+      "path": "full-auto-qualified-profile-develop-1-303.json",
+      "sha256": "95eb9e9a1394e5ca1280419930eba367977c8e72d27c182313bc063159e1ff6d"
+    },
+    {
+      "path": "full-auto-qualified-profile-jit-1-303.json",
+      "sha256": "34b0e20c43ac91d5732d26ddcba1b509050ec0739d6e9e04ed2d7f249805e5e8"
+    },
+    {
+      "path": "full-auto-qualified-profile-jit-2-303.json",
+      "sha256": "74bbaabedceed2c0ab2df8718a3233c7814ecc170b971ae6f3bec466a7f684d2"
+    },
+    {
+      "path": "full-auto-qualified-profile-refine-1-303.json",
+      "sha256": "537a7278623cc71c51e9d1850feb935493462213269b6f19522376a5f646cd7e"
+    },
+    {
+      "path": "full-auto-qualified-profile-refine-2-303.json",
+      "sha256": "ec105af8834445ca358ccdb5e73c317a258f78494d93d746e9338f05f090ad1e"
+    },
+    {
+      "path": "full-auto-qualified-profile-rework-1-303.json",
+      "sha256": "9198583f1db6369a402e5d2974fba790ceffd7ba6651c26ea44103e40d11fbc7"
+    }
+  ]
+}
