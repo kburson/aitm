@@ -1,0 +1,15 @@
+{
+  "story": 119,
+  "verdict": "PASS",
+  "phase": "narrowed-refine",
+  "attempt": 1,
+  "base": "2b3225e085319cd345c7c54e47605e1b1d43b289",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "estimate": 3.6,
+  "size": "M",
+  "refine_sha256": "20870fa3c6d46b7ffbb00defc859506c26f19a9c073da3a8168ef30012ca3fad",
+  "submission_sha256": "f65671c3ad2c6a0e049f656f96ff92c2be389d9255f9f09dbf5735809598bf8b",
+  "result_sha256": "89532889cdc6113ce877133c81aae95af0bc3ac0f69dd478bb30e69132caa33c",
+  "review_sha256": "b3e63690a2b0d9a3c7713d2e95a8e45cfce5278d9419ae746d5c845109a5c90e"
+}
