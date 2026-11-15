@@ -1,0 +1,19 @@
+name: Notify Blocked-By sync of planning changes
+
+on:
+  push:
+    branches: [planning]
+
+permissions:
+  contents: write
+
+jobs:
+  dispatch:
+    if: github.repository == 'kburson/aitm' && github.ref == 'refs/heads/planning'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Dispatch to the default branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api repos/kburson/aitm/dispatches -f event_type=aitm-planning-dependencies-changed
