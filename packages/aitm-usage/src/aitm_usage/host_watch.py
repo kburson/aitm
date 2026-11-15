@@ -438,7 +438,7 @@ class _Darwin:
                     raise WatchError("FSEvents root changed during startup")
             self.started = True
             self.ready.set()
-            while not self.stop.is_set():
+            while owned and not self.stop.is_set():
                 self._run(self._mode, 0.05, False)
                 with self._ownership:
                     retired, self._retired = self._retired, set()

@@ -416,3 +416,18 @@ if platform.system() == "Darwin":
                 _next(watches, lambda item: item.reason == "callback-pressure").key
                 == root.key
             )
+
+    def test_darwin_last_lost_root_retires_native_owner_without_waiting_for_close(
+        tmp_path,
+    ):
+        watched = tmp_path / "watched"
+        watched.mkdir()
+        root = _root(watched)
+        with WatchSet((root,)) as watches:
+            _startup(watches, root)
+            backend = watches._darwin
+            assert backend is not None
+            watched.rename(tmp_path / "moved")
+            _next(watches, lambda item: item.kind is WatchKind.ROOT_LOST)
+            backend._thread.join(1)
+            assert not backend.alive()
