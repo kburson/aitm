@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 325
 title: "[M11a] Own native root watch resources and overflow hints"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/325"
 parent: 100
 children: []
@@ -46,3 +46,7 @@ The Darwin watcher now retires its native owner after the last authorized root i
 ## Independent source
 
 The exact dormant native watcher passed signed Test. Independent source returned **PASS**. [Signed Test](plan/native-watch-signed-hosted-r1.json) · [Source receipt](plan/native-watch-independent-source-r1-receipt.json).
+
+## Close
+
+PR #327 merged to trunk after signed hosted Test and independent source review. Native state is Closed Completed and the Project is Done. [Delivery](plan/native-watch-verified-delivery.json) · [Native Close](plan/native-watch-native-close.json).
