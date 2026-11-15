@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 300
 title: "Refuse unqualified sources and retain sanitized coverage evidence"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/300"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [210, 303]
 created: "2026-11-15T02:18:55Z"
 updated: "2026-11-15T02:19:53Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 2.5, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/2026-11-14-100-qualified-cost-acceptance-r2.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -40,3 +40,7 @@ Project 24 Rank 229.06.
 ## Current release coverage scope
 
 #303 owns live-source policy and admission. #300 owns the authorized typed journal coverage record and migration. Its Refine and JIT bind the exact merged #303 decision type. [Independent acceptance](https://github.com/kburson/aitm/blob/f98161a1728343cf2761fb9317735cd2241c0090/.aitm/stories/003/300/plan/2026-11-14-300-qualified-policy-split.md).
+
+## Journal coverage Refine recovery
+
+Passed independent Refine at 2.5 implementation hours after #303 delivered. The exact JIT covers authority, lazy v6 and ordered custody. [Review](plan/qualified-coverage-independent-refine-r2.md).
