@@ -1,0 +1,26 @@
+{
+  "story": 331,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "8be6d460dd7df8c4a1708e3b21fb71ab7be0fb73",
+    "headRefOid": "1f8534d9ac853091c21eb0027771f03ffd1631e1",
+    "isDraft": false,
+    "number": 334,
+    "url": "https://github.com/kburson/aitm/pull/334"
+  },
+  "tests": 1487,
+  "tree": "622f1ab6f5f9a7968e32632fd95e9b94c1322551",
+  "product_lines": {
+    "covered_lines": 14214,
+    "num_statements": 15632
+  },
+  "evidence_sha256": {
+    "grok-enrollment-focused.log": "256e8fbe5f84ca414b8c5ac968bbc9d2ac0d030a6ed1adc7d08aeb755d066a32",
+    "source-recovery-red.log": "f32a7336ed2fb578f8b08850650284f96d267a4e7392b58ad4edd3ebda9ec5e8",
+    "local-current/product.log": "9433ce17eee39bafe046ebc30ab6666d8452bbcf3f9480bbd2ba9d0c41a4a116"
+  },
+  "correction": "Retain a frozen pre-witness cut when an existing grant enrolls an untracked stream through owner reissue. Validate current source approval only for active grants, while retaining original receipts and witness epochs for retired records.",
+  "r1_head": "b55786b6e766bf1ad486693d66dc501af85e0ad4",
+  "r1_source_hold_sha256": "ff4a5e81947f6055b8e0fbf5e140cdcf7145d9cbcfd6a0b92f2a575b32670e5a"
+}
