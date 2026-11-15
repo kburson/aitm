@@ -13,6 +13,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Never
 from uuid import UUID
 
+from ._monitor_qualification import (
+    _LiveExclusion,
+    _LiveProfile,
+    _LiveSourceProof,
+    _LiveSourceTuple,
+    _LiveSourceUnavailable,
+)
 from .ledger import (
     STORE_NAME,
     ConflictError,
@@ -495,6 +502,8 @@ class Registry:
     def __init__(self, root: Path, _writer: _PinnedPath | None = None):
         self.root = root.absolute()
         self._writer = _writer
+        self._live_profile: _LiveProfile | None = None
+        self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
         self._frontiers: dict[_CaptureKey, tuple[CaptureChange, CaptureFrontier]] = {}
         self._verified: dict[_CaptureKey, VerifiedBoundary] = {}
         self._completed: dict[_CaptureKey, VerifiedBoundary] = {}
@@ -648,6 +657,64 @@ class Registry:
         self._save(view)
         return project
 
+    def _require_live_source(
+        self,
+        approved: ApprovedSource,
+        *,
+        prior: _LiveSourceProof | None = None,
+        observed: bool = False,
+    ) -> _LiveSourceProof:
+        lease = self.lease
+        profile = self._live_profile
+        source = _LiveSourceTuple.from_approval(approved)
+        if (
+            type(profile) is _LiveProfile
+            and profile.lease is lease
+            and _pinned(profile.root)
+            and profile.root.path == str(self.root)
+            and source.supported()
+            and _pinned(approved.directory)
+            and profile.current is not None
+            and self.view().source_key_id is not None
+        ):
+            installations = [
+                item
+                for item in profile.installations
+                if item.source == source and item.directory == approved.directory
+            ]
+            if len(installations) == 1:
+                (installation,) = installations
+                if prior is None or (
+                    prior.profile is profile and prior.installation is installation
+                ):
+                    try:
+                        evidence = self.source_evidence()
+                        evidence.validate_source_ref(profile.generation)
+                        evidence.validate_source_ref(installation.executable)
+                        current = profile.current(installation)
+                    except (LedgerError, OSError, ValueError):
+                        current = False
+                    if current is True and self._live_profile is profile:
+                        lease.check()
+                        return _LiveSourceProof(profile, installation)
+        decision = None
+        if observed and _pinned(approved.directory):
+            evidence = self.source_evidence()
+            generation = evidence.pseudonymize("live-policy", "closed-v1")
+            if type(profile) is _LiveProfile and profile.lease is lease:
+                try:
+                    evidence.validate_source_ref(profile.generation)
+                except (LedgerError, ValueError):
+                    pass
+                else:
+                    generation = profile.generation
+            identity = evidence.pseudonymize(
+                "excluded-installation",
+                f"{approved.source_id}:{approved.directory.identity}",
+            )
+            decision = _LiveExclusion(approved.source_id, generation, identity)
+        raise _LiveSourceUnavailable(decision)
+
     def _approve(
         self, view: RegistryView, request: SourceApprovalRequest
     ) -> tuple[RegistryView, ApprovedSource]:
@@ -663,6 +730,7 @@ class Registry:
             raise ValueError("Invalid approved source tuple")
         root = _directory(request.root)
         approved = ApprovedSource(replace(request, root=root.path), root)
+        self._require_live_source(approved)
         for existing in view.sources:
             if existing.source_id == approved.source_id:
                 if existing != approved:
@@ -685,8 +753,13 @@ class Registry:
         return approved
 
     def _approved_candidate(
-        self, view: RegistryView, source_id: UUID, locator: SourceLocator
-    ) -> tuple[ApprovedSource, SourceLocator]:
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        observed: bool = False,
+    ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
         source = _source(view, source_id)
         _check_capture_root(source.directory)
         candidate = locator._source
@@ -729,7 +802,7 @@ class Registry:
             or str(native.provider) != approval.provider
         ):
             raise _CaptureSourceLost("Native capture source tuple changed")
-        return source, current
+        return source, current, self._require_live_source(source, observed=observed)
 
     def _native_delta(
         self,
@@ -740,7 +813,7 @@ class Registry:
         *,
         arm: bool = False,
     ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
-        source, current = self._approved_candidate(view, change.source_id, locator)
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
         approval = source.approval
         candidate = current._source
         reader = ProviderAdapter()
@@ -843,7 +916,7 @@ class Registry:
             arm=True,
         )
         if previous is not None and previous.position is not None:
-            _, current = self._approved_candidate(view, change.source_id, locator)
+            _, current, _ = self._approved_candidate(view, change.source_id, locator)
             try:
                 _capture_position(
                     current._source, previous.position, fixed=previous.position
@@ -866,8 +939,13 @@ class Registry:
         view = self.view()
         _encode(change, CaptureChange)
         _project(view, change.project_id)
+        approved = _source(view, change.source_id)
+        prior = self._require_live_source(approved)
         frontier = self._capture_frontier(view, change, locator)
         key = _capture_key(change, locator.stream_ref)
+        self._boundary_qualification[key] = self._require_live_source(
+            approved, prior=prior
+        )
         self._frontiers[key] = change, frontier
         self._verified.pop(key, None)
         self._completed.pop(key, None)
@@ -915,7 +993,14 @@ class Registry:
         armed = self._frontiers.get(key)
         if armed is None or armed[0] != change or armed[1] is not frontier:
             raise LedgerError("Expected this capture change's current armed frontier")
-        proof = self._verify_next(self.view(), change, locator, frontier)
+        view = self.view()
+        approved = _source(view, change.source_id)
+        prior = self._boundary_qualification[key]
+        bound = self._require_live_source(approved, prior=prior)
+        proof = self._verify_next(view, change, locator, frontier)
+        self._boundary_qualification[key] = self._require_live_source(
+            approved, prior=bound
+        )
         self._verified[key] = proof
         return proof
 
@@ -967,6 +1052,10 @@ class Registry:
             and self._completed.get(key) is not boundary
         ):
             raise LedgerError("Expected a verified boundary for this capture change")
+        prior = self._boundary_qualification.get(key)
+        if prior is None:
+            raise _LiveSourceUnavailable()
+        self._require_live_source(_source(view, change.source_id), prior=prior)
         if any(_edge(item.change) == _edge(change) for item in view.pending_capture):
             raise ConflictError("An ordered capture command is already pending")
 
@@ -1080,7 +1169,7 @@ class Registry:
             or previous.gap_open
         ):
             raise ConflictError("Native progress requires an admitted stream")
-        approved, current = self._approved_candidate(view, change.source_id, locator)
+        approved, current, _ = self._approved_candidate(view, change.source_id, locator)
         base = self._capture_base(previous, None)
         snapshot = _capture_position(current._source, base.cursor, fixed=cursor.cursor)
         self._verify_capture_tuple(approved, snapshot)
@@ -1204,7 +1293,7 @@ class Registry:
         later: bool,
         saved: _CaptureArm | None = None,
     ) -> _CaptureArm:
-        source, current = self._approved_candidate(view, change.source_id, locator)
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
         try:
             position = _capture_position(
                 current._source,
@@ -1377,6 +1466,8 @@ class Registry:
             or pending.digest != command.payload_digest
         ):
             raise BoundaryUnavailable("An earlier ordered capture command is pending")
+        if payload.enabled:
+            self._require_live_source(source)
         arms = (
             {} if pending is None else {item.stream_ref: item for item in pending.arms}
         )
@@ -1494,6 +1585,13 @@ class Registry:
                         (previous, arm if loss is _LocatorLoss.ABSENT else None)
                     )
                     continue
+                if not payload.enabled:
+                    try:
+                        self._require_live_source(source)
+                    except _LiveSourceUnavailable:
+                        raise BoundaryUnavailable(
+                            "Waiting for qualified capture disable"
+                        ) from None
                 current = self._make_arm(
                     view,
                     payload,
@@ -1526,6 +1624,10 @@ class Registry:
                     lost.append(
                         (previous, arm if loss is _LocatorLoss.ABSENT else None)
                     )
+            except _LiveSourceUnavailable:
+                if payload.enabled:
+                    raise
+                held = True
             except (LedgerError, ValueError):
                 held = True
 
