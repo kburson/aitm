@@ -77,7 +77,10 @@ def _frame(event: HookEvent) -> bytes:
 def _parse_frame(raw: bytes) -> HookEvent:
     if len(raw) > _FRAME_BYTES or not raw.endswith(b"\n"):
         raise ValueError("Invalid wake frame")
-    data = json.loads(raw.decode("utf-8"))
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except RecursionError:
+        raise ValueError("Invalid wake frame") from None
     if type(data) is not dict or type(data.get("v")) is not int or data["v"] != 1:
         raise ValueError("Invalid wake frame")
     try:

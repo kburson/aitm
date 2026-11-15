@@ -27,6 +27,7 @@ from aitm_usage.monitor_scheduler import (
     WakeResolutionKind,
 )
 from aitm_usage.monitor_types import MonitorProvider
+from aitm_usage.sources import hooks
 from aitm_usage.sources.hooks import (
     HookEvent,
     HookSender,
@@ -255,6 +256,26 @@ def test_real_socket_and_park_cli_retain_only_keyed_wake_bytes(
 def test_wake_wire_refuses_noncanonical_or_unbounded_frames(raw):
     with pytest.raises(ValueError):
         _parse_frame(raw)
+
+
+def test_decoder_failure_refuses_wake_and_keeps_listener_live(wake, monkeypatch):
+    scheduler, resolver, _, now = wake
+    sender = HookSender(resolver.writer.root)
+    event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
+
+    def exhausted_decoder(*args, **kwargs):
+        raise RecursionError("decoder exhausted")
+
+    with WakeIngress(scheduler, resolver).listen() as listener:
+        with monkeypatch.context() as patch:
+            patch.setattr(hooks.json, "loads", exhausted_decoder)
+            assert sender.notify(event) is WakeDisposition.SENT
+            assert not listener.serve_once()
+        assert resolver.calls == []
+        assert scheduler.take_due(now[0], 1) == ()
+        assert sender.notify(event) is WakeDisposition.SENT
+        assert listener.serve_once()
+        assert len(scheduler.take_due(now[0], 1)) == 1
 
 
 def test_wake_publication_failure_creates_no_memory_only_due_work(wake, monkeypatch):
