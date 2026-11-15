@@ -1,0 +1,42 @@
+{
+  "story": 303,
+  "base": "59a92a8797d47bae6c9026cbfe145b9c95a4aff0",
+  "candidate": "5538aadf6542323aa821659f3d21a53def20992d",
+  "tree": "1bea1e471e7f848270c033e57048725c11378811",
+  "package_tree": "1f3488004c64bb8df7afe98665ee8f1f1cb9a380",
+  "pr": "https://github.com/kburson/aitm/pull/306",
+  "project": {
+    "actual": 0.1043,
+    "coverage": "Partial coordinator Refine, JIT and Develop intervals. Review, tool and wait time excluded.",
+    "estimate": 2.7,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI0O8A",
+    "issue": 303,
+    "rank": 229.055,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-14",
+    "status": "Test"
+  },
+  "coverage": {
+    "basis": "canonical tools/ci/python_gate.py tracked product and policy-listed helpers",
+    "floor": 90,
+    "product": {
+      "covered_lines": 11382,
+      "num_statements": 12394
+    },
+    "helpers": {
+      "covered_lines": 806,
+      "num_statements": 849
+    }
+  },
+  "candidate_reports": {
+    "product": {
+      "summary": "1232 passed in 585.53s (0:09:45)",
+      "stdout_sha256": "8e30644446be72f077c6238ca773ba9d3c50716435fd0c06b28db72729b1c1cb"
+    },
+    "helper": {
+      "summary": "196 passed in 20.77s",
+      "stdout_sha256": "26636d8cef31cfde715323e401d7b196a0852d0c3e15e6490b7fbe85d062597b"
+    }
+  }
+}

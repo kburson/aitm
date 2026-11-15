@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 303
 title: "Enforce closed live-source qualification at approval and reserve"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/303"
 parent: 100
 children: []
@@ -56,3 +56,7 @@ Passed on the exact attached plan. Develop follows the current native graph and 
 ## Develop
 
 Exact independent JIT passed and GitHub confirms #210 closed, the current dependency graph and the Dev transition. [Native readback](plan/qualification-develop-native.json).
+
+## Test
+
+The scoped controls and complete locked local validation passed, and https://github.com/kburson/aitm/pull/306 opened against literal trunk. Signed hosted Test and independent source review follow. [Local verification](plan/qualification-local-verification.json) · [Project](plan/project-test.json).
