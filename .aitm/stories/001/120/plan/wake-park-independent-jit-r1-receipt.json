@@ -1,0 +1,15 @@
+{
+  "story": 120,
+  "gate": "JIT",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "e9b92172aee21eaab728e1a313d94f0bea38279b",
+  "sha256": {
+    "jit-result.json": "a97abcf011d5d19d1bc56f41939c0d57450c4ed0f7ed37815b225797034b2727",
+    "wake-park-independent-jit-r1.md": "fcc6654e7d56a5733d75414b3937269a03fc1dbb0778b601a46c7e5041ba529d",
+    "jit-input.md": "678316376172c0658b2423208aa3bc16531dde5802b18e6def30efceffa258e3",
+    "2026-11-15-120-wake-park-jit.md": "b81f4012fe0f25ade7700fb51d8078549e8047904a3c7787ce349ed525b22c65"
+  }
+}

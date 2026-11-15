@@ -1,0 +1,169 @@
+Current exact trunk e9b92172aee21eaab728e1a313d94f0bea38279b
+Refine source ab9db80098849e323d5122eb47bf48f377107058
+Registry, scope, host path, publication and CLI source blobs match Refine. The inherited #134 merge adds its separate Linux native carrier.
+
+Native peer and inode feasibility
+{"platform": "darwin", "credentials_match": true, "checked_pinned_socket_inode": true, "mode": "0600", "address_bytes": 85}
+{"platform": "linux", "credentials_match": true, "checked_pinned_socket_inode": true, "mode": "0600", "address_bytes": 33}
+
+Current per-account Darwin endpoint length
+{"native_default_endpoint_bytes": 80, "path_not_persisted": true}
+
+Current private credentials and stable owner commands
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/export.py:305:def _publish(destination: Path, files: dict[str, bytes]) -> None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/host_fs.py:99:def account_control_root(uid: int) -> Path:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/ledger.py:278:def _pin_directory(path: Path) -> Iterator[_PinnedPath]:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/ledger.py:335:def _physical_ancestry(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_control.py:587:def configure_monitor_commands(monitor_subparsers: argparse._SubParsersAction) -> None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_registry.py:91:def default_monitor_root() -> Path:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_registry.py:772:    def _approved_candidate(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/monitor_scope.py:991:    def _grok_admission(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:181:def _private_child(
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:218:def _read_private(directory: _PinnedPath, name: str) -> bytes | None:
+e9b92172aee21eaab728e1a313d94f0bea38279b:packages/aitm-usage/src/aitm_usage/scopes.py:274:def _publish(
+
+Previously accepted native dependencies and ranks
+[
+  {
+    "issue": 120,
+    "rank": 240,
+    "status": "Refine"
+  },
+  {
+    "issue": 121,
+    "rank": 250,
+    "status": "Backlog"
+  },
+  {
+    "issue": 124,
+    "rank": 280,
+    "status": "Backlog"
+  },
+  {
+    "issue": 125,
+    "rank": 290,
+    "status": "Backlog"
+  }
+]
+[{"number":115,"state":"closed"},{"number":119,"state":"closed"}]
+[{"number":121,"state":"open"},{"number":320,"state":"open"}]
+
+## Exact lease, account root and existing publisher
+class Registry:
+    """Committed read snapshots and writes under one private coordinator lease."""
+
+    def __init__(self, root: Path, _writer: _PinnedPath | None = None):
+        self.root = root.absolute()
+        self._writer = _writer
+        self._live_profile: _LiveProfile | None = None
+        self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
+        self._frontiers: dict[_CaptureKey, tuple[CaptureChange, CaptureFrontier]] = {}
+        self._verified: dict[_CaptureKey, VerifiedBoundary] = {}
+        self._completed: dict[_CaptureKey, VerifiedBoundary] = {}
+
+    @contextmanager
+    def writer(self) -> Iterator["Registry"]:
+        _ensure_private_directory(self.root)
+        with _lease(self.root / _COORDINATOR_FILE, create=True) as lease:
+            writer = Registry(self.root, lease)
+            try:
+                yield writer
+            finally:
+                writer._writer = None
+
+    @property
+    def lease(self) -> _PinnedPath:
+        if self._writer is None:
+            raise LedgerError("Monitor coordinator lease is required")
+        self._writer.check()
+        return self._writer
+def _publish(
+    directory: _PinnedPath,
+    name: str,
+    data: bytes,
+    *,
+    replace_pending: bool = False,
+    before_commit: Callable[[], None] | None = None,
+) -> bool:
+    """Publish fsynced bytes relative to a pinned private directory."""
+    directory.check()
+    temporary = f".publishing-{secrets.token_hex(16)}"
+    fd = os.open(
+        temporary,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o600,
+        dir_fd=directory.fd,
+    )
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            os.fchmod(fd, 0o600)
+            _private(os.fstat(fd))
+            _check_acl(fd)
+            handle.write(data)
+            handle.flush()
+            os.fsync(fd)
+        directory.check()
+        if before_commit is not None:
+            before_commit()
+        if replace_pending:
+            os.replace(
+                temporary, name, src_dir_fd=directory.fd, dst_dir_fd=directory.fd
+            )
+        else:
+            try:
+                if not publish_noreplace(directory.fd, temporary, directory.fd, name):
+                    return False
+            except HostFilesystemError:
+                raise LedgerError("Unable to publish private inbox file") from None
+        os.fsync(directory.fd)
+        directory.check()
+        return True
+    finally:
+        try:
+            os.unlink(temporary, dir_fd=directory.fd)
+        except FileNotFoundError:
+            pass
+
+## Measured checked ctypes and non-follow chmod
+    _fields_ = [("pid", c.c_int), ("uid", c.c_uint), ("gid", c.c_uint)]
+
+def peer(sock):
+    if sys.platform == "darwin":
+        uid, gid = c.c_uint(), c.c_uint()
+        api = libc.getpeereid
+        api.argtypes = [c.c_int, c.POINTER(c.c_uint), c.POINTER(c.c_uint)]
+        api.restype = c.c_int
+        assert api(sock.fileno(), c.byref(uid), c.byref(gid)) == 0
+        return uid.value, gid.value
+    assert sys.platform == "linux"
+    value = Credentials()
+    size = c.c_uint(c.sizeof(value))
+    api = libc.getsockopt
+    api.argtypes = [c.c_int, c.c_int, c.c_int, c.c_void_p, c.POINTER(c.c_uint)]
+    api.restype = c.c_int
+    assert api(sock.fileno(), socket.SOL_SOCKET, socket.SO_PEERCRED, c.byref(value), c.byref(size)) == 0
+    assert size.value == c.sizeof(value) and value.pid > 0
+    return value.uid, value.gid
+
+with TemporaryDirectory(prefix="aitm-wake-") as tmp:
+    root = Path(tmp).resolve()
+    fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        name = "wake.sock"
+        endpoint = root / name
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as listener:
+            assert len(os.fsencode(endpoint)) <= 103
+            listener.bind(str(endpoint))
+            os.chmod(name, 0o600, dir_fd=fd, follow_symlinks=False)
+            pinned = os.stat(name, dir_fd=fd, follow_symlinks=False)
+            assert stat.S_ISSOCK(pinned.st_mode) and pinned.st_mode & 0o777 == 0o600
+            assert os.path.samestat(pinned, endpoint.lstat())
+            listener.listen(2)
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.connect(str(endpoint))
+                service, _ = listener.accept()
+                with service:
+
+## New launcher path ownership
+No sources/hooks.py blob at ab9db80098849e323d5122eb47bf48f377107058
+No sources/hooks.py blob at e9b92172aee21eaab728e1a313d94f0bea38279b
