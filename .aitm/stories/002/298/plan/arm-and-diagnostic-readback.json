@@ -1,0 +1,88 @@
+{
+  "schema": "aitm.claude-carrier-arm-and-diagnostic-preflight/v1",
+  "armed_checkpoint_offset": 62673,
+  "armed_last_ordinal": 24,
+  "physical_arm_prefix_sha256": "bfa022c59f6704eb7e3c6efcdb18efb92b8473b31615bf55c3b7a14f234f7fc4",
+  "arm_precedes_first_enrollment_native_api_row": true,
+  "enrollment_epoch_ordinal": 32,
+  "pre_enrollment_rows": [
+    {
+      "ordinal": 22,
+      "kind": "attachment",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 23,
+      "kind": "last-prompt",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 24,
+      "kind": "cost-state",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 25,
+      "kind": "queue-operation",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 26,
+      "kind": "queue-operation",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 27,
+      "kind": "user",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 28,
+      "kind": "attachment",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 29,
+      "kind": "attachment",
+      "disposition": "excluded"
+    },
+    {
+      "ordinal": 30,
+      "kind": "api-request-blob",
+      "disposition": "excluded"
+    }
+  ],
+  "observed_diagnostics": [
+    {
+      "code": "unreconciled-usage",
+      "ordinal": 22,
+      "native_kind": "attachment"
+    },
+    {
+      "code": "unreconciled-usage",
+      "ordinal": 32,
+      "native_kind": "assistant"
+    },
+    {
+      "code": "unreconciled-usage",
+      "ordinal": 43,
+      "native_kind": "assistant"
+    },
+    {
+      "code": "coverage-gap",
+      "ordinal": 43,
+      "native_kind": "assistant"
+    },
+    {
+      "code": "unreconciled-usage",
+      "ordinal": 21,
+      "native_kind": "assistant"
+    }
+  ],
+  "existing_candidate_usage_ordinals": [
+    32,
+    43
+  ],
+  "public_cursor_present": false,
+  "debug_read_only": true
+}

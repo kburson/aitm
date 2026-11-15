@@ -32,3 +32,5 @@ Use the independently accepted supervisor, account and transcript authority, pro
 [Accepted design and scope](https://github.com/kburson/aitm/blob/d30916ddc9d87fd0a1259ce19790bf2111ee0615/.aitm/stories/002/295/design/2026-11-14-295-claude-evidence-design-r2.md) · [Independent verdict](https://github.com/kburson/aitm/blob/d30916ddc9d87fd0a1259ce19790bf2111ee0615/.aitm/stories/002/295/design/claude-evidence-design-independent-r2.md) · [Activation](https://github.com/kburson/aitm/blob/d30916ddc9d87fd0a1259ce19790bf2111ee0615/.aitm/stories/002/295/design/claude-carrier-activation.md).
 
 Project 24 Rank 229.05. [Independent Refine input](plan/2026-11-14-298-claude-carrier-refine.md) · [Native preflight](plan/three-process-preflight.json).
+
+[Independent Refine HOLD](plan/claude-carrier-independent-refine-r1.md) · [Native origin evidence and remaining gate](plan/2026-11-14-298-claude-origin-refine-findings.md).

@@ -1,0 +1,12 @@
+{
+  "schema": "aitm.independent-refine/v1",
+  "issue": 298,
+  "verdict": "HOLD",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "input_sha256": "c01f3cd55e18d9cc6d56924ac77e5595c869789b49b4c0b3bda06bdc0e91a902",
+  "verdict_sha256": "1c924eb7ad237c4a05a0ce9ef3d933eb56ca46f65a558800e22204dd9f97cea6",
+  "estimate_accepted": false,
+  "jit_started": false,
+  "full_cursor_qualified": false
+}
