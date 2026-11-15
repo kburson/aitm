@@ -10,12 +10,12 @@ children: []
 blocking: [293]
 blocked-by: [147, 288]
 created: "2026-11-14T13:09:52Z"
-updated: "2026-11-15T13:56:56Z"
+updated: "2026-11-15T13:57:49Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-292-fast-story-shadow-plan.md", "plan/local-corrected.json", "plan/local-corrected.log", "plan/quality-first.log", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-15-292-fast-story-shadow-plan.md", "plan/local-corrected.json", "plan/local-corrected.log", "plan/quality-first.log", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,7 @@ Build a bounded hosted fast-path shadow runner on reviewed inputs. Bind exact ba
 ## Exact candidate and review
 
 [Trusted #103 verifier](plan/trusted-verifier.json) · [Signed review](plan/reviews/formal-review.md).
+
+## Delivery
+
+[Verified exact-tree delivery](plan/delivery.json) · [Pre-merge #103 verifier](plan/premerge-verifier.json).
