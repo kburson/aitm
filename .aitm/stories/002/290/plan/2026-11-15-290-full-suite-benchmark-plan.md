@@ -1,0 +1,15 @@
+# #290 Full-suite scale benchmark
+
+Measure a workload above 3,000 execution assignments using the reviewed scheduled baseline on protected trunk `4cfb41813199f9fa483447a61c65b9ca664fb97e`. The baseline contains 1,277 collected product tests and 540 helper tests. The second cohort models 1,203 additional assignments by proportional sampling within every exact source family. The test IDs retain their original dependency and fixture behavior. Each execution assignment has a cohort and a pytest ID. The projected cohort represents current costs at larger volume. Future Core functionality and its dependency distribution remain unmeasured.
+
+## Reference layout
+
+- [ ] Recollect the exact two ordered test profiles with the pinned lock and compare their ordered SHA-256 values with the scheduled run. Build the projected cohort by deterministic hash order with proportional family quotas. Include the explicit required native behavior IDs and the two native child tests in both cohorts.
+- [ ] Use private APFS roots, the locked Python 3.13.9 environment and pinned GitHub CLI 2.97.0. Capture CPU/OS, setup time, test wall, phase outcomes, required child witnesses, source coverage and reconciliation time. Use a fresh user-level uv cache and virtual environment for cold setup. Reuse each measured layout's cache and environment for warm setup with fresh test fixtures. Keep outputs isolated per profile, cohort and mode.
+- [ ] Execute current full and projected cohorts with a serial reference and the existing three-worker xdist work-stealing configuration. Reconcile worker reports with the controller, exact assigned inventories, all phase results, and required normal child exit and coverage evidence. Retain both lane coverage reports and compare measured line inventories and outcomes by cohort. A failed setup or lost receipt remains an invalid sample with its complete traceback.
+- [ ] Compare cold and warm elapsed values. Local queue is zero by construction. Show the genuine hosted scheduled run's observed registration-to-job queue and trigger-to-verdict separately as a 1,817-test measurement. Include setup and evidence work in totals and keep the delayed scheduling interval visible. Evaluate a hosted sharding follow-up from the measured result and recorded reasons.
+- [ ] Get an independent review of the assumptions, complete measurements, exact inventory and limitations. Record whether the serial and private-worker measurements justify a hosted shard pilot. This story supplies benchmark evidence for #293 and carries no production gate change.
+
+## Reproducibility
+
+The benchmark harness takes a protected source archive and the #289 historical receipt. It writes the fixed workload manifest once, runs each timed matrix cell with a private output directory, and retains raw collection, execution, coverage and child evidence. A separate summary reconciles the results and presents queue separately from execution. Retain the harness and its exact inputs with the measured results.
