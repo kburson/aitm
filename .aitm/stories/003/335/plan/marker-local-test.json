@@ -1,0 +1,25 @@
+{
+  "story": 335,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "headRefOid": "875b9d5b5c220d270843777438c8da5d365880a4",
+    "isDraft": true,
+    "number": 336,
+    "url": "https://github.com/kburson/aitm/pull/336"
+  },
+  "tests": 1502,
+  "tree": "8a2ee6352e71508c275d7938c1f4f2e6ac078483",
+  "product_lines": {
+    "covered_lines": 14454,
+    "num_statements": 15895
+  },
+  "evidence_sha256": {
+    "marker-focused.log": "a577a9355de628685df0d50dacf751cce422a695323110467c493c6e0c6e0b68",
+    "marker-exact-focused.log": "a2270ae535b6d63c34afa1e2a2fab4f1f7f960fd5eed12d9b0cfb32dd108c46c",
+    "marker-red.log": "8d0afea5f2cd5f3a9affbcbef58d32ec8ba4063c5254874a106a2d6d41811e64",
+    "local-current/product.log": "9e9b9e10a851fcb2f1c177265ce026a753abe126bccbb70880e5d672ce7f1ce6"
+  },
+  "local_invariant": "Existing grants, mark routing and wake paths remain exercised by the inherited suite. The new tests bind one exact owner proposal and native prompt."
+}
