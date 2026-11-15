@@ -97,8 +97,9 @@ def installed(tmp_path, monkeypatch):
     assert pilot._collect_host_installation is original_collector
     with native.registry.writer() as reopened:
         assert reopened._live_profile is None
-        with pytest.raises(_LiveSourceUnavailable):
+        with pytest.raises(_LiveSourceUnavailable) as caught:
             ScopeState(reopened).read_source(SOURCE, native.locator())
+        assert type(caught.value) is _LiveSourceUnavailable
 
 
 def _durable(journal, native):
@@ -258,6 +259,7 @@ def test_late_recheck_refusal_is_private_and_rolls_back(installed, monkeypatch, 
 
     with pytest.raises(_LiveSourceUnavailable) as caught:
         operation()
+    assert type(caught.value) is _LiveSourceUnavailable
     assert caught.value.decision is not None
     assert _durable(journal, native) == before
     assert _durable(RoutingJournal(writer, ScopeState(writer)), native) == before
@@ -283,6 +285,19 @@ def test_product_issuer_and_exclusion_consumers_have_fixed_entry_points():
         if excluded.intersection(path.relative_to(repo).parts) or path.is_symlink():
             continue
         module = ast.parse(path.read_bytes())
+        parents = {
+            child: parent
+            for parent in ast.walk(module)
+            for child in ast.iter_child_nodes(parent)
+        }
+
+        def enclosing_function(node):
+            while node in parents:
+                node = parents[node]
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    return node.name
+            return "<module>"
+
         for node in ast.walk(module):
             if isinstance(node, (ast.Import, ast.ImportFrom)) and any(
                 symbol in ast.unparse(node) for symbol in private_symbols
@@ -297,16 +312,16 @@ def test_product_issuer_and_exclusion_consumers_have_fixed_entry_points():
                 elif name == "_prepare_isolated_issuer":
                     prepare_calls.append(path)
                 elif name == "_confirm_live_exclusion":
-                    confirmation_calls.append(path.name)
+                    confirmation_calls.append((path.name, enclosing_function(node)))
                 elif name == "_record_live_exclusion":
-                    recorder_calls.append(path.name)
+                    recorder_calls.append((path.name, enclosing_function(node)))
             if isinstance(node, ast.ExceptHandler) and any(
                 isinstance(item, ast.Attribute)
                 and item.attr == "decision"
                 and isinstance(item.ctx, ast.Load)
                 for item in ast.walk(node)
             ):
-                consumers.append(path.name)
+                consumers.append((path.name, enclosing_function(node)))
             if (
                 path != issuer
                 and isinstance(node, ast.Attribute)
@@ -316,9 +331,15 @@ def test_product_issuer_and_exclusion_consumers_have_fixed_entry_points():
     assert imports == [runner]
     assert activation_calls == [runner]
     assert prepare_calls == [runner]
-    assert sorted(consumers) == ["monitor_journal.py", "monitor_scope.py"]
-    assert confirmation_calls == ["monitor_journal.py", "monitor_journal.py"]
-    assert recorder_calls == ["monitor_journal.py"]
+    assert sorted(consumers) == [
+        ("monitor_journal.py", "prepare"),
+        ("monitor_scope.py", "_confirm_live_exclusion"),
+    ]
+    assert confirmation_calls == [
+        ("monitor_journal.py", "_record_live_exclusion"),
+        ("monitor_journal.py", "_record_live_exclusion"),
+    ]
+    assert recorder_calls == [("monitor_journal.py", "prepare")]
     for path in repo.rglob("pyproject.toml"):
         if excluded.intersection(path.relative_to(repo).parts):
             continue
@@ -346,7 +367,9 @@ def test_closed_resolver_cannot_copy_the_unpatched_codex_fixture(tmp_path):
     )
     for unqualified in (digest, "0" * 64, "", pilot._GROK_DIGEST.upper()):
         assert pilot._approved_pilot_tuple(unqualified) is None
-    with pytest.raises(LedgerError):
+    with pytest.raises(
+        LedgerError, match="Isolated source qualification is unavailable"
+    ):
         with pilot._OpenedExecutable.copy(binary, tmp_path / "wrong"):
             pytest.fail("Unqualified binary could be copied")
     assert not (tmp_path / "wrong").exists()
