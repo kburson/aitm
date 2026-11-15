@@ -1,0 +1,10 @@
+{
+  "story": 329,
+  "no_product_change": true,
+  "registry_literal_old_roundtrip": true,
+  "strict_legacy_refuses_extended_registry": true,
+  "additive_codec_roundtrip": true,
+  "source_and_grok_boundary_shape_disjoint": true,
+  "old_registry_sha256": "badc4ff05d31f574111c6024adb6a4e98a9a0ed10a481dac4d4b40f80af8708c",
+  "old_reader_rollback_needs_existing_compatible_snapshot_when_grok_records_are_present": true
+}

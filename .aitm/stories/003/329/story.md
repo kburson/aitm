@@ -34,3 +34,5 @@ Verified #115, #117, #304 and #326 Close and the M11c split release this leaf at
 [Independent Refine passed](plan/grok-capture-independent-refine.md), with 14 conditions for exact JIT.
 
 [Exact JIT](plan/2026-11-15-329-positive-grok-capture-jit.md) is submitted for independent acceptance.
+
+[First JIT held](plan/grok-capture-independent-jit-r1.md) on the exact cut, codec and authority boundaries. [Recovery JIT](plan/2026-11-15-329-positive-grok-capture-jit-r2.md) is submitted on literal trunk.

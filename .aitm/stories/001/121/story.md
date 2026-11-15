@@ -53,3 +53,5 @@ Independent Refine held the integrated proposal because current admission reread
 ## Accepted Grok prerequisites
 
 [#329](../../003/329/story.md) qualifies selected Grok capture. [#330](../../003/330/story.md) depends on it and blocks #121 until verified Grok journal delivery closes. [Accepted amendment](plan/2026-11-15-121-grok-guarded-delivery-amendment.md) · [Native readback](plan/grok-delivery-split-native-readback.json).
+
+The ordered Grok capture callback and missing-callback refusal are specified in [#329’s recovery JIT](../../003/329/plan/2026-11-15-329-positive-grok-capture-jit-r2.md). #121 owns supplying it from the running coordinator.
