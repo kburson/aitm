@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
@@ -25,6 +25,7 @@ from ..monitor_types import (
 from ..types import (
     Availability,
     DiagnosticCode,
+    Eligibility,
     SourceRef,
     _encode,
     _nonnegative,
@@ -69,6 +70,65 @@ _CONTENT_METHOD = "session/update"
 type _Row = dict[str, object]
 type _VerifyReceipt = Callable[[str, str, str], SourceRef | None]
 type _ReadHeadless = Callable[[str, str], _Row | None]
+type _AdmitSpan = Callable[[int, int], Eligibility]
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedGrokMark:
+    key: SourceRef
+    start: int
+    end: int
+    boundary: GrokBoundary
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifiedGrokHookless:
+    key: SourceRef
+    start: int
+    end: int
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokAttemptHeld:
+    start: int
+    code: DiagnosticCode
+    key: SourceRef | None = None
+
+
+type _GrokReadNotice = _VerifiedGrokMark | _VerifiedGrokHookless | _GrokAttemptHeld
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokTerminalSpan:
+    start: int
+    ordinal: int
+    byte_end: int
+    verified: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokCaptureMaterial:
+    source: _GrokSource
+    origin: GrokOrigin
+    data: bytes = field(repr=False)
+    complete: int
+    open_start: int | None
+    terminals: tuple[_GrokTerminalSpan, ...]
+
+    def prefix(self, offset: int) -> SourceRef:
+        if not 0 <= offset <= self.complete:
+            raise ValueError("Grok capture prefix is outside the verified native file")
+        return _capture_prefix(self.source, self.origin, self.data, offset)
+
+
+def _capture_prefix(
+    source: _GrokSource, origin: GrokOrigin, data: bytes, offset: int
+) -> SourceRef:
+    return source.root.evidence.pseudonymize(
+        "grok-capture-prefix-v1",
+        f"{source.stream_ref.value}:{origin.incarnation.value}:"
+        f"{offset}:{sha256(data[:offset]).hexdigest()}",
+    )
 
 
 class _Held(Exception):
@@ -263,13 +323,15 @@ def _checkpoint(
     origin: GrokOrigin,
     prefix: bytes,
     completions: tuple[GrokCompletion, ...],
+    *,
+    strict: bool = False,
 ) -> GrokCheckpoint:
     offset = len(prefix)
     state = sha256(
         _encode(completions, tuple[GrokCompletion, ...]).encode()
     ).hexdigest()
     anchor = source.root.evidence.pseudonymize(
-        "grok-prefix",
+        "grok-capture-delta-v1" if strict else "grok-prefix",
         json.dumps(
             [
                 source.stream_ref.value,
@@ -289,12 +351,20 @@ def _checkpoint(
 
 
 def _validate_prior(
-    source: _GrokSource, origin: GrokOrigin, data: bytes, prior: GrokCheckpoint
+    source: _GrokSource,
+    origin: GrokOrigin,
+    data: bytes,
+    prior: GrokCheckpoint,
+    *,
+    strict: bool = False,
 ) -> None:
     if (
         prior.offset > len(data)
         or len(prior.completions) > _MAX_TURNS
-        or prior != _checkpoint(source, origin, data[: prior.offset], prior.completions)
+        or prior
+        != _checkpoint(
+            source, origin, data[: prior.offset], prior.completions, strict=strict
+        )
     ):
         raise _Held(DiagnosticCode.SOURCE_REPLACED)
 
@@ -307,6 +377,10 @@ class _NativeWalk:
         prior: tuple[GrokCompletion, ...],
         verify_receipt: _VerifyReceipt | None,
         read_headless: _ReadHeadless | None,
+        *,
+        strict: bool = False,
+        trace: bool = False,
+        admit_span: _AdmitSpan | None = None,
     ) -> None:
         self.source = source
         self.origin = origin
@@ -318,18 +392,45 @@ class _NativeWalk:
         self.prompt: str | None = None
         self.hook: _Update | None = None
         self.user_chunk = False
+        self.strict = strict
+        self.trace = trace
+        self.admit_span = admit_span
+        self.start: int | None = None
+        self.notices: list[_GrokReadNotice] = []
+        self.terminals: list[_GrokTerminalSpan] = []
+        self.receipts = {
+            turn.receipt_ref for turn in prior if turn.receipt_ref is not None
+        }
 
-    def read(self, data: bytes, offset: int) -> None:
+    @staticmethod
+    def _row(raw: bytes, origin: GrokOrigin) -> _Update:
+        if not raw.endswith(b"\n") or len(raw) > _MAX_ROW_BYTES:
+            raise _Held(DiagnosticCode.COVERAGE_GAP)
+        return _update(_load(raw), origin.session_id)
+
+    def read(self, data: bytes, offset: int) -> int:
         for raw in data.splitlines(keepends=True):
-            if not raw.endswith(b"\n") or len(raw) > _MAX_ROW_BYTES:
-                raise _Held(DiagnosticCode.COVERAGE_GAP)
-            update = _update(_load(raw), self.origin.session_id)
-            self.advance(update, offset)
+            try:
+                update = self._row(raw, self.origin)
+                self.advance(update, offset, offset + len(raw))
+            except _Held as hold:
+                if not self.strict:
+                    raise
+                resume = offset if self.start is None else self.start
+                self.notices.append(_GrokAttemptHeld(resume, hold.code, hold.key))
+                return resume
             offset += len(raw)
-        if self.prompt is not None or self.user_chunk:
-            raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED)
+        if not self.trace and (self.prompt is not None or self.user_chunk):
+            if not self.strict:
+                raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED)
+            assert self.start is not None
+            self.notices.append(
+                _GrokAttemptHeld(self.start, DiagnosticCode.BOUNDARY_UNVERIFIED)
+            )
+            return self.start
+        return offset
 
-    def advance(self, update: _Update, offset: int) -> None:
+    def advance(self, update: _Update, offset: int, byte_end: int) -> None:
         kind = update.kind
         if kind in _CONTENT_UPDATES:
             return
@@ -339,16 +440,18 @@ class _NativeWalk:
             if self.user_chunk:
                 raise _Held(DiagnosticCode.OVERLAP_UNVERIFIED)
             self.user_chunk = True
+            if self.start is None:
+                self.start = offset
             return
         if kind == "hook_execution":
-            self.start_hook(update)
+            self.start_hook(update, offset)
             return
         if kind == "turn_completed":
-            self.complete(update, offset)
+            self.complete(update, offset, byte_end)
             return
         raise _Held(DiagnosticCode.UNSUPPORTED_FORMAT)
 
-    def start_hook(self, update: _Update) -> None:
+    def start_hook(self, update: _Update, offset: int) -> None:
         fields = update.fields
         if fields.get("event_name") != "user_prompt_submit":
             raise _Held(DiagnosticCode.UNSUPPORTED_FORMAT)
@@ -356,12 +459,13 @@ class _NativeWalk:
         if self.prompt is not None or self.user_chunk:
             raise _Held(DiagnosticCode.OVERLAP_UNVERIFIED)
         self.prompt = prompt
+        self.start = offset
         runs = fields.get("runs")
         if type(runs) is list and len(runs) == 1:
             if _object(_object(runs[0]).get("status")).get("status") == "success":
                 self.hook = update
 
-    def complete(self, update: _Update, offset: int) -> None:
+    def complete(self, update: _Update, offset: int, byte_end: int) -> None:
         prompt = _uuid(update.fields.get("prompt_id"))
         refs = self.source.root.evidence
         key = refs.pseudonymize("grok-turn", f"{self.source.stream_ref.value}:{prompt}")
@@ -373,16 +477,26 @@ class _NativeWalk:
         if update.fields.get("stop_reason") != "end_turn":
             raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED, key)
         hook = self.hook
-        self.prompt = self.hook = None
-        self.user_chunk = False
+        attempted = self.prompt is not None
+        start = self.start
+        if self.strict and start is None:
+            raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED, key)
+        disposition = Eligibility.ELIGIBLE
+        if self.admit_span is not None:
+            assert start is not None
+            disposition = self.admit_span(start, offset + 1)
+            if disposition is Eligibility.UNKNOWN:
+                raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED, key)
         if (
-            prompt in self.origin.inherited_prompt_ids
+            disposition is Eligibility.EXCLUDED
+            or prompt in self.origin.inherited_prompt_ids
             or update.time < self.source.root.cutoff
         ):
             if old is None:
                 self.remember(
                     GrokCompletion(key, offset, update.time, None, None, None)
                 )
+            self._finish_turn()
             return
         try:
             usage = _object(update.fields.get("usage"))
@@ -404,6 +518,11 @@ class _NativeWalk:
         )
         boundary = self.verified_boundary(hook, update, prompt, key, offset)
         receipt = None if boundary is None else boundary.receipt_ref
+        verified = not attempted or receipt is not None and receipt not in self.receipts
+        if self.strict and not verified:
+            raise _Held(DiagnosticCode.BOUNDARY_UNVERIFIED, key)
+        if self.trace and start is not None:
+            self.terminals.append(_GrokTerminalSpan(start, offset, byte_end, verified))
         complete = GrokCompletion(
             key,
             offset,
@@ -426,13 +545,28 @@ class _NativeWalk:
                 and old.receipt_ref != receipt
             ):
                 raise _Held(DiagnosticCode.IDENTITY_CONFLICT, key)
+            self._finish_turn()
             return
         self.remember(complete)
         self.new.append(complete)
+        if receipt is not None:
+            self.receipts.add(receipt)
+        if self.strict:
+            assert start is not None
+            self.notices.append(
+                _VerifiedGrokHookless(key, start, offset + 1)
+                if boundary is None
+                else _VerifiedGrokMark(key, start, offset + 1, boundary)
+            )
+        self._finish_turn()
         if boundary is not None:
             self.boundaries.append(
                 (key, NativeBoundary(boundary, self.origin.checkout))
             )
+
+    def _finish_turn(self) -> None:
+        self.prompt = self.hook = self.start = None
+        self.user_chunk = False
 
     def remember(self, completion: GrokCompletion) -> None:
         if len(self.completions) >= _MAX_TURNS:
@@ -681,8 +815,45 @@ class GrokAdapter:
             )
             yield SourceLocator(_GrokSource(path, origin, root, snapshot, stream))
 
+    def _capture_material(
+        self, locator: SourceLocator, verifier: _VerifyReceipt | None
+    ) -> _GrokCaptureMaterial:
+        source = locator._source
+        if not isinstance(source, _GrokSource):
+            raise _Held(DiagnosticCode.UNSUPPORTED_FORMAT)
+        origin = source.origin
+        if (
+            origin is None
+            or not _qualified(origin)
+            or self.verify_origin(source.path) != origin
+        ):
+            raise _Held(DiagnosticCode.UNSUPPORTED_FORMAT)
+        data = _read_file(source.path, source.snapshot.identity, _MAX_NATIVE_BYTES)
+        walk = _NativeWalk(
+            source,
+            origin,
+            (),
+            verifier if self.verify_receipt is verifier else None,
+            self.read_headless,
+            trace=True,
+        )
+        end = walk.read(data, 0)
+        if self.verify_origin(source.path) != origin:
+            raise _Held(DiagnosticCode.SOURCE_REPLACED)
+        return _GrokCaptureMaterial(
+            source, origin, data, end, walk.start, tuple(walk.terminals)
+        )
+
     def read_delta(
-        self, locator: SourceLocator, cursor: StreamCursor | None
+        self,
+        locator: SourceLocator,
+        cursor: StreamCursor | None,
+        *,
+        _proofs: list[_GrokReadNotice] | None = None,
+        _receipt_verifier: _VerifyReceipt | None = None,
+        _capture_limit: int | None = None,
+        _capture_fences: tuple[tuple[int, SourceRef], ...] = (),
+        _admit_span: _AdmitSpan | None = None,
     ) -> AdapterBatch:
         source = locator._source
         if not isinstance(source, _GrokSource):
@@ -705,7 +876,16 @@ class GrokAdapter:
             refs.validate_source_ref(origin.incarnation)
             if origin.checkout is not None:
                 refs.validate_source_ref(origin.checkout)
-            return self._read_delta(source, origin, cursor)
+            return self._read_delta(
+                source,
+                origin,
+                cursor,
+                _proofs,
+                _receipt_verifier,
+                _capture_limit,
+                _capture_fences,
+                _admit_span,
+            )
         except _Held as hold:
             diagnostic = GrokDiagnostic(
                 hold.code, source.root.cutoff, source.stream_ref, hold.key
@@ -721,21 +901,64 @@ class GrokAdapter:
         return AdapterBatch(diagnostics=(diagnostic,), cursor=cursor)
 
     def _read_delta(
-        self, source: _GrokSource, origin: GrokOrigin, cursor: StreamCursor | None
+        self,
+        source: _GrokSource,
+        origin: GrokOrigin,
+        cursor: StreamCursor | None,
+        proofs: list[_GrokReadNotice] | None,
+        verifier: _VerifyReceipt | None,
+        capture_limit: int | None,
+        capture_fences: tuple[tuple[int, SourceRef], ...],
+        admit_span: _AdmitSpan | None,
     ) -> AdapterBatch:
+        strict = proofs is not None
         data = _read_file(source.path, source.snapshot.identity, _MAX_NATIVE_BYTES)
+        if any(
+            not 0 <= end <= len(data)
+            or _capture_prefix(source, origin, data, end) != prefix
+            for end, prefix in capture_fences
+        ):
+            raise _Held(DiagnosticCode.SOURCE_REPLACED)
+        if capture_limit is not None:
+            if not 0 <= capture_limit <= len(data):
+                raise _Held(DiagnosticCode.SOURCE_REPLACED)
+            data = data[:capture_limit]
         prior = cursor.checkpoint if cursor is not None else None
         if prior is not None:
             if not isinstance(prior, GrokCheckpoint):
                 raise _Held(DiagnosticCode.SOURCE_REPLACED)
-            _validate_prior(source, origin, data, prior)
+            _validate_prior(source, origin, data, prior, strict=strict)
         offset = prior.offset if prior is not None else 0
         history = prior.completions if prior is not None else ()
+        verify = self.verify_receipt
+        if strict and verify is not verifier:
+            verify = None
         walk = _NativeWalk(
-            source, origin, history, self.verify_receipt, self.read_headless
+            source,
+            origin,
+            history,
+            verify,
+            self.read_headless,
+            strict=strict,
+            admit_span=admit_span,
         )
-        walk.read(data[offset:], offset)
+        reached = walk.read(data[offset:], offset)
         diagnostics, disputed = _reconcile(source, origin, walk)
+        if proofs is not None:
+            for notice in walk.notices:
+                if type(notice) is _GrokAttemptHeld:
+                    diagnostics = (
+                        *diagnostics,
+                        GrokDiagnostic(
+                            notice.code,
+                            source.root.cutoff,
+                            source.stream_ref,
+                            notice.key,
+                        ),
+                    )
+                    proofs.append(notice)
+                elif notice.key not in disputed:
+                    proofs.append(notice)
         session_ref = source.root.evidence.pseudonymize(
             "grok-session", origin.session_id
         )
@@ -755,7 +978,13 @@ class GrokAdapter:
         boundaries = tuple(
             boundary for key, boundary in walk.boundaries if key not in disputed
         )
-        checkpoint = _checkpoint(source, origin, data, tuple(walk.completions.values()))
+        checkpoint = _checkpoint(
+            source,
+            origin,
+            data[:reached],
+            tuple(walk.completions.values()),
+            strict=strict,
+        )
         return AdapterBatch(
             observations, boundaries, diagnostics, StreamCursor(checkpoint)
         )

@@ -21,16 +21,26 @@ from ._monitor_qualification import (
 from .ledger import ConflictError, Ledger, LedgerError, _path_exists, _pin_directory
 from .monitor_registry import (
     ApprovedSource,
+    CaptureChange,
     Registry,
     RegistryView,
     _check_capture_root,
+    _grok_read_fences,
+    _grok_records,
+    _grok_span_disposition,
+    _GrokArm,
+    _GrokCaptureIdentity,
+    _GrokCaptureOffer,
+    _GrokCut,
+    _GrokEpoch,
+    _GrokPending,
     _pinned,
     _project,
     _read_state,
     _ServiceEvidence,
     _source,
 )
-from .monitor_types import GrokCheckpoint, GrokDiagnostic, NativeSurface
+from .monitor_types import GrokBoundary, GrokCheckpoint, GrokDiagnostic, NativeSurface
 from .scopes import _publish
 from .sources.adapter import (
     AdapterBatch,
@@ -50,6 +60,10 @@ from .sources.codex import _CodexCompletionWitness, codex_request_boundary_refer
 from .sources.grok import (
     _MAX_NATIVE_BYTES,
     GrokAdapter,
+    _GrokCaptureMaterial,
+    _GrokReadNotice,
+    _VerifiedGrokHookless,
+    _VerifiedGrokMark,
 )
 from .sources.grok import (
     _Held as _GrokHeld,
@@ -238,7 +252,7 @@ class _ScopeEvent:
     anchor_project: UUID | None
     eligible: bool
     affected: AffectedScope
-    native_boundary: SourceBoundary | None
+    native_boundary: SourceBoundary | GrokBoundary | None
     current_project: UUID | None = None
     before_generation: int | None = None
     retained_checkout: SourceRef | None = None
@@ -298,6 +312,9 @@ class _ObservationProof:
     checkout: SourceRef | None
     anchor_project: UUID | None
     eligible_projects: frozenset[UUID]
+    grok: _VerifiedGrokMark | _VerifiedGrokHookless | None = field(
+        default=None, repr=False
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -335,6 +352,25 @@ class _CompletionProgress:
     proofs: tuple[_ObservationProof, ...]
 
 
+class _GrokCaptureHeld(LedgerError):
+    def __init__(
+        self, reason: str, code: DiagnosticCode = DiagnosticCode.BOUNDARY_UNVERIFIED
+    ):
+        super().__init__(reason)
+        self.code = code
+
+
+@dataclass(frozen=True, slots=True, weakref_slot=True)
+class _GrokAdmission:
+    source_id: UUID
+    original: SourceLocator
+    current: SourceLocator
+    approved: ApprovedSource
+    live: _LiveSourceProof
+    view: RegistryView
+    reader: GrokAdapter
+
+
 @dataclass(frozen=True, slots=True, weakref_slot=True)
 class VerifiedScopeBatch:
     source_id: UUID
@@ -364,6 +400,7 @@ class VerifiedScopeBatch:
     _completion_scope: _ScopeSnapshotV2 | None = field(
         default=None, repr=False, compare=False
     )
+    _grok_strict: bool = field(default=False, repr=False, compare=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -719,15 +756,32 @@ def resolve_route(
     ):
         return RouteDecision(RouteStatus.HELD)
     ordinal = proof.position.ordinal
+    start = proof.grok.start if proof.grok is not None else ordinal
     for hold in scopes.holds:
         if (
             hold.state is not HoldState.RESOLVED
             and _stream(hold.position) == _stream(proof.position)
             and hold.affected.start < proof.end
-            and ordinal < hold.affected.end
+            and start < hold.affected.end
         ):
             return RouteDecision(RouteStatus.HELD)
+    if type(proof.grok) is _VerifiedGrokHookless:
+        project = proof.anchor_project
+        if project is not None and project in proof.eligible_projects:
+            return RouteDecision(RouteStatus.ROUTED, project)
+        return RouteDecision(RouteStatus.HELD)
     route, _ = _timeline(scopes.events, proof.position, through=ordinal)
+    if type(proof.grok) is _VerifiedGrokMark:
+        matched = [
+            event
+            for event in scopes.events
+            if event.position == proof.position
+            and event.native_boundary == proof.grok.boundary
+            and event.reported is not None
+            and event.reported.status is HandoffStatus.APPLIED
+        ]
+        if len(matched) != 1 or route.scope != matched[0].scope:
+            return RouteDecision(RouteStatus.HELD)
     if proof.end > ordinal + 1:
         final, _ = _timeline(scopes.events, proof.position, through=proof.end - 1)
         if final != route:
@@ -776,6 +830,9 @@ class ScopeState:
         self.registry = registry
         self._clock = clock
         self._grok_reader = grok_reader
+        self._grok_admissions: WeakValueDictionary[int, _GrokAdmission] = (
+            WeakValueDictionary()
+        )
         self._codex_quota_binding: _CodexQuotaBinding | None = None
         self._operators: dict[UUID, ScopeAuthority] = {}
         self._authorized: dict[UUID, tuple[str, ScopeAuthority]] = {}
@@ -955,6 +1012,13 @@ class ScopeState:
         source = locator._source
         evidence = self.registry.source_evidence()
         if (
+            approved.approval.provider == "grok"
+            and approved.approval.surface != NativeSurface.GROK_BUILD_MACOS
+        ):
+            raise _GrokCaptureHeld(
+                "Grok native surface is unqualified", DiagnosticCode.UNSUPPORTED_FORMAT
+            )
+        if (
             type(source) is not _GrokSource
             or source.root.path != Path(approved.directory.path)
             or source.root.evidence != evidence
@@ -1013,38 +1077,286 @@ class ScopeState:
         locator: SourceLocator,
         *,
         inventory: _InventoryCycle | None = None,
-    ) -> tuple[ApprovedSource, SourceLocator, _LiveSourceProof]:
+    ) -> _GrokAdmission:
         approved, current = self._current_grok(
             view, source_id, locator, inventory=inventory
         )
-        authority = self.registry._require_live_source(
-            approved,
-            observed=any(
-                self.registry.source_read_allowed(project.project_id, source_id)
-                for project in view.projects
-            ),
+        try:
+            authority = self.registry._require_live_source(
+                approved,
+                observed=any(
+                    self.registry.source_read_allowed(project.project_id, source_id)
+                    for project in view.projects
+                ),
+            )
+        except _LiveSourceUnavailable as refusal:
+            if (
+                any(
+                    type(item) is _GrokEpoch and item.identity.source_id == source_id
+                    for item in _grok_records(view)
+                )
+                or refusal.decision is not None
+                and not self.registry._stable_live_exclusion(approved)
+            ):
+                raise _GrokCaptureHeld(
+                    "Grok live capture authority is unavailable"
+                ) from None
+            raise
+        assert self._grok_reader is not None
+        admission = _GrokAdmission(
+            source_id, locator, current, approved, authority, view, self._grok_reader
         )
-        return approved, current, authority
+        self._grok_admissions[id(admission)] = admission
+        return admission
+
+    def _take_grok_admission(
+        self,
+        view: RegistryView,
+        source_id: UUID,
+        locator: SourceLocator,
+        admission: _GrokAdmission,
+    ) -> None:
+        if (
+            self._grok_admissions.pop(id(admission), None) is not admission
+            or admission.view != view
+            or admission.source_id != source_id
+            or admission.original is not locator
+            or admission.reader is not self._grok_reader
+        ):
+            raise _GrokCaptureHeld("Grok source admission changed")
+        self.registry._require_live_source(admission.approved, prior=admission.live)
+        _check_capture_root(admission.approved.directory)
+
+    def _grok_identity(
+        self,
+        admission: _GrokAdmission,
+        project: UUID,
+    ) -> _GrokCaptureIdentity | None:
+        source = admission.current._source
+        origin = source.origin
+        if (
+            origin is None
+            or origin.checkout is None
+            or self._anchor(admission.view, origin.checkout) != project
+        ):
+            return None
+        live = admission.live
+        session = self.registry.source_evidence().pseudonymize(
+            "grok-session", origin.session_id
+        )
+        return _GrokCaptureIdentity(
+            project,
+            admission.source_id,
+            live.installation.source,
+            NativeSurface(admission.approved.approval.surface),
+            origin.checkout,
+            session,
+            source.stream_ref,
+            origin.incarnation,
+            live.profile.generation,
+            live.installation.executable,
+        )
+
+    def _grok_cut(
+        self, material: _GrokCaptureMaterial, ordinal: int, offset: int
+    ) -> _GrokCut:
+        prefix = material.prefix(offset)
+        boundary = material.source.root.evidence.pseudonymize(
+            "grok-capture-boundary-v1", f"{prefix.value}:{ordinal}"
+        )
+        return _GrokCut(ordinal, offset, prefix, boundary)
+
+    def _grok_capture_offer(
+        self,
+        admission: _GrokAdmission,
+        identity: _GrokCaptureIdentity,
+        change: CaptureChange,
+        pending: _GrokPending | None,
+    ) -> _GrokCaptureOffer:
+        registry = self.registry
+        key = admission.source_id, admission.live.profile.generation
+        verifier = registry._grok_verifiers.setdefault(
+            key, admission.reader.verify_receipt
+        )
+        try:
+            material = admission.reader._capture_material(admission.current, verifier)
+            previous = (
+                None
+                if pending is None
+                else next(
+                    (item.cut for item in pending.cuts if item.identity == identity),
+                    None,
+                )
+            )
+            arm = (
+                None
+                if pending is None
+                else next(
+                    (item for item in pending.arms if item.identity == identity), None
+                )
+            )
+            if previous is not None:
+                if material.prefix(previous.offset) != previous.prefix:
+                    raise _GrokCaptureHeld("Grok frozen capture prefix changed")
+                cut = previous
+            elif arm is not None:
+                if (
+                    material.prefix(arm.prefix.offset) != arm.prefix.prefix
+                    or material.prefix(arm.open_start.offset) != arm.open_start.prefix
+                ):
+                    raise _GrokCaptureHeld("Grok armed capture prefix changed")
+                terminals = [
+                    terminal
+                    for terminal in material.terminals
+                    if terminal.start == arm.open_start.ordinal
+                    and terminal.byte_end > arm.prefix.offset
+                ]
+                if len(terminals) > 1:
+                    raise _GrokCaptureHeld("Grok armed turn has competing terminals")
+                if not terminals:
+                    if material.open_start != arm.open_start.ordinal:
+                        raise _GrokCaptureHeld("Grok armed turn identity changed")
+                    cut = None
+                elif not terminals[0].verified:
+                    cut = None if change.enabled else arm.open_start
+                else:
+                    terminal = terminals[0]
+                    cut = self._grok_cut(
+                        material, terminal.ordinal + 1, terminal.byte_end
+                    )
+            elif material.open_start is None:
+                cut = self._grok_cut(material, material.complete, material.complete)
+            else:
+                start = self._grok_cut(
+                    material, material.open_start, material.open_start
+                )
+                prefix = self._grok_cut(material, material.complete, material.complete)
+                arm = _GrokArm(identity, prefix, start)
+                cut = None
+        except (_GrokHeld, OSError, ValueError):
+            raise _GrokCaptureHeld("Grok capture material is unavailable") from None
+        registry._require_live_source(admission.approved, prior=admission.live)
+        _check_capture_root(admission.approved.directory)
+        if (
+            cut is not None
+            and admission.reader.verify_origin(material.source.path) != material.origin
+        ):
+            raise _GrokCaptureHeld("Grok capture origin changed")
+        return _GrokCaptureOffer(
+            identity, admission.live, registry.lease, cut, arm if cut is None else None
+        )
+
+    def _grok_capture_evidence(
+        self,
+        change: CaptureChange,
+        locators: tuple[SourceLocator, ...],
+        active: tuple[_GrokEpoch, ...],
+        pending: _GrokPending | None,
+        *,
+        inventory: _InventoryCycle | None = None,
+    ) -> tuple[_GrokCaptureOffer, ...]:
+        view = self.registry.view()
+        identities = {item.identity for item in active}
+        if pending is not None:
+            identities = {item.identity for item in pending.cuts}
+            identities.update(arm.identity for arm in pending.arms)
+        restricted = not change.enabled or pending is not None
+        wanted = {item.stream for item in identities}
+        offers = []
+        for locator in locators:
+            if restricted and locator.stream_ref not in wanted:
+                continue
+            admission = self._grok_admission(
+                view, change.source_id, locator, inventory=inventory
+            )
+            self._take_grok_admission(view, change.source_id, locator, admission)
+            identity = self._grok_identity(admission, change.project_id)
+            if identity is not None and (not restricted or identity in identities):
+                offers.append(
+                    self._grok_capture_offer(admission, identity, change, pending)
+                )
+        return tuple(offers)
 
     def _read_grok(
         self,
         source_id: UUID,
         locator: SourceLocator,
         *,
+        view: RegistryView,
+        cursor: StreamCursor | None,
         inventory: _InventoryCycle | None = None,
-    ) -> tuple[SourceLocator, AdapterBatch, _LiveSourceProof]:
-        view = self.registry.view()
-        approved, current, authority = self._grok_admission(
-            view, source_id, locator, inventory=inventory
+        admission: _GrokAdmission | None = None,
+    ) -> tuple[
+        _GrokAdmission,
+        AdapterBatch,
+        _GrokCaptureIdentity | None,
+        tuple[_GrokReadNotice, ...],
+    ]:
+        if admission is None:
+            admission = self._grok_admission(
+                view, source_id, locator, inventory=inventory
+            )
+        self._take_grok_admission(view, source_id, locator, admission)
+        matching = tuple(
+            item
+            for item in _grok_records(view)
+            if type(item) is _GrokEpoch
+            and item.identity.source_id == source_id
+            and item.identity.stream == locator.stream_ref
         )
-        result = self._grok_reader.read_delta(current, None)
-        _check_capture_root(approved.directory)
+        identity = (
+            self._grok_identity(admission, matching[-1].identity.project_id)
+            if matching
+            else None
+        )
+        if matching and (
+            identity is None or all(item.identity != identity for item in matching)
+        ):
+            raise _GrokCaptureHeld("Grok capture incarnation or generation changed")
+        if cursor is not None and identity is None:
+            raise _GrokCaptureHeld("Grok cursor has no admitted capture stream")
+        notices: list[_GrokReadNotice] = []
+        if identity is None:
+            result = admission.reader.read_delta(admission.current, None)
+        else:
+            verifier = self.registry._grok_verifiers.get((source_id, identity.profile))
+            limit, fences = _grok_read_fences(view, identity)
+            result = admission.reader.read_delta(
+                admission.current,
+                cursor,
+                _proofs=notices,
+                _receipt_verifier=verifier,
+                _capture_limit=limit,
+                _capture_fences=fences,
+                _admit_span=lambda start, end: _grok_span_disposition(
+                    view, identity, start, end
+                ),
+            )
+        self.registry._require_live_source(admission.approved, prior=admission.live)
+        _check_capture_root(admission.approved.directory)
         if (
             result.cursor is None
             or type(result.cursor.checkpoint) is not GrokCheckpoint
         ):
             raise LedgerError("Grok scope source proof is unavailable")
-        return current, result, authority
+        if identity is not None:
+            self._recheck_grok_prefix(admission.current, result.cursor.checkpoint, True)
+        return admission, result, identity, tuple(notices)
+
+    def _recheck_grok_prefix(
+        self, locator: SourceLocator, checkpoint: GrokCheckpoint, strict: bool
+    ) -> None:
+        native = locator._source
+        origin = native.origin
+        if origin is None or self._grok_reader.verify_origin(native.path) != origin:
+            raise _GrokCaptureHeld("Grok scope origin changed")
+        try:
+            data = _read_grok_file(
+                native.path, native.snapshot.identity, _MAX_NATIVE_BYTES
+            )
+            _validate_grok_prior(native, origin, data, checkpoint, strict=strict)
+        except (_GrokHeld, OSError, ValueError):
+            raise _GrokCaptureHeld("Verified Grok source prefix changed") from None
 
     def _anchor(self, view: RegistryView, checkout: SourceRef | None) -> UUID | None:
         if checkout is None:
@@ -1130,7 +1442,7 @@ class ScopeState:
                 or event.position.stream_ref != stream_ref
                 or event.before_generation is not None
                 or event.anchor_project is not None
-                or event.native_boundary is None
+                or type(event.native_boundary) is not SourceBoundary
             ):
                 continue
             _, dispositions = _timeline(events, event.position)
@@ -1212,6 +1524,7 @@ class ScopeState:
         cursor: StreamCursor | None = None,
         qualify_completion: bool = False,
         inventory: _InventoryCycle | None = None,
+        _grok_admission: _GrokAdmission | None = None,
     ) -> VerifiedScopeBatch:
         """Read one exact pinned native stream and retain provenance for its results."""
         self.registry.lease
@@ -1224,7 +1537,13 @@ class ScopeState:
             [] if qualify_completion else None
         )
         quota_binding = None
+        grok_identity = None
+        grok_notices = ()
         if type(locator._source) is CandidateSource:
+            if _grok_admission is not None:
+                raise LedgerError(
+                    "Grok admission cannot authorize another native source"
+                )
             if not any(
                 self.registry.capture_read_limit(
                     project.project_id, source_id, locator.stream_ref
@@ -1291,16 +1610,33 @@ class ScopeState:
             _check_capture_root(approved.directory)
             surface = NativeSurface(approved.approval.surface)
         else:
-            current, batch, authority = self._read_grok(
-                source_id, locator, inventory=inventory
+            grok, batch, grok_identity, grok_notices = self._read_grok(
+                source_id,
+                locator,
+                view=view,
+                cursor=cursor,
+                inventory=inventory,
+                admission=_grok_admission,
             )
-            surface = NativeSurface.GROK_BUILD_MACOS
-            admitted = frozenset()
+            current, authority = grok.current, grok.live
+            surface = NativeSurface(grok.approved.approval.surface)
+            admitted = (
+                frozenset((grok_identity.project_id,))
+                if grok_identity is not None
+                else frozenset()
+            )
             native_cursor = None
 
         self.registry._require_live_source(_source(view, source_id), prior=authority)
         proofs = self._observation_proofs(
-            source_id, locator, surface, batch.observations, view, admitted
+            source_id,
+            locator,
+            surface,
+            batch.observations,
+            view,
+            admitted,
+            grok_identity=grok_identity,
+            grok_notices=grok_notices,
         )
         completion_progress = None
         if completion_frontiers:
@@ -1331,6 +1667,7 @@ class ScopeState:
             _completion_witnesses=tuple(completion_witnesses or ()),
             _completion_progress=completion_progress,
             _quota_binding=quota_binding,
+            _grok_strict=grok_identity is not None,
             _completion_scope=(
                 completion_scope
                 if isinstance(completion_scope, _ScopeSnapshotV2)
@@ -1391,8 +1728,16 @@ class ScopeState:
         observations: tuple[NativeObservation, ...],
         view: RegistryView,
         admitted: frozenset[UUID],
+        *,
+        grok_identity: _GrokCaptureIdentity | None = None,
+        grok_notices: tuple[_GrokReadNotice, ...] = (),
     ) -> tuple[_ObservationProof, ...]:
         proofs = []
+        grok_by_key = {
+            item.key: item
+            for item in grok_notices
+            if type(item) in (_VerifiedGrokMark, _VerifiedGrokHookless)
+        }
         evidence = self.registry.source_evidence()
         for observation in observations:
             usage = observation.usage
@@ -1424,14 +1769,28 @@ class ScopeState:
                     "Verified scope observation has an invalid native span"
                 )
             checkout = observation.project_context
+            anchor = self._anchor(view, checkout)
+            grok = grok_by_key.get(observation.key)
+            eligible = self._eligible(admitted, position, end)
+            if grok_identity is not None:
+                if (
+                    grok is None
+                    or grok.end != end
+                    or native.session_ref != grok_identity.session
+                    or checkout != grok_identity.checkout
+                ):
+                    raise _GrokCaptureHeld(
+                        "Grok observation lost its native span or checkout"
+                    )
+                if (
+                    anchor == grok_identity.project_id
+                    and _grok_span_disposition(view, grok_identity, grok.start, end)
+                    is Eligibility.ELIGIBLE
+                ):
+                    eligible = admitted
             proofs.append(
                 _ObservationProof(
-                    observation,
-                    position,
-                    end,
-                    checkout,
-                    self._anchor(view, checkout),
-                    self._eligible(admitted, position, end),
+                    observation, position, end, checkout, anchor, eligible, grok
                 )
             )
         return tuple(proofs)
@@ -1700,16 +2059,11 @@ class ScopeState:
             else:
                 assert batch.cursor is not None
                 checkpoint = batch.cursor.checkpoint
-                origin = native.origin
-                if (
-                    origin is None
-                    or self._grok_reader.verify_origin(native.path) != origin
-                ):
-                    raise LedgerError("Grok scope origin changed")
-                data = _read_grok_file(
-                    native.path, native.snapshot.identity, _MAX_NATIVE_BYTES
+                if type(checkpoint) is not GrokCheckpoint:
+                    raise LedgerError("Missing verified Grok checkpoint")
+                self._recheck_grok_prefix(
+                    batch._locator, checkpoint, batch._grok_strict
                 )
-                _validate_grok_prior(native, origin, data, checkpoint)
         except (_CaptureDiscontinuity, _GrokHeld, OSError, ValueError):
             raise LedgerError("Verified native scope source changed") from None
         _check_capture_root(approved.directory)
@@ -1945,6 +2299,11 @@ class ScopeState:
         eligible_projects = self._eligible(
             batch._admitted, position, position.ordinal + 1
         )
+        if batch._grok_strict:
+            exact = tuple(proof for proof in matching if proof.position == position)
+            eligible_projects = (
+                exact[0].eligible_projects if len(exact) == 1 else frozenset()
+            )
         eligible = _scope(command).project_id in eligible_projects
         if isinstance(command, (Mark, Handoff)) and not self._development_proof(
             command, batch, position, checkout
@@ -2028,6 +2387,19 @@ class ScopeState:
         self._require_boundary(receipt, command)
         state = self._snapshot(confirm=True)
         _require_unused_route_disposition_id(state, command.command_id)
+        native_boundary = receipt.native_boundary
+        if receipt._batch._grok_strict:
+            markers = tuple(
+                proof.grok.boundary
+                for proof in receipt._batch._proofs
+                if type(proof.grok) is _VerifiedGrokMark
+                and proof.grok.boundary.receipt_ref == command.receipt_ref
+            )
+            if len(markers) != 1:
+                raise _GrokCaptureHeld(
+                    "Grok scope proof no longer names one original receipt"
+                )
+            (native_boundary,) = markers
         event = _ScopeEvent(
             receipt.command_id,
             receipt.digest,
@@ -2037,7 +2409,7 @@ class ScopeState:
             receipt.anchor_project,
             receipt.eligible,
             receipt.affected,
-            receipt.native_boundary,
+            native_boundary,
             command.current_project if isinstance(command, Handoff) else None,
             command.before_generation if isinstance(command, Handoff) else None,
             command.retained_checkout if isinstance(command, Handoff) else None,
