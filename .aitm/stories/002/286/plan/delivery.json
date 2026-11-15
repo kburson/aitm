@@ -1,0 +1,8 @@
+{
+  "artifact": "plan/2026-11-14-286-core-behavior-test-standard.md",
+  "artifact_sha256": "7d8a9c7739611b9cdb408918ee71002f98572ff91f55d2abe36ac7ce26af6621",
+  "issue": 286,
+  "review": "plan/reviews/2026-11-14-286-core-behavior-test-standard-review.md",
+  "review_sha256": "af81f0d84c2b6df711960c6a80321155819fa4cf05d259609bdc930274478b4a",
+  "status": "accepted"
+}

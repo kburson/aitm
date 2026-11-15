@@ -10,7 +10,7 @@ children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 
 blocking: [247]
 blocked-by: [100, 133]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-12T01:40:33Z"
+updated: "2026-11-15T02:12:42Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: 297.25, size: XL }
@@ -90,3 +90,7 @@ The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 
 ## Usage Monitor Cost integration
 
 [#230](../../002/230/story.md) qualifies the delivered #123/#124 monitor producer against the Core #51 receiver. It carries a separate preliminary 3.25 h estimate outside the existing M1 release scope. The existing #100 and #133 blockers apply to every Core child. [Dependency replan](../../002/230/plan/2026-11-11-230-cost-dependency-replan.md).
+
+## Behavior-driven testing
+
+Use the independently reviewed [Core testing standard](../../002/286/plan/2026-11-14-286-core-behavior-test-standard.md) when planning and reviewing Core leaves.
