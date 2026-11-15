@@ -1,0 +1,11 @@
+{
+  "story": 304,
+  "trunk": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "status": "awaiting-independent-review-authorization",
+  "accepted_estimate_hours": 3.5,
+  "proposed_estimate_hours": 3.8,
+  "artifacts": {
+    "2026-11-14-304-controlled-source-issuer-jit-r3.md": "45723c5fe6f9449b37afca079a3fc44da0cac725eb31ccce5a9b000917055877",
+    "304-jit-r3-admission-evidence.txt": "94be3ccc7c531bf361aca057bc1c8ebfd898e1f4a6759147962c278cf747a28e"
+  }
+}

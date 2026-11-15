@@ -1,0 +1,14 @@
+{
+  "story": 304,
+  "attempt": 2,
+  "verdict": "HOLD",
+  "role": "JIT",
+  "route": "isolated Claude CLI",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "trunk": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+  "draft_sha256": "b015e6e3285888339071a7d7a412e771a54874568b389129f8b302610c2d94c0",
+  "input_sha256": "9a1573f923049f34890626bc1bdc55ce1004c069b1f27ab8bf05f96701702c36",
+  "response_sha256": "355de1321cd92a8ac5282948c453c5953828d4969b1a12bbe5170d58369a8302",
+  "verdict_sha256": "ff014e96567b121d8c700c642d36021960619c8bd217aeb956e29cc2e0baf67b"
+}

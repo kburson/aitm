@@ -1,0 +1,235 @@
+
+Commit 6b64ea873e438769c23e0a37b7fa7c0155629fbe
+monitor_scope.py: _require_batch_qualification: _recheck_batch:1599, _require_settlement_side:2403
+monitor_scope.py: _recheck_batch: _journal_view:2616, _require_boundary:1883, _verified_boundary:1763, view:2691
+monitor_scope.py: _admitted_readers: _bind_codex_quota_account:1115, read_source:1193
+monitor_journal.py: _require_batch_qualification: settle_disposition:1745
+monitor_journal.py: _journal_view: _fresh_view:817, _settled_side:1493
+monitor_journal.py: _fresh_view: _reserve:1263, _reserve:1285, prepare:797
+monitor_journal.py: blob sha256 47eb2b407e175a9fa235d61cbd94e90bfee43ffaf54a3fad8c2f27fd7595aa4d
+monitor_scope.py: blob sha256 ef30d8fb30ac6cd05c38f047b317d58ab7568e308a7230a2bcbdecf2570e58d5
+
+monitor_scope.py:331-350
+331:
+332: @dataclass(frozen=True, slots=True, weakref_slot=True)
+333: class VerifiedScopeBatch:
+334:     source_id: UUID
+335:     surface: NativeSurface
+336:     observations: tuple[NativeObservation, ...]
+337:     boundaries: tuple[NativeBoundary, ...]
+338:     diagnostics: tuple[Diagnostic | GrokDiagnostic, ...]
+339:     cursor: StreamCursor | None
+340:     _proofs: tuple[_ObservationProof, ...] = field(repr=False)
+341:     _admitted: frozenset[UUID] = field(repr=False)
+342:     _locator: SourceLocator = field(repr=False)
+343:     _native_cursor: SourceCursor | None = field(repr=False)
+344:     _registry: RegistryView = field(repr=False)
+345:     _live_source: _LiveSourceProof = field(repr=False, compare=False)
+346:     _revision_witnesses: tuple[
+347:         tuple[NativeObservation, _NativeRevisionWitness], ...
+348:     ] = field(default=(), repr=False, compare=False)
+349:     _completion_witnesses: tuple[_CodexCompletionWitness, ...] = field(
+350:         default=(), repr=False, compare=False
+
+monitor_scope.py:1042-1075
+1042:     def _admitted_readers(
+1043:         self, view: RegistryView, source_id: UUID, locator: SourceLocator
+1044:     ) -> frozenset[UUID]:
+1045:         latest = {
+1046:             epoch.project_id: epoch
+1047:             for epoch in view.epochs
+1048:             if epoch.source_id == source_id and epoch.stream_ref == locator.stream_ref
+1049:         }
+1050:         bounds = {
+1051:             project_id: self.registry.capture_read_limit(
+1052:                 project_id, source_id, locator.stream_ref
+1053:             )
+1054:             for project_id in latest
+1055:         }
+1056:         if not any(bound is None for bound in bounds.values()):
+1057:             raise LedgerError("Native scope source has no admitted unbounded read")
+1058:         admitted = set()
+1059:         for project_id, epoch in latest.items():
+1060:             bound = bounds[project_id]
+1061:             if bound is not None and bound.cursor is None:
+1062:                 continue
+1063:             prior = (
+1064:                 (epoch.position or epoch.observed.checkpoint.cursor)
+1065:                 if bound is None
+1066:                 else bound.cursor
+1067:             )
+1068:             try:
+1069:                 _capture_position(locator._source, prior, fixed=prior)
+1070:             except (_CaptureDiscontinuity, OSError, ValueError):
+1071:                 continue
+1072:             admitted.add(project_id)
+1073:         if not any(bounds[project_id] is None for project_id in admitted):
+1074:             raise LedgerError("Native scope source lost its enrolled physical prefix")
+1075:         return frozenset(admitted)
+
+monitor_scope.py:1169-1193
+1169:     ) -> VerifiedScopeBatch:
+1170:         """Read one exact pinned native stream and retain provenance for its results."""
+1171:         self.registry.lease
+1172:         view = self.registry.view()
+1173:         revision_witnesses: list[tuple[NativeObservation, _NativeRevisionWitness]] = []
+1174:         completion_witnesses: list[_CodexCompletionWitness] | None = (
+1175:             [] if qualify_completion else None
+1176:         )
+1177:         completion_frontiers: list[_CompletionFrontier] | None = (
+1178:             [] if qualify_completion else None
+1179:         )
+1180:         quota_binding = None
+1181:         if type(locator._source) is CandidateSource:
+1182:             if not any(
+1183:                 self.registry.capture_read_limit(
+1184:                     project.project_id, source_id, locator.stream_ref
+1185:                 )
+1186:                 is None
+1187:                 for project in view.projects
+1188:             ):
+1189:                 raise LedgerError("Native scope source has no admitted unbounded read")
+1190:             approved, current, authority = self.registry._approved_candidate(
+1191:                 view, source_id, locator, observed=True
+1192:             )
+1193:             admitted = self._admitted_readers(view, source_id, current)
+
+monitor_scope.py:1245-1293
+1245:             _check_capture_root(approved.directory)
+1246:             surface = NativeSurface(approved.approval.surface)
+1247:         else:
+1248:             current, batch, authority = self._read_grok(source_id, locator)
+1249:             surface = NativeSurface.GROK_BUILD_MACOS
+1250:             admitted = frozenset()
+1251:             native_cursor = None
+1252:
+1253:         self.registry._require_live_source(_source(view, source_id), prior=authority)
+1254:         proofs = self._observation_proofs(
+1255:             source_id, locator, surface, batch.observations, view, admitted
+1256:         )
+1257:         completion_progress = None
+1258:         if completion_frontiers:
+1259:             (frontier,) = completion_frontiers
+1260:             completion_progress = _CompletionProgress(
+1261:                 frontier.cursor,
+1262:                 self._observation_proofs(
+1263:                     source_id, locator, surface, frontier.observations, view, admitted
+1264:                 ),
+1265:             )
+1266:         completion_scope = (
+1267:             self._snapshot(confirm=True) if completion_witnesses else None
+1268:         )
+1269:         verified = VerifiedScopeBatch(
+1270:             source_id=source_id,
+1271:             surface=surface,
+1272:             observations=batch.observations,
+1273:             boundaries=batch.boundaries,
+1274:             diagnostics=batch.diagnostics,
+1275:             cursor=batch.cursor,
+1276:             _proofs=proofs,
+1277:             _admitted=admitted,
+1278:             _locator=current,
+1279:             _native_cursor=native_cursor,
+1280:             _registry=view,
+1281:             _live_source=authority,
+1282:             _revision_witnesses=tuple(revision_witnesses),
+1283:             _completion_witnesses=tuple(completion_witnesses or ()),
+1284:             _completion_progress=completion_progress,
+1285:             _quota_binding=quota_binding,
+1286:             _completion_scope=(
+1287:                 completion_scope
+1288:                 if isinstance(completion_scope, _ScopeSnapshotV2)
+1289:                 else None
+1290:             ),
+1291:         )
+1292:         self._batches[id(verified)] = verified
+1293:         return verified
+
+monitor_scope.py:1587-1601
+1587:     def _require_batch_qualification(self, batch: VerifiedScopeBatch) -> ApprovedSource:
+1588:         self.registry.lease
+1589:         if (
+1590:             self._batches.get(id(batch)) is not batch
+1591:             or batch._registry != self.registry.view()
+1592:         ):
+1593:             raise LedgerError("Scope registry or issuer changed since the native read")
+1594:         approved = _source(batch._registry, batch.source_id)
+1595:         self.registry._require_live_source(approved, prior=batch._live_source)
+1596:         return approved
+1597:
+1598:     def _recheck_batch(self, batch: VerifiedScopeBatch) -> None:
+1599:         approved = self._require_batch_qualification(batch)
+1600:         _check_capture_root(approved.directory)
+1601:         native = batch._locator._source
+monitor_registry.py: blob sha256 92cef31a5bfc06fc886f3eece49a0d38ab5d356b860b9479f580e2f1b5bbdba2
+
+monitor_registry.py:660-716
+660:     def _require_live_source(
+661:         self,
+662:         approved: ApprovedSource,
+663:         *,
+664:         prior: _LiveSourceProof | None = None,
+665:         observed: bool = False,
+666:     ) -> _LiveSourceProof:
+667:         lease = self.lease
+668:         profile = self._live_profile
+669:         source = _LiveSourceTuple.from_approval(approved)
+670:         if (
+671:             type(profile) is _LiveProfile
+672:             and profile.lease is lease
+673:             and _pinned(profile.root)
+674:             and profile.root.path == str(self.root)
+675:             and source.supported()
+676:             and _pinned(approved.directory)
+677:             and profile.current is not None
+678:             and self.view().source_key_id is not None
+679:         ):
+680:             installations = [
+681:                 item
+682:                 for item in profile.installations
+683:                 if item.source == source and item.directory == approved.directory
+684:             ]
+685:             if len(installations) == 1:
+686:                 (installation,) = installations
+687:                 if prior is None or (
+688:                     prior.profile is profile and prior.installation is installation
+689:                 ):
+690:                     try:
+691:                         evidence = self.source_evidence()
+692:                         evidence.validate_source_ref(profile.generation)
+693:                         evidence.validate_source_ref(installation.executable)
+694:                         current = profile.current(installation)
+695:                     except (LedgerError, OSError, ValueError):
+696:                         current = False
+697:                     if current is True and self._live_profile is profile:
+698:                         lease.check()
+699:                         return _LiveSourceProof(profile, installation)
+700:         decision = None
+701:         if observed and _pinned(approved.directory):
+702:             evidence = self.source_evidence()
+703:             generation = evidence.pseudonymize("live-policy", "closed-v1")
+704:             if type(profile) is _LiveProfile and profile.lease is lease:
+705:                 try:
+706:                     evidence.validate_source_ref(profile.generation)
+707:                 except (LedgerError, ValueError):
+708:                     pass
+709:                 else:
+710:                     generation = profile.generation
+711:             identity = evidence.pseudonymize(
+712:                 "excluded-installation",
+713:                 f"{approved.source_id}:{approved.directory.identity}",
+714:             )
+715:             decision = _LiveExclusion(approved.source_id, generation, identity)
+716:         raise _LiveSourceUnavailable(decision)
+
+Commit 0542848b0c8f680e11d5f443707835170b04c8f1
+monitor_scope.py: _require_batch_qualification: _recheck_batch:1658, _require_settlement_side:2462
+monitor_scope.py: _recheck_batch: _journal_view:2675, _require_boundary:1942, _verified_boundary:1822, view:2750
+monitor_scope.py: _admitted_readers: _bind_codex_quota_account:1131, read_source:1209
+monitor_journal.py: _require_batch_qualification: settle_disposition:1911
+monitor_journal.py: _journal_view: _fresh_view:983, _settled_side:1659
+monitor_journal.py: _fresh_view: _reserve:1429, _reserve:1451, prepare:902
+monitor_journal.py: blob sha256 9f3e95a237e3df92fc8121359924cb8a1fef7ab6dea5474065fab0d08c0b6774
+monitor_scope.py: blob sha256 0ddcff7d3827cd2cb39ec59971d3fcbb03cb510da474f82d30a492b21f2c91db
+Verified admission and batch recheck AST unchanged on the separate #300 candidate.
+monitor_registry.py: blob sha256 d603082ed0eaaedfe1a81709e4ca02f3b138a534c0e66801004842ad443d84bd

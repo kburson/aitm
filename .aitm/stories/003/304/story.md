@@ -38,3 +38,7 @@ Project 24 Rank 229.065.
 ## Independent Refine
 
 Passed at 3.5 implementation hours with a single real macOS arm64 Grok pilot. The exact independent JIT binds the native witness and currentness contract. [Refine](plan/isolated-issuer-independent-refine-r1.md).
+
+## Independent JIT
+
+Two exact JIT reviews held. The recovery closed four findings and left admission provenance and reserve/retry coverage sign-off pending. The confirmation draft includes the retained admission predicate, source callers, and a four-case hosted proof. The accepted Project estimate is 3.5 hours and the draft proposes 3.8 hours. A further independent JIT review requires explicit authorization. [First review](plan/isolated-issuer-independent-jit-r1.md) · [Recovery](plan/isolated-issuer-independent-jit-r2.md) · [Confirmation draft](plan/2026-11-14-304-controlled-source-issuer-jit-r3.md).
