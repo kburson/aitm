@@ -316,8 +316,8 @@ def test_grok_inventory_audits_active_route_and_sideband_renewal(tmp_path):
     assert traces["unchanged-parked"] == 0
     assert traces["changed-parked"] == 1
     assert traces["sideband-parked"] == 1
-    assert traces["selected-verifier-opens"] >= 1
-    assert traces["selected-native-opens"] >= 1
+    assert traces["selected-verifier-opens"] == 1
+    assert traces["selected-native-opens"] == 1
 
 
 @pytest.mark.parametrize(
@@ -388,13 +388,25 @@ def test_metadata_inventory_rejects_changed_sibling_before_return_and_same_cycle
 
 
 def test_cache_renews_through_same_authority_and_rejects_closed_or_foreign_writer(
-    siblings, tmp_path
+    siblings, tmp_path, monkeypatch
 ):
-    native, selected, _ = siblings
+    native, selected, parked = siblings
+    seen = []
+    original = source_scan._open_snapshot
+
+    @contextmanager
+    def record(path, **kwargs):
+        seen.append(path)
+        with original(path, **kwargs) as opened:
+            yield opened
+
+    monkeypatch.setattr(source_scan, "_open_snapshot", record)
     cache = _OriginCache()
     with native.registry.writer() as writer, writer._inventory_cycle(cache) as old:
         writer._current_candidate(writer.view(), LIVE, selected, inventory=old)
         assert cache._entries
+    assert parked in seen
+    seen.clear()
     with pytest.raises(_InventoryUnavailable, match="expired"):
         old._require_writer(writer)
 
@@ -408,6 +420,7 @@ def test_cache_renews_through_same_authority_and_rejects_closed_or_foreign_write
             restarted.view(), LIVE, selected, inventory=current
         )
         assert reopened.stream_ref == selected.stream_ref
+    assert parked not in seen
     foreign = Registry(tmp_path / "foreign")
     with foreign.writer() as writer:
         with pytest.raises(BoundaryUnavailable, match="established"):
@@ -506,6 +519,118 @@ def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
                 writer._current_candidate(
                     writer.view(), LIVE, selected, inventory=inventory
                 )
+
+
+@pytest.mark.parametrize(
+    "when", ["during-walk", "root-revalidation", "nested-revalidation"]
+)
+def test_superseded_directory_witness_holds_catalog_without_staging(
+    siblings, monkeypatch, when
+):
+    native, selected, parked = siblings
+    root = parked.parent
+    nested = root / "nested"
+    nested.mkdir()
+    parked.rename(nested / parked.name)
+    changed = root if when == "root-revalidation" else nested
+    marker = changed / "membership-change"
+    before = source_scan._directory_witness(changed.stat())
+
+    if when == "during-walk":
+        original = source_scan.os.scandir
+        inode = changed.stat().st_ino
+
+        @contextmanager
+        def change_after_scan(directory):
+            with original(directory) as entries:
+                yield entries
+            if isinstance(directory, int) and os.fstat(directory).st_ino == inode:
+                monkeypatch.setattr(source_scan.os, "scandir", original)
+                marker.touch()
+
+        monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
+    else:
+        original_revalidate = source_scan._revalidate_catalog
+
+        def change_before_revalidation(catalog):
+            monkeypatch.setattr(source_scan, "_revalidate_catalog", original_revalidate)
+            marker.touch()
+            original_revalidate(catalog)
+
+        monkeypatch.setattr(
+            source_scan, "_revalidate_catalog", change_before_revalidation
+        )
+
+    cache = _OriginCache()
+    with native.registry.writer() as writer:
+        with writer._inventory_cycle(cache) as inventory:
+            for _ in range(2):
+                with pytest.raises(BoundaryUnavailable, match="Complete metadata"):
+                    writer._current_candidate(
+                        writer.view(), LIVE, selected, inventory=inventory
+                    )
+            assert marker.exists()
+            assert source_scan._directory_witness(changed.stat()) != before
+            assert not cache._entries
+        with writer._inventory_cycle(cache) as refreshed:
+            _, current = writer._current_candidate(
+                writer.view(), LIVE, selected, inventory=refreshed
+            )
+            assert current.stream_ref == selected.stream_ref
+
+
+def test_inventory_rechecks_root_identity_even_without_existing_registry_match(
+    siblings,
+):
+    native, _, parked = siblings
+    directory = parked.parent
+    moved = directory.with_name("moved-approved")
+    cache = _OriginCache()
+    with native.registry.writer() as writer:
+        with writer._inventory_cycle(cache) as inventory:
+            directory.rename(moved)
+            directory.mkdir()
+            with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
+                tuple(
+                    ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)
+                )
+            directory.rmdir()
+            moved.rename(directory)
+            with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
+                tuple(
+                    ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)
+                )
+            assert not cache._entries
+        with writer._inventory_cycle(cache) as inventory:
+            assert (
+                len(
+                    tuple(
+                        ProviderAdapter()._inventory_discover(
+                            native.roots[LIVE], inventory
+                        )
+                    )
+                )
+                == 2
+            )
+
+
+def test_midcycle_key_identity_change_refuses_existing_writer_cache(
+    siblings, monkeypatch
+):
+    native, _, _ = siblings
+    with (
+        native.registry.writer() as writer,
+        writer._inventory_cycle(_OriginCache()) as current,
+    ):
+        assert tuple(ProviderAdapter()._inventory_discover(native.roots[LIVE], current))
+        before = writer.view()
+        assert before.source_key_id is not None
+        successor = sha256(before.source_key_id.encode()).hexdigest()
+        monkeypatch.setattr(
+            writer, "view", lambda: replace(before, source_key_id=successor)
+        )
+        with pytest.raises(BoundaryUnavailable, match="authority changed"):
+            tuple(ProviderAdapter()._inventory_discover(native.roots[LIVE], current))
 
 
 if __name__ == "__main__":
