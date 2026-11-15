@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -74,3 +74,7 @@ The exact local and signed hosted carrier built against trunk. Independent sourc
 ## Malformed-frame confirmation
 
 [Focused tests](plan/carrier-malformed-frame-confirmation.json) now prove an invalid committed row holds both cold and resumed reads before a later verified turn. The two ordinary source-review attempts remain recorded. Any additional paid source review needs owner authorization.
+
+## Owner-authorized independent source
+
+The exact local and signed hosted carrier built against trunk. Owner-authorized independent source returned **PASS**. [Signed Test](plan/carrier-signed-hosted-r3.json) · [Source receipt](plan/carrier-independent-source-r3-receipt.json).
