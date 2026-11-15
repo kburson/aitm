@@ -1,0 +1,14 @@
+{
+  "story": 325,
+  "platform": "Linux",
+  "architecture": "arm64",
+  "status": "pass",
+  "tests": 12,
+  "head": "8527e02957b744b8debfde25056eea768515d54f",
+  "tree": "2dc69b32272fdda31a476c2d128244a2be930300",
+  "container_image": "sha256:8353ef33b6dea0ccf6eaf7d09905c675d0bd8f3bd38ac43d7171cf62f0e35e79",
+  "network": "disabled",
+  "evidence_sha256": "678e3e164efa6f94eb45cbf63902c48e8106118bdeb0c0c4b73e2f6ef78308e9",
+  "real_kernel_queue_overflow": true,
+  "no_payload_opens": true
+}

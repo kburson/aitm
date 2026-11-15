@@ -1,0 +1,18 @@
+{
+  "story": 325,
+  "actual_hours": 0.0594,
+  "coverage": "partial",
+  "milliseconds": 213977,
+  "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
+  "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
+  "evidence": [
+    {
+      "path": "full-auto-native-watch-develop-1-325.json",
+      "sha256": "1bd1bab9bbebffb5756a475b77b3c6ece5f11c272d4d088fe82f4431363e0e27"
+    },
+    {
+      "path": "full-auto-native-watch-refine-1-325.json",
+      "sha256": "d0f4388eec0d213e9394bce6338dadc0e5d8ca6a4ca100dd5d7699e3057342a8"
+    }
+  ]
+}

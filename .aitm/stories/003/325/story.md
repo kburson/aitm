@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 325
 title: "[M11a] Own native root watch resources and overflow hints"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/325"
 parent: 100
 children: []
@@ -36,3 +36,7 @@ Independent Refine passed at 3.0 implementation hours. [Refine receipt](plan/nat
 ## Develop
 
 Independent JIT passed. [Signed-off plan boundary](plan/native-watch-independent-jit-receipt.json).
+
+## Test
+
+Both native watchers delivered events and retired their resources. Linux proved actual overflow and recovery. Both host groups proved zero transcript payload opens. The exact candidate passed 1,409 locked local tests. [Test proof](plan/native-watch-local-test.json) · [PR #327](https://github.com/kburson/aitm/pull/327).

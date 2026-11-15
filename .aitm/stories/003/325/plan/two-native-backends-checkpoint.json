@@ -1,0 +1,17 @@
+{
+  "story": 325,
+  "status": "pass",
+  "conservative_elapsed_upper_hours": 0.1039,
+  "checkpoint_hours": 2,
+  "projected_total_hours": 3,
+  "boundaries": [
+    "real event",
+    "startup reconcile",
+    "root identity",
+    "joined or descriptor-safe close"
+  ],
+  "native_log_sha256": {
+    "develop-mac-first.log": "eef8e761ea9f2f11e06e6daff6d0df87615468343d2c1817b77eac49a311a358",
+    "develop-linux-first.log": "db868f6a2d28ecf0140da36c57147f136b012c407080506c8c2f97b5b2de79ef"
+  }
+}
