@@ -10,6 +10,7 @@ from enum import StrEnum
 from hashlib import sha256
 from itertools import groupby
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import UUID
 from weakref import WeakValueDictionary
 
@@ -21,18 +22,23 @@ from ._monitor_qualification import (
 from .ledger import ConflictError, Ledger, LedgerError, _path_exists, _pin_directory
 from .monitor_registry import (
     ApprovedSource,
+    BoundaryUnavailable,
     CaptureChange,
+    ControlCommand,
     Registry,
     RegistryView,
     _check_capture_root,
     _grok_read_fences,
     _grok_records,
     _grok_span_disposition,
+    _grok_view,
     _GrokArm,
     _GrokCaptureIdentity,
     _GrokCaptureOffer,
     _GrokCut,
     _GrokEpoch,
+    _GrokFrozenCut,
+    _GrokGrant,
     _GrokPending,
     _pinned,
     _project,
@@ -107,6 +113,9 @@ from .types import (
     _encode,
     _nonnegative,
 )
+
+if TYPE_CHECKING:
+    from .monitor_control import ControlInbox
 
 _FILE = "scope-v1.json"
 _FORMAT = "aitm.usage.monitor-scope/v1"
@@ -369,6 +378,17 @@ class _GrokAdmission:
     live: _LiveSourceProof
     view: RegistryView
     reader: GrokAdapter
+
+
+@dataclass(frozen=True, slots=True)
+class GrokEnrollmentGap:
+    surface: NativeSurface
+    edge: SourceRef
+    stream: SourceRef
+    incarnation: SourceRef
+    start: int | None
+    end: int | None
+    code: DiagnosticCode = DiagnosticCode.COVERAGE_GAP
 
 
 @dataclass(frozen=True, slots=True, weakref_slot=True)
@@ -1170,6 +1190,32 @@ class ScopeState:
         change: CaptureChange,
         pending: _GrokPending | None,
     ) -> _GrokCaptureOffer:
+        previous = (
+            None
+            if pending is None
+            else next(
+                (item.cut for item in pending.cuts if item.identity == identity), None
+            )
+        )
+        arm = (
+            None
+            if pending is None
+            else next(
+                (item for item in pending.arms if item.identity == identity), None
+            )
+        )
+        return self._grok_capture_offer_from_prior(
+            admission, identity, change, previous, arm
+        )
+
+    def _grok_capture_offer_from_prior(
+        self,
+        admission: _GrokAdmission,
+        identity: _GrokCaptureIdentity,
+        change: CaptureChange,
+        previous: _GrokCut | None,
+        arm: _GrokArm | None,
+    ) -> _GrokCaptureOffer:
         registry = self.registry
         key = admission.source_id, admission.live.profile.generation
         verifier = registry._grok_verifiers.setdefault(
@@ -1177,21 +1223,6 @@ class ScopeState:
         )
         try:
             material = admission.reader._capture_material(admission.current, verifier)
-            previous = (
-                None
-                if pending is None
-                else next(
-                    (item.cut for item in pending.cuts if item.identity == identity),
-                    None,
-                )
-            )
-            arm = (
-                None
-                if pending is None
-                else next(
-                    (item for item in pending.arms if item.identity == identity), None
-                )
-            )
             if previous is not None:
                 if material.prefix(previous.offset) != previous.prefix:
                     raise _GrokCaptureHeld("Grok frozen capture prefix changed")
@@ -1279,6 +1310,167 @@ class ScopeState:
                     self._grok_capture_offer(admission, identity, change, pending)
                 )
         return tuple(offers)
+
+    def enroll_grok(
+        self,
+        inbox: "ControlInbox",
+        project_id: UUID,
+        source_id: UUID,
+        locator: SourceLocator,
+        *,
+        inventory: _InventoryCycle | None = None,
+    ) -> None:
+        """Enroll prospectively under an applied enable; call outside publication()."""
+        from .monitor_control import ControlInbox
+
+        registry = self.registry
+        lease = registry.lease
+        if type(inbox) is not ControlInbox or inbox.root != registry.root:
+            raise LedgerError("Grok enrollment requires the coordinator inbox")
+        edge = project_id, source_id
+        change = CaptureChange(*edge, True)
+        with inbox.publication() as locked:
+            view = registry.view(_confirm_publication=True)
+            records = _grok_records(view)
+            if any(
+                type(command) is ControlCommand
+                and type(command.payload) is CaptureChange
+                and (command.payload.project_id, command.payload.source_id) == edge
+                for command in inbox.iter_pending(locked)
+            ) or any(
+                type(row) is _GrokPending
+                and (row.change.project_id, row.change.source_id) == edge
+                for row in records
+            ):
+                raise BoundaryUnavailable("An ordered Grok capture command is pending")
+            try:
+                admission = self._grok_admission(
+                    view, source_id, locator, inventory=inventory
+                )
+                self._take_grok_admission(view, source_id, locator, admission)
+                grant = registry._grok_enrollment_grant(view, change, admission.live)
+                identity = self._grok_identity(admission, project_id)
+                if identity is None:
+                    raise BoundaryUnavailable(
+                        "Grok enrollment has no matching checkout"
+                    )
+                prior = next(
+                    (
+                        row
+                        for row in grant.witnesses
+                        if row.identity.stream == identity.stream
+                    ),
+                    None,
+                )
+                if prior is not None and prior.identity != identity:
+                    raise BoundaryUnavailable("Grok enrollment stream identity changed")
+                epochs = tuple(
+                    row
+                    for row in records
+                    if type(row) is _GrokEpoch
+                    and row.identity.stream == identity.stream
+                    and row.identity.edge == edge
+                )
+                if prior is None and any(
+                    row.identity == identity and row.end is None for row in epochs
+                ):
+                    return
+                if prior is None and any(
+                    row.identity.profile == identity.profile for row in epochs
+                ):
+                    raise BoundaryUnavailable(
+                        "Grok enrollment requires a fresh capture interval"
+                    )
+
+                def mint(command, _active, _pending):
+                    return (
+                        self._grok_capture_offer_from_prior(
+                            admission,
+                            identity,
+                            command,
+                            prior.cut if type(prior) is _GrokFrozenCut else None,
+                            prior if type(prior) is _GrokArm else None,
+                        ),
+                    )
+
+                (offered,) = registry._grok_capture_offers(
+                    admission.approved, change, (), None, mint, admission.live
+                )
+                if self._grok_identity(admission, project_id) != identity:
+                    raise ConflictError("Grok enrollment checkout changed")
+            except (_GrokCaptureHeld, _LiveSourceUnavailable) as error:
+                raise BoundaryUnavailable(
+                    "Grok enrollment proof is unavailable"
+                ) from error
+
+            witness = (
+                _GrokFrozenCut(identity, offered.cut)
+                if offered.cut is not None
+                else offered.arm
+            )
+            assert witness is not None
+            if prior != witness:
+                witnesses = tuple(row for row in grant.witnesses if row is not prior)
+                next_grant = replace(grant, witnesses=(*witnesses, witness))
+                updated = tuple(row for row in records if row is not grant)
+                if offered.cut is not None:
+                    updated = (
+                        *updated,
+                        _GrokEpoch(identity, grant.generation, offered.cut),
+                    )
+                next_view = _grok_view(view, (*updated, next_grant))
+                if registry.lease is not lease or registry.view() != view:
+                    raise ConflictError("Grok enrollment registry changed")
+                registry._save(next_view)
+                if registry.view(_confirm_publication=True) != next_view:
+                    raise LedgerError("Grok enrollment failed committed readback")
+            if offered.cut is None:
+                raise BoundaryUnavailable(
+                    "Waiting for the enrolled Grok turn to finish"
+                )
+
+    def grok_enrollment_gaps(self) -> tuple[GrokEnrollmentGap, ...]:
+        """Read sanitized evidence of work preceding prospective enrollment."""
+        registry = self.registry
+        registry.lease
+        records = _grok_records(registry.view())
+        gaps = []
+        for record in records:
+            if type(record) is not _GrokGrant or not record.witnesses:
+                continue
+            evidence = registry.source_evidence()
+            edge = evidence.pseudonymize(
+                "grok-enrollment-gap-edge-v1", f"{record.project_id}:{record.source_id}"
+            )
+            for witness in record.witnesses:
+                _encode(
+                    witness, type(witness), validate_ref=evidence.validate_source_ref
+                )
+                identity = witness.identity
+                if type(witness) is _GrokFrozenCut:
+                    if witness.cut.offset:
+                        gaps.append(
+                            GrokEnrollmentGap(
+                                identity.surface,
+                                edge,
+                                identity.stream,
+                                identity.incarnation,
+                                0,
+                                witness.cut.offset,
+                            )
+                        )
+                elif not record.active:
+                    gaps.append(
+                        GrokEnrollmentGap(
+                            identity.surface,
+                            edge,
+                            identity.stream,
+                            identity.incarnation,
+                            None,
+                            None,
+                        )
+                    )
+        return tuple(gaps)
 
     def _read_grok(
         self,
