@@ -1,0 +1,24 @@
+{
+  "input": "const result = await tools.exec_command({cmd:\"aitm-usage --project /pilot-state/state scope mark --marker /carrier/pilot/marker.json --json\",max_output_tokens:1000});\ntext(result.output);\n",
+  "output": [
+    {
+      "type": "input_text",
+      "text": "Script completed\nWall time 0.6 seconds\nOutput:\n"
+    },
+    {
+      "type": "input_text",
+      "text": "{\"command_id\": \"<opaque-command-id>\", \"status\": \"queued\"}\n"
+    }
+  ],
+  "sandbox_policy": {
+    "type": "danger-full-access"
+  },
+  "permission_profile": {
+    "type": "disabled"
+  },
+  "captured_at_utc": "2026-11-15T12:16:25.345239+00:00",
+  "archived_prefix_created_utc": "2026-11-15T12:15:49.885745+00:00",
+  "archive_sha256": "e0c4902884122714b31e2ed2b13ccb777257606468b18340957b807ed10467a7",
+  "prefix_after_resume_sha256": "e0c4902884122714b31e2ed2b13ccb777257606468b18340957b807ed10467a7",
+  "complete_line_boundary": true
+}

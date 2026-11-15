@@ -1,0 +1,57 @@
+{
+  "authenticated_hook_completions": 2,
+  "hookless_completion": 1,
+  "native_arch": "aarch64",
+  "native_os": "Linux",
+  "retained_native_prefixes": 2,
+  "stored_usage_reconciled": 3,
+  "distinct_turns": 3,
+  "prefix_increments": [
+    1,
+    1
+  ],
+  "private_capture_hashes": [
+    "ea34ce8a5440aee5dafe0cfb30318611d0347d05fc04f68d59a4688f812b3e15",
+    "674c80e2ab3d5a31f37589edf3843af9de5607aa9bfc00e8229b98d484288271",
+    "74aebf2765c242ea8eb6655b7e3c7f81b87b7d755c66accba654967c8ccba3e0"
+  ],
+  "product_linux_adapter_cursor_proven": false,
+  "tuple": {
+    "provider": "grok",
+    "native_system": "Linux",
+    "native_architecture": "aarch64",
+    "version": "1.0.77",
+    "build": "50ca579fa996",
+    "provider_probe_path": "/probe",
+    "observed_probe_sha256": "b30eee14a656124ef3c9da8577b5e783ef2cffabeb2b679c5c49633e77eed574",
+    "adapter_format_version": 1
+  },
+  "artifact": {
+    "package": "@xai-official/grok-linux-arm64@1.0.77",
+    "registry_integrity": "sha512-Kb4yKbVEztX07iM7cvKB2L/xiQP1M/kLjJnyRk84gNtr3IG7ahqJp6005uB/VLvw0isv1Cj50zJ9jYTK7NiOqw==",
+    "recomputed_archive_integrity": "sha512-Kb4yKbVEztX07iM7cvKB2L/xiQP1M/kLjJnyRk84gNtr3IG7ahqJp6005uB/VLvw0isv1Cj50zJ9jYTK7NiOqw==",
+    "archive_entry": "package/bin/grok.br",
+    "brotli_extraction_matches_probe_bytes": true,
+    "hash_readback": "Separate native Docker readback of the same read-only mount used by all three capture invocations"
+  },
+  "capture": {
+    "start_utc": "2026-11-15T11:52:11.385939+00:00",
+    "end_utc": "2026-11-15T11:52:23.799927+00:00",
+    "host_alias": "scratch-grok-linux-arm64",
+    "kernel_distro": [
+      "Linux 7.0.12-linuxkit aarch64",
+      "\"Debian GNU/Linux 12 (bookworm)\""
+    ],
+    "lineage_equals_native_session": true,
+    "both_explicit_resumes_kept_exact_lineage": true,
+    "one_process_bound_receipt_per_marked_turn": true,
+    "existing_v1_decoder_matches_all_completions_and_snapshots": true,
+    "store_layout": "GROK_HOME/sessions/<encoded workspace>/<native session UUID>/{updates.jsonl,usage.json}",
+    "third_turn_hook_count": 0
+  },
+  "authority": {
+    "date": "2026-11-15",
+    "basis": "User-directed continue Full-Auto through existing gates, with explicit request for the two Linux device sign-ins. Both private login files appeared after that request.",
+    "scope": "Owner-supplied local scratch Grok account, two marked turns and one hookless qualification control. No billing claim or separate explicit turn-count approval was obtained."
+  }
+}

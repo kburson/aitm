@@ -1,0 +1,19 @@
+{
+  "status": "captured",
+  "system": "Linux",
+  "architecture": "aarch64",
+  "cli_version": "0.167.0-alpha.3.2",
+  "native_originator": "codex_exec",
+  "native_launch_mode": "exec",
+  "outer_isolation": "Docker linux/arm64 with zero added capabilities, read-only image and scratch-only binds",
+  "codex_exec_sandbox": "externally contained process",
+  "authentic_queued_command_scope": true,
+  "receipt_in_native_tool_result": true,
+  "exact_request_link": true,
+  "preserved_before_resume_bytes": 255372,
+  "archived_prefix_sha256": "e0c4902884122714b31e2ed2b13ccb777257606468b18340957b807ed10467a7",
+  "native_suffix_sha256": "dd453c376eefaf5df6140651c6c09cb85fe9ce6bc741fea3a1ef4753cb0eeb3f",
+  "new_native_response_identities": 2,
+  "first_post_receipt_request_distinct": true,
+  "product_linux_adapter_cursor_proven": false
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 137
 title: "[M05-LG] Linux Grok Build native carrier and adapter bridge"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/137"
 parent: 100
 children: []
@@ -40,3 +40,7 @@ Partial Actual is 0.0248 hours from the assigned Codex worker’s bounded Refine
 ## Isolated Linux preflight
 
 The integrity-checked official arm64 candidate launched in a clean Linux sandbox. The provider device-code sign-in command is available. Authenticated native turn capture is still required before independent Refine and JIT. [Verified package and sign-in preflight](../134/plan/2026-11-14-134-137-linux-carrier-preflight.md).
+
+## Authenticated Linux capture and independent Refine
+
+The recovery held on executable extraction provenance, explicit structured lineage fields and capture authority documentation. The confirmation record contains the read-only Linux executable comparison, native lineage checks and actual owner continuation basis. A further independent Refine review requires specific authorization. [Native evidence](plan/grok-native-arm64-evidence.json) · [Review](plan/authenticated-refine-r2.md).

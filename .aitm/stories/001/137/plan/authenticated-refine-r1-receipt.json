@@ -1,0 +1,15 @@
+{
+  "story": 137,
+  "verdict": "HOLD",
+  "attempt": 1,
+  "role": "Refine",
+  "route": "isolated Claude CLI",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "sha256": {
+    "2026-11-15-137-linux-grok-authenticated-refine.md": "50b2eceb7145471ad07c310a97a9b8c89731ff21dd449728c8c136d7c159bc7b",
+    "result.json": "dc4fbf3717e2d1d4ae4aa4a27f052004f036c85e40bdc24c9b4ec7ff6e0e3ede",
+    "input.md": "a4ebbde194aad63363864e9b6c6c11008859a356178f69977217bad9296d1ac4",
+    "authenticated-refine-r1.md": "6aabc3512dd538b71f28c462c9ede4ff06d00bf0c173806e0278bf975163952f"
+  }
+}

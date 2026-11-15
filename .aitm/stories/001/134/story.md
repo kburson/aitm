@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -12,7 +12,7 @@ blocked-by: [114]
 created: "2026-11-10T15:38:48Z"
 updated: "2026-11-10T15:46:34+00:00"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.25, "size": "M"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -42,3 +42,7 @@ Partial Actual is 0.0096 hours from the assigned Codex worker’s bounded Refine
 ## Isolated Linux preflight
 
 The integrity-checked official arm64 candidate launched in a clean Linux sandbox. The provider device-code sign-in command is available. Authenticated native turn capture is still required before independent Refine and JIT. [Verified package and sign-in preflight](./plan/2026-11-14-134-137-linux-carrier-preflight.md).
+
+## Authenticated Linux capture and independent Refine
+
+Independent Refine accepted the exact qualified Codex CLI alpha tuple, command output, following native request and archive proof at 3.25 implementation hours. JIT is next. [Native evidence](plan/codex-native-arm64-evidence.json) · [Review](plan/authenticated-refine-r2.md).

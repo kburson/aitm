@@ -1,0 +1,15 @@
+{
+  "story": 134,
+  "verdict": "HOLD",
+  "attempt": 1,
+  "role": "Refine",
+  "route": "isolated Claude CLI",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "sha256": {
+    "2026-11-15-134-linux-codex-authenticated-refine.md": "32aca1198dfa5a60cdaedc4cff79c104e498d6a6ed2d15e089ad5ad4f4dba0e9",
+    "result.json": "bddc68699c9b4f00a69d526b6aed586f60fc6e59fdf0e36efe2a6ce42747ab27",
+    "input.md": "15b51f65352a1332c3ff6a9b22ae816d67c84f60779553e6d18f6ff4ec759fb8",
+    "authenticated-refine-r1.md": "592c12311625627d4635b7c488d6f424807d72b9f51f75178a868591499c4207"
+  }
+}

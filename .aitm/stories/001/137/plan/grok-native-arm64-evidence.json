@@ -1,0 +1,19 @@
+{
+  "authenticated_hook_completions": 2,
+  "hookless_completion": 1,
+  "native_arch": "aarch64",
+  "native_os": "Linux",
+  "retained_native_prefixes": 2,
+  "stored_usage_reconciled": 3,
+  "distinct_turns": 3,
+  "prefix_increments": [
+    1,
+    1
+  ],
+  "private_capture_hashes": [
+    "ea34ce8a5440aee5dafe0cfb30318611d0347d05fc04f68d59a4688f812b3e15",
+    "674c80e2ab3d5a31f37589edf3843af9de5607aa9bfc00e8229b98d484288271",
+    "74aebf2765c242ea8eb6655b7e3c7f81b87b7d755c66accba654967c8ccba3e0"
+  ],
+  "product_linux_adapter_cursor_proven": false
+}
