@@ -32,3 +32,7 @@ Implement an explicitly closed first-release qualification profile with real iso
 [Exact split and verification requirements](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/300/plan/2026-11-14-300-qualified-policy-split.md). Requires independent Refine, JIT, exact signed Test, source review, delivery and Close. Epic #2, C01 and production cutover are excluded.
 
 Project 24 Rank 229.055. [Accepted revision](https://github.com/kburson/aitm/blob/f98161a1728343cf2761fb9317735cd2241c0090/.aitm/stories/003/300/plan/2026-11-14-300-qualified-policy-split.md).
+
+## Independent Refine
+
+Held on missing authenticated provider executable identity and policy generation or revocation source. The accepted split requires independent parent re-acceptance to reassign those inputs. JIT requires a passing Refine. [Review](plan/qualified-source-profile-independent-refine-r1.md).
