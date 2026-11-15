@@ -5,7 +5,7 @@ title: "[M08b5] Qualified folded usage intent"
 kind: "story"
 state: "refine"
 issue: "https://github.com/kburson/aitm/issues/204"
-parent: 100
+parent: 297
 children: []
 blocking: [296]
 blocked-by: [203, 210, 270]
@@ -65,3 +65,7 @@ The unchanged writer enrolled the parent before the Agent call. The full tool-to
 ## Qualified-source release dependency
 
 This story remains open for original ownership and folded intent. [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) replaces only the direct edge to #119 and assigns the later atomic delivery proof to [#296](../../002/296/story.md), which requires both #204 and #119.
+
+## Current epic
+
+[Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.

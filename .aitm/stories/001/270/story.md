@@ -5,7 +5,7 @@ title: "[M08b5 prerequisite] Admit Claude foreground Agent source spans in the w
 kind: "story"
 state: "refine"
 issue: "https://github.com/kburson/aitm/issues/270"
-parent: 100
+parent: 297
 children: [271, 272, 273]
 blocking: [204]
 blocked-by: [269, 273]
@@ -37,3 +37,7 @@ The first and recovery reviews held original native admission. The live preappro
 ## Approved split for qualification and review
 
 The native sequence is #269 → [#271 closure evidence](../271/story.md) → [#272 writer admission](../272/story.md) → [#273 restart and refusals](../273/story.md) → #270 → #204 → #119. The admission design requires independent re-acceptance under the existing gates. #271 issues no new usage or ownership authority.
+
+## Current epic
+
+[Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.

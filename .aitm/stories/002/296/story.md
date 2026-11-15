@@ -5,7 +5,7 @@ title: "[M09-Folded] Qualify atomic Claude Agent replacement delivery"
 kind: "story"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/296"
-parent: 100
+parent: 297
 children: []
 blocking: []
 blocked-by: [119, 204]
@@ -34,3 +34,7 @@ Prove `test_folded_replacement_and_child_withdrawal_share_view` using the actual
 A future end-to-end support claim separately requires the established recovery fence, reports, exports and exact carrier qualification. This follow-up confers no release or usage-admission authority.
 
 [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) · [Independent verdict](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/qualified-source-review-r3.md).
+
+## Current epic
+
+[Epic #297](https://github.com/kburson/aitm/issues/297) owns this open folded-usage work under the accepted qualified-release scope amendment. Current native prerequisites and dependent edges are preserved.

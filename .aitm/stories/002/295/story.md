@@ -60,3 +60,7 @@ The [live Claude qualification](plan/2026-11-14-295-claude-quota-qualification.m
 ## Joined quota and completion experiment
 
 The [joined-evidence qualification](plan/2026-11-14-295-claude-joined-evidence.md) inventories 13 prior sessions and verifies two new isolated trials. The scratch join ties CLI completion and the captured quota event to an admitted ordinary request interval. The three-channel trial corroborates account identity. Both unchanged native monitor runs kept the cursor absent. Refine stays held.
+
+## Claude carrier design acceptance
+
+[Carrier R2](design/2026-11-14-295-claude-evidence-design-r2.md) passed independent design and parent-plan scope insertion review. The separately owned carrier must deliver a genuine ordinary cursor before #295 resumes. [Exact activation requirements](design/claude-carrier-activation.md).

@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137, 182, 194, 199, 201, 202, 203, 204, 209, 210, 295, 296]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 135, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 295]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -87,3 +87,7 @@ Monitor completion includes #123 fenced reports and #124 versioned exports with 
 ## Qualified-source release amendment
 
 [Independently accepted R3](https://github.com/kburson/aitm/blob/54f2a7f93668d1a5c744be8a8a654a51b073e2cc/.aitm/stories/001/119/plan/2026-11-13-119-qualified-sources-reacceptance-r3.md) assigns [M08b6 #295](../../002/295/story.md) as a direct prerequisite of #119. [M09-Folded #296](../../002/296/story.md) owns the later positive delivery proof. See the [verified native graph](../119/plan/qualified-source-graph-readback.json).
+
+## Completion scope
+
+The independently accepted [completion amendment](plan/2026-11-14-100-qualified-monitor-activation.md) moves the open folded Claude work to sibling [Epic #297](../../002/297/story.md). #100's remaining release scope retains R3 containment, qualified per-turn accounting, and all integrated and native gates. [Verified graph and closure manifest](plan/qualified-monitor-completion-readback.json).
