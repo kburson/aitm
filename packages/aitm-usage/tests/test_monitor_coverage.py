@@ -391,13 +391,21 @@ def test_coverage_readback_rejects_corrupted_event_binding(admitted_sources, alt
 def test_open_refuses_unknown_schema_version(admitted_sources):
     from test_monitor_journal_store import _sqlite
 
-    from aitm_usage._monitor_journal_store import _DATABASE, _STORE
+    from aitm_usage._monitor_journal_store import (
+        _DATABASE,
+        _DELIVERY_SCHEMA_VERSION,
+        _STORE,
+    )
 
     native, _ = admitted_sources
     with native.registry.writer() as writer:
         RoutingJournal(writer, ScopeState(writer))
         with _sqlite(writer.root / _STORE / _DATABASE) as conn:
-            conn.execute("PRAGMA user_version = 7")
+            conn.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION}")
+        with pytest.raises(LedgerError, match="Invalid routing journal table schema"):
+            RoutingJournal(writer, ScopeState(writer))
+        with _sqlite(writer.root / _STORE / _DATABASE) as conn:
+            conn.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
         with pytest.raises(
             LedgerError, match="Unsupported routing journal schema version"
         ):
@@ -512,7 +520,7 @@ def test_unqualified_source_gap_publishes_without_project_write_or_ack(
 ):
     from datetime import UTC, datetime
 
-    from aitm_usage._monitor_journal_store import _open
+    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
     from aitm_usage.ledger import Ledger
     from aitm_usage.monitor_journal import (
         JournalChange,
@@ -606,10 +614,15 @@ def test_unqualified_source_gap_publishes_without_project_write_or_ack(
                 "UPDATE source_coverage SET identity=?,payload=?", (key, raw)
             )
         assert reopened.publication_candidate(stored) == candidate
+        reopened.enable_delivery(reopened.as_of().sequence)
+        assert reopened.coverage_changes(0) == (stored,)
+        assert reopened.publication_candidate(stored) == candidate
         database = writer.root / "routing-journal-v1" / "journal.sqlite3"
         with _open(database, write=True) as connection:
-            connection.execute("PRAGMA user_version = 7")
+            connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
         with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
             reopened.publication_candidate(stored)
         with _open(database, write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (7,)
+            assert connection.execute("PRAGMA user_version").fetchone() == (
+                _DELIVERY_SCHEMA_VERSION + 1,
+            )

@@ -45,7 +45,12 @@ from .types import (
 
 SCHEMA_VERSION = 1
 MONITOR_SCHEMA_VERSION = 2
-SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, MONITOR_SCHEMA_VERSION)
+DELIVERY_SCHEMA_VERSION = 3
+SUPPORTED_SCHEMA_VERSIONS = (
+    SCHEMA_VERSION,
+    MONITOR_SCHEMA_VERSION,
+    DELIVERY_SCHEMA_VERSION,
+)
 APPLICATION_ID = 0x41495455  # AITU
 STORE_NAME = "state"
 DATABASE_NAME = "usage.sqlite3"
@@ -88,6 +93,29 @@ _MONITOR_SCHEMA = (
 ) STRICT""",
     "CREATE INDEX monitor_revision_sequence ON monitor_revisions (sequence, key, revision)",
 )
+
+
+_DELIVERY_SCHEMA = """CREATE TABLE monitor_delivery_receipts (
+    key TEXT NOT NULL,
+    revision INTEGER NOT NULL CHECK (revision > 0),
+    sequence INTEGER NOT NULL REFERENCES commits,
+    payload TEXT NOT NULL,
+    seal TEXT NOT NULL,
+    PRIMARY KEY (key, revision),
+    FOREIGN KEY (key, revision) REFERENCES monitor_revisions (key, revision)
+) STRICT"""
+
+
+@dataclass(frozen=True, slots=True)
+class _DeliveryReceipt:
+    project_id: UUID
+    destination_key: str
+    key: SourceRef
+    revision: int
+    claim_sequence: int
+    sequence: int
+    claim_digest: str
+    payload_digest: str
 
 
 class LedgerError(RuntimeError):
@@ -459,9 +487,11 @@ def _supported_schema(
     _require_schema_version(version)
     with closing(sqlite3.connect(":memory:")) as conn:
         conn.executescript(_SCHEMA)
-        if version == MONITOR_SCHEMA_VERSION:
+        if version >= MONITOR_SCHEMA_VERSION:
             for statement in _MONITOR_SCHEMA:
                 conn.execute(statement)
+        if version == DELIVERY_SCHEMA_VERSION:
+            conn.execute(_DELIVERY_SCHEMA)
         return _schema_objects(conn)
 
 
@@ -968,7 +998,7 @@ class Ledger:
         with self._write_transaction() as conn:
             if _head(conn) != expected_sequence:
                 raise ConflictError("Ledger changed before schema upgrade")
-            if self.identity.schema_version == MONITOR_SCHEMA_VERSION:
+            if self.identity.schema_version >= MONITOR_SCHEMA_VERSION:
                 return self.identity
             for statement in _MONITOR_SCHEMA:
                 conn.execute(statement)
@@ -977,6 +1007,175 @@ class Ledger:
             _validate_identity(conn, identity)
             self.require_writer()
             return identity
+
+    def upgrade_delivery_schema(self, expected_sequence: int) -> LedgerIdentity:
+        """Add receipt custody under an explicit, still-current project selection."""
+        if type(expected_sequence) is not int or expected_sequence < 0:
+            raise ValueError("Expected a valid ledger sequence")
+        if self._writer is None:
+            with self.writer() as writer:
+                return writer.upgrade_delivery_schema(expected_sequence)
+        with self._write_transaction() as conn:
+            if _head(conn) != expected_sequence:
+                raise ConflictError("Ledger changed before delivery schema upgrade")
+            if self.identity.schema_version == DELIVERY_SCHEMA_VERSION:
+                return self.identity
+            if self.identity.schema_version != MONITOR_SCHEMA_VERSION:
+                raise LedgerError("Delivery upgrade requires monitor ledger schema")
+            if conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise LedgerError("Invalid project delivery foreign keys")
+            conn.execute(_DELIVERY_SCHEMA)
+            conn.execute(f"PRAGMA user_version = {DELIVERY_SCHEMA_VERSION}")
+            identity = replace(self.identity, schema_version=DELIVERY_SCHEMA_VERSION)
+            _validate_identity(conn, identity)
+            self.require_writer()
+            return identity
+
+    def _require_delivery_writer(self) -> None:
+        self.require_writer()
+        if self.identity.schema_version != DELIVERY_SCHEMA_VERSION:
+            raise LedgerError("Delivery ledger schema is unavailable")
+        assert self._write_paths is not None
+        key = _read_key(
+            self.root, self.identity.project_id, self._write_paths.files[-1]
+        )
+        if not hmac.compare_digest(key, self._key):
+            raise LedgerError("Project delivery identity changed")
+        self._write_paths.check()
+
+    def _delivery_receipt(
+        self, conn: sqlite3.Connection, key: SourceRef, revision: int
+    ) -> _DeliveryReceipt | None:
+        self.validate_source_ref(key)
+        row = conn.execute(
+            "SELECT m.sequence,m.payload,c.sequence,r.sequence,r.payload,r.seal"
+            " FROM monitor_revisions m LEFT JOIN commits c ON c.sequence=m.sequence"
+            " LEFT JOIN monitor_delivery_receipts r ON (r.key,r.revision)=(m.key,m.revision)"
+            " WHERE (m.key,m.revision)=(?,?)",
+            (key.value, revision),
+        ).fetchone()
+        if row is None:
+            if (
+                conn.execute(
+                    "SELECT 1 FROM monitor_delivery_receipts WHERE (key,revision)=(?,?)",
+                    (key.value, revision),
+                ).fetchone()
+                is not None
+            ):
+                raise LedgerError("Project delivery revision is missing")
+            return None
+        sequence, payload, committed, receipt_sequence, raw, seal = row
+        if raw is None or seal is None:
+            raise LedgerError("Project delivery receipt is missing")
+        try:
+            result = _decode(
+                raw, _DeliveryReceipt, validate_ref=self.validate_source_ref
+            )
+            observed = _decode(
+                payload, MonitorRevision, validate_ref=self.validate_source_ref
+            )
+            if (
+                not hmac.compare_digest(
+                    self.pseudonymize("monitor-delivery-receipt-v1", raw).value, seal
+                )
+                or _encode(
+                    result, _DeliveryReceipt, validate_ref=self.validate_source_ref
+                )
+                != raw
+                or _encode(
+                    observed, MonitorRevision, validate_ref=self.validate_source_ref
+                )
+                != payload
+                or (result.project_id, result.destination_key)
+                != (self.identity.project_id, self.identity.key_id)
+                or (result.key, result.revision) != (key, revision)
+                or (observed.key, observed.revision) != (key, revision)
+                or not result.sequence == sequence == committed == receipt_sequence
+                or result.claim_sequence <= 0
+                or not re.fullmatch(r"[0-9a-f]{64}", result.claim_digest)
+                or result.payload_digest != hashlib.sha256(payload.encode()).hexdigest()
+            ):
+                raise ValueError("Project delivery receipt differs")
+        except (LedgerError, ValueError, TypeError):
+            raise LedgerError("Invalid committed project delivery receipt") from None
+        return result
+
+    def _monitor_delivery_receipt(
+        self, key: SourceRef, revision: int
+    ) -> _DeliveryReceipt | None:
+        if self.identity.schema_version != DELIVERY_SCHEMA_VERSION:
+            raise LedgerError("Delivery ledger schema is unavailable")
+        with self.reader() as conn:
+            return self._delivery_receipt(conn, key, revision)
+
+    def _validate_delivery_receipts(self) -> None:
+        """Authenticate receipt-bearing rows when reopening a restored ledger."""
+        with self.reader() as conn:
+            for key, revision in conn.execute(
+                "SELECT key,revision FROM monitor_delivery_receipts"
+            ):
+                self._delivery_receipt(conn, SourceRef(key), revision)
+
+    def _commit_monitor_delivery(
+        self, row: MonitorRevision, claim_sequence: int, claim_digest: str
+    ) -> _DeliveryReceipt:
+        self.require_writer()
+        if (
+            self.identity.schema_version != DELIVERY_SCHEMA_VERSION
+            or type(claim_sequence) is not int
+            or claim_sequence <= 0
+            or type(claim_digest) is not str
+            or not re.fullmatch(r"[0-9a-f]{64}", claim_digest)
+        ):
+            raise LedgerError("Invalid project delivery authority")
+        payload = _encode(row, MonitorRevision, validate_ref=self.validate_source_ref)
+        payload_digest = hashlib.sha256(payload.encode()).hexdigest()
+        with self._write_transaction() as conn:
+            previous = self._delivery_receipt(conn, row.key, row.revision)
+            if previous is not None:
+                if (
+                    previous.claim_sequence,
+                    previous.claim_digest,
+                    previous.payload_digest,
+                ) != (claim_sequence, claim_digest, payload_digest):
+                    raise ConflictError("Project delivery revision changed")
+                return previous
+            if (
+                conn.execute(
+                    "SELECT 1 FROM monitor_revisions WHERE key=? AND revision>? LIMIT 1",
+                    (row.key.value, row.revision),
+                ).fetchone()
+                is not None
+            ):
+                raise ConflictError("Project delivery revision was superseded")
+            sequence = _head(conn) + 1
+            receipt = _DeliveryReceipt(
+                self.identity.project_id,
+                self.identity.key_id,
+                row.key,
+                row.revision,
+                claim_sequence,
+                sequence,
+                claim_digest,
+                payload_digest,
+            )
+            raw = _encode(
+                receipt, _DeliveryReceipt, validate_ref=self.validate_source_ref
+            )
+            seal = self.pseudonymize("monitor-delivery-receipt-v1", raw).value
+            conn.execute("INSERT INTO commits(sequence) VALUES (?)", (sequence,))
+            conn.execute(
+                "INSERT INTO monitor_revisions(key,revision,sequence,payload) VALUES (?,?,?,?)",
+                (row.key.value, row.revision, sequence, payload),
+            )
+            conn.execute(
+                "INSERT INTO monitor_delivery_receipts(key,revision,sequence,payload,seal) VALUES (?,?,?,?,?)",
+                (row.key.value, row.revision, sequence, raw, seal),
+            )
+            if conn.execute("PRAGMA foreign_key_check").fetchone() is not None:
+                raise LedgerError("Invalid project delivery foreign keys")
+            self.require_writer()
+            return receipt
 
     def as_of(self, sequence: int | None = None) -> LedgerView:
         with self.reader() as conn:
@@ -1019,7 +1218,7 @@ class Ledger:
 
     def monitor_as_of(self, sequence: int) -> MonitorLedgerView:
         """Read both legacy and monitor histories from one versioned snapshot."""
-        if self.identity.schema_version != MONITOR_SCHEMA_VERSION:
+        if self.identity.schema_version < MONITOR_SCHEMA_VERSION:
             raise LedgerError("Monitor ledger schema is unavailable")
         if type(sequence) is not int:
             raise ValueError("Sequence is outside committed ledger history")
