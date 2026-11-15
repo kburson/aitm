@@ -1,0 +1,15 @@
+{
+  "schema": "aitm.independent-epic-completion-review/v1",
+  "epic": 100,
+  "verdict": "PASS",
+  "conditions_apply_at_activation": true,
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "transport": "isolated provider CLI",
+  "input_sha256": "c0ca1cf82070afeac092a68c8d00652d4b0b21d4069018ffb0fa9e9bc4025cd8",
+  "scope_sha256": "19a3509697b9aa0c7ad3c6567da17951e3de1f6c357278a214fddf70b2f5446d",
+  "verdict_sha256": "0119ebb0a982e4e0e3f19c522d2fb3d4147e0dd6805bcee36772397f827c2772",
+  "activation_sha256": "9c1ca608e2758f4a0e9c07f81e6efcb9403830d2eca13616d3716772c1cae52b",
+  "stable_plan_key": "E100-CLAUDE-FOLDED",
+  "prospective_title": "Qualified Claude foreground Agent accounting"
+}
