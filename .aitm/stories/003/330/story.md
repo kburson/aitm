@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 330
 title: "[M11d] Deliver verified Grok usage through the guarded journal"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/330"
 parent: 100
 children: []
@@ -54,3 +54,7 @@ The test-only candidate passed 1,473 locked local tests and adds the five regres
 [Signed hosted Test](plan/grok-journal-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
 
 [Independent source review](plan/grok-journal-independent-source-r2.md) returned **PASS** on the exact signed candidate. [Receipt](plan/grok-journal-independent-source-r2-receipt.json).
+
+## Verified Close
+
+[PR #333](https://github.com/kburson/aitm/pull/333) delivered the exact reviewed tree on trunk at 8be6d460dd7df8c4a1708e3b21fb71ab7be0fb73. The native issue is Closed and Project 24 is Done. [Delivery proof](plan/grok-journal-verified-delivery.json) · [Native Close proof](plan/grok-journal-native-close.json).

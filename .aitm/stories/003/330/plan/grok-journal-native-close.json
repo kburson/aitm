@@ -1,0 +1,73 @@
+{
+  "story": 330,
+  "parent": 100,
+  "native": {
+    "created_at": "2026-11-15T19:50:53Z",
+    "html_url": "https://github.com/kburson/aitm/issues/330",
+    "id": 6408689930,
+    "number": 330,
+    "state": "closed",
+    "title": "[M11d] Deliver verified Grok usage through the guarded journal"
+  },
+  "project": {
+    "actual": 0.0825,
+    "coverage": "partial",
+    "estimate": 3.75,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI9Ps8",
+    "issue": 330,
+    "rank": 249,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "delivery": {
+    "baseRefName": "trunk",
+    "headRefOid": "bc1a43f9deb42d57133b74c6d62607880a170089",
+    "mergeCommit": {
+      "oid": "8be6d460dd7df8c4a1708e3b21fb71ab7be0fb73"
+    },
+    "mergedAt": "2026-11-15T22:27:16Z",
+    "number": 333,
+    "state": "MERGED",
+    "url": "https://github.com/kburson/aitm/pull/333",
+    "literalBase": "30e1a13d64a88d43e7447e2199c0e389324a0857",
+    "deliveredTree": "9571299738b8bafd124ba04a9febb3f5417a9364",
+    "remoteTrunk": "8be6d460dd7df8c4a1708e3b21fb71ab7be0fb73",
+    "orderedParentsVerified": true,
+    "zeroDiffVerified": true,
+    "mergeMethod": "merge"
+  },
+  "dependent_prerequisites": {
+    "121": [
+      {
+        "number": 115,
+        "state": "closed"
+      },
+      {
+        "number": 120,
+        "state": "closed"
+      },
+      {
+        "number": 304,
+        "state": "closed"
+      },
+      {
+        "number": 325,
+        "state": "closed"
+      },
+      {
+        "number": 326,
+        "state": "closed"
+      },
+      {
+        "number": 330,
+        "state": "closed"
+      },
+      {
+        "number": 331,
+        "state": "open"
+      }
+    ]
+  }
+}
