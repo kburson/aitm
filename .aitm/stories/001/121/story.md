@@ -25,7 +25,7 @@ plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M11", "path"
 
 [GitHub issue #121](https://github.com/kburson/aitm/issues/121) · [Parent #100](../100/story.md) · [Accepted plan leaf M11](../100/plan/multi-project-usage-monitor-implementation-plan.md#m11-shared-root-watchers-and-coordinator)
 
-**Required predecessors** [M05 #115](../115/story.md), [M10 #120](../120/story.md).
+**Required predecessors** [M05 #115](../115/story.md), [M10 #120](../120/story.md), [isolated source issuer #304](../../003/304/story.md).
 
 This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969ecadb8df74cf4a37a62c4`. Before Develop, obtain the applicable leaf design, Refine estimate, plan and JIT approval. Validate the four implementation agent-hour cap at JIT. Paths in the accepted excerpt are relative to `packages/aitm-usage`.
 
@@ -43,3 +43,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 ## Refine
 
 The native Close records for #115, #120 and #304 release M11 at Rank 250. [Root watch and coordinator refinement](plan/2026-11-15-121-watch-coordinator-refine.md) is queued for its initial independent review.
+
+Independent Refine held the integrated proposal because current admission rereads parked sibling transcripts. [Independent result](plan/m11-independent-refine-r1.md) · [Three-leaf recovery proposal](plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md).

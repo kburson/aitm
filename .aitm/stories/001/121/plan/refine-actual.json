@@ -1,0 +1,14 @@
+{
+  "story": 121,
+  "actual_hours": 0.0107,
+  "coverage": "partial",
+  "milliseconds": 38518,
+  "basis": "Union of completed coordinator progress inside the attributed Develop and prior recorded story windows.",
+  "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
+  "evidence": [
+    {
+      "path": "full-auto-m11-refine-1-121.json",
+      "sha256": "9dd1a28dd1548b3ad25576a8710fcb69b8195e5be94a62715befc430648ea6e6"
+    }
+  ]
+}
