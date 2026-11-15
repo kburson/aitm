@@ -1,0 +1,134 @@
+Literal trunk supporting the controlled reproduction d7552d6ab06c6b8c1159d853657dc5d742d786c0
+100644 blob e64622a3d5a6b287b49f5b2ffcf9488c3992be90	packages/aitm-usage/src/aitm_usage/monitor_journal.py
+100644 blob 58dfa1eb7ca43239f08d474149aab9d49d7c8276	packages/aitm-usage/src/aitm_usage/monitor_registry.py
+100644 blob 300dc650981fdf27a5a506c6df366dc6ddf90bd0	packages/aitm-usage/src/aitm_usage/monitor_scope.py
+100644 blob 6ae7d8124eef962bb06e617dcad1c620ac204d4a	packages/aitm-usage/src/aitm_usage/sources/adapter.py
+
+## Journal stream and cursor guard
+def _stream(source_id: UUID, locator: SourceLocator) -> _Stream:
+    source = locator._source
+    if (
+        type(source) is not CandidateSource
+        or source.session_ref is None
+        or source._native_surface is None
+    ):
+        raise LedgerError("Journal source has no verified native session")
+    return (
+        str(source_id),
+        source._native_surface.value,
+        source.stream_ref.value,
+        source.locator_ref.value,
+        source.incarnation_ref.value,
+    )
+
+
+def _source_checkpoint(progress: StreamCursor) -> SourceCheckpoint:
+    if type(progress.checkpoint) is not SourceCheckpoint:
+        raise LedgerError("Journal requires a verified native cursor")
+    return progress.checkpoint
+
+
+def _settlement_stream(side: _SettledSide) -> _Stream:
+    def prepare(self, source_id: UUID, locator: SourceLocator) -> PreparedRouting:
+        """Read current native evidence from the journal's exact prior checkpoint."""
+        self._writer.lease
+        try:
+            if type(locator._source) is _GrokSource:
+                # Grok has no routing cursor in this journal. Its existing
+                # authenticated metadata can still establish a policy refusal.
+                try:
+                    self._scopes._grok_admission(
+                        self._writer.view(), source_id, locator
+                    )
+                except _LiveSourceUnavailable:
+                    raise
+                except (LedgerError, OSError, ValueError):
+                    self._writer.lease
+            stream = _stream(source_id, locator)
+            prior = self.cursor_for(source_id, locator)
+            batch = self._scopes.read_source(source_id, locator, cursor=prior)
+        except _LiveSourceUnavailable as refusal:
+            decision = refusal.decision
+            if type(decision) is _LiveExclusion and decision.source_id == source_id:
+                try:
+                    self._record_live_exclusion(source_id, locator, decision)
+                except _StaleLiveExclusion:
+                    pass
+            raise
+        progress = batch.cursor
+        if progress is None:
+            raise LedgerError("Native read did not provide a verified journal cursor")
+        checkpoint = _source_checkpoint(progress).cursor
+        if (
+            batch.source_id != source_id
+            or batch.surface.value != stream[1]
+            or (
+                checkpoint.source_ref.value,
+                checkpoint.locator_ref.value,
+
+## Existing admitted scope typing
+    def _eligible(
+        self, admitted: frozenset[UUID], position: ScopePosition, end: int
+    ) -> frozenset[UUID]:
+        if position.surface is NativeSurface.GROK_BUILD_MACOS:
+            return frozenset()
+        eligible = set()
+        for project_id in admitted:
+            bound = self.registry.capture_read_limit(
+                project_id, position.source_id, position.stream_ref
+            )
+            if (
+                bound is None or end <= bound.ordinal
+            ) and self.registry.span_disposition(
+                project_id,
+                position.source_id,
+                position.stream_ref,
+                position.ordinal,
+                end,
+            ) is Eligibility.ELIGIBLE:
+                eligible.add(project_id)
+        return frozenset(eligible)
+
+    def _admitted_readers(
+                except LedgerError:
+                    if completion_witnesses is not None:
+                        completion_witnesses.clear()
+                    raise
+            _check_capture_root(approved.directory)
+            surface = NativeSurface(approved.approval.surface)
+        else:
+            current, batch, authority = self._read_grok(source_id, locator)
+            surface = NativeSurface.GROK_BUILD_MACOS
+            admitted = frozenset()
+            native_cursor = None
+
+        self.registry._require_live_source(_source(view, source_id), prior=authority)
+        proofs = self._observation_proofs(
+            source_id, locator, surface, batch.observations, view, admitted
+        )
+        completion_progress = None
+        if completion_frontiers:
+            (frontier,) = completion_frontiers
+            completion_progress = _CompletionProgress(
+                frontier.cursor,
+                self._observation_proofs(
+                    source_id, locator, surface, frontier.observations, view, admitted
+                ),
+
+## Existing native registry frontier
+    def _native_delta(
+        self,
+        view: RegistryView,
+        change: CaptureChange,
+        locator: SourceLocator,
+        prior: CaptureFrontier | None,
+        *,
+        arm: bool = False,
+    ) -> tuple[CaptureFrontier, tuple[SourceBoundary, ...]]:
+        source, current, _ = self._approved_candidate(view, change.source_id, locator)
+        approval = source.approval
+        candidate = current._source
+        reader = ProviderAdapter()
+
+## Actual controlled execution
+{"observations_at_verified_read": 2, "cursor_type": "GrokCheckpoint", "journal_prepare": "held", "reason": "Journal source has no verified native session", "journal_view_unchanged": true}
