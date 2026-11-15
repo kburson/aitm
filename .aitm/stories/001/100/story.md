@@ -6,7 +6,7 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/100"
 parent: null
-children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300]
+children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 134, 137, 182, 194, 199, 201, 202, 203, 209, 210, 269, 282, 300, 303]
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
@@ -103,3 +103,7 @@ R2 independently passed. The current native graph stays authoritative until the 
 ## Verified qualified-cost release scope
 
 [#300](https://github.com/kburson/aitm/issues/300) directly blocks #119 and #129. The live Claude work now belongs to [#301](https://github.com/kburson/aitm/issues/301). #297 retains the folded scope. See the [current graph and exact release child set](plan/qualified-cost-release-graph.json).
+
+## Verified admission and coverage split
+
+#303 owns first-release admission enforcement and must deliver before #300. Both directly gate #119 and #129. [Independent acceptance](https://github.com/kburson/aitm/blob/f98161a1728343cf2761fb9317735cd2241c0090/.aitm/stories/003/300/plan/2026-11-14-300-qualified-policy-split.md).

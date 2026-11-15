@@ -2,7 +2,7 @@
   "schema": "aitm.qualified-cost-policy-split-review/v1",
   "story": 300,
   "verdict": "PASS",
-  "activation": "pending",
+  "activation": "verified",
   "model": "claude-opus-5-5",
   "effort": "high",
   "route": "isolated Claude CLI",
@@ -11,5 +11,6 @@
   "input_sha256": "23767f8f4908c61d693ba743b6ed12d9cb95613991443c0860f0d81e70b028fd",
   "response_sha256": "621f46eb400c99948d0aad4c1a53f8f5e0b74039ed29e1165aab2d680d0dd31c",
   "review_sha256": "7bc0cb731dc010538db7774693bbb5eca6c8f112ecad62126d9e52515c4a6684",
-  "producer_issue_body_sha256": "741f325a425e11b35d3fe25796c70b26b533c9629c65e322850abfaa8b435e6f"
+  "producer_issue_body_sha256": "741f325a425e11b35d3fe25796c70b26b533c9629c65e322850abfaa8b435e6f",
+  "graph_receipt": ".aitm/stories/001/100/plan/qualified-cost-policy-split-native.json"
 }
