@@ -1,0 +1,173 @@
+Verified literal base e9b92172aee21eaab728e1a313d94f0bea38279b; accepted JIT ab9db80098849e323d5122eb47bf48f377107058
+The above helper blobs are identical. Literal source map follows.
+100644 blob 06a15172988e71cb1817c39621eb9bdb88ec9ea2	packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py
+100644 blob 11f659639a971017b889e50166f9817d19fda3a8	packages/aitm-usage/src/aitm_usage/ledger.py
+100644 blob e64622a3d5a6b287b49f5b2ffcf9488c3992be90	packages/aitm-usage/src/aitm_usage/monitor_journal.py
+100644 blob 58dfa1eb7ca43239f08d474149aab9d49d7c8276	packages/aitm-usage/src/aitm_usage/monitor_registry.py
+100644 blob 5e1dd2e6d94b692a7c151326a59d3ddd0a85ff5d	packages/aitm-usage/src/aitm_usage/scopes.py
+100644 blob 5417678efdb2ef7f95d7180ef130f97b970a8f9e	packages/aitm-usage/src/aitm_usage/types.py
+
+Literal root, key/lease/store custody and evidence
+    _private,
+    _schema_objects,
+)
+from .monitor_registry import _SOURCE_KEY_FILE, Registry, _ServiceEvidence
+from .scopes import _read_private
+
+_STORE = "routing-journal-v1"
+_DATABASE = "journal.sqlite3"
+_FILES = (_DATABASE, f"{_DATABASE}-wal", f"{_DATABASE}-shm")
+_APPLICATION_ID = 0x4149544A  # AITJ
+_LEGACY_SCHEMA_VERSION = 1
+_REVISION_SCHEMA_VERSION = 2
+
+    def __init__(self, writer: Registry):
+        self._writer = writer
+        self._lease = writer.lease
+        key_id = writer.view().source_key_id
+        if key_id is None:
+            raise LedgerError("Routing journal requires an initialized source key")
+        self._key_id = key_id
+        with _pin_directory(writer.root) as root:
+            self._check_root(root)
+            self._key_file = _file_identity(root.path / _SOURCE_KEY_FILE)
+            published = None
+            if not _path_exists(root.path / _STORE):
+                self._evidence = self._read_evidence(root)
+                published = self._create(root)
+            with _pin_directory(root.path / _STORE) as directory:
+                self._identity = _StoreIdentity.capture(directory)
+                if published is not None:
+                    published.check(directory)
+                with self._pinned_transaction(root, directory, write=False) as conn:
+                    expected = _SCHEMA_VERSION if published is not None else None
+                    version = _validate_identity(conn, key_id, version=expected)
+                self._check_store(root, directory)
+
+    def _check_root(self, root: _PinnedPath) -> None:
+        if (
+            self._writer.lease is not self._lease
+            or self._lease.identities[:-1] != root.identities
+        ):
+            raise LedgerError("Routing journal coordinator custody changed")
+        root.check()
+
+    def _check_authority(self, root: _PinnedPath) -> None:
+        self._check_root(root)
+        if self._writer.view().source_key_id != self._key_id:
+            raise LedgerError("Routing journal registry source key identity changed")
+        try:
+            key = _read_private(root, _SOURCE_KEY_FILE)
+        except OSError:
+            raise LedgerError("Routing journal source key is unavailable") from None
+        if (
+            key is None
+            or len(key) != 32
+            or not hmac.compare_digest(sha256(key).hexdigest(), self._key_id)
+            or _file_identity(root.path / _SOURCE_KEY_FILE) != self._key_file
+        ):
+            raise LedgerError("Routing journal source key changed")
+
+    def _read_evidence(self, root: _PinnedPath) -> _ServiceEvidence:
+        # The existing registry path may initialize a key in other contexts.
+        self._check_authority(root)
+        evidence = self._writer.source_evidence()
+        if evidence.key_id != self._key_id:
+            raise LedgerError("Routing journal source key changed")
+        self._check_authority(root)
+        return evidence
+
+    def _check_store(self, root: _PinnedPath, directory: _PinnedPath) -> None:
+        self._check_authority(root)
+        self._identity.check(directory)
+
+    @property
+    def evidence(self) -> _ServiceEvidence:
+        self._writer.lease
+        with (
+            _pin_directory(self._writer.root) as root,
+            _pin_directory(root.path / _STORE) as directory,
+        ):
+            self._check_store(root, directory)
+            return self._evidence
+
+Literal lock and bounded private canonical read
+def _publication(inbox: _PinnedPath) -> Iterator[None]:
+    """Serialize publication with retirement, independently of the ledger lease."""
+    inbox.check()
+    fcntl.flock(inbox.fd, fcntl.LOCK_EX)
+    try:
+        inbox.check()
+        yield
+        inbox.check()
+    finally:
+        fcntl.flock(inbox.fd, fcntl.LOCK_UN)
+
+
+def _read_private(directory: _PinnedPath, name: str) -> bytes | None:
+    try:
+        fd = os.open(
+            name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory.fd
+        )
+    except FileNotFoundError:
+        return None
+    with os.fdopen(fd, "rb") as handle:
+        info = os.fstat(fd)
+        _private(info)
+        _check_acl(fd)
+        data = handle.read(MAX_COMMAND_BYTES + 1)
+        if len(data) > MAX_COMMAND_BYTES or not os.path.samestat(
+            info, os.stat(name, dir_fd=directory.fd, follow_symlinks=False)
+        ):
+            raise LedgerError("Invalid private inbox file")
+        directory.check()
+        return data
+
+
+Literal codec and durable claimant normalization
+                **{name: convert(value[name], kind) for name, kind in schema.items()}
+            )
+        if not decode and type(value) is expected:
+            return {
+                name: convert(getattr(value, name), kind)
+                for name, kind in schema.items()
+            }
+    raise ValueError("Value does not match the allowlisted usage fields")
+
+
+def _unique_fields(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result = dict(pairs)
+    if len(result) != len(pairs):
+        raise ValueError("Duplicate usage fields")
+    return result
+
+
+def _encode(
+    value: object,
+    model: type,
+    *,
+    validate_ref: Callable[[SourceRef], None] | None = None,
+) -> str:
+    return json.dumps(
+        _wire(value, model, decode=False, validate_ref=validate_ref),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _decode[T](
+    data: str | bytes,
+    model: type[T],
+    *,
+    validate_ref: Callable[[SourceRef], None] | None = None,
+) -> T:
+    try:
+        payload = json.loads(data, object_pairs_hook=_unique_fields)
+        return cast(T, _wire(payload, model, decode=True, validate_ref=validate_ref))
+    except (RecursionError, TypeError, ValueError):
+        raise ValueError("Invalid allowlisted usage envelope") from None
+
+
+def encode_marker(marker: ScopeMarker) -> bytes:
+    """Encode the closed marker shape. Authenticate it with the project ledger before use."""
+    return _encode(marker, ScopeMarker).encode("utf-8")
