@@ -1,0 +1,22 @@
+{
+  "story": 119,
+  "actual_hours": 0.0524,
+  "coverage": "partial",
+  "milliseconds": 188477,
+  "basis": "Union of completed coordinator progress inside the attributed Test recovery and prior recorded story windows.",
+  "exclusions": "Capture acquisition, provider reviews, tool runtime, concurrent work and wait intervals are outside the sampled windows.",
+  "evidence": [
+    {
+      "path": "full-auto-delivery-source-recovery-1-119.json",
+      "sha256": "8d0a8d3c942261c0ed32c8075325e7b6c3a41ad6b34cc20e573465d2577b7801"
+    },
+    {
+      "path": "full-auto-destination-develop-1-119.json",
+      "sha256": "3a757e7b587ae64d00cd8e9ed1253c2cae6d7af5dbaac11cab95988735636648"
+    },
+    {
+      "path": "full-auto-m09-measured-119.json",
+      "sha256": "78466fff998b1c1c38b2db1524abf79808d886abbf52a33fe505fe9e9eb4b86b"
+    }
+  ]
+}
