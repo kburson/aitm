@@ -1,0 +1,27 @@
+{
+  "base": "3675e9898e17a5a112eb403831c340f1a574b764",
+  "head": "b1713c7b6b17a2e24751aef8d8618f9b3734a870",
+  "tree": "baa2bfb67b1d483d5c738b243759c4675987004c",
+  "run": "https://github.com/kburson/aitm/actions/runs/43743853023/attempts/1",
+  "run_id": 43743853023,
+  "story": 120,
+  "gate": "source",
+  "attempt": 2,
+  "verdict": "PASS",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "d92c8c118ca4ee4529fd9ee858f264795c9eae7a8f38d18ef89ba23b5e589164",
+  "response_sha256": "6c5959f9a80f31fca07369acfa734de2ca20ad6f2a161d4e38bbda82c81f2d14",
+  "review_sha256": "85af2e6b52a53891be73841922803b6aa5148fa63fae9f61233850d2fceebe0c",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "aaa54d32ab78e4feabf196dc7892e5a1b8bbf5d1a279d9e73d3bae9aa13297ee",
+    "recovery-red.log": "d6c0509ec356af212ea59c9220e53b109f8a0f0fe762d38f7525df0f5fa692c7",
+    "recovery-green.log": "61ec7b7cd3912e2c96e948664da826b21f0e1db4a2507f70153199c9c1671a68",
+    "recovery.diff": "3f68db4997b35c7f7908f4bdf2aba980ba5de587160f581fbd74308fdb8eca8b",
+    "base-refresh.txt": "8a649af9532cedd8eecee2a180d5b3b9f9cfffc17dd16d16b2ad5e2e6bcd9d72",
+    "signed-tree-blobs.txt": "ab861c72587a73b6ee6fb387168c1669541fd4e2bc3b2f7219c5c2f8beb85c97",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "product.log": "f1a7ede52640d962206c3e00081fcf292d3a5fed6abf9ca8aa8f9b6367faba9a",
+    "product-coverage.json": "2edf16fdc66ca7e7049568df1b01a6923c3afdce5a27d351ced50571dde63155"
+  }
+}
