@@ -12,7 +12,7 @@ blocked-by: [115, 119]
 created: "2026-11-10T13:58:03Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.5, "size": "M", "scope": "provisional narrowed estimate"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -49,3 +49,5 @@ The first independent Refine estimated six hours for the unsplit leaf and return
 ## Accepted scheduler-only scope
 
 The [independently accepted split](plan/2026-11-15-120-wake-scheduler-installer-split.md) assigns the native installers to [#320](../../003/320/story.md). #120 retains its scheduler, private ingress and generic sender. [Native graph readback](plan/wake-installer-split-native-readback.json).
+
+[The narrowed Refine](plan/2026-11-15-120-wake-park-narrowed-refine.md) carries a provisional 3.5-hour estimate and Size M. The second paid Refine reached the runner's turn limit on a tool request before returning a verdict. [Attempt receipt](plan/wake-park-independent-refine-r2-receipt.json).

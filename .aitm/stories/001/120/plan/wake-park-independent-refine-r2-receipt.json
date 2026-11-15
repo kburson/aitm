@@ -1,0 +1,17 @@
+{
+  "story": 120,
+  "gate": "Refine",
+  "attempt": 2,
+  "verdict": "NO_VERDICT",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "reason": "error_max_turns",
+  "provider_stop_reason": "tool_use",
+  "provider_errors": [
+    "Reached maximum number of turns (1)"
+  ],
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "submission_sha256": "cfd32f2172565f37be1732602fb63812bc009cf53bf7584349678b5a97997d14",
+  "response_sha256": "4be94a0dfba023367a19473e5420284dd87264ee62f4d574444b824e5a44380f",
+  "scope_sha256": "8736f3a0ef9c2ddff105572dda68002f4d4336dd92a867edd0701751540ac4df"
+}
