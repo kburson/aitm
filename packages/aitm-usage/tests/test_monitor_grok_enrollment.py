@@ -340,3 +340,129 @@ def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
     assert f.evaluate() == ()
     assert f.writer.command_status(another.command_id) is None
     assert f.writer.view() == armed
+
+
+@pytest.mark.parametrize("open_turn", [False, True], ids=["quiet", "in-flight"])
+def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
+    isolated_grok_capture,
+    open_turn,
+):
+    f = isolated_grok_capture
+    original = f.locator()._source.path
+    original.unlink()
+    try:
+        enable = f.submit(33117, True)
+        assert f.evaluate()[0].command_id == enable.command_id
+        other, write = f.add_stream()
+        turn = _hookless(f)
+        write(turn[:1] if open_turn else turn, 0 if open_turn else 1)
+        again = f.submit(33118, True)
+        with pytest.raises(BoundaryUnavailable, match="pending"):
+            _enroll(f, other)
+        if open_turn:
+            assert f.evaluate() == ()
+            assert f.state.grok_enrollment_gaps() == ()
+            write(turn, 1)
+        assert f.evaluate()[0].command_id == again.command_id
+        (gap,) = _gaps_after_reopen(f)
+        assert (gap.start, gap.end, gap.code) == (
+            0,
+            len(b"".join(turn)),
+            DiagnosticCode.COVERAGE_GAP,
+        )
+        enrolled = f.writer.view()
+        assert _enroll(f, other) is None
+        assert f.writer.view() == enrolled
+        assert f.state.read_source(f.source_id, other()).observations == ()
+    finally:
+        original.touch()
+
+
+def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
+    isolated_grok_capture,
+    tmp_path,
+):
+    from uuid import UUID
+
+    from aitm_usage.ledger import ConflictError, LedgerError
+    from aitm_usage.monitor_registry import (
+        CaptureChange,
+        ControlCommand,
+        _directory,
+        _grok_records,
+        _GrokGrant,
+    )
+
+    f = isolated_grok_capture
+    f.submit(33119, True)
+    assert f.evaluate()[0].status is ControlStatus.APPLIED
+    other, write = f.add_stream()
+    write(_hookless(f), 1)
+    assert _enroll(f, other) is None
+    (old_gap,) = _gaps_after_reopen(f)
+    disable = f.submit(33120, False)
+    assert f.evaluate()[0].command_id == disable.command_id
+    retired = f.writer.view()
+    (old_source,) = retired.sources
+
+    replacement = tmp_path / "replacement-capture"
+    replacement.mkdir(mode=0o700)
+    previous = f.writer._live_profile
+    (installation,) = previous.installations
+    new_installation = replace(installation, directory=_directory(str(replacement)))
+    f.writer._live_profile = replace(
+        previous,
+        generation=f.writer.source_evidence().pseudonymize(
+            "fixture-profile", "replacement"
+        ),
+        installations=(new_installation,),
+        current=lambda actual: actual is new_installation,
+    )
+    # The established approval contract does not allow reusing an old source ID.
+    with pytest.raises(ConflictError, match="identity changed"):
+        f.writer.approve_source(replace(old_source.approval, root=str(replacement)))
+    new_source = UUID(int=33121)
+    f.writer.approve_source(
+        replace(old_source.approval, source_id=new_source, root=str(replacement))
+    )
+    both = f.writer.view()
+    # Exercise a retained approval snapshot with the retired source omitted.
+    f.writer._save(
+        replace(
+            both,
+            sources=tuple(row for row in both.sources if row.source_id == new_source),
+        )
+    )
+    assert _gaps_after_reopen(f) == (old_gap,)
+
+    inbox = ControlInbox(f.writer.root)
+    enable = ControlCommand(UUID(int=33122), CaptureChange(f.project, new_source, True))
+    inbox.enqueue(enable)
+    (applied,) = f.writer.apply_pending(
+        inbox,
+        f.writer.lease,
+        None,
+        grok_evidence=lambda change, active, pending: f.state._grok_capture_evidence(
+            change, (), active, pending
+        ),
+    )
+    assert (
+        applied.command_id == enable.command_id
+        and applied.status is ControlStatus.APPLIED
+    )
+    grants = tuple(
+        row for row in _grok_records(f.writer.view()) if type(row) is _GrokGrant
+    )
+    assert {(row.source_id, row.active) for row in grants} == {
+        (f.source_id, False),
+        (new_source, True),
+    }
+    assert _gaps_after_reopen(f) == (old_gap,)
+    current = f.writer.view()
+    f.writer._save(replace(current, sources=()))
+    try:
+        with pytest.raises(LedgerError, match="grant installation changed"):
+            _gaps_after_reopen(f)
+    finally:
+        # Keep the original fixture's teardown able to probe its retired source.
+        f.writer._save(replace(current, sources=both.sources))

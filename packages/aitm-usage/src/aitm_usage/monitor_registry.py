@@ -555,12 +555,17 @@ def _check_grok_grants(view: RegistryView) -> None:
     for grant in records:
         if type(grant) is not _GrokGrant:
             continue
-        approval = _source(view, grant.source_id)
-        if (
-            approval.directory.identity != grant.root_identity
-            or _LiveSourceTuple.from_approval(approval) != grant.installation
-        ):
-            raise LedgerError("Grok grant installation changed")
+        if grant.active:
+            approval = next(
+                (row for row in view.sources if row.source_id == grant.source_id),
+                None,
+            )
+            if (
+                approval is None
+                or approval.directory.identity != grant.root_identity
+                or _LiveSourceTuple.from_approval(approval) != grant.installation
+            ):
+                raise LedgerError("Grok grant installation changed")
         enable = CaptureChange(*grant.edge, True)
         disable = CaptureChange(*grant.edge, False)
         receipts = iter(view.receipts)
@@ -2367,6 +2372,15 @@ class Registry:
                     for identity, cut in cuts
                     if identity not in active_identities
                 )
+                if current is not None and additions:
+                    witnesses = (
+                        *current.witnesses,
+                        *(_GrokFrozenCut(row.identity, row.start) for row in additions),
+                    )
+                    remaining = tuple(
+                        replace(row, witnesses=witnesses) if row is current else row
+                        for row in remaining
+                    )
                 next_view = _permission(
                     _grok_view(view, (*remaining, *additions)), change
                 )
