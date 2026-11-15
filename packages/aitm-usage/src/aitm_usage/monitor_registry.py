@@ -427,8 +427,70 @@ type _GrokCaptureEvidence = Callable[
 
 
 @dataclass(frozen=True, slots=True)
+class _GrokGrant:
+    project_id: UUID
+    source_id: UUID
+    installation: _LiveSourceTuple
+    root_identity: tuple[int, ...]
+    profile: SourceRef
+    executable: SourceRef
+    generation: int
+    command_id: UUID
+    digest: str
+    active: bool = True
+    witnesses: tuple[_GrokFrozenCut | _GrokArm, ...] = ()
+
+    @property
+    def edge(self) -> tuple[UUID, UUID]:
+        return self.project_id, self.source_id
+
+    def matches(self, live: _LiveSourceProof) -> bool:
+        return (
+            self.installation,
+            self.root_identity,
+            self.profile,
+            self.executable,
+        ) == (
+            live.installation.source,
+            live.installation.directory.identity,
+            live.profile.generation,
+            live.installation.executable,
+        )
+
+    def __post_init__(self) -> None:
+        _positive(self.generation)
+        if (
+            self.installation.surface != NativeSurface.GROK_BUILD_MACOS
+            or not self.installation.supported()
+            or len(self.root_identity) != 2
+        ):
+            raise ValueError("Invalid pinned Grok grant installation")
+        for part in self.root_identity:
+            _nonnegative(part)
+        if (
+            self.digest
+            != ControlCommand(
+                self.command_id, CaptureChange(*self.edge, True)
+            ).payload_digest
+        ):
+            raise ValueError("Grok grant does not match the original enable command")
+        identities = [row.identity for row in self.witnesses]
+        if len({identity.stream for identity in identities}) != len(identities) or any(
+            identity.edge != self.edge
+            or identity.surface is not NativeSurface.GROK_BUILD_MACOS
+            or (identity.installation, identity.profile, identity.executable)
+            != (self.installation, self.profile, self.executable)
+            for identity in identities
+        ):
+            raise ValueError("Invalid private Grok grant witnesses")
+
+
+type _GrokRecord = _GrokEpoch | _GrokPending | _GrokGrant
+
+
+@dataclass(frozen=True, slots=True)
 class _RegistryWithGrok(RegistryView):
-    grok_records: tuple[_GrokEpoch | _GrokPending, ...] = ()
+    grok_records: tuple[_GrokEpoch | _GrokPending | _GrokGrant, ...] = ()
 
     def __post_init__(self) -> None:
         RegistryView.__post_init__(self)
@@ -441,8 +503,13 @@ class _RegistryWithGrok(RegistryView):
         epochs = tuple(
             record for record in self.grok_records if type(record) is _GrokEpoch
         )
+        grants = tuple(row for row in self.grok_records if type(row) is _GrokGrant)
         if (
-            len({item.command_id for item in pending}) != len(pending)
+            len({row.command_id for row in grants}) != len(grants)
+            or len({row.edge for row in grants if row.active})
+            != sum(row.active for row in grants)
+            or {row.command_id for row in grants} & {row.command_id for row in pending}
+            or len({item.command_id for item in pending}) != len(pending)
             or len({_edge(item.change) for item in pending}) != len(pending)
             or len({(item.identity, item.generation) for item in epochs}) != len(epochs)
             or len({item.identity for item in epochs if item.end is None})
@@ -464,17 +531,71 @@ def _encode_registry(view: RegistryView) -> bytes:
     return _encode(view, type(view)).encode("utf-8")
 
 
-def _grok_records(view: RegistryView) -> tuple[_GrokEpoch | _GrokPending, ...]:
+def _grok_records(view: RegistryView) -> tuple[_GrokRecord, ...]:
     return view.grok_records if type(view) is _RegistryWithGrok else ()
 
 
-def _grok_view(
-    view: RegistryView, records: tuple[_GrokEpoch | _GrokPending, ...]
-) -> RegistryView:
+def _grok_view(view: RegistryView, records: tuple[_GrokRecord, ...]) -> RegistryView:
     keep = {item.name: getattr(view, item.name) for item in fields(RegistryView)}
     if records:
         return _RegistryWithGrok(**keep, grok_records=records)
     return RegistryView(**keep)
+
+
+def _grok_applied_change(receipt: ControlReceipt, change: CaptureChange) -> bool:
+    return (
+        receipt.status is ControlStatus.APPLIED
+        and receipt.payload_digest
+        == ControlCommand(receipt.command_id, change).payload_digest
+    )
+
+
+def _check_grok_grants(view: RegistryView) -> None:
+    records = _grok_records(view)
+    for grant in records:
+        if type(grant) is not _GrokGrant:
+            continue
+        approval = _source(view, grant.source_id)
+        if (
+            approval.directory.identity != grant.root_identity
+            or _LiveSourceTuple.from_approval(approval) != grant.installation
+        ):
+            raise LedgerError("Grok grant installation changed")
+        enable = CaptureChange(*grant.edge, True)
+        disable = CaptureChange(*grant.edge, False)
+        receipts = iter(view.receipts)
+        receipt = next(
+            (row for row in receipts if row.command_id == grant.command_id), None
+        )
+        if (
+            receipt is None
+            or not _grok_applied_change(receipt, enable)
+            or (
+                grant.active
+                and (
+                    enable not in view.permissions
+                    or any(_grok_applied_change(row, disable) for row in receipts)
+                )
+            )
+        ):
+            raise LedgerError("Original applied Grok grant is unavailable")
+        for witness in grant.witnesses:
+            matches = tuple(
+                epoch
+                for epoch in records
+                if type(epoch) is _GrokEpoch
+                and epoch.identity == witness.identity
+                and epoch.generation == grant.generation
+            )
+            if type(witness) is _GrokFrozenCut:
+                if (
+                    len(matches) != 1
+                    or matches[0].start != witness.cut
+                    or (grant.active and matches[0].end is not None)
+                ):
+                    raise LedgerError("Grok enrollment witness has no matching epoch")
+            elif matches:
+                raise LedgerError("Unresolved Grok enrollment also has an epoch")
 
 
 def _grok_span_disposition(
@@ -851,6 +972,7 @@ class Registry:
             or any(item.status is ControlStatus.QUEUED for item in state.receipts)
         ):
             raise LedgerError("Duplicate private monitor registry identity")
+        _check_grok_grants(state)
         return state
 
     def _save(self, view: RegistryView) -> None:
@@ -2086,6 +2208,54 @@ class Registry:
         _check_capture_root(approved.directory)
         return offers
 
+    def _grok_enrollment_grant(
+        self, view: RegistryView, change: CaptureChange, live: _LiveSourceProof
+    ) -> _GrokGrant:
+        records = _grok_records(view)
+        edge = _edge(change)
+        grant = next(
+            (
+                row
+                for row in records
+                if type(row) is _GrokGrant and row.active and row.edge == edge
+            ),
+            None,
+        )
+        if grant is not None:
+            if not grant.matches(live):
+                raise BoundaryUnavailable("Grok enrollment requires a current enable")
+            return grant
+        if change not in view.permissions:
+            raise BoundaryUnavailable("Grok enrollment requires an applied enable")
+        disable = replace(change, enabled=False)
+        for receipt in reversed(view.receipts):
+            if _grok_applied_change(receipt, disable):
+                break
+            if _grok_applied_change(receipt, change):
+                active = tuple(
+                    row
+                    for row in records
+                    if type(row) is _GrokEpoch
+                    and row.identity.edge == edge
+                    and row.identity.profile == live.profile.generation
+                    and row.identity.installation == live.installation.source
+                    and row.identity.executable == live.installation.executable
+                    and row.end is None
+                )
+                if active:
+                    return _GrokGrant(
+                        *edge,
+                        live.installation.source,
+                        live.installation.directory.identity,
+                        live.profile.generation,
+                        live.installation.executable,
+                        max(row.generation for row in active),
+                        receipt.command_id,
+                        receipt.payload_digest,
+                    )
+                break
+        raise BoundaryUnavailable("Grok enrollment has no proven applied enable")
+
     def _apply_grok_capture(
         self,
         view: RegistryView,
@@ -2125,8 +2295,27 @@ class Registry:
             offers = self._grok_capture_offers(
                 approved, change, active, pending, evidence_for, live
             )
-            if change.enabled and not offers:
-                raise BoundaryUnavailable("Waiting for verified Grok capture streams")
+            edge = _edge(change)
+            grants = tuple(
+                row for row in records if type(row) is _GrokGrant and row.edge == edge
+            )
+            current = next(
+                (row for row in grants if row.active and row.matches(live)), None
+            )
+            if change.enabled and current is not None:
+                tracked = {
+                    row.identity.stream: row.identity for row in current.witnesses
+                }
+                if any(
+                    tracked.get(row.identity.stream, row.identity) != row.identity
+                    for row in offers
+                ):
+                    raise BoundaryUnavailable(
+                        "Grok enable changed an enrolled incarnation"
+                    )
+                offers = tuple(
+                    row for row in offers if row.identity.stream not in tracked
+                )
             cuts = tuple(
                 (item.identity, item.cut) for item in offers if item.cut is not None
             )
@@ -2143,15 +2332,36 @@ class Registry:
                 next_view = _grok_view(view, (*remaining, held))
             elif change.enabled:
                 active_identities = {item.identity for item in active}
-                generation = 1 + max(
-                    (
-                        item.generation
-                        for item in records
-                        if type(item) is _GrokEpoch
-                        and item.identity.edge == _edge(change)
-                    ),
-                    default=0,
+                generations = [
+                    row.generation
+                    for row in records
+                    if (type(row) is _GrokEpoch and row.identity.edge == edge)
+                    or (type(row) is _GrokGrant and row.edge == edge)
+                ]
+                generation = (
+                    current.generation
+                    if current is not None
+                    else 1 + max(generations, default=0)
                 )
+                if current is None and (not offers or grants):
+                    remaining = (
+                        *(
+                            replace(row, active=False)
+                            if row in grants and row.active
+                            else row
+                            for row in remaining
+                        ),
+                        _GrokGrant(
+                            *edge,
+                            live.installation.source,
+                            live.installation.directory.identity,
+                            live.profile.generation,
+                            live.installation.executable,
+                            generation,
+                            command.command_id,
+                            command.payload_digest,
+                        ),
+                    )
                 additions = tuple(
                     _GrokEpoch(identity, generation, cut)
                     for identity, cut in cuts
@@ -2163,7 +2373,11 @@ class Registry:
             else:
                 ends = dict(cuts)
                 closed = tuple(
-                    replace(item, end=ends[item.identity]) if item in active else item
+                    replace(item, end=ends[item.identity])
+                    if item in active
+                    else replace(item, active=False)
+                    if item in grants and item.active
+                    else item
                     for item in remaining
                 )
                 next_view = _permission(_grok_view(view, closed), change)
