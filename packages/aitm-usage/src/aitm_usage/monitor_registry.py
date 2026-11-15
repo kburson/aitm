@@ -6,7 +6,7 @@ import platform
 import re
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field, fields, replace
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
@@ -36,6 +36,7 @@ from .ledger import (
     _private,
     validate_private_path,
 )
+from .monitor_types import NativeSurface
 from .scopes import _publish, _read_private
 from .sources.adapter import ProviderAdapter, SourceLocator, StreamCursor
 from .sources.scan import (
@@ -324,6 +325,238 @@ class RegistryView:
 
 
 @dataclass(frozen=True, slots=True)
+class _GrokCaptureIdentity:
+    project_id: UUID
+    source_id: UUID
+    installation: _LiveSourceTuple
+    surface: NativeSurface
+    checkout: SourceRef
+    session: SourceRef
+    stream: SourceRef
+    incarnation: SourceRef
+    profile: SourceRef
+    executable: SourceRef
+
+    @property
+    def edge(self) -> tuple[UUID, UUID]:
+        return self.project_id, self.source_id
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokCut:
+    ordinal: int
+    offset: int
+    prefix: SourceRef
+    boundary: SourceRef
+
+    def __post_init__(self) -> None:
+        _nonnegative(self.ordinal)
+        _nonnegative(self.offset)
+        if self.offset < self.ordinal:
+            raise ValueError("Grok capture boundary exceeds its authenticated prefix")
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokEpoch:
+    identity: _GrokCaptureIdentity
+    generation: int
+    start: _GrokCut
+    end: _GrokCut | None = None
+
+    def __post_init__(self) -> None:
+        _positive(self.generation)
+        if self.end is not None and (
+            self.end.ordinal < self.start.ordinal or self.end.offset < self.start.offset
+        ):
+            raise ValueError("Grok capture end precedes its start")
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokArm:
+    identity: _GrokCaptureIdentity
+    prefix: _GrokCut
+    open_start: _GrokCut
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokFrozenCut:
+    identity: _GrokCaptureIdentity
+    cut: _GrokCut
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokPending:
+    command_id: UUID
+    digest: str
+    change: CaptureChange
+    cuts: tuple[_GrokFrozenCut, ...]
+    arms: tuple[_GrokArm, ...]
+
+    def __post_init__(self) -> None:
+        identities = [item.identity for item in self.cuts]
+        identities.extend(item.identity for item in self.arms)
+        if (
+            not self.arms
+            or len({identity.stream for identity in identities}) != len(identities)
+            or any(identity.edge != _edge(self.change) for identity in identities)
+            or self.digest
+            != ControlCommand(self.command_id, self.change).payload_digest
+        ):
+            raise ValueError("Invalid ordered Grok capture fence")
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokCaptureOffer:
+    identity: _GrokCaptureIdentity
+    live: _LiveSourceProof = field(repr=False)
+    lease: _PinnedPath = field(repr=False)
+    cut: _GrokCut | None = None
+    arm: _GrokArm | None = None
+
+    def __post_init__(self) -> None:
+        if (self.cut is None) == (self.arm is None) or (
+            self.arm is not None and self.arm.identity != self.identity
+        ):
+            raise ValueError("Grok offer requires one boundary or open arm")
+
+
+type _GrokCaptureEvidence = Callable[
+    [CaptureChange, tuple[_GrokEpoch, ...], _GrokPending | None],
+    tuple[_GrokCaptureOffer, ...],
+]
+
+
+@dataclass(frozen=True, slots=True)
+class _RegistryWithGrok(RegistryView):
+    grok_records: tuple[_GrokEpoch | _GrokPending, ...] = ()
+
+    def __post_init__(self) -> None:
+        RegistryView.__post_init__(self)
+        if not self.grok_records:
+            raise ValueError("Empty Grok capture state uses the legacy registry")
+        pending = (
+            *self.pending_capture,
+            *(record for record in self.grok_records if type(record) is _GrokPending),
+        )
+        epochs = tuple(
+            record for record in self.grok_records if type(record) is _GrokEpoch
+        )
+        if (
+            len({item.command_id for item in pending}) != len(pending)
+            or len({_edge(item.change) for item in pending}) != len(pending)
+            or len({(item.identity, item.generation) for item in epochs}) != len(epochs)
+            or len({item.identity for item in epochs if item.end is None})
+            != sum(item.end is None for item in epochs)
+            or {item.command_id for item in pending}
+            & {receipt.command_id for receipt in self.receipts}
+        ):
+            raise ValueError("Conflicting private Grok capture state")
+
+
+def _decode_registry(data: bytes) -> RegistryView:
+    try:
+        return _decode(data, RegistryView)
+    except ValueError:
+        return _decode(data, _RegistryWithGrok)
+
+
+def _encode_registry(view: RegistryView) -> bytes:
+    return _encode(view, type(view)).encode("utf-8")
+
+
+def _grok_records(view: RegistryView) -> tuple[_GrokEpoch | _GrokPending, ...]:
+    return view.grok_records if type(view) is _RegistryWithGrok else ()
+
+
+def _grok_view(
+    view: RegistryView, records: tuple[_GrokEpoch | _GrokPending, ...]
+) -> RegistryView:
+    keep = {item.name: getattr(view, item.name) for item in fields(RegistryView)}
+    if records:
+        return _RegistryWithGrok(**keep, grok_records=records)
+    return RegistryView(**keep)
+
+
+def _grok_span_disposition(
+    view: RegistryView, identity: _GrokCaptureIdentity, start: int, end: int
+) -> Eligibility:
+    for record in _grok_records(view):
+        if type(record) is _GrokPending and _edge(record.change) == identity.edge:
+            cut = next(
+                (item.cut.ordinal for item in record.cuts if item.identity == identity),
+                None,
+            )
+            if cut is None:
+                cut = next(
+                    (
+                        arm.prefix.ordinal
+                        for arm in record.arms
+                        if arm.identity == identity
+                    ),
+                    None,
+                )
+            if cut is None or end > cut:
+                return Eligibility.UNKNOWN
+    overlaps = False
+    for record in _grok_records(view):
+        if type(record) is not _GrokEpoch or record.identity != identity:
+            continue
+        lower = record.start.ordinal
+        upper = record.end.ordinal if record.end is not None else None
+        if lower <= start and (upper is None or end <= upper):
+            return Eligibility.ELIGIBLE
+        if lower < end and (upper is None or start < upper):
+            overlaps = True
+    return Eligibility.UNKNOWN if overlaps else Eligibility.EXCLUDED
+
+
+def _grok_read_fences(
+    view: RegistryView, identity: _GrokCaptureIdentity
+) -> tuple[int | None, tuple[tuple[int, SourceRef], ...]]:
+    records = _grok_records(view)
+    epochs = tuple(
+        item
+        for item in records
+        if type(item) is _GrokEpoch and item.identity == identity
+    )
+    fences = {
+        (cut.offset, cut.prefix)
+        for epoch in epochs
+        for cut in (epoch.start, epoch.end)
+        if cut is not None
+    }
+    committed = (
+        None
+        if any(item.end is None for item in epochs)
+        else max(
+            (item.end.offset for item in epochs if item.end is not None), default=0
+        )
+    )
+    limit = committed
+    pending = next(
+        (
+            item
+            for item in records
+            if type(item) is _GrokPending and _edge(item.change) == identity.edge
+        ),
+        None,
+    )
+    if pending is not None:
+        bound = next(
+            (item.cut for item in pending.cuts if item.identity == identity), None
+        )
+        if bound is None:
+            bound = next(
+                (arm.prefix for arm in pending.arms if arm.identity == identity), None
+            )
+        if bound is not None:
+            fences.add((bound.offset, bound.prefix))
+        pending_limit = 0 if bound is None else bound.offset
+        limit = pending_limit if committed is None else min(committed, pending_limit)
+    return limit, tuple(sorted(fences, key=lambda item: (item[0], item[1].value)))
+
+
+@dataclass(frozen=True, slots=True)
 class _ServiceEvidence:
     """Stable source-only references independent of destination project keys."""
 
@@ -507,6 +740,8 @@ class Registry:
         self.root = root.absolute()
         self._writer = _writer
         self._live_profile: _LiveProfile | None = None
+        self._grok_verifiers: dict[tuple[UUID, SourceRef], object] = {}
+        self._grok_offer_sink: dict[int, _GrokCaptureOffer] | None = None
         self._active_inventory: _InventoryCycle | None = None
         self._inventory_lock = Lock()
         self._boundary_qualification: dict[_CaptureKey, _LiveSourceProof] = {}
@@ -600,7 +835,7 @@ class Registry:
         if len(data) > _MAX_REGISTRY_BYTES:
             raise LedgerError("Private monitor registry is too large")
         try:
-            state = _decode(data, RegistryView)
+            state = _decode_registry(data)
         except ValueError:
             raise LedgerError("Invalid private monitor registry") from None
         if (
@@ -620,7 +855,7 @@ class Registry:
 
     def _save(self, view: RegistryView) -> None:
         lease = self.lease
-        data = _encode(view, RegistryView).encode("utf-8")
+        data = _encode_registry(view)
         if len(data) > _MAX_REGISTRY_BYTES:
             raise LedgerError("Private monitor registry is too large")
         with _pin_directory(self.root) as root:
@@ -632,9 +867,13 @@ class Registry:
         return _command_outcome(self.view(_confirm_publication=True), command_id)
 
     def pending_capture_status(self, command_id: UUID, digest: str) -> str | None:
+        view = self.view()
+        pending = (
+            *view.pending_capture,
+            *(item for item in _grok_records(view) if type(item) is _GrokPending),
+        )
         if any(
-            item.command_id == command_id and item.digest == digest
-            for item in self.view().pending_capture
+            item.command_id == command_id and item.digest == digest for item in pending
         ):
             return "proof-unavailable"
         return None
@@ -1770,12 +2009,179 @@ class Registry:
         )
         raise _CaptureArmed(replace(view, pending_capture=(*remaining, pending)))
 
+    def _issue_grok_capture_offer(self, offer: _GrokCaptureOffer) -> _GrokCaptureOffer:
+        issued = self._grok_offer_sink
+        if issued is None or offer.lease is not self.lease:
+            raise BoundaryUnavailable(
+                "Grok capture evidence is outside its writer request"
+            )
+        issued[id(offer)] = offer
+        return offer
+
+    def _grok_capture_offers(
+        self,
+        approved: ApprovedSource,
+        change: CaptureChange,
+        active: tuple[_GrokEpoch, ...],
+        pending: _GrokPending | None,
+        evidence_for: _GrokCaptureEvidence,
+        live: _LiveSourceProof,
+    ) -> tuple[_GrokCaptureOffer, ...]:
+        if self._grok_offer_sink is not None:
+            raise BoundaryUnavailable("Grok capture evidence request is already active")
+        issued: dict[int, _GrokCaptureOffer] = {}
+        self._grok_offer_sink = issued
+        try:
+            offers = evidence_for(change, active, pending)
+        finally:
+            self._grok_offer_sink = None
+        evidence = self.source_evidence()
+        streams = set()
+        for offer in offers:
+            if (
+                type(offer) is not _GrokCaptureOffer
+                or issued.get(id(offer)) is not offer
+            ):
+                raise BoundaryUnavailable(
+                    "Grok capture evidence was not issued at this boundary"
+                )
+            identity = offer.identity
+            if (
+                offer.lease is not self.lease
+                or offer.live.profile is not live.profile
+                or offer.live.installation is not live.installation
+                or identity.edge != _edge(change)
+                or identity.installation != live.installation.source
+                or identity.surface is not NativeSurface.GROK_BUILD_MACOS
+                or identity.surface != approved.approval.surface
+                or identity.profile != live.profile.generation
+                or identity.executable != live.installation.executable
+                or identity.stream in streams
+            ):
+                raise BoundaryUnavailable("Grok capture evidence changed")
+            _encode(
+                identity,
+                _GrokCaptureIdentity,
+                validate_ref=evidence.validate_source_ref,
+            )
+            if offer.cut is not None:
+                _encode(offer.cut, _GrokCut, validate_ref=evidence.validate_source_ref)
+            else:
+                _encode(offer.arm, _GrokArm, validate_ref=evidence.validate_source_ref)
+            streams.add(identity.stream)
+        identities = {offer.identity for offer in offers}
+        if not {item.identity for item in active} <= identities or (
+            not change.enabled and identities != {item.identity for item in active}
+        ):
+            raise BoundaryUnavailable("Grok capture streams changed")
+        if pending is not None:
+            old = {item.identity for item in pending.cuts}
+            old.update(item.identity for item in pending.arms)
+            if identities != old:
+                raise BoundaryUnavailable("Grok armed capture streams changed")
+            frozen = {offer.identity: offer.cut for offer in offers}
+            if any(frozen[item.identity] != item.cut for item in pending.cuts):
+                raise BoundaryUnavailable("Grok frozen capture cut changed")
+        self._require_live_source(approved, prior=live)
+        _check_capture_root(approved.directory)
+        return offers
+
+    def _apply_grok_capture(
+        self,
+        view: RegistryView,
+        command: ControlCommand,
+        change: CaptureChange,
+        approved: ApprovedSource,
+        evidence_for: _GrokCaptureEvidence | None,
+    ) -> RegistryView:
+        _project(view, change.project_id)
+        if evidence_for is None:
+            raise BoundaryUnavailable("Waiting for the Grok capture reader")
+        records = _grok_records(view)
+        pending = next(
+            (
+                item
+                for item in records
+                if type(item) is _GrokPending and _edge(item.change) == _edge(change)
+            ),
+            None,
+        )
+        if pending is not None and (
+            pending.command_id != command.command_id
+            or pending.digest != command.payload_digest
+        ):
+            raise BoundaryUnavailable("An earlier Grok capture command is pending")
+        try:
+            live = self._require_live_source(approved)
+            _check_capture_root(approved.directory)
+            active = tuple(
+                item
+                for item in records
+                if type(item) is _GrokEpoch
+                and item.identity.edge == _edge(change)
+                and item.identity.profile == live.profile.generation
+                and item.end is None
+            )
+            offers = self._grok_capture_offers(
+                approved, change, active, pending, evidence_for, live
+            )
+            if change.enabled and not offers:
+                raise BoundaryUnavailable("Waiting for verified Grok capture streams")
+            cuts = tuple(
+                (item.identity, item.cut) for item in offers if item.cut is not None
+            )
+            arms = tuple(item.arm for item in offers if item.arm is not None)
+            remaining = tuple(item for item in records if item is not pending)
+            if arms:
+                held = _GrokPending(
+                    command.command_id,
+                    command.payload_digest,
+                    change,
+                    tuple(_GrokFrozenCut(identity, cut) for identity, cut in cuts),
+                    arms,
+                )
+                next_view = _grok_view(view, (*remaining, held))
+            elif change.enabled:
+                active_identities = {item.identity for item in active}
+                generation = 1 + max(
+                    (
+                        item.generation
+                        for item in records
+                        if type(item) is _GrokEpoch
+                        and item.identity.edge == _edge(change)
+                    ),
+                    default=0,
+                )
+                additions = tuple(
+                    _GrokEpoch(identity, generation, cut)
+                    for identity, cut in cuts
+                    if identity not in active_identities
+                )
+                next_view = _permission(
+                    _grok_view(view, (*remaining, *additions)), change
+                )
+            else:
+                ends = dict(cuts)
+                closed = tuple(
+                    replace(item, end=ends[item.identity]) if item in active else item
+                    for item in remaining
+                )
+                next_view = _permission(_grok_view(view, closed), change)
+        except (LedgerError, OSError, ValueError):
+            raise BoundaryUnavailable(
+                "Waiting for verified Grok capture cuts"
+            ) from None
+        if arms:
+            raise _CaptureArmed(next_view)
+        return next_view
+
     def _apply(
         self,
         view: RegistryView,
         command: ControlCommand,
         locate: _LocateStreams | None,
         progress: dict[_CaptureKey, CaptureProgress],
+        grok_evidence: _GrokCaptureEvidence | None,
     ) -> RegistryView:
         payload = command.payload
         if isinstance(payload, ProjectRegistrationRequest):
@@ -1793,6 +2199,11 @@ class Registry:
                 existing.default_driver,
             )
             return self._register(view, request)[0]
+        approved = _source(view, payload.source_id)
+        if approved.approval.provider == "grok":
+            return self._apply_grok_capture(
+                view, command, payload, approved, grok_evidence
+            )
         return self._apply_capture(view, command, payload, locate, progress)
 
     def apply_pending(
@@ -1802,6 +2213,7 @@ class Registry:
         locate: _LocateStreams | None,
         *,
         progress: Iterable[CaptureProgress] = (),
+        grok_evidence: _GrokCaptureEvidence | None = None,
     ) -> tuple[ControlReceipt, ...]:
         if writer_lease is not self.lease or inbox.root != self.root:
             raise LedgerError("Monitor command requires the matching coordinator lease")
@@ -1833,7 +2245,9 @@ class Registry:
                 if isinstance(payload, CaptureChange) and _edge(payload) in held_edges:
                     continue
                 try:
-                    next_view = self._apply(view, command, locate, positions)
+                    next_view = self._apply(
+                        view, command, locate, positions, grok_evidence
+                    )
                 except _CaptureArmed as armed:
                     assert isinstance(payload, CaptureChange)
                     self._save(armed.view)
