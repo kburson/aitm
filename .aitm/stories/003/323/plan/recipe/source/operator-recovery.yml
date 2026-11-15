@@ -1,0 +1,50 @@
+name: Explicit missed-slot recovery
+run-name: recovery/${{ inputs.admission_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      admission_id:
+        description: Unique operator authorization ID
+        required: true
+        type: string
+      authorization:
+        description: Base64 canonical authorization
+        required: true
+        type: string
+      signature:
+        description: Base64 detached operator signature
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  recovery:
+    if: github.repository == 'kburson/aitm-missed-slot-323' && github.ref == 'refs/heads/trunk'
+    name: recovery
+    runs-on: macos-26
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Authenticate separate operator authorization
+        shell: bash
+        run: python3 operator_recovery.py "$RUNNER_TEMP/recovery-evidence"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Execute unchanged full suite from pinned production source
+        shell: bash
+        run: bash run-recovery.sh "$RUNNER_TEMP/recovery-evidence"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: aitm-recovery-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/recovery-evidence/
+          if-no-files-found: warn
+          retention-days: 14

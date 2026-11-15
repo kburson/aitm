@@ -1,0 +1,28 @@
+{
+  "item": {
+    "disposition": null,
+    "estimate": {
+      "number": 4.0
+    },
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI7tzM",
+    "priority": {
+      "name": "P2"
+    },
+    "project": {
+      "id": "PVT_kwHOABCEY84Bq1hZ",
+      "number": 24
+    },
+    "rank": {
+      "number": 150.0
+    },
+    "size": {
+      "name": "M"
+    },
+    "status": {
+      "name": "In review"
+    }
+  },
+  "number": 323,
+  "state": "OPEN",
+  "stateReason": null
+}

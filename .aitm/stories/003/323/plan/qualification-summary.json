@@ -1,0 +1,357 @@
+{
+  "disposable_recovery": {
+    "actor": {
+      "id": 1082467,
+      "login": "kburson"
+    },
+    "artifact": {
+      "created_at": "2026-11-15T17:42:48Z",
+      "digest": "sha256:20c8e17ac2310205b7f46f9d97c1461e5c9455406f65f0e0401c27b4ce3e72a0",
+      "id": 14173500281,
+      "name": "aitm-recovery-a1",
+      "size_in_bytes": 251751
+    },
+    "authorization_id": "bdb23cbf0d19f5bda815edb3db903c03",
+    "authorization_sha256": "96d977fb70e6b543801f1b5abaf8dc8601a5bd4a21d93150cde56c64c644735e",
+    "child_witnesses": [
+      {
+        "label": "service-one-shot",
+        "pid": 7730,
+        "returncode": 0
+      },
+      {
+        "label": "cli-help",
+        "pid": 8100,
+        "returncode": 0
+      }
+    ],
+    "controls": {
+      ".github/workflows/operator-recovery.yml": {
+        "blob": "85b3850bd5056cf0ccbfa20ed20cc52381e3fadb",
+        "sha256": "6424f0bba025a6940b4cd9702b922c128073c87394042e62a7bf3034c1f4e748"
+      },
+      "operator.allowed_signers": {
+        "blob": "fbe446d23a994ab15a51c0592a69b75928598b7b",
+        "sha256": "09b6c8dd35d9f1909ad355a7ee0bb8a0a0abf6916e0da9974c5c58e89fcfe131"
+      },
+      "operator_recovery.py": {
+        "blob": "bf9b19caeae9c8bf3d88b5a3218603d1c80aaa6b",
+        "sha256": "5f1240b6efb3c6f2ae6d7b1a79bc46e215dff16d0371515e599428fde47ab645"
+      },
+      "run-recovery.sh": {
+        "blob": "ebd20316f9db19cff442225bf2b04872259fea60",
+        "sha256": "678800d5954389ccfb56a19e390090d266bb5f834d92c0e9c6a3cf68ee61535b"
+      },
+      "scenario.json": {
+        "blob": "33868c7264114fe01b995f383aab7111c7f9ddcb",
+        "sha256": "ad37c7197efc82bb06562820cda1def77fe3465cf5a1c2989220c6a376000275"
+      }
+    },
+    "full_execution_step": {
+      "completed_at": "2026-11-15T17:42:46Z",
+      "conclusion": "success",
+      "name": "Execute unchanged full suite from pinned production source",
+      "number": 5,
+      "started_at": "2026-11-15T17:34:17Z",
+      "status": "completed"
+    },
+    "hold_at_verification": "active",
+    "job_completed_at": "2026-11-15T17:42:57Z",
+    "job_elapsed_seconds": 525.0,
+    "job_id": 132896486467,
+    "job_started_at": "2026-11-15T17:34:12Z",
+    "miss_sha256": "3f9e555ef8c5d3e6adf695cea3d360165bfe9f16459dbba265d507e0882bc595",
+    "preflight": {
+      "admission_id": "bdb23cbf0d19f5bda815edb3db903c03",
+      "authorization_sha256": "96d977fb70e6b543801f1b5abaf8dc8601a5bd4a21d93150cde56c64c644735e",
+      "authorized_at": "2026-11-15T17:34:16.252353+00:00",
+      "producer": {
+        "actor": "kburson",
+        "actor_id": 1082467,
+        "attempt": 1,
+        "event": "workflow_dispatch",
+        "ref": "refs/heads/trunk",
+        "repository": "kburson/aitm-missed-slot-323",
+        "repository_id": 1459057543,
+        "run_id": 43741833227,
+        "sha": "27ab953c5d3280999a0c2eb4c75fd2003ca7e76b",
+        "triggering_actor": "kburson",
+        "workflow_ref": "kburson/aitm-missed-slot-323/.github/workflows/operator-recovery.yml@refs/heads/trunk",
+        "workflow_sha": "27ab953c5d3280999a0c2eb4c75fd2003ca7e76b"
+      },
+      "production": {
+        "id": 1450406435,
+        "ref": "refs/heads/trunk",
+        "repository": "kburson/aitm",
+        "sha": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+        "tree": "d551e285f8c15c98ec7285bbf43f78c59d345756"
+      },
+      "schema": "aitm.rehearsal-operator-preflight/v1"
+    },
+    "producer": {
+      "ref": "refs/heads/trunk",
+      "repository": "kburson/aitm-missed-slot-323",
+      "repository_id": 1459057543,
+      "sha": "27ab953c5d3280999a0c2eb4c75fd2003ca7e76b",
+      "workflow": ".github/workflows/operator-recovery.yml"
+    },
+    "producer_tree": "b17f8b80c642559eb0c5a8accb1b89c58a844f0a",
+    "production": {
+      "id": 1450406435,
+      "ref": "refs/heads/trunk",
+      "repository": "kburson/aitm",
+      "sha": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+      "tree": "d551e285f8c15c98ec7285bbf43f78c59d345756"
+    },
+    "queue_to_job_seconds": 7.0,
+    "reference_profiles": {
+      "helpers": {
+        "collected": 545,
+        "ordered_inventory_sha256": "5edd22e2fec64e3379b44abd021a02b327ff076bcb11d8044a8a867d8c7817cf",
+        "passed": 545,
+        "phase_reports": 1635,
+        "skipped": []
+      },
+      "product": {
+        "collected": 1366,
+        "ordered_inventory_sha256": "d43e62254ad822c79d6cb29e18d683c1ed3be85ab29e38b7e744bf9f77cb642d",
+        "passed": 1366,
+        "phase_reports": 4098,
+        "skipped": []
+      }
+    },
+    "rehearsal_deadline": "2026-11-15T17:34:00+00:00",
+    "rehearsal_slot": "2026-11-15T17:32:00+00:00",
+    "repository": "kburson/aitm-missed-slot-323",
+    "run": {
+      "check_suite_id": 118424235459,
+      "conclusion": "success",
+      "created_at": "2026-11-15T17:34:05Z",
+      "display_title": "recovery/bdb23cbf0d19f5bda815edb3db903c03",
+      "event": "workflow_dispatch",
+      "head_branch": "trunk",
+      "head_sha": "27ab953c5d3280999a0c2eb4c75fd2003ca7e76b",
+      "id": 43741833227,
+      "path": ".github/workflows/operator-recovery.yml",
+      "run_attempt": 1,
+      "run_number": 1,
+      "run_started_at": "2026-11-15T17:34:05Z",
+      "status": "completed",
+      "workflow_id": 419337510
+    },
+    "status": "eligible-current-full-recovery",
+    "subject": {
+      "controls": {
+        "packages/aitm-usage/pyproject.toml": "1eecf3a6ca4c24913cb90702d1e33a27c765dc14452a5519b3d5a8f2483fad8a",
+        "packages/aitm-usage/uv.lock": "949aa576be20d2b4f2516313fde8426304b0aeda3874751927243f8ff979ae73",
+        "tools/ci/ci_scheduled_shadow.py": "713c3690aead3d91cc61c6b9a80982f96fb62a90a5f47fc13b87d1a63e9300cb",
+        "tools/ci/policy.json": "323498224344b7852da7c02299ff7e5812e3d9fbd1557c4e950de0b7dd8ba776",
+        "tools/ci/pytest_evidence.py": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+        "tools/ci/python_gate.py": "7dcc28e13db5a1dafb278f8d6d8029a19424bd72209cb48b6b999a99d404866c",
+        "tools/ci/run_scheduled_shadow.sh": "f372efb9feb0eb099e092767c043388e573660e2cd416a118a47e47743b18964"
+      },
+      "finished_at": "2026-11-15T17:42:46.810826+00:00",
+      "repository": "kburson/aitm",
+      "schema": "aitm.rehearsal-executed-subject/v1",
+      "sha": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+      "status": "clean",
+      "tree": "d551e285f8c15c98ec7285bbf43f78c59d345756"
+    },
+    "verified_at": "2026-11-15T17:44:18.142537+00:00"
+  },
+  "historical_live_production_at_missed_deadline": {
+    "artifact": null,
+    "current_verified": false,
+    "event": "schedule",
+    "failed_job": null,
+    "gaps": [
+      "no run for the current schedule slot"
+    ],
+    "provenance": "shadow",
+    "repository_id": 1450406435,
+    "schema": "aitm.ci-scheduled-shadow/v1",
+    "sha": "6b64ea873e438769c23e0a37b7fa7c0155629fbe",
+    "slot": "2026-11-15T03:47:00+00:00",
+    "status": "incomplete",
+    "target": "trunk",
+    "workflow_id": 418826440
+  },
+  "issue": 323,
+  "native_hold_probe_rule_suite_ids": {
+    "green-held-merge-probe": 5132983767,
+    "held-merge-probe": 5132918857
+  },
+  "native_replay": {
+    "attempt": 2,
+    "attempt_1_provider_artifact_after_rerun": {
+      "direct_http_status": 404,
+      "listing_count": 0,
+      "observed_at": "2026-11-15T17:46:47Z",
+      "retained_archive_path": "records/green/artifact.zip"
+    },
+    "authorization_step": "failure",
+    "collector_denial": "replayed or different dispatch attempt",
+    "full_suite_step": "skipped",
+    "native_conclusion": "failure",
+    "run_id": 43741833227,
+    "timing": "after separate disposable hold acknowledgment"
+  },
+  "off_host_controls": [
+    {
+      "control": "red accepted-identity attempt",
+      "reason": "red or unsuccessful recovery",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "missing archive bytes",
+      "reason": "missing or duplicate recovery archive",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "missing artifact listing",
+      "reason": "missing or duplicate recovery archive",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "foreign genuine production artifact metadata",
+      "reason": "foreign or invalid recovery archive custody",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "corrupt archive bytes",
+      "reason": "foreign or invalid recovery archive custody",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "protected SHA moved",
+      "reason": "stale or moved protected default target",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "wrong recovery event",
+      "reason": "wrong recovery event",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "latest run supersedes authorized run",
+      "reason": "dispatch superseded or replayed",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "same signed admission dispatched twice",
+      "reason": "dispatch superseded or replayed",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "same run rerun attempt",
+      "reason": "replayed or different dispatch attempt",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    },
+    {
+      "control": "hold disabled before acknowledgment",
+      "reason": "explicit hold is missing or bypassable",
+      "scope": "off-host mutation of retained authenticated facts",
+      "status": "held"
+    }
+  ],
+  "operator_acknowledgment": {
+    "acknowledgment": {
+      "acknowledged_at": "2026-11-15T17:45:02.180027+00:00",
+      "action": "acknowledge-and-release-disposable-hold",
+      "artifact_digest": "sha256:20c8e17ac2310205b7f46f9d97c1461e5c9455406f65f0e0401c27b4ce3e72a0",
+      "artifact_id": 14173500281,
+      "attempt": 1,
+      "authorization_id": "bdb23cbf0d19f5bda815edb3db903c03",
+      "fresh_verification_sha256": "930e31e3624f1f62d420481ee6f0c1a45f961512dbea571fe9a7bd82335261f2",
+      "hold_id": 27321992,
+      "issue": 323,
+      "miss_sha256": "3f9e555ef8c5d3e6adf695cea3d360165bfe9f16459dbba265d507e0882bc595",
+      "operator": {
+        "id": 1082467,
+        "login": "kburson"
+      },
+      "producer": {
+        "ref": "refs/heads/trunk",
+        "repository": "kburson/aitm-missed-slot-323",
+        "repository_id": 1459057543,
+        "sha": "27ab953c5d3280999a0c2eb4c75fd2003ca7e76b",
+        "workflow": ".github/workflows/operator-recovery.yml"
+      },
+      "production_sha_at_acknowledgment": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+      "repository": "kburson/aitm-missed-slot-323",
+      "run_id": 43741833227,
+      "schema": "aitm.rehearsal-operator-acknowledgment/v1"
+    },
+    "acknowledgment_sha256": "670845db61eecb756c31a71b998ec347d0b866cb4e4d2d9c8c2dd53cf8dba620",
+    "acknowledgment_signature_sha256": "6bc5fbebe6ecf9ddc1695f9b7b2a77173e16f331fe36c4a119cde4040edce85b",
+    "confirmed_at": "2026-11-15T17:45:05.655832+00:00",
+    "native_hold_release_sha256": "33b35cdf0195cfdd39515783475ad0a798983c12a0d90cf6709a913c4898245c",
+    "status": "disposable-hold-released-after-explicit-fresh-acknowledgment"
+  },
+  "production_diagnostic": {
+    "artifact": null,
+    "current_verified": false,
+    "event": "workflow_dispatch",
+    "failed_job": null,
+    "gaps": [],
+    "observed_run": {
+      "attempt": 1,
+      "created_at": "2026-11-15T03:19:22Z",
+      "id": 43671830880,
+      "sha": "a76eecf856bdd42fbaeb7fdf13b57a0ec404d334"
+    },
+    "provenance": "shadow",
+    "repository_id": 1450406435,
+    "schema": "aitm.ci-scheduled-shadow/v1",
+    "sha": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "slot": null,
+    "status": "stale",
+    "target": "trunk",
+    "workflow_id": 418826440
+  },
+  "production_late_registration_seconds": 27794.0,
+  "production_slot": {
+    "artifact": null,
+    "current_verified": false,
+    "event": "schedule",
+    "failed_job": null,
+    "gaps": [
+      "no run for the current schedule slot"
+    ],
+    "observed_run": {
+      "attempt": 1,
+      "created_at": "2026-11-15T11:30:14Z",
+      "id": 43709222718,
+      "sha": "4cfb41813199f9fa483447a61c65b9ca664fb97e"
+    },
+    "provenance": "shadow",
+    "repository_id": 1450406435,
+    "schema": "aitm.ci-scheduled-shadow/v1",
+    "sha": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "slot": "2026-11-15T03:47:00+00:00",
+    "status": "incomplete",
+    "target": "trunk",
+    "workflow_id": 418826440
+  },
+  "scope": "disposable recovery only",
+  "status": "review-requested",
+  "trunk": {
+    "owner_cutover_approval": false,
+    "production_after": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "production_at_acknowledgment": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "production_before": "9de9dbbec4053b95cfab5e005cd876c667f71e10",
+    "production_control_blobs_unchanged": true,
+    "production_issue_103_unchanged": true,
+    "production_protections_unchanged": true
+  }
+}
