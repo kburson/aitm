@@ -1,0 +1,364 @@
+{
+  "source": "07e17d80f7f4aa2ee6b2295b52c6225eae129f5b",
+  "issue": 335,
+  "native": {
+    "created_at": "2026-11-15T22:59:53Z",
+    "html_url": "https://github.com/kburson/aitm/issues/335",
+    "id": 6410677241,
+    "number": 335,
+    "state": "open",
+    "title": "[M11f] Authenticate Grok scope marker receipts"
+  },
+  "board": {
+    "actual": null,
+    "coverage": null,
+    "estimate": 3.75,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI_O2c",
+    "issue": 335,
+    "rank": 249.75,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": null,
+    "status": "Backlog"
+  },
+  "in": [
+    {
+      "number": 182,
+      "state": "closed"
+    },
+    {
+      "number": 329,
+      "state": "closed"
+    }
+  ],
+  "out": [
+    {
+      "number": 121,
+      "state": "open"
+    }
+  ],
+  "pre-121": [
+    {
+      "number": 115,
+      "state": "closed"
+    },
+    {
+      "number": 120,
+      "state": "closed"
+    },
+    {
+      "number": 304,
+      "state": "closed"
+    },
+    {
+      "number": 325,
+      "state": "closed"
+    },
+    {
+      "number": 326,
+      "state": "closed"
+    },
+    {
+      "number": 330,
+      "state": "closed"
+    },
+    {
+      "number": 331,
+      "state": "closed"
+    }
+  ],
+  "post-121": [
+    {
+      "number": 115,
+      "state": "closed"
+    },
+    {
+      "number": 120,
+      "state": "closed"
+    },
+    {
+      "number": 304,
+      "state": "closed"
+    },
+    {
+      "number": 325,
+      "state": "closed"
+    },
+    {
+      "number": 326,
+      "state": "closed"
+    },
+    {
+      "number": 330,
+      "state": "closed"
+    },
+    {
+      "number": 331,
+      "state": "closed"
+    },
+    {
+      "number": 335,
+      "state": "open"
+    }
+  ],
+  "pre-329": [
+    {
+      "number": 330,
+      "state": "closed"
+    },
+    {
+      "number": 331,
+      "state": "closed"
+    }
+  ],
+  "post-329": [
+    {
+      "number": 330,
+      "state": "closed"
+    },
+    {
+      "number": 331,
+      "state": "closed"
+    },
+    {
+      "number": 335,
+      "state": "open"
+    }
+  ],
+  "pre-182": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 194,
+      "state": "closed"
+    }
+  ],
+  "post-182": [
+    {
+      "number": 118,
+      "state": "closed"
+    },
+    {
+      "number": 194,
+      "state": "closed"
+    },
+    {
+      "number": 335,
+      "state": "open"
+    }
+  ],
+  "post-children": [
+    {
+      "number": 111,
+      "state": "closed",
+      "title": "[M01] Host path security"
+    },
+    {
+      "number": 112,
+      "state": "closed",
+      "title": "[M02] Atomic filesystem operations"
+    },
+    {
+      "number": 113,
+      "state": "closed",
+      "title": "[M03] Versioned project persistence"
+    },
+    {
+      "number": 114,
+      "state": "closed",
+      "title": "[M04] Adapter contract and existing providers"
+    },
+    {
+      "number": 115,
+      "state": "closed",
+      "title": "[M05] Grok evidence adapter"
+    },
+    {
+      "number": 116,
+      "state": "closed",
+      "title": "[M06] Registry and capture epochs"
+    },
+    {
+      "number": 117,
+      "state": "closed",
+      "title": "[M07] Native scope and handoff"
+    },
+    {
+      "number": 118,
+      "state": "closed",
+      "title": "[M08] Service journal and claim order"
+    },
+    {
+      "number": 119,
+      "state": "closed",
+      "title": "[M09] Project writes and ACK"
+    },
+    {
+      "number": 120,
+      "state": "closed",
+      "title": "[M10] Wake and park scheduler"
+    },
+    {
+      "number": 121,
+      "state": "open",
+      "title": "[M11] Root watches and coordinator"
+    },
+    {
+      "number": 122,
+      "state": "closed",
+      "title": "[M12] Recovery and publication fence"
+    },
+    {
+      "number": 123,
+      "state": "open",
+      "title": "[M13] Snapshot reports"
+    },
+    {
+      "number": 124,
+      "state": "open",
+      "title": "[M14] Compatible export and reconciliation"
+    },
+    {
+      "number": 125,
+      "state": "open",
+      "title": "[M15] Host service lifecycle"
+    },
+    {
+      "number": 126,
+      "state": "open",
+      "title": "[M16] Backup, legacy adoption and rollback"
+    },
+    {
+      "number": 127,
+      "state": "open",
+      "title": "[M17] Privacy and scale integration"
+    },
+    {
+      "number": 128,
+      "state": "open",
+      "title": "[M18] Native macOS qualification"
+    },
+    {
+      "number": 129,
+      "state": "open",
+      "title": "[M19] Native Linux qualification"
+    },
+    {
+      "number": 134,
+      "state": "closed",
+      "title": "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
+    },
+    {
+      "number": 137,
+      "state": "open",
+      "title": "[M05-LG] Linux Grok Build native carrier and adapter bridge"
+    },
+    {
+      "number": 182,
+      "state": "closed",
+      "title": "[M07b] Scope command admission and legacy compatibility"
+    },
+    {
+      "number": 194,
+      "state": "closed",
+      "title": "[M07c] Installed scope launcher compatibility"
+    },
+    {
+      "number": 199,
+      "state": "closed",
+      "title": "[M08b1] Verified Claude revision proof"
+    },
+    {
+      "number": 201,
+      "state": "closed",
+      "title": "[M08b2] Durable causal revision succession"
+    },
+    {
+      "number": 202,
+      "state": "closed",
+      "title": "[M08b3] Verified incomparable-content disputes"
+    },
+    {
+      "number": 203,
+      "state": "closed",
+      "title": "[M08b4a] Verified native disposition proof"
+    },
+    {
+      "number": 209,
+      "state": "closed",
+      "title": "[M08b4b] Atomic journal disposition and coverage projection"
+    },
+    {
+      "number": 210,
+      "state": "closed",
+      "title": "[M08b4c] Verified paired disposition settlement"
+    },
+    {
+      "number": 269,
+      "state": "closed",
+      "title": "[Spike] Prove Claude folded origin and original scope"
+    },
+    {
+      "number": 282,
+      "state": "closed",
+      "title": "[Spike] Measure Claude subagent telemetry coverage and story impact"
+    },
+    {
+      "number": 300,
+      "state": "closed",
+      "title": "Refuse unqualified sources and retain sanitized coverage evidence"
+    },
+    {
+      "number": 303,
+      "state": "closed",
+      "title": "Enforce closed live-source qualification at approval and reserve"
+    },
+    {
+      "number": 304,
+      "state": "closed",
+      "title": "Authenticate controlled live-source qualification on isolated hosts"
+    },
+    {
+      "number": 310,
+      "state": "closed",
+      "title": "Create verified journal-only publication candidates"
+    },
+    {
+      "number": 320,
+      "state": "open",
+      "title": "[M10b] Install owned native wake hooks"
+    },
+    {
+      "number": 325,
+      "state": "closed",
+      "title": "[M11a] Own native root watch resources and overflow hints"
+    },
+    {
+      "number": 326,
+      "state": "closed",
+      "title": "[M11b] Authenticate sources through a shared metadata inventory"
+    },
+    {
+      "number": 329,
+      "state": "closed",
+      "title": "[M11c] Prove positive Grok capture and scope authority"
+    },
+    {
+      "number": 330,
+      "state": "closed",
+      "title": "[M11d] Deliver verified Grok usage through the guarded journal"
+    },
+    {
+      "number": 331,
+      "state": "closed",
+      "title": "[M11e] Enroll new Grok streams under existing capture grants"
+    },
+    {
+      "number": 335,
+      "state": "open",
+      "title": "[M11f] Authenticate Grok scope marker receipts"
+    }
+  ]
+}

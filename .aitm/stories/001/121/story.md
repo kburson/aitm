@@ -8,7 +8,7 @@ issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
 blocking: [123, 125]
-blocked-by: [115, 120, 304, 325, 326, 330, 331]
+blocked-by: [115, 120, 304, 325, 326, 330, 331, 335]
 created: "2026-11-10T13:58:05Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
@@ -65,3 +65,5 @@ Apply the exact authorized #117 receipt verifier in the #329 capture callback fo
 ## Coordinator JIT hold
 
 [Independent JIT R1](plan/coordinator-independent-jit-r1.md) held the missing production-independent Grok marker receipt join. [Exact source](plan/grok-marker-exact-source.txt) also verifies the existing scheduler park branch and the disposition-only viewer. [Proposed marker receipt amendment](plan/2026-11-15-121-grok-scope-marker-amendment.md) enters independent review.
+
+[#335](../../003/335/story.md) owns the authenticated Grok scope marker receipt and blocks coordinator integration. [Exact native graph](plan/grok-scope-marker-native-readback.json).
