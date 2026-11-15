@@ -50,3 +50,7 @@ Independent Refine accepted the exact qualified Codex CLI alpha tuple, command o
 ## Independent JIT
 
 Recovery passed at 3.25 implementation hours. Develop uses the potential Linux alpha carrier only. Signed target admission remains #129. [Verdict](plan/independent-jit-r2.md).
+
+## Linux carrier Develop evidence
+
+The committed reader replayed the captured bytes on Linux arm64, located the marked request, preserved the archive prefix and maintained a stable keyed checkpoint across cold retry. The sanitized replay is separate from private transcript custody. The scratch Codex login was retired after replay. The host-level release qualification remains with #129. [Native replay](plan/exact-native-replay.json) · [Fixture audit](plan/sanitized-fixture-audit.json) · [Actual](plan/measured-actual.json).

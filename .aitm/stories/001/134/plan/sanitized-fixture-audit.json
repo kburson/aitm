@@ -1,0 +1,10 @@
+{
+  "fixture": "packages/aitm-usage/tests/fixtures/codex/linux-arm64-0.167.0-alpha.3.2.jsonl",
+  "sha256": "a63358dcaad34ee47567f3298144c63f9933572d24f0daf94f5b41e37f084ecd",
+  "prefix_sha256": "b5d00e459824edc55bf516f1d2a19bc8408dd1a3c3053a52c0e69aedfe8f6889",
+  "line_count": 32,
+  "archived_line_count": 22,
+  "native_identity_comparisons": 85,
+  "no_original_native_identifiers": true,
+  "no_capture_credentials_or_private_paths": true
+}
