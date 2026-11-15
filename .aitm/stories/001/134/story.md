@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 134
 title: "[M04-LC] Linux Codex CLI native carrier and adapter bridge"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/134"
 parent: 100
 children: []
@@ -58,3 +58,7 @@ The committed reader replayed the captured bytes on Linux arm64, located the mar
 ## Local Test
 
 Locked testing passed on the exact candidate. The native replay confirmed the keyed receipt and replay-safe checkpoint. [Evidence](plan/carrier-local-test.json).
+
+## Independent source
+
+The exact local and signed hosted carrier built against trunk. Independent source returned **HOLD**. [Signed Test](plan/carrier-signed-hosted-r1.json) · [Source receipt](plan/carrier-independent-source-r1-receipt.json).

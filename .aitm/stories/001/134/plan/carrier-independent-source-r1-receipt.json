@@ -1,0 +1,28 @@
+{
+  "base": "f89169df13120dc7fa4acc42d59b7ee5fef4429d",
+  "head": "9ebc2d25a030183ebd09b1ce60dfc6c0bd6a7e29",
+  "tree": "869d0054715025e5bc1cbcc8fee5a42a31878cb1",
+  "run": "https://github.com/kburson/aitm/actions/runs/43723685753/attempts/1",
+  "run_id": 43723685753,
+  "story": 134,
+  "gate": "source",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "0472f7b45a74c48e964d021aa16dd84e3e859f6bc90aafd76c8768d7658ab931",
+  "response_sha256": "ac3e2ff777f21d33d64805ef646988cb68fbab7276bcccc4d1a677a73e21a97f",
+  "review_sha256": "063f2aa46ae586d6ff3393e6b088911acafcdeccfaa89a3c72b1ed12368e6165",
+  "evidence_sha256": {
+    "producer-source-exact.diff": "91048dac76e2a25509282a6f3645bf68d8bfac0eccd70e8ddbc53f859b0acf9f",
+    "exact-native-replay.json": "befdf3200bd47fc17f0c41336621ab4efba28293cafe1fcc13036dfe4016c920",
+    "unchanged-controls.diff": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "local-final/product.log": "65388f13ec4b523cc8f0a7816ddabb71da2e1edd59d5d3a6ee260dc36528a90f",
+    "local-final/isolated-candidate-revoked.log": "b6533422d1630740f5655134f45127452989eca69913155ff0cdf6331ecfe21d",
+    "local-final/isolated-base-revoked.log": "142e711fac20a466998c8bbeb42619edb1e1722cf84dfe39f564f9b894494392",
+    "local-final/isolated-candidate-later-usage.log": "94f637a11e3ab7e202c311d8457e129b32b19795cbf37167b40e870db11bef0b",
+    "local-final/isolated-base-later-usage.log": "d0deb4e52e1bd4074ae74959d4a2ebfad828b825df07c466351f28c4ce29b9f8"
+  },
+  "exact_local_test_sha256": "9509b554cb509b978f84cdce2a8430adcddebbf12f8228a73efda079cb6680a9",
+  "earlier_local_issues": "Two Mac native fixtures failed on the old base, passed in isolation on base and candidate, and the fresh exact combined run passed. Cause not reproduced."
+}
