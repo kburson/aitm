@@ -1,0 +1,14 @@
+{
+  "story": 122,
+  "gate": "Refine",
+  "attempt": 1,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "base": "ab9db80098849e323d5122eb47bf48f377107058",
+  "sha256": {
+    "refine-result.json": "2d306d4b2234846d88989789f7916358cf18c3fbdaf802d54300fffe16620d95",
+    "recovery-fence-independent-refine-r1.md": "7e5404b7bf271e2986b34980a265d837b0bbf2783a8733f32cfa5c54895426e8",
+    "refine-input.md": "6f614f687f15d086f552892f2770590a990d42a94d6d052d4493fbf4b8cbe696"
+  }
+}

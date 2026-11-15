@@ -12,7 +12,7 @@ blocked-by: [119]
 created: "2026-11-10T13:58:06Z"
 updated: "2026-11-10T14:00:46Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 3.8, "size": "M", "scope": "provisional"}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -43,3 +43,5 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 ## Refine
 
 Verified #119 Close releases this leaf at Rank 260. [Refine packet](plan/2026-11-15-122-recovery-publication-fence-refine.md) carries the accepted coverage-only amendment.
+
+[Initial Refine](plan/recovery-fence-independent-refine-r1-receipt.json) held on candidate authority. [The recovery packet](plan/2026-11-15-122-recovery-publication-fence-refine-r2.md) binds the existing candidate and exact closed #310 to #119 chain.
