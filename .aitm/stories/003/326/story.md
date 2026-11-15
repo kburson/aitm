@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 326
 title: "[M11b] Authenticate sources through a shared metadata inventory"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/326"
 parent: 100
 children: []
@@ -26,3 +26,7 @@ plan-origin: {"kind": "accepted-parent-plan-amendment", "source-story": 121, "ke
 [Native issue #326](https://github.com/kburson/aitm/issues/326) · [Epic #100](../../001/100/story.md) · [Accepted M11 amendment](../../001/121/plan/2026-11-15-121-watch-inventory-coordinator-split-r2.md)
 
 Rank 247.5 and provisional Estimate 3.5 implementation hours. Complete the independent Refine and JIT before Develop. The existing signed Test, independent source review, verified delivery and native Close apply.
+
+## Refine
+
+Verified #115, #120 and #304 Close and the M11b split release this leaf at Rank 247.5. [Independent refinement packet](plan/2026-11-15-326-metadata-inventory-refine.md).
