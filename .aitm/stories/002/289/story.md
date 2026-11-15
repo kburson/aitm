@@ -10,12 +10,12 @@ children: []
 blocking: [290, 291]
 blocked-by: [277, 279]
 created: "2026-11-14T13:09:50Z"
-updated: "2026-11-15T03:10:17Z"
+updated: "2026-11-15T03:11:32Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-14-133-behavior-driven-validation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-14-289-scheduled-full-shadow-plan.md", "plan/local-validation.md", "plan/local-test.log", "plan/reviews/plan-review.md", "plan/local-native-diagnostics.md", "plan/local-full-setup-trace.log", "plan/exact-local-full-setup-trace.log", "plan/reviews/source-assessment.md", "plan/trusted-verifier.json", "plan/hosted-signature.json", "plan/tree-disposition.json", "plan/reviews/formal-review.md", "plan/delivery.json", "plan/premerge-verifier.json", "plan/premerge-rules.json", "plan/active-shadow-workflow.json", "plan/dispatch-diagnostic.md", "plan/dispatch-red.json", "plan/2026-11-14-289-shadow-toolchain-repair-plan.md", "plan/first-shadow-deployment/delivery.json", "plan/first-shadow-deployment/trusted-verifier.json", "plan/first-shadow-deployment/premerge-verifier.json", "plan/first-shadow-deployment/hosted-signature.json", "plan/first-shadow-deployment/tree-disposition.json", "plan/first-shadow-deployment/reviews/formal-review.md", "plan/reviews/toolchain-source-assessment.md", "plan/toolchain-local-tests.log"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -55,3 +55,7 @@ Qualify a default-branch-only scheduled full run and read-only evidence contract
 ## Hosted diagnostic and follow-up
 
 [Dispatch diagnosis](plan/dispatch-diagnostic.md) · [Authenticated diagnostic red](plan/dispatch-red.json) · [Repair PR #307](https://github.com/kburson/aitm/pull/307). The first independently reviewed [shadow deployment](plan/first-shadow-deployment/delivery.json) remains recorded.
+
+## Toolchain correction evidence
+
+[Independent exact-source assessment](plan/reviews/toolchain-source-assessment.md) · [105 planned focused checks with the checksum-verified CLI](plan/toolchain-local-tests.log).
