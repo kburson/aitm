@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 121
 title: "[M11] Root watches and coordinator"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
@@ -39,3 +39,7 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 
 - [ ] Write `test_watch_overflow_and_nested_rotation_reconcile`, `test_shared_root_enumerates_once_for_many_projects`, and `test_unchanged_parked_payload_is_not_read`. Verify a changed parked source wakes independently and a lost root becomes a coverage gap. Write during suspend or watch loss and recover on wake or bounded fallback without a queued event.
 - [ ] Run red. Integrate scheduler, discovery, route decisions and guarded delivery. Run green with `test_monitor_scheduler.py`, `test_scan.py` and real watch probes. Commit M11.
+
+## Refine
+
+The native Close records for #115, #120 and #304 release M11 at Rank 250. [Root watch and coordinator refinement](plan/2026-11-15-121-watch-coordinator-refine.md) is queued for its initial independent review.
