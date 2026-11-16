@@ -265,11 +265,12 @@ def test_inventory_and_selector_custody(sandbox, monkeypatch, tmp_path):
     unavailable(report.build_report(repo, base), "selector-unavailable")
 
 
-def run_cli(*args, tracing=False):
+def run_cli(*args, tracing=False, cwd=ROOT):
     flags = ["-X", "importtime"] if tracing else []
     return subprocess.run(
         [
             sys.executable,
+            "-B",
             "-E",
             "-s",
             *flags,
@@ -277,7 +278,7 @@ def run_cli(*args, tracing=False):
             "tools.ci.tia.working_tree_report",
             *args,
         ],
-        cwd=ROOT,
+        cwd=cwd,
         env=os.environ | {"PYTHONPATH": "/unqualified-pythonpath"},
         capture_output=True,
         text=True,
@@ -323,6 +324,21 @@ def test_help_is_human_readable():
     child = run_cli("--help")
     assert child.returncode == 0
     assert "--repo CHECKOUT" in child.stdout
+
+
+def test_cli_startup_leaves_a_fresh_tooling_checkout_unchanged(tmp_path):
+    for path in (
+        "tools/ci/path_map.py",
+        "tools/ci/tia/snapshot.py",
+        "tools/ci/tia/working_tree_report.py",
+    ):
+        write(tmp_path, path, (ROOT / path).read_bytes())
+    before = {path.relative_to(tmp_path) for path in tmp_path.rglob("*")}
+
+    child = run_cli("--help", cwd=tmp_path)
+
+    assert child.returncode == 0
+    assert {path.relative_to(tmp_path) for path in tmp_path.rglob("*")} == before
 
 
 def test_exact_cli_on_production_anchor(tmp_path):

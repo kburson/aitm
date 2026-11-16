@@ -55,9 +55,10 @@ The Python jobs retain the full applicable test inventory, slow test durations, 
 
 Run the report from a trusted checkout containing the tooling. Pass the inspected
 checkout separately and use its exact 40-character HEAD commit for `--base`.
+Use `-B` to keep Python from writing bytecode caches in the tooling checkout.
 
 ```sh
-python -E -s -m tools.ci.tia.working_tree_report \
+python -B -E -s -m tools.ci.tia.working_tree_report \
   --repo /path/to/inspected/checkout \
   --base 8799c5a445dd4b51d499132e9a314b64796ae918
 ```
