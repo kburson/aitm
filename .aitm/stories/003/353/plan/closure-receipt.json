@@ -1,0 +1,83 @@
+{
+  "story": 353,
+  "parent": 351,
+  "accepted_planning_commit": "a14716c6053220d2827a8da54389ba63cb103409",
+  "recorded_at_utc": "2026-11-16T21:47:18Z",
+  "scope": "Research finding and independent acceptance",
+  "last_required_gate": {
+    "kind": "independent findings acceptance and investigator sign-off",
+    "signed_at_utc": "2026-11-16T21:44:31Z"
+  },
+  "acceptance": {
+    "kind": "independent-spike-acceptance",
+    "path": "plan/reviews/2026-11-16-353-independent-findings-review.md",
+    "sha256": "844f254be3995df8f4718749bd156408dfdbfcbba9875a89b06957e3a78929d7",
+    "finding_path": "plan/2026-11-16-353-findings.md",
+    "finding_sha256": "d55eff3337ba3d6bfd6bbc7e261c88c491cc4849b21cb5a5a029ba0bb168fa8f",
+    "signoff_path": "retro/2026-11-16-353-spike-delivery.md",
+    "signoff_sha256": "36376e74001a2501cfd695dd043038e5a6a35c988a1a78244a57758b8a8d72a2",
+    "verdict": "pass",
+    "round": 1
+  },
+  "github_closed_at_utc": "2026-11-16T21:45:33Z",
+  "planning_done_at_utc": "2026-11-16T21:47:18Z",
+  "project_24_readback": {
+    "at": "2026-11-16T21:45:37Z",
+    "issue": {
+      "number": 353,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "closedAt": "2026-11-16T21:45:33Z",
+      "parent": {
+        "number": 351
+      }
+    },
+    "item": "PVTI_lAHOABCEY84Bq1hZzhJROPw",
+    "fields": {
+      "Title": "[Spike] Find the process boundary for trusted local test observation",
+      "Status": "Done",
+      "Priority": "P2",
+      "Size": "S",
+      "Rank": 450.0,
+      "Estimate": 2.0,
+      "Actual coverage": "Partial through 2026-11-16T21:41:55.523Z",
+      "Actual": 0.0493,
+      "Disposition_v0": "Delivered"
+    }
+  },
+  "timing": {
+    "snapshot_sha256": "e8ea5d49c25de2f05b2d2f65ac27c4b6a1757aed3c1ac6b431cf719c4ebb7820",
+    "as_of_utc": "2026-11-16T21:45:15Z",
+    "actual_milliseconds": 177573,
+    "coverage": "partial",
+    "evidence_through_utc": "2026-11-16T21:41:55.523000Z",
+    "idle": "unknown",
+    "owner_wait": "unknown",
+    "field_checkpoints": [
+      {
+        "step": "before",
+        "at_utc": "2026-11-16T21:45:23Z",
+        "actual": null,
+        "actual_coverage": null
+      },
+      {
+        "step": "pending",
+        "at_utc": "2026-11-16T21:45:26Z",
+        "actual": null,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "numeric",
+        "at_utc": "2026-11-16T21:45:28Z",
+        "actual": 0.0493,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "verified",
+        "at_utc": "2026-11-16T21:45:31Z",
+        "actual": 0.0493,
+        "actual_coverage": "Partial through 2026-11-16T21:41:55.523Z"
+      }
+    ]
+  }
+}
