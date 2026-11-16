@@ -15,7 +15,7 @@ last-branch: "codex/344-functional-tia"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/tia-baseline.md", "plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/tia-baseline.md", "plan/baseline-verifier.json", "plan/implementation-review.md", "plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -48,4 +48,4 @@ Scope is functional TIA for ordinary PR validation under the [current #133 direc
 
 ## Implementation and baseline
 
-[Baseline and consumer audit](plan/tia-baseline.md) · [Implementation PR #346](https://github.com/kburson/aitm/pull/346)
+[Baseline and consumer audit](plan/tia-baseline.md) · [Independent implementation review](plan/implementation-review.md) · [Implementation PR #346](https://github.com/kburson/aitm/pull/346)
