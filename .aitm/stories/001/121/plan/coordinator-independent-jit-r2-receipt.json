@@ -1,0 +1,20 @@
+{
+  "story": 121,
+  "gate": "JIT",
+  "verdict": "PASS",
+  "attempt": 2,
+  "base": "755fa2ece56cfa8c70a460b269d947ec6e958b2f",
+  "tree": "2ffe002416bacbb37670a325852fff0b88330ea1",
+  "planning_evidence_snapshot": "dcee3efeda7c17a80dd28f73c07a9aab49afe5fb",
+  "model": "claude-opus-5-5",
+  "effort": "high",
+  "review_route": "independent headless packet review",
+  "started_utc": "2026-11-16T06:06:42.000Z",
+  "received_utc": "2026-11-16T06:11:11.000Z",
+  "provider_reported_turns": 1,
+  "provider_reported_duration_ms": 268508,
+  "owner_authorized_paid_review": true,
+  "raw_sha256": "0ad3e32f6dd3fb59c392534df2f16762def49ca8e80d51f47f4ae9eb7dcdbb0b",
+  "packet_sha256": "13b65a33f67199b4d5f0bf1348f18eaa1a1f2f283d1d69f6d381981c39614447",
+  "review_sha256": "fb7a2bba0da42c2c3ea74160f562d2653f84f1246c5a11c0d33318faf5960fc2"
+}

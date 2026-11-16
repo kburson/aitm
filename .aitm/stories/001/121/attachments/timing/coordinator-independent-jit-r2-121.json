@@ -1,0 +1,39 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 121,
+  "batch": "coordinator-independent-jit-r2",
+  "recorded_at_utc": "2026-11-16T06:12:24.621Z",
+  "source": {
+    "ref": "codex:completed-progress-and-headless-review-envelope",
+    "sha256": "db42b49a013984e651afb878d0e8cae20b31918ef1c74954cef88ff130d76c44"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.34ed3a3af55a4f07b4bec6f7d91806a4",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.01a1e2f4-8584-7dd2-9dc3-7cb02a2661a0",
+      "phase": "Planning",
+      "role": "coordinator",
+      "attempt": "jit-recovery-r2",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-16T06:03:58.245Z",
+      "end_utc": "2026-11-16T06:11:11.852Z"
+    },
+    {
+      "observation_id": "claude.review.0ad3e32f6dd3fb59c392534d",
+      "actor": "claude-independent-reviewer",
+      "turn": "claude.packet.13b65a33f67199b4d5f0bf13",
+      "phase": "Planning",
+      "role": "reviewer",
+      "attempt": "jit-recovery-r2",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "headless-wrapper-second-resolution-start-plus-provider-reported-duration",
+      "start_utc": "2026-11-16T06:06:42.000Z",
+      "end_utc": "2026-11-16T06:11:10.508Z"
+    }
+  ]
+}

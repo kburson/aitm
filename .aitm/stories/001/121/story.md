@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 121
 title: "[M11] Root watches and coordinator"
 kind: "story"
-state: "refine"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/121"
 parent: 100
 children: []
@@ -67,3 +67,9 @@ Apply the exact authorized #117 receipt verifier in the #329 capture callback fo
 [Independent JIT R1](plan/coordinator-independent-jit-r1.md) held the missing production-independent Grok marker receipt join. [Exact source](plan/grok-marker-exact-source.txt) also verifies the existing scheduler park branch and the disposition-only viewer. [Proposed marker receipt amendment](plan/2026-11-15-121-grok-scope-marker-amendment.md) enters independent review.
 
 [#335](../../003/335/story.md) owns the authenticated Grok scope marker receipt and blocks coordinator integration. [Exact native graph](plan/grok-scope-marker-native-readback.json).
+
+## Coordinator JIT recovery
+
+[Independent JIT R2](plan/coordinator-independent-jit-r2.md) returned **PASS** against trunk `755fa2ece56cfa8c70a460b269d947ec6e958b2f` and the exact planning evidence snapshot `dcee3efeda7c17a80dd28f73c07a9aab49afe5fb`. The reviewed behavior refuses unverified v1 Stop frames and preserves admitted Change, keyed Park, and bounded watch and timer reconciliation. Apply the Develop conditions in the verdict within the three-file scope and four-hour cap. [Review receipt](plan/coordinator-independent-jit-r2-receipt.json) · [Timing receipt](attachments/timing/coordinator-independent-jit-r2-121.json)
+
+The delivered Registry invokes its Grok callback with `(change, active, pending)`. The coordinator callback selects the matching locators and forwards `(change, locators, active, pending, inventory=inventory)` to the bound ScopeState method. Keep the first RED for this wiring. The pinned trunk lists neither `monitor.py` nor `test_monitor_watches.py`.
