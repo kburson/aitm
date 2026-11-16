@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
-children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339, 340, 341]
+children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339, 340, 341, 344]
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T06:43:16Z"
+updated: "2026-11-16T12:45:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -165,4 +165,8 @@ Rank 160 [#337](../../003/337/story.md) follows the delivered #323 decision. #10
 
 On 2026-11-16 the owner stopped the remaining shadow qualification. [#338](../../003/338/story.md) and [#339](../../003/339/story.md) are replaced, and the superseded leaves #149–#157 and #159–#178 are closed. Delivered #158 stays. #133 no longer blocks Core #2.
 
-The full suite already uses three workers and may take up to 20 minutes. The remaining work is [#340](../../003/340/story.md), then [#341](../../003/341/story.md). [Replacement record](plan/2026-11-16-133-pr-feedback-replacement.md).
+The full suite already uses three workers and may take up to 20 minutes. [#340](../../003/340/story.md) delivered the path-map check and [#341](../../003/341/story.md) delivered full-suite reuse. [Replacement record](plan/2026-11-16-133-pr-feedback-replacement.md).
+
+## Functional TIA acceptance
+
+[#344](../../003/344/story.md) is the open follow-up for functional test impact analysis. It compares the live required PR check with full-suite results, verifies explainable selection and conservative fallback, and fixes any gaps it finds. #133 stays open until this acceptance evidence is delivered.
