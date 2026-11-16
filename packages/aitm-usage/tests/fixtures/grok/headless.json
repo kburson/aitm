@@ -19,7 +19,7 @@
     "sessionId": "10000000-0000-4000-8000-000000000115",
     "requestId": "20000000-0000-4000-8000-000000000001",
     "usage": {
-      "input_tokens": 12789,
+      "input_tokens": 12790,
       "cache_read_input_tokens": 1152,
       "cache_creation_input_tokens": 0,
       "output_tokens": 199,
@@ -30,4 +30,3 @@
     "total_cost_usd_ticks": 92983200
   }
 ]
-
