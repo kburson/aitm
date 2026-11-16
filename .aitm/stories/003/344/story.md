@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/test-impact-analysis-implementation-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -42,6 +42,6 @@ As an AITM contributor, I want ordinary pull requests to run the tests affected 
 
 Scope is functional TIA for ordinary PR validation under the [current #133 direction](https://github.com/kburson/aitm/blob/043d7ce22ed2da0d00aaa1236b1eacd9d1710a87/.aitm/stories/001/133/plan/2026-11-16-133-pr-feedback-replacement.md). The [accepted TIA design](https://github.com/kburson/aitm/blob/2ff1b49ed3a3f91c8164d6c7b0e1dbe4c15cd3f9/.aitm/stories/001/133/design/test-impact-analysis-design.md) defines explainability and uncertainty fallback. Reuse the delivered path map wherever it can meet those criteria. Scheduled backstop activation and Stop the Line are outside this story's scope.
 
-## Plan candidate
+## XPR plan acceptance
 
-[Functional Test Impact Analysis Implementation Plan](plan/test-impact-analysis-implementation-plan.md)
+[Functional Test Impact Analysis Implementation Plan](plan/test-impact-analysis-implementation-plan.md) was accepted in round 2 by Grok `grok-4.7` at high effort, with Codex `gpt-6.1-sol` at high effort as author. The accepted plan digest is `sha256:a6f7ef90668153eeb063d34b33162424409526021475eeed97dbf342b289c109`. [XPR review manifest](plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md) · [Final reviewer response](plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-reviewer-response-2.md).
