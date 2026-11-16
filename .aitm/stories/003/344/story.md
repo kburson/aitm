@@ -52,4 +52,4 @@ Scope is functional TIA for ordinary PR validation under the [current #133 direc
 
 The full hosted check and [trusted verifier](plan/implementation-verifier.json) passed on the independently reviewed implementation tree.
 
-[Live delivery evidence](plan/tia-evidence.md) records the completed post-merge cases and the pending changed-selection check.
+[Live delivery evidence](plan/tia-evidence.md) records all post-merge cases, including the new full run after selection changed.

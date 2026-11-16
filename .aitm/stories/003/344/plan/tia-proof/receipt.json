@@ -1153,6 +1153,223 @@
         "verified_at": "2026-11-16T14:05:36.520525+00:00"
       }
     },
+    "source": {
+      "artifacts": [
+        {
+          "digest": "sha256:df40465186c3766c22d138a856bb5e5355a7c70e68703e07a4f0b061495a01d2",
+          "id": 14234586389,
+          "name": "aitm-ci-python-a2"
+        },
+        {
+          "digest": "sha256:9d608825194d7064cb117d3153124d2c8b6f6038bafedcf76de50bb4d6dc5c4d",
+          "id": 14234396539,
+          "name": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e"
+        },
+        {
+          "digest": "sha256:83e72abbdaeef6319b29f28d27204b1e8be2c94dde5467835555e7c5caa22bdd",
+          "id": 14234123113,
+          "name": "aitm-ci-collector-a2"
+        },
+        {
+          "digest": "sha256:d5b4892e7b8a32073f1ac471e1c0f0ada2e5addb69b90462e7ceca0f63a1197d",
+          "id": 14234057363,
+          "name": "aitm-ci-base-a2"
+        },
+        {
+          "digest": "sha256:5831982208fb300614a838e39ec46b93bccaf9e25f1cd009df1767bdb9a13b8d",
+          "id": 14233538261,
+          "name": "aitm-ci-evidence-a2"
+        }
+      ],
+      "attempt": 2,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "source",
+      "conclusion": "success",
+      "created_at": "2026-11-16T14:22:52Z",
+      "full_once": true,
+      "head": "a43d66f3677269a6bba3b0959bb431607728aaac",
+      "jobs": [
+        {
+          "end": "2026-11-16T14:27:25Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T14:22:58Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T14:23:11Z",
+              "conclusion": "success",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T14:23:10Z"
+            },
+            {
+              "completed_at": "2026-11-16T14:23:52Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T14:23:11Z"
+            },
+            {
+              "completed_at": "2026-11-16T14:27:15Z",
+              "conclusion": "success",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T14:23:53Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T14:23:25Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T14:22:56Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:23:20Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T14:22:55Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:23:07Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T14:22:55Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:27:39Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T14:27:28Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T14:27:37Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T14:27:36Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T14:28:07Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T14:27:43Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T14:28:05Z",
+              "conclusion": "success",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T14:28:03Z"
+            }
+          ]
+        }
+      ],
+      "pr": 347,
+      "precompletion_hold": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-16T14:13:24.244418+00:00"
+      },
+      "prior_unassigned_python": {
+        "attempt": 1,
+        "conclusion": "cancelled",
+        "end": "2026-11-16T14:22:17Z",
+        "job": 133351574606,
+        "start": "2026-11-16T14:07:16Z",
+        "steps": 0
+      },
+      "run": 43882437964,
+      "run_started_at": "2026-11-16T14:22:49Z",
+      "selection": {
+        "cache_key": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e",
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e",
+        "mode": "mapped",
+        "paths": [
+          {
+            "disposition": "mapped",
+            "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+            "tests": [
+              "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+            ]
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+        ]
+      },
+      "test_inventory": {
+        "artifact": "inventories/812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6.json.gz",
+        "calls": 30,
+        "collected": 30,
+        "failed": [],
+        "passed": 30,
+        "sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6"
+      },
+      "tested": "dc8c46823e9e54012918f017650b192222831fc7",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 267,
+        "queue": null,
+        "setup": 4,
+        "test": 37,
+        "total": 42
+      },
+      "tree": "481b5e8e4aa41bf4d5b2ac49c273c5acb2a24606",
+      "trusted_verifier": {
+        "archive_digest": "sha256:5831982208fb300614a838e39ec46b93bccaf9e25f1cd009df1767bdb9a13b8d",
+        "artifact_id": 14233538261,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 5698,
+            "num_statements": 15925
+          }
+        },
+        "head": "a43d66f3677269a6bba3b0959bb431607728aaac",
+        "jobs": {
+          "aitm-ci": 133363992978,
+          "collect-evidence": 133363846460,
+          "file-checks": 133361007342,
+          "python": 133361006868,
+          "python-base": 133361007870,
+          "quality": 133361007343
+        },
+        "pr": 347,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": null,
+        "run": "https://github.com/kburson/aitm/actions/runs/43882437964/attempts/2",
+        "run_attempt": 2,
+        "run_id": 43882437964,
+        "status": "pass",
+        "subject_digest": "7b7b6cab5b2143110e22780b4a41923e47788623eafe07149201a67710ae6303",
+        "target": "trunk",
+        "tested": "dc8c46823e9e54012918f017650b192222831fc7",
+        "tree": "481b5e8e4aa41bf4d5b2ac49c273c5acb2a24606",
+        "verified_at": "2026-11-16T14:28:50.438210+00:00",
+        "workflow_id": 412848571
+      }
+    },
     "superseded": {
       "artifacts": [
         {
@@ -1235,17 +1452,6 @@
     "tree": "d93514160f9ba39b21f378953a2c5d7fb4c919a3",
     "uv": "0.10.6",
     "workers": 3
-  },
-  "pending_source": {
-    "head": "a43d66f3677269a6bba3b0959bb431607728aaac",
-    "precompletion_hold": {
-      "reason": "selected attempt is not complete and successful",
-      "status": "hold",
-      "verified_at": "2026-11-16T14:13:24.244418+00:00"
-    },
-    "run": 43882437964,
-    "tested": "dc8c46823e9e54012918f017650b192222831fc7",
-    "tree": "481b5e8e4aa41bf4d5b2ac49c273c5acb2a24606"
   },
   "repository": "kburson/aitm",
   "trunk": {
