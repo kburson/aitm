@@ -764,3 +764,18 @@ def test_v2_receipt_requires_exact_selection_and_execution(client):
     report["result"]["executed_test_ids"] = ["elsewhere.py::test_other"]
     with pytest.raises(Hold, match="execution evidence"):
         verify()
+
+
+def test_first_attempt_can_be_persisted_one_second_after_the_run(
+    client, attempt_records
+):
+    selected, record = attempt_records
+    selected["run_started_at"] = selected["created_at"]
+    record["run_started_at"] = selected["run_started_at"]
+    record["created_at"] = "2026-11-11T16:25:49Z"
+
+    pull = live_pull(client, PR, TARGET)
+    path, started, suite = read_attempt(client, pull, selected["workflow_id"], selected)
+    assert path == ATTEMPT
+    assert started.isoformat() == "2026-11-11T16:25:48+00:00"
+    assert suite["id"] == SUITE

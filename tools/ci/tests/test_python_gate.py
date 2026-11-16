@@ -461,3 +461,17 @@ def test_mapped_evidence_requires_calls_in_every_selected_module(inputs):
         "tests/test_other.py::test_unrelated",
     )
     assert not evaluate(**inputs)["passed"]
+
+
+def test_v2_checks_mode_requires_a_valid_empty_receipt(inputs):
+    inputs["selection"] = {
+        "schema": "aitm.path-selection/v2",
+        "mode": "checks",
+        "tests": [],
+        "children": {"cli-help": "cli.py", "service-one-shot": "service.py"},
+    }
+    inputs["child"]["children"] = []
+    inputs["candidate"] = evidence()
+    assert evaluate(**inputs)["passed"]
+    inputs["candidate"]["exit_code"] = 1
+    assert not evaluate(**inputs)["passed"]

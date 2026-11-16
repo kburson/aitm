@@ -416,7 +416,14 @@ def read_attempt(github, pull, workflow, selected):
     require(started >= run_created, "selected attempt start predates run")
     if attempt == 1:
         require(
-            record["created_at"] == selected["created_at"],
+            record["created_at"] == selected["created_at"]
+            or (
+                record["run_started_at"] == selected["run_started_at"]
+                and 0
+                < (timestamp(record["created_at"]) - run_created).total_seconds()
+                <= 1
+                and timestamp(record["created_at"]) <= timestamp(record["updated_at"])
+            ),
             "first attempt creation disagrees with canonical run",
         )
     else:
@@ -627,7 +634,7 @@ def read_evidence_archive(data):
     return content["candidate.json"], content["attestation.sigstore.json"]
 
 
-def attempt_archive(github, pull, selected):
+def attempt_archive(github, pull, selected, expected_selection=None):
     run, attempt = selected["id"], selected["run_attempt"]
     artifacts = github.pages(f"actions/runs/{run}/artifacts?per_page=100", "artifacts")
     require(
@@ -637,14 +644,22 @@ def attempt_archive(github, pull, selected):
         "duplicate attempt artifact ID or name",
     )
     current = {}
+    stamp_key = (expected_selection or {}).get("cache_key")
     for item in artifacts:
         name = re.fullmatch(r"aitm-ci-([a-z]+)-a([1-9][0-9]*)", item["name"])
-        require(
-            name and name[1] in ARTIFACTS and int(name[2]) <= attempt,
-            "unexpected attempt artifact name",
+        diagnostic = re.fullmatch(
+            r"aitm-ci-mapped-diagnostics-a([1-9][0-9]*)", item["name"]
         )
-        if int(name[2]) != attempt:
+        if diagnostic and int(diagnostic[1]) < attempt:
             continue
+        is_stamp = stamp_key is not None and item["name"] == stamp_key
+        if not is_stamp:
+            require(
+                name and name[1] in ARTIFACTS and int(name[2]) <= attempt,
+                "unexpected attempt artifact name",
+            )
+            if int(name[2]) != attempt:
+                continue
         link = item["workflow_run"]
         require(
             positive(item["id"])
@@ -659,7 +674,8 @@ def attempt_archive(github, pull, selected):
             and positive(item["size_in_bytes"]),
             "attempt artifact custody, digest or expiry disagrees",
         )
-        current[name[1]] = item
+        if not is_stamp:
+            current[name[1]] = item
     require(set(current) == ARTIFACTS, "missing selected attempt artifact")
     final = current["evidence"]
     require(
@@ -935,7 +951,9 @@ def verify_pr(github, number, target, checkout, *, reviewed_tree=None):
             suite,
             set(policy["pr_jobs"]) | FIXED_JOBS,
         )
-        artifact, subject, bundle = attempt_archive(github, pull, selected)
+        artifact, subject, bundle = attempt_archive(
+            github, pull, selected, expected_selection
+        )
         invocation, subject_digest = verify_certificate(
             github, pull, selected, started, subject, bundle
         )

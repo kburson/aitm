@@ -132,9 +132,7 @@ def test_workflow_uses_the_base_selector_and_cancels_a_superseded_run():
     assert WORKFLOW.index("Restore the full-suite stamp") < WORKFLOW.index(
         "Run parallel behavior suite and retain exact coverage"
     )
-    assert "steps.full-once.outputs.cache-hit != 'true'" in WORKFLOW
-    assert "actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684" in WORKFLOW
-    assert "actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684" in WORKFLOW
+    assert "steps.full-once.outputs.hit != 'true'" in WORKFLOW
     assert "steps.qualify.outputs.cache_key" in WORKFLOW
     diff = "git diff --name-only --no-renames --diff-filter=ACDMRTUXB"
     assert WORKFLOW.count(diff) == 2
@@ -262,3 +260,23 @@ def test_cache_key_is_exact_and_rejects_unsafe_values():
     assert cache_key(12, {"key": "d" * 64}, base="a" * 40, policy="b" * 64) != key
     with pytest.raises(ValueError):
         cache_key(12, selected, base="wrong", policy="b" * 64)
+
+
+@pytest.mark.parametrize(
+    "control", ["conftest.py", "packages/conftest.py", ".github/workflows/ci.yml"]
+)
+def test_landed_shared_controls_expire_the_consumer_audit(audit, control):
+    base, rules = audit
+    base[control] = _entry("f")
+    current = {**base, FIXTURE: _entry("c")}
+    result = select_trees(base, current, rules)
+    assert result["mode"] == "full"
+    assert result["paths"][0]["reason"] == "audited consumer scope changed"
+
+
+def test_stamp_is_published_after_attested_success_and_bound_to_a_completed_run():
+    assert WORKFLOW.index("- name: Publish the full-suite stamp") > WORKFLOW.index(
+        "Copy the bundle to the evidence directory"
+    )
+    assert "actions/artifacts?name=" in WORKFLOW
+    assert '.status == "completed" and .conclusion == "success"' in WORKFLOW

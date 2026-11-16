@@ -46,7 +46,7 @@
         "packages/aitm-usage/tests/test_grok_scope_receipts.py"
       ],
       "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
-      "consumer_digest": "23d4bec3cfda5b8b942399d3d3acddebc412e9051b8921c59655b56d95e40e05"
+      "consumer_digest": "1ff8a344ae6d119c8926002ccde7e90052fb138ae4ed68928f536688d23c080c"
     },
     {
       "prefix": "packages/aitm-usage/tests/fixtures/grok/headless.json",
@@ -54,7 +54,7 @@
         "packages/aitm-usage/tests/test_grok.py"
       ],
       "reason": "test_grok.py reads the headless rows and reconciles their request IDs and usage against native Grok observations.",
-      "consumer_digest": "9459a4fefdcd90928f4b83d69ea5b242a2cd50657aabdd0ef74930e33750e94e"
+      "consumer_digest": "a5162ab1ff1fcab635bd2ed67fb97a0a1b07ef20f1a7d66be311575d8cf45da0"
     }
   ]
 }

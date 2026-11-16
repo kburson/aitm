@@ -365,6 +365,9 @@ def evaluate(
         selected_execution = {"executed_test_ids": passed, "skipped_test_ids": skipped}
         if selection["mode"] == "checks" and (
             not isinstance(candidate, dict)
+            or candidate.get("schema") != "aitm.pytest-evidence/v1"
+            or type(candidate.get("exit_code")) is not int
+            or candidate["exit_code"] != 0
             or any(
                 candidate.get(key) != []
                 for key in ("collected", "deselected", "reports")

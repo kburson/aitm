@@ -13,6 +13,7 @@ MAP_SCHEMA = "aitm.path-map/v2"
 SELECTION_SCHEMA = "aitm.path-selection/v2"
 _PACKAGE = "packages/aitm-usage/"
 _EXTRA_CONSUMERS = {
+    ".github/workflows/ci.yml",
     "tools/ci/pytest_evidence.py",
     "tools/ci/tests/test_cli_evidence.py",
 }
@@ -136,14 +137,18 @@ def read_tree(revision):
     return entries
 
 
-def consumer_digest(entries, input_path):
+def consumer_digest(entries, input_path, full_names):
     """Bind each declaration to the audited package and canonical CI consumers."""
     inventory = [
         [path, entry["mode"], entry["sha"]]
         for path, entry in sorted(entries.items())
         if path != input_path
         and entry["type"] != "tree"
-        and (path.startswith(_PACKAGE) or path in _EXTRA_CONSUMERS)
+        and (
+            path.startswith(_PACKAGE)
+            or path in _EXTRA_CONSUMERS
+            or path.rsplit("/", 1)[-1] in full_names
+        )
     ]
     return _json_digest(inventory)
 
@@ -171,7 +176,7 @@ def _path_disposition(path, rule, base, candidate, document):
         return "checks", rule["reason"], []
     if any(not _regular(candidate.get(test, {})) for test in tests):
         return "full", "selected test module is missing or non-regular", []
-    if consumer_digest(base, path) != rule["consumer_digest"]:
+    if consumer_digest(base, path, document["full_names"]) != rule["consumer_digest"]:
         return "full", "audited consumer scope changed", []
     return "mapped", rule["reason"], tests
 
