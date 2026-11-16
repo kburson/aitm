@@ -1,0 +1,470 @@
+{
+  "bounded_rollback_verified": true,
+  "cutover_approved": false,
+  "issue": 337,
+  "lab": {
+    "acknowledgment": {
+      "action": "release-only-disposable-hold",
+      "actor_id": 1082467,
+      "branch": "b848e1612870d143472c54a9a3ab2b7eb806ac23",
+      "captured": "2026-11-16T00:14:42Z",
+      "hold": "27339262",
+      "ordinary": "7a74a51ab3e4b81fa0ed29ccfe40acf203195ff6",
+      "pr_receipt": "a0656013dcd02cfd2ad9d520d57e2abde6c3371652c3de55c7e9f0f450fe71b9",
+      "push_receipt": "6fbcc0a762939c750f2cdc4bb992dfddebd73da88196f8c9b3190d3ba535aca2",
+      "repo": "kburson/aitm-rollback-337",
+      "run": "43778309249",
+      "schema": "aitm.disposable-rollback-acknowledgment/v1",
+      "scope": "simulated operator"
+    },
+    "effective_after_release": [
+      {
+        "parameters": {
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [
+            {
+              "context": "python-base",
+              "integration_id": 15368
+            },
+            {
+              "context": "python",
+              "integration_id": 15368
+            },
+            {
+              "context": "quality",
+              "integration_id": 15368
+            },
+            {
+              "context": "file-checks",
+              "integration_id": 15368
+            },
+            {
+              "context": "collect-evidence",
+              "integration_id": 15368
+            },
+            {
+              "context": "aitm-ci",
+              "integration_id": 15368
+            }
+          ],
+          "strict_required_status_checks_policy": true
+        },
+        "ruleset_id": 27339233,
+        "ruleset_source": "kburson/aitm-rollback-337",
+        "ruleset_source_type": "Repository",
+        "type": "required_status_checks"
+      },
+      {
+        "ruleset_id": 27339225,
+        "ruleset_source": "kburson/aitm-rollback-337",
+        "ruleset_source_type": "Repository",
+        "type": "deletion"
+      },
+      {
+        "ruleset_id": 27339225,
+        "ruleset_source": "kburson/aitm-rollback-337",
+        "ruleset_source_type": "Repository",
+        "type": "non_fast_forward"
+      },
+      {
+        "parameters": {
+          "allowed_merge_methods": [
+            "merge",
+            "squash",
+            "rebase"
+          ],
+          "dismiss_stale_reviews_on_push": false,
+          "require_code_owner_review": false,
+          "require_extra_approval_for_unattributed_changes": true,
+          "require_last_push_approval": false,
+          "required_approving_review_count": 0,
+          "required_review_thread_resolution": false,
+          "required_reviewers": []
+        },
+        "ruleset_id": 27339225,
+        "ruleset_source": "kburson/aitm-rollback-337",
+        "ruleset_source_type": "Repository",
+        "type": "pull_request"
+      }
+    ],
+    "landed": "b848e1612870d143472c54a9a3ab2b7eb806ac23",
+    "ordinary_mergeability_after_release": "unstable",
+    "push": {
+      "artifact": {
+        "controls": {
+          ".github/workflows/ci.yml": "98320b46e6e88144aa1a8e2dedd7763f0b70789e",
+          "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12"
+        },
+        "digest": "sha256:a3c5cec7779afcd34d1c7a41de72349192abf1ac13b70727c6d45f4600bb1e84",
+        "id": 14187665786,
+        "policy_result": {
+          "baseline_tests": 0,
+          "coverage": {
+            "helpers": {
+              "covered_lines": 806,
+              "num_statements": 849
+            },
+            "product": {
+              "covered_lines": 14214,
+              "num_statements": 15632
+            }
+          },
+          "failures": [],
+          "passed": true,
+          "tests": 1487
+        },
+        "tree": "6dcdc52b7dd0e582b0a5e555ea45af44dda65fa1"
+      },
+      "attempt": 1,
+      "current_verified": true,
+      "failures": [],
+      "gaps": [],
+      "jobs": {
+        "collect-evidence": 133011547156,
+        "file-checks": 133009564332,
+        "python": 133009564068,
+        "quality": 133009564289
+      },
+      "provenance": "shadow",
+      "repository_id": 1459345121,
+      "run_id": 43778309249,
+      "run_number": 5,
+      "schema": "aitm.ci-advisory/v1",
+      "sha": "b848e1612870d143472c54a9a3ab2b7eb806ac23",
+      "started_at": "2026-11-16T00:05:32Z",
+      "status": "green",
+      "target": "trunk",
+      "workflow_id": 419574482
+    },
+    "repository": "kburson/aitm-rollback-337",
+    "restore": {
+      "archive_digest": "sha256:5488e6b75bd4a2905488a12ab929865dd832c837f3e28315127e6ba9effdc443",
+      "artifact_id": 14186817835,
+      "base": "0cc6c0c9fabe47efb36972d6aa0af0ec56f6bd15",
+      "controls": {
+        "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+        "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+        "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+        "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+        "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+        "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+      },
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 14214,
+          "num_statements": 15632
+        }
+      },
+      "head": "d43d94a7dcf0ab1932092ee135ea142b9b21ef18",
+      "jobs": {
+        "aitm-ci": 133008836815,
+        "collect-evidence": 133008767807,
+        "file-checks": 133007047958,
+        "python": 133007047920,
+        "python-base": 133007047741,
+        "quality": 133007048164
+      },
+      "pr": 2,
+      "repository": "kburson/aitm-rollback-337",
+      "repository_id": 1459345121,
+      "reviewed_tree": null,
+      "run": "https://github.com/kburson/aitm-rollback-337/actions/runs/43777508613/attempts/1",
+      "run_attempt": 1,
+      "run_id": 43777508613,
+      "status": "pass",
+      "subject_digest": "e8a71418312c8e4835270c39329e92a3adab412898ddefe82db225e9cc729be4",
+      "target": "trunk",
+      "tested": "37d2c271233584fe98c97ca7b8a646f28f4b4f5b",
+      "tree": "6dcdc52b7dd0e582b0a5e555ea45af44dda65fa1",
+      "verified_at": "2026-11-16T00:04:05.192510+00:00",
+      "workflow_id": 419574482
+    },
+    "reverified_ordinary": {
+      "archive_digest": "sha256:b1902b4b4e3bad454ea8b5c8fa96a25dc3c53e45584969dc2aded001887c707d",
+      "artifact_id": 14187094298,
+      "base": "b848e1612870d143472c54a9a3ab2b7eb806ac23",
+      "controls": {
+        "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+        "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+        "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+        "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+        "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+        "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+      },
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 14214,
+          "num_statements": 15632
+        }
+      },
+      "head": "7a74a51ab3e4b81fa0ed29ccfe40acf203195ff6",
+      "jobs": {
+        "aitm-ci": 133011975984,
+        "collect-evidence": 133011865422,
+        "file-checks": 133009796315,
+        "python": 133009796545,
+        "python-base": 133009796548,
+        "quality": 133009796445
+      },
+      "pr": 4,
+      "repository": "kburson/aitm-rollback-337",
+      "repository_id": 1459345121,
+      "reviewed_tree": null,
+      "run": "https://github.com/kburson/aitm-rollback-337/actions/runs/43778385315/attempts/1",
+      "run_attempt": 1,
+      "run_id": 43778385315,
+      "status": "pass",
+      "subject_digest": "deb4e1de4b8226a7c4b9de293b788b5cfa55e73d1cb80721bbb756016eacff73",
+      "target": "trunk",
+      "tested": "6df323886e29fe29524f203e57b238545807fa92",
+      "tree": "1ffa3cbfd4c910311fdadba5a2c7f1553dfd44af",
+      "verified_at": "2026-11-16T00:14:13.713962+00:00",
+      "workflow_id": 419574482
+    },
+    "rules_at_probes": {
+      "5136279926": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "pass",
+        "update": "fail"
+      },
+      "5136289087": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "fail",
+        "update": "fail"
+      },
+      "5136383866": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "pass",
+        "update": "fail"
+      },
+      "5136384394": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "pass",
+        "secret_scanning": "pass",
+        "update": "fail"
+      },
+      "5136386588": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "fail",
+        "update": "fail"
+      },
+      "5136523549": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "pass",
+        "update": "fail"
+      },
+      "5136532518": {
+        "deletion": "pass",
+        "non_fast_forward": "pass",
+        "pull_request": "pass",
+        "required_status_checks": "fail",
+        "update": "fail"
+      }
+    },
+    "seed": "0cc6c0c9fabe47efb36972d6aa0af0ec56f6bd15",
+    "superseded_green": {
+      "archive_digest": "sha256:c826a5c2f4a92f47a0ea75c8f261ddbeafb100713bb9b543d52890400683b31f",
+      "artifact_id": 14186961642,
+      "base": "0cc6c0c9fabe47efb36972d6aa0af0ec56f6bd15",
+      "controls": {
+        "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+        "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+        "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+        "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+        "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+        "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+      },
+      "coverage": {
+        "helpers": {
+          "covered_lines": 806,
+          "num_statements": 849
+        },
+        "product": {
+          "covered_lines": 14214,
+          "num_statements": 15632
+        }
+      },
+      "head": "e8f8cf9ec507f9c368220fc5271635b0d9ab307d",
+      "jobs": {
+        "aitm-ci": 133006163160,
+        "collect-evidence": 133006121983,
+        "file-checks": 133003474594,
+        "python": 133003474816,
+        "python-base": 133003475096,
+        "quality": 133003474892
+      },
+      "pr": 4,
+      "repository": "kburson/aitm-rollback-337",
+      "repository_id": 1459345121,
+      "reviewed_tree": null,
+      "run": "https://github.com/kburson/aitm-rollback-337/actions/runs/43776372089/attempts/1",
+      "run_attempt": 1,
+      "run_id": 43776372089,
+      "status": "pass",
+      "subject_digest": "0b8dc931feac810c688641c66057d0c98ca9607cea9600da18e98bdb9f270973",
+      "target": "trunk",
+      "tested": "2861504cb9886e37abe20f5d37565e3cbf024cfb",
+      "tree": "0af9a17825032ab5e99f29e32d681205d7456340",
+      "verified_at": "2026-11-15T23:55:10.508353+00:00",
+      "workflow_id": 419574482
+    },
+    "superseded_restore": {
+      "first_signed": {
+        "archive_digest": "sha256:045bfe6af5d86c12692f44578fa4665f80d0aa05d3d4cd409902367f86861a0d",
+        "artifact_id": 14186941252,
+        "base": "0cc6c0c9fabe47efb36972d6aa0af0ec56f6bd15",
+        "controls": {
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 806,
+            "num_statements": 849
+          },
+          "product": {
+            "covered_lines": 14214,
+            "num_statements": 15632
+          }
+        },
+        "head": "b0ee3b7abedaf897cfbd6330c853b0e2f9aecb50",
+        "jobs": {
+          "aitm-ci": 133005316531,
+          "collect-evidence": 133005264639,
+          "file-checks": 133003270850,
+          "python": 133003270634,
+          "python-base": 133003270801,
+          "quality": 133003270798
+        },
+        "pr": 2,
+        "repository": "kburson/aitm-rollback-337",
+        "repository_id": 1459345121,
+        "reviewed_tree": null,
+        "run": "https://github.com/kburson/aitm-rollback-337/actions/runs/43776307538/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43776307538,
+        "status": "pass",
+        "subject_digest": "0df8f9442dfd1922bef779409b3e3e01c5e59ba0397dd6b48a416780cc70c203",
+        "target": "trunk",
+        "tested": "37f507b7b4cf94d42eb0b20d169bc549207c1f15",
+        "tree": "6dcdc52b7dd0e582b0a5e555ea45af44dda65fa1",
+        "verified_at": "2026-11-15T23:51:27.129143+00:00",
+        "workflow_id": 419574482
+      },
+      "premerge_hold": {
+        "reason": "signature verification failed with pinned GitHub CLI",
+        "status": "hold",
+        "verified_at": "2026-11-15T23:55:26.617536+00:00"
+      },
+      "then_live_tested": "f0c55072985f9346b76e0b2d7ae9f021f2b37d76"
+    },
+    "timings": {
+      "refresh_run_registration_to_signed_seconds": 440,
+      "restore_open_to_signed_seconds": 1228,
+      "restore_open_to_trusted_verifier_seconds": 1265
+    }
+  },
+  "production": {
+    "after": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "archive_sha256": "76a7ce2567bd6f1923406aa7a93e0beb6e6b3d02678937d473c8654fa954a81d",
+    "before": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "canonical_workflow": {
+      "id": 412848571,
+      "name": "CI",
+      "path": ".github/workflows/ci.yml",
+      "state": "active"
+    },
+    "controls": {
+      ".github/workflows/ci.yml": "98320b46e6e88144aa1a8e2dedd7763f0b70789e",
+      ".github/workflows/fast-story-shadow.yml": "5fb07416f74b78444dd1148d4bae631be929ad70",
+      ".github/workflows/scheduled-full-shadow.yml": "b979732cfd382a10f531db8dbcadc1ff4c5d0138",
+      "packages/aitm-usage/pyproject.toml": "b17bd04fd19cc8117e41a405911c6b9720077274",
+      "packages/aitm-usage/uv.lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+      "tools/ci/ci_advisory.py": "18bc17129036aedbeedb71bfa04a6c088209df73",
+      "tools/ci/ci_fast_story_shadow.py": "94706109836229aac33283b4dca06d56d0d5f8b6",
+      "tools/ci/ci_incident.py": "636fe44777e2fb8f589cb7c7abd72024a802295f",
+      "tools/ci/ci_recovery.py": "8eeaf1539da9ae5b8c77ffa0b77ed9c2b5f153fe",
+      "tools/ci/ci_scheduled_shadow.py": "f73cd10b4630dbec9bffe1384612ca303ca23434",
+      "tools/ci/file-lint": "39c22218bf49cd527655d8e38da5ba6368c7708a",
+      "tools/ci/file_checks.py": "e2d654ef8ac1ffb9ef4cfc505652832dc7313452",
+      "tools/ci/policy.json": "176b5cc1143a9109228026c5c87f68ade487be69",
+      "tools/ci/pytest_evidence.py": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+      "tools/ci/python_gate.py": "2a92c066422387de839560f9bdde8609c606bd12",
+      "tools/ci/run_scheduled_shadow.sh": "5295eb1b146fa71a47c4026c0a4f2f40f915bef9",
+      "tools/ci/verify_pr.py": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558"
+    },
+    "controls_unchanged": true,
+    "effective_rules": [
+      {
+        "ruleset_id": 26821811,
+        "ruleset_source": "kburson/aitm",
+        "ruleset_source_type": "Repository",
+        "type": "deletion"
+      },
+      {
+        "ruleset_id": 26821811,
+        "ruleset_source": "kburson/aitm",
+        "ruleset_source_type": "Repository",
+        "type": "non_fast_forward"
+      },
+      {
+        "parameters": {
+          "allowed_merge_methods": [
+            "merge",
+            "squash",
+            "rebase"
+          ],
+          "dismiss_stale_reviews_on_push": false,
+          "require_code_owner_review": false,
+          "require_extra_approval_for_unattributed_changes": true,
+          "require_last_push_approval": false,
+          "required_approving_review_count": 0,
+          "required_review_thread_resolution": false,
+          "required_reviewers": []
+        },
+        "ruleset_id": 26821811,
+        "ruleset_source": "kburson/aitm",
+        "ruleset_source_type": "Repository",
+        "type": "pull_request"
+      }
+    ],
+    "prs": [
+      321,
+      322,
+      324,
+      327,
+      328,
+      332,
+      333,
+      334
+    ],
+    "rules_unchanged": true
+  },
+  "rollback_archive_sha256": "84b074162b51a8dd83c5f52220655be32ef6f7e71d79403f680c3617e699b306",
+  "scope": "verified existing production PR baseline and disposable native rollback rehearsal"
+}

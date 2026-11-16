@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 337
 title: "[#133] Measure full PR validation and rehearse rollback to #103"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/337"
 parent: 133
 children: []
 blocking: []
 blocked-by: [323]
 created: "2026-11-15T23:37:40Z"
-updated: "2026-11-15T23:49:35Z"
+updated: "2026-11-16T00:16:17Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/323/plan/2026-11-15-323-missed-slot-recovery-results.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip", "plan/2026-11-15-337-full-pr-and-rollback-results.md", "plan/qualification-summary.json", "plan/rollback-evidence.zip", "plan/restore-review.md", "plan/reproduction.md", "plan/SHA256SUMS"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,7 @@ Production is read-only apart from issue, board and planning records. #103 remai
 ## Production baseline
 
 Eight consecutive delivered PRs from the measurement window. [Timings](plan/production-readout.md) · [Native evidence and replay](plan/production-evidence.zip). The [rehearsal plan](plan/2026-11-15-337-full-pr-and-rollback-plan.md) binds all six canonical job contexts.
+
+## Hosted rollback evidence
+
+[Results](plan/2026-11-15-337-full-pr-and-rollback-results.md) · [Retained native evidence](plan/rollback-evidence.zip) · [Exact archive hashes](plan/SHA256SUMS).
