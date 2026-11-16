@@ -1,0 +1,26 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 121,
+  "batch": "coordinator-stop-feasibility",
+  "recorded_at_utc": "2026-11-16T01:47:09.737Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "1f36ac56e81c589ddb703ef7783b04c3300e172e853c5f027252c71eca3982f1"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.89e4ac0c9ee14350a2b18d004ba84e8c",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.01a1e206-f707-7bd3-9322-1d84a91370f3",
+      "phase": "Planning",
+      "role": "coordinator",
+      "attempt": "jit-recovery-triage",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-16T01:44:29.718Z",
+      "end_utc": "2026-11-16T01:46:44.873Z"
+    }
+  ]
+}
