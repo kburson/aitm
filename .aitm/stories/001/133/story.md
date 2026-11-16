@@ -10,12 +10,12 @@ children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151,
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-16T20:10:23Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md", "plan/2026-11-16-133-decomposition.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md", "plan/2026-11-16-133-decomposition.md", "plan/2026-11-16-133-reduced-scope-acceptance.md", "retro/2026-11-16-133-delivery.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -180,3 +180,7 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 - [#362 Flag a scheduled build failure](../../003/362/story.md)
 
 [Decomposition record](plan/2026-11-16-133-decomposition.md).
+
+## Reduced-scope acceptance
+
+[Verified epic acceptance](plan/2026-11-16-133-reduced-scope-acceptance.md) · [Signed retrospective](retro/2026-11-16-133-delivery.md).
