@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: [323]
 created: "2026-11-15T23:37:40Z"
-updated: "2026-11-16T00:16:17Z"
+updated: "2026-11-16T00:18:51Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/323/plan/2026-11-15-323-missed-slot-recovery-results.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip", "plan/2026-11-15-337-full-pr-and-rollback-results.md", "plan/qualification-summary.json", "plan/rollback-evidence.zip", "plan/restore-review.md", "plan/reproduction.md", "plan/SHA256SUMS"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip", "plan/2026-11-15-337-full-pr-and-rollback-results.md", "plan/qualification-summary.json", "plan/rollback-evidence.zip", "plan/restore-review.md", "plan/reproduction.md", "plan/SHA256SUMS", "plan/full-pr-rollback-review.md", "plan/delivery.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,7 @@ Eight consecutive delivered PRs from the measurement window. [Timings](plan/prod
 ## Hosted rollback evidence
 
 [Results](plan/2026-11-15-337-full-pr-and-rollback-results.md) · [Retained native evidence](plan/rollback-evidence.zip) · [Exact archive hashes](plan/SHA256SUMS).
+
+## Independent acceptance
+
+[Signed review](plan/full-pr-rollback-review.md) accepts the production cohort measurement and the disposable rollback. Production CI missed the measured timing target and #103 remains authoritative.

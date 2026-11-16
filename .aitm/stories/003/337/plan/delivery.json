@@ -1,0 +1,15 @@
+{
+  "evidence_commit": "9911fe7f4d5adc2ee603b7886c037a4334da00ed",
+  "issue": 337,
+  "manifest": "plan/SHA256SUMS",
+  "manifest_sha256": "9aca19e231d14b5f1639f3ff4d4bd8a0c20cfbb59057f1b0f6ce4b28f1f71312",
+  "owner_cutover_approval": false,
+  "production_gate": 103,
+  "production_timing_target_met": false,
+  "review": "plan/full-pr-rollback-review.md",
+  "review_sha256": "1ce62e1964982c64fbb17106a17bf1fdd19f4f7d9315323d9230839520eda19e",
+  "scope": "existing production PR timing and disposable native rollback",
+  "status": "accepted",
+  "summary": "plan/qualification-summary.json",
+  "summary_sha256": "e0f55e98527beec901bf5289e0a507bd9fe719bef0c80d60c0546f056bd57f2c"
+}
