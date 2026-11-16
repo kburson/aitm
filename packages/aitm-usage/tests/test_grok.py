@@ -62,7 +62,7 @@ def grok_source(tmp_path, monkeypatch):
     }
     rows = (FIXTURES / "updates.jsonl").read_bytes().splitlines(keepends=True)
     snapshot = json.loads((FIXTURES / "usage.json").read_text())
-    headless = json.loads((FIXTURES / "headless.json").read_text())
+    headless = json.loads((FIXTURES / "headless-moved.json").read_text())
 
     def disallow_project_access(*args):
         pytest.fail("adapter attempted destination access")
