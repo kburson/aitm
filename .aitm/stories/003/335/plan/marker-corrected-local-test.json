@@ -1,0 +1,28 @@
+{
+  "story": 335,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "headRefOid": "332e4f5c3114c2efba71bc9bce346bf473687e83",
+    "isDraft": false,
+    "number": 336,
+    "url": "https://github.com/kburson/aitm/pull/336"
+  },
+  "tests": 1508,
+  "tree": "db93f38ef259434b599f89340ea8e7a790250d08",
+  "product_lines": {
+    "covered_lines": 14486,
+    "num_statements": 15925
+  },
+  "evidence_sha256": {
+    "marker-exact-focused.log": "2b63a0a00df51873126269445f6fe065f69e396853a4c09840fedf66dd6096ed",
+    "profile-and-hook-red.log": "00f55be3f0774ed05086869279e3cf6feb0e6f1f1fc5d445d80c5e6cb09c5217",
+    "local-current/product.log": "221ae5f9624daaca67c90745d93e5ce7bb9fd37848cdfddcde13d0a02ebc3a42",
+    "marker-installed-module.txt": "6ebc9c1e88e31b025e92fb13b6ae92983d098599f814da559251b7b56f6cc3a7",
+    "adversarial-checks.log": "b4178e276a7c286fa7a727a089d6774cc5ab65aa6b0f5e884d946663e9df5676",
+    "test_335_exact_adversarial_checks.py": "2644b0212a40980e0bd1d42965d55dc1cee19991c29651ff1e33a15875de9f48"
+  },
+  "correction": "Before the hook consumes a staged receipt, compare the private installed qualification revision to the reference that the live writer authenticated. Late grant revocation serializes on the existing publication lock through application.",
+  "prior_source_hold_sha256": "730dbc7fd379d9c41160bb6d2e06d5cab528c1b49b5ea8b477692fe02184bb9b"
+}

@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 335
 title: "[M11f] Authenticate Grok scope marker receipts"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/335"
 parent: 100
 children: []
@@ -48,3 +48,5 @@ The exact candidate passed 1,504 locked local tests. The regressions cover revoc
 [Signed hosted Test](plan/marker-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
 
 [Independent source recovery verdict](plan/marker-independent-source-r2.md) returned **HOLD** on the exact signed candidate. [Receipt](plan/marker-independent-source-r2-receipt.json).
+
+The corrected candidate passed 1,508 locked local tests. A signed replacement or revocation before bind leaves the original attempt unbound. A competing descriptor cannot acquire the publication lock through first scope application. [Exact local Test](plan/marker-corrected-local-test.json) · [PR #336](https://github.com/kburson/aitm/pull/336).
