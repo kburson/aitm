@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 354
 title: "Report the affected tests for the working tree"
 kind: "story"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/354"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: [352]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-16T21:57:34Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": "S"}
+estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-354-working-tree-obligations-plan.md", "plan/reviews/2026-11-16-354-plan-sar.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,7 @@ Stay blocked until #352 is accepted. When that receipt says no trustworthy list 
 ## Bound
 
 This story delivers the report. It does not run the tests. Running them is #355, which also waits on #353.
+
+## Implementation planning
+
+#352 is accepted and closed. [Implementation plan](plan/2026-11-16-354-working-tree-obligations-plan.md) · [Plan SAR](plan/reviews/2026-11-16-354-plan-sar.md).
