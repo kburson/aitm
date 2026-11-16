@@ -1,0 +1,1264 @@
+{
+  "cases": {
+    "docs": {
+      "artifacts": [
+        {
+          "digest": "sha256:f03a957b26149a5dc15fc047260790bd384e6f10da0b1dc10e559fa5d5c51ab1",
+          "id": 14232155899,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:03a0243b91fbf30d0987c6a1b83a677a694437732038baeaa5a16b6dbb67f4e2",
+          "id": 14232035759,
+          "name": "aitm-ci-evidence-a1"
+        },
+        {
+          "digest": "sha256:e36d9443c4791ead30ce6567c545e9d722ed56397d1a12c74a246671766cf796",
+          "id": 14231806898,
+          "name": "pr-350-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-97b77dbe6e26af8b7f0aeee091b908642eff732507c3f8a07063279ff6410d79"
+        },
+        {
+          "digest": "sha256:17a46f2a0b92c3e4fd9b118991b0f6ff7f5bc37b676dd8def1e2ee5a429477ab",
+          "id": 14231717086,
+          "name": "aitm-ci-python-a1"
+        },
+        {
+          "digest": "sha256:b1fe8720d76872de64aabe9455ce4ecedbe9c9e002d8d25fe870037804f44684",
+          "id": 14231483404,
+          "name": "aitm-ci-collector-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "docs",
+      "conclusion": "success",
+      "created_at": "2026-11-16T13:45:12Z",
+      "full_once": true,
+      "head": "fd581968adc128a5494bb1743b44d4f94160f155",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:50:38Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T13:45:18Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:45:32Z",
+              "conclusion": "success",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T13:45:32Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:46:08Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T13:45:32Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:50:22Z",
+              "conclusion": "success",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T13:46:10Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:50:55Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:50:41Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:35Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:45:15Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:43Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:45:15Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:51:08Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T13:50:57Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:51:05Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T13:51:04Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:51:22Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T13:51:10Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:51:21Z",
+              "conclusion": "success",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T13:51:20Z"
+            }
+          ]
+        }
+      ],
+      "pr": 350,
+      "run": 43878801143,
+      "run_started_at": "2026-11-16T13:45:12Z",
+      "selection": {
+        "cache_key": "pr-350-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-97b77dbe6e26af8b7f0aeee091b908642eff732507c3f8a07063279ff6410d79",
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "97b77dbe6e26af8b7f0aeee091b908642eff732507c3f8a07063279ff6410d79",
+        "mode": "checks",
+        "paths": [
+          {
+            "disposition": "checks",
+            "path": "README.md",
+            "reason": "Repository overview only. File and quality checks still run.",
+            "tests": []
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": []
+      },
+      "test_inventory": {
+        "artifact": "inventories/37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570.json.gz",
+        "calls": 0,
+        "collected": 0,
+        "failed": [],
+        "passed": 0,
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      },
+      "tested": "264dd5217553ce6bd9a993f503d3f58e9b4431ad",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 320,
+        "queue": 6,
+        "setup": 4,
+        "test": 31,
+        "total": 37
+      },
+      "tree": "e8c1748a7e341d8cb0b43a3a557a4a1e5ad6d35e",
+      "trusted_verifier": {
+        "archive_digest": "sha256:03a0243b91fbf30d0987c6a1b83a677a694437732038baeaa5a16b6dbb67f4e2",
+        "artifact_id": 14232035759,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 0,
+            "num_statements": 0
+          }
+        },
+        "head": "fd581968adc128a5494bb1743b44d4f94160f155",
+        "jobs": {
+          "aitm-ci": 133342238332,
+          "collect-evidence": 133342106079,
+          "file-checks": 133338823554,
+          "python": 133338822905,
+          "python-base": 133338823472,
+          "quality": 133338823877
+        },
+        "pr": 350,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": null,
+        "run": "https://github.com/kburson/aitm/actions/runs/43878801143/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43878801143,
+        "status": "pass",
+        "subject_digest": "f382c496806f0f94671e36a7fff549d4019ad639330a515f611fa64142d29498",
+        "target": "trunk",
+        "tested": "264dd5217553ce6bd9a993f503d3f58e9b4431ad",
+        "tree": "e8c1748a7e341d8cb0b43a3a557a4a1e5ad6d35e",
+        "verified_at": "2026-11-16T13:51:47.249267+00:00",
+        "workflow_id": 412848571
+      }
+    },
+    "docs-reuse": {
+      "artifacts": [
+        {
+          "digest": "sha256:5e6753e69aa474698b896458e6ee7f3e2fefba2924770f241a9b06dec09bcaed",
+          "id": 14232086738,
+          "name": "aitm-ci-collector-a1"
+        },
+        {
+          "digest": "sha256:09c8a6b66e9236edb80ebc7981ded3e65a4940e09513cb8d3ccc18d415492614",
+          "id": 14231587883,
+          "name": "aitm-ci-python-a1"
+        },
+        {
+          "digest": "sha256:e06c4e03fa2a202050ab5401e264288335975840729789963c34da710d4248c4",
+          "id": 14230769758,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:e4062d90f0a265d076516917f80eb0e86bc6b8c435cb2a68a77425e1094ccbd0",
+          "id": 14230754859,
+          "name": "aitm-ci-evidence-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "docs-reuse",
+      "conclusion": "success",
+      "created_at": "2026-11-16T13:52:42Z",
+      "full_once": false,
+      "head": "01643038e4bc6d8264c897c8c1680efd77cfd4c9",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:53:16Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:52:46Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:52:55Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:52:45Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:53:36Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T13:52:46Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:52:59Z",
+              "conclusion": "success",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T13:52:57Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:53:29Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T13:52:59Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:53:30Z",
+              "conclusion": "skipped",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T13:53:30Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:53:52Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:53:38Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:54:09Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T13:53:54Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:54:06Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T13:54:05Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:54:18Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T13:54:11Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:54:17Z",
+              "conclusion": "skipped",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T13:54:17Z"
+            }
+          ]
+        }
+      ],
+      "pr": 350,
+      "restored_run": 43878801143,
+      "run": 43880030738,
+      "run_started_at": "2026-11-16T13:52:42Z",
+      "selection": {
+        "cache_key": "pr-350-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-97b77dbe6e26af8b7f0aeee091b908642eff732507c3f8a07063279ff6410d79",
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "97b77dbe6e26af8b7f0aeee091b908642eff732507c3f8a07063279ff6410d79",
+        "mode": "checks",
+        "paths": [
+          {
+            "disposition": "checks",
+            "path": "README.md",
+            "reason": "Repository overview only. File and quality checks still run.",
+            "tests": []
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": []
+      },
+      "test_inventory": {
+        "artifact": "inventories/37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570.json.gz",
+        "calls": 0,
+        "collected": 0,
+        "failed": [],
+        "passed": 0,
+        "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+      },
+      "tested": "3d5b1da45a43496b52fce252237fec58685b1e49",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 50,
+        "queue": 4,
+        "setup": 5,
+        "test": 25,
+        "total": 31
+      },
+      "tree": "c4eb66e0ee7f1ece10c13cf3fb2a19bd14a277de",
+      "trusted_verifier": {
+        "archive_digest": "sha256:e4062d90f0a265d076516917f80eb0e86bc6b8c435cb2a68a77425e1094ccbd0",
+        "artifact_id": 14230754859,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 0,
+            "num_statements": 0
+          }
+        },
+        "head": "01643038e4bc6d8264c897c8c1680efd77cfd4c9",
+        "jobs": {
+          "aitm-ci": 133343954352,
+          "collect-evidence": 133343792779,
+          "file-checks": 133343145226,
+          "python": 133343145236,
+          "python-base": 133343145293,
+          "quality": 133343144662
+        },
+        "pr": 350,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": null,
+        "run": "https://github.com/kburson/aitm/actions/runs/43880030738/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43880030738,
+        "status": "pass",
+        "subject_digest": "20d0ca32bae569b00a332cf5a496372ccf0490b849b6c529da74cdb0bfe0d19c",
+        "target": "trunk",
+        "tested": "3d5b1da45a43496b52fce252237fec58685b1e49",
+        "tree": "c4eb66e0ee7f1ece10c13cf3fb2a19bd14a277de",
+        "verified_at": "2026-11-16T13:54:57.291475+00:00",
+        "workflow_id": 412848571
+      }
+    },
+    "fallback": {
+      "artifacts": [
+        {
+          "digest": "sha256:c4be6473370aa22d89f7679d2a585eab370ff2678f79c1d14fa83edbfa22d5d4",
+          "id": 14232915902,
+          "name": "aitm-ci-evidence-a1"
+        },
+        {
+          "digest": "sha256:714af287f7891788f61fb6d52b9e47aaca159763eb05ffd485a309bfa5315b71",
+          "id": 14232915768,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:ec498f114737ccea3a3cdb19f1f0c1cb3986a4ed892fd4818400b4d77d6cd7ea",
+          "id": 14232910794,
+          "name": "aitm-ci-collector-a1"
+        },
+        {
+          "digest": "sha256:31a8f32520f028ff09bce4c4b3b74c1518873dd70e4b9686fcac39f8de943e2a",
+          "id": 14231444969,
+          "name": "aitm-ci-python-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "fallback",
+      "conclusion": "success",
+      "created_at": "2026-11-16T13:45:08Z",
+      "full_once": false,
+      "head": "5fdb132f82f593107fac1a8f98246e799ad91cfd",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:58:58Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:54:34Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:42Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:45:11Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:21Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:45:10Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:57:51Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T13:50:07Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:50:18Z",
+              "conclusion": "skipped",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T13:50:18Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:57:40Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T13:50:18Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:57:41Z",
+              "conclusion": "skipped",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T13:57:41Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:59:25Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T13:59:02Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:59:21Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T13:59:20Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:59:40Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T13:59:27Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:59:38Z",
+              "conclusion": "skipped",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T13:59:38Z"
+            }
+          ]
+        }
+      ],
+      "pr": 349,
+      "run": 43878789073,
+      "run_started_at": "2026-11-16T13:45:08Z",
+      "selection": {
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "full",
+        "mode": "full",
+        "paths": [
+          {
+            "disposition": "full",
+            "path": "packages/aitm-usage/pyproject.toml",
+            "reason": "CI control or shared setup",
+            "tests": []
+          },
+          {
+            "disposition": "full",
+            "path": "packages/aitm-usage/tests/fixtures/grok/headless-moved.json",
+            "reason": "unclassified input",
+            "tests": []
+          },
+          {
+            "disposition": "full",
+            "path": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+            "reason": "added, removed or changed file type or mode",
+            "tests": []
+          },
+          {
+            "disposition": "full",
+            "path": "packages/aitm-usage/tests/test_grok.py",
+            "reason": "unclassified input",
+            "tests": []
+          },
+          {
+            "disposition": "full",
+            "path": "tia_probe.data",
+            "reason": "unclassified input",
+            "tests": []
+          },
+          {
+            "disposition": "full",
+            "path": "tia_probe.py",
+            "reason": "unclassified input",
+            "tests": []
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": []
+      },
+      "test_inventory": {
+        "artifact": "inventories/8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043.json.gz",
+        "calls": 1517,
+        "collected": 1517,
+        "failed": [],
+        "passed": 1517,
+        "sha256": "8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043"
+      },
+      "tested": "d6a804e1efd1765e3ec98339045b0b4c2cbd5278",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 464,
+        "queue": 299,
+        "setup": 4,
+        "test": 438,
+        "total": 443
+      },
+      "tree": "1f17e46729628a26c09e8aaf13f6568f89299907",
+      "trusted_verifier": {
+        "archive_digest": "sha256:c4be6473370aa22d89f7679d2a585eab370ff2678f79c1d14fa83edbfa22d5d4",
+        "artifact_id": 14232915902,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 14487,
+            "num_statements": 15925
+          }
+        },
+        "head": "5fdb132f82f593107fac1a8f98246e799ad91cfd",
+        "jobs": {
+          "aitm-ci": 133346985987,
+          "collect-evidence": 133346735477,
+          "file-checks": 133338783538,
+          "python": 133338783546,
+          "python-base": 133338782957,
+          "quality": 133338783403
+        },
+        "pr": 349,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": "1f17e46729628a26c09e8aaf13f6568f89299907",
+        "run": "https://github.com/kburson/aitm/actions/runs/43878789073/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43878789073,
+        "status": "pass",
+        "subject_digest": "c8972999c81a1174257036613911f8451e8080b1caaf58e60c4679480fe21429",
+        "target": "trunk",
+        "tested": "d6a804e1efd1765e3ec98339045b0b4c2cbd5278",
+        "tree": "1f17e46729628a26c09e8aaf13f6568f89299907",
+        "verified_at": "2026-11-16T14:00:17.889672+00:00",
+        "workflow_id": 412848571
+      }
+    },
+    "fixture-prime": {
+      "artifacts": [
+        {
+          "digest": "sha256:74797873c6a0de9ced8bb49e428376123ae386c36612c272403eb5ec934338f0",
+          "id": 14232340877,
+          "name": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-8985f8bcfadb9369483c9ad019035226e7533dc4d229f96def0bafca54462b11"
+        },
+        {
+          "digest": "sha256:f36c9429296fd50d92616f4fd65f096dc6102c3b0583e10d5941c527a5689fd7",
+          "id": 14232047087,
+          "name": "aitm-ci-collector-a1"
+        },
+        {
+          "digest": "sha256:bcf0707d6e2cb1faab716e4a63e5163a8524292fda5b09f1414b27e2f2ab2e06",
+          "id": 14231757927,
+          "name": "aitm-ci-evidence-a1"
+        },
+        {
+          "digest": "sha256:9927188ee7d6ea0320871707268a7b1fde2744b4008b7176d58c059ea8d29344",
+          "id": 14231237636,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:dbfca9e1b91e022a240fa2961cf1119b2386d8816a8920db1c22eb5b70a054a1",
+          "id": 14231048597,
+          "name": "aitm-ci-python-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "fixture-prime",
+      "conclusion": "success",
+      "created_at": "2026-11-16T13:45:00Z",
+      "full_once": true,
+      "head": "a974fc65e109a6bb1422350a36da49e2b59ad107",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:45:15Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:45:03Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:55:23Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T13:50:57Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:51:11Z",
+              "conclusion": "success",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T13:51:10Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:51:44Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T13:51:11Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:55:14Z",
+              "conclusion": "success",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T13:51:45Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:45:25Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:45:03Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:14Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:45:03Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:55:37Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T13:55:26Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:55:34Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T13:55:33Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:55:54Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T13:55:40Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:55:52Z",
+              "conclusion": "success",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T13:55:51Z"
+            }
+          ]
+        }
+      ],
+      "pr": 347,
+      "run": 43878765256,
+      "run_started_at": "2026-11-16T13:45:00Z",
+      "selection": {
+        "cache_key": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-8985f8bcfadb9369483c9ad019035226e7533dc4d229f96def0bafca54462b11",
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "8985f8bcfadb9369483c9ad019035226e7533dc4d229f96def0bafca54462b11",
+        "mode": "mapped",
+        "paths": [
+          {
+            "disposition": "mapped",
+            "path": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+            "reason": "test_grok.py reads the headless rows and reconciles their request IDs and usage against native Grok observations.",
+            "tests": [
+              "packages/aitm-usage/tests/test_grok.py"
+            ]
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": [
+          "packages/aitm-usage/tests/test_grok.py"
+        ]
+      },
+      "test_inventory": {
+        "artifact": "inventories/506743ac60b2eff4479b68232bb61a45a27734d8db5fb1ee9a9ab70fcc0b8e00.json.gz",
+        "calls": 33,
+        "collected": 33,
+        "failed": [],
+        "passed": 33,
+        "sha256": "506743ac60b2eff4479b68232bb61a45a27734d8db5fb1ee9a9ab70fcc0b8e00"
+      },
+      "tested": "9e85927cac8ed100c842dee4f9ba67ffd7a805fb",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 266,
+        "queue": 357,
+        "setup": 4,
+        "test": 29,
+        "total": 34
+      },
+      "tree": "653137e9b3d778d9ea4a775db9c6c88e53031a6f",
+      "trusted_verifier": {
+        "archive_digest": "sha256:bcf0707d6e2cb1faab716e4a63e5163a8524292fda5b09f1414b27e2f2ab2e06",
+        "artifact_id": 14231757927,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 4269,
+            "num_statements": 15925
+          }
+        },
+        "head": "a974fc65e109a6bb1422350a36da49e2b59ad107",
+        "jobs": {
+          "aitm-ci": 133344802114,
+          "collect-evidence": 133344665881,
+          "file-checks": 133338710432,
+          "python": 133338709895,
+          "python-base": 133338709880,
+          "quality": 133338710040
+        },
+        "pr": 347,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": "653137e9b3d778d9ea4a775db9c6c88e53031a6f",
+        "run": "https://github.com/kburson/aitm/actions/runs/43878765256/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43878765256,
+        "status": "pass",
+        "subject_digest": "e3543f1d6984db47ac58b9735315602b2a3e93f50cb6f23ec68ea5379639ba06",
+        "target": "trunk",
+        "tested": "9e85927cac8ed100c842dee4f9ba67ffd7a805fb",
+        "tree": "653137e9b3d778d9ea4a775db9c6c88e53031a6f",
+        "verified_at": "2026-11-16T13:56:31.630648+00:00",
+        "workflow_id": 412848571
+      }
+    },
+    "ledger": {
+      "artifacts": [
+        {
+          "digest": "sha256:a18d5a0b27cd13daca1807d520952c38f2ebe8b1124ea2a25f571e3882ad5cc9",
+          "id": 14231882179,
+          "name": "aitm-ci-evidence-a1"
+        },
+        {
+          "digest": "sha256:5e23b485f4f637cbc8082543945254f6477961dcb7d738a2c5a9ed7e9edf9206",
+          "id": 14231837085,
+          "name": "aitm-ci-python-a1"
+        },
+        {
+          "digest": "sha256:e5c17f33d36dea5f7effc79000fbed3aa760bb480dd8f9f7a529c062dd1a8c59",
+          "id": 14231303531,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:7f5f8e0168fb793df451c02f87be44fa5e94dd9c6d37a81c6d71fc71ed146ac1",
+          "id": 14231274218,
+          "name": "aitm-ci-collector-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "ledger",
+      "conclusion": "success",
+      "created_at": "2026-11-16T13:45:05Z",
+      "full_once": false,
+      "head": "cefa7b43ba661fe6aeb50f009da9b9004c3ea809",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:45:36Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:45:08Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:49:31Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:45:09Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:45:30Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:45:07Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:52:15Z",
+          "name": "python",
+          "result": "success",
+          "start": "2026-11-16T13:45:09Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:45:18Z",
+              "conclusion": "skipped",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T13:45:18Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:52:04Z",
+              "conclusion": "success",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T13:45:18Z"
+            },
+            {
+              "completed_at": "2026-11-16T13:52:06Z",
+              "conclusion": "skipped",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T13:52:06Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:52:28Z",
+          "name": "collect-evidence",
+          "result": "success",
+          "start": "2026-11-16T13:52:17Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:52:24Z",
+              "conclusion": "success",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T13:52:23Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T13:52:51Z",
+          "name": "aitm-ci",
+          "result": "success",
+          "start": "2026-11-16T13:52:31Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T13:52:49Z",
+              "conclusion": "skipped",
+              "name": "Publish the full-suite stamp",
+              "started_at": "2026-11-16T13:52:49Z"
+            }
+          ]
+        }
+      ],
+      "pr": 348,
+      "run": 43878780064,
+      "run_started_at": "2026-11-16T13:45:05Z",
+      "selection": {
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "full",
+        "mode": "full",
+        "paths": [
+          {
+            "disposition": "full",
+            "path": "packages/aitm-usage/src/aitm_usage/ledger.py",
+            "reason": "Shared Ledger consumers span ownership, storage, admission and service tests.",
+            "tests": []
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": []
+      },
+      "test_inventory": {
+        "artifact": "inventories/8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043.json.gz",
+        "calls": 1517,
+        "collected": 1517,
+        "failed": [],
+        "passed": 1517,
+        "sha256": "8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043"
+      },
+      "tested": "2614e3dcdddeeff0501d469832436a949e5dc9c6",
+      "timings": {
+        "cache": "warm",
+        "hosted_seconds": 426,
+        "queue": 4,
+        "setup": 4,
+        "test": 402,
+        "total": 407
+      },
+      "tree": "d65f51becc9ca37ce708bb2a90542904cd752365",
+      "trusted_verifier": {
+        "archive_digest": "sha256:a18d5a0b27cd13daca1807d520952c38f2ebe8b1124ea2a25f571e3882ad5cc9",
+        "artifact_id": 14231882179,
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "controls": {
+          "gate": "c46994833732fd9b8811a43193b4b81b1b4de03f",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "d0a84ec1e33c6bd33afbde6051580e9ece9334b7",
+          "verifier": "3389c6b36cb8ad51f9531d695e7133cfa292bc71",
+          "workflow": "7cb6b1e044542d8735f7e886cbdb6889dfcae84f"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1036,
+            "num_statements": 1109
+          },
+          "product": {
+            "covered_lines": 14487,
+            "num_statements": 15925
+          }
+        },
+        "head": "cefa7b43ba661fe6aeb50f009da9b9004c3ea809",
+        "jobs": {
+          "aitm-ci": 133343002459,
+          "collect-evidence": 133342884465,
+          "file-checks": 133338754040,
+          "python": 133338754633,
+          "python-base": 133338754391,
+          "quality": 133338754408
+        },
+        "pr": 348,
+        "repository": "kburson/aitm",
+        "repository_id": 1450406435,
+        "reviewed_tree": null,
+        "run": "https://github.com/kburson/aitm/actions/runs/43878780064/attempts/1",
+        "run_attempt": 1,
+        "run_id": 43878780064,
+        "status": "pass",
+        "subject_digest": "4d2d0606fc1ca834323e966982073822bdcb185a0a24013a4bc83d633c32ca9b",
+        "target": "trunk",
+        "tested": "2614e3dcdddeeff0501d469832436a949e5dc9c6",
+        "tree": "d65f51becc9ca37ce708bb2a90542904cd752365",
+        "verified_at": "2026-11-16T13:53:25.836384+00:00",
+        "workflow_id": 412848571
+      }
+    },
+    "red": {
+      "artifacts": [
+        {
+          "digest": "sha256:756d1010a6ee1653715707f606c5a1bb4f1cb297f68faf34ef45fbd968185141",
+          "id": 14233016665,
+          "name": "aitm-ci-base-a1"
+        },
+        {
+          "digest": "sha256:f8a0874debdd620dc97285701b6ea936e5e3d2ab3c475b09ea39fec9994136fe",
+          "id": 14232891072,
+          "name": "aitm-ci-mapped-diagnostics-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "red",
+      "conclusion": "failure",
+      "created_at": "2026-11-16T13:59:49Z",
+      "head": "6e7bdc31bcfabdcd8a3c63b44fafc91aa84f9bb4",
+      "jobs": [
+        {
+          "end": "2026-11-16T14:00:06Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:59:53Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:00:25Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:59:54Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:05:09Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T14:04:56Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T14:00:24Z",
+          "name": "python",
+          "result": "failure",
+          "start": "2026-11-16T13:59:55Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T14:00:12Z",
+              "conclusion": "success",
+              "name": "Restore the full-suite stamp",
+              "started_at": "2026-11-16T14:00:09Z"
+            },
+            {
+              "completed_at": "2026-11-16T14:00:19Z",
+              "conclusion": "failure",
+              "name": "Run parallel behavior suite and retain exact coverage",
+              "started_at": "2026-11-16T14:00:12Z"
+            },
+            {
+              "completed_at": "2026-11-16T14:00:19Z",
+              "conclusion": "skipped",
+              "name": "Run the full suite once for this selection",
+              "started_at": "2026-11-16T14:00:19Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T14:05:18Z",
+          "name": "collect-evidence",
+          "result": "failure",
+          "start": "2026-11-16T14:05:11Z",
+          "steps": [
+            {
+              "completed_at": "2026-11-16T14:05:15Z",
+              "conclusion": "skipped",
+              "name": "Evaluate required evidence and assemble the candidate",
+              "started_at": "2026-11-16T14:05:15Z"
+            }
+          ]
+        },
+        {
+          "end": "2026-11-16T14:05:18Z",
+          "name": "aitm-ci",
+          "result": "skipped",
+          "start": "2026-11-16T14:05:18Z",
+          "steps": []
+        }
+      ],
+      "pr": 347,
+      "restored_run": 43878765256,
+      "run": 43881192348,
+      "run_started_at": "2026-11-16T13:59:49Z",
+      "selection": {
+        "cache_key": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-8985f8bcfadb9369483c9ad019035226e7533dc4d229f96def0bafca54462b11",
+        "children": {
+          "cli-help": "tools/ci/tests/test_cli_evidence.py",
+          "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+        },
+        "key": "8985f8bcfadb9369483c9ad019035226e7533dc4d229f96def0bafca54462b11",
+        "mode": "mapped",
+        "paths": [
+          {
+            "disposition": "mapped",
+            "path": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+            "reason": "test_grok.py reads the headless rows and reconciles their request IDs and usage against native Grok observations.",
+            "tests": [
+              "packages/aitm-usage/tests/test_grok.py"
+            ]
+          }
+        ],
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "tests": [
+          "packages/aitm-usage/tests/test_grok.py"
+        ]
+      },
+      "test_inventory": {
+        "artifact": "inventories/506743ac60b2eff4479b68232bb61a45a27734d8db5fb1ee9a9ab70fcc0b8e00.json.gz",
+        "calls": 33,
+        "collected": 33,
+        "failed": [
+          "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration"
+        ],
+        "passed": 32,
+        "sha256": "506743ac60b2eff4479b68232bb61a45a27734d8db5fb1ee9a9ab70fcc0b8e00"
+      },
+      "tested": "28af991f87e13ef57a6299c673d0ff8810266085",
+      "tree": "d93514160f9ba39b21f378953a2c5d7fb4c919a3",
+      "trusted_verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-16T14:05:36.520525+00:00"
+      }
+    },
+    "superseded": {
+      "artifacts": [
+        {
+          "digest": "sha256:582d5ff1d685bf807cc9bba2732849dbfd77864c676264cc056252037647c55f",
+          "id": 14231563328,
+          "name": "aitm-ci-base-a1"
+        }
+      ],
+      "attempt": 1,
+      "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "case": "superseded",
+      "conclusion": "cancelled",
+      "created_at": "2026-11-16T13:56:47Z",
+      "head": "7931efccb6b2ab93ba5191fe2867e629956bef87",
+      "jobs": [
+        {
+          "end": "2026-11-16T13:57:19Z",
+          "name": "quality",
+          "result": "success",
+          "start": "2026-11-16T13:56:50Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:57:04Z",
+          "name": "python-base",
+          "result": "success",
+          "start": "2026-11-16T13:56:50Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:59:50Z",
+          "name": "python",
+          "result": "cancelled",
+          "start": "2026-11-16T13:56:48Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:57:11Z",
+          "name": "file-checks",
+          "result": "success",
+          "start": "2026-11-16T13:56:50Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:59:50Z",
+          "name": "collect-evidence",
+          "result": "cancelled",
+          "start": "2026-11-16T13:59:51Z",
+          "steps": []
+        },
+        {
+          "end": "2026-11-16T13:59:50Z",
+          "name": "aitm-ci",
+          "result": "cancelled",
+          "start": "2026-11-16T13:59:51Z",
+          "steps": []
+        }
+      ],
+      "pr": 347,
+      "run": 43880699536,
+      "run_started_at": "2026-11-16T13:56:47Z",
+      "tested": "63e73cd5b2dfb228e22e736484eb80ec4df5d421",
+      "tree": "c38a14edd323866e670578beca266abcff0e8a61"
+    }
+  },
+  "independent_full_comparison": {
+    "assertion": "len(baseline.observations) == 2 and not baseline.diagnostics",
+    "calls": 1517,
+    "collected": 1517,
+    "exit_code": 1,
+    "failed": "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration",
+    "observed_count": 0,
+    "other_errors": [],
+    "passed": 1516,
+    "platform": "macOS 26.6.2 arm64, APFS",
+    "python": "3.13.9",
+    "sha256": "8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043",
+    "test_inventory": "inventories/8608777460b07145ae880134b2392c48cead73cedac7376f8ebc784e1fea3043.json.gz",
+    "tested": "28af991f87e13ef57a6299c673d0ff8810266085",
+    "tree": "d93514160f9ba39b21f378953a2c5d7fb4c919a3",
+    "uv": "0.10.6",
+    "workers": 3
+  },
+  "pending_source": {
+    "head": "a43d66f3677269a6bba3b0959bb431607728aaac",
+    "precompletion_hold": {
+      "reason": "selected attempt is not complete and successful",
+      "status": "hold",
+      "verified_at": "2026-11-16T14:13:24.244418+00:00"
+    },
+    "run": 43882437964,
+    "tested": "dc8c46823e9e54012918f017650b192222831fc7",
+    "tree": "481b5e8e4aa41bf4d5b2ac49c273c5acb2a24606"
+  },
+  "repository": "kburson/aitm",
+  "trunk": {
+    "collected": 1517,
+    "head": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "outcome": "success",
+    "run": "https://github.com/kburson/aitm/actions/runs/43878715343",
+    "selection": {
+      "key": "full",
+      "mode": "full",
+      "schema": "aitm.path-selection/v1",
+      "source": "push",
+      "tests": []
+    }
+  }
+}
