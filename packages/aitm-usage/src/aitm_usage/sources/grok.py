@@ -1,6 +1,7 @@
 """Read qualified Grok Build whole-turn evidence without assigning a project.
 
 The mapped pull-request coverage for this module is test_grok.py.
+A later amendment of this module keeps that same mapped test.
 """
 
 import json
