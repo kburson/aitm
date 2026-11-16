@@ -50,3 +50,33 @@ The file lane checks tracked Markdown and YAML with markdownlint-cli2 and yamlli
 TypeScript reports **not applicable** because the repository has no product TypeScript package. The tooling manifest under `tools/ci/file-lint/` only installs the Markdown checker. The first tracked product TypeScript inputs surface a hold until the product has a working ESLint and typescript-eslint check, `tsc --noEmit`, and Vitest with meaningful behavioral tests and an unrounded 90% V8 line floor.
 
 The Python jobs retain the full applicable test inventory, slow test durations, setup and run timings, and the cold or warm cache result. Use those observations when evaluating test scheduling as the suite grows.
+
+## Report pinned obligations for an uncommitted change
+
+Run the report from a trusted checkout containing the tooling. Pass the inspected
+checkout separately and use its exact 40-character HEAD commit for `--base`.
+Use `-B` to keep Python from writing bytecode caches in the tooling checkout.
+
+```sh
+python -B -E -s -m tools.ci.tia.working_tree_report \
+  --repo /path/to/inspected/checkout \
+  --base 8799c5a445dd4b51d499132e9a314b64796ae918
+```
+
+Version 1 supports an edit confined to appending LF-terminated ASCII comments
+and blank lines to the audited Grok scope hook source, with the original bytes
+and file mode preserved. It admits the evidence anchor shown above and a tree
+whose only committed differences are this report's three new files and the CI
+guide update. Other committed changes require fresh qualification. Use separate
+checkouts if the inspected checkout contains edits to the tooling. Git-ignored
+files are outside the effective snapshot.
+
+A positive JSON report exits 0 with `mode: pinned-mapped-obligations`, the observed
+snapshot, the admission evidence, and the 30 pinned test IDs. The candidate
+inventory and impact completeness are both `unqualified`. The command reads
+captured data without importing candidate Python or running tests.
+
+An unavailable report exits 2 with a machine-readable `reason` and an empty
+`node_ids` array. This includes invalid arguments, an unsupported or clean
+worktree, and an observation that changed during the report. Bind any subsequent
+action to the reported snapshot and revalidate it before use.
