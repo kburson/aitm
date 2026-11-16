@@ -18,7 +18,14 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import quote
 
-from python_gate import _policy_error
+from path_map import (
+    MAP_PATH,
+    MAP_SCHEMA,
+    SELECTION_SCHEMA,
+    SELECTOR_PATH,
+    select_candidate,
+)
+from python_gate import _policy_error, selected_execution_errors
 
 WORKFLOW = ".github/workflows/ci.yml"
 GH_VERSION = "2.97.0"
@@ -409,7 +416,14 @@ def read_attempt(github, pull, workflow, selected):
     require(started >= run_created, "selected attempt start predates run")
     if attempt == 1:
         require(
-            record["created_at"] == selected["created_at"],
+            record["created_at"] == selected["created_at"]
+            or (
+                record["run_started_at"] == selected["run_started_at"]
+                and 0
+                < (timestamp(record["created_at"]) - run_created).total_seconds()
+                <= 1
+                and timestamp(record["created_at"]) <= timestamp(record["updated_at"])
+            ),
             "first attempt creation disagrees with canonical run",
         )
     else:
@@ -580,7 +594,14 @@ def verify_controls(github, pull, tree, reviewed_tree):
         "tree": base_tree,
         **{name: sha256(raw).hexdigest() for name, raw in base_blobs.items()},
     }
-    return policy, controls, base_identity
+    expected_selection = None
+    if MAP_PATH in base and SELECTOR_PATH in base:
+        document = decode_json(blob(github, regular_blob(base, MAP_PATH)))
+        if document.get("schema") == MAP_SCHEMA:
+            expected_selection = select_candidate(
+                pull.base, pull.number, base, candidate, document
+            )
+    return policy, controls, base_identity, expected_selection
 
 
 def read_evidence_archive(data):
@@ -613,7 +634,7 @@ def read_evidence_archive(data):
     return content["candidate.json"], content["attestation.sigstore.json"]
 
 
-def attempt_archive(github, pull, selected):
+def attempt_archive(github, pull, selected, expected_selection=None):
     run, attempt = selected["id"], selected["run_attempt"]
     artifacts = github.pages(f"actions/runs/{run}/artifacts?per_page=100", "artifacts")
     require(
@@ -623,14 +644,22 @@ def attempt_archive(github, pull, selected):
         "duplicate attempt artifact ID or name",
     )
     current = {}
+    stamp_key = (expected_selection or {}).get("cache_key")
     for item in artifacts:
         name = re.fullmatch(r"aitm-ci-([a-z]+)-a([1-9][0-9]*)", item["name"])
-        require(
-            name and name[1] in ARTIFACTS and int(name[2]) <= attempt,
-            "unexpected attempt artifact name",
+        diagnostic = re.fullmatch(
+            r"aitm-ci-mapped-diagnostics-a([1-9][0-9]*)", item["name"]
         )
-        if int(name[2]) != attempt:
+        if diagnostic and int(diagnostic[1]) < attempt:
             continue
+        is_stamp = stamp_key is not None and item["name"] == stamp_key
+        if not is_stamp:
+            require(
+                name and name[1] in ARTIFACTS and int(name[2]) <= attempt,
+                "unexpected attempt artifact name",
+            )
+            if int(name[2]) != attempt:
+                continue
         link = item["workflow_run"]
         require(
             positive(item["id"])
@@ -645,7 +674,8 @@ def attempt_archive(github, pull, selected):
             and positive(item["size_in_bytes"]),
             "attempt artifact custody, digest or expiry disagrees",
         )
-        current[name[1]] = item
+        if not is_stamp:
+            current[name[1]] = item
     require(set(current) == ARTIFACTS, "missing selected attempt artifact")
     final = current["evidence"]
     require(
@@ -718,7 +748,7 @@ def _narrowed_selection(report, policy):
     mode = selection.get("mode") if isinstance(selection, dict) else None
     require(
         isinstance(selection, dict)
-        and selection.get("schema") == "aitm.path-selection/v1"
+        and selection.get("schema") in {"aitm.path-selection/v1", SELECTION_SCHEMA}
         and mode in {"full", "mapped", "checks"}
         and isinstance(tests, list)
         and all(isinstance(item, str) and item for item in tests)
@@ -737,7 +767,16 @@ def _narrowed_selection(report, policy):
     return selection
 
 
-def report_evidence(subject, pull, selected, tree, policy, controls, base_identity):
+def report_evidence(
+    subject,
+    pull,
+    selected,
+    tree,
+    policy,
+    controls,
+    base_identity,
+    expected_selection=None,
+):
     report = decode_json(subject)
     require(report["schema"] == "aitm.ci-candidate/v2", "candidate schema disagrees")
     expected = {
@@ -789,6 +828,11 @@ def report_evidence(subject, pull, selected, tree, policy, controls, base_identi
     for key in ("inventory", "source_inventory", "baseline"):
         require(digest(report[key], 64), f"candidate {key} digest missing")
     result = report["result"]
+    if expected_selection is not None:
+        require(
+            report.get("selection") == expected_selection,
+            "candidate path selection disagrees with the trusted base and tested tree",
+        )
     selection = _narrowed_selection(report, policy)
     if selection is None:
         require(
@@ -810,6 +854,23 @@ def report_evidence(subject, pull, selected, tree, policy, controls, base_identi
                 else result["tests"] == 0
             ),
             "candidate Python evidence is not passing",
+        )
+    if selection is not None and selection["schema"] == SELECTION_SCHEMA:
+        passed = result.get("executed_test_ids")
+        skipped = result.get("skipped_test_ids")
+        require(
+            all(
+                isinstance(nodes, list)
+                and all(isinstance(node, str) and node for node in nodes)
+                and nodes == sorted(set(nodes))
+                for nodes in (passed, skipped)
+            )
+            and not set(passed).intersection(skipped)
+            and result["tests"] == len(passed) + len(skipped)
+            and not selected_execution_errors(
+                selection, passed, skipped, policy["optional_skips"]
+            ),
+            "selected test execution evidence is incomplete",
         )
     coverage = result["coverage"]
     require(
@@ -878,7 +939,7 @@ def verify_pr(github, number, target, checkout, *, reviewed_tree=None):
             "tested merge has incorrect ordered base/head parents",
         )
         tree = tested["tree"]["sha"]
-        policy, controls, base_identity = verify_controls(
+        policy, controls, base_identity, expected_selection = verify_controls(
             github, pull, tree, reviewed_tree
         )
         jobs = verify_jobs(
@@ -890,12 +951,21 @@ def verify_pr(github, number, target, checkout, *, reviewed_tree=None):
             suite,
             set(policy["pr_jobs"]) | FIXED_JOBS,
         )
-        artifact, subject, bundle = attempt_archive(github, pull, selected)
+        artifact, subject, bundle = attempt_archive(
+            github, pull, selected, expected_selection
+        )
         invocation, subject_digest = verify_certificate(
             github, pull, selected, started, subject, bundle
         )
         coverage = report_evidence(
-            subject, pull, selected, tree, policy, controls, base_identity
+            subject,
+            pull,
+            selected,
+            tree,
+            policy,
+            controls,
+            base_identity,
+            expected_selection,
         )
         require(
             live_pull(github, number, target) == pull

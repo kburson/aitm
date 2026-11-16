@@ -56,15 +56,19 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-base"
           mkdir -p "$out/observer" "$out/evidence"
-          # This checkout is the base. Diff the tested merge with rename detection
-          # off, the same command the candidate lane uses, so both lanes see the
-          # pre-image of a rename and a complete path list.
+          # Use the literal base and the exact tested merge in both lanes.
+          # The legacy diff also retains both sides of a rename.
           if [[ -f tools/ci/path_map.py && -f tools/ci/path_map.json ]]; then
             git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/merge"
             test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
-            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
-            python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/selection.json"
-            mode=$(jq -er .mode "$out/selection.json")
+            if [[ "$(jq -r .schema tools/ci/path_map.json)" == aitm.path-map/v2 ]]; then
+              python3 tools/ci/path_map.py --map tools/ci/path_map.json \
+                --base "$BASE" --candidate "$GITHUB_SHA" --pull-number "$PR_NUMBER" > "$out/evidence/selection.json"
+            else
+              git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
+              python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/evidence/selection.json"
+            fi
+            mode=$(jq -er .mode "$out/evidence/selection.json")
             if [[ "$mode" != full ]]; then
               printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
               exit 0
@@ -130,12 +134,13 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 20
     permissions:
-      actions: write
+      actions: read
       contents: read
     outputs:
       checkout: ${{ steps.source.outputs.commit }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
       artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      full-once: ${{ steps.full-suite-once.outcome }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         id: source
@@ -205,8 +210,13 @@ jobs:
             # Run the selector from the base blobs. The merge tree must not choose tests.
             git show "$BASE:tools/ci/path_map.py" > "$out/base-path-map.py"
             git show "$BASE:tools/ci/path_map.json" > "$out/base-path-map.json"
-            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
-            python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
+            if [[ "$(jq -r .schema "$out/base-path-map.json")" == aitm.path-map/v2 ]]; then
+              python3 "$out/base-path-map.py" --map "$out/base-path-map.json" \
+                --base "$BASE" --candidate "$GITHUB_SHA" --pull-number "$PR_NUMBER" > "$selection"
+            else
+              git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
+              python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
+            fi
           else
             python3 - "$selection" <<'PY'
           import json, sys
@@ -218,8 +228,54 @@ jobs:
           PY
           fi
           mode=$(jq -er .mode "$selection")
-          key=$(jq -er .key "$selection")
-          printf 'mode=%s\nkey=%s\ncache_key=%s\n' "$mode" "$key" "pr-${PR_NUMBER}-full-${key}" >> "$GITHUB_OUTPUT"
+          cache_key=$(jq -r '.cache_key // empty' "$selection")
+          printf 'mode=%s\ncache_key=%s\n' "$mode" "$cache_key" >> "$GITHUB_OUTPUT"
+      - name: Restore the full-suite stamp
+        id: full-once
+        if: github.event_name == 'pull_request' && steps.qualify.outputs.cache_key != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STAMP_KEY: ${{ steps.qualify.outputs.cache_key }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          repo="repos/$GITHUB_REPOSITORY"
+          trusted_workflow=$(git rev-parse "$BASE:.github/workflows/ci.yml")
+          hit=false
+          if listing=$(gh api "$repo/actions/artifacts?name=$STAMP_KEY&per_page=20"); then
+            while IFS= read -r prior; do
+              if ! run=$(gh api "$repo/actions/runs/$prior"); then continue; fi
+              if ! jq -e --argjson current "$GITHUB_RUN_ID" --argjson pr "$PR_NUMBER" \
+                --argjson repo_id "$GITHUB_REPOSITORY_ID" --arg base "$BASE" \
+                --arg branch "$GITHUB_HEAD_REF" --arg target "$GITHUB_BASE_REF" '
+                  .id != $current and .path == ".github/workflows/ci.yml" and
+                  .event == "pull_request" and .status == "completed" and .conclusion == "success" and
+                  .repository.id == $repo_id and .head_repository.id == $repo_id and
+                  any(.pull_requests[]; .number == $pr and .base.sha == $base and .base.ref == $target and .head.ref == $branch and
+                    .base.repo.id == $repo_id and .head.repo.id == $repo_id)
+                ' <<<"$run" >/dev/null; then continue; fi
+              prior_head=$(jq -er .head_sha <<<"$run")
+              [[ "$prior_head" =~ ^[a-f0-9]{40}$ ]] || continue
+              if ! prior_workflow=$(gh api "$repo/contents/.github/workflows/ci.yml?ref=$prior_head" --jq .sha) ||
+                ! [[ "$prior_workflow" == "$trusted_workflow" ]]; then continue; fi
+              attempt=$(jq -er .run_attempt <<<"$run")
+              if jobs=$(gh api "$repo/actions/runs/$prior/attempts/$attempt/jobs?per_page=100") &&
+                jq -e 'any(.jobs[]; .name == "aitm-ci" and .conclusion == "success" and
+                          any(.steps[]; .name == "Publish the full-suite stamp" and .conclusion == "success"))
+                       and any(.jobs[]; .name == "python" and .conclusion == "success" and
+                          any(.steps[]; .name == "Run the full suite once for this selection" and .conclusion == "success"))' \
+                  <<<"$jobs" >/dev/null; then
+                hit=true
+                printf 'Restored %s from successful run %s attempt %s\n' "$STAMP_KEY" "$prior" "$attempt"
+                break
+              fi
+            done < <(jq -r --arg key "$STAMP_KEY" --argjson repo_id "$GITHUB_REPOSITORY_ID" '
+              .artifacts[] | select(.name == $key and .expired == false and
+                .workflow_run.repository_id == $repo_id and .workflow_run.head_repository_id == $repo_id) |
+              .workflow_run.id | numbers' <<<"$listing")
+          fi
+          printf 'hit=%s\n' "$hit" >> "$GITHUB_OUTPUT"
       - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
@@ -308,15 +364,9 @@ jobs:
           grep -q 'usage: aitm-usage' "$out/help"
           jq --argjson end "$(date +%s)" '. + {total:($end-.started)} | del(.started)' "$out/timings.json" > "$out/evidence/timings.json"
           jq -n --arg digest "$(cut -d' ' -f1 "$out/wheel.sha256")" '{$digest}' > "$out/evidence/wheel.json"
-      - name: Restore the full-suite stamp
-        id: full-once
-        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full'
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: ${{ runner.temp }}/aitm-full-once
-          key: ${{ steps.qualify.outputs.cache_key }}
       - name: Run the full suite once for this selection
-        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
+        id: full-suite-once
+        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.hit != 'true'
         shell: bash
         run: |
           root=$(pwd -P)
@@ -324,20 +374,23 @@ jobs:
           fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-full-once-fixtures.XXXXXXXX")
           uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
             --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
-          mkdir -p "$RUNNER_TEMP/aitm-full-once"
-          printf 'ok\n' > "$RUNNER_TEMP/aitm-full-once/stamp"
-      - name: Save the full-suite stamp
-        if: success() && github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: ${{ runner.temp }}/aitm-full-once
-          key: ${{ steps.qualify.outputs.cache_key }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: upload
         with:
           name: aitm-ci-python-a${{ github.run_attempt }}
           path: ${{ runner.temp }}/aitm-python/evidence/
           if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.qualify.outputs.mode == 'mapped'
+        with:
+          name: aitm-ci-mapped-diagnostics-a${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/aitm-python/evidence/selection.json
+            ${{ runner.temp }}/aitm-python/evidence/product-junit.xml
+            ${{ runner.temp }}/aitm-python/observer/pytest*.json
+          if-no-files-found: error
+          overwrite: false
 
   quality:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
@@ -488,6 +541,12 @@ jobs:
           fi
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             mode='pr'
+            base_selection="$RUNNER_TEMP/aitm-baseline/selection.json"
+            if [[ -f "$base_selection" ]]; then
+              jq -e --slurpfile candidate "$input/selection.json" '. == $candidate[0]' "$base_selection" >/dev/null
+            else
+              test "$selection_mode" = full
+            fi
             if [[ "$selection_mode" == full ]]; then
               base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
                          --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"
@@ -536,7 +595,7 @@ jobs:
               '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$source_inventory,$baseline,
                 controls:{$policy,$workflow,$observer,$gate,$lock,$verifier},jobs:($jobs|map_values(.result)),
                 checkouts:(($jobs|map_values(.outputs.checkout))+{collector:$tested}),
-                result:$result[0],children:$child[0].children,timings:($timings[0]+$provider_timing[0]),wheel:$wheel[0].digest,
+                full_once:($jobs.python.outputs["full-once"]=="success"),result:$result[0],children:$child[0].children,timings:($timings[0]+$provider_timing[0]),wheel:$wheel[0].digest,
                 platform:$platform[0],base_identity:$base_identity[0],selection:$selection[0],
                 branches:{product:($product[0].totals|{covered_branches,num_branches}),
                 helpers:($helpers[0].totals|{covered_branches,num_branches})}}' > "$out/candidate.json"
@@ -590,6 +649,7 @@ jobs:
           skip-decompress: true
           digest-mismatch: error
       - name: Validate the archive and recover only the fixed subject
+        id: subject
         env:
           EXPECTED_SHA256: ${{ steps.authorize.outputs.digest }}
         shell: bash
@@ -628,6 +688,20 @@ jobs:
           destination = root / "binding-signed"
           destination.mkdir()
           (destination / "candidate.json").write_bytes(subject)
+
+          if report.get("full_once") is True:
+              import re
+
+              selection = report["selection"]
+              key = selection.get("cache_key", "")
+              if selection.get("mode") not in {"mapped", "checks"}:
+                  raise SystemExit("invalid full-suite stamp mode")
+              if key and not re.fullmatch(r"pr-[1-9][0-9]*-full-v2-[a-f0-9]{40}(?:-[a-f0-9]{64}){2}", key):
+                  raise SystemExit("invalid full-suite stamp key")
+              if key:
+                  (root / "full-suite-stamp").write_text(f"{key}\n")
+                  with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+                      print(f"stamp={key}", file=output)
           PY
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         id: attest
@@ -649,3 +723,11 @@ jobs:
           path: ${{ runner.temp }}/binding-signed/
           if-no-files-found: error
           overwrite: false
+      - name: Publish the full-suite stamp
+        if: steps.subject.outputs.stamp != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.subject.outputs.stamp }}
+          path: ${{ runner.temp }}/full-suite-stamp
+          if-no-files-found: error
+          overwrite: true

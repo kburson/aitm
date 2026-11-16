@@ -1,32 +1,27 @@
-"""Choose pull-request tests from the trusted base path map.
-
-The candidate tree does not choose the tests. Callers pass paths changed
-between the pull-request base and the tested merge, plus the map blob from
-that base. An absent map is handled by the workflow, which records mode full
-without executing this file.
-"""
+"""Select PR tests using a reviewed base map and the two exact Git trees."""
 
 import argparse
 import json
+import re
+import subprocess
 from hashlib import sha256
 from pathlib import Path
 
-MAP_SCHEMA = "aitm.path-map/v1"
-SELECTION_SCHEMA = "aitm.path-selection/v1"
-_EXECUTABLE_SUFFIXES = {".py", ".sh", ".bash", ".zsh"}
-_SOURCE_DATA_SUFFIXES = {".json", ".toml", ".yaml", ".yml"}
+MAP_PATH = "tools/ci/path_map.json"
+SELECTOR_PATH = "tools/ci/path_map.py"
+MAP_SCHEMA = "aitm.path-map/v2"
+SELECTION_SCHEMA = "aitm.path-selection/v2"
+_PACKAGE = "packages/aitm-usage/"
+_EXTRA_CONSUMERS = {
+    ".github/workflows/ci.yml",
+    "tools/ci/pytest_evidence.py",
+    "tools/ci/tests/test_cli_evidence.py",
+}
 _COMPARE_FILE_LIMIT = 300
 
 
 def full_suite_needed(event, mode, cache_hit):
-    """Return whether a narrowed pull request must start the full suite.
-
-    Push and mode full already run the full suite as the required check, so
-    they do not start a second one. A mapped or checks pull request starts it
-    only when this selection has no successful stamp. An unknown mode starts
-    it, which fails closed.
-    """
-
+    """Whether a narrowed PR needs its extra full suite."""
     if event == "push" or mode == "full":
         return False
     if mode not in {"mapped", "checks"} or cache_hit not in {True, False}:
@@ -34,24 +29,32 @@ def full_suite_needed(event, mode, cache_hit):
     return not cache_hit
 
 
-def cache_key(pull_number, selection):
-    """Return the exact Actions cache key for one pull request and selection."""
+def _digest(value, size):
+    return isinstance(value, str) and re.fullmatch(rf"[0-9a-f]{{{size}}}", value)
 
+
+def cache_key(pull_number, selection, *, base, policy):
+    """A successful full run applies only to this PR and selection context."""
     key = selection.get("key") if isinstance(selection, dict) else None
     if (
         type(pull_number) is not int
         or pull_number <= 0
-        or not isinstance(key, str)
-        or not key
-        or any(character in key for character in "\n ,")
+        or not _digest(base, 40)
+        or not _digest(policy, 64)
+        or not _digest(key, 64)
     ):
         raise ValueError("invalid full-suite cache key")
-    return f"pr-{pull_number}-full-{key}"
+    return f"pr-{pull_number}-full-v2-{base}-{policy}-{key}"
+
+
+def _json_digest(value):
+    return sha256(
+        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
 def paths_from_compare(document):
-    """Return compare filenames, or None when the response cannot narrow tests."""
-
+    """Retain both names of a move and reject incomplete compare responses."""
     files = document.get("files") if isinstance(document, dict) else None
     if not isinstance(files, list) or len(files) >= _COMPARE_FILE_LIMIT:
         return None
@@ -63,8 +66,6 @@ def paths_from_compare(document):
         if not isinstance(name, str) or not name:
             return None
         paths.append(name)
-        # A rename's post-image can be an ordinary docs path. Keep the pre-image
-        # so a moved workflow, map, or executable still selects the full suite.
         if "previous_filename" in item or item.get("status") in {"renamed", "copied"}:
             previous = item.get("previous_filename")
             if not isinstance(previous, str) or not previous:
@@ -73,149 +74,180 @@ def paths_from_compare(document):
     return paths
 
 
-def select(paths, document):
-    """Return a full, mapped, or checks selection for the changed paths."""
-
-    _validate_map(document)
-    if not paths or any(_unsafe(path) for path in paths):
-        return _selection("full", [], document)
-    if any(_is_full(path, document) for path in paths):
-        return _selection("full", [], document)
-    chosen = []
-    for path in paths:
-        tests = _rule_tests(path, document)
-        if tests is None:
-            if _executable(path):
-                return _selection("full", [], document)
-            continue
-        chosen.extend(tests)
-    unique = sorted(set(chosen))
-    return _selection("mapped" if unique else "checks", unique, document)
-
-
-def _selection(mode, tests, document):
-    body = {"mode": mode, "tests": tests}
-    key = (
-        "full"
-        if mode == "full"
-        else sha256(
-            json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+def _unsafe(path):
+    return (
+        not isinstance(path, str)
+        or "\\" in path
+        or any(part in {"", ".", ".."} for part in path.split("/"))
     )
-    return {
-        "schema": SELECTION_SCHEMA,
-        "mode": mode,
-        "tests": tests,
-        "key": key,
-        "source": "base",
-        "children": document["children"],
-    }
+
+
+def _names(values):
+    return (
+        isinstance(values, list)
+        and all(isinstance(item, str) and item for item in values)
+        and len(set(values)) == len(values)
+    )
 
 
 def _validate_map(document):
     if not isinstance(document, dict) or document.get("schema") != MAP_SCHEMA:
         raise ValueError("invalid path map")
-    prefixes = document.get("full_prefixes")
-    names = document.get("full_names")
+    for key in ("full_prefixes", "full_names"):
+        if not _names(document.get(key)):
+            raise ValueError("invalid full-suite policy")
     rules = document.get("rules")
-    self_tests = document.get("self_tests")
     children = document.get("children")
     if (
-        not _strings(prefixes)
-        or not _strings(names)
-        or any("/" in name for name in names)
-        or not isinstance(rules, list)
-        or not _strings(self_tests)
-        or any(
-            pattern.count("*") != 1 or not pattern.endswith("*.py")
-            for pattern in self_tests
-        )
+        not isinstance(rules, list)
         or not isinstance(children, dict)
         or not children
-        or any(
-            not isinstance(label, str)
-            or not isinstance(path, str)
-            or not label
-            or not path
-            for label, path in children.items()
-        )
+        or any(not label or _unsafe(path) for label, path in children.items())
     ):
         raise ValueError("invalid path map")
+    declared = set()
     for rule in rules:
-        prefix = rule.get("prefix") if isinstance(rule, dict) else None
-        tests = rule.get("tests") if isinstance(rule, dict) else None
-        if not isinstance(prefix, str) or not prefix or not isinstance(tests, list):
-            raise ValueError("invalid path map")
-        if any(not isinstance(test, str) or not test for test in tests):
-            raise ValueError("invalid path map")
+        path = rule.get("prefix") if isinstance(rule, dict) else None
+        if (
+            _unsafe(path)
+            or path in declared
+            or not isinstance(rule.get("reason"), str)
+            or not rule["reason"]
+            or "tests" in rule
+            and (
+                not _names(rule["tests"])
+                or any(_unsafe(test) for test in rule["tests"])
+            )
+            or rule.get("tests")
+            and not _digest(rule.get("consumer_digest"), 64)
+        ):
+            raise ValueError("invalid or duplicate path rule")
+        declared.add(path)
 
 
-def _strings(values):
-    return (
-        isinstance(values, list)
-        and all(isinstance(item, str) and item for item in values)
-        and len(values) == len(set(values))
-    )
+def read_tree(revision):
+    if not _digest(revision, 40):
+        raise ValueError("an exact Git revision is required")
+    data = subprocess.check_output(["git", "ls-tree", "--full-tree", "-rz", revision])
+    entries = {}
+    for line in data.split(b"\0")[:-1]:
+        metadata, path = line.split(b"\t", 1)
+        mode, kind, blob = metadata.decode("ascii").split()
+        entries[path.decode("utf-8")] = {"mode": mode, "type": kind, "sha": blob}
+    return entries
 
 
-def _unsafe(path):
-    return (
-        not isinstance(path, str)
-        or not path
-        or path.startswith("/")
-        or "\\" in path
-        or path == ".."
-        or path.startswith("../")
-        or path.endswith("/..")
-        or "/../" in path
-        or "/./" in path
-    )
+def consumer_digest(entries, input_path, full_names):
+    """Bind each declaration to the audited package and canonical CI consumers."""
+    inventory = [
+        [path, entry["mode"], entry["sha"]]
+        for path, entry in sorted(entries.items())
+        if path != input_path
+        and entry["type"] != "tree"
+        and (
+            path.startswith(_PACKAGE)
+            or path in _EXTRA_CONSUMERS
+            or path.rsplit("/", 1)[-1] in full_names
+        )
+    ]
+    return _json_digest(inventory)
 
 
-def _is_full(path, document):
-    name = path.rsplit("/", 1)[-1]
-    return name in document["full_names"] or any(
-        path.startswith(prefix) for prefix in document["full_prefixes"]
-    )
+def _regular(entry):
+    return entry.get("type") == "blob" and entry.get("mode") in {"100644", "100755"}
 
 
-def _rule_tests(path, document):
-    best = None
-    best_length = -1
-    for rule in document["rules"]:
-        prefix = rule["prefix"]
-        matched = path.startswith(prefix) if prefix.endswith("/") else path == prefix
-        if matched and len(prefix) > best_length:
-            best = list(rule["tests"])
-            best_length = len(prefix)
-    for pattern in document["self_tests"]:
-        if _glob_match(pattern, path) and len(pattern) > best_length:
-            best = [path]
-            best_length = len(pattern)
-    return best
+def _path_disposition(path, rule, base, candidate, document):
+    if path.rsplit("/", 1)[-1] in document["full_names"] or path.startswith(
+        tuple(document["full_prefixes"])
+    ):
+        return "full", "CI control or shared setup", []
+    if rule is None:
+        return "full", "unclassified input", []
+    if "tests" not in rule:
+        return "full", rule["reason"], []
+    if base is None or candidate is None:
+        return "full", "missing exact tree inputs", []
+    prior, current = base.get(path, {}), candidate.get(path, {})
+    if not (_regular(prior) and _regular(current) and prior["mode"] == current["mode"]):
+        return "full", "added, removed or changed file type or mode", []
+    tests = sorted(rule["tests"])
+    if not tests:
+        return "checks", rule["reason"], []
+    if any(not _regular(candidate.get(test, {})) for test in tests):
+        return "full", "selected test module is missing or non-regular", []
+    if consumer_digest(base, path, document["full_names"]) != rule["consumer_digest"]:
+        return "full", "audited consumer scope changed", []
+    return "mapped", rule["reason"], tests
 
 
-def _glob_match(pattern, path):
-    head, _, tail = pattern.rpartition("*")
-    if "*" in head or "*" in tail or "/" in tail or not head:
-        return False
-    rest = path[len(head) :]
-    middle = rest[: -len(tail)] if tail else rest
-    return (
-        path.startswith(head)
-        and middle != ""
-        and "/" not in rest
-        and rest.endswith(tail)
-    )
+def select(paths, document, *, base=None, candidate=None):
+    """Explain each changed path and fall back if any input is uncertain."""
+    try:
+        _validate_map(document)
+    except ValueError:
+        return _selection("full", [], [], {}, "invalid trusted path map")
+    if not paths or any(_unsafe(path) for path in paths):
+        return _selection("full", [], [], document["children"], "incomplete path input")
+    rules = {rule["prefix"]: rule for rule in document["rules"]}
+    evidence = []
+    for path in sorted(set(paths)):
+        disposition, reason, tests = _path_disposition(
+            path, rules.get(path), base, candidate, document
+        )
+        evidence.append(
+            {"path": path, "disposition": disposition, "reason": reason, "tests": tests}
+        )
+    full = any(row["disposition"] == "full" for row in evidence)
+    tests = [] if full else sorted({test for row in evidence for test in row["tests"]})
+    mode = "full" if full else "mapped" if tests else "checks"
+    return _selection(mode, tests, evidence, document["children"])
 
 
-def _executable(path):
-    suffix = Path(path).suffix.lower()
-    if suffix in _EXECUTABLE_SUFFIXES:
-        return True
-    return (
-        path.startswith("packages/aitm-usage/src/") and suffix in _SOURCE_DATA_SUFFIXES
-    )
+def _selection(mode, tests, paths, children, reason=None):
+    result = {
+        "schema": SELECTION_SCHEMA,
+        "mode": mode,
+        "tests": tests,
+        "key": "full"
+        if mode == "full"
+        else _json_digest({"mode": mode, "tests": tests}),
+        "source": "base",
+        "children": children,
+        "paths": paths,
+    }
+    if reason:
+        result["reason"] = reason
+    return result
+
+
+def _files(entries):
+    return {
+        path: {key: entry[key] for key in ("mode", "type", "sha")}
+        for path, entry in entries.items()
+        if entry["type"] != "tree"
+    }
+
+
+def select_trees(base, candidate, document):
+    base = _files(base)
+    candidate = _files(candidate)
+    paths = [
+        path
+        for path in base.keys() | candidate.keys()
+        if base.get(path) != candidate.get(path)
+    ]
+    return select(paths, document, base=base, candidate=candidate)
+
+
+def select_candidate(base_oid, pull_number, base, candidate, document):
+    selection = select_trees(base, candidate, document)
+    if selection["mode"] != "full":
+        policy = _json_digest([base[path]["sha"] for path in (SELECTOR_PATH, MAP_PATH)])
+        selection["cache_key"] = cache_key(
+            pull_number, selection, base=base_oid, policy=policy
+        )
+    return selection
 
 
 def main(argv=None):
@@ -224,22 +256,30 @@ def main(argv=None):
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--changed-from", type=Path)
     source.add_argument("--compare", type=Path)
+    source.add_argument("--base")
+    parser.add_argument("--candidate")
+    parser.add_argument("--pull-number", type=int)
     args = parser.parse_args(argv)
-    document = json.loads(args.map.read_text(encoding="utf-8"))
-    _validate_map(document)
-    if args.compare is not None:
-        paths = paths_from_compare(json.loads(args.compare.read_text(encoding="utf-8")))
-        result = (
-            _selection("full", [], document)
-            if paths is None
-            else select(paths, document)
+    try:
+        document = json.loads(args.map.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        document = None
+    if args.base:
+        if args.candidate is None or args.pull_number is None:
+            parser.error("--base requires --candidate and --pull-number")
+        result = select_candidate(
+            args.base,
+            args.pull_number,
+            read_tree(args.base),
+            read_tree(args.candidate),
+            document,
         )
     else:
-        paths = [
-            line
-            for line in args.changed_from.read_text(encoding="utf-8").splitlines()
-            if line
-        ]
+        paths = (
+            paths_from_compare(json.loads(args.compare.read_text(encoding="utf-8")))
+            if args.compare
+            else args.changed_from.read_text(encoding="utf-8").splitlines()
+        )
         result = select(paths, document)
     print(json.dumps(result, sort_keys=True))
     return 0

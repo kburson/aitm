@@ -6,6 +6,8 @@ import re
 from hashlib import sha256
 from pathlib import Path
 
+from path_map import SELECTION_SCHEMA
+
 PHASES = ("setup", "call", "teardown")
 IDENTITY_DIGESTS = {
     "base": 40,
@@ -263,7 +265,7 @@ def _selection_error(selection):
     mode = selection.get("mode") if isinstance(selection, dict) else None
     if (
         not isinstance(selection, dict)
-        or selection.get("schema") != "aitm.path-selection/v1"
+        or selection.get("schema") not in {"aitm.path-selection/v1", SELECTION_SCHEMA}
         or mode not in {"full", "mapped", "checks"}
         or not isinstance(tests, list)
         or any(type(item) is not str or not item for item in tests)
@@ -291,6 +293,23 @@ def _node_selected(node, selection):
     return any(
         node == path or node.startswith(f"{path}::") for path in selection["tests"]
     )
+
+
+def selected_execution_errors(selection, passed, skipped, optional_skips):
+    """Require current call evidence in each selected module."""
+    modules = set(selection["tests"])
+    exercised = {node.partition("::")[0] for node in passed}
+    problems = [
+        f"selected module has no passing call: {path}"
+        for path in sorted(modules - exercised)
+    ]
+    for node in [*passed, *skipped]:
+        path, separator, test = node.partition("::")
+        if not separator or not test or path not in modules:
+            problems.append(f"unexpected selected test ID: {node}")
+    if set(skipped) - optional_skips.keys():
+        problems.append("unexpected selected test skip")
+    return problems
 
 
 def _required_children(policy, selection):
@@ -334,6 +353,27 @@ def evaluate(
     else:
         actual, errors = _outcomes(candidate, policy["optional_skips"])
         failures.extend(errors)
+    selected_execution = {}
+    if narrowed and selection.get("schema") == SELECTION_SCHEMA:
+        passed = sorted(node for node, status in actual.items() if status == "passed")
+        skipped = sorted(set(actual) - set(passed))
+        failures.extend(
+            selected_execution_errors(
+                selection, passed, skipped, policy["optional_skips"]
+            )
+        )
+        selected_execution = {"executed_test_ids": passed, "skipped_test_ids": skipped}
+        if selection["mode"] == "checks" and (
+            not isinstance(candidate, dict)
+            or candidate.get("schema") != "aitm.pytest-evidence/v1"
+            or type(candidate.get("exit_code")) is not int
+            or candidate["exit_code"] != 0
+            or any(
+                candidate.get(key) != []
+                for key in ("collected", "deselected", "reports")
+            )
+        ):
+            failures.append("unexpected pytest evidence for checks-only mode")
     for node in policy["required_tests"]:
         if not _node_selected(node, selection):
             continue
@@ -396,7 +436,11 @@ def evaluate(
         ):
             failures.append(f"{name}: raw line coverage below 90%")
     return _disposition(
-        failures, coverage=counts, tests=len(actual), baseline_tests=len(baseline)
+        failures,
+        coverage=counts,
+        tests=len(actual),
+        baseline_tests=len(baseline),
+        **selected_execution,
     )
 
 
