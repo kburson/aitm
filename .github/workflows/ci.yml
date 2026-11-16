@@ -47,6 +47,8 @@ jobs:
       - name: Run isolated trusted base inventory and outcomes
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -54,6 +56,20 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-base"
           mkdir -p "$out/observer" "$out/evidence"
+          # This checkout is the base. Diff the tested merge with rename detection
+          # off, the same command the candidate lane uses, so both lanes see the
+          # pre-image of a rename and a complete path list.
+          if [[ -f tools/ci/path_map.py && -f tools/ci/path_map.json ]]; then
+            git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/merge"
+            test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
+            python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/selection.json"
+            mode=$(jq -er .mode "$out/selection.json")
+            if [[ "$mode" != full ]]; then
+              printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
+              exit 0
+            fi
+          fi
           workers=0
           if [[ -f tools/ci/pytest_evidence.py && -f tools/ci/policy.json ]]; then
             workers=3
@@ -112,8 +128,9 @@ jobs:
   python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: macos-26
-    timeout-minutes: 8
+    timeout-minutes: 20
     permissions:
+      actions: write
       contents: read
     outputs:
       checkout: ${{ steps.source.outputs.commit }}
@@ -135,9 +152,11 @@ jobs:
           cache-dependency-glob: packages/aitm-usage/uv.lock
           cache-suffix: macos-26-python-3.13.9
       - name: Qualify and record exact candidate inputs
+        id: qualify
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           root=$(pwd -P)
@@ -172,6 +191,35 @@ jobs:
           git ls-tree -r --name-only -z HEAD -- packages/aitm-usage/src/aitm_usage |
             python3 -c 'import json,sys; paths=sys.stdin.buffer.read().decode().split(chr(0)); print(json.dumps([p.removeprefix("packages/aitm-usage/") for p in paths if p.endswith(".py")]))' \
               > "$out/evidence/product-inventory.json"
+          selection="$out/evidence/selection.json"
+          if [[ "$GITHUB_EVENT_NAME" != pull_request ]]; then
+            python3 - "$selection" <<'PY'
+          import json, sys
+          from pathlib import Path
+          Path(sys.argv[1]).write_text(json.dumps({
+              "schema": "aitm.path-selection/v1", "mode": "full", "tests": [],
+              "key": "full", "source": "push",
+          }, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          elif git cat-file -e "$BASE:tools/ci/path_map.py" 2>/dev/null && git cat-file -e "$BASE:tools/ci/path_map.json" 2>/dev/null; then
+            # Run the selector from the base blobs. The merge tree must not choose tests.
+            git show "$BASE:tools/ci/path_map.py" > "$out/base-path-map.py"
+            git show "$BASE:tools/ci/path_map.json" > "$out/base-path-map.json"
+            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
+            python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
+          else
+            python3 - "$selection" <<'PY'
+          import json, sys
+          from pathlib import Path
+          Path(sys.argv[1]).write_text(json.dumps({
+              "schema": "aitm.path-selection/v1", "mode": "full", "tests": [],
+              "key": "full", "source": "absent",
+          }, sort_keys=True) + "\n", encoding="utf-8")
+          PY
+          fi
+          mode=$(jq -er .mode "$selection")
+          key=$(jq -er .key "$selection")
+          printf 'mode=%s\nkey=%s\ncache_key=%s\n' "$mode" "$key" "pr-${PR_NUMBER}-full-${key}" >> "$GITHUB_OUTPUT"
       - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
@@ -187,13 +235,26 @@ jobs:
           mkdir -p "$out/observer"
           export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
+          mode=$(jq -er .mode "$out/evidence/selection.json")
           # Keep native fixtures away from the shared system temp directory and coverage output.
           fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
-          uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
-            -n "$workers" --dist worksteal -p no:cacheprovider \
-            --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
-            --durations=15 tests "$root/tools/ci/tests/test_cli_evidence.py"
-          uv run --locked python - "$out" "$workers" <<'PY'
+          if [[ "$mode" == checks ]]; then
+            printf '%s\n' '{"schema":"aitm.pytest-evidence/v1","exit_code":0,"collected":[],"deselected":[],"reports":[],"children":[]}' > "$out/evidence/pytest.json"
+            printf '%s\n' '{"schema":"aitm.ci-child-evidence/v1","children":[]}' > "$out/evidence/children.json"
+            printf '%s\n' '{"files":{},"totals":{"covered_branches":0,"num_branches":0,"covered_lines":0,"num_statements":0}}' > "$out/evidence/product-coverage.json"
+          else
+            product_args=(tests "$root/tools/ci/tests/test_cli_evidence.py")
+            if [[ "$mode" == mapped ]]; then
+              product_args=()
+              while IFS= read -r path; do
+                product_args+=("$root/$path")
+              done < <(jq -er '.tests[]' "$out/evidence/selection.json")
+            fi
+            uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
+              -n "$workers" --dist worksteal -p no:cacheprovider \
+              --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
+              --durations=15 "${product_args[@]}"
+            uv run --locked python - "$out" "$workers" <<'PY'
           import json
           import sys
           from pathlib import Path
@@ -206,8 +267,9 @@ jobs:
           result = collect_child_coverage(evidence, root / ".product")
           (root / "evidence/children.json").write_text(json.dumps(result))
           PY
-          uv run --locked coverage combine --keep
-          uv run --locked coverage json -o "$out/evidence/product-coverage.json"
+            uv run --locked coverage combine --keep
+            uv run --locked coverage json -o "$out/evidence/product-coverage.json"
+          fi
           cd "$root"
           unset AITM_CI_PYTEST_EVIDENCE AITM_CI_CHILD_EVIDENCE
           gh_asset=gh_2.97.0_macOS_arm64.zip
@@ -220,7 +282,8 @@ jobs:
           COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
             --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
             tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py \
-            tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py
+            tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py \
+            tools/ci/tests/test_path_map.py
           cache=cold
           if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
           jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
@@ -245,6 +308,30 @@ jobs:
           grep -q 'usage: aitm-usage' "$out/help"
           jq --argjson end "$(date +%s)" '. + {total:($end-.started)} | del(.started)' "$out/timings.json" > "$out/evidence/timings.json"
           jq -n --arg digest "$(cut -d' ' -f1 "$out/wheel.sha256")" '{$digest}' > "$out/evidence/wheel.json"
+      - name: Restore the full-suite stamp
+        id: full-once
+        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full'
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/aitm-full-once
+          key: ${{ steps.qualify.outputs.cache_key }}
+      - name: Run the full suite once for this selection
+        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          root=$(pwd -P)
+          cd packages/aitm-usage
+          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-full-once-fixtures.XXXXXXXX")
+          uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
+            --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
+          mkdir -p "$RUNNER_TEMP/aitm-full-once"
+          printf 'ok\n' > "$RUNNER_TEMP/aitm-full-once/stamp"
+      - name: Save the full-suite stamp
+        if: success() && github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
+        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/aitm-full-once
+          key: ${{ steps.qualify.outputs.cache_key }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: upload
         with:
@@ -393,20 +480,32 @@ jobs:
           mkdir "$out"
           mode='push'
           base_args=()
+          selection_args=()
+          selection_mode=full
+          if [[ -f "$input/selection.json" ]]; then
+            selection_mode=$(jq -er .mode "$input/selection.json")
+            selection_args=(--selection "$input/selection.json")
+          fi
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             mode='pr'
-            base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
-                       --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"
-                       --expected-base "$input/expected-base.json")
+            if [[ "$selection_mode" == full ]]; then
+              base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
+                         --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"
+                         --expected-base "$input/expected-base.json")
+            fi
           fi
           python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json \
             --inventory "$input/pytest.json" --outcomes "$input/pytest.json" \
             --coverage "$input/product-coverage.json" --product-inventory "$input/product-inventory.json" \
             --helpers "$input/helper-coverage.json" \
             --child-evidence "$input/children.json" --capability "$input/capability.json" \
-            "${base_args[@]}" > "$out/disposition.json"
+            "${selection_args[@]}" "${base_args[@]}" > "$out/disposition.json"
           cat "$out/disposition.json"
           if [[ "$mode" == pr ]]; then
+            baseline_file="$RUNNER_TEMP/aitm-baseline/base.json"
+            if [[ "$selection_mode" != full ]]; then
+              baseline_file="$RUNNER_TEMP/aitm-baseline/base-skip.json"
+            fi
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT" > "$out/run.json"
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" > "$out/jobs.json"
             jq -n --slurpfile run "$out/run.json" --slurpfile jobs "$out/jobs.json" '
@@ -428,16 +527,17 @@ jobs:
               --arg lock "$(git rev-parse HEAD:packages/aitm-usage/uv.lock)" \
               --arg inventory "$(sha256sum "$input/pytest.json" | cut -d' ' -f1)" \
               --arg source_inventory "$(sha256sum "$input/product-inventory.json" | cut -d' ' -f1)" \
-              --arg baseline "$(sha256sum "$RUNNER_TEMP/aitm-baseline/base.json" | cut -d' ' -f1)" \
+              --arg baseline "$(sha256sum "$baseline_file" | cut -d' ' -f1)" \
               --slurpfile result "$out/disposition.json" --slurpfile child "$input/children.json" \
               --slurpfile timings "$input/timings.json" --slurpfile provider_timing "$out/provider-timing.json" --slurpfile wheel "$input/wheel.json" \
               --slurpfile platform "$input/capability.json" --slurpfile base_identity "$input/expected-base.json" \
               --slurpfile product "$input/product-coverage.json" --slurpfile helpers "$input/helper-coverage.json" \
+              --slurpfile selection "$input/selection.json" \
               '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$source_inventory,$baseline,
                 controls:{$policy,$workflow,$observer,$gate,$lock,$verifier},jobs:($jobs|map_values(.result)),
                 checkouts:(($jobs|map_values(.outputs.checkout))+{collector:$tested}),
                 result:$result[0],children:$child[0].children,timings:($timings[0]+$provider_timing[0]),wheel:$wheel[0].digest,
-                platform:$platform[0],base_identity:$base_identity[0],
+                platform:$platform[0],base_identity:$base_identity[0],selection:$selection[0],
                 branches:{product:($product[0].totals|{covered_branches,num_branches}),
                 helpers:($helpers[0].totals|{covered_branches,num_branches})}}' > "$out/candidate.json"
           fi

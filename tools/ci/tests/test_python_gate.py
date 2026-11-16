@@ -324,3 +324,108 @@ def test_shipped_policy_requires_file_checks_when_other_lanes_pass(mode, unavail
 
     lanes["file-checks"] = {"result": "success"}
     assert check_jobs(policy, lanes, mode)["passed"] is True
+
+
+def _selection(mode, tests):
+    return {
+        "schema": "aitm.path-selection/v1",
+        "mode": mode,
+        "tests": tests,
+        "key": "full" if mode == "full" else "ab" * 32,
+        "source": "base" if mode != "full" else "absent",
+        "children": {
+            "cli-help": "tools/ci/tests/test_cli_evidence.py",
+            "service-one-shot": "packages/aitm-usage/tests/test_service.py",
+        },
+    }
+
+
+def _without_children(inputs):
+    inputs["candidate"]["children"] = []
+    inputs["child"] = {"schema": "aitm.ci-child-evidence/v1", "children": []}
+
+
+def test_mapped_selection_waives_base_floor_and_unselected_requirements(inputs):
+    _without_children(inputs)
+    inputs["selection"] = _selection("mapped", ["tests/test_core.py"])
+    inputs["product"] = {"files": {}}
+    inputs["policy"]["required_tests"].append("tests/test_other.py::test_outside")
+    inputs["base"] = None
+    result = evaluate(**inputs)
+    assert result["passed"] is True
+    assert result["baseline_tests"] == 0
+    assert result["tests"] == 2
+    assert result["coverage"]["product"] == {"covered_lines": 0, "num_statements": 0}
+
+    inputs["candidate"]["reports"][1]["outcome"] = "failed"
+    assert evaluate(**inputs)["passed"] is False
+
+
+def test_checks_selection_accepts_an_empty_product_suite(inputs):
+    inputs["selection"] = _selection("checks", [])
+    inputs["candidate"] = {
+        "schema": "aitm.pytest-evidence/v1",
+        "exit_code": 1,
+        "collected": [],
+        "deselected": ["ignored"],
+        "reports": [],
+        "children": [],
+    }
+    inputs["child"] = {"schema": "aitm.ci-child-evidence/v1", "children": []}
+    inputs["product"] = {"files": {}}
+    inputs["helpers"] = coverage(inputs["policy"]["helpers"], 1, 10)
+    result = evaluate(**inputs)
+    assert result["passed"] is False
+    assert any("helpers" in failure for failure in result["failures"])
+    inputs["helpers"] = coverage(inputs["policy"]["helpers"])
+    result = evaluate(**inputs)
+    assert result["passed"] is True
+    assert result["tests"] == 0
+    assert result["baseline_tests"] == 0
+
+
+def test_full_selection_keeps_the_base_and_coverage_floor(inputs):
+    inputs["selection"] = _selection("full", [])
+    assert evaluate(**inputs)["passed"] is True
+    inputs["selection"] = {
+        "schema": "aitm.path-selection/v1",
+        "mode": "mapped",
+        "tests": [],
+    }
+    assert any("selection" in failure for failure in evaluate(**inputs)["failures"])
+
+
+def test_mapped_cli_does_not_read_base_evidence(tmp_path, inputs, capsys):
+    _without_children(inputs)
+    inputs["selection"] = _selection("mapped", ["tests/test_core.py"])
+    inputs["product"] = {"files": {}}
+
+    def write(name, value):
+        path = tmp_path / name
+        path.write_text(json.dumps(value), encoding="utf-8")
+        return str(path)
+
+    args = [
+        "--policy",
+        write("policy", inputs["policy"]),
+        "--mode",
+        "pr",
+        "--inventory",
+        write("inventory", inputs["candidate"]),
+        "--outcomes",
+        write("outcomes", inputs["candidate"]),
+        "--coverage",
+        write("coverage", inputs["product"]),
+        "--product-inventory",
+        write("product", inputs["product_inventory"]),
+        "--helpers",
+        write("helpers", inputs["helpers"]),
+        "--child-evidence",
+        write("children", inputs["child"]),
+        "--capability",
+        write("capability", inputs["capability"]),
+        "--selection",
+        write("selection", inputs["selection"]),
+    ]
+    assert main(args) == 0
+    assert json.loads(capsys.readouterr().out)["passed"] is True

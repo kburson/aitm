@@ -448,6 +448,71 @@ def test_both_unrounded_coverage_floors_accept_exactly_ninety(
     assert client.check()["coverage"]["helpers"]["covered_lines"] == 9
 
 
+def _path_selection(report, mode, tests):
+    labels = [item["label"] for item in report["children"]]
+    return {
+        "schema": "aitm.path-selection/v1",
+        "mode": mode,
+        "tests": tests,
+        "key": "full" if mode == "full" else "cd" * 32,
+        "source": "base",
+        "children": {label: f"unselected/{label}.py" for label in labels},
+    }
+
+
+def test_mapped_selection_does_not_apply_the_product_floor(client, verified_signature):
+    def mutate(report):
+        report["selection"] = _path_selection(
+            report, "mapped", ["packages/aitm-usage/tests/test_grok.py"]
+        )
+        report["result"]["baseline_tests"] = 0
+        report["result"]["coverage"]["product"] = {
+            "covered_lines": 1,
+            "num_statements": 100,
+        }
+        report["children"] = []
+
+    override_signed_report(client, verified_signature, mutate)
+    assert client.check()["coverage"]["product"]["covered_lines"] == 1
+
+
+def test_checks_selection_accepts_no_product_tests(client, verified_signature):
+    def mutate(report):
+        report["selection"] = _path_selection(report, "checks", [])
+        report["result"]["tests"] = 0
+        report["result"]["baseline_tests"] = 0
+        report["result"]["coverage"]["product"] = {
+            "covered_lines": 0,
+            "num_statements": 0,
+        }
+        report["children"] = []
+
+    override_signed_report(client, verified_signature, mutate)
+    assert client.check()["coverage"]["product"]["num_statements"] == 0
+
+
+def test_full_selection_keeps_the_product_floor(client, verified_signature):
+    def mutate(report):
+        report["selection"] = _path_selection(report, "full", [])
+        report["result"]["coverage"]["product"] = {
+            "covered_lines": 1,
+            "num_statements": 100,
+        }
+
+    override_signed_report(client, verified_signature, mutate)
+    with pytest.raises(Hold, match="product coverage"):
+        client.check()
+
+
+def test_malformed_path_selection_holds(client, verified_signature):
+    def mutate(report):
+        report["selection"] = {"schema": "aitm.path-selection/v1", "mode": "mapped"}
+
+    override_signed_report(client, verified_signature, mutate)
+    with pytest.raises(Hold, match="path selection"):
+        client.check()
+
+
 def test_gate_controls_require_matching_reviewed_tree_and_keep_existing_jobs(client):
     tree, _ = replace_policy(client, lambda p: p["pr_jobs"].remove("quality"))
     with pytest.raises(Hold, match="reviewed tree"):

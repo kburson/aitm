@@ -708,6 +708,35 @@ def verify_certificate(github, pull, selected, started, subject, bundle):
     return invocation, digest_sha
 
 
+def _narrowed_selection(report, policy):
+    """Return a mapped or checks selection. Missing or full keeps the legacy gate."""
+
+    if "selection" not in report:
+        return None
+    selection = report["selection"]
+    tests = selection.get("tests") if isinstance(selection, dict) else None
+    mode = selection.get("mode") if isinstance(selection, dict) else None
+    require(
+        isinstance(selection, dict)
+        and selection.get("schema") == "aitm.path-selection/v1"
+        and mode in {"full", "mapped", "checks"}
+        and isinstance(tests, list)
+        and all(isinstance(item, str) and item for item in tests)
+        and (bool(tests) if mode == "mapped" else tests == []),
+        "candidate path selection is malformed",
+    )
+    if mode == "full":
+        return None
+    children = selection.get("children")
+    require(
+        isinstance(children, dict)
+        and set(children) == set(policy["required_children"])
+        and all(isinstance(path, str) and path for path in children.values()),
+        "candidate path selection is malformed",
+    )
+    return selection
+
+
 def report_evidence(subject, pull, selected, tree, policy, controls, base_identity):
     report = decode_json(subject)
     require(report["schema"] == "aitm.ci-candidate/v2", "candidate schema disagrees")
@@ -760,20 +789,40 @@ def report_evidence(subject, pull, selected, tree, policy, controls, base_identi
     for key in ("inventory", "source_inventory", "baseline"):
         require(digest(report[key], 64), f"candidate {key} digest missing")
     result = report["result"]
-    require(
-        result["passed"] is True
-        and result["failures"] == []
-        and positive(result["tests"])
-        and positive(result["baseline_tests"])
-        and result["tests"] >= result["baseline_tests"],
-        "candidate Python evidence is not passing",
-    )
+    selection = _narrowed_selection(report, policy)
+    if selection is None:
+        require(
+            result["passed"] is True
+            and result["failures"] == []
+            and positive(result["tests"])
+            and positive(result["baseline_tests"])
+            and result["tests"] >= result["baseline_tests"],
+            "candidate Python evidence is not passing",
+        )
+    else:
+        require(
+            result["passed"] is True
+            and result["failures"] == []
+            and result["baseline_tests"] == 0
+            and (
+                positive(result["tests"])
+                if selection["mode"] == "mapped"
+                else result["tests"] == 0
+            ),
+            "candidate Python evidence is not passing",
+        )
     coverage = result["coverage"]
     require(
         set(coverage) == {"product", "helpers"}, "candidate coverage scope disagrees"
     )
     for scope, counts in coverage.items():
         covered, total = counts["covered_lines"], counts["num_statements"]
+        if selection is not None and scope == "product":
+            require(
+                type(covered) is int and type(total) is int and 0 <= covered <= total,
+                "candidate product coverage missing or invalid",
+            )
+            continue
         require(
             type(covered) is int
             and positive(total)
@@ -782,9 +831,18 @@ def report_evidence(subject, pull, selected, tree, policy, controls, base_identi
             f"candidate {scope} coverage missing, invalid or below 90%",
         )
     children = report["children"]
+    if selection is None:
+        expected_children = set(policy["required_children"])
+    else:
+        selected_tests = set(selection["tests"])
+        expected_children = {
+            label
+            for label, path in selection["children"].items()
+            if path in selected_tests
+        }
     require(
-        len(children) == len(policy["required_children"])
-        and {item["label"] for item in children} == set(policy["required_children"])
+        len(children) == len(expected_children)
+        and {item["label"] for item in children} == expected_children
         and len({item["pid"] for item in children}) == len(children)
         and all(
             positive(item["pid"])

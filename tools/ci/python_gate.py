@@ -252,6 +252,55 @@ def collect_child_coverage(evidence, prefix):
     return {"schema": "aitm.ci-child-evidence/v1", "children": result}
 
 
+def _narrowed(selection):
+    return isinstance(selection, dict) and selection.get("mode") in {"mapped", "checks"}
+
+
+def _selection_error(selection):
+    if selection is None:
+        return None
+    tests = selection.get("tests") if isinstance(selection, dict) else None
+    mode = selection.get("mode") if isinstance(selection, dict) else None
+    if (
+        not isinstance(selection, dict)
+        or selection.get("schema") != "aitm.path-selection/v1"
+        or mode not in {"full", "mapped", "checks"}
+        or not isinstance(tests, list)
+        or any(type(item) is not str or not item for item in tests)
+        or (not tests if mode == "mapped" else tests != [])
+    ):
+        return "invalid path selection"
+    if mode == "full":
+        return None
+    children = selection.get("children")
+    if (
+        not isinstance(children, dict)
+        or not children
+        or any(
+            type(label) is not str or type(path) is not str or not label or not path
+            for label, path in children.items()
+        )
+    ):
+        return "invalid path selection"
+    return None
+
+
+def _node_selected(node, selection):
+    if not _narrowed(selection):
+        return True
+    return any(
+        node == path or node.startswith(f"{path}::") for path in selection["tests"]
+    )
+
+
+def _required_children(policy, selection):
+    required = policy["required_children"]
+    if not _narrowed(selection):
+        return required
+    selected = set(selection["tests"])
+    return [label for label in required if selection["children"].get(label) in selected]
+
+
 def evaluate(
     policy,
     candidate,
@@ -264,26 +313,35 @@ def evaluate(
     expected_base=None,
     base_policy=None,
     mode="pr",
+    selection=None,
 ):
     if problem := _policy_error(policy):
         return _disposition([problem])
     if mode not in {"pr", "push"}:
         return _disposition(["unknown validation mode"])
+    if problem := _selection_error(selection):
+        return _disposition([problem])
 
     failures = []
+    narrowed = _narrowed(selection)
     if not isinstance(capability, dict) or (
         capability.get("os"),
         capability.get("filesystem"),
     ) != ("Darwin", "apfs"):
         failures.append("required Darwin APFS capability is absent")
-    actual, errors = _outcomes(candidate, policy["optional_skips"])
-    failures.extend(errors)
+    if narrowed and selection["mode"] == "checks":
+        actual = {}
+    else:
+        actual, errors = _outcomes(candidate, policy["optional_skips"])
+        failures.extend(errors)
     for node in policy["required_tests"]:
+        if not _node_selected(node, selection):
+            continue
         if actual.get(node) != "passed":
             failures.append(f"required test did not pass: {node}")
 
     baseline = {}
-    if mode == "pr":
+    if mode == "pr" and not narrowed:
         if not isinstance(base, dict) or not _trusted_identity(
             base.get("identity"), expected_base
         ):
@@ -309,7 +367,7 @@ def evaluate(
         candidate.get("children") if isinstance(candidate, dict) else None
     )
     failures.extend(
-        _child_errors(child, observed_children, policy["required_children"])
+        _child_errors(child, observed_children, _required_children(policy, selection))
     )
 
     counts = {}
@@ -321,6 +379,12 @@ def evaluate(
         ),
         ("helpers", helpers, {"names": policy["helpers"]}),
     ):
+        if narrowed and name == "product":
+            try:
+                counts[name] = _line_totals(document, **scope)
+            except ValueError:
+                counts[name] = {"covered_lines": 0, "num_statements": 0}
+            continue
         try:
             counts[name] = totals = _line_totals(document, **scope)
         except ValueError as exc:
@@ -366,6 +430,7 @@ def main(argv=None):
         "base-policy",
         "expected-base",
         "needs",
+        "selection",
     ):
         parser.add_argument(f"--{field}")
     args = parser.parse_args(argv)
@@ -381,9 +446,15 @@ def main(argv=None):
                 candidate = _read(args.outcomes)
                 if _read(args.inventory) != candidate:
                     raise ValueError("inventory and outcome records disagree")
-                expected_base = _read(args.expected_base) if args.mode == "pr" else None
+                selection = _read(args.selection) if args.selection else None
+                narrowed = _narrowed(selection)
+                expected_base = (
+                    _read(args.expected_base)
+                    if args.mode == "pr" and not narrowed
+                    else None
+                )
                 base_policy = None
-                if args.mode == "pr":
+                if args.mode == "pr" and not narrowed:
                     base_policy = _read(args.base_policy)
                     if not isinstance(expected_base, dict) or sha256(
                         Path(args.base_policy).read_bytes()
@@ -399,10 +470,13 @@ def main(argv=None):
                     _read(args.helpers),
                     _read(args.child_evidence),
                     _read(args.capability),
-                    _read(args.base_evidence) if args.mode == "pr" else None,
+                    _read(args.base_evidence)
+                    if args.mode == "pr" and not narrowed
+                    else None,
                     expected_base,
                     base_policy,
                     args.mode,
+                    selection,
                 )
         except (OSError, ValueError) as exc:
             result = _disposition([f"invalid evidence: {exc}"])
