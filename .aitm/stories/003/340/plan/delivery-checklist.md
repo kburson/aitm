@@ -16,7 +16,8 @@
 - Required jobs, all success: `python-base`, `python`, `quality`, `file-checks`, `collect-evidence`, `aitm-ci`
 - Signed candidate `aitm.ci-candidate/v2`: selection mode `full`, source `absent`, 1517 tests, 1516 baseline tests, no failures
 - This head changes the workflow and `tools/ci/`, so the base has no path map. Source `absent` is the control-path result. The mapped live check is a later pull request whose base contains this map.
-- Independent reviewer: separate Grok review of head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`, started 2026-11-16T07:51:07Z. Verdict pending.
+- Independent reviewer: separate Grok review of head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`. Verdict fail on 2026-11-16. Record: `plan/reviews/2026-11-16-head-fcd1d745.md`. Native GitHub review absent.
+- Replacement head: `a80b4420b9715d3a5716e497293b29322197cb65`. Fresh hosted CI and a new review are required on that head.
 - Merge, retrospective, and closure: pending
 
 ## Checkpoints
@@ -24,5 +25,7 @@
 - [x] 2026-11-16T07:30:47Z Develop. Branch `story/340-341-path-map` commit `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`.
 - [x] 2026-11-16T07:31:54Z Test. Pull request 342 opened into `trunk`. Head and base read back. Hosted CI run 43824428689 is in progress on that head.
 - [x] 2026-11-16T07:39:40Z Required jobs passed on head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`. `aitm-ci` finished at that time.
-- [ ] Review verdict on that same head.
+- [x] 2026-11-16T08:08:10Z Review of head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac` failed. Returned to develop. Replacement head `a80b4420b9715d3a5716e497293b29322197cb65`.
+- [ ] Fresh required jobs on that replacement head.
+- [ ] Fresh review verdict on that same passing head.
 - [ ] Done after merge, the mapped proof, retrospective, and issue closure.
