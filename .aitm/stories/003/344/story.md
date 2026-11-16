@@ -10,12 +10,12 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-16T12:45:44Z"
-updated: "2026-11-16T14:31:12Z"
+updated: "2026-11-16T15:33:29Z"
 last-branch: "codex/344-functional-tia"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/tia-baseline.md", "plan/tia-evidence.md", "plan/tia-proof/receipt.json", "plan/implementation-verifier.json", "plan/baseline-verifier.json", "plan/implementation-review.md", "plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/tia-baseline.md", "plan/tia-evidence.md", "plan/tia-proof/receipt.json", "plan/implementation-verifier.json", "plan/baseline-verifier.json", "plan/implementation-review.md", "plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md", "plan/2026-11-16-344-refinement-reconciliation.md", "plan/closure-receipt.json", "retro/2026-11-16-closure-reconciliation.md"], "attachments": ["attachments/timing/late-closeout-2026-11-16-v1-344.json"]}
 expansions: []
 trips: []
 ---
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #344](https://github.com/kburson/aitm/issues/344) · [Parent #133](../../001/133/story.md)
 
-Rank 200, P1, M. Initial estimate of 4 implementation agent-hours, subject to refinement after baseline verification. The delivered predecessors are [#340](../340/story.md) and [#341](../341/story.md).
+Rank 200, P1, M. Estimate of 4 implementation agent-hours, retained in the [late refinement reconciliation](plan/2026-11-16-344-refinement-reconciliation.md). The delivered predecessors are [#340](../340/story.md) and [#341](../341/story.md).
 
 ## Outcome
 
@@ -57,3 +57,5 @@ The full hosted check and [trusted verifier](plan/implementation-verifier.json) 
 ## Closure
 
 PR #346 delivered the reviewed tree to trunk. The independent delivery-evidence review passed and proof drafts #345 and #347 through #350 were closed. GitHub issue #344 is closed as completed and the Project item is Done with Delivered disposition. #133 remains open.
+
+[Original implementer retrospective and late sign-off](retro/2026-11-16-closure-reconciliation.md) · [Verified closure receipt](plan/closure-receipt.json) · [Timing receipt](attachments/timing/late-closeout-2026-11-16-v1-344.json). Project 24 records 2.5084 actual agent-hours with Partial coverage. Idle is Unknown.

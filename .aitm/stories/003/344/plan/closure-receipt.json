@@ -1,0 +1,125 @@
+{
+  "story": 344,
+  "attempt": 1,
+  "recorded_at_utc": "2026-11-16T15:33:29Z",
+  "original_closure": {
+    "issue_closed_at_utc": "2026-11-16T14:31:12Z",
+    "planning_done_at_utc": "2026-11-16T14:31:12Z",
+    "planning_commit": "ab1c1b42dcc50d48b1ff19e7ea26f21a68e64f54",
+    "omissions": [
+      "refine-stage",
+      "ready-for-plan-and-planning-checkpoints",
+      "estimate-event",
+      "actual-and-coverage",
+      "implementer-retrospective-and-sign-off",
+      "durable-closure-readback"
+    ]
+  },
+  "accepted_plan": {
+    "path": "plan/test-impact-analysis-implementation-plan.md",
+    "sha256": "a6f7ef90668153eeb063d34b33162424409526021475eeed97dbf342b289c109",
+    "planning_commit": "2fe8fcfc19718bef6feb1bbe63a4551e6dea64f1",
+    "xpr_round": 2,
+    "xpr_verdict": "accepted"
+  },
+  "delivery": {
+    "pr": "https://github.com/kburson/aitm/pull/346",
+    "target": "trunk",
+    "merge_method": "merge-commit",
+    "merged_at_utc": "2026-11-16T13:44:39Z",
+    "base": "625b5407978675ac3b906990c8bb0713dcae18fd",
+    "reviewed_head": "4074d31da90f31e5a47445ca3112733672519512",
+    "tested_merge": "de6a7a9684415bb56e0068122d01c35eb7e70b85",
+    "reviewed_and_delivered_tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8",
+    "merge_commit": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "source_review": "plan/implementation-review.md",
+    "source_review_sha256": "1bba652eb30f22417dafc0a699b8914a6360b5c66cfb9c28cef3a2fc706cc4a1",
+    "source_review_native": false,
+    "hosted_full_run": "https://github.com/kburson/aitm/actions/runs/43877292106",
+    "proof": "plan/tia-proof/receipt.json",
+    "proof_sha256": "0afbcd3532001dd4955e8577d83392f0889e29a994424d097928422164bf399f",
+    "proof_review": {
+      "verdict": "pass",
+      "published_at_utc": "2026-11-16T14:30:27Z",
+      "planning_commit": "ca9e58425bac8948da73233116db8ad6f2e6ec36"
+    },
+    "closed_proof_prs": [
+      345,
+      347,
+      348,
+      349,
+      350
+    ]
+  },
+  "late_sign_off": {
+    "author": "Codex, original #344 implementer",
+    "at_utc": "2026-11-16T15:33:29Z",
+    "path": "retro/2026-11-16-closure-reconciliation.md",
+    "sha256": "10abeb742367c48fb06cb6cb8c8347e1d2acf3cb8beeca871603dded59e14b4c"
+  },
+  "board": {
+    "read_at_utc": "2026-11-16T15:32:03.633Z",
+    "project_number": 24,
+    "project_id": "PVT_kwHOABCEY84Bq1hZ",
+    "item_id": "PVTI_lAHOABCEY84Bq1hZzhJKK48",
+    "issue_number": 344,
+    "issue_state": "CLOSED",
+    "issue_state_reason": "COMPLETED",
+    "issue_closed_at_utc": "2026-11-16T14:31:12Z",
+    "parent": {
+      "number": 133,
+      "state": "OPEN"
+    },
+    "fields": {
+      "Status": "Done",
+      "Disposition_v0": "Delivered",
+      "Estimate": 4.0,
+      "Rank": 200.0,
+      "Size": "M",
+      "Priority": "P1",
+      "Actual": 2.5084,
+      "Actual coverage": "Partial through 2026-11-16T14:32:11.256Z",
+      "Cost": null
+    },
+    "idle_field_exists": false
+  },
+  "timing": {
+    "receipt": "attachments/timing/late-closeout-2026-11-16-v1-344.json",
+    "receipt_sha256": "cd99eb67d1b276b1d29e852a22938ecd885bb029299374fac3d532bf9f4602bd",
+    "planning_commit": "a2fe87407b5a52e33aa010b343c65cbd502e4299",
+    "as_of_utc": "2026-11-16T15:30:53Z",
+    "snapshot_sha256": "9447886ffadeea1807aa00ff2ebd68dce996e8dfcea667338c0582c882611235",
+    "actual_milliseconds": 9030137,
+    "actual_hours": "2.5084",
+    "coverage": "partial",
+    "evidence_through_utc": "2026-11-16T14:32:11.256000Z",
+    "idle": "unknown",
+    "owner_wait": "unknown",
+    "checkpoints": [
+      {
+        "step": "before",
+        "read_at_utc": "2026-11-16T15:31:56.699Z",
+        "actual": null,
+        "actual_coverage": null
+      },
+      {
+        "step": "coverage_pending",
+        "read_at_utc": "2026-11-16T15:31:58.895Z",
+        "actual": null,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "actual_written",
+        "read_at_utc": "2026-11-16T15:32:01.452Z",
+        "actual": 2.5084,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "verified",
+        "read_at_utc": "2026-11-16T15:32:03.633Z",
+        "actual": 2.5084,
+        "actual_coverage": "Partial through 2026-11-16T14:32:11.256Z"
+      }
+    ]
+  }
+}
