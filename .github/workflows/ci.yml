@@ -56,15 +56,19 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-base"
           mkdir -p "$out/observer" "$out/evidence"
-          # This checkout is the base. Diff the tested merge with rename detection
-          # off, the same command the candidate lane uses, so both lanes see the
-          # pre-image of a rename and a complete path list.
+          # Use the literal base and the exact tested merge in both lanes.
+          # The legacy diff also retains both sides of a rename.
           if [[ -f tools/ci/path_map.py && -f tools/ci/path_map.json ]]; then
             git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/merge"
             test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
-            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
-            python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/selection.json"
-            mode=$(jq -er .mode "$out/selection.json")
+            if [[ "$(jq -r .schema tools/ci/path_map.json)" == aitm.path-map/v2 ]]; then
+              python3 tools/ci/path_map.py --map tools/ci/path_map.json \
+                --base "$BASE" --candidate "$GITHUB_SHA" --pull-number "$PR_NUMBER" > "$out/evidence/selection.json"
+            else
+              git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
+              python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/evidence/selection.json"
+            fi
+            mode=$(jq -er .mode "$out/evidence/selection.json")
             if [[ "$mode" != full ]]; then
               printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
               exit 0
@@ -205,8 +209,13 @@ jobs:
             # Run the selector from the base blobs. The merge tree must not choose tests.
             git show "$BASE:tools/ci/path_map.py" > "$out/base-path-map.py"
             git show "$BASE:tools/ci/path_map.json" > "$out/base-path-map.json"
-            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
-            python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
+            if [[ "$(jq -r .schema "$out/base-path-map.json")" == aitm.path-map/v2 ]]; then
+              python3 "$out/base-path-map.py" --map "$out/base-path-map.json" \
+                --base "$BASE" --candidate "$GITHUB_SHA" --pull-number "$PR_NUMBER" > "$selection"
+            else
+              git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
+              python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
+            fi
           else
             python3 - "$selection" <<'PY'
           import json, sys
@@ -218,8 +227,15 @@ jobs:
           PY
           fi
           mode=$(jq -er .mode "$selection")
-          key=$(jq -er .key "$selection")
-          printf 'mode=%s\nkey=%s\ncache_key=%s\n' "$mode" "$key" "pr-${PR_NUMBER}-full-${key}" >> "$GITHUB_OUTPUT"
+          cache_key=$(jq -r '.cache_key // empty' "$selection")
+          printf 'mode=%s\ncache_key=%s\n' "$mode" "$cache_key" >> "$GITHUB_OUTPUT"
+      - name: Restore the full-suite stamp
+        id: full-once
+        if: github.event_name == 'pull_request' && steps.qualify.outputs.cache_key != ''
+        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ${{ runner.temp }}/aitm-full-once
+          key: ${{ steps.qualify.outputs.cache_key }}
       - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
@@ -308,13 +324,6 @@ jobs:
           grep -q 'usage: aitm-usage' "$out/help"
           jq --argjson end "$(date +%s)" '. + {total:($end-.started)} | del(.started)' "$out/timings.json" > "$out/evidence/timings.json"
           jq -n --arg digest "$(cut -d' ' -f1 "$out/wheel.sha256")" '{$digest}' > "$out/evidence/wheel.json"
-      - name: Restore the full-suite stamp
-        id: full-once
-        if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full'
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
-          path: ${{ runner.temp }}/aitm-full-once
-          key: ${{ steps.qualify.outputs.cache_key }}
       - name: Run the full suite once for this selection
         if: github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
         shell: bash
@@ -327,7 +336,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/aitm-full-once"
           printf 'ok\n' > "$RUNNER_TEMP/aitm-full-once/stamp"
       - name: Save the full-suite stamp
-        if: success() && github.event_name == 'pull_request' && steps.qualify.outputs.mode != 'full' && steps.full-once.outputs.cache-hit != 'true'
+        if: success() && github.event_name == 'pull_request' && steps.qualify.outputs.cache_key != '' && steps.full-once.outputs.cache-hit != 'true'
         uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: ${{ runner.temp }}/aitm-full-once
@@ -338,6 +347,17 @@ jobs:
           name: aitm-ci-python-a${{ github.run_attempt }}
           path: ${{ runner.temp }}/aitm-python/evidence/
           if-no-files-found: error
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure() && steps.qualify.outputs.mode == 'mapped'
+        with:
+          name: aitm-ci-mapped-diagnostics-a${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/aitm-python/evidence/selection.json
+            ${{ runner.temp }}/aitm-python/evidence/product-junit.xml
+            ${{ runner.temp }}/aitm-python/observer/pytest*.json
+          if-no-files-found: error
+          overwrite: false
 
   quality:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
@@ -488,6 +508,9 @@ jobs:
           fi
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             mode='pr'
+            if [[ "$(jq -r .schema "$input/selection.json")" == aitm.path-selection/v2 ]]; then
+              jq -e --slurpfile base "$RUNNER_TEMP/aitm-baseline/selection.json" '. == $base[0]' "$input/selection.json" >/dev/null
+            fi
             if [[ "$selection_mode" == full ]]; then
               base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
                          --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"

@@ -429,3 +429,35 @@ def test_mapped_cli_does_not_read_base_evidence(tmp_path, inputs, capsys):
     ]
     assert main(args) == 0
     assert json.loads(capsys.readouterr().out)["passed"] is True
+
+
+def test_mapped_evidence_requires_calls_in_every_selected_module(inputs):
+    inputs["policy"]["required_tests"] = ["unrelated.py::test_required"]
+    inputs["child"]["children"] = []
+    inputs["selection"] = {
+        "schema": "aitm.path-selection/v2",
+        "mode": "mapped",
+        "tests": ["tests/test_alias.py", "tests/test_core.py"],
+        "children": {"cli-help": "cli.py", "service-one-shot": "service.py"},
+    }
+    inputs["candidate"] = evidence("tests/test_core.py::test_run[one]")
+    result = evaluate(**inputs)
+    assert not result["passed"]
+    assert any("tests/test_alias.py" in problem for problem in result["failures"])
+
+    inputs["candidate"] = evidence(
+        "tests/test_core.py::test_run[one]", "tests/test_alias.py::test_alias"
+    )
+    result = evaluate(**inputs)
+    assert result["passed"]
+    assert result["executed_test_ids"] == [
+        "tests/test_alias.py::test_alias",
+        "tests/test_core.py::test_run[one]",
+    ]
+
+    inputs["candidate"] = evidence(
+        "tests/test_core.py::test_run[one]",
+        "tests/test_alias.py::test_alias",
+        "tests/test_other.py::test_unrelated",
+    )
+    assert not evaluate(**inputs)["passed"]

@@ -1,3 +1,4 @@
+import base64
 import gzip
 import json
 import sys
@@ -703,3 +704,63 @@ def test_cli_writes_dated_blocker_for_invalid_repo(tmp_path):
     assert result["status"] == "hold"
     assert "repository" in result["reason"]
     assert result["verified_at"].endswith("+00:00")
+
+
+def test_v2_receipt_requires_exact_selection_and_execution(client):
+    from types import SimpleNamespace
+
+    from verify_pr import report_evidence
+
+    subject, _ = read_evidence_archive(client.raw_archive)
+    report = json.loads(subject)
+    policy_raw = client.documents[f"git/blobs/{report['controls']['policy']}"]
+    policy = json.loads(base64.b64decode(policy_raw["content"]))
+    pull = SimpleNamespace(
+        number=report["pr"],
+        head=report["head"],
+        base=report["base"],
+        merge=report["tested"],
+    )
+    attempt = {"id": report["run"], "run_attempt": report["attempt"]}
+    modules = ["packages/aitm-usage/tests/test_grok.py"]
+    selection = _path_selection(report, "mapped", modules)
+    selection.update(
+        schema="aitm.path-selection/v2",
+        paths=[
+            {
+                "path": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+                "reason": "Grok fixture reader",
+                "disposition": "mapped",
+                "tests": modules,
+            }
+        ],
+    )
+    report["selection"] = json.loads(json.dumps(selection))
+    report["children"] = []
+    report["result"].update(
+        tests=1,
+        baseline_tests=0,
+        executed_test_ids=[f"{modules[0]}::test_run[one]"],
+        skipped_test_ids=[],
+    )
+
+    def verify():
+        return report_evidence(
+            json.dumps(report).encode(),
+            pull,
+            attempt,
+            report["tree"],
+            policy,
+            report["controls"],
+            report["base_identity"],
+            selection,
+        )
+
+    assert verify()
+    report["selection"]["paths"][0]["reason"] = "stale rule"
+    with pytest.raises(Hold, match="trusted base and tested tree"):
+        verify()
+    report["selection"] = selection
+    report["result"]["executed_test_ids"] = ["elsewhere.py::test_other"]
+    with pytest.raises(Hold, match="execution evidence"):
+        verify()

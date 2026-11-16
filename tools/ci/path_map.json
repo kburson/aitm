@@ -1,6 +1,9 @@
 {
-  "schema": "aitm.path-map/v1",
-  "full_prefixes": [".github/", "tools/ci/"],
+  "schema": "aitm.path-map/v2",
+  "full_prefixes": [
+    ".github/",
+    "tools/ci/"
+  ],
   "full_names": [
     ".coveragerc",
     ".pytest.toml",
@@ -18,141 +21,40 @@
     "usercustomize.py",
     "uv.lock"
   ],
-  "rules": [
-    {"prefix": "README.md", "tests": []},
-    {"prefix": "docs/", "tests": []},
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/accounting.py",
-      "tests": ["packages/aitm-usage/tests/test_accounting.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/export.py",
-      "tests": ["packages/aitm-usage/tests/test_export.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/host_fs.py",
-      "tests": [
-        "packages/aitm-usage/tests/test_host_fs_publication.py",
-        "packages/aitm-usage/tests/test_host_fs_security.py"
-      ]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/host_watch.py",
-      "tests": ["packages/aitm-usage/tests/test_host_watch.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/install.py",
-      "tests": ["packages/aitm-usage/tests/test_install.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/ledger.py",
-      "tests": ["packages/aitm-usage/tests/test_ledger.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/pricing.py",
-      "tests": ["packages/aitm-usage/tests/test_grok_pricing.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/rollup.py",
-      "tests": ["packages/aitm-usage/tests/test_rollup.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/scope_admission.py",
-      "tests": ["packages/aitm-usage/tests/test_scope_admission.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/scopes.py",
-      "tests": [
-        "packages/aitm-usage/tests/test_scope_legacy.py",
-        "packages/aitm-usage/tests/test_scopes.py"
-      ]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/service.py",
-      "tests": [
-        "packages/aitm-usage/tests/test_service.py",
-        "packages/aitm-usage/tests/test_service_process.py"
-      ]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/_isolated_qualification.py",
-      "tests": ["packages/aitm-usage/tests/test_isolated_qualification.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_control.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_control.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_journal.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_journal.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_journal_store.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_recovery.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_recovery_fence.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_registry.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_registry.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_scheduler.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_scheduler.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/monitor_scope.py",
-      "tests": ["packages/aitm-usage/tests/test_monitor_scope.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/sources/claude.py",
-      "tests": ["packages/aitm-usage/tests/test_claude.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/sources/codex.py",
-      "tests": ["packages/aitm-usage/tests/test_codex.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/sources/grok.py",
-      "tests": ["packages/aitm-usage/tests/test_grok.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
-      "tests": ["packages/aitm-usage/tests/test_grok_scope_receipts.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/src/aitm_usage/sources/scan.py",
-      "tests": ["packages/aitm-usage/tests/test_scan.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/tests/fixtures/activation/",
-      "tests": ["packages/aitm-usage/tests/test_activation_receipt.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/tests/fixtures/claude/",
-      "tests": ["packages/aitm-usage/tests/test_claude.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/tests/fixtures/codex/",
-      "tests": ["packages/aitm-usage/tests/test_codex.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/tests/fixtures/grok/",
-      "tests": ["packages/aitm-usage/tests/test_grok.py"]
-    },
-    {
-      "prefix": "packages/aitm-usage/tests/fixtures/service/",
-      "tests": [
-        "packages/aitm-usage/tests/test_service.py",
-        "packages/aitm-usage/tests/test_service_process.py"
-      ]
-    }
-  ],
-  "self_tests": ["packages/aitm-usage/tests/test_*.py"],
   "children": {
     "cli-help": "tools/ci/tests/test_cli_evidence.py",
     "service-one-shot": "packages/aitm-usage/tests/test_service.py"
-  }
+  },
+  "rules": [
+    {
+      "prefix": "README.md",
+      "tests": [],
+      "reason": "Repository overview only. File and quality checks still run."
+    },
+    {
+      "prefix": "docs/blocked-by.md",
+      "tests": [],
+      "reason": "Operator documentation only. File and quality checks still run."
+    },
+    {
+      "prefix": "packages/aitm-usage/src/aitm_usage/ledger.py",
+      "reason": "Shared Ledger consumers span ownership, storage, admission and service tests."
+    },
+    {
+      "prefix": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+      ],
+      "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+      "consumer_digest": "23d4bec3cfda5b8b942399d3d3acddebc412e9051b8921c59655b56d95e40e05"
+    },
+    {
+      "prefix": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok.py"
+      ],
+      "reason": "test_grok.py reads the headless rows and reconciles their request IDs and usage against native Grok observations.",
+      "consumer_digest": "9459a4fefdcd90928f4b83d69ea5b242a2cd50657aabdd0ef74930e33750e94e"
+    }
+  ]
 }
