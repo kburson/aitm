@@ -1,4 +1,7 @@
-"""Read qualified Grok Build whole-turn evidence without assigning a project."""
+"""Read qualified Grok Build whole-turn evidence without assigning a project.
+
+The mapped pull-request coverage for this module is test_grok.py.
+"""
 
 import json
 from collections.abc import Callable, Iterator
