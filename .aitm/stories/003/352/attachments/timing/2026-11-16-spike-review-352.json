@@ -1,0 +1,57 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 352,
+  "batch": "2026-11-16-spike-review",
+  "recorded_at_utc": "2026-11-16T21:48:35Z",
+  "source": {
+    "ref": "manual:independent-spike-review-turns"
+  },
+  "observations": [
+    {
+      "observation_id": "native-review-3880f86b793e6d507a7417f0e8eca4c0",
+      "actor": "reviewer-1",
+      "turn": "turn-1",
+      "phase": "review",
+      "role": "reviewer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "paired-native-turn-boundaries",
+      "start_utc": "2026-11-16T21:41:40.187Z",
+      "end_utc": "2026-11-16T21:46:46.811Z",
+      "source": {
+        "sha256": "3880f86b793e6d507a7417f0e8eca4c05b153d40d86e4344f44dafe75aead818"
+      }
+    },
+    {
+      "observation_id": "native-review-8b647f16a087853a7caa92e60574500d",
+      "actor": "reviewer-1",
+      "turn": "turn-2",
+      "phase": "review",
+      "role": "reviewer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "paired-native-turn-boundaries",
+      "start_utc": "2026-11-16T21:47:26.084Z",
+      "end_utc": "2026-11-16T21:48:16.952Z",
+      "source": {
+        "sha256": "8b647f16a087853a7caa92e60574500d1faf4cca03e5576374527743a45f226a"
+      }
+    },
+    {
+      "observation_id": "author-scope-gap-352",
+      "actor": "investigator-1",
+      "phase": "research",
+      "role": "investigator",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "unknown",
+      "basis": "partial-scope-reconciliation",
+      "start_utc": null,
+      "end_utc": null,
+      "missing_reason": "mixed-story-author-turn"
+    }
+  ]
+}
