@@ -11,3 +11,7 @@ Manual same-agent review by Codex, the plan author, at 2026-11-16T21:32:57Z UTC.
 **#353 finding resolved.** The original plan could show that a child produced pass/fail without distinguishing launch evidence, assignment results and observer independence. Added assignment reconciliation, invalid-assignment control and explicit attribution of interpreter and filesystem authority.
 
 **Verdict.** PASS for both investigation plans on the accepted digest. The probes are bounded, reproducible, and include negative controls. The plan holds feature development for accepted spike findings and a separate SAR of the applicable implementation plan.
+
+## Final fixture-path check
+
+At 2026-11-16T21:35:11Z UTC dry source validation caught a mistyped source path. The exact rule prefix in the pinned map is `packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py`. Corrected the plan before running any probe and checked the pinned source and rule. Previous reviewed digest `4020cb3112f1f0a07250699837b8f296c48271512c927e825a36ba467288b5a5`. Final plan SHA-256 `b5b56c3cd785fdc2672bc6f934247d909575f96a54a62bffcdfe432fb8fe2620`. **PASS** on the final digest for both spikes.
