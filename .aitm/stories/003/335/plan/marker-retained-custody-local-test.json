@@ -1,0 +1,26 @@
+{
+  "story": 335,
+  "status": "local-test-pass",
+  "candidate": {
+    "baseRefName": "trunk",
+    "baseRefOid": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "headRefOid": "b36a6d9e01a73160cbd6df6da4ff001fd7ae04bf",
+    "isDraft": false,
+    "number": 336,
+    "url": "https://github.com/kburson/aitm/pull/336"
+  },
+  "tests": 1517,
+  "tree": "2ffe002416bacbb37670a325852fff0b88330ea1",
+  "product_lines": {
+    "covered_lines": 14487,
+    "num_statements": 15925
+  },
+  "evidence_sha256": {
+    "marker-exact-focused.log": "ef8b4430d70ee6c278bd7297cb573cd4a55a34fa23466f4c3c774d0830e66c09",
+    "local-current/product.log": "0f4579acca3917e7a87cd3bb9156036a28410ad03d43191670d3d721a035b0bb",
+    "product-source-blobs.txt": "148a6910bf31cb927d958d3d7aaa0d79657e3e0eed016ce54a535884fa9ba7e6",
+    "producer-source-exact.diff": "e6a91ee63f402df523031fb22198ea903b24dfa300779dcd5dec956713712d66"
+  },
+  "correction": "Test-only revision. The locked suite now retains fake-libproc custody refusals and qualification rotation inside the receipt publication window. Product source blobs match the independently inspected previous candidate.",
+  "prior_source_hold_sha256": "2a61b4fa4c171acce5e0d9bef9cbadb09735a3a8ad0c72abd3628481ffc1f5a3"
+}

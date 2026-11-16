@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 335
 title: "[M11f] Authenticate Grok scope marker receipts"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/335"
 parent: 100
 children: []
@@ -54,3 +54,5 @@ The corrected candidate passed 1,508 locked local tests. A signed replacement or
 [Exact signed hosted Test](plan/marker-corrected-signed-hosted-test.json) passed with the inherited controls. The corrected source packet is ready. The ordinary source attempts were consumed and another paid review requires authorization. Packet SHA-256 `dd24d475b472589a6a4b20864dfbb5cc4f3b011d77023c51dbdc5eda192365e8`.
 
 [Owner-authorized independent source verdict](plan/marker-independent-source-r3.md) returned **HOLD** on the exact signed candidate. [Receipt](plan/marker-independent-source-r3-receipt.json).
+
+The corrected candidate passed 1,517 locked local tests. The signed-suite test paths now include a malformed, foreign and stopped process matrix and a signed profile rotation inside the receipt publication window. The product blobs match the previous independent review candidate. [Exact local Test](plan/marker-retained-custody-local-test.json) · [PR #336](https://github.com/kburson/aitm/pull/336).
