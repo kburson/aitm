@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
-children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337]
+children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339]
 blocking: [2]
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-15T23:37:38Z"
+updated: "2026-11-16T06:14:54Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -156,3 +156,7 @@ Rank 150 [#323](../../003/323/story.md) follows the delivered #294 decision. #10
 ## Full PR validation and rollback
 
 Rank 160 [#337](../../003/337/story.md) follows the delivered #323 decision. #103 remains authoritative.
+
+## Parallel Rank 170 qualification
+
+[#338 Qualify live missed-slot backstop recovery in shadow](../../003/338/story.md) and [#339 Shorten and remeasure exact PR feedback](../../003/339/story.md) follow delivered #337 in parallel. #103 remains authoritative.

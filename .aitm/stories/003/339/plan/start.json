@@ -1,0 +1,67 @@
+{
+  "blocked_by": [
+    337
+  ],
+  "board": {
+    "item": {
+      "disposition": null,
+      "estimate": {
+        "number": 4.0
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhJECTo",
+      "priority": {
+        "name": "P2"
+      },
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 170.0
+      },
+      "size": {
+        "name": "M"
+      },
+      "status": {
+        "name": "Dev"
+      }
+    },
+    "number": 339,
+    "state": "OPEN",
+    "stateReason": null
+  },
+  "parent": 133,
+  "predecessor_acceptance": "c34a9a9fba8406bf40115edfd7c7f939b6b2529d",
+  "predecessor_closure": "ff3d6c646ac19257774250f037df5688db2ea659",
+  "prerequisite": {
+    "item": {
+      "disposition": {
+        "name": "Delivered"
+      },
+      "disposition_field": "Disposition_v0",
+      "estimate": {
+        "number": 4.0
+      },
+      "id": "PVTI_lAHOABCEY84Bq1hZzhI_nY0",
+      "priority": {
+        "name": "P2"
+      },
+      "project": {
+        "id": "PVT_kwHOABCEY84Bq1hZ",
+        "number": 24
+      },
+      "rank": {
+        "number": 160.0
+      },
+      "size": {
+        "name": "M"
+      },
+      "status": {
+        "name": "Done"
+      }
+    },
+    "number": 337,
+    "state": "CLOSED",
+    "stateReason": "COMPLETED"
+  }
+}

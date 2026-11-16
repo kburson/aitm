@@ -55,3 +55,5 @@ A completed spike report satisfies a dependent capability only when it qualifies
 Rank 150 [#323 Missed-slot recovery qualification](../../../003/323/story.md) follows #294.
 
 Rank 160 [#337 Full PR validation and rollback](../../../003/337/story.md) follows #323.
+
+Rank 170 [#338 Qualify live missed-slot backstop recovery in shadow](../../../003/338/story.md) and [#339 Shorten and remeasure exact PR feedback](../../../003/339/story.md) follow #337 in parallel. Existing blocked stories retain their dispositions.

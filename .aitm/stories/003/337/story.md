@@ -7,10 +7,10 @@ state: "done"
 issue: "https://github.com/kburson/aitm/issues/337"
 parent: 133
 children: []
-blocking: []
+blocking: [338, 339]
 blocked-by: [323]
 created: "2026-11-15T23:37:40Z"
-updated: "2026-11-16T00:19:07Z"
+updated: "2026-11-16T06:14:54Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
