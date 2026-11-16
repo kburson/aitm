@@ -2,6 +2,7 @@
 
 The mapped pull-request coverage for this module is test_grok.py.
 A later amendment of this module keeps that same mapped test.
+The selection key stays the same when only this module changes.
 """
 
 import json
