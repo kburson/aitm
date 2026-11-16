@@ -10,12 +10,12 @@ children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151,
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T12:45:44Z"
+updated: "2026-11-16T19:41:49Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md", "plan/2026-11-16-133-decomposition.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -169,4 +169,14 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 
 ## Functional TIA acceptance
 
-[#344](../../003/344/story.md) delivered and verified functional test impact analysis for ordinary PR validation. The [live evidence](../../003/344/plan/tia-evidence.md) records mapped source and fixture checks, full fallback, stamp reuse and invalidation, cancellation, and the exact-tree regression comparison. #133 remains open for disposition of the broader epic scope.
+[#344](../../003/344/story.md) delivered and verified functional test impact analysis for ordinary PR validation. The [live evidence](../../003/344/plan/tia-evidence.md) records mapped source and fixture checks, full fallback, stamp reuse and invalidation, cancellation, and the exact-tree regression comparison. #133 stays open. The remaining claims are independent epics recorded in [Decomposition](#decomposition).
+
+## Decomposition
+
+#133 delivered the hosted path map in [#340](../../003/340/story.md), [#341](../../003/341/story.md), and [#344](../../003/344/story.md). The remaining claims now have their own backlog epics. Those epics are independent of #133 and of each other. Later blocks can learn from earlier delivered work. The recommended order is a note only: local test selection, then category shards, then the scheduled-failure flag.
+
+- [#351 Select the tests affected by uncommitted work](../../003/351/story.md)
+- [#356 Shard tests by execution category](../../003/356/story.md)
+- [#362 Flag a scheduled build failure](../../003/362/story.md)
+
+[Decomposition record](plan/2026-11-16-133-decomposition.md).
