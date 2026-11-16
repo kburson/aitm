@@ -1,0 +1,13 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 159,
+  "batch": "133-native-progress-20261116",
+  "recorded_at_utc": "2026-11-16T12:41:41.351Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {"observation_id":"codex.item.5f4cd40b6e2ad8d1e7f0091d","actor":"codex.d55b5e9736d45cb09dcd4eea","turn":"codex.turn.5302b3989e8e2e81989cba39","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-11T13:39:45.866Z","end_utc":"2026-11-11T13:39:45.949Z","source":{"sha256":"67e1725b28c807ed8603b0017d7dc88c2dec12b9e6bccf8d2130826929fcacab"}}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 292,
+  "batch": "133-native-progress-20261116",
+  "recorded_at_utc": "2026-11-16T12:41:41.351Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {"observation_id":"codex.item.8ba65dcc65bf0c9a916b3692","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T13:32:37.651Z","end_utc":"2026-11-15T13:32:44.768Z","source":{"sha256":"a2421deb02b043e5eec6489e2be77f7c56e3c357aa072ea86b0c171d161447f0"}},
+    {"observation_id":"codex.item.00d3d08bbe47da88967d0d14","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T13:38:49.871Z","end_utc":"2026-11-15T13:38:50.937Z","source":{"sha256":"81230799ae1f103b7239112d5c7bc45b5ce482f667a0a31f927e61fbbebab4e1"}},
+    {"observation_id":"codex.item.7befde00996b7d39a8abcb91","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T13:42:40.475Z","end_utc":"2026-11-15T13:42:48.447Z","source":{"sha256":"a3e98c52c27c0b999e2c85e32d3504e962bb9a3c155e4afc39a5dbfb6fd1e4a6"}},
+    {"observation_id":"codex.item.43ba088208e2da1feab1ba91","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T14:00:39.870Z","end_utc":"2026-11-15T14:00:53.939Z","source":{"sha256":"62b6530ec5c5a76d4cffdfffc22c33f2a85eaca5d97a5906ffca002f349b3142"}},
+    {"observation_id":"codex.item.aaddda17f97609727ffa8741","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T14:10:14.965Z","end_utc":"2026-11-15T14:10:33.848Z","source":{"sha256":"1def5a58c010fa11f8bddcccb6bc67110a96daeaea638c5f81c4dbc5738523a3"}}
+  ]
+}

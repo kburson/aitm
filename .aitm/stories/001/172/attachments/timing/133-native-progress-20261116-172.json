@@ -1,0 +1,16 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 172,
+  "batch": "133-native-progress-20261116",
+  "recorded_at_utc": "2026-11-16T12:41:41.351Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {"observation_id":"codex.item.58926ec8cf68c4ac7f9f3bbc","actor":"codex.d55b5e9736d45cb09dcd4eea","turn":"codex.turn.2f3fe0a0022c1a1e8fccab04","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-11T20:15:35.108Z","end_utc":"2026-11-11T20:15:39.811Z","source":{"sha256":"48d8fa28fd62124b62318a2a664dd62bfe5cd1053da6100236364c273b4c6cab"}},
+    {"observation_id":"codex.item.6f9ccbe6a47aeb1323700e25","actor":"codex.d55b5e9736d45cb09dcd4eea","turn":"codex.turn.a2a22317db218239f6ff445a","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-11T21:04:42.356Z","end_utc":"2026-11-11T21:04:42.357Z","source":{"sha256":"33ff88f9ab8364bb4dcc764a057c4ecd9aeb41481bc1f50a89947a1df0a8f7d4"}},
+    {"observation_id":"codex.item.54958ebefc648bf2cec1e9c0","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.dcf30304a8bf8c9674ca4222","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-12T12:03:18.175Z","end_utc":"2026-11-12T12:03:18.176Z","source":{"sha256":"b1b93fa78793d7713510179256417e96df70f99937cf7d8fff1aaca642b8a0e7"}},
+    {"observation_id":"codex.item.fd3d7f7cda037b170803c352","actor":"codex.d342df6b0641e210723c6751","turn":"codex.turn.0e5a31375a9176623123ef19","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T14:50:27.066Z","end_utc":"2026-11-15T14:50:27.345Z","source":{"sha256":"e7bb2b46a384cae44604a60b2057f947125845f10ba4a2c3773cb811d5f9187f"}}
+  ]
+}

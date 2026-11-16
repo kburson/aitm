@@ -1,0 +1,20 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 279,
+  "batch": "133-native-progress-20261116",
+  "recorded_at_utc": "2026-11-16T12:41:41.351Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {"observation_id":"codex.item.b65c23f7da8d33916c9527d8","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:25:39.377Z","end_utc":"2026-11-13T11:25:43.192Z","source":{"sha256":"77b2c1ceb8c9b2d215fd51fbee07b868ffb544c2fe2751225468ff87b3f96720"}},
+    {"observation_id":"codex.item.d96c9aa8082927192dd928e0","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:26:21.835Z","end_utc":"2026-11-13T11:26:22.974Z","source":{"sha256":"cd99069c511936fee301d8b62fbf211f2387c278f55e10ec9b87ff1fc0b09162"}},
+    {"observation_id":"codex.item.290f21586a8c9bd19d5c2769","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:26:28.274Z","end_utc":"2026-11-13T11:26:33.421Z","source":{"sha256":"a8ad4f0451ccf1ead37ea1c9055342adbd2e27b4b82c6a9744c7d7328cd7793b"}},
+    {"observation_id":"codex.item.5a71218ea530e33a9388f7dc","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:30:16.322Z","end_utc":"2026-11-13T11:30:21.664Z","source":{"sha256":"b899d75dab5ca97df1cb4eb969a92fc3bb2a713e2bd9bcaa393a0e7e94a66a6f"}},
+    {"observation_id":"codex.item.541911e6f8776db463bf623f","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:30:31.140Z","end_utc":"2026-11-13T11:30:34.051Z","source":{"sha256":"d42ceeed6538c731b4c288a0a5c2ae62e8d95acb7041913708d6b2880f70909a"}},
+    {"observation_id":"codex.item.eebbcec64eab0fc276d3b9a5","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:39:43.402Z","end_utc":"2026-11-13T11:39:58.167Z","source":{"sha256":"91b6acddca13d6a7510b65240e44e6cb3aa8a0c2eeb5b50990746daa8349fd2e"}},
+    {"observation_id":"codex.item.52c12d69480ec2923c184099","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.de13cbf57c0cbe800ed58f35","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-13T11:47:39.014Z","end_utc":"2026-11-13T11:47:43.347Z","source":{"sha256":"1d266a1e8741b858928ac046b94112c709c710fa68bbab9fa91bbe68f6f96b9b"}},
+    {"observation_id":"codex.item.9e4bf0dec128c3809e610539","actor":"codex.982a296f3751a72e99a8bc9f","turn":"codex.turn.4d1863a83983bc3a956f8d65","phase":null,"role":null,"kind":"agent-turn","coverage":"partial","basis":"codex-completed-command-boundaries","start_utc":"2026-11-15T13:17:15.327Z","end_utc":"2026-11-15T13:17:15.587Z","source":{"sha256":"acd0efc2cb1e4fb459bf0b5f780974937dac7efc9a4a81685c3e3ecaa4e123e5"}}
+  ]
+}
