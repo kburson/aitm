@@ -4,11 +4,11 @@ import ctypes
 import json
 import os
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 from .. import install
-from ..ledger import LedgerError
 from ..monitor_registry import default_monitor_root
 from ..scope_admission import _grok_image_ref, _grok_process_ref, bind_grok_prompt
 from ..types import SourceRef, _unique_fields
@@ -16,7 +16,7 @@ from ..types import SourceRef, _unique_fields
 _MAX_HOOK_BYTES = 65536
 
 
-def _process_hop(pid: int):
+def _process_hop(pid: int) -> tuple[int, datetime] | None:
     info = install._BSDProcessInfo()
     size = ctypes.sizeof(info)
     if (
@@ -34,10 +34,16 @@ def _process_hop(pid: int):
     )
 
 
-def _has_process_ancestor(evidence, process, image) -> bool:
+def _has_process_ancestor(
+    evidence,
+    process: SourceRef,
+    image: SourceRef,
+    *,
+    read_hop: Callable[[int], tuple[int, datetime] | None] = _process_hop,
+) -> bool:
     def stable_hop(pid):
-        before = _process_hop(pid)
-        return before if before is not None and _process_hop(pid) == before else None
+        before = read_hop(pid)
+        return before if before is not None and read_hop(pid) == before else None
 
     caller = stable_hop(os.getpid())
     if caller is None or caller[0] != os.getppid():
@@ -90,15 +96,7 @@ def main() -> int:
         bind_grok_prompt(
             default_monitor_root(), selector, session, prompt, Path(checkout)
         )
-    except (
-        LedgerError,
-        OSError,
-        TypeError,
-        ValueError,
-        AttributeError,
-        OverflowError,
-        RecursionError,
-    ):
+    except Exception:
         pass
     return 0
 

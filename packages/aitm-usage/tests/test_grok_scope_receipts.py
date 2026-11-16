@@ -6,7 +6,7 @@ from uuid import UUID
 
 import pytest
 from test_grok import PROMPT_A, PROMPT_B, SESSION
-from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
+from test_monitor_grok_capture import isolated_grok_capture  # noqa: F401, F811
 
 from aitm_usage import install, scope_admission
 from aitm_usage.ledger import ConflictError, LedgerError
@@ -16,7 +16,11 @@ from aitm_usage.types import DiagnosticCode, ItemKey, ItemKind, WorkPhase
 
 
 @pytest.fixture
-def staged_scope(isolated_grok_capture, tmp_path, monkeypatch):
+def staged_scope(
+    isolated_grok_capture,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
     f = isolated_grok_capture
     inbox = ControlInbox(f.writer.root)
     reader = ScopeInboxReader(f.writer, inbox)
@@ -104,6 +108,8 @@ def test_original_owner_and_live_process_are_required(staged_scope, tmp_path):
         _stage(f, command, rival, process)
     with pytest.raises(LedgerError):
         _stage(f, replace(command, command_id=UUID(int=33510)), checkout, process)
+    with pytest.raises(LedgerError, match="native process is unavailable"):
+        _stage(f, command, checkout, replace(process, pid=process.pid + 1))
 
 
 def _ready_scope(staged_scope, monkeypatch):
@@ -317,6 +323,15 @@ def test_module_accepts_exact_native_input_and_prints_nothing(
     monkeypatch.setenv("GROK_SESSION_ID", SESSION)
     invoke(b'{"sessionId":"duplicate","sessionId":"bad"}')
     invoke(b"x" * (grok_scope_hook._MAX_HOOK_BYTES + 1))
+
+    def fail_binding(*args):
+        raise RuntimeError("native process inspection failed")
+
+    with monkeypatch.context() as trial:
+        trial.setattr(grok_scope_hook, "bind_grok_prompt", fail_binding)
+        invoke(json.dumps(event).encode())
+    assert lookup(SESSION, PROMPT_A, "native") is None
+
     invoke(json.dumps(event).encode())
     assert lookup(SESSION, PROMPT_A, "native") is not None
 
@@ -363,8 +378,49 @@ def test_darwin_walk_rechecks_parent_incarnation_and_image(staged_scope, monkeyp
     assert not grok_scope_hook._has_process_ancestor(evidence, name, image)
 
 
+def test_darwin_walk_refuses_invalid_parent_depth_and_birth_order(
+    staged_scope, monkeypatch
+):
+    from aitm_usage.sources import grok_scope_hook
+
+    f, _, _, _, process = staged_scope
+    evidence = f.writer.source_evidence()
+    name = scope_admission._grok_process_ref(evidence, process.pid, process.started)
+    image = scope_admission._grok_image_ref(evidence, process.executable)
+    caller = process.pid + 9
+    monkeypatch.setattr(grok_scope_hook.os, "getpid", lambda: caller)
+    monkeypatch.setattr(grok_scope_hook.os, "getppid", lambda: caller - 1)
+
+    def chain(pid):
+        return pid - 1, process.started
+
+    assert not grok_scope_hook._has_process_ancestor(
+        evidence, name, image, read_hop=chain
+    )
+
+    def born_too_late(pid):
+        if pid == caller:
+            return process.pid, process.started - timedelta(seconds=1)
+        return 1, process.started
+
+    monkeypatch.setattr(grok_scope_hook.os, "getppid", lambda: process.pid)
+    assert not grok_scope_hook._has_process_ancestor(
+        evidence, name, image, read_hop=born_too_late
+    )
+
+    monkeypatch.setattr(grok_scope_hook.os, "getppid", lambda: 1)
+
+    def no_parent(pid):
+        assert pid == caller
+        return 1, process.started
+
+    assert not grok_scope_hook._has_process_ancestor(
+        evidence, name, image, read_hop=no_parent
+    )
+
+
 def test_platform_native_process_custody_has_no_provider_request(
-    isolated_grok_capture,
+    isolated_grok_capture,  # noqa: F811
     monkeypatch,
 ):
     import io
@@ -431,6 +487,26 @@ def test_source_approval_profile_and_command_witness_do_not_transfer(
         bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
 
 
+@pytest.mark.parametrize("operation", ["replace", "revoke"])
+def test_profile_revision_before_first_bind_preserves_unbound_attempt(
+    staged_scope, monkeypatch, operation
+):
+    f, _, _, checkout, selector, lookup, bind = _ready_scope(staged_scope, monkeypatch)
+    f.revise(operation, 2)
+    with pytest.raises(LedgerError, match="qualification revision changed"):
+        bind(f.writer.root, selector, SESSION, PROMPT_A, checkout)
+    with scope_admission._pin_directory(f.writer.root) as root:
+        with scope_admission._private_child(
+            root, scope_admission._GROK_RECEIPTS, create=False
+        ) as directory:
+            assert directory is not None
+            (attempt,) = scope_admission._grok_receipts(
+                directory, f.writer.source_evidence()
+            )
+    assert attempt.selector == selector and attempt.prompt is None
+    assert lookup(SESSION, PROMPT_A, "native") is None
+
+
 def test_ordinary_checkout_mode_can_be_physically_identified(tmp_path):
     from aitm_usage.monitor_registry import _directory
 
@@ -484,6 +560,35 @@ def test_grant_revoked_after_native_read_refuses_first_application(
                 mark, f.state.verify_boundary(mark, owner, batch, boundary)
             )
     assert f.state._snapshot() == before
+
+
+def test_first_application_holds_the_revocation_publication_lock(
+    staged_scope, monkeypatch
+):
+    import fcntl
+
+    from aitm_usage.monitor_control import INBOX_NAME
+
+    f, reader, request, checkout, attempt, _, bind = _ready_scope(
+        staged_scope, monkeypatch
+    )
+    assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    f.write(f.rows[:5], 1)
+    batch = f.state.read_source(f.source_id, f.locator())
+    (boundary,) = batch.boundaries
+    with (
+        scope_admission._pin_directory(f.writer.root / INBOX_NAME) as competing,
+        scope_admission.grok_mark(f.writer, request, f.source_id, checkout) as mark,
+    ):
+        with pytest.raises(BlockingIOError):
+            fcntl.flock(competing.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        owner = f.state.operator(f.project)
+        f.state.authorize(mark, owner)
+        verdict = f.state.apply_mark(
+            mark, f.state.verify_boundary(mark, owner, batch, boundary)
+        )
+        assert verdict.status is HandoffStatus.APPLIED
+    reader.revoke(request.grant_id)
 
 
 def test_native_marker_cannot_be_applied_by_a_different_scope_owner(

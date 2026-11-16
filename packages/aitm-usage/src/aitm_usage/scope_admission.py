@@ -606,6 +606,7 @@ def pinned_destination(
 
 
 _GROK_RECEIPTS = "grok-scope-receipts-v1"
+_GROK_QUALIFICATION_RECORD = "isolated-qualification.json"
 _MAX_GROK_RECEIPTS_BYTES = 1024 * 1024
 
 
@@ -617,6 +618,7 @@ class _GrokScopeAttempt:
     source_id: UUID
     source: SourceRef
     profile: SourceRef
+    qualification_record: SourceRef
     checkout: SourceRef
     session: SourceRef
     process: SourceRef
@@ -634,6 +636,19 @@ class _GrokScopeReceipts:
 def _grok_receipts_name(evidence: _ServiceEvidence) -> str:
     key = evidence.pseudonymize("grok-scope-receipts", "v1").value
     return f"{key.rsplit(':', 1)[1]}.json"
+
+
+def _grok_qualification_record_ref(
+    root: _PinnedPath, evidence: _ServiceEvidence
+) -> SourceRef:
+    # The live writer authenticates the revision. The hook only compares the
+    # pinned record to the reference sealed by that writer during staging.
+    record = _read_private(root, _GROK_QUALIFICATION_RECORD)
+    if record is None:
+        raise LedgerError("Grok qualification revision changed")
+    return evidence.pseudonymize(
+        "grok-qualification-record", sha256(record).hexdigest()
+    )
 
 
 def _grok_receipts_wire(
@@ -879,6 +894,8 @@ def stage_grok_attempt(
         evidence = _authority(writer, root)
         approved, source = _grok_approved_ref(writer, evidence, source_id)
         live = writer._require_live_source(approved)
+        qualification_record = _grok_qualification_record_ref(root, evidence)
+        writer._require_live_source(approved, prior=live)
         process = _process_identity(pid)
         if process is None:
             raise LedgerError("Grok scope native process is unavailable")
@@ -914,6 +931,7 @@ def stage_grok_attempt(
                 source_id,
                 source,
                 live.profile.generation,
+                qualification_record,
                 checkout_ref,
                 session_ref,
                 _grok_process_ref(evidence, pid, process.started),
@@ -949,6 +967,12 @@ def stage_grok_attempt(
             def confirm():
                 recheck()
                 lease.check()
+                writer._require_live_source(approved, prior=live)
+                if (
+                    _grok_qualification_record_ref(root, evidence)
+                    != qualification_record
+                ):
+                    raise LedgerError("Grok qualification revision changed")
                 writer._require_live_source(approved, prior=live)
                 if (
                     _process_identity(pid) != process
@@ -1019,6 +1043,11 @@ def bind_grok_prompt(
                     )
                 ):
                     raise LedgerError("Staged Grok scope hook custody changed")
+                if (
+                    _grok_qualification_record_ref(root, evidence)
+                    != attempt.qualification_record
+                ):
+                    raise LedgerError("Grok qualification revision changed")
 
             confirm()
             if attempt.prompt is None:
