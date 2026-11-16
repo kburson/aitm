@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 352
 title: "[Spike] Name the condition that blocks local test selection"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/352"
 parent: 351
 children: []
 blocking: [354]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T21:48:51Z"
+updated: "2026-11-16T21:49:58Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-352-findings.md", "plan/reviews/2026-11-16-352-independent-findings-review.md", "retro/2026-11-16-352-spike-delivery.md"], "attachments": ["attachments/2026-11-16-352-selection-probe.json", "attachments/timing/2026-11-16-spike-review-352.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-352-findings.md", "plan/reviews/2026-11-16-352-independent-findings-review.md", "retro/2026-11-16-352-spike-delivery.md", "plan/closure-receipt.json"], "attachments": ["attachments/2026-11-16-352-selection-probe.json", "attachments/timing/2026-11-16-spike-review-352.json"]}
 expansions: []
 trips: []
 ---
@@ -47,3 +47,5 @@ Read #143, #267, #339, `tools/ci/tia/local.py`, and `tools/ci/path_map.py`.
 [Findings](plan/2026-11-16-352-findings.md) · [Machine receipt](attachments/2026-11-16-352-selection-probe.json).
 
 [Independent review accepted](plan/reviews/2026-11-16-352-independent-findings-review.md) · [Signed retrospective](retro/2026-11-16-352-spike-delivery.md).
+
+GitHub closed this spike as Completed. Project 24 shows Done with Delivered disposition. [Verified closure receipt](plan/closure-receipt.json).

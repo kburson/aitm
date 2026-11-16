@@ -10,7 +10,7 @@ children: [352, 353, 354, 355]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T21:34:42Z"
+updated: "2026-11-16T21:49:58Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -48,3 +48,11 @@ Development does not start from this epic. Codex picks up the child stories afte
 ## Spike pickup
 
 [Investigation plan](plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](plan/reviews/2026-11-16-351-spike-plan-sar.md).
+
+
+## Accepted spike findings
+
+- #352 passed independent review after two rounds. The stock command first needs its import path wired. Once it starts, the candidate suite policy refuses before collection. The exact probe established 30 pinned mapped obligations for the audited module. Fresh candidate collection and general completeness require separate evidence. [Finding](../352/plan/2026-11-16-352-findings.md) · [Review verdict](../352/plan/reviews/2026-11-16-352-independent-findings-review.md).
+- #353 passed independent review on the first round. Cooperative local results can use direct process exit plus a matching worker receipt. Trusted results require qualified outcome observation and custody outside candidate authority. [Finding](../353/plan/2026-11-16-353-findings.md) · [Review verdict](../353/plan/reviews/2026-11-16-353-independent-findings-review.md).
+
+#354 may proceed to feature planning. Run SAR on its implementation plan before Develop. #355 needs #354's delivered interface and its own reviewed qualification plan for the process boundary.
