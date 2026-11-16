@@ -169,4 +169,4 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 
 ## Functional TIA acceptance
 
-[#344](../../003/344/story.md) is the open follow-up for functional test impact analysis. It compares the live required PR check with full-suite results, verifies explainable selection and conservative fallback, and fixes any gaps it finds. #133 stays open until this acceptance evidence is delivered.
+[#344](../../003/344/story.md) delivered and verified functional test impact analysis for ordinary PR validation. The [live evidence](../../003/344/plan/tia-evidence.md) records mapped source and fixture checks, full fallback, stamp reuse and invalidation, cancellation, and the exact-tree regression comparison. #133 remains open for disposition of the broader epic scope.

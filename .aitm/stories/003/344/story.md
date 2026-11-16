@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 344
 title: "[#133] Verify and repair end-to-end test impact analysis"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/344"
 parent: 133
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-16T12:45:44Z"
-updated: "2026-11-16T13:44:31Z"
+updated: "2026-11-16T14:31:12Z"
 last-branch: "codex/344-functional-tia"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
@@ -53,3 +53,7 @@ Scope is functional TIA for ordinary PR validation under the [current #133 direc
 The full hosted check and [trusted verifier](plan/implementation-verifier.json) passed on the independently reviewed implementation tree.
 
 [Live delivery evidence](plan/tia-evidence.md) records all post-merge cases, including the new full run after selection changed.
+
+## Closure
+
+PR #346 delivered the reviewed tree to trunk. The independent delivery-evidence review passed and proof drafts #345 and #347 through #350 were closed. GitHub issue #344 is closed as completed and the Project item is Done with Delivered disposition. #133 remains open.
