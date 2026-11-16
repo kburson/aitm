@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 337
 title: "[#133] Measure full PR validation and rehearse rollback to #103"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/337"
 parent: 133
 children: []
 blocking: []
 blocked-by: [323]
 created: "2026-11-15T23:37:40Z"
-updated: "2026-11-16T00:18:51Z"
+updated: "2026-11-16T00:19:07Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/323/plan/2026-11-15-323-missed-slot-recovery-results.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip", "plan/2026-11-15-337-full-pr-and-rollback-results.md", "plan/qualification-summary.json", "plan/rollback-evidence.zip", "plan/restore-review.md", "plan/reproduction.md", "plan/SHA256SUMS", "plan/full-pr-rollback-review.md", "plan/delivery.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/2026-11-15-337-full-pr-and-rollback-plan.md", "plan/production-readout.md", "plan/production-evidence.zip", "plan/2026-11-15-337-full-pr-and-rollback-results.md", "plan/qualification-summary.json", "plan/rollback-evidence.zip", "plan/restore-review.md", "plan/reproduction.md", "plan/SHA256SUMS", "plan/full-pr-rollback-review.md", "plan/delivery.json", "plan/closure-receipt.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -51,3 +51,7 @@ Eight consecutive delivered PRs from the measurement window. [Timings](plan/prod
 ## Independent acceptance
 
 [Signed review](plan/full-pr-rollback-review.md) accepts the production cohort measurement and the disposable rollback. Production CI missed the measured timing target and #103 remains authoritative.
+
+## Closure
+
+[Verified closure receipt](plan/closure-receipt.json).
