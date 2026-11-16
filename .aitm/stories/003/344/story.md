@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 344
 title: "[#133] Verify and repair end-to-end test impact analysis"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/344"
 parent: 133
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-16T12:45:44Z"
-updated: "2026-11-16T12:45:44Z"
-last-branch: "planning"
+updated: "2026-11-16T13:16:53Z"
+last-branch: "codex/344-functional-tia"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
