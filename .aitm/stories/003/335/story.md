@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 335
 title: "[M11f] Authenticate Grok scope marker receipts"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/335"
 parent: 100
 children: []
@@ -60,3 +60,7 @@ The corrected candidate passed 1,517 locked local tests. The signed-suite test p
 [Exact signed hosted Test](plan/marker-retained-custody-signed-hosted-test.json) passed with the inherited controls. The signed suite now includes both custody proofs requested by independent source review. The prior authorized review held and another paid source review requires authorization. Packet SHA-256 `fea0aa3fd8b990791f97f6a4b5c9888de959a25e4e10410d0311bd6064caa3a4`.
 
 [Owner-authorized independent source verdict](plan/marker-independent-source-r4.md) returned **PASS** on the exact signed candidate. [Receipt](plan/marker-independent-source-r4-receipt.json).
+
+## Verified Close
+
+[PR #336](https://github.com/kburson/aitm/pull/336) delivered the exact reviewed tree on trunk at 755fa2ece56cfa8c70a460b269d947ec6e958b2f. The native issue is Closed and Project 24 is Done. [Delivery proof](plan/marker-verified-delivery.json) · [Native Close proof](plan/marker-native-close.json).

@@ -1,0 +1,77 @@
+{
+  "story": 335,
+  "parent": 100,
+  "native": {
+    "created_at": "2026-11-15T22:59:53Z",
+    "html_url": "https://github.com/kburson/aitm/issues/335",
+    "id": 6410677241,
+    "number": 335,
+    "state": "closed",
+    "title": "[M11f] Authenticate Grok scope marker receipts"
+  },
+  "project": {
+    "actual": 0.1258,
+    "coverage": "partial",
+    "estimate": 3.75,
+    "id": "PVTI_lAHOABCEY84Bq1hZzhI_O2c",
+    "issue": 335,
+    "rank": 249.75,
+    "repository": "kburson/aitm",
+    "size": "M",
+    "start": "2026-11-15",
+    "status": "Done"
+  },
+  "delivery": {
+    "baseRefName": "trunk",
+    "headRefOid": "b36a6d9e01a73160cbd6df6da4ff001fd7ae04bf",
+    "mergeCommit": {
+      "oid": "755fa2ece56cfa8c70a460b269d947ec6e958b2f"
+    },
+    "mergedAt": "2026-11-16T01:19:46Z",
+    "number": 336,
+    "state": "MERGED",
+    "url": "https://github.com/kburson/aitm/pull/336",
+    "literalBase": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+    "deliveredTree": "2ffe002416bacbb37670a325852fff0b88330ea1",
+    "remoteTrunk": "755fa2ece56cfa8c70a460b269d947ec6e958b2f",
+    "orderedParentsVerified": true,
+    "zeroDiffVerified": true,
+    "mergeMethod": "merge"
+  },
+  "dependent_prerequisites": {
+    "121": [
+      {
+        "number": 115,
+        "state": "closed"
+      },
+      {
+        "number": 120,
+        "state": "closed"
+      },
+      {
+        "number": 304,
+        "state": "closed"
+      },
+      {
+        "number": 325,
+        "state": "closed"
+      },
+      {
+        "number": 326,
+        "state": "closed"
+      },
+      {
+        "number": 330,
+        "state": "closed"
+      },
+      {
+        "number": 331,
+        "state": "closed"
+      },
+      {
+        "number": 335,
+        "state": "closed"
+      }
+    ]
+  }
+}
