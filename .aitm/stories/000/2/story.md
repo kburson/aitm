@@ -8,9 +8,9 @@ issue: https://github.com/kburson/aitm/issues/2
 parent: 1
 children: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 74, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 75, 37, 76, 38, 39, 40, 41, 42, 77, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 78, 53, 54, 55, 56, 57, 58, 59, 60, 63, 64, 79, 80, 61, 62, 81, 65, 82, 66, 67, 68, 69, 70, 71, 72, 228, 229, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 230]
 blocking: [247]
-blocked-by: [100, 133]
+blocked-by: [100]
 created: 2026-11-08T19:24:20Z
-updated: "2026-11-15T02:12:42Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: planning
 last-worktree: /Users/kpburson/projects/aitm-workspace/planning
 estimate: { agent-hours: 297.25, size: XL }
@@ -94,3 +94,7 @@ The Core implementation estimate is **297.25 h across 89 bounded leaves**. #228 
 ## Behavior-driven testing
 
 Use the independently reviewed [Core testing standard](../../002/286/plan/2026-11-14-286-core-behavior-test-standard.md) when planning and reviewing Core leaves.
+
+## #133 no longer blocks Core
+
+On 2026-11-16 the owner removed #133 from this epic's blockers. #100 remains. The test-feedback replacement is [#340](../../003/340/story.md) and [#341](../../003/341/story.md).

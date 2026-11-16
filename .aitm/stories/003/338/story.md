@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 338
 title: "[#133] Qualify live missed-slot backstop recovery in shadow"
 kind: "story"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/338"
 parent: 133
 children: []
 blocking: []
 blocked-by: [337]
 created: "2026-11-16T06:14:57Z"
-updated: "2026-11-16T06:14:54Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -33,3 +33,7 @@ Production diagnostic dispatch stays diagnostic. This qualification confers shad
 ## Pickup
 
 [Verified native Dev state, rank and dependency](plan/start.json).
+
+## Replaced scope
+
+On 2026-11-16 the owner replaced this unfinished scope. The record and any evidence stay. [Replacement](../../001/133/plan/2026-11-16-133-pr-feedback-replacement.md).

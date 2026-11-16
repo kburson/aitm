@@ -57,3 +57,5 @@ Rank 150 [#323 Missed-slot recovery qualification](../../../003/323/story.md) fo
 Rank 160 [#337 Full PR validation and rollback](../../../003/337/story.md) follows #323.
 
 Rank 170 [#338 Qualify live missed-slot backstop recovery in shadow](../../../003/338/story.md) and [#339 Shorten and remeasure exact PR feedback](../../../003/339/story.md) follow #337 in parallel. Existing blocked stories retain their dispositions.
+
+On 2026-11-16 the owner replaced that unfinished scope. #338, #339, and Backlog leaves #149–#157 and #159–#178 are closed as replaced. Delivered #158 stays. Rank 180 [#340](../../../003/340/story.md) and Rank 190 [#341](../../../003/341/story.md) are the remaining production changes. [Replacement](2026-11-16-133-pr-feedback-replacement.md).

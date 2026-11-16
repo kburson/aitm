@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 157
 title: "[#133 T20] Authenticate workspace and incident authority"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/157"
 parent: 133
 children: []
 blocking: [159, 160, 165]
 blocked-by: [156]
 created: "2026-11-10T16:51:42Z"
-updated: "2026-11-10T16:56:26Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -55,3 +55,7 @@ and disposable host transport configuration.
   trunk. V(authority_io) and a cross-clone request pass. Prove the
   normal entry point issues no grant and dispatches nothing with only
   T17 storage or an inconsistent witness.
+
+## Replaced scope
+
+On 2026-11-16 the owner replaced this unfinished scope. The record and any evidence stay. [Replacement](../133/plan/2026-11-16-133-pr-feedback-replacement.md).

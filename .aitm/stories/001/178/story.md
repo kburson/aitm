@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 178
 title: "[#133 T41] Rehearse rollback with a live stop"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/178"
 parent: 133
 children: []
 blocking: []
 blocked-by: [172, 176, 177]
 created: "2026-11-10T16:52:35Z"
-updated: "2026-11-13T05:14:57Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.0, "size": "M"}
 priority: "P1"
@@ -51,3 +51,7 @@ disposable rollback report.
 ## Superseded scope hold
 
 Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.
+
+## Replaced scope
+
+On 2026-11-16 the owner replaced this unfinished scope. The record and any evidence stay. [Replacement](../133/plan/2026-11-16-133-pr-feedback-replacement.md).

@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 339
 title: "[#133] Shorten and remeasure exact PR feedback"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/339"
 parent: 133
 children: []
 blocking: []
 blocked-by: [337]
 created: "2026-11-16T06:14:58Z"
-updated: "2026-11-16T06:33:09Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
@@ -37,3 +37,7 @@ Production #103, its required checks and verifier remain authoritative. Any prop
 ## Paired exact PR feedback qualification
 
 [Plan](plan/2026-11-16-339-exact-pr-feedback-plan.md) · [Recorded local TIA refusal and recovery](plan/2026-11-16-339-preflight-recovery.md) · [Results](plan/2026-11-16-339-exact-pr-feedback-results.md) · [Evidence manifest](plan/SHA256SUMS).
+
+## Replaced scope
+
+On 2026-11-16 the owner replaced this unfinished scope. The record and any evidence stay. [Replacement](../../001/133/plan/2026-11-16-133-pr-feedback-replacement.md).

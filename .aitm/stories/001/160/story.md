@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 160
 title: "[#133 T23] Qualify full repair outside broken base controls"
 kind: "spike"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/160"
 parent: 133
 children: []
 blocking: [161]
 blocked-by: [152, 157]
 created: "2026-11-10T16:51:50Z"
-updated: "2026-11-13T05:14:57Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P1"
@@ -53,3 +53,7 @@ or explicit refusal.
 ## Superseded scope hold
 
 Keep this original scope on hold under the [reviewed #133 fallback](https://github.com/kburson/aitm/blob/62b2c5f5af388a1b889c8440d91bc89a365effbd/.aitm/stories/001/133/plan/2026-11-12-133-ci-warning-manual-recovery-replan.md). The native dependencies remain historical.
+
+## Replaced scope
+
+On 2026-11-16 the owner replaced this unfinished scope. The record and any evidence stay. [Replacement](../133/plan/2026-11-16-133-pr-feedback-replacement.md).

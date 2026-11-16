@@ -6,16 +6,16 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
-children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339]
-blocking: [2]
+children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339, 340, 341]
+blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T06:14:54Z"
+updated: "2026-11-16T06:43:16Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -160,3 +160,9 @@ Rank 160 [#337](../../003/337/story.md) follows the delivered #323 decision. #10
 ## Parallel Rank 170 qualification
 
 [#338 Qualify live missed-slot backstop recovery in shadow](../../003/338/story.md) and [#339 Shorten and remeasure exact PR feedback](../../003/339/story.md) follow delivered #337 in parallel. #103 remains authoritative.
+
+## Pull-request feedback replacement
+
+On 2026-11-16 the owner stopped the remaining shadow qualification. [#338](../../003/338/story.md) and [#339](../../003/339/story.md) are replaced, and the superseded leaves #149–#157 and #159–#178 are closed. Delivered #158 stays. #133 no longer blocks Core #2.
+
+The full suite already uses three workers and may take up to 20 minutes. The remaining work is [#340](../../003/340/story.md), then [#341](../../003/341/story.md). [Replacement record](plan/2026-11-16-133-pr-feedback-replacement.md).
