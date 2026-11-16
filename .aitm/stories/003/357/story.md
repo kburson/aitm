@@ -10,7 +10,7 @@ children: []
 blocking: [358, 359]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #357](https://github.com/kburson/aitm/issues/357) · [Parent #356](../356/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 270. Priority P2. Size S.
+Project 24 Rank 490. Priority P2. Size S.
 
 Question: which collected tests belong in fast unit, slow unit, local integration, and systems integration, and which collected tests fit none of those four?
 

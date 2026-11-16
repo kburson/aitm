@@ -10,7 +10,7 @@ children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #353](https://github.com/kburson/aitm/issues/353) · [Parent #351](../351/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 230. Priority P2. Size S.
+Project 24 Rank 450. Priority P2. Size S.
 
 Question: why did local test observation share a process with the code under test, and what process boundary does a pre-commit run need before its result can be trusted?
 

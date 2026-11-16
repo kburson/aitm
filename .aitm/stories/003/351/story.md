@@ -10,7 +10,7 @@ children: [352, 353, 354, 355]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #351](https://github.com/kburson/aitm/issues/351) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 210. Priority P2. Size Feature.
+Project 24 Rank 430. Priority P2. Size Feature.
 
 Decompose one claim out of #133 into an independent epic. Deliver local test selection so an agent runs the tests affected by uncommitted work before commit.
 

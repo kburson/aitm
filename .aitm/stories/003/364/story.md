@@ -10,7 +10,7 @@ children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #364](https://github.com/kburson/aitm/issues/364) · [Parent #362](../362/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 340. Priority P2. Size S.
+Project 24 Rank 560. Priority P2. Size S.
 
 Question: where can one current flag be stored so a person and an agent can both read it, while the flag stays off the merge route, off required status checks, and outside workspace control?
 

@@ -10,7 +10,7 @@ children: []
 blocking: [354]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #352](https://github.com/kburson/aitm/issues/352) · [Parent #351](../351/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 220. Priority P2. Size S.
+Project 24 Rank 440. Priority P2. Size S.
 
 Question: on current trunk, what single condition prevents a local plan from naming the tests for one uncommitted production edit?
 

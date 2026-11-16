@@ -16,22 +16,24 @@ Owner decision on 2026-11-16. #133 delivered the hosted pull-request path map an
 
 | Issue | Kind | Rank | Title | Parent | Blocked by |
 | --- | --- | --- | --- | --- | --- |
-| #351 | epic | 210 | Select the tests affected by uncommitted work |  | — |
-| #352 | spike | 220 | [Spike] Name the condition that blocks local test selection | #351 | — |
-| #353 | spike | 230 | [Spike] Find the process boundary for trusted local test observation | #351 | — |
-| #354 | story | 240 | Report the affected tests for the working tree | #351 | #352 |
-| #355 | story | 250 | Run the affected tests before commit | #351 | #353, #354 |
-| #356 | epic | 260 | Shard tests by execution category |  | — |
-| #357 | spike | 270 | [Spike] Classify tests into execution categories | #356 | — |
-| #358 | spike | 280 | [Spike] Find what blocks parallel category runs | #356 | #357 |
-| #359 | story | 290 | Run a local full sweep as category shards | #356 | #357, #358 |
-| #360 | story | 300 | Run a CI full sweep as category shards | #356 | #359 |
-| #361 | story | 310 | Schedule the category-shard full sweep | #356 | #360 |
-| #362 | epic | 320 | Flag a scheduled build failure |  | — |
-| #363 | spike | 330 | [Spike] Identify the run a failure flag should watch | #362 | — |
-| #364 | spike | 340 | [Spike] Find where a person and an agent can read one flag | #362 | — |
-| #365 | story | 350 | Record the scheduled-failure flag | #362 | #363, #364 |
-| #366 | story | 360 | Show the scheduled-failure flag when it is checked | #362 | #365 |
+| #351 | epic | 430 | Select the tests affected by uncommitted work |  | — |
+| #352 | spike | 440 | [Spike] Name the condition that blocks local test selection | #351 | — |
+| #353 | spike | 450 | [Spike] Find the process boundary for trusted local test observation | #351 | — |
+| #354 | story | 460 | Report the affected tests for the working tree | #351 | #352 |
+| #355 | story | 470 | Run the affected tests before commit | #351 | #353, #354 |
+| #356 | epic | 480 | Shard tests by execution category |  | — |
+| #357 | spike | 490 | [Spike] Classify tests into execution categories | #356 | — |
+| #358 | spike | 500 | [Spike] Find what blocks parallel category runs | #356 | #357 |
+| #359 | story | 510 | Run a local full sweep as category shards | #356 | #357, #358 |
+| #360 | story | 520 | Run a CI full sweep as category shards | #356 | #359 |
+| #361 | story | 530 | Schedule the category-shard full sweep | #356 | #360 |
+| #362 | epic | 540 | Flag a scheduled build failure |  | — |
+| #363 | spike | 550 | [Spike] Identify the run a failure flag should watch | #362 | — |
+| #364 | spike | 560 | [Spike] Find where a person and an agent can read one flag | #362 | — |
+| #365 | story | 570 | Record the scheduled-failure flag | #362 | #363, #364 |
+| #366 | story | 580 | Show the scheduled-failure flag when it is checked | #362 | #365 |
+
+Owner moved this block after rank 420. The ranks are 430 through 580, ten apart.
 
 Recommended later development order, as a note only: #351, then #356, then #362. That order is not a blocker edge.
 

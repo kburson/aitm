@@ -10,7 +10,7 @@ children: []
 blocking: [355]
 blocked-by: [352]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #354](https://github.com/kburson/aitm/issues/354) · [Parent #351](../351/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 240. Priority P2. Size S.
+Project 24 Rank 460. Priority P2. Size S.
 
 Report the tests affected by the current uncommitted working tree.
 

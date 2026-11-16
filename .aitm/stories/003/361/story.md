@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [360]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #361](https://github.com/kburson/aitm/issues/361) · [Parent #356](../356/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 310. Priority P2. Size S.
+Project 24 Rank 530. Priority P2. Size S.
 
 Schedule the category-shard full sweep delivered by #360.
 

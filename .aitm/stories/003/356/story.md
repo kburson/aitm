@@ -10,7 +10,7 @@ children: [357, 358, 359, 360, 361]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:41:49Z"
+updated: "2026-11-16T19:55:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #356](https://github.com/kburson/aitm/issues/356) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 260. Priority P2. Size Feature.
+Project 24 Rank 480. Priority P2. Size Feature.
 
 Decompose one claim out of #133 into an independent epic. Divide the collected tests into execution categories and run those categories as parallel shards for a full sweep.
 
