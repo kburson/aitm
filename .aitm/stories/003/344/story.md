@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/test-impact-analysis-implementation-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -41,3 +41,7 @@ As an AITM contributor, I want ordinary pull requests to run the tests affected 
 - Publish replayable commands and hosted run or artifact links with base, head, tested tree, selected and executed tests, fallback reasons, full-suite comparison, and pass/fail outcomes. Obtain independent review and verify the delivered behavior before closing. Any unresolved gap in these criteria keeps this story and #133 open.
 
 Scope is functional TIA for ordinary PR validation under the [current #133 direction](https://github.com/kburson/aitm/blob/043d7ce22ed2da0d00aaa1236b1eacd9d1710a87/.aitm/stories/001/133/plan/2026-11-16-133-pr-feedback-replacement.md). The [accepted TIA design](https://github.com/kburson/aitm/blob/2ff1b49ed3a3f91c8164d6c7b0e1dbe4c15cd3f9/.aitm/stories/001/133/design/test-impact-analysis-design.md) defines explainability and uncertainty fallback. Reuse the delivered path map wherever it can meet those criteria. Scheduled backstop activation and Stop the Line are outside this story's scope.
+
+## Plan candidate
+
+[Functional Test Impact Analysis Implementation Plan](plan/test-impact-analysis-implementation-plan.md)
