@@ -1,0 +1,26 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 121,
+  "batch": "coordinator-jit-recovery-triage",
+  "recorded_at_utc": "2026-11-16T01:42:33.446Z",
+  "source": {
+    "ref": "codex:completed-progress",
+    "sha256": "1f7041430db8d63e71d8b5adbaf13b41f5aff1c243684bba5f3e9f209f4d2a9f"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.4d01081672154aa0a86a84caccf0837f",
+      "actor": "codex-coordinator",
+      "turn": "codex.turn.01a1e1ff-63b8-76a3-91dc-7b57bf4c27e2",
+      "phase": "Planning",
+      "role": "coordinator",
+      "attempt": "jit-recovery-triage",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-16T01:36:48.204Z",
+      "end_utc": "2026-11-16T01:41:30.735Z"
+    }
+  ]
+}
