@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 353
 title: "[Spike] Find the process boundary for trusted local test observation"
 kind: "spike"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/353"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-16T21:34:42Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": "S"}
+estimate: {"agent-hours": 2, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -37,3 +37,7 @@ This is research for #351. Write the finding. Production code and CI stay unchan
 ## Handoff
 
 #355 implements the accepted finding together with the report from #354.
+
+## Spike pickup
+
+[Investigation plan](../351/plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](../351/plan/reviews/2026-11-16-351-spike-plan-sar.md).

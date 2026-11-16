@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 351
 title: "Select the tests affected by uncommitted work"
 kind: "epic"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/351"
 parent: null
 children: [352, 353, 354, 355]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-16T21:34:42Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-351-local-tia-spike-plan.md", "plan/reviews/2026-11-16-351-spike-plan-sar.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -44,3 +44,7 @@ Spike stories answer one question and create no production software. Feature sto
 Read #138, #139, #140, #141, #142, #143, #147, #267, #288, and #339. Read `tools/ci/tia/local.py` and `tools/ci/path_map.py` on current trunk. The hosted map is evidence to learn from.
 
 Development does not start from this epic. Codex picks up the child stories after the blockers are accepted.
+
+## Spike pickup
+
+[Investigation plan](plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](plan/reviews/2026-11-16-351-spike-plan-sar.md).

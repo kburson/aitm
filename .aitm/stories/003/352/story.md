@@ -3,16 +3,16 @@ schema: "aitm.story/v0"
 id: 352
 title: "[Spike] Name the condition that blocks local test selection"
 kind: "spike"
-state: "backlog"
+state: "plan"
 issue: "https://github.com/kburson/aitm/issues/352"
 parent: 351
 children: []
 blocking: [354]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-16T21:34:42Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": "S"}
+estimate: {"agent-hours": 2, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
@@ -39,3 +39,7 @@ Read #143, #267, #339, `tools/ci/tia/local.py`, and `tools/ci/path_map.py`.
 ## Handoff
 
 #354 implements the accepted finding. It stays blocked until this receipt is accepted.
+
+## Spike pickup
+
+[Investigation plan](../351/plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](../351/plan/reviews/2026-11-16-351-spike-plan-sar.md).
