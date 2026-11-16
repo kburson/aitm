@@ -10,12 +10,12 @@ children: []
 blocking: [355]
 blocked-by: [352]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T22:08:09Z"
+updated: "2026-11-16T22:15:04Z"
 last-branch: "codex/354-working-tree-report"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-354-working-tree-obligations-plan.md", "plan/reviews/2026-11-16-354-plan-sar.md", "plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-354-working-tree-obligations-plan.md", "plan/reviews/2026-11-16-354-plan-sar.md", "plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md", "plan/2026-11-16-354-develop-checkpoint.md"], "attachments": ["attachments/2026-11-16-354-local-report-probe.json"]}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,5 @@ This story delivers the report. It does not run the tests. Running them is #355,
 ## Develop
 
 Opus 5.5 at high effort accepted the exact implementation plan in round two after five findings were resolved. Develop starts on `codex/354-working-tree-report`. #355 remains blocked by #354. [XPR manifest](plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md) · [Final reviewer verdict](plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-reviewer-response-2.md).
+
+[Implementation and local proof](plan/2026-11-16-354-develop-checkpoint.md).
