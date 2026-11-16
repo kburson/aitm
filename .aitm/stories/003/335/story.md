@@ -46,3 +46,5 @@ The exact candidate passed 1,502 locked local tests. The focused regressions cov
 The exact candidate passed 1,504 locked local tests. The regressions cover revocation after a native read, original owner custody, and the typed duplicate hook refusal. [Exact local Test](plan/marker-source-r2-local-test.json) · [PR #336](https://github.com/kburson/aitm/pull/336).
 
 [Signed hosted Test](plan/marker-source-r2-signed-hosted-test.json) verified the same exact candidate and inherited controls. Independent source review is submitted.
+
+[Independent source recovery verdict](plan/marker-independent-source-r2.md) returned **HOLD** on the exact signed candidate. [Receipt](plan/marker-independent-source-r2-receipt.json).

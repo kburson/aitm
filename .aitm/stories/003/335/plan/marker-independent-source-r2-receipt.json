@@ -1,0 +1,17 @@
+{
+  "base": "4ba4354f603ad861c897111dcaaf2342fc68da86",
+  "head": "a7856662fa5809332cfeab2da50efeca66088d8a",
+  "tree": "2a52b8c134f1a33a87132ce1326f9d3426b877b4",
+  "run": "https://github.com/kburson/aitm/actions/runs/43776061642/attempts/2",
+  "run_id": 43776061642,
+  "story": 335,
+  "gate": "source",
+  "attempt": 2,
+  "verdict": "HOLD",
+  "reviewer": "claude-opus-5-5",
+  "effort": "high",
+  "submission_sha256": "2fd8648eb9dd9d37ea189dc7d857437720b6eb4c2555dc9cbeb1998e2f3c4d87",
+  "response_sha256": "24a1768e9b14b09a871eaa3cf72e9da59c4886d6183ee193ab69f9e58ed1b525",
+  "review_sha256": "344bb51f1b64a8c4654fb5eb630f4a14beaeee38e06d246ef15f76735b1f164f",
+  "diff_sha256": "fd905c832c02db7c03f12d23ad6cca0eaeff28b9db71a05456e165c9f8b84c51"
+}
