@@ -11,15 +11,18 @@
 - Story branch: `story/340-341-path-map`
 - Pull request: https://github.com/kburson/aitm/pull/342
 - Head: `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`
-- Hosted run: https://github.com/kburson/aitm/actions/runs/43824428689
-- Required jobs: `python-base`, `python`, `quality`, `file-checks`, then `collect-evidence` and `aitm-ci`
-- This head changes the workflow and `tools/ci/`, so the base has no path map. The run records selection source `absent` and must pass the full suite. That is the control-path result. The mapped live check is a later pull request whose base contains this map.
-- Independent reviewer: pending a green exact head
+- Hosted run: https://github.com/kburson/aitm/actions/runs/43824428689 attempt 1, conclusion success, event pull_request, head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`
+- Tested merge: `8e22acfca5b116dbedb298f0ed62d9de68e1c2de` (parents base `755fa2ec` and head `fcd1d745`)
+- Required jobs, all success: `python-base`, `python`, `quality`, `file-checks`, `collect-evidence`, `aitm-ci`
+- Signed candidate `aitm.ci-candidate/v2`: selection mode `full`, source `absent`, 1517 tests, 1516 baseline tests, no failures
+- This head changes the workflow and `tools/ci/`, so the base has no path map. Source `absent` is the control-path result. The mapped live check is a later pull request whose base contains this map.
+- Independent reviewer: separate Grok review of head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`, started 2026-11-16T07:51:07Z. Verdict pending.
 - Merge, retrospective, and closure: pending
 
 ## Checkpoints
 
 - [x] 2026-11-16T07:30:47Z Develop. Branch `story/340-341-path-map` commit `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`.
 - [x] 2026-11-16T07:31:54Z Test. Pull request 342 opened into `trunk`. Head and base read back. Hosted CI run 43824428689 is in progress on that head.
-- [ ] Review after the required jobs pass on this head.
+- [x] 2026-11-16T07:39:40Z Required jobs passed on head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`. `aitm-ci` finished at that time.
+- [ ] Review verdict on that same head.
 - [ ] Done after merge, the mapped proof, retrospective, and issue closure.

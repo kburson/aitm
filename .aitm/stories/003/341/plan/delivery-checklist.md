@@ -11,14 +11,16 @@
 - Story branch: `story/340-341-path-map`
 - Pull request: https://github.com/kburson/aitm/pull/342
 - Head: `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`
-- Hosted run: https://github.com/kburson/aitm/actions/runs/43824428689
+- Hosted run: https://github.com/kburson/aitm/actions/runs/43824428689 attempt 1, conclusion success, head `fcd1d745647ca24321b62558e9fd2d3c3c57d1ac`
+- Tested merge: `8e22acfca5b116dbedb298f0ed62d9de68e1c2de`
 - The workflow cancels a superseded pull-request run. A narrowed selection saves a full-suite stamp only after the full suite passes, and a later push with the same key does not start that suite. This head is mode full because the base has no map, so the stamp path is not exercised here.
-- Independent reviewer: pending a green exact head
+- Independent reviewer: separate Grok review of the same head, started 2026-11-16T07:51:07Z. Verdict pending.
 - The live full-once proof is a follow-up pull request after this candidate is on `trunk`.
 
 ## Checkpoints
 
 - [x] 2026-11-16T07:30:47Z Develop, shared with #340.
 - [x] 2026-11-16T07:31:54Z Test. Pull request 342 is the candidate. Hosted CI is in progress.
-- [ ] Review after the required jobs pass on this head.
+- [x] 2026-11-16T07:39:40Z Required jobs passed on the shared head.
+- [ ] Review verdict on that same head.
 - [ ] Done after the amended-head proof, retrospective, and issue closure.

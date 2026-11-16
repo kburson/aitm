@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 341
 title: "[#133] Run the short check on every push and the full suite once"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/341"
 parent: 133
 children: []
 blocking: []
 blocked-by: [340]
 created: "2026-11-16T06:43:16Z"
-updated: "2026-11-16T07:31:54Z"
+updated: "2026-11-16T07:51:07Z"
 last-branch: "story/340-341-path-map"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
