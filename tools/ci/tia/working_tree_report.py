@@ -33,7 +33,8 @@ _DELIVERY_ADDITIONS = {
     b"tools/ci/tia/working_tree_obligations.json",
     b"tools/ci/tests/test_tia_working_tree_report.py",
 }
-_COMMENT_LINES = re.compile(rb"(?:[ \t]*(?:#[\x20-\x7e\t]*)?\n)+")
+_COMMENT_WHITESPACE = re.compile(rb"[ \t\n]*")
+_COMMENT_LINE = re.compile(rb"#[\x20-\x7e\t]*")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
 
 
@@ -118,6 +119,20 @@ def _admitted_change(before, after, base_commit):
     return effective[0]
 
 
+def _matches_comment_suffix(content, start):
+    if not content.endswith(b"\n") or content.find(b"#", start) == -1:
+        return False
+
+    while True:
+        start = _COMMENT_WHITESPACE.match(content, start).end()
+        if start == len(content):
+            return True
+        end = content.find(b"\n", start)
+        if not _COMMENT_LINE.fullmatch(content, start, end):
+            return False
+        start = end + 1
+
+
 def _pinned_ids():
     try:
         raw = _INVENTORY_PATH.read_bytes()
@@ -186,12 +201,10 @@ def build_report(repo: Path, base_commit: str) -> dict:
         change = _admitted_change(before, after, base_commit)
         prior = before.read_content(_PATH)
         current = after.read_content(_PATH)
-        suffix = current[len(prior) :]
         if (
             not prior.endswith(b"\n")
             or not current.startswith(prior)
-            or not _COMMENT_LINES.fullmatch(suffix)
-            or b"#" not in suffix
+            or not _matches_comment_suffix(current, len(prior))
         ):
             raise _Unavailable("unsupported-change")
         reason = _consumer_reason(before, change, current)

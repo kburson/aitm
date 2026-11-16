@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+import tracemalloc
 from hashlib import sha256
 from pathlib import Path
 
@@ -161,6 +162,18 @@ def test_nonqualifying_suffix_never_reports_ids(sandbox, suffix):
     repo, base = sandbox
     append(repo, suffix)
     unavailable(report.build_report(repo, base), "unsupported-change")
+
+
+def test_multiline_comment_validation_limits_temporary_memory():
+    base = b"LIMIT = 10\n"
+    content = base + b"# local note\n\n" * 2048
+    tracemalloc.start()
+    try:
+        assert report._matches_comment_suffix(content, len(base))
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert peak < 128 * 1024
 
 
 def test_base_without_lf_refuses_comment_suffix(sandbox, monkeypatch):
