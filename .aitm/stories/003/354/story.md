@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 354
 title: "Report the affected tests for the working tree"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/354"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: [352]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T22:15:04Z"
+updated: "2026-11-16T23:45:21Z"
 last-branch: "codex/354-working-tree-report"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P2"
@@ -47,3 +47,7 @@ This story delivers the report. It does not run the tests. Running them is #355,
 Opus 5.5 at high effort accepted the exact implementation plan in round two after five findings were resolved. Develop starts on `codex/354-working-tree-report`. #355 remains blocked by #354. [XPR manifest](plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md) · [Final reviewer verdict](plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-reviewer-response-2.md).
 
 [Implementation and local proof](plan/2026-11-16-354-develop-checkpoint.md).
+
+## Hosted validation
+
+[PR #367](https://github.com/kburson/aitm/pull/367) runs the canonical CI workflow on tranche head `37121ba4783119839313da107a3c1e61d0d0a1e8`. Exact local suite replay and independent review accompany the hosted check.
