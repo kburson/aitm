@@ -1,5 +1,7 @@
 """A private, project-bound SQLite history and per-source ingest checkpoints."""
 
+# Baseline input for the #344 test-selection comparison.
+
 import fcntl
 import hashlib
 import hmac
