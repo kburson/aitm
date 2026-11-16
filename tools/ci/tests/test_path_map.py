@@ -92,6 +92,33 @@ def test_compare_limit_cannot_narrow_the_suite(tmp_path, capsys):
     assert paths_from_compare({"files": [{"filename": GROK}]}) == [GROK]
     assert paths_from_compare({"files": [{}]}) is None
     assert paths_from_compare({"files": [{"filename": GROK}] * 300}) is None
+    renamed = {
+        "filename": "docs/moved.md",
+        "previous_filename": ".github/workflows/ci.yml",
+        "status": "renamed",
+    }
+    paths = paths_from_compare({"files": [renamed]})
+    assert paths == ["docs/moved.md", ".github/workflows/ci.yml"]
+    assert select(paths, MAP)["mode"] == "full"
+    assert select(["docs/moved.md"], MAP)["mode"] == "checks"
+    assert (
+        paths_from_compare(
+            {"files": [{"filename": "docs/moved.md", "status": "renamed"}]}
+        )
+        is None
+    )
+    assert (
+        paths_from_compare(
+            {"files": [{"filename": "docs/moved.md", "previous_filename": ""}]}
+        )
+        is None
+    )
+    hidden = {
+        "filename": "README.md",
+        "previous_filename": "packages/aitm-usage/src/aitm_usage/cli.py",
+        "status": "renamed",
+    }
+    assert select(paths_from_compare({"files": [hidden]}), MAP)["mode"] == "full"
     compare = tmp_path / "compare.json"
     changed = tmp_path / "changed.txt"
     path = tmp_path / "map.json"
@@ -123,3 +150,10 @@ def test_workflow_uses_the_base_selector_and_cancels_a_superseded_run():
     assert "actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684" in WORKFLOW
     assert "actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684" in WORKFLOW
     assert "pr-${PR_NUMBER}-full-${key}" in WORKFLOW
+    diff = "git diff --name-only --no-renames --diff-filter=ACDMRTUXB"
+    assert WORKFLOW.count(diff) == 2
+    assert f'{diff} "$BASE" FETCH_HEAD' in WORKFLOW
+    assert f'{diff} "$BASE" HEAD' in WORKFLOW
+    assert "refs/pull/${PR_NUMBER}/merge" in WORKFLOW
+    assert 'test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"' in WORKFLOW
+    assert "compare/${BASE}" not in WORKFLOW

@@ -57,10 +57,19 @@ def paths_from_compare(document):
         return None
     paths = []
     for item in files:
-        name = item.get("filename") if isinstance(item, dict) else None
+        if not isinstance(item, dict):
+            return None
+        name = item.get("filename")
         if not isinstance(name, str) or not name:
             return None
         paths.append(name)
+        # A rename's post-image can be an ordinary docs path. Keep the pre-image
+        # so a moved workflow, map, or executable still selects the full suite.
+        if "previous_filename" in item or item.get("status") in {"renamed", "copied"}:
+            previous = item.get("previous_filename")
+            if not isinstance(previous, str) or not previous:
+                return None
+            paths.append(previous)
     return paths
 
 

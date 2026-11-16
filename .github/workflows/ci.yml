@@ -48,6 +48,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
@@ -55,14 +56,18 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-base"
           mkdir -p "$out/observer" "$out/evidence"
-          # This checkout is the base. A narrowed selection does not run the base suite.
+          # This checkout is the base. Diff the tested merge with rename detection
+          # off, the same command the candidate lane uses, so both lanes see the
+          # pre-image of a rename and a complete path list.
           if [[ -f tools/ci/path_map.py && -f tools/ci/path_map.json ]]; then
-            if gh api "repos/$GITHUB_REPOSITORY/compare/${BASE}...${PR_HEAD}" > "$out/compare.json"; then
-              python3 tools/ci/path_map.py --map tools/ci/path_map.json --compare "$out/compare.json" > "$out/selection.json"
-              if [[ "$(jq -er .mode "$out/selection.json")" != full ]]; then
-                printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
-                exit 0
-              fi
+            git fetch --no-tags --depth=1 origin "refs/pull/${PR_NUMBER}/merge"
+            test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" FETCH_HEAD > "$out/changed.txt"
+            python3 tools/ci/path_map.py --map tools/ci/path_map.json --changed-from "$out/changed.txt" > "$out/selection.json"
+            mode=$(jq -er .mode "$out/selection.json")
+            if [[ "$mode" != full ]]; then
+              printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
+              exit 0
             fi
           fi
           workers=0
@@ -200,7 +205,7 @@ jobs:
             # Run the selector from the base blobs. The merge tree must not choose tests.
             git show "$BASE:tools/ci/path_map.py" > "$out/base-path-map.py"
             git show "$BASE:tools/ci/path_map.json" > "$out/base-path-map.json"
-            git diff --name-only --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
+            git diff --name-only --no-renames --diff-filter=ACDMRTUXB "$BASE" HEAD > "$out/changed.txt"
             python3 "$out/base-path-map.py" --map "$out/base-path-map.json" --changed-from "$out/changed.txt" > "$selection"
           else
             python3 - "$selection" <<'PY'
