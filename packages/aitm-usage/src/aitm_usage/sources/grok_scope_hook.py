@@ -1,5 +1,7 @@
 """Dormant producer entry for an authenticated native Grok scope marker."""
 
+# The scope hook binds the live prompt to its staged receipt.
+
 import ctypes
 import json
 import os
