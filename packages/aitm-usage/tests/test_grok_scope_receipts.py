@@ -219,10 +219,14 @@ def test_original_envelope_and_sealed_prompt_record_cannot_be_substituted(
 
     (receipt,) = (f.writer.root / scope_admission._GROK_RECEIPTS).glob("*.json")
     retained = receipt.read_bytes()
-    for raw in (SESSION, PROMPT_A, str(checkout)):
+    process = staged_scope[-1]
+    for raw in (SESSION, PROMPT_A, str(checkout), str(process.executable)):
         assert raw.encode() not in retained
     changed = json.loads(retained)
-    assert "pid" not in changed["attempts"][0]
+    attempt_fields = changed["attempts"][0]
+    assert "pid" not in attempt_fields
+    assert process.pid not in attempt_fields.values()
+    assert str(process.pid) not in attempt_fields.values()
     changed["seal"] = "0" * 64
     receipt.write_text(json.dumps(changed, separators=(",", ":"), sort_keys=True))
     assert lookup(SESSION, PROMPT_A, "synthetic-event-1") is None
@@ -334,6 +338,31 @@ def test_module_accepts_exact_native_input_and_prints_nothing(
 
     invoke(json.dumps(event).encode())
     assert lookup(SESSION, PROMPT_A, "native") is not None
+
+
+@pytest.mark.parametrize(
+    "problem", ["size", "foreign_pid", "init", "uid", "zombie", "no_start", "usec"]
+)
+def test_process_info_refuses_invalid_custody(monkeypatch, problem):
+    import os
+
+    from aitm_usage.sources import grok_scope_hook
+
+    pid = 1 if problem == "init" else 33500
+
+    class Proc:
+        def proc_pidinfo(self, given, _flavor, _arg, pointer, size):
+            row = pointer._obj
+            row.pid = given + int(problem == "foreign_pid")
+            row.parent_pid = 33501
+            row.uid = os.geteuid() + int(problem == "uid")
+            row.status = 5 if problem == "zombie" else 1
+            row.start_seconds = 0 if problem == "no_start" else 10000
+            row.start_microseconds = 1_000_000 if problem == "usec" else 37
+            return size - int(problem == "size")
+
+    monkeypatch.setattr(install, "_libproc", Proc)
+    assert grok_scope_hook._process_hop(pid) is None
 
 
 def test_darwin_walk_rechecks_parent_incarnation_and_image(staged_scope, monkeypatch):
@@ -507,6 +536,36 @@ def test_profile_revision_before_first_bind_preserves_unbound_attempt(
     assert lookup(SESSION, PROMPT_A, "native") is None
 
 
+def test_rotation_between_bind_validation_and_publication_refuses_commit(
+    staged_scope, monkeypatch
+):
+    f, _, _, checkout, selector, lookup, bind = _ready_scope(staged_scope, monkeypatch)
+    original = scope_admission._publish
+    invoked = []
+
+    def publish(*args, **kwargs):
+        invoked.append(True)
+        f.revise("replace", 2)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(scope_admission, "_publish", publish)
+    with pytest.raises(LedgerError, match="qualification revision changed"):
+        bind(f.writer.root, selector, SESSION, PROMPT_A, checkout)
+    assert invoked == [True]
+    with (
+        scope_admission._pin_directory(f.writer.root) as root,
+        scope_admission._private_child(
+            root, scope_admission._GROK_RECEIPTS, create=False
+        ) as directory,
+    ):
+        assert directory is not None
+        (attempt,) = scope_admission._grok_receipts(
+            directory, f.writer.source_evidence()
+        )
+    assert attempt.selector == selector and attempt.prompt is None
+    assert lookup(SESSION, PROMPT_A, "exact-event") is None
+
+
 def test_ordinary_checkout_mode_can_be_physically_identified(tmp_path):
     from aitm_usage.monitor_registry import _directory
 
@@ -538,19 +597,28 @@ def test_expired_first_bind_keeps_exact_original_scope_unpublished(
     assert callback(SESSION, PROMPT_A, "native") is None
 
 
-def test_grant_revoked_after_native_read_refuses_first_application(
-    staged_scope, monkeypatch
+@pytest.mark.parametrize(
+    ("operation", "refusal"),
+    [("revoke", "producer grant is unavailable"), ("rotate", "seal changed")],
+)
+def test_grant_change_after_native_read_refuses_first_application(
+    staged_scope, monkeypatch, operation, refusal
 ):
-    f, reader, request, checkout, attempt, _, bind = _ready_scope(
+    f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
         staged_scope, monkeypatch
     )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
     f.write(f.rows[:5], 1)
     batch = f.state.read_source(f.source_id, f.locator())
     (boundary,) = batch.boundaries
-    reader.revoke(request.grant_id)
+    if operation == "revoke":
+        reader.revoke(request.grant_id)
+    else:
+        reader.register(request.grant_id, f.project, ("mark",), generation=2)
+        reader.advertise(reader.probe(request))
+    assert lookup(SESSION, PROMPT_A, "native") is None
     before = f.state._snapshot()
-    with pytest.raises(LedgerError, match="producer grant is unavailable"):
+    with pytest.raises(LedgerError, match=refusal):
         with scope_admission.grok_mark(
             f.writer, request, f.source_id, checkout
         ) as mark:
