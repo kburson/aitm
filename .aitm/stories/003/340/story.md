@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 340
 title: "[#133] Make a coarse path map the required PR check"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/340"
 parent: 133
 children: []
 blocking: [341]
 blocked-by: []
 created: "2026-11-16T06:43:16Z"
-updated: "2026-11-16T08:08:10Z"
+updated: "2026-11-16T08:17:36Z"
 last-branch: "story/340-341-path-map"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
