@@ -10,12 +10,12 @@ children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T21:42:46Z"
+updated: "2026-11-16T21:44:31Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-353-findings.md"], "attachments": ["attachments/2026-11-16-353-process-probe.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-353-findings.md", "plan/reviews/2026-11-16-353-independent-findings-review.md", "retro/2026-11-16-353-spike-delivery.md"], "attachments": ["attachments/2026-11-16-353-process-probe.json", "attachments/timing/2026-11-16-spike-review-353.json"]}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,5 @@ This is research for #351. Write the finding. Production code and CI stay unchan
 [Investigation plan](../351/plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](../351/plan/reviews/2026-11-16-351-spike-plan-sar.md).
 
 [Findings](plan/2026-11-16-353-findings.md) · [Machine receipt](attachments/2026-11-16-353-process-probe.json).
+
+[Independent review accepted](plan/reviews/2026-11-16-353-independent-findings-review.md) · [Signed retrospective](retro/2026-11-16-353-spike-delivery.md).

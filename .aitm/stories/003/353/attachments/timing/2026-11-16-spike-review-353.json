@@ -1,0 +1,41 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 353,
+  "batch": "2026-11-16-spike-review",
+  "recorded_at_utc": "2026-11-16T21:43:35Z",
+  "source": {
+    "ref": "manual:independent-spike-review-turns"
+  },
+  "observations": [
+    {
+      "observation_id": "native-review-16c1770ac6de8147e1c291aee6070837",
+      "actor": "reviewer-1",
+      "turn": "turn-1",
+      "phase": "review",
+      "role": "reviewer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "paired-native-turn-boundaries",
+      "start_utc": "2026-11-16T21:38:57.950Z",
+      "end_utc": "2026-11-16T21:41:55.523Z",
+      "source": {
+        "sha256": "16c1770ac6de8147e1c291aee607083703947398820bd4cc465e71dab914e209"
+      }
+    },
+    {
+      "observation_id": "author-scope-gap-353",
+      "actor": "investigator-1",
+      "phase": "research",
+      "role": "investigator",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "unknown",
+      "basis": "partial-scope-reconciliation",
+      "start_utc": null,
+      "end_utc": null,
+      "missing_reason": "mixed-story-author-turn"
+    }
+  ]
+}
