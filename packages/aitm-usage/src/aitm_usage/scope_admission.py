@@ -3,16 +3,18 @@
 import hmac
 import os
 import re
+import stat
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from hashlib import sha256
+from hashlib import file_digest, sha256
 from pathlib import Path
-from uuid import UUID, uuid5
+from uuid import UUID, uuid4, uuid5
 
 from .ledger import (
+    ConflictError,
     Ledger,
     LedgerError,
     _path_exists,
@@ -21,14 +23,19 @@ from .ledger import (
 )
 from .monitor_registry import (
     _SOURCE_KEY_FILE,
+    ApprovedSource,
     Registry,
+    _check_capture_root,
     _directory,
     _PhysicalDirectory,
     _project,
+    _read_state,
     _ServiceEvidence,
+    _source,
 )
-from .monitor_scope import Scope
-from .scopes import _private_child, _publish, _read_private
+from .monitor_scope import Mark, Scope
+from .monitor_types import NativeSurface
+from .scopes import _filename, _private_child, _publish, _read_private
 from .types import (
     DevelopmentBinding,
     DraftAlias,
@@ -596,3 +603,512 @@ def pinned_destination(
 
         yield recheck
         recheck()
+
+
+_GROK_RECEIPTS = "grok-scope-receipts-v1"
+_GROK_QUALIFICATION_RECORD = "isolated-qualification.json"
+_MAX_GROK_RECEIPTS_BYTES = 1024 * 1024
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokScopeAttempt:
+    selector: SourceRef
+    command_id: UUID
+    proposal_digest: str
+    source_id: UUID
+    source: SourceRef
+    profile: SourceRef
+    qualification_record: SourceRef
+    checkout: SourceRef
+    session: SourceRef
+    process: SourceRef
+    image: SourceRef
+    expires: datetime
+    prompt: SourceRef | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _GrokScopeReceipts:
+    attempts: tuple[_GrokScopeAttempt, ...]
+    seal: str
+
+
+def _grok_receipts_name(evidence: _ServiceEvidence) -> str:
+    key = evidence.pseudonymize("grok-scope-receipts", "v1").value
+    return f"{key.rsplit(':', 1)[1]}.json"
+
+
+def _grok_qualification_record_ref(
+    root: _PinnedPath, evidence: _ServiceEvidence
+) -> SourceRef:
+    # The live writer authenticates the revision. The hook only compares the
+    # pinned record to the reference sealed by that writer during staging.
+    record = _read_private(root, _GROK_QUALIFICATION_RECORD)
+    if record is None:
+        raise LedgerError("Grok qualification revision changed")
+    return evidence.pseudonymize(
+        "grok-qualification-record", sha256(record).hexdigest()
+    )
+
+
+def _grok_receipts_wire(
+    attempts: tuple[_GrokScopeAttempt, ...], evidence: _ServiceEvidence
+) -> _GrokScopeReceipts:
+    body = _encode(
+        attempts,
+        tuple[_GrokScopeAttempt, ...],
+        validate_ref=evidence.validate_source_ref,
+    )
+    return _GrokScopeReceipts(
+        attempts, _tag(evidence.key, b"grok-scope-receipts/v1", body)
+    )
+
+
+def _grok_receipts(
+    directory: _PinnedPath, evidence: _ServiceEvidence
+) -> tuple[_GrokScopeAttempt, ...]:
+    name = _grok_receipts_name(evidence)
+    raw = _read_state(directory, name, _MAX_GROK_RECEIPTS_BYTES)
+    if raw is None:
+        return ()
+    receipt = _decode(
+        raw, _GrokScopeReceipts, validate_ref=evidence.validate_source_ref
+    )
+    expected = _grok_receipts_wire(receipt.attempts, evidence)
+    if (
+        len(raw) > _MAX_GROK_RECEIPTS_BYTES
+        or not hmac.compare_digest(receipt.seal, expected.seal)
+        or _encode(receipt, _GrokScopeReceipts).encode() != raw
+    ):
+        raise LedgerError("Invalid committed Grok scope receipts")
+    return receipt.attempts
+
+
+def _store_grok_receipts(
+    directory: _PinnedPath,
+    evidence: _ServiceEvidence,
+    attempts: tuple[_GrokScopeAttempt, ...],
+    recheck: Callable[[], None],
+) -> None:
+    data = _encode(_grok_receipts_wire(attempts, evidence), _GrokScopeReceipts).encode()
+    if len(data) > _MAX_GROK_RECEIPTS_BYTES:
+        raise LedgerError("Private Grok scope receipt capacity exceeded")
+    if (
+        not _publish(
+            directory,
+            _grok_receipts_name(evidence),
+            data,
+            replace_pending=True,
+            before_commit=recheck,
+        )
+        or _grok_receipts(directory, evidence) != attempts
+    ):
+        raise LedgerError("Grok scope receipt publication changed")
+
+
+@contextmanager
+def _grok_mark_proposal(
+    registry: Registry,
+    directory: _PinnedPath,
+    command_id: UUID,
+    *,
+    require_current_witness: bool,
+) -> Iterator[tuple[ScopeEnvelope, Callable[[], None]]]:
+    from .monitor_control import _decode_publication
+
+    name = _filename(command_id)
+    data = _read_private(directory, name)
+    if data is None:
+        raise LedgerError("Grok mark proposal is unavailable")
+    envelope = _decode_publication(name, data).command
+    if (
+        type(envelope) is not ScopeEnvelope
+        or type(envelope.body.request) is not MarkRequest
+    ):
+        raise LedgerError("Grok hook requires an exact sealed mark proposal")
+    request = envelope.body.request
+    with (
+        open_grant(registry, request.grant_id) as (grant, recheck_grant, _),
+        pinned_destination(registry, request) as recheck_destination,
+    ):
+
+        def recheck():
+            recheck_grant()
+            if _read_private(directory, name) != data:
+                raise ConflictError("Grok mark proposal changed")
+            if recheck_destination is not None:
+                recheck_destination()
+            with open_grant(registry, request.grant_id) as (current, _, _):
+                if seal_request(current, request) != envelope:
+                    raise ConflictError("Grok mark grant changed")
+                if require_current_witness:
+                    require_witness(registry, current, datetime.now(UTC))
+
+        if seal_request(grant, request) != envelope:
+            raise LedgerError("Grok mark proposal seal changed")
+        recheck()
+        yield envelope, recheck
+        recheck()
+
+
+def scope_receipt_ref(evidence: _ServiceEvidence, command_id: UUID) -> SourceRef:
+    return evidence.pseudonymize("scope-receipt", str(command_id))
+
+
+@contextmanager
+def grok_mark(
+    writer: Registry,
+    request: MarkRequest,
+    source_id: UUID,
+    checkout: Path,
+) -> Iterator[Mark]:
+    """Keep the original grant current through the coordinator's first application."""
+    from .monitor_control import ControlInbox
+
+    lease = writer.lease
+    with (
+        ControlInbox(writer.root).publication() as locked,
+        _pin_directory(writer.root) as root,
+        _private_child(root, _GROK_RECEIPTS, create=False) as directory,
+        _grok_mark_proposal(
+            writer, locked.directory, request.command_id, require_current_witness=False
+        ) as (envelope, _),
+    ):
+        if directory is None or envelope.body.request != request:
+            raise LedgerError("Original Grok mark proposal is unavailable")
+        evidence = _authority(writer, root)
+        approved, source = _grok_approved_ref(writer, evidence, source_id)
+        live = writer._require_live_source(approved)
+        checkout_ref = _grok_checkout_ref(
+            writer, evidence, request.scope.project_id, checkout
+        )
+        original = next(
+            (
+                item
+                for item in _grok_receipts(directory, evidence)
+                if item.command_id == request.command_id
+            ),
+            None,
+        )
+        if (
+            original is None
+            or original.prompt is None
+            or original.proposal_digest != envelope.payload_digest
+            or (
+                original.source_id,
+                original.source,
+                original.profile,
+                original.checkout,
+            )
+            != (source_id, source, live.profile.generation, checkout_ref)
+        ):
+            raise LedgerError("Original Grok mark receipt is unavailable")
+        lease.check()
+        yield Mark(
+            request.command_id,
+            request.scope,
+            scope_receipt_ref(evidence, request.command_id),
+            request.destination_binding,
+        )
+        lease.check()
+        writer._require_live_source(approved, prior=live)
+
+
+def _grok_process_ref(
+    evidence: _ServiceEvidence, pid: int, started: datetime
+) -> SourceRef:
+    return evidence.pseudonymize(
+        "grok-scope-process", f"{pid}:{started.astimezone(UTC).isoformat()}"
+    )
+
+
+def _grok_image_ref(evidence: _ServiceEvidence, executable: Path) -> SourceRef:
+    info = executable.stat(follow_symlinks=False)
+    if not stat.S_ISREG(info.st_mode) or info.st_size > 256 * 1024 * 1024:
+        raise LedgerError("Grok process image is not a bounded regular file")
+    return evidence.pseudonymize(
+        "grok-scope-image",
+        f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}",
+    )
+
+
+def _grok_checkout_ref(
+    registry: Registry, evidence: _ServiceEvidence, project_id: UUID, checkout: Path
+) -> SourceRef:
+    physical = _directory(str(checkout))
+    project = _project(registry.view(), project_id)
+    if physical not in project.anchors:
+        raise LedgerError("Grok scope checkout is outside the owner project")
+    return evidence.pseudonymize(
+        "grok-scope-checkout", f"{physical.identity[0]}:{physical.identity[1]}"
+    )
+
+
+def _grok_scope_refs(
+    evidence: _ServiceEvidence, session: str, prompt: str | None = None
+) -> tuple[SourceRef, SourceRef | None]:
+    from .sources.grok import _uuid
+
+    session_ref = evidence.pseudonymize("grok-scope-session", _uuid(session))
+    prompt_ref = (
+        None
+        if prompt is None
+        else evidence.pseudonymize(
+            "grok-scope-prompt", f"{session_ref.value}:{_uuid(prompt)}"
+        )
+    )
+    return session_ref, prompt_ref
+
+
+def _grok_approved_ref(
+    registry: Registry, evidence: _ServiceEvidence, source_id: UUID
+) -> tuple[ApprovedSource, SourceRef]:
+    approved = _source(registry.view(), source_id)
+    if approved.approval.surface != NativeSurface.GROK_BUILD_MACOS:
+        raise LedgerError("Grok scope marker requires its qualified carrier")
+    _check_capture_root(approved.directory)
+    approved_ref = evidence.pseudonymize(
+        "grok-scope-source",
+        _encode(approved.approval, type(approved.approval))
+        + str(approved.directory.identity),
+    )
+    return approved, approved_ref
+
+
+def stage_grok_attempt(
+    writer: Registry,
+    source_id: UUID,
+    command_id: UUID,
+    session: str,
+    checkout: Path,
+    pid: int,
+) -> SourceRef:
+    """Stage one already sealed owner mark for the qualified native launch."""
+    from .install import _process_identity
+    from .monitor_control import ControlInbox
+
+    lease = writer.lease
+    now = datetime.now(UTC)
+    inbox = ControlInbox(writer.root)
+    with inbox.publication() as locked, _pin_directory(writer.root) as root:
+        evidence = _authority(writer, root)
+        approved, source = _grok_approved_ref(writer, evidence, source_id)
+        live = writer._require_live_source(approved)
+        qualification_record = _grok_qualification_record_ref(root, evidence)
+        writer._require_live_source(approved, prior=live)
+        process = _process_identity(pid)
+        if process is None:
+            raise LedgerError("Grok scope native process is unavailable")
+        image = _grok_image_ref(evidence, process.executable)
+        with process.executable.open("rb") as binary:
+            digest = file_digest(binary, "sha256").hexdigest()
+        if (
+            evidence.pseudonymize("isolated-executable-v1", digest)
+            != live.installation.executable
+            or _grok_image_ref(evidence, process.executable) != image
+        ):
+            raise LedgerError("Grok scope native process image changed")
+        session_ref, _ = _grok_scope_refs(evidence, session)
+        with (
+            _grok_mark_proposal(
+                writer, locked.directory, command_id, require_current_witness=True
+            ) as (
+                envelope,
+                recheck,
+            ),
+            _private_child(root, _GROK_RECEIPTS, create=True) as directory,
+        ):
+            assert directory is not None
+            request = envelope.body.request
+            checkout_ref = _grok_checkout_ref(
+                writer, evidence, request.scope.project_id, checkout
+            )
+            attempts = _grok_receipts(directory, evidence)
+            draft = _GrokScopeAttempt(
+                evidence.pseudonymize("grok-scope-attempt", uuid4().hex),
+                command_id,
+                envelope.payload_digest,
+                source_id,
+                source,
+                live.profile.generation,
+                qualification_record,
+                checkout_ref,
+                session_ref,
+                _grok_process_ref(evidence, pid, process.started),
+                image,
+                now + WITNESS_LIFETIME,
+            )
+            prior = next(
+                (item for item in attempts if item.command_id == command_id), None
+            )
+            if prior is not None:
+                if prior != replace(
+                    draft,
+                    selector=prior.selector,
+                    expires=prior.expires,
+                    prompt=prior.prompt,
+                ):
+                    raise ConflictError(
+                        "Grok scope mark already belongs to another attempt"
+                    )
+                if prior.prompt is None and now >= prior.expires:
+                    raise LedgerError("Grok scope attempt expired")
+                return prior.selector
+            if any(
+                item.session == session_ref
+                and item.prompt is None
+                and now < item.expires
+                for item in attempts
+            ):
+                raise ConflictError(
+                    "A Grok scope attempt is already pending for this session"
+                )
+
+            def confirm():
+                recheck()
+                lease.check()
+                writer._require_live_source(approved, prior=live)
+                if (
+                    _grok_qualification_record_ref(root, evidence)
+                    != qualification_record
+                ):
+                    raise LedgerError("Grok qualification revision changed")
+                writer._require_live_source(approved, prior=live)
+                if (
+                    _process_identity(pid) != process
+                    or _grok_image_ref(evidence, process.executable) != image
+                    or _grok_checkout_ref(
+                        writer, evidence, request.scope.project_id, checkout
+                    )
+                    != checkout_ref
+                ):
+                    raise LedgerError("Staged Grok scope custody changed")
+
+            _store_grok_receipts(directory, evidence, (*attempts, draft), confirm)
+            lease.check()
+            return draft.selector
+
+
+def bind_grok_prompt(
+    root_path: Path,
+    selector: SourceRef,
+    session: str,
+    prompt: str,
+    checkout: Path,
+) -> SourceRef:
+    """The native hook binds its one staged receipt without a coordinator lease."""
+    from .monitor_control import ControlInbox
+    from .sources.grok_scope_hook import _has_process_ancestor
+
+    registry = Registry(root_path)
+    now = datetime.now(UTC)
+    with (
+        ControlInbox(registry.root).publication() as locked,
+        _pin_directory(registry.root) as root,
+        _private_child(root, _GROK_RECEIPTS, create=False) as directory,
+    ):
+        evidence = _authority(registry, root)
+        evidence.validate_source_ref(selector)
+        session_ref, prompt_ref = _grok_scope_refs(evidence, session, prompt)
+        if directory is None:
+            raise LedgerError("Staged Grok scope attempt is unavailable")
+        attempts = _grok_receipts(directory, evidence)
+        attempt = next((item for item in attempts if item.selector == selector), None)
+        if (
+            attempt is None
+            or attempt.session != session_ref
+            or (attempt.prompt is None and now >= attempt.expires)
+        ):
+            raise LedgerError("Staged Grok scope attempt is unavailable")
+        if attempt.prompt is not None and attempt.prompt != prompt_ref:
+            raise ConflictError("Grok scope attempt already belongs to another prompt")
+        with _grok_mark_proposal(
+            registry,
+            locked.directory,
+            attempt.command_id,
+            require_current_witness=attempt.prompt is None,
+        ) as (envelope, recheck):
+            project_id = envelope.body.request.scope.project_id
+
+            def confirm():
+                recheck()
+                _, source = _grok_approved_ref(registry, evidence, attempt.source_id)
+                if (
+                    source != attempt.source
+                    or envelope.payload_digest != attempt.proposal_digest
+                    or _grok_checkout_ref(registry, evidence, project_id, checkout)
+                    != attempt.checkout
+                    or not _has_process_ancestor(
+                        evidence, attempt.process, attempt.image
+                    )
+                ):
+                    raise LedgerError("Staged Grok scope hook custody changed")
+                if (
+                    _grok_qualification_record_ref(root, evidence)
+                    != attempt.qualification_record
+                ):
+                    raise LedgerError("Grok qualification revision changed")
+
+            confirm()
+            if attempt.prompt is None:
+                if any(
+                    item.session == session_ref and item.prompt == prompt_ref
+                    for item in attempts
+                ):
+                    raise ConflictError("Grok prompt already has an owner receipt")
+                updated = tuple(
+                    replace(item, prompt=prompt_ref) if item is attempt else item
+                    for item in attempts
+                )
+                _store_grok_receipts(directory, evidence, updated, confirm)
+            return scope_receipt_ref(evidence, attempt.command_id)
+
+
+def grok_receipt_lookup(
+    writer: Registry, source_id: UUID, checkout: Path
+) -> Callable[[str, str, str], SourceRef | None]:
+    """Bind a pure native receipt lookup to the current qualified writer."""
+    from .monitor_control import INBOX_NAME
+
+    lease = writer.lease
+
+    def find(session: str, prompt: str, _event_id: str) -> SourceRef | None:
+        try:
+            lease.check()
+            with (
+                _pin_directory(writer.root) as root,
+                _private_child(root, _GROK_RECEIPTS, create=False) as directory,
+                _private_child(root, INBOX_NAME, create=False) as inbox,
+            ):
+                if directory is None or inbox is None:
+                    return None
+                evidence = _authority(writer, root)
+                session_ref, prompt_ref = _grok_scope_refs(evidence, session, prompt)
+                approved, source = _grok_approved_ref(writer, evidence, source_id)
+                live = writer._require_live_source(approved)
+                matching = tuple(
+                    attempt
+                    for attempt in _grok_receipts(directory, evidence)
+                    if (attempt.session, attempt.prompt) == (session_ref, prompt_ref)
+                )
+                if len(matching) != 1:
+                    return None
+                (attempt,) = matching
+                with _grok_mark_proposal(
+                    writer, inbox, attempt.command_id, require_current_witness=False
+                ) as (envelope, _):
+                    project_id = envelope.body.request.scope.project_id
+                    current = _grok_checkout_ref(writer, evidence, project_id, checkout)
+                    if (
+                        (attempt.source_id, attempt.source, attempt.profile)
+                        != (source_id, source, live.profile.generation)
+                        or current != attempt.checkout
+                        or envelope.payload_digest != attempt.proposal_digest
+                    ):
+                        return None
+                    writer._require_live_source(approved, prior=live)
+                    return scope_receipt_ref(evidence, attempt.command_id)
+        except (LedgerError, OSError, ValueError):
+            return None
+
+    return find
