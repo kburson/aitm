@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 352
 title: "[Spike] Name the condition that blocks local test selection"
 kind: "spike"
-state: "plan"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/352"
 parent: 351
 children: []
 blocking: [354]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T21:34:42Z"
+updated: "2026-11-16T21:42:46Z"
 last-branch: "planning"
 estimate: {"agent-hours": 2, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-352-findings.md"], "attachments": ["attachments/2026-11-16-352-selection-probe.json"]}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,5 @@ Read #143, #267, #339, `tools/ci/tia/local.py`, and `tools/ci/path_map.py`.
 ## Spike pickup
 
 [Investigation plan](../351/plan/2026-11-16-351-local-tia-spike-plan.md) · [Plan SAR passed](../351/plan/reviews/2026-11-16-351-spike-plan-sar.md).
+
+[Findings](plan/2026-11-16-352-findings.md) · [Machine receipt](attachments/2026-11-16-352-selection-probe.json).

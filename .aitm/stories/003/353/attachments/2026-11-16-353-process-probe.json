@@ -1,0 +1,131 @@
+{
+  "cases": [
+    {
+      "assignment": "test_boundary.py::test_pass",
+      "body_marker_matches_worker_pid": true,
+      "collected": [
+        "test_boundary.py::test_pass"
+      ],
+      "driver_marker_matches_worker_pid": true,
+      "exit_from_parent_wait": 0,
+      "observer_registered_in_worker": true,
+      "receipt_exit": 0,
+      "reports": [
+        {
+          "nodeid": "test_boundary.py::test_pass",
+          "outcome": "passed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "nodeid": "test_boundary.py::test_pass",
+          "outcome": "passed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "nodeid": "test_boundary.py::test_pass",
+          "outcome": "passed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "teardown"
+        }
+      ],
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "bea5a77cc68582c0c66ca0fc860c9b8f449e679bec8d6a9178605ee7b7dc69a3",
+      "worker_euid_equals_controller": true,
+      "worker_pid_distinct_from_controller": true,
+      "worker_receipt_sha256": "2a214547b86c0d17a8f02dd23cf31cbba00e98ff2b6db6523b0d31bb8449c7d5"
+    },
+    {
+      "assignment": "test_boundary.py::test_fail",
+      "body_marker_matches_worker_pid": true,
+      "collected": [
+        "test_boundary.py::test_fail"
+      ],
+      "driver_marker_matches_worker_pid": true,
+      "exit_from_parent_wait": 1,
+      "observer_registered_in_worker": true,
+      "receipt_exit": 1,
+      "reports": [
+        {
+          "nodeid": "test_boundary.py::test_fail",
+          "outcome": "passed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "setup"
+        },
+        {
+          "nodeid": "test_boundary.py::test_fail",
+          "outcome": "failed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "call"
+        },
+        {
+          "nodeid": "test_boundary.py::test_fail",
+          "outcome": "passed",
+          "skip_reason": null,
+          "wasxfail": false,
+          "when": "teardown"
+        }
+      ],
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_sha256": "2c1b24d14d96c6b90307f511b2cbd92f89d5dcdd8899395cfcda5df06e999730",
+      "worker_euid_equals_controller": true,
+      "worker_pid_distinct_from_controller": true,
+      "worker_receipt_sha256": "b8b89c8ceee8d828f3f80df43df9b23f5d33e48ff826cb8e8521f2e3310f6ba0"
+    },
+    {
+      "assignment": "test_boundary.py::not_a_test",
+      "body_marker_matches_worker_pid": false,
+      "collected": [],
+      "driver_marker_matches_worker_pid": true,
+      "exit_from_parent_wait": 4,
+      "observer_registered_in_worker": true,
+      "receipt_exit": 4,
+      "reports": [],
+      "stderr_sha256": "c8807dfdb972b4d2dc5478a43a7825e5911fd1f60905e22deaf03909daf51b5b",
+      "stdout_sha256": "a6fc53a5cef0fe8278c459c532a5e372bbe2dd65e4c365a7d7757a210299799f",
+      "worker_euid_equals_controller": true,
+      "worker_pid_distinct_from_controller": true,
+      "worker_receipt_sha256": "188796ce88706c94d8650bf0da9352613a9bf384c433b44a93f985178314322c"
+    }
+  ],
+  "invocation": [
+    "python",
+    "-P",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "pytest_evidence",
+    "-p",
+    "no:cacheprovider",
+    "-c",
+    "pytest.ini",
+    "--rootdir",
+    ".",
+    "--",
+    "<assigned-node>"
+  ],
+  "probe": {
+    "end_utc": "2026-11-16T21:36:53.150Z",
+    "instrumentation_sha256": "eb6ab7989fbf3cdaf89c074c684ce126c619e2c9833903820c91f60fb31c247e",
+    "observer_sha256": "361263c425969ae067687594adc627fd8e2cb11a8edaf51ba7ed20b8e3e78a9f",
+    "repository_source": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "scope": "cooperative scratch pytest process",
+    "start_utc": "2026-11-16T21:36:52.720Z",
+    "test_module_sha256": "f6253ad178e2c30881366989a53b7ec5255a133c8c3bf45f67f2a653c2cae6b0"
+  },
+  "story": 353,
+  "toolchain": {
+    "architecture": "arm64",
+    "macos": "26.6.2",
+    "os": "Darwin",
+    "pytest": "pytest 9.2.0",
+    "python": "3.13.9"
+  }
+}

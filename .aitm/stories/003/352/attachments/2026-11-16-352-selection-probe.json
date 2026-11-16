@@ -1,0 +1,213 @@
+{
+  "bounded_collect_only": {
+    "child_reports": 0,
+    "exit": 0,
+    "hosted_run": "https://github.com/kburson/aitm/actions/runs/43882437964/attempts/2",
+    "matched_hosted_node_set_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+    "phase_reports": 0,
+    "selected_node_ids": [
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[foreign_pid]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[init]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[no_start]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[size]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[uid]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[usec]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[zombie]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+    ]
+  },
+  "hosted_map": {
+    "on_committed_HEAD_with_dirty_worktree": {
+      "children": {
+        "cli-help": "tools/ci/tests/test_cli_evidence.py",
+        "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+      },
+      "key": "full",
+      "mode": "full",
+      "paths": [],
+      "reason": "incomplete path input",
+      "schema": "aitm.path-selection/v2",
+      "source": "base",
+      "tests": []
+    },
+    "on_effective_entries_read_only_diagnostic": {
+      "children": {
+        "cli-help": "tools/ci/tests/test_cli_evidence.py",
+        "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+      },
+      "key": "4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e",
+      "mode": "mapped",
+      "paths": [
+        {
+          "disposition": "mapped",
+          "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+          "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+          "tests": [
+            "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+          ]
+        }
+      ],
+      "schema": "aitm.path-selection/v2",
+      "source": "base",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+      ]
+    },
+    "on_equivalent_scratch_commit": {
+      "cache_key": "pr-347-full-v2-8799c5a445dd4b51d499132e9a314b64796ae918-b8ec04ff72ed3a46cb6017b71c032aacc5dc863cd076d1bfad9be690931b9735-4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e",
+      "children": {
+        "cli-help": "tools/ci/tests/test_cli_evidence.py",
+        "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+      },
+      "key": "4fb2d52230da64b1104d7a7752ac1c7f6e3205e5f7455baa268033b44a65d81e",
+      "mode": "mapped",
+      "paths": [
+        {
+          "disposition": "mapped",
+          "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+          "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+          "tests": [
+            "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+          ]
+        }
+      ],
+      "schema": "aitm.path-selection/v2",
+      "source": "base",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+      ]
+    }
+  },
+  "local": {
+    "bare_clean": {
+      "diagnostic": "ModuleNotFoundError: No module named 'path_map'",
+      "exit": 1,
+      "mode": null,
+      "seconds": 0.051
+    },
+    "bare_dirty": {
+      "diagnostic": "ModuleNotFoundError: No module named 'path_map'",
+      "exit": 1,
+      "mode": null,
+      "seconds": 0.048
+    },
+    "with_tools_ci_on_pythonpath_clean": {
+      "changes": [],
+      "exit": 2,
+      "mode": "unavailable",
+      "reasons": [
+        "candidate-inventory: policy: invalid profile"
+      ],
+      "seconds": 4.875,
+      "selected_count": 0,
+      "snapshot": {
+        "after": "7f8b5be01ff847a69d042958fac1bbdaa977309e4b177ed64a6e14cc2fd338e7",
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "base_tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8",
+        "before": "b423cf4c55180b57e6fdc8a82acb08eabe851a0ff519d53abb2f328565cd5acd",
+        "repository": "local/checkout",
+        "worktree": "f99ca79eb52bcbed144e6ccdfc9415dcf2e5e4fcc83772be720d08b4efaf7224"
+      }
+    },
+    "with_tools_ci_on_pythonpath_dirty": {
+      "changes": [
+        {
+          "new": {
+            "display": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "hex": "7061636b616765732f6169746d2d75736167652f7372632f6169746d5f75736167652f736f75726365732f67726f6b5f73636f70655f686f6f6b2e7079"
+          },
+          "old": {
+            "display": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "hex": "7061636b616765732f6169746d2d75736167652f7372632f6169746d5f75736167652f736f75726365732f67726f6b5f73636f70655f686f6f6b2e7079"
+          },
+          "status": "M"
+        }
+      ],
+      "exit": 2,
+      "mode": "unavailable",
+      "reasons": [
+        "candidate-inventory: policy: invalid profile"
+      ],
+      "seconds": 5.27,
+      "selected_count": 0,
+      "snapshot": {
+        "after": "09c01584212ca3d254965270cce1e0b4117b3ce8e74b8c973f7d7e73d1513f75",
+        "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+        "base_tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8",
+        "before": "489813c11e4c31b92ad104c8a0907260b43ee4513185e6eb3bac3a820d29f20c",
+        "repository": "local/checkout",
+        "worktree": "64d3310b1af3c1c68ba7b1710ae4baf981dc625e743d9cb41fc9d434e60faec9"
+      }
+    }
+  },
+  "policy": {
+    "after_also_adding_module_rule_in_memory": "accepted by policy parser",
+    "after_only_adding_profile_target": "policy: missing required target module rule",
+    "declared_helper_targets": [
+      "tools/ci/tests/test_file_checks.py",
+      "tools/ci/tests/test_pytest_evidence.py",
+      "tools/ci/tests/test_python_gate.py",
+      "tools/ci/tests/test_verify_pr.py"
+    ],
+    "extra_helper_targets": [],
+    "missing_helper_targets": [
+      "tools/ci/tests/test_path_map.py"
+    ],
+    "parser_error": "policy: invalid profile",
+    "required_helper_targets": [
+      "tools/ci/tests/test_file_checks.py",
+      "tools/ci/tests/test_path_map.py",
+      "tools/ci/tests/test_pytest_evidence.py",
+      "tools/ci/tests/test_python_gate.py",
+      "tools/ci/tests/test_verify_pr.py"
+    ]
+  },
+  "probe": {
+    "base_snapshot_sha256": "489813c11e4c31b92ad104c8a0907260b43ee4513185e6eb3bac3a820d29f20c",
+    "baseline_blob": "4d27ddaabf5697e94fc847701434b8fdd2d8ceb7",
+    "candidate_blob": "325e33991da3d640dc859195f5418ad06297729f",
+    "dirty_snapshot_sha256": "09c01584212ca3d254965270cce1e0b4117b3ce8e74b8c973f7d7e73d1513f75",
+    "effective_bytes_sha256": "d71cd5853453d5f85dfb2c369ff1c9c0efb37f898ae13134a4538bab16101647",
+    "end_utc": "2026-11-16T21:40:03.180Z",
+    "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+    "scratch_commit": "23ef98c65e4fcdb4ff3ceacb712a7cb1e0f6c3eb",
+    "scratch_tree": "02bbc2e0bb6fdedd5f1971ce90b15cacd00e5af2",
+    "source_edit": "append one inert comment in scratch",
+    "start_utc": "2026-11-16T21:39:50.310Z"
+  },
+  "source": {
+    "commit": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8"
+  },
+  "story": 352,
+  "toolchain": {
+    "architecture": "arm64",
+    "git": "git version 2.42.1",
+    "macos": "26.6.2",
+    "os": "Darwin",
+    "python": "3.13.9",
+    "uv": "uv 0.10.6 (a91bcf268 2026-02-24)"
+  }
+}
