@@ -58,3 +58,5 @@ The corrected candidate passed 1,508 locked local tests. A signed replacement or
 The corrected candidate passed 1,517 locked local tests. The signed-suite test paths now include a malformed, foreign and stopped process matrix and a signed profile rotation inside the receipt publication window. The product blobs match the previous independent review candidate. [Exact local Test](plan/marker-retained-custody-local-test.json) · [PR #336](https://github.com/kburson/aitm/pull/336).
 
 [Exact signed hosted Test](plan/marker-retained-custody-signed-hosted-test.json) passed with the inherited controls. The signed suite now includes both custody proofs requested by independent source review. The prior authorized review held and another paid source review requires authorization. Packet SHA-256 `fea0aa3fd8b990791f97f6a4b5c9888de959a25e4e10410d0311bd6064caa3a4`.
+
+[Owner-authorized independent source verdict](plan/marker-independent-source-r4.md) returned **PASS** on the exact signed candidate. [Receipt](plan/marker-independent-source-r4-receipt.json).
