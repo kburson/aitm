@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 339
 title: "[#133] Shorten and remeasure exact PR feedback"
 kind: "story"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/339"
 parent: 133
 children: []
 blocking: []
 blocked-by: [337]
 created: "2026-11-16T06:14:58Z"
-updated: "2026-11-16T06:14:54Z"
+updated: "2026-11-16T06:33:09Z"
 last-branch: "planning"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/337/plan/2026-11-15-337-full-pr-and-rollback-results.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/start.json", "plan/SHA256SUMS", "plan/2026-11-16-339-exact-pr-feedback-plan.md", "plan/2026-11-16-339-preflight-recovery.md", "plan/2026-11-16-339-exact-pr-feedback-results.md", "plan/exact-pr-feedback-evidence.zip", "plan/qualification-summary.json", "plan/reproduction.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,7 @@ Production #103, its required checks and verifier remain authoritative. Any prop
 ## Pickup
 
 [Verified native Dev state, rank and dependency](plan/start.json).
+
+## Paired exact PR feedback qualification
+
+[Plan](plan/2026-11-16-339-exact-pr-feedback-plan.md) · [Recorded local TIA refusal and recovery](plan/2026-11-16-339-preflight-recovery.md) · [Results](plan/2026-11-16-339-exact-pr-feedback-results.md) · [Evidence manifest](plan/SHA256SUMS).

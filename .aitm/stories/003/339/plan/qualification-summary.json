@@ -1,0 +1,516 @@
+{
+  "arms": {
+    "control": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "conclusion": "failure",
+          "head": "e3d7fc52af404fe335af35f983365513a23c5f92",
+          "job_clocks": {
+            "aitm-ci": {
+              "completed_at": "2026-11-16T06:22:58Z",
+              "conclusion": "skipped",
+              "created_at": "2026-11-16T06:22:59Z",
+              "execution_seconds": -1.0,
+              "id": 133129214738,
+              "queue_seconds": 0.0,
+              "started_at": "2026-11-16T06:22:59Z"
+            },
+            "collect-evidence": {
+              "completed_at": "2026-11-16T06:22:58Z",
+              "conclusion": "failure",
+              "created_at": "2026-11-16T06:22:48Z",
+              "execution_seconds": 8.0,
+              "id": 133129152128,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:22:50Z"
+            },
+            "file-checks": {
+              "completed_at": "2026-11-16T06:17:57Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:17:32Z",
+              "execution_seconds": 22.0,
+              "id": 133127283759,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:17:35Z"
+            },
+            "python": {
+              "completed_at": "2026-11-16T06:22:48Z",
+              "conclusion": "failure",
+              "created_at": "2026-11-16T06:17:32Z",
+              "execution_seconds": 313.0,
+              "id": 133127283390,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:17:35Z"
+            },
+            "python-base": {
+              "completed_at": "2026-11-16T06:21:56Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:17:32Z",
+              "execution_seconds": 261.0,
+              "id": 133127283806,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:17:35Z"
+            },
+            "quality": {
+              "completed_at": "2026-11-16T06:18:02Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:17:32Z",
+              "execution_seconds": 27.0,
+              "id": 133127283853,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:17:35Z"
+            }
+          },
+          "registered": "2026-11-16T06:17:32Z",
+          "run": 43815750781
+        },
+        {
+          "attempt": 1,
+          "conclusion": "success",
+          "head": "9ca3ea633e0486af4791758f015f2fa6e6c6d18e",
+          "job_clocks": {
+            "aitm-ci": {
+              "completed_at": "2026-11-16T06:31:12Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:30:48Z",
+              "execution_seconds": 21.0,
+              "id": 133132000651,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:30:51Z"
+            },
+            "collect-evidence": {
+              "completed_at": "2026-11-16T06:30:48Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:30:39Z",
+              "execution_seconds": 8.0,
+              "id": 133131939255,
+              "queue_seconds": 1.0,
+              "started_at": "2026-11-16T06:30:40Z"
+            },
+            "file-checks": {
+              "completed_at": "2026-11-16T06:23:46Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:23:21Z",
+              "execution_seconds": 23.0,
+              "id": 133129350160,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:23:23Z"
+            },
+            "python": {
+              "completed_at": "2026-11-16T06:30:38Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:23:21Z",
+              "execution_seconds": 434.0,
+              "id": 133129350309,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:23:24Z"
+            },
+            "python-base": {
+              "completed_at": "2026-11-16T06:27:40Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:23:21Z",
+              "execution_seconds": 256.0,
+              "id": 133129350405,
+              "queue_seconds": 3.0,
+              "started_at": "2026-11-16T06:23:24Z"
+            },
+            "quality": {
+              "completed_at": "2026-11-16T06:23:46Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:23:21Z",
+              "execution_seconds": 23.0,
+              "id": 133129350616,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:23:23Z"
+            }
+          },
+          "registered": "2026-11-16T06:23:20Z",
+          "run": 43816407550
+        }
+      ],
+      "corrected_publish_started_at": "2026-11-16T06:23:13.995690+00:00",
+      "edit_started_at": "2026-11-16T06:17:25.646386+00:00",
+      "final": {
+        "archive_digest": "sha256:c64126192f90b2a31541e0b8237607b4954eef33c16fe53e5a9eecf1f664d2f1",
+        "artifact_id": 14202489165,
+        "attempt_started_at": "2026-11-16T06:23:20Z",
+        "base": "755fa2ece56cfa8c70a460b269d947ec6e958b2f",
+        "controls": {
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 806,
+            "num_statements": 849
+          },
+          "product": {
+            "covered_lines": 14487,
+            "num_statements": 15925
+          }
+        },
+        "head": "9ca3ea633e0486af4791758f015f2fa6e6c6d18e",
+        "hosted_timing": {
+          "cache": "cold",
+          "hosted_seconds": 434,
+          "queue": 4,
+          "setup": 7,
+          "test": 403,
+          "total": 411
+        },
+        "job_clocks": {
+          "aitm-ci": {
+            "completed_at": "2026-11-16T06:31:12Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:30:48Z",
+            "execution_seconds": 21.0,
+            "id": 133132000651,
+            "queue_seconds": 3.0,
+            "started_at": "2026-11-16T06:30:51Z"
+          },
+          "collect-evidence": {
+            "completed_at": "2026-11-16T06:30:48Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:30:39Z",
+            "execution_seconds": 8.0,
+            "id": 133131939255,
+            "queue_seconds": 1.0,
+            "started_at": "2026-11-16T06:30:40Z"
+          },
+          "file-checks": {
+            "completed_at": "2026-11-16T06:23:46Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:23:21Z",
+            "execution_seconds": 23.0,
+            "id": 133129350160,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:23:23Z"
+          },
+          "python": {
+            "completed_at": "2026-11-16T06:30:38Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:23:21Z",
+            "execution_seconds": 434.0,
+            "id": 133129350309,
+            "queue_seconds": 3.0,
+            "started_at": "2026-11-16T06:23:24Z"
+          },
+          "python-base": {
+            "completed_at": "2026-11-16T06:27:40Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:23:21Z",
+            "execution_seconds": 256.0,
+            "id": 133129350405,
+            "queue_seconds": 3.0,
+            "started_at": "2026-11-16T06:23:24Z"
+          },
+          "quality": {
+            "completed_at": "2026-11-16T06:23:46Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:23:21Z",
+            "execution_seconds": 23.0,
+            "id": 133129350616,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:23:23Z"
+          }
+        },
+        "jobs": {
+          "aitm-ci": 133132000651,
+          "collect-evidence": 133131939255,
+          "file-checks": 133129350160,
+          "python": 133129350309,
+          "python-base": 133129350405,
+          "quality": 133129350616
+        },
+        "pr": 1,
+        "repository": "kburson/aitm-feedback-339",
+        "repository_id": 1459620863,
+        "reviewed_tree": "e170e6bee0260f65bdd5211125ca25e0c8ccd915",
+        "run": "https://github.com/kburson/aitm-feedback-339/actions/runs/43816407550/attempts/1",
+        "run_attempt": 1,
+        "run_created_at": "2026-11-16T06:23:20Z",
+        "run_id": 43816407550,
+        "signed_ready_at": "2026-11-16T06:31:12Z",
+        "status": "pass",
+        "subject_digest": "d5d90875c9da0dc2d1788a9e54fa5c1f1ce03aa2ec5e6169e3df894a3a23a030",
+        "target": "trunk",
+        "test_counts": {
+          "baseline_tests": 1516,
+          "coverage": {
+            "helpers": {
+              "covered_lines": 806,
+              "num_statements": 849
+            },
+            "product": {
+              "covered_lines": 14487,
+              "num_statements": 15925
+            }
+          },
+          "failures": [],
+          "passed": true,
+          "tests": 1517
+        },
+        "tested": "9bf3f879400d0333273611e893f63c206138bf17",
+        "tree": "e170e6bee0260f65bdd5211125ca25e0c8ccd915",
+        "verified_at": "2026-11-16T06:31:34.670844+00:00",
+        "wheel_digest": "3f665f224edaa26ae8efb9e93ca05147be0ec8980074c3179546096ba8d10f7f",
+        "workflow_id": 419794126
+      },
+      "first_registration_at": "2026-11-16T06:17:32Z",
+      "timings": {
+        "corrected_publish_to_verified_seconds": 500.675,
+        "edit_to_signed_seconds": 826.354,
+        "edit_to_verified_seconds": 849.024,
+        "final_registration_to_verified_seconds": 494.671,
+        "first_registration_to_signed_seconds": 820.0,
+        "first_registration_to_verified_seconds": 842.671
+      }
+    },
+    "treatment": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "conclusion": "success",
+          "head": "53b86dcb6c96237d3b12bb1801c500e31008fe66",
+          "job_clocks": {
+            "aitm-ci": {
+              "completed_at": "2026-11-16T06:26:23Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:25:59Z",
+              "execution_seconds": 22.0,
+              "id": 133130276215,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:26:01Z"
+            },
+            "collect-evidence": {
+              "completed_at": "2026-11-16T06:25:58Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:25:49Z",
+              "execution_seconds": 7.0,
+              "id": 133130219076,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:25:51Z"
+            },
+            "file-checks": {
+              "completed_at": "2026-11-16T06:19:22Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:18:59Z",
+              "execution_seconds": 21.0,
+              "id": 133127790020,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:19:01Z"
+            },
+            "python": {
+              "completed_at": "2026-11-16T06:25:49Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:18:59Z",
+              "execution_seconds": 408.0,
+              "id": 133127790011,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:19:01Z"
+            },
+            "python-base": {
+              "completed_at": "2026-11-16T06:22:05Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:18:59Z",
+              "execution_seconds": 184.0,
+              "id": 133127789897,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:19:01Z"
+            },
+            "quality": {
+              "completed_at": "2026-11-16T06:19:24Z",
+              "conclusion": "success",
+              "created_at": "2026-11-16T06:18:59Z",
+              "execution_seconds": 23.0,
+              "id": 133127789726,
+              "queue_seconds": 2.0,
+              "started_at": "2026-11-16T06:19:01Z"
+            }
+          },
+          "registered": "2026-11-16T06:18:58Z",
+          "run": 43815909956
+        }
+      ],
+      "corrected_publish_started_at": "2026-11-16T06:18:53.061547+00:00",
+      "edit_started_at": "2026-11-16T06:17:25.646378+00:00",
+      "final": {
+        "archive_digest": "sha256:57ef78b2182252cce989505bde99be1b1d6ba128ce36609a6884511081e32338",
+        "artifact_id": 14203270005,
+        "attempt_started_at": "2026-11-16T06:18:58Z",
+        "base": "755fa2ece56cfa8c70a460b269d947ec6e958b2f",
+        "controls": {
+          "gate": "2a92c066422387de839560f9bdde8609c606bd12",
+          "lock": "7033982318b761f49de77998aa970e7b9bbbe417",
+          "observer": "3bc0ff913a7cf373664577f154d0ddcef0803c09",
+          "policy": "176b5cc1143a9109228026c5c87f68ade487be69",
+          "verifier": "c1f2c8655cc96a011e7a22d7cbca0d53093ef558",
+          "workflow": "98320b46e6e88144aa1a8e2dedd7763f0b70789e"
+        },
+        "coverage": {
+          "helpers": {
+            "covered_lines": 806,
+            "num_statements": 849
+          },
+          "product": {
+            "covered_lines": 14487,
+            "num_statements": 15925
+          }
+        },
+        "head": "53b86dcb6c96237d3b12bb1801c500e31008fe66",
+        "hosted_timing": {
+          "cache": "cold",
+          "hosted_seconds": 408,
+          "queue": 3,
+          "setup": 7,
+          "test": 381,
+          "total": 389
+        },
+        "job_clocks": {
+          "aitm-ci": {
+            "completed_at": "2026-11-16T06:26:23Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:25:59Z",
+            "execution_seconds": 22.0,
+            "id": 133130276215,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:26:01Z"
+          },
+          "collect-evidence": {
+            "completed_at": "2026-11-16T06:25:58Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:25:49Z",
+            "execution_seconds": 7.0,
+            "id": 133130219076,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:25:51Z"
+          },
+          "file-checks": {
+            "completed_at": "2026-11-16T06:19:22Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:18:59Z",
+            "execution_seconds": 21.0,
+            "id": 133127790020,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:19:01Z"
+          },
+          "python": {
+            "completed_at": "2026-11-16T06:25:49Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:18:59Z",
+            "execution_seconds": 408.0,
+            "id": 133127790011,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:19:01Z"
+          },
+          "python-base": {
+            "completed_at": "2026-11-16T06:22:05Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:18:59Z",
+            "execution_seconds": 184.0,
+            "id": 133127789897,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:19:01Z"
+          },
+          "quality": {
+            "completed_at": "2026-11-16T06:19:24Z",
+            "conclusion": "success",
+            "created_at": "2026-11-16T06:18:59Z",
+            "execution_seconds": 23.0,
+            "id": 133127789726,
+            "queue_seconds": 2.0,
+            "started_at": "2026-11-16T06:19:01Z"
+          }
+        },
+        "jobs": {
+          "aitm-ci": 133130276215,
+          "collect-evidence": 133130219076,
+          "file-checks": 133127790020,
+          "python": 133127790011,
+          "python-base": 133127789897,
+          "quality": 133127789726
+        },
+        "pr": 2,
+        "repository": "kburson/aitm-feedback-339",
+        "repository_id": 1459620863,
+        "reviewed_tree": "e170e6bee0260f65bdd5211125ca25e0c8ccd915",
+        "run": "https://github.com/kburson/aitm-feedback-339/actions/runs/43815909956/attempts/1",
+        "run_attempt": 1,
+        "run_created_at": "2026-11-16T06:18:58Z",
+        "run_id": 43815909956,
+        "signed_ready_at": "2026-11-16T06:26:23Z",
+        "status": "pass",
+        "subject_digest": "270ac06c502d8efc1ae47cf954fbcce038197699df21257bcd6b904e78db42ba",
+        "target": "trunk",
+        "test_counts": {
+          "baseline_tests": 1516,
+          "coverage": {
+            "helpers": {
+              "covered_lines": 806,
+              "num_statements": 849
+            },
+            "product": {
+              "covered_lines": 14487,
+              "num_statements": 15925
+            }
+          },
+          "failures": [],
+          "passed": true,
+          "tests": 1517
+        },
+        "tested": "3eb024e63bfa2e04a16c343120ceed029dc635b7",
+        "tree": "e170e6bee0260f65bdd5211125ca25e0c8ccd915",
+        "verified_at": "2026-11-16T06:26:42.362262+00:00",
+        "wheel_digest": "3f665f224edaa26ae8efb9e93ca05147be0ec8980074c3179546096ba8d10f7f",
+        "workflow_id": 419794126
+      },
+      "first_registration_at": "2026-11-16T06:18:58Z",
+      "timings": {
+        "corrected_publish_to_verified_seconds": 469.301,
+        "edit_to_signed_seconds": 537.354,
+        "edit_to_verified_seconds": 556.716,
+        "final_registration_to_verified_seconds": 464.362,
+        "first_registration_to_signed_seconds": 445.0,
+        "first_registration_to_verified_seconds": 464.362
+      }
+    }
+  },
+  "base": "755fa2ece56cfa8c70a460b269d947ec6e958b2f",
+  "control_minus_treatment_seconds": {
+    "corrected_publish_to_verified_seconds": 31.374,
+    "edit_to_signed_seconds": 289.0,
+    "edit_to_verified_seconds": 292.308,
+    "final_registration_to_verified_seconds": 30.309,
+    "first_registration_to_signed_seconds": 375.0,
+    "first_registration_to_verified_seconds": 378.309
+  },
+  "corrected_tree": "e170e6bee0260f65bdd5211125ca25e0c8ccd915",
+  "gate_changed": false,
+  "local_obligations": 33,
+  "paired_sample_count": 1,
+  "qualified": true,
+  "red_assertion": "assert len(baseline.observations) == 2 and not baseline.diagnostics",
+  "red_tree": "a2edad694d88f60013206fafa5c03ae81d0d4e45",
+  "repo": "kburson/aitm-feedback-339",
+  "same_workload": {
+    "base": {
+      "node_set_sha256": "c571e7c8ff1e847f1af270070652181fb5c657f6798f820faf5020e4ab88571f",
+      "phase_outcomes_sha256": "abc35bb85189b32c641fa90dd97c55580512f1ed9b9fb8a2386cbbcfd69801b7",
+      "phase_reports": 4548,
+      "tests": 1516
+    },
+    "candidate": {
+      "node_set_sha256": "49fbe61ae2253ca3b2542d6cbef6eb86cab8288e7bf2140d63954d52318c5e1c",
+      "phase_outcomes_sha256": "49611136a92c4033f0d8e67c3a87681c6e56569760db4f14e7ac211fe37cf616",
+      "phase_reports": 4551,
+      "tests": 1517
+    }
+  },
+  "schema": "aitm.experimental-paired-pr-feedback/v1",
+  "stock_tia_qualified": false
+}

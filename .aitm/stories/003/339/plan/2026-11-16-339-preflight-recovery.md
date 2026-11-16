@@ -1,0 +1,7 @@
+# #339 recovery after local TIA refusal
+
+The initial treatment command returned exit 2 and declined to execute tests. The candidate inventory reported “unclassified or out-of-profile node ID”. The current protected production suite policy has unclassified newly delivered test modules. Retain the refusal and diagnosis. The control's initial hosted run is still in progress. The treatment has published no candidate.
+
+Keep the original clocks, branches and candidate identities. As a bounded advisory recovery, verify that the exact candidate changes only the mapped Grok fixture and that the unchanged baseline edge declares `test_grok.py` as consumer. Run the entire mapped module on the same unmodified initial edit, using locked Python 3.13.9 and its canonical pytest evidence observer. Require the predeclared node and assertion to be the sole local failure before applying the correction. Repeat the module after correction with zero failures and the same collection. No control action changes. Treatment must still pass every full hosted check, coverage and trusted exact verification on the corrected tree.
+
+The explicit fixture-to-module route is a disclosed recovery, selected before its outcome or the terminal hosted control was known. It contributes to the original treatment clock and supplies no evidence for a general TIA route. Exact verification still supplies authority for PR acceptance. If this bounded recipe works, the reported intervention is advisory fixture preflight following a current TIA refusal.
