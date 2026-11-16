@@ -33,4 +33,4 @@
 - [x] 2026-11-16T08:27:35Z Shared merge is on `trunk`.
 - [x] 2026-11-16T08:39:41Z The same-selection run skipped the full suite. The superseded run was cancelled.
 - [x] 2026-11-16T08:40:42Z Retrospective `retro/2026-11-16-delivery.md`.
-- [ ] GitHub issue closure read back.
+- [x] 2026-11-16T08:43:09Z GitHub issue #341 closed COMPLETED. Project status Done. Disposition Delivered.
