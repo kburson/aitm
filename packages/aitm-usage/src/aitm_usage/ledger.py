@@ -1,5 +1,7 @@
 """A private, project-bound SQLite history and per-source ingest checkpoints."""
 
+# The Ledger is shared by storage, admission and service.
+
 import fcntl
 import hashlib
 import hmac
