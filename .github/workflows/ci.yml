@@ -241,18 +241,24 @@ jobs:
         shell: bash
         run: |
           repo="repos/$GITHUB_REPOSITORY"
+          trusted_workflow=$(git rev-parse "$BASE:.github/workflows/ci.yml")
           hit=false
           if listing=$(gh api "$repo/actions/artifacts?name=$STAMP_KEY&per_page=20"); then
             while IFS= read -r prior; do
               if ! run=$(gh api "$repo/actions/runs/$prior"); then continue; fi
               if ! jq -e --argjson current "$GITHUB_RUN_ID" --argjson pr "$PR_NUMBER" \
-                --argjson repo_id "$GITHUB_REPOSITORY_ID" --arg base "$BASE" --arg branch "$GITHUB_HEAD_REF" '
+                --argjson repo_id "$GITHUB_REPOSITORY_ID" --arg base "$BASE" \
+                --arg branch "$GITHUB_HEAD_REF" --arg target "$GITHUB_BASE_REF" '
                   .id != $current and .path == ".github/workflows/ci.yml" and
                   .event == "pull_request" and .status == "completed" and .conclusion == "success" and
                   .repository.id == $repo_id and .head_repository.id == $repo_id and
-                  any(.pull_requests[]; .number == $pr and .base.sha == $base and .head.ref == $branch and
+                  any(.pull_requests[]; .number == $pr and .base.sha == $base and .base.ref == $target and .head.ref == $branch and
                     .base.repo.id == $repo_id and .head.repo.id == $repo_id)
                 ' <<<"$run" >/dev/null; then continue; fi
+              prior_head=$(jq -er .head_sha <<<"$run")
+              [[ "$prior_head" =~ ^[a-f0-9]{40}$ ]] || continue
+              if ! prior_workflow=$(gh api "$repo/contents/.github/workflows/ci.yml?ref=$prior_head" --jq .sha) ||
+                ! [[ "$prior_workflow" == "$trusted_workflow" ]]; then continue; fi
               attempt=$(jq -er .run_attempt <<<"$run")
               if jobs=$(gh api "$repo/actions/runs/$prior/attempts/$attempt/jobs?per_page=100") &&
                 jq -e 'any(.jobs[]; .name == "aitm-ci" and .conclusion == "success" and

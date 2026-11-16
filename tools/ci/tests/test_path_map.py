@@ -280,3 +280,7 @@ def test_stamp_is_published_after_attested_success_and_bound_to_a_completed_run(
     )
     assert "actions/artifacts?name=" in WORKFLOW
     assert '.status == "completed" and .conclusion == "success"' in WORKFLOW
+    assert (
+        "prior_workflow" in WORKFLOW
+        and '"$prior_workflow" == "$trusted_workflow"' in WORKFLOW
+    )
