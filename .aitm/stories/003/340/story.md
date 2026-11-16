@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 340
 title: "[#133] Make a coarse path map the required PR check"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/340"
 parent: 133
 children: []
 blocking: [341]
 blocked-by: []
 created: "2026-11-16T06:43:16Z"
-updated: "2026-11-16T08:17:36Z"
+updated: "2026-11-16T08:40:42Z"
 last-branch: "story/340-341-path-map"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-pr-feedback-replacement.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/delivery-checklist.md", "plan/reviews/2026-11-16-head-fcd1d745.md", "plan/reviews/2026-11-16-head-a80b4420.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/delivery-checklist.md", "plan/reviews/2026-11-16-head-fcd1d745.md", "plan/reviews/2026-11-16-head-a80b4420.md", "retro/2026-11-16-delivery.md"], "attachments": []}
 expansions: []
 trips: []
 ---

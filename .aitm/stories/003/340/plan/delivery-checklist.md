@@ -32,4 +32,6 @@
 - [x] 2026-11-16T08:16:54Z Required jobs passed on the replacement head. `aitm-ci` finished at that time.
 - [x] 2026-11-16T08:26:49Z Review of head `a80b4420b9715d3a5716e497293b29322197cb65` passed. Trunk `verify_pr` status pass for reviewed tree `bc7d2e7909177a68325050b45e35a70bc0959345`.
 - [x] 2026-11-16T08:27:35Z Merged to `trunk`. The merge tree is the reviewed tree.
-- [ ] Done after the mapped proof, retrospective, and issue closure.
+- [x] 2026-11-16T08:39:41Z Mapped proof passed on pull request 343. Run https://github.com/kburson/aitm/actions/runs/43831676598 selected `packages/aitm-usage/tests/test_grok.py` from the base map, ran 33 tests, wrote `base-skip.json`, and passed trunk `verify_pr` at 2026-11-16T08:37:29Z. The proof pull request was closed without merge.
+- [x] 2026-11-16T08:40:42Z Retrospective `retro/2026-11-16-delivery.md`.
+- [ ] GitHub issue closure read back.
