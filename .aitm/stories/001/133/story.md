@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 133
 title: "Test impact analysis, CI sharding, and Stop the Line"
 kind: "epic"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/133"
 parent: null
 children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 267, 277, 278, 279, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 323, 337, 338, 339, 340, 341, 344]
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T20:10:23Z"
+updated: "2026-11-16T20:11:51Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
 origin: ".aitm/drafts/2026-11/20261110-0915-test-impact-analysis/draft.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md", "plan/2026-11-16-133-decomposition.md", "plan/2026-11-16-133-reduced-scope-acceptance.md", "retro/2026-11-16-133-delivery.md"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/test-impact-analysis-design.md", "design/2026-11-11-133-merge-only-stop-the-line-design.md", "design/2026-11-11-133-test-execution-and-advisory-selection-design.md"], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/2026-11-11-133-merge-only-stop-the-line.md", "plan/2026-11-11-133-test-execution-and-advisory-selection.md", "plan/2026-11-12-133-advisory-and-qualification-replan.md", "plan/reviews/2026-11-12-133-advisory-and-qualification-replan-review.md", "plan/2026-11-12-133-advisory-and-qualification-readback.json", "plan/2026-11-12-133-rank-order.md", "plan/2026-11-12-133-ci-warning-manual-recovery-replan.md", "plan/reviews/2026-11-12-133-ci-warning-manual-recovery-replan-review.md", "plan/2026-11-12-133-ci-warning-manual-recovery-readback.json", "plan/2026-11-14-133-behavior-driven-validation-plan.md", "plan/reviews/2026-11-14-133-behavior-driven-validation-plan-review.md", "plan/2026-11-14-133-behavior-validation-readback.json", "plan/2026-11-16-133-pr-feedback-replacement.md", "plan/2026-11-16-133-decomposition.md", "plan/2026-11-16-133-reduced-scope-acceptance.md", "retro/2026-11-16-133-delivery.md", "plan/closure-receipt.json"], "attachments": ["attachments/2026-11-11-merge-fence-design-evidence.md"]}
 expansions: []
 trips: []
 ---
@@ -169,7 +169,7 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 
 ## Functional TIA acceptance
 
-[#344](../../003/344/story.md) delivered and verified functional test impact analysis for ordinary PR validation. The [live evidence](../../003/344/plan/tia-evidence.md) records mapped source and fixture checks, full fallback, stamp reuse and invalidation, cancellation, and the exact-tree regression comparison. #133 stays open. The remaining claims are independent epics recorded in [Decomposition](#decomposition).
+[#344](../../003/344/story.md) delivered and verified functional test impact analysis for ordinary PR validation. The [live evidence](../../003/344/plan/tia-evidence.md) records mapped source and fixture checks, full fallback, stamp reuse and invalidation, cancellation, and the exact-tree regression comparison. The remaining claims are independent epics recorded in [Decomposition](#decomposition).
 
 ## Decomposition
 
@@ -184,3 +184,7 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 ## Reduced-scope acceptance
 
 [Verified epic acceptance](plan/2026-11-16-133-reduced-scope-acceptance.md) · [Signed retrospective](retro/2026-11-16-133-delivery.md).
+
+## Closure
+
+GitHub closed #133 as Completed at 2026-11-16T20:10:56Z. Project 24 shows Done with Delivered disposition. [Verified closure receipt](plan/closure-receipt.json).

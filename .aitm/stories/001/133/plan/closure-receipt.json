@@ -1,0 +1,114 @@
+{
+  "story": 133,
+  "scope": "owner-approved reduced production PR validation",
+  "recorded_at_utc": "2026-11-16T20:11:51Z",
+  "planning_done_at_utc": "2026-11-16T20:11:51Z",
+  "last_required_gate": {
+    "kind": "reduced-scope epic acceptance and sign-off",
+    "signed_at_utc": "2026-11-16T20:10:23Z",
+    "published_planning_commit": "12d2cd092eff56815e1f154addc8ed5e624216e3"
+  },
+  "acceptance": {
+    "path": "plan/2026-11-16-133-reduced-scope-acceptance.md",
+    "sha256": "fd2c1184be7395b548dc95b97ae283133eeea9898a4573288cd30be48e4c8f84"
+  },
+  "retrospective": {
+    "path": "retro/2026-11-16-133-delivery.md",
+    "sha256": "a1f12697d3d90648562deddd5affa40d8bacd5ecb393822c138e131b51b18846"
+  },
+  "delivery": {
+    "target": "trunk",
+    "delivered_stories": [
+      340,
+      341,
+      344
+    ],
+    "pull_requests": [
+      342,
+      346
+    ],
+    "target_commit": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "tested_and_delivered_tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8",
+    "trunk_run": "https://github.com/kburson/aitm/actions/runs/43878715343",
+    "tia_receipt_path": "../../003/344/plan/tia-proof/receipt.json",
+    "tia_receipt_sha256": "0afbcd3532001dd4955e8577d83392f0889e29a994424d097928422164bf399f"
+  },
+  "github": {
+    "state": "CLOSED",
+    "state_reason": "COMPLETED",
+    "closed_at_utc": "2026-11-16T20:10:56Z",
+    "url": "https://github.com/kburson/aitm/issues/133"
+  },
+  "project_readback": {
+    "read_at_utc": "2026-11-16T20:11:03.784Z",
+    "issue": {
+      "number": 133,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "closedAt": "2026-11-16T20:10:56Z",
+      "updatedAt": "2026-11-16T20:10:57Z",
+      "parent": null
+    },
+    "project": 24,
+    "project_id": "PVT_kwHOABCEY84Bq1hZ",
+    "item_id": "PVTI_lAHOABCEY84Bq1hZzhHjBtA",
+    "fields": {
+      "Estimate": 146.5,
+      "Rank": 10.0,
+      "Size": "Feature",
+      "Actual": 8.328,
+      "Actual coverage": "Partial through 2026-11-16T14:32:11.256Z",
+      "Cost": null,
+      "Status": "Done",
+      "Disposition_v0": "Delivered"
+    },
+    "idle_field_exists": false
+  },
+  "direct_children": {
+    "open": 0,
+    "completed": 28,
+    "not_planned": 34
+  },
+  "independent_open_epics": [
+    351,
+    356,
+    362
+  ],
+  "timing": {
+    "planning_commit": "7c2f1db5daa756632fcf9eda8c07826205517cf7",
+    "as_of_utc": "2026-11-16T20:07:30Z",
+    "snapshot_sha256": "5248e64376ed382f4b39419d5399fffea2bb0f60fd5a81201a274ee37c30a189",
+    "coverage": "partial",
+    "evidence_through_utc": "2026-11-16T14:32:11.256000Z",
+    "actual_milliseconds": 29980915,
+    "actual_hours": "8.3280",
+    "idle": "unknown",
+    "owner_wait": "unknown",
+    "checkpoints": [
+      {
+        "step": "before",
+        "at_utc": "2026-11-16T20:09:09.907Z",
+        "actual": 2.1983,
+        "actual_coverage": "Partial reconstruction through 2026-11-10 13:35 CST. Two child subtotals + 1.7114 h direct epic work. Unattributed intervals excluded."
+      },
+      {
+        "step": "coverage_pending",
+        "at_utc": "2026-11-16T20:09:12.823Z",
+        "actual": 2.1983,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "actual_written",
+        "at_utc": "2026-11-16T20:09:15.594Z",
+        "actual": 8.328,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "verified",
+        "at_utc": "2026-11-16T20:09:18.023Z",
+        "actual": 8.328,
+        "actual_coverage": "Partial through 2026-11-16T14:32:11.256Z"
+      }
+    ]
+  }
+}
