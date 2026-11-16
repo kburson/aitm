@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 344
 title: "[#133] Verify and repair end-to-end test impact analysis"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/344"
 parent: 133
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-16T12:45:44Z"
-updated: "2026-11-16T13:16:53Z"
+updated: "2026-11-16T13:32:33Z"
 last-branch: "codex/344-functional-tia"
 estimate: {"agent-hours": 4, "size": "M"}
 priority: "P1"
 origin: ".aitm/stories/001/133/story.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/tia-baseline.md", "plan/test-impact-analysis-implementation-plan.md", "plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -45,3 +45,7 @@ Scope is functional TIA for ordinary PR validation under the [current #133 direc
 ## XPR plan acceptance
 
 [Functional Test Impact Analysis Implementation Plan](plan/test-impact-analysis-implementation-plan.md) was accepted in round 2 by Grok `grok-4.7` at high effort, with Codex `gpt-6.1-sol` at high effort as author. The accepted plan digest is `sha256:a6f7ef90668153eeb063d34b33162424409526021475eeed97dbf342b289c109`. [XPR review manifest](plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-review-manifest.md) · [Final reviewer response](plan/reviews/plan/2026-11-16-test-impact-analysis-implementation-plan-review-c71d9bf99a30b80cea3e96ba9d9c8b9f/review-c71d9bf99a30b80cea3e96ba9d9c8b9f-reviewer-response-2.md).
+
+## Implementation and baseline
+
+[Baseline and consumer audit](plan/tia-baseline.md) · [Implementation PR #346](https://github.com/kburson/aitm/pull/346)
