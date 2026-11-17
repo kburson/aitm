@@ -90,7 +90,7 @@ def put_root(path, mode, source=None):
         good("/usr/bin/sudo", "-n", "/usr/bin/install", "-o", "root", "-g", "wheel", "-m", mode, str(source), str(path))
 
 
-def verify_job(receipt, allowed=ALLOWED):
+def verify_job(receipt):
     head = good("/usr/bin/git", "rev-parse", "HEAD").decode().strip()
     tree = good("/usr/bin/git", "rev-parse", "HEAD^{tree}").decode().strip()
     require(head == os.environ["GITHUB_SHA"] and os.environ["GITHUB_REF"] == BRANCH
@@ -98,8 +98,8 @@ def verify_job(receipt, allowed=ALLOWED):
             and os.environ["GITHUB_ACTOR"] == "kburson", "workflow job identity differs")
     require(good("/usr/bin/git", "rev-parse", BASE + "^{tree}").decode().strip() == TREE, "product tree differs")
     additions = good("/usr/bin/git", "diff", "--name-status", BASE, head).decode().splitlines()
-    require(sorted(additions) == sorted(f"A\t{path}" for path in allowed), "unexpected experimental tree changes")
-    identities = {path: digest(Path(path)) for path in allowed}
+    require(sorted(additions) == sorted(f"A\t{path}" for path in ALLOWED), "unexpected experimental tree changes")
+    identities = {path: digest(Path(path)) for path in ALLOWED}
     image = os.environ.get("ImageVersion") or os.environ.get("IMAGE_VERSION")
     require(bool(image), "runner image version unavailable")
     info = {
@@ -128,7 +128,7 @@ def worker_command(profile=None):
     return args
 
 
-def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executables=()):
+def prepare_boundary(private, raw, receipt):
     require(not ROOT.exists() and WORKER not in {row.pw_name for row in pwd.getpwall()}, "prior worker state present")
     put_root(ROOT, "0755")
     put_root(STAGED, "0755")
@@ -174,13 +174,8 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
             path.chmod(int(mode, 8))
 
     profile_src = private / "worker.sb"
-    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH), *public_inputs)
+    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH))
     allowed_reads = "\n".join(f'(allow file-read* (subpath {json.dumps(path)}))' for path in roots)
-    exec_policy = ""
-    if admitted_executables:
-        executables = (str(STAGED / "qualification"), *admitted_executables)
-        literals = " ".join(f"(literal {json.dumps(path)})" for path in executables)
-        exec_policy = f"(deny process-exec*)\n(allow process-exec* {literals})\n"
     profile_src.write_text(
         '(version 1)\n(allow default)\n(deny file-read*)\n'
         '(allow file-read-data (literal "/"))\n' + allowed_reads +
@@ -188,7 +183,7 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
         f'(allow file-write* (subpath {json.dumps(str(SCRATCH))}) (literal "/dev/null"))\n'
         '(deny file-read* file-ioctl (literal "/dev/dtrace"))\n'
         '(allow file-write-data file-ioctl (require-all (literal "/dev/dtracehelper")'
-        ' (vnode-type CHARACTER-DEVICE)))\n' + exec_policy
+        ' (vnode-type CHARACTER-DEVICE)))\n'
     )
     profile = STAGED / "worker.sb"
     put_root(profile, "0444", profile_src)
@@ -210,15 +205,6 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
                            "sha256": digest(path)} for name, (path, _) in markers.items()},
     }
     command = worker_command(profile)
-    if admitted_executables:
-        imitation = SCRATCH / "ssh-keygen"
-        good("/usr/bin/sudo", "-n", "/usr/bin/install", "-o", WORKER, "-g", "staff", "-m", "0700",
-             str(staged_probe), str(imitation))
-        proof = run(*command, str(staged_probe), "refuse-exec", str(imitation))
-        require(output(raw, "unadmitted-executable", proof) == 0 and proof.stdout == b"DENY unadmitted executable\n",
-                "worker executed unadmitted scratch input")
-        receipt["boundary"]["executable_allowlist"] = list(executables)
-        receipt["boundary"]["same_named_scratch_executable_denied"] = True
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         listener.listen()
@@ -425,13 +411,12 @@ def build_runtime(private, raw, receipt):
     )
 
 
-def publish(raw, exported, receipt, extra=()):
+def publish(raw, exported, receipt):
     # Stage only explicit harness evidence. The job environment itself is never exported.
     candidates = {
-        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json", *extra,
+        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json",
         *(f"{label}.{stream}" for label in (
             "mounts", "probe-build", "worker-boundary", "provider-inventory", "benign-worker", "early-trace",
-            "unadmitted-executable",
             "product-archive", "uv-identity", "runtime-lock-sync", "trace-install",
             "instrumented-pytest-identity", "installed-probe-table",
         ) for stream in ("stdout", "stderr")),
