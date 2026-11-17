@@ -1,0 +1,575 @@
+{
+  "ancestry_and_native": {
+    "ancestry_rows": [
+      "ANCESTOR / root 040755 none",
+      "ANCESTOR /Users root 040755 none",
+      "ANCESTOR /Users/Shared root 041777 none",
+      "ANCESTOR /Users/Shared/aitm368-hosted root 040755 none",
+      "ANCESTOR /Users/Shared/aitm368-hosted/worker worker 040700 none",
+      "PHYSICAL /Users/Shared/aitm368-hosted/worker"
+    ],
+    "dispatch_timing": {
+      "deadline_utc": "2026-11-17T14:48:02Z",
+      "decision_utc": "2026-11-17T13:12:46.148321Z"
+    },
+    "entry_denials": [
+      "DENY LIST /Users EPERM",
+      "DENY LIST /Users/Shared EPERM",
+      "DENY LIST /Users/Shared/aitm368-hosted EPERM",
+      "DENY STAT /Users/runner EPERM",
+      "DENY ACL /Users/runner EPERM",
+      "DENY STAT /Users/Shared/aitm368-hosted.canary EPERM",
+      "DENY ACL /Users/Shared/aitm368-hosted.canary EPERM",
+      "DENY DATA /Users/Shared/aitm368-hosted.canary EPERM"
+    ],
+    "gate": "calibration-and-scoped-observation",
+    "native_direct_verified": 74,
+    "probe_sha256": "50bad20fe677c64cdf9496228f014ae97cdbabcbdecc6fd83947f719664428cd",
+    "product_started": true,
+    "verdict": "HOLD",
+    "visible_failures": 16,
+    "visible_missing": 0,
+    "visible_passed": 14
+  },
+  "artifact": {
+    "digest": "sha256:ce2195147f73f7f9e807a27691fcc78a3663ad659b0540e3a6fdb1d8371f6a33",
+    "expires_at": "2026-12-01T13:12:58Z",
+    "id": 14332020353,
+    "name": "aitm368-integrated-44090243525-a1",
+    "size_in_bytes": 5930299
+  },
+  "attempt": 1,
+  "blocks": 355,
+  "clock": {
+    "carried_conservative_hours": 3.301,
+    "dispatch_deadline": "2026-11-17T14:48:02Z",
+    "evidence_reserve_minutes": 12,
+    "exact_packet_ceiling_hours": 5.96,
+    "exact_packet_hard_stop": "2026-11-17T15:42:34Z",
+    "job_reserve_minutes": 22,
+    "overall_ceiling_hours": 6,
+    "overall_hard_stop": "2026-11-17T15:44:58Z",
+    "prior_hold": "2026-11-17T12:52:42Z",
+    "prior_publication_bound": "2026-11-17T13:01:00Z",
+    "review_and_publication_reserve_minutes": 20,
+    "superseded_dispatch_deadline": "2026-11-17T12:52:24Z",
+    "window_seconds": 6300,
+    "window_start": "2026-11-17T13:03:02Z",
+    "worst_case_hours_at_deadline": 5.051
+  },
+  "diagnostics": {
+    "hosted_native_process_parent_uid": 0,
+    "hosted_native_process_worker_uid": 550,
+    "local_metadata_only_sandbox": {
+      "baseline": {
+        "ancestor_directory_open": "allowed",
+        "ancestor_list": [
+          "worker"
+        ],
+        "ancestor_stat": "allowed",
+        "direct_owned_child_read": "synthetic\n",
+        "uid": 501
+      },
+      "metadata_only": {
+        "ancestor_directory_open": "EPERM",
+        "ancestor_list": "EPERM",
+        "ancestor_stat": "allowed",
+        "direct_owned_child_read": "synthetic\n",
+        "uid": 501
+      }
+    },
+    "local_suite_control": {
+      "failed": 0,
+      "isolated": false,
+      "passed": 30,
+      "pluggy": "1.7.0",
+      "pytest": "9.2.0",
+      "python": "3.13.9",
+      "seconds": 6.2
+    },
+    "raw_pytest_counts": {
+      "calls_failed": 9,
+      "calls_passed": 21,
+      "teardown_errors": 15
+    }
+  },
+  "driver_exit": 1,
+  "execution_packet": {
+    "accepted_utc": "2026-11-17T13:10:47Z",
+    "path": "plan/2026-11-17-368-queue-inclusive-execution-packet.md",
+    "sha256": "4065c91cc4fe50a48aa5a3d8cc4f557831d3f5cf310145961221c4789612e18b",
+    "xpr": "plan/reviews/hosted-queue-packet/plan/2026-11-17-2026-11-17-368-queue-inclusive-execution-packet-review-bc77b92cf0572db34f16881721f8db19/review-bc77b92cf0572db34f16881721f8db19-review-manifest.md"
+  },
+  "failing_phases": {
+    "call-failed": [
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner"
+    ],
+    "teardown-failed": [
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner"
+    ]
+  },
+  "failure": "product observation did not reconcile",
+  "gate": "calibration-and-scoped-observation",
+  "github_conclusion": "failure",
+  "github_readback_sha256": {
+    "artifact.json": "3d1e9fb3cab530f9e81e17c7471005e23b234f10db4a6337dac2da36ff2faf90",
+    "job.log": "6c5876f29e190a3472ab33c3cec0b24c3f6d8fb87ca9e8de99ada433ae513317",
+    "jobs.json": "58b7bfcb13a3f3f2f4524e45042ab7b23889c34ea7e20ae3268b00a1e582b568",
+    "run.json": "6f49d43cd6bcccaef2ee9122dbce52ec0d095ac1f00161ca8036943824b8aece"
+  },
+  "github_workflow": ".github/workflows/aitm-368-hosted-qualification.yml",
+  "hosted_export": {
+    "ancestry-controller.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ancestry-controller.stdout": {
+      "bytes": 265,
+      "sha256": "4e436905629c18dfb2aa62f46cf3513e0556fc6f05e8dc1db7cff941b6e1aefc"
+    },
+    "ancestry-probe.bin": {
+      "bytes": 35216,
+      "sha256": "50bad20fe677c64cdf9496228f014ae97cdbabcbdecc6fd83947f719664428cd"
+    },
+    "ancestry-worker.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "ancestry-worker.stdout": {
+      "bytes": 577,
+      "sha256": "5db71df8e38186dc4e91b34cbcfdec972667e44a154af6b6f1879cc8ffab5f0a"
+    },
+    "benign-worker.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "benign-worker.stdout": {
+      "bytes": 29,
+      "sha256": "18a2239a0be231c87a376a3834c2bbccd5dea130a6a71783e34a308d98df5642"
+    },
+    "calibrate-failure-dtrace.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-failure-dtrace.stdout.log": {
+      "bytes": 821,
+      "sha256": "7e37afc923206898f3c5b1f88d6713867ffb7cef02f082400647b70acf7661b6"
+    },
+    "calibrate-failure.d": {
+      "bytes": 1995,
+      "sha256": "a4657395b412a1c14e51f496eda26c42ed001a51cd1367b9ea35a521f6888c26"
+    },
+    "calibrate-failure.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-failure.stdout.log": {
+      "bytes": 993,
+      "sha256": "565fc91877d22e4b7c91558ed427526a55cd10a5634fc4be638d7482592ee1c4"
+    },
+    "calibrate-missing-dtrace.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-missing-dtrace.stdout.log": {
+      "bytes": 889,
+      "sha256": "c3c5953e2436d774dd41934f55fd9d0352a6ca5e1964a9f6870d4b9120e5331d"
+    },
+    "calibrate-missing.d": {
+      "bytes": 1995,
+      "sha256": "a4657395b412a1c14e51f496eda26c42ed001a51cd1367b9ea35a521f6888c26"
+    },
+    "calibrate-missing.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-missing.stdout.log": {
+      "bytes": 993,
+      "sha256": "4ba314cd0c152718a2acd163b5ed148f2874be6807b8c798080ed789efe09095"
+    },
+    "calibrate-positive-dtrace.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-positive-dtrace.stdout.log": {
+      "bytes": 1180,
+      "sha256": "09e67a740c39360964d96d6ea38fa37701f5a8090ccfe801c582860c3ad9d5e3"
+    },
+    "calibrate-positive.d": {
+      "bytes": 1995,
+      "sha256": "a4657395b412a1c14e51f496eda26c42ed001a51cd1367b9ea35a521f6888c26"
+    },
+    "calibrate-positive.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "calibrate-positive.stdout.log": {
+      "bytes": 415,
+      "sha256": "eaca391aace4df3614dd6299f974a13f5f3a3e103ea75e417f79779a683fce8c"
+    },
+    "early-trace.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "early-trace.stdout": {
+      "bytes": 75,
+      "sha256": "3cffba4bdff00d7dbc9303fee492a45423d786e57b17c6f85536da645a977337"
+    },
+    "early.d": {
+      "bytes": 508,
+      "sha256": "0617fa5ea3cfc53f7f9e7b0e8d8ed1acea5e81b27cf7759e7d10c9a71e826bfa"
+    },
+    "hosted-report-1.json": {
+      "bytes": 5370,
+      "sha256": "5d75994ae61c5482f73f11bcfe3d8592609afec57a1c6172622232bdc61cd7e3"
+    },
+    "hosted-report-2.json": {
+      "bytes": 5370,
+      "sha256": "5d75994ae61c5482f73f11bcfe3d8592609afec57a1c6172622232bdc61cd7e3"
+    },
+    "hosted-report-3.json": {
+      "bytes": 117,
+      "sha256": "261a5127f2f8438b5074f649d654e7aa6487ccd6d6b7c6659fd8308ac8add4b1"
+    },
+    "installed-probe-table.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "installed-probe-table.stdout": {
+      "bytes": 5113,
+      "sha256": "6f92128660113f8fc0396fc0e02abb0a2ba9e26598f3aef28f063f2b11707b06"
+    },
+    "instrumented-pytest-identity.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "instrumented-pytest-identity.stdout": {
+      "bytes": 13,
+      "sha256": "ce3cb133edb441a32c4ed39abd3ce75d165e74ec3376134208af13fa269a92ca"
+    },
+    "mounts.stdout": {
+      "bytes": 1154,
+      "sha256": "061459a7e228b60e307be78996b52869a64862e110a56fd6d70daf18698cb4ef"
+    },
+    "probe-build.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "probe-build.stdout": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "provider-inventory.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "provider-inventory.stdout": {
+      "bytes": 45294669,
+      "sha256": "1b685dce650da191517596f0e3a51f0e3dba21058b5962155f250c7ce93ba841"
+    },
+    "scoped-product-dtrace.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "scoped-product-dtrace.stdout.log": {
+      "bytes": 71573,
+      "sha256": "7628d5f13febd2f1147a62700ee55ebf5a188096b825ef8f1a4db0dff797fbda"
+    },
+    "scoped-product.d": {
+      "bytes": 1995,
+      "sha256": "a4657395b412a1c14e51f496eda26c42ed001a51cd1367b9ea35a521f6888c26"
+    },
+    "scoped-product.stderr.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "scoped-product.stdout.log": {
+      "bytes": 168984,
+      "sha256": "29bca4d35bc219cf6536811e0804f9c7000ffb44a0fcf647521251875d8d271d"
+    },
+    "unadmitted-executable.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unadmitted-executable.stdout": {
+      "bytes": 27,
+      "sha256": "8fd1588e9dd75dd54bb82b094a917cada95a7d2eef4bee81d4d325846504fcae"
+    },
+    "worker-boundary.stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "worker-boundary.stdout": {
+      "bytes": 349,
+      "sha256": "ce0a4edac4739483edbb37c7e821591ebb738018593ccaee0d7574a5a0a1b828"
+    },
+    "worker.sb": {
+      "bytes": 1364,
+      "sha256": "020fc8e0951d31b8c08c64fb6c2689e3f4649720d70119e3ee6b31712cf62929"
+    }
+  },
+  "hosted_receipt_sha256": "559161ea51d3a55b8d609afb56d6c364c506e69fc040bdd17bc1ab0e60287982",
+  "identity": {
+    "architecture": "arm64",
+    "attempt": 1,
+    "base": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "base_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+    "compiler": [
+      "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+      "Target: arm64-apple-darwin25.6.0",
+      "Thread model: posix",
+      "InstalledDir: /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+    ],
+    "image": "20261112.0504.1",
+    "image_label": "macos26",
+    "native_input_sha256": {
+      "/usr/bin/ssh-keygen": "e9cba2415f13366eb43402ab20218433f585851b4f4a749a6a1e9988e6af9eb5"
+    },
+    "os": [
+      "ProductName:\t\tmacOS",
+      "ProductVersion:\t\t26.7.2",
+      "BuildVersion:\t\t25G332"
+    ],
+    "ref": "refs/heads/codex/368-hosted-qualification",
+    "repository": "kburson/aitm",
+    "run": 44090243525,
+    "sdk": "26.5",
+    "sha": "56428a6ccc7c525b374f087dc2aa0c06e4cc7eac",
+    "sip": "System Integrity Protection status: disabled.",
+    "source_sha256": {
+      ".github/spikes/368/admission.py": "c71ebaa05c671b86eb7905130a7e6346d2011baab541f05a21ae68416ca9f169",
+      ".github/spikes/368/calibration.py": "fb090f97c43d197d7c86373060462b85bd8c0817d74b4a60f14ad1fa04dd7313",
+      ".github/spikes/368/integrated.py": "528463754382e5d40a16905a5f1123b5f4845e7e71c9fd9f1c743a4285066d21",
+      ".github/spikes/368/observed.py": "c6f74000466aa7151a44fc5d4d7adab1fc17a68a2990ce3687910032fdad81bb",
+      ".github/spikes/368/qualification.c": "2764393a64bde17d42f78b9fa1f8b77eb28d39e3ea3384d2f8c4e7ffed4ff7b0",
+      ".github/spikes/368/qualification.d": "9f95376aa2dabba1411549d604e42b3e5098c691bf91a3501bd2959dab80ff9d",
+      ".github/spikes/368/stage-b-inputs.json": "2741a763afe3434d232a05aab5f606242a1cacd02550539c7510a2264072bca0",
+      ".github/spikes/368/test_admission.py": "cfdf94bdfd7264c9766e70950c7f779c8a399c009afc3e535fc282a0fd3cfe04",
+      ".github/spikes/368/test_integrated.py": "e4177c8e5210571741b08d0f8d4624c96822182d75a4e5de241d67e11be061f8",
+      ".github/workflows/aitm-368-hosted-qualification.yml": "3eb54bc8771dd96d98c3476f0c8410c77591d0753b592dc24908dc728517f3a9"
+    },
+    "tree": "6f61e6d1a8a103d894c3607751cde3f42ca9abcd",
+    "workflow": "kburson/aitm/.github/workflows/aitm-368-hosted-qualification.yml@refs/heads/codex/368-hosted-qualification",
+    "xcode": [
+      "Xcode 26.6",
+      "Build version 17F113"
+    ]
+  },
+  "job": 134063181995,
+  "post_run_custody": "not reached",
+  "product_lineage": [
+    {
+      "parent": 2550,
+      "pid": 2551,
+      "uid": 550
+    },
+    {
+      "parent": 1300,
+      "pid": 2550,
+      "uid": 0
+    }
+  ],
+  "product_outcomes": 30,
+  "report_replays": {
+    "stable_positives": 2,
+    "unsupported_change_refusal": true
+  },
+  "run": 44090243525,
+  "run_url": "https://github.com/kburson/aitm/actions/runs/44090243525/attempts/1",
+  "runner": 1000190638,
+  "runtime_admission": {
+    "archive_sha256": "3841df4cfeca31523065b63d6b66ba72aec58aad4041e91854225d36564936ca",
+    "artifact": 14302787413,
+    "attempt": 1,
+    "head": "e38d67d0254c0bac77761a48561c7ee5ecad315e",
+    "manifest_sha256": "1a5e9f5df23ffba83417532c4d67e9f51bb72f78570c7078027712fa238f11fd",
+    "probe_table_sha256": "6f92128660113f8fc0396fc0e02abb0a2ba9e26598f3aef28f063f2b11707b06",
+    "python_sha256": "a6d5935b3937d7f11b10059b9ce6cd2a03b3919e17c6ffda0326afd06491f734",
+    "receipt_sha256": "a363e0a3f15683ce2c0c57302c528e80781e1ef30916c67a13b0c54bb1da2b4e",
+    "run": 44024930299,
+    "runtime_archive_sha256": "402dda5423f9a0f97cf3b7c3ca25228503a101d552c4772b68ee5d0bc3d441dd"
+  },
+  "schema": "aitm.story.hosted-qualification-closeout/v1",
+  "scope": {
+    "calibrate-failure": {
+      "failed": [
+        "calibration/test_probe.py::test_failure"
+      ],
+      "missing": [],
+      "native_records": 0,
+      "passed": [],
+      "reparsed": true
+    },
+    "calibrate-missing": {
+      "failed": [
+        "calibration/test_probe.py::test_failure"
+      ],
+      "missing": [
+        "calibration/test_probe.py::test_success"
+      ],
+      "native_records": 0,
+      "passed": [],
+      "reparsed": true
+    },
+    "calibrate-positive": {
+      "failed": [],
+      "missing": [],
+      "native_records": 1,
+      "passed": [
+        "calibration/test_probe.py::test_success"
+      ],
+      "reparsed": true
+    },
+    "scoped-product": {
+      "failed": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+      ],
+      "missing": [],
+      "native_records": 74,
+      "passed": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[foreign_pid]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[init]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[no_start]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[size]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[uid]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[usec]",
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[zombie]"
+      ],
+      "reparsed": true
+    }
+  },
+  "source": {
+    "base": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "diff": [
+      "A\t.github/spikes/368/admission.py",
+      "A\t.github/spikes/368/calibration.py",
+      "A\t.github/spikes/368/integrated.py",
+      "A\t.github/spikes/368/observed.py",
+      "A\t.github/spikes/368/qualification.c",
+      "A\t.github/spikes/368/qualification.d",
+      "A\t.github/spikes/368/stage-b-inputs.json",
+      "A\t.github/spikes/368/test_admission.py",
+      "A\t.github/spikes/368/test_integrated.py",
+      "A\t.github/workflows/aitm-368-hosted-qualification.yml"
+    ],
+    "head": "56428a6ccc7c525b374f087dc2aa0c06e4cc7eac",
+    "only_expected_job": "integrated",
+    "source": {
+      ".github/spikes/368/admission.py": {
+        "blob": "a2eba713235965d4dd1d4599441d9beef5df7df4",
+        "sha256": "c71ebaa05c671b86eb7905130a7e6346d2011baab541f05a21ae68416ca9f169"
+      },
+      ".github/spikes/368/calibration.py": {
+        "blob": "0ab4f2432dbd8f92b5552365c7d285f7ec76b693",
+        "sha256": "fb090f97c43d197d7c86373060462b85bd8c0817d74b4a60f14ad1fa04dd7313"
+      },
+      ".github/spikes/368/integrated.py": {
+        "blob": "f062072aecd7ba08f3fcd9072130a673767a0c67",
+        "sha256": "528463754382e5d40a16905a5f1123b5f4845e7e71c9fd9f1c743a4285066d21"
+      },
+      ".github/spikes/368/observed.py": {
+        "blob": "7b1a7b3ebf204634728ab98b3014a9023d3ce1f4",
+        "sha256": "c6f74000466aa7151a44fc5d4d7adab1fc17a68a2990ce3687910032fdad81bb"
+      },
+      ".github/spikes/368/qualification.c": {
+        "blob": "fb1de64f440f4b944deac431fe195639be78fd35",
+        "sha256": "2764393a64bde17d42f78b9fa1f8b77eb28d39e3ea3384d2f8c4e7ffed4ff7b0"
+      },
+      ".github/spikes/368/qualification.d": {
+        "blob": "77aba2a76d1ed8d0e820ff29589ef7d4b0d15a30",
+        "sha256": "9f95376aa2dabba1411549d604e42b3e5098c691bf91a3501bd2959dab80ff9d"
+      },
+      ".github/spikes/368/stage-b-inputs.json": {
+        "blob": "4e86f65edb976fc1179dcd9b511bd7a7f65d1b71",
+        "sha256": "2741a763afe3434d232a05aab5f606242a1cacd02550539c7510a2264072bca0"
+      },
+      ".github/spikes/368/test_admission.py": {
+        "blob": "9470e8e8ee7f9ace7665735f5947188df7bfa620",
+        "sha256": "cfdf94bdfd7264c9766e70950c7f779c8a399c009afc3e535fc282a0fd3cfe04"
+      },
+      ".github/spikes/368/test_integrated.py": {
+        "blob": "a720cad19c229fb11bfb7f9a0d31d47241ad5c77",
+        "sha256": "e4177c8e5210571741b08d0f8d4624c96822182d75a4e5de241d67e11be061f8"
+      },
+      ".github/workflows/aitm-368-hosted-qualification.yml": {
+        "blob": "63b6904f4520d4e086b27719a919d65fe50b093f",
+        "sha256": "3eb54bc8771dd96d98c3476f0c8410c77591d0753b592dc24908dc728517f3a9"
+      }
+    },
+    "tree": "6f61e6d1a8a103d894c3607751cde3f42ca9abcd"
+  },
+  "story": 368,
+  "story_summary": "The Opus-reviewed admission window gave the hosted job time to start. The live rerun passed the five ancestry readbacks and eight isolation denials. The independent observer recorded all 30 assigned outcomes and verified all 74 native child lifecycles. Fourteen tests passed and sixteen failed. Fifteen IDs encountered transcript discovery failures, and the native process-custody test required a same-UID parent. The scoped run is HOLD. The earlier local guest could exercise local isolation but lacked a usable process observer. The hosted run supplied independent observation and exposed the remaining execution incompatibilities. #368 stays open and #355 remains blocked by #368.",
+  "timing": {
+    "cumulative_hours_at_dispatch": 3.4633,
+    "cumulative_hours_at_job_completion": 3.4688,
+    "job_completed": "2026-11-17T13:13:06Z",
+    "job_started": "2026-11-17T13:11:31Z",
+    "product_dispatch": {
+      "deadline_utc": "2026-11-17T14:48:02Z",
+      "decision_utc": "2026-11-17T13:12:46.148321Z"
+    },
+    "run_created": "2026-11-17T13:11:28Z",
+    "runner_allocation_elapsed_seconds": 3.0
+  },
+  "trace_clean": true,
+  "trace_provider_and_worker_controls": {
+    "child": 1463,
+    "parent": 1458,
+    "process_observation": true,
+    "root_child_metadata_denied": true,
+    "root_metadata_read_and_listing_denied": true,
+    "stock_providers": {
+      "proc": 30,
+      "syscall": 1116
+    },
+    "usdt": true,
+    "worker_controls": true
+  },
+  "tracer_exit": 0,
+  "verdict": "HOLD"
+}
