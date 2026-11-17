@@ -6,11 +6,11 @@ kind: "epic"
 state: "plan"
 issue: "https://github.com/kburson/aitm/issues/351"
 parent: null
-children: [352, 353, 354, 355]
+children: [352, 353, 354, 355, 368]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T21:49:58Z"
+updated: "2026-11-17T00:53:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -37,7 +37,8 @@ Spike stories answer one question and create no production software. Feature sto
 1. #352 names the condition that blocks local test selection.
 2. #353 names the process boundary a trusted pre-commit run needs.
 3. #354 reports the affected tests. It is blocked by #352.
-4. #355 runs that list before commit. It is blocked by #354 and #353.
+4. #355 runs that list before commit. It requires #354, #353, and #368.
+5. [#368](../368/story.md) qualifies the protected local runner, independent observer, and scoped assignment for #355.
 
 ## Starting material
 
