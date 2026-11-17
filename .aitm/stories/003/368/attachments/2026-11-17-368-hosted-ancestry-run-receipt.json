@@ -1,0 +1,124 @@
+{
+  "clock": {
+    "accepted_at": "2026-11-17T12:31:32Z",
+    "admission_remaining_hours": 0.348,
+    "cumulative_hours_at_acceptance": 2.775611,
+    "dispatch_deadline": "2026-11-17T12:52:24Z",
+    "headroom_overall_hours": 3.224389,
+    "headroom_to_packet_hours": 0.974389,
+    "prior_through_run_hours": 2.152,
+    "prior_with_closeout_hours": 2.394222
+  },
+  "gate": "runner-assignment-timebox",
+  "local": {
+    "metadata_additions": [
+      "/",
+      "/Users",
+      "/Users/Shared"
+    ],
+    "negative_controls": 8,
+    "old_ledger": {
+      "exit": 4,
+      "record": {
+        "message": "Private ledger ancestry is unavailable",
+        "type": "LedgerError"
+      }
+    },
+    "revised_ledger": {
+      "exit": 0,
+      "record": {
+        "ancestry": 6,
+        "physical_path": "/Users/Shared/aitm368-ancestry.9nEAFE39/worker/synthetic",
+        "uid": 501
+      }
+    },
+    "unit_tests_passed": 13
+  },
+  "native_edge": {
+    "blocked": 355,
+    "blocker": 368,
+    "disposition": "retained"
+  },
+  "plan_sha256": "361618e5244f2c64aaffb98a31a3ea291ee62797f27c700304f41bc7b225885f",
+  "qualification_pass": false,
+  "run": {
+    "artifact_count": 0,
+    "attempt": 1,
+    "conclusion": "cancelled",
+    "finished_at": "2026-11-17T12:52:42Z",
+    "head": "f5f1cf8f48804c364375042ba32426a3125b9749",
+    "id": 44085388689,
+    "job": 134046345090,
+    "product_ids_executed": 0,
+    "queued_at": "2026-11-17T12:40:43Z",
+    "runner": "",
+    "runner_at_deadline": null,
+    "status_at_deadline": "queued",
+    "steps": [],
+    "steps_at_deadline": []
+  },
+  "schema": "aitm.368.hosted-ancestry-rerun/v1",
+  "scope": "local ancestry revision and queued hosted attempt",
+  "source": {
+    "base": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "diff": [
+      "A\t.github/spikes/368/admission.py",
+      "A\t.github/spikes/368/calibration.py",
+      "A\t.github/spikes/368/integrated.py",
+      "A\t.github/spikes/368/observed.py",
+      "A\t.github/spikes/368/qualification.c",
+      "A\t.github/spikes/368/qualification.d",
+      "A\t.github/spikes/368/stage-b-inputs.json",
+      "A\t.github/spikes/368/test_admission.py",
+      "A\t.github/spikes/368/test_integrated.py",
+      "A\t.github/workflows/aitm-368-hosted-qualification.yml"
+    ],
+    "head": "f5f1cf8f48804c364375042ba32426a3125b9749",
+    "only_expected_job": "integrated",
+    "source": {
+      ".github/spikes/368/admission.py": {
+        "blob": "a2eba713235965d4dd1d4599441d9beef5df7df4",
+        "sha256": "c71ebaa05c671b86eb7905130a7e6346d2011baab541f05a21ae68416ca9f169"
+      },
+      ".github/spikes/368/calibration.py": {
+        "blob": "0ab4f2432dbd8f92b5552365c7d285f7ec76b693",
+        "sha256": "fb090f97c43d197d7c86373060462b85bd8c0817d74b4a60f14ad1fa04dd7313"
+      },
+      ".github/spikes/368/integrated.py": {
+        "blob": "f062072aecd7ba08f3fcd9072130a673767a0c67",
+        "sha256": "528463754382e5d40a16905a5f1123b5f4845e7e71c9fd9f1c743a4285066d21"
+      },
+      ".github/spikes/368/observed.py": {
+        "blob": "7b1a7b3ebf204634728ab98b3014a9023d3ce1f4",
+        "sha256": "c6f74000466aa7151a44fc5d4d7adab1fc17a68a2990ce3687910032fdad81bb"
+      },
+      ".github/spikes/368/qualification.c": {
+        "blob": "fb1de64f440f4b944deac431fe195639be78fd35",
+        "sha256": "2764393a64bde17d42f78b9fa1f8b77eb28d39e3ea3384d2f8c4e7ffed4ff7b0"
+      },
+      ".github/spikes/368/qualification.d": {
+        "blob": "77aba2a76d1ed8d0e820ff29589ef7d4b0d15a30",
+        "sha256": "9f95376aa2dabba1411549d604e42b3e5098c691bf91a3501bd2959dab80ff9d"
+      },
+      ".github/spikes/368/stage-b-inputs.json": {
+        "blob": "804c28c85e236839ac397eb277918f48c059d0d8",
+        "sha256": "91fdd9f241b09fb71260c36ed64f693956b40e76f3789e879909e284ed7a1754"
+      },
+      ".github/spikes/368/test_admission.py": {
+        "blob": "9470e8e8ee7f9ace7665735f5947188df7bfa620",
+        "sha256": "cfdf94bdfd7264c9766e70950c7f779c8a399c009afc3e535fc282a0fd3cfe04"
+      },
+      ".github/spikes/368/test_integrated.py": {
+        "blob": "a720cad19c229fb11bfb7f9a0d31d47241ad5c77",
+        "sha256": "e4177c8e5210571741b08d0f8d4624c96822182d75a4e5de241d67e11be061f8"
+      },
+      ".github/workflows/aitm-368-hosted-qualification.yml": {
+        "blob": "63b6904f4520d4e086b27719a919d65fe50b093f",
+        "sha256": "3eb54bc8771dd96d98c3476f0c8410c77591d0753b592dc24908dc728517f3a9"
+      }
+    },
+    "tree": "4c9cc4a50b74a552a8c8c33eb2aa6821839486cf"
+  },
+  "story": 368,
+  "verdict": "HOLD"
+}
