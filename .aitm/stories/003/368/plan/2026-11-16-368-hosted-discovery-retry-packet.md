@@ -47,7 +47,7 @@ The exact delta changes four paths within the existing ten-path allowlist.
 
 The refreshed Stage A image, archive digest, scope records, product tree and assignment are the same. The workload and controls
 use the same independent observer. Read the exact delta from the held worktree using
-`git -C /Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk diff ffe77e3e2d8f5eac625add23b37c30f40025b4ec 3b603c6aa1c60b3dec895237beb2d3120a6914cf -- .github/spikes/368`.
-The conservative combined charge at this submission is 1.921 agent-hours.
+`git -C /Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk diff ffe77e3e2d8f5eac625add23b37c30f40025b4ec d06b0e7f21a447cabbcd808364377a6736d16892 -- .github/spikes/368`.
+The conservative combined charge at this submission is 2.107 agent-hours.
 A fresh hosted job must recheck the admitted image, new live boundary controls, runtime, replays and calibration before product execution.
 #355 remains blocked.
