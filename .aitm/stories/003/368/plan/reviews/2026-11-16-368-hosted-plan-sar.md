@@ -7,3 +7,7 @@ Single-agent review by the author at 2026-11-17T04:30:17+00:00. Plan SHA-256 `19
 - Checked that the plan keeps direct OS wait, externally observed outcomes and native-child attribution, live and offline refusal controls, evidence custody and cleanup. It preserves the local and hosted provenance and the #355 trust hold.
 
 **Verdict** PASS for XPR on this exact hosted revision.
+
+## Accepted revision readback
+
+Same-agent recheck at 2026-11-17T04:38:49Z. Verified the exact plan SHA-256 `51f56908994e273e9adce20f5d60813cb7b45cddd52051580241f9119e47bba9`, the separation of workflow and product trees, authenticated runtime transfer, raw evidence reconciliation, and unchanged trust qualifications. SAR passes on the same revision accepted by Opus 5.5 at high effort. [XPR manifest](hosted-plan/plan/2026-11-17-2026-11-16-368-hosted-observation-plan-review-6243e4d7fcda5797d0d41af00514157d/review-6243e4d7fcda5797d0d41af00514157d-review-manifest.md).

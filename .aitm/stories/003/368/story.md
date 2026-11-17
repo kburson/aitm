@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 368
 title: "Qualify protected local pre-commit test observation"
 kind: "spike"
-state: "blocked"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/368"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-17T00:52:11Z"
-updated: "2026-11-17T04:30:17+00:00"
+updated: "2026-11-17T04:38:49Z"
 last-branch: "planning"
 estimate: {"agent-hours": 6, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/355/plan/2026-11-16-355-execution-qualification.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-368-protected-local-observation-plan.md", "plan/reviews/2026-11-16-368-plan-sar.md", "plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-review-manifest.md", "plan/2026-11-16-368-qualification-results.md", "plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-review-manifest.md", "plan/2026-11-16-368-live-tracing-findings.md", "plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-review-manifest.md", "plan/2026-11-16-368-hosted-observation-plan.md", "plan/reviews/2026-11-16-368-hosted-plan-sar.md"], "attachments": ["attachments/2026-11-16-368-qualification.json", "attachments/2026-11-16-368-live-tracing-receipt.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-368-protected-local-observation-plan.md", "plan/reviews/2026-11-16-368-plan-sar.md", "plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-review-manifest.md", "plan/2026-11-16-368-qualification-results.md", "plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-review-manifest.md", "plan/2026-11-16-368-live-tracing-findings.md", "plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-review-manifest.md", "plan/2026-11-16-368-hosted-observation-plan.md", "plan/reviews/2026-11-16-368-hosted-plan-sar.md", "plan/reviews/hosted-plan/plan/2026-11-17-2026-11-16-368-hosted-observation-plan-review-6243e4d7fcda5797d0d41af00514157d/review-6243e4d7fcda5797d0d41af00514157d-review-manifest.md"], "attachments": ["attachments/2026-11-16-368-qualification.json", "attachments/2026-11-16-368-live-tracing-receipt.json"]}
 expansions: []
 trips: []
 ---
@@ -57,3 +57,7 @@ The retained guest completed setup and verified its offline configuration. The r
 ## Hosted qualification plan revision
 
 The local trial exercised the offline pre-commit boundary and stopped because its DTrace configuration lacked the required process provider. The owner authorized a hosted experiment using the runner family from #146 to test live tracing and the same scoped assignment under fresh isolation controls. Both results belong to #368. [Hosted plan](plan/2026-11-16-368-hosted-observation-plan.md) · [Plan SAR](plan/reviews/2026-11-16-368-hosted-plan-sar.md).
+
+## Hosted plan accepted
+
+SAR and Opus 5.5 at high effort accepted the hosted revision after three findings were resolved. Stage A starts with the protected worker and tracing probes. #355 remains blocked. [XPR manifest](plan/reviews/hosted-plan/plan/2026-11-17-2026-11-16-368-hosted-observation-plan-review-6243e4d7fcda5797d0d41af00514157d/review-6243e4d7fcda5797d0d41af00514157d-review-manifest.md).
