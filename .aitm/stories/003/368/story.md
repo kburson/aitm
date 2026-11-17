@@ -10,12 +10,12 @@ children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-17T00:52:11Z"
-updated: "2026-11-17T03:34:23Z"
+updated: "2026-11-17T04:30:17+00:00"
 last-branch: "planning"
 estimate: {"agent-hours": 6, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/355/plan/2026-11-16-355-execution-qualification.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-368-protected-local-observation-plan.md", "plan/reviews/2026-11-16-368-plan-sar.md", "plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-review-manifest.md", "plan/2026-11-16-368-qualification-results.md", "plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-review-manifest.md", "plan/2026-11-16-368-live-tracing-findings.md", "plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-review-manifest.md"], "attachments": ["attachments/2026-11-16-368-qualification.json", "attachments/2026-11-16-368-live-tracing-receipt.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-368-protected-local-observation-plan.md", "plan/reviews/2026-11-16-368-plan-sar.md", "plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-review-manifest.md", "plan/2026-11-16-368-qualification-results.md", "plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-review-manifest.md", "plan/2026-11-16-368-live-tracing-findings.md", "plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-review-manifest.md", "plan/2026-11-16-368-hosted-observation-plan.md", "plan/reviews/2026-11-16-368-hosted-plan-sar.md"], "attachments": ["attachments/2026-11-16-368-qualification.json", "attachments/2026-11-16-368-live-tracing-receipt.json"]}
 expansions: []
 trips: []
 ---
@@ -53,3 +53,7 @@ The owner reviewed and accepted Apple’s license for the disposable guest and a
 The retained guest completed setup and verified its offline configuration. The restricted worker exercised scratch-write and protected-path controls. Stock DTrace refused the required process program, and the guest inventory exposed only its internal and profiling providers. Live assignment and outcome calibration remain unqualified. Zero product tests ran. Opus 5.5 at high effort independently accepted these findings after two rounds.
 
 #368 stays open and #355 remains blocked. [Live findings](plan/2026-11-16-368-live-tracing-findings.md) · [Machine receipt](attachments/2026-11-16-368-live-tracing-receipt.json) · [XPR manifest](plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-review-manifest.md) · [Final reviewer response](plan/reviews/live-qualification/plan/2026-11-17-2026-11-16-368-live-tracing-findings-review-0b6b44993f1e7efe90bb3f968157eb0d/review-0b6b44993f1e7efe90bb3f968157eb0d-reviewer-response-2.md).
+
+## Hosted qualification plan revision
+
+The local trial exercised the offline pre-commit boundary and stopped because its DTrace configuration lacked the required process provider. The owner authorized a hosted experiment using the runner family from #146 to test live tracing and the same scoped assignment under fresh isolation controls. Both results belong to #368. [Hosted plan](plan/2026-11-16-368-hosted-observation-plan.md) · [Plan SAR](plan/reviews/2026-11-16-368-hosted-plan-sar.md).
