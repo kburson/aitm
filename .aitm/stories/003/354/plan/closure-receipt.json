@@ -1,0 +1,87 @@
+{
+  "story": 354,
+  "parent": 351,
+  "publication": "6d1d0e29bc0dd30e6dbd41dba3ae73a87d1776a4",
+  "recorded_at_utc": "2026-11-17T00:07:53.233Z",
+  "planning_done_at_utc": "2026-11-17T00:07:53.233Z",
+  "last_required_gate": {
+    "kind": "verified trunk CI, CLI delivery and original implementer sign-off",
+    "signed_at_utc": "2026-11-17T00:07:00.634Z"
+  },
+  "delivery": {
+    "path": "plan/2026-11-16-354-verified-delivery.json",
+    "sha256": "f3a63bb3b116f5f2dedda321c901aba7f718efe449bdbdb8b642b7cb2daab2a3",
+    "trunk_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "trunk_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7"
+  },
+  "github": {
+    "number": 354,
+    "closed_at": "2026-11-17T00:07:34Z",
+    "state_reason": "completed",
+    "url": "https://github.com/kburson/aitm/issues/354"
+  },
+  "project_24_readback": {
+    "at": "2026-11-17T00:07:39Z",
+    "issue": {
+      "number": 354,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "closedAt": "2026-11-17T00:07:34Z",
+      "parent": {
+        "number": 351
+      }
+    },
+    "item": "PVTI_lAHOABCEY84Bq1hZzhJROW8",
+    "fields": {
+      "Title": "Report the affected tests for the working tree",
+      "Status": "Done",
+      "Priority": "P2",
+      "Size": "S",
+      "Rank": 460.0,
+      "Estimate": 3.5,
+      "Actual coverage": "Partial through 2026-11-17T00:06:39.781Z",
+      "Actual": 0.8556,
+      "Disposition_v0": "Delivered"
+    }
+  },
+  "timing": {
+    "pinned_snapshot_sha256": "7cc668b217bf07daa016a514d124e5e4043e4ea23c99221e8a4be74324dc618c",
+    "as_of_utc": "2026-11-17T00:07:17.463000Z",
+    "actual_milliseconds": 3080190,
+    "coverage": "partial",
+    "evidence_through_utc": "2026-11-17T00:06:39.781000Z",
+    "idle": "unknown",
+    "owner_wait": "unknown",
+    "checkpoints": [
+      {
+        "step": "before",
+        "at_utc": "2026-11-17T00:07:25Z",
+        "actual": null,
+        "actual_coverage": null
+      },
+      {
+        "step": "pending",
+        "at_utc": "2026-11-17T00:07:26Z",
+        "actual": null,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "numeric",
+        "at_utc": "2026-11-17T00:07:29Z",
+        "actual": 0.8556,
+        "actual_coverage": "Pending verification"
+      },
+      {
+        "step": "verified",
+        "at_utc": "2026-11-17T00:07:31Z",
+        "actual": 0.8556,
+        "actual_coverage": "Partial through 2026-11-17T00:06:39.781Z"
+      }
+    ]
+  },
+  "dependency": {
+    "story": 355,
+    "required_delivery": 354,
+    "state_after": "ready for separate pickup"
+  }
+}

@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 354
 title: "Report the affected tests for the working tree"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/354"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: [352]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T00:07:00.634Z"
+updated: "2026-11-17T00:07:53.233Z"
 last-branch: "codex/354-working-tree-report"
 estimate: {"agent-hours": 3.5, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-354-working-tree-obligations-plan.md", "plan/reviews/2026-11-16-354-plan-sar.md", "plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md", "plan/2026-11-16-354-develop-checkpoint.md", "plan/reviews/2026-11-16-354-source-review-round-1.md", "plan/reviews/2026-11-16-354-source-review-round-2.md", "plan/2026-11-16-354-trusted-pr-verifier.json", "plan/2026-11-16-354-verified-delivery.json", "retro/2026-11-16-354-delivery.md"], "attachments": ["attachments/2026-11-16-354-local-report-probe.json", "attachments/2026-11-16-354-delivered-cli-probe.json", "attachments/timing/2026-11-16-verified-delivery-354.json"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-354-working-tree-obligations-plan.md", "plan/reviews/2026-11-16-354-plan-sar.md", "plan/reviews/plan/2026-11-16-2026-11-16-354-working-tree-obligations-plan-review-f07dbc2d2f9b704a70c2cb872586d1dc/review-f07dbc2d2f9b704a70c2cb872586d1dc-review-manifest.md", "plan/2026-11-16-354-develop-checkpoint.md", "plan/reviews/2026-11-16-354-source-review-round-1.md", "plan/reviews/2026-11-16-354-source-review-round-2.md", "plan/2026-11-16-354-trusted-pr-verifier.json", "plan/2026-11-16-354-verified-delivery.json", "retro/2026-11-16-354-delivery.md", "plan/closure-receipt.json"], "attachments": ["attachments/2026-11-16-354-local-report-probe.json", "attachments/2026-11-16-354-delivered-cli-probe.json", "attachments/timing/2026-11-16-verified-delivery-354.json"]}
 expansions: []
 trips: []
 ---
@@ -61,3 +61,7 @@ The refreshed candidate documents `-B` for read-only startup and validates comme
 ## Verified delivery
 
 The reviewed tree landed on trunk and passed the fresh CLI probe and trunk CI. [Verified delivery receipt](plan/2026-11-16-354-verified-delivery.json) · [Signed retrospective](retro/2026-11-16-354-delivery.md) · [Live CLI probe](attachments/2026-11-16-354-delivered-cli-probe.json).
+
+## Closure
+
+GitHub is Closed as Completed and Project 24 shows Done / Delivered. #355 can proceed to its own planning and execution qualification. [Closure receipt](plan/closure-receipt.json).
