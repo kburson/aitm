@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [353, 354, 368]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T00:53:39Z"
+updated: "2026-11-17T01:11:52Z"
 last-branch: "codex/355-precommit-execution"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -46,4 +46,4 @@ Opus 5.5 at high effort accepted the exact plan in round two after both findings
 
 The delivered #354 report reproduced all 30 pinned obligations. The strict local execution boundary and scoped assignment authority were unavailable. The accepted plan stops at this checkpoint and records the owner scope decision. [Qualification hold](plan/2026-11-16-355-execution-qualification.md) · [Machine receipt](attachments/2026-11-16-355-execution-qualification.json).
 
-Stay blocked until [#368](../368/story.md) passes independent review of the integrated live qualification.
+An independently accepted [#368](../368/story.md) qualification is a prerequisite. If a bounded PASS leaves a trust requirement unmet, keep #368 as the open blocker until an owner-approved scope decision or a verified open native successor covers that requirement.
