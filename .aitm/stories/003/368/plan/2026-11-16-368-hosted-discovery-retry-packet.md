@@ -16,24 +16,34 @@ The revised launcher supplies the already admitted product `pyproject.toml` as t
 the admitted source tree as both pytest root and conftest cutoff. Pytest 9.2.0 also stats the admission root itself.
 The restricted worker policy now allows exactly `file-read-metadata` on that literal directory.
 It still denies data reads of that directory, recursive discovery of its contents, writes and reads of the protected controls and evidence.
-The synthetic boundary probe verifies both the allowed stat and a denied real directory listing before any calibration.
+The synthetic boundary probe requires the allowed stat, denied real directory listing, and denied stat of an unadmitted child under the same root before calibration.
 The existing same-named executable, denied collector device, network, checkout, control, credential and write cases still run.
 
-A local collect-only reproduction with the protected ancestor rejected the original launcher. The revised scope and
-literal metadata rule collected the two exact synthetic IDs and denied listing. The target-native probe compiled and returned
-the expected synthetic controls on the same protected profile shape under an ordinary account. Eleven offline harness tests passed.
-[Local dry check](../attachments/2026-11-16-368-hosted-discovery-dry-check.json) at SHA-256 `e5d6030005d469753b7ef39471645db891347af98c5eadd35c9593b3f48fb99f`.
+The stronger local reproduction called the same `boundary_profile` generator used by `prepare_boundary` with
+Stage B-shaped arguments and substituted only the synthetic admission, staged, scratch, source, trusted Python and venv paths.
+It preserved the exact baseline and revised policy texts and digests. With the original options and profile, pytest returned
+exit 2 and errno 1 on the literal synthetic admission root. Its final pytest frame was `_pytest/config/__init__.py:454` in
+`_get_directory`. The hosted trace used shorter output, so this pytest frame is unavailable there. The hosted and local traces
+both show `pathlib/_local.py:515` in `stat`, errno 1, and the corresponding literal admission root.
+
+Under the revised profile with the same config, root and conftest flags, collection returned exit 0 with
+`calibration/test_probe.py::test_failure` and `calibration/test_probe.py::test_success`. The sandbox also denied directory listing
+and stat of the unadmitted child. Three local synthetic calibration runs returned expected exit codes 0, 1 and 1, including the
+stock keygen launch on success and an omitted sibling under maxfail. These local runs exercised the worker only. The hosted
+job still must establish independent DTrace outcomes. Twelve offline tests passed, including the literal policy assertion.
+[Full local dry-check receipt and driver](../attachments/2026-11-16-368-protected-pytest-check.json) at SHA-256 `bd0b7a612ca299619b3b7608bb3d81dd10543a4d25ee1a52a34904603b1b67f9`.
 
 ## Exact authorization
 
-Workflow head `3b603c6aa1c60b3dec895237beb2d3120a6914cf` and tree `485cc52b358a8d403f0fda2ae503bcb88dbb7b74`, replacing accepted head `ffe77e3e2d8f5eac625add23b37c30f40025b4ec`.
-The exact delta changes the following three paths in the existing ten-path allowlist.
+Workflow head `d06b0e7f21a447cabbcd808364377a6736d16892` and tree `618e81e5c8981b54694ac2e97e5ee8eb8d28caf3`, replacing accepted head `ffe77e3e2d8f5eac625add23b37c30f40025b4ec`.
+The exact delta changes four paths within the existing ten-path allowlist.
 
 | Path | Git blob | SHA-256 |
 | --- | --- | --- |
-| `.github/spikes/368/admission.py` | `2c26869ce63bf4cc26ca7e3f986f2e1fdaac6d85` | `ceb65f0e38eb47acb6bf833cc0d0cadc2f1aa7efb00e6da67f9518e8ead1a935` |
+| `.github/spikes/368/admission.py` | `f0d168d5a4dd365e16f9c1f6f0313ae511c56ba7` | `9b1cea56e7605ddc297ed94abd1c6dec64ea48df7c0a835bd5ead25086798343` |
 | `.github/spikes/368/integrated.py` | `f0742ae6b85ade9a9bb78a3471cc9486701835b1` | `86e1b2453e3f8db754e2b4ab4ea46fe5caddc48ef272a445a4e837f3558dc2df` |
-| `.github/spikes/368/qualification.c` | `ca59ebb1dd1fe1875ae9633e720b29293dbaf76d` | `fa024e8c511bba94619afb3fad80c6f37807d79e33d0ea7cd40246b27c4c5c60` |
+| `.github/spikes/368/qualification.c` | `e4a1f9939b1797e5cff91076c69b74bd2746fa1b` | `f31a878d331cc001311fac102954a4c0c918409c6b743b2cbfbceae74082346e` |
+| `.github/spikes/368/test_integrated.py` | `cd5c849c7b4a14a8ef708703d56f3edfea1840bc` | `b8e753626340fd06dc33e3788d5e5cd934d3f9dc49b167770124fb35224b302b` |
 
 The refreshed Stage A image, archive digest, scope records, product tree and assignment are the same. The workload and controls
 use the same independent observer. Read the exact delta from the held worktree using
