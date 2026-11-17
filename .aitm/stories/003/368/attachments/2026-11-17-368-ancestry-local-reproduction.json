@@ -1,0 +1,118 @@
+{
+  "clock": {
+    "accepted_at": "2026-11-17T12:31:32Z",
+    "admission_remaining_hours": 0.348,
+    "cumulative_hours_at_acceptance": 2.775611,
+    "dispatch_deadline": "2026-11-17T12:52:24Z",
+    "headroom_overall_hours": 3.224389,
+    "headroom_to_packet_hours": 0.974389,
+    "prior_through_run_hours": 2.152,
+    "prior_with_closeout_hours": 2.394222
+  },
+  "controller_rows": "ANCESTOR / root 040755 none\nANCESTOR /Users root 040755 none\nANCESTOR /Users/Shared root 041777 none\nANCESTOR /Users/Shared/aitm368-ancestry.9nEAFE39 worker 040700 none\nANCESTOR /Users/Shared/aitm368-ancestry.9nEAFE39/worker worker 040755 none\nPHYSICAL /Users/Shared/aitm368-ancestry.9nEAFE39/worker\n",
+  "green_test_stdout": ".............\n----------------------------------------------------------------------\nRan 13 tests in 0.008s\n\nOK\n",
+  "head": "f5f1cf8f48804c364375042ba32426a3125b9749",
+  "interpreter": {
+    "sha256": "b64058cfba60c56399509ef923a2b39457c621095583aaff7488c93f1ee9e60a",
+    "version": "3.13.9 (main, Oct 28 2025, 12:02:14) [Clang 20.1.4 ]"
+  },
+  "local_source_manifest": {
+    "entries": 39,
+    "sha256": "92938022d633742723fa87e34c4629a3e5c95c9440cfd1109dd76f956e175bb7",
+    "source_files": {
+      "packages/aitm-usage/src/aitm_usage/__init__.py": "3444a2cee180098d746c88ed28447add856db74e6f567345a5246f183d74a5d1",
+      "packages/aitm-usage/src/aitm_usage/_isolated_qualification.py": "272fbe60fcb316b18597a370fc75026ffbf58fe1d16a4dd3eadc5854db7498dd",
+      "packages/aitm-usage/src/aitm_usage/_monitor_journal_store.py": "4cff5010b0a2cfdf7a95628fd7726a546f5b985c788ab343b711730ff51f028f",
+      "packages/aitm-usage/src/aitm_usage/_monitor_qualification.py": "ca3028261bd5bcf0a127d8f3f43964e2f440813d487fad897fa686ff287a0047",
+      "packages/aitm-usage/src/aitm_usage/accounting.py": "35699addb22b9b80ba7f284f37fc5e73092b22665e384ac206ca0389357057ad",
+      "packages/aitm-usage/src/aitm_usage/backup.py": "8ef5f9f0406b3630e967826f771d2b25c69d5f809dbd4ac5339e3efad7610207",
+      "packages/aitm-usage/src/aitm_usage/cli.py": "b74258da1ca51bc67344e95970f563331c017b43b02a7d357a6c44ad66be95a3",
+      "packages/aitm-usage/src/aitm_usage/export.py": "1a7c42df414c2df8231c40ae7d8ca8b3f32ff3bf7df2430828885a5a666b82e6",
+      "packages/aitm-usage/src/aitm_usage/host_fs.py": "0a4eb61b4983c57b7bd723afa0b4b25f51da78ca01742557134419634c3e007d",
+      "packages/aitm-usage/src/aitm_usage/host_watch.py": "4ae5453e08a6d917a818fb7eca04f2bcac885f3e4eef74d1b4ac0d6304b8827f",
+      "packages/aitm-usage/src/aitm_usage/install.py": "f17fd95794cf13bdd192292b021967473f010f0e606797335b2863441761465a",
+      "packages/aitm-usage/src/aitm_usage/ledger.py": "beaf26aa0d9d76f129607ac8f26a15bbf85dad59eb0b74e05a84cff01acc0f03",
+      "packages/aitm-usage/src/aitm_usage/monitor_control.py": "402b86d985ef7307eb4c1926b38415faab4170a3ed9a4f63279423a0b145ee62",
+      "packages/aitm-usage/src/aitm_usage/monitor_journal.py": "0b820e8632de9b15a71c039dacc00f6d90bf38b4d0a11d52134ccf030850bf7d",
+      "packages/aitm-usage/src/aitm_usage/monitor_recovery.py": "3694295517f0649343516ac841754482e609e6aec3d3d13130402f387a81aac6",
+      "packages/aitm-usage/src/aitm_usage/monitor_registry.py": "f8fd19736bcb9eeae73a6efe6c079b7bcf74a590765a067e4c8d5669b9f7015a",
+      "packages/aitm-usage/src/aitm_usage/monitor_scheduler.py": "3998373901afc4bd3783a52076b517e6bba248e4ebd8c1da36ffe1218c7fd76c",
+      "packages/aitm-usage/src/aitm_usage/monitor_scope.py": "d9fd5fa543723ae238c8825ea74fbce15a1be56d844e99e0efd8266edd43ccda",
+      "packages/aitm-usage/src/aitm_usage/monitor_types.py": "044aec924ed4af48eebcd856ede3df39c23b2e71f9fa370cc8f78d4b7e82ffb6",
+      "packages/aitm-usage/src/aitm_usage/monitor_writer.py": "f825fd39c3c644d4741397976db14f5942ae8adb7b0e7f848603bf71768a11d2",
+      "packages/aitm-usage/src/aitm_usage/pricing.py": "8c7a93794d511abc2328099338bd3b02aac72a1b235d28538512c97c65729a64",
+      "packages/aitm-usage/src/aitm_usage/qualification.py": "f83277ff401a789677101490f60e6f94b69c62f320ffa0e40604946e8b930d5e",
+      "packages/aitm-usage/src/aitm_usage/rates/2026-11-09.json": "c65f2cb5ea797331862746a30fe71c88a4d906f35ca0cc27f7fa327fb583623e",
+      "packages/aitm-usage/src/aitm_usage/rates/monitor/2026-11-10.json": "f5c2d9e55aae88a65b27edf62afff90dcaadc8634840b3d56706b6bcd9c5f6c7",
+      "packages/aitm-usage/src/aitm_usage/relationships.py": "4b873a6f692967ec0ff3d43f4cb798721c059370d26ba5fe0732565a83b3fbe7",
+      "packages/aitm-usage/src/aitm_usage/rollup.py": "0c438aa783987e82de7dd8342c14f968d40662090eade27ba6ae1fce901cbdd5",
+      "packages/aitm-usage/src/aitm_usage/scope_admission.py": "abe43b18f44b3b044d4ab5fa6a345e672ef38726fe20f1168bdf5515a32a6100",
+      "packages/aitm-usage/src/aitm_usage/scopes.py": "8757c42f4367c52d8ff979f7a17af22b415714fa0a58142ef7ea523b58f9f661",
+      "packages/aitm-usage/src/aitm_usage/service.py": "cdb8f673c254cb5e9d4d186a18f15bab0df7bd9a059fb27900ca6b0c09c32faa",
+      "packages/aitm-usage/src/aitm_usage/sources/__init__.py": "d59278a04f69e70b6101abdeed6ddd2cfda3ff87ca3e1bcb6d714c6f5a6f87ca",
+      "packages/aitm-usage/src/aitm_usage/sources/_scope_command.py": "8ac21b5324337bcf5bf5f625f1e9a21714f86c880519ade7845c400ecfff7787",
+      "packages/aitm-usage/src/aitm_usage/sources/adapter.py": "11365f85207f42a51665db9627c48b049fc941004631435c1c3d25114d7e6f5b",
+      "packages/aitm-usage/src/aitm_usage/sources/claude.py": "5fdf7ba97cf861ccd8c6e88d155e1d2b9c1b66aa24fd76f4272ca078c699e558",
+      "packages/aitm-usage/src/aitm_usage/sources/codex.py": "a2d05cf79089eac8c1136fb7689848aa14a619c1eb41673e142d8ace733f74ba",
+      "packages/aitm-usage/src/aitm_usage/sources/grok.py": "23d3cb4f3af5d4ff6e433745f269c1d8dd10b9e11c573345fad5453973aa7ae1",
+      "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py": "c38878eae31799dfde52f3bc1bc5d71bffbbabf7230a9b7a2f7e9ec367846090",
+      "packages/aitm-usage/src/aitm_usage/sources/hooks.py": "8d6c0b840182ab2612fc0cf6d58d9508d6a19ec3fd0e2beea5c6eae33ae069e1",
+      "packages/aitm-usage/src/aitm_usage/sources/scan.py": "d165218475db318b4c001ad14edfcda0cc66929d925c126973ee36c8e4cc00ea",
+      "packages/aitm-usage/src/aitm_usage/types.py": "7c570b2394b38ffdc8522f555b225fea5a15375f984cbaf58f62d7d5b73480ad"
+    }
+  },
+  "native_probe_sha256": "6cbcba54b03261ccd362b91d4d32352dca0c947b65815f8883b8963dc592ca57",
+  "native_probe_source_sha256": "2764393a64bde17d42f78b9fa1f8b77eb28d39e3ea3384d2f8c4e7ffed4ff7b0",
+  "prior_product_ancestry": {
+    "exit": 4,
+    "record": {
+      "message": "Private ledger ancestry is unavailable",
+      "type": "LedgerError"
+    }
+  },
+  "prior_profile": "(version 1)\n(allow default)\n(deny file-read*)\n(allow file-read-data (literal \"/\"))\n(allow file-read* (subpath \"/usr\"))\n(allow file-read* (subpath \"/System\"))\n(allow file-read* (subpath \"/Library/Apple\"))\n(allow file-read* (subpath \"/private/etc\"))\n(allow file-read* (subpath \"/dev\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/admitted\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/worker\"))\n(allow file-read* (subpath \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none\"))\n(allow file-read* (subpath \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv\"))\n(deny network*)\n(deny file-write*)\n(allow file-write* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/worker\") (literal \"/dev/null\"))\n(deny file-read* file-ioctl (literal \"/dev/dtrace\"))\n(allow file-write-data file-ioctl (require-all (literal \"/dev/dtracehelper\") (vnode-type CHARACTER-DEVICE)))\n(allow file-read-metadata (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39\"))\n(deny process-exec*)\n(allow process-exec* (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39/admitted/qualification\") (literal \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv/bin/python\") (literal \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/bin/python3.13\") (literal \"/usr/bin/ssh-keygen\"))\n",
+  "prior_profile_sha256": "0258af58bf23c7f6c9acaf70751e7ceb2a5fe7aea96a17f86e14743b480b1356",
+  "product_path_driver": "\"\"\"Run only the pinned ancestry primitives for a benign synthetic directory.\"\"\"\nfrom pathlib import Path\nimport json\nimport os\nimport sys\n\nsys.path.insert(0, str(Path(__file__).parent / \"packages/aitm-usage/src\"))\nfrom aitm_usage import ledger, monitor_registry\n\ntarget = Path(sys.argv[1])\ntry:\n    ancestry = ledger._validated_path(target, directory=True)\n    directory = monitor_registry._directory(str(target))\nexcept (ledger.LedgerError, PermissionError) as error:\n    print(json.dumps({\"type\": type(error).__name__, \"message\": str(error)}))\n    raise SystemExit(4)\nexpected = tuple((info.st_dev, info.st_ino) for path in (*reversed(target.parents), target)\n                 for info in (path.lstat(),))\nassert ancestry == expected and directory.path == str(target)\nassert directory.identity == expected[-1]\nprint(json.dumps({\"ancestry\": len(ancestry), \"physical_path\": directory.path, \"uid\": os.geteuid()}))\n",
+  "product_source_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+  "product_test_ids_executed": 0,
+  "profile_delta": {
+    "from": "(allow file-read-metadata (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39\"))",
+    "to": "(allow file-read-metadata (literal \"/\") (literal \"/Users\") (literal \"/Users/Shared\") (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39\"))"
+  },
+  "red_test_stdout": "...FE........\n======================================================================\nERROR: test_only_an_in_time_utc_decision_can_dispatch (test_integrated.DispatchDeadlineTest.test_only_an_in_time_utc_decision_can_dispatch)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk/.github/spikes/368/test_integrated.py\", line 103, in test_only_an_in_time_utc_decision_can_dispatch\n    integrated.authorize_dispatch(bounds, receipt, at_deadline)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: module 'integrated' has no attribute 'authorize_dispatch'\n\n======================================================================\nFAIL: test_metadata_grant_applies_to_the_literal_admission_root_only (test_integrated.BoundaryProfileTest.test_metadata_grant_applies_to_the_literal_admission_root_only)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk/.github/spikes/368/test_integrated.py\", line 93, in test_metadata_grant_applies_to_the_literal_admission_root_only\n    self.assertEqual(rules, [\n    ~~~~~~~~~~~~~~~~^^^^^^^^^\n        f'(allow file-read-metadata (literal \"/\") (literal \"/Users\") (literal \"/Users/Shared\") (literal \"{ROOT}\"))'\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    ])\n    ^^\nAssertionError: Lists differ: ['(al[29 chars]al \"/Users/Shared/aitm368-hosted\"))'] != ['(al[29 chars]al \"/\") (literal \"/Users\") (literal \"/Users/Sh[45 chars]\"))']\n\nFirst differing element 0:\n'(all[28 chars]al \"/Users/Shared/aitm368-hosted\"))'\n'(all[28 chars]al \"/\") (literal \"/Users\") (literal \"/Users/Sh[44 chars]d\"))'\n\n- ['(allow file-read-metadata (literal \"/Users/Shared/aitm368-hosted\"))']\n+ ['(allow file-read-metadata (literal \"/\") (literal \"/Users\") (literal '\n+  '\"/Users/Shared\") (literal \"/Users/Shared/aitm368-hosted\"))']\n\n----------------------------------------------------------------------\nRan 13 tests in 0.005s\n\nFAILED (failures=1, errors=1)\n",
+  "reproduction_driver": "\"\"\"Ordinary-account reproducibility proof for the exact ancestry revision.\"\"\"\nfrom hashlib import sha256\nimport json\nimport os\nfrom pathlib import Path\nimport stat\nimport subprocess\nimport sys\n\nlab = Path(sys.argv[1])\nhold = Path.cwd()\nsys.path[:0] = [str(hold/\".github/spikes/368\"), str(lab/\"admitted\")]\nimport admission\nimport prior_admission\n\ndef check(args, **kwargs):\n    result = subprocess.run(tuple(map(str,args)), capture_output=True, text=True, **kwargs)\n    return result.returncode, result.stdout, result.stderr\n\ndef digest(path):\n    return sha256(path.read_bytes()).hexdigest()\n\nbase = \"8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7\"\nbinary = lab/\"admitted/qualification\"\nstaged = lab/\"admitted\"\nscratch = lab/\"worker\"\nfixture = scratch/\"synthetic\"\nfixture.mkdir(mode=0o700,exist_ok=False)\nproduct = staged/\"packages/aitm-usage/src/aitm_usage\"\ntracked = subprocess.check_output((\"git\",\"ls-tree\",\"-r\",\"--name-only\",base,\"packages/aitm-usage/src/aitm_usage\")).decode().splitlines()\nassert tracked\nfiles = {}\nfor name in tracked:\n    current = staged/name\n    expected = subprocess.check_output((\"git\",\"show\",f\"{base}:{name}\"))\n    assert current.is_file() and current.read_bytes()==expected\n    files[name] = digest(current)\nassert len(files) == sum(path.is_file() for path in product.rglob(\"*\"))\nmanifest = sha256(json.dumps(files,sort_keys=True,separators=(\",\",\":\")).encode()).hexdigest()\nfor module in (admission,prior_admission):\n    module.ROOT,module.STAGED,module.SCRATCH=lab,staged,scratch\npublic = (sys.base_prefix,sys.prefix)\nexes = (sys.executable,str(Path(sys.executable).resolve()),\"/usr/bin/ssh-keygen\")\nold = prior_admission.boundary_profile(public,exes)\nnew = admission.boundary_profile(public,exes)\nbefore = f'(allow file-read-metadata (literal \"{lab}\"))'\nafter = f'(allow file-read-metadata (literal \"/\") (literal \"/Users\") (literal \"/Users/Shared\") (literal \"{lab}\"))'\nassert old.replace(before,after)==new and before in old\noldfile,newfile=staged/\"prior-policy.sb\",staged/\"revised-policy.sb\"\noldfile.write_text(old)\nnewfile.write_text(new)\nenvironment={\"PATH\":\"/usr/bin:/bin\",\"LC_ALL\":\"C\",\"HOME\":str(scratch),\"TMPDIR\":str(scratch)}\ndef sandbox(policy,*args):\n    return check((\"/usr/bin/sandbox-exec\",\"-f\",policy,*args),env=environment,cwd=staged)\nowner = str(os.getuid())\ncanary = lab.with_name(lab.name+\".canary\")\nfd = os.open(canary,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o644)\nwith os.fdopen(fd,\"wb\") as stream:\n    stream.write(b\"public synthetic prefix control\\n\")\n    os.fchmod(stream.fileno(),0o644)\ntry:\n    witness=check((binary,\"ancestry-readback\",lab,scratch,owner))\n    assert witness[0]==0 and witness[2]==\"\",witness\n    worker=sandbox(newfile,binary,\"ancestry\",lab,scratch,owner,Path.home(),canary)\n    assert worker[0]==0 and worker[2]==\"\",worker\n    control=[f\"DENY LIST {path} EPERM\" for path in (lab.parents[1],lab.parent,lab)]\n    control.extend(f\"DENY {kind} {path} EPERM\" for path in (Path.home(),canary) for kind in (\"STAT\",\"ACL\"))\n    control.append(f\"DENY DATA {canary} EPERM\")\n    assert worker[1]==witness[1]+\"\\n\".join(control)+\"\\n\",worker\n    trace=(sys.executable,\"-I\",\"-B\",staged/\"worker_path_check.py\",fixture)\n    denied=sandbox(oldfile,*trace)\n    assert denied[0]==4 and json.loads(denied[1])=={\"type\":\"LedgerError\",\"message\":\"Private ledger ancestry is unavailable\"},denied\n    allowed=sandbox(newfile,*trace)\n    assert allowed[0]==0 and allowed[2]==\"\",allowed\n    assert json.loads(allowed[1])[\"physical_path\"]==str(fixture)\nfinally:\n    canary.unlink()\ndata={\"prior_profile_sha256\":digest(oldfile),\"revised_profile_sha256\":digest(newfile),\n      \"profile_delta\":{\"from\":before,\"to\":after},\"native_probe_sha256\":digest(binary),\n      \"native_probe_source_sha256\":digest(hold/\".github/spikes/368/qualification.c\"),\n      \"prior_profile\":old,\"revised_profile\":new,\"product_source_commit\":base,\n      \"local_source_manifest\":{\"sha256\":manifest,\"entries\":len(files),\"source_files\":files},\n      \"interpreter\":{\"version\":sys.version,\"sha256\":digest(Path(sys.executable))},\n      \"controller_rows\":witness[1],\"worker_rows\":worker[1],\n      \"prior_product_ancestry\":{\"exit\":denied[0],\"record\":json.loads(denied[1])},\n      \"revised_product_ancestry\":{\"exit\":allowed[0],\"record\":json.loads(allowed[1])},\n      \"product_test_ids_executed\":0}\nprint(json.dumps(data,indent=2))\n",
+  "revised_product_ancestry": {
+    "exit": 0,
+    "record": {
+      "ancestry": 6,
+      "physical_path": "/Users/Shared/aitm368-ancestry.9nEAFE39/worker/synthetic",
+      "uid": 501
+    }
+  },
+  "revised_profile": "(version 1)\n(allow default)\n(deny file-read*)\n(allow file-read-data (literal \"/\"))\n(allow file-read* (subpath \"/usr\"))\n(allow file-read* (subpath \"/System\"))\n(allow file-read* (subpath \"/Library/Apple\"))\n(allow file-read* (subpath \"/private/etc\"))\n(allow file-read* (subpath \"/dev\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/admitted\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/worker\"))\n(allow file-read* (subpath \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none\"))\n(allow file-read* (subpath \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv\"))\n(deny network*)\n(deny file-write*)\n(allow file-write* (subpath \"/Users/Shared/aitm368-ancestry.9nEAFE39/worker\") (literal \"/dev/null\"))\n(deny file-read* file-ioctl (literal \"/dev/dtrace\"))\n(allow file-write-data file-ioctl (require-all (literal \"/dev/dtracehelper\") (vnode-type CHARACTER-DEVICE)))\n(allow file-read-metadata (literal \"/\") (literal \"/Users\") (literal \"/Users/Shared\") (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39\"))\n(deny process-exec*)\n(allow process-exec* (literal \"/Users/Shared/aitm368-ancestry.9nEAFE39/admitted/qualification\") (literal \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv/bin/python\") (literal \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/bin/python3.13\") (literal \"/usr/bin/ssh-keygen\"))\n",
+  "revised_profile_sha256": "c27f7bdf134c00f9e824cfcaf1ab75e260ec6171b7071d9b2f19a06c8cf8aacf",
+  "runtime": {
+    "artifact": 14302787413,
+    "artifact_sha256": "3841df4cfeca31523065b63d6b66ba72aec58aad4041e91854225d36564936ca",
+    "attempt": 1,
+    "expires_at": "2026-12-01T05:37:11Z",
+    "head": "e38d67d0254c0bac77761a48561c7ee5ecad315e",
+    "image": "20261112.0504.1",
+    "manifest_sha256": "1a5e9f5df23ffba83417532c4d67e9f51bb72f78570c7078027712fa238f11fd",
+    "member_counts": {
+      "directory": 393,
+      "file": 8570,
+      "symlink": 10
+    },
+    "prefixes": [
+      "trace-build/installed",
+      "trace-build/observed-venv"
+    ],
+    "receipt_sha256": "a363e0a3f15683ce2c0c57302c528e80781e1ef30916c67a13b0c54bb1da2b4e",
+    "run": 44024930299,
+    "runtime_sha256": "402dda5423f9a0f97cf3b7c3ca25228503a101d552c4772b68ee5d0bc3d441dd",
+    "workflow": ".github/workflows/aitm-368-hosted-qualification.yml"
+  },
+  "schema": "aitm.368.hosted-ancestry-local-check/v1",
+  "worker_rows": "ANCESTOR / root 040755 none\nANCESTOR /Users root 040755 none\nANCESTOR /Users/Shared root 041777 none\nANCESTOR /Users/Shared/aitm368-ancestry.9nEAFE39 worker 040700 none\nANCESTOR /Users/Shared/aitm368-ancestry.9nEAFE39/worker worker 040755 none\nPHYSICAL /Users/Shared/aitm368-ancestry.9nEAFE39/worker\nDENY LIST /Users EPERM\nDENY LIST /Users/Shared EPERM\nDENY LIST /Users/Shared/aitm368-ancestry.9nEAFE39 EPERM\nDENY STAT /Users/kpburson EPERM\nDENY ACL /Users/kpburson EPERM\nDENY STAT /Users/Shared/aitm368-ancestry.9nEAFE39.canary EPERM\nDENY ACL /Users/Shared/aitm368-ancestry.9nEAFE39.canary EPERM\nDENY DATA /Users/Shared/aitm368-ancestry.9nEAFE39.canary EPERM\n"
+}
