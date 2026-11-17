@@ -1,5 +1,6 @@
 from collections import Counter
 from copy import deepcopy
+from datetime import datetime, timezone
 import errno
 from hashlib import sha256
 from io import BytesIO
@@ -12,6 +13,8 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+
+import integrated
 
 from admission import ROOT, boundary_profile
 
@@ -83,11 +86,31 @@ class NativeIntakeTest(unittest.TestCase):
 
 
 class BoundaryProfileTest(unittest.TestCase):
-    def test_metadata_grant_applies_to_the_literal_admission_root_only(self):
+    def test_metadata_grant_uses_only_literal_scratch_ancestors(self):
         self.assertNotIn("allow file-read-metadata", boundary_profile())
         rules = [line for line in boundary_profile(admitted_executables=(KEYGEN,)).splitlines()
                  if line.startswith("(allow file-read-metadata")]
-        self.assertEqual(rules, [f'(allow file-read-metadata (literal "{ROOT}"))'])
+        self.assertEqual(rules, [
+            f'(allow file-read-metadata (literal "/") (literal "/Users") (literal "/Users/Shared") (literal "{ROOT}"))'
+        ])
+
+
+class DispatchDeadlineTest(unittest.TestCase):
+    def test_only_an_in_time_utc_decision_can_dispatch(self):
+        bounds = {"ancestry_execution": {"deadline_utc": "2026-11-17T12:00:00Z"}}
+        at_deadline = datetime(2026, 11, 17, 12, tzinfo=timezone.utc)
+        receipt = {}
+        integrated.authorize_dispatch(bounds, receipt, at_deadline)
+        self.assertEqual(receipt["dispatch_timing"]["decision_utc"], "2026-11-17T12:00:00Z")
+        after = at_deadline.replace(second=1)
+        with self.assertRaisesRegex(ValueError, "admission deadline expired"):
+            integrated.authorize_dispatch(bounds, receipt, after)
+        self.assertEqual(receipt["dispatch_timing"]["decision_utc"], "2026-11-17T12:00:01Z")
+        for malformed in (None, "", "2026-11-17T12:00:00+00:00", "2026-11-17 12:00", "2026-11-31T12:00:00Z"):
+            with self.subTest(malformed=malformed), self.assertRaises(ValueError):
+                integrated.authorize_dispatch({"ancestry_execution": {"deadline_utc": malformed}}, {}, at_deadline)
+        with self.assertRaises(ValueError):
+            integrated.authorize_dispatch({}, {}, at_deadline)
 
 
 class RuntimeRestoreTest(unittest.TestCase):

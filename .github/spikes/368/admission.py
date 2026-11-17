@@ -135,7 +135,9 @@ def boundary_profile(public_inputs=(), admitted_executables=()):
     if admitted_executables:
         executables = (str(STAGED / "qualification"), *admitted_executables)
         literals = " ".join(f"(literal {json.dumps(path)})" for path in executables)
-        metadata = f"(allow file-read-metadata (literal {json.dumps(str(ROOT))}))\n"
+        ancestors = (*reversed(ROOT.parents), ROOT)
+        metadata = " ".join(f"(literal {json.dumps(str(path))})" for path in ancestors)
+        metadata = f"(allow file-read-metadata {metadata})\n"
         exec_policy = metadata + f"(deny process-exec*)\n(allow process-exec* {literals})\n"
     return (
         '(version 1)\n(allow default)\n(deny file-read*)\n'
@@ -146,6 +148,29 @@ def boundary_profile(public_inputs=(), admitted_executables=()):
         '(allow file-write-data file-ioctl (require-all (literal "/dev/dtracehelper")'
         ' (vnode-type CHARACTER-DEVICE)))\n' + exec_policy
     )
+
+
+def verify_ancestry(raw, command, binary, uid, home, canary):
+    root, scratch = ROOT.lstat(), SCRATCH.lstat()
+    require((root.st_uid, root.st_gid, stat.S_IMODE(root.st_mode)) == (0, 0, 0o755)
+            and (scratch.st_uid, scratch.st_gid, stat.S_IMODE(scratch.st_mode)) == (uid, 20, 0o700),
+            "unexpected hosted ancestry owner, group or mode")
+    require(home.parent == ROOT.parents[1] and stat.S_ISDIR(home.lstat().st_mode)
+            and stat.S_ISREG(canary.lstat().st_mode), "ancestry controls do not name known children")
+    args = (str(ROOT), str(SCRATCH), str(uid))
+    controller = run("/usr/bin/sudo", "-n", str(binary), "ancestry-readback", *args)
+    require(output(raw, "ancestry-controller", controller) == 0 and controller.stderr == b"",
+            "controller ancestry readback refused")
+    require(len(controller.stdout.splitlines()) == 6, "incomplete controller ancestry readback")
+
+    expected = [f"DENY LIST {path} EPERM" for path in (ROOT.parents[1], ROOT.parent, ROOT)]
+    expected.extend(f"DENY {kind} {path} EPERM" for path in (home, canary) for kind in ("STAT", "ACL"))
+    expected.append(f"DENY DATA {canary} EPERM")
+    worker = run(*command, str(binary), "ancestry", *args, str(home), str(canary))
+    require(output(raw, "ancestry-worker", worker) == 0 and worker.stderr == b"",
+            f"worker ancestry probe returned {worker.returncode}")
+    require(worker.stdout == controller.stdout + ("\n".join(expected) + "\n").encode(),
+            "worker ancestry or denied-access readback differs")
 
 
 def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executables=()):
@@ -183,11 +208,18 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
         "checkout": (Path.cwd() / ".aitm368-checkout-canary", "0644"),
         "controller_home": (Path.home() / ".aitm368-controller-canary", "0644"),
     }
+    if admitted_executables:
+        markers["shared_prefix"] = (ROOT.with_name(ROOT.name + ".canary"), "0644")
     for name, (path, mode) in markers.items():
         local = private / f"{name}.sample"
         local.write_text("public synthetic marker\n")
         if path.parent in (ROOT, STAGED):
             put_root(path, mode, local)
+        elif name == "shared_prefix":
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o644)
+            with os.fdopen(fd, "wb") as stream:
+                stream.write(local.read_bytes())
+                os.fchmod(stream.fileno(), 0o644)
         else:
             with path.open("xb") as stream:
                 stream.write(local.read_bytes())
@@ -217,6 +249,9 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
     }
     command = worker_command(profile)
     if admitted_executables:
+        (raw / "ancestry-probe.bin").write_bytes(staged_probe.read_bytes())
+        verify_ancestry(raw, command, staged_probe, uid, Path.home(), markers["shared_prefix"][0])
+        receipt["boundary"]["ancestry_readbacks_matched"] = True
         imitation = SCRATCH / "ssh-keygen"
         good("/usr/bin/sudo", "-n", "/usr/bin/install", "-o", WORKER, "-g", "staff", "-m", "0700",
              str(staged_probe), str(imitation))
@@ -443,10 +478,10 @@ def build_runtime(private, raw, receipt):
 def publish(raw, exported, receipt, extra=()):
     # Stage only explicit harness evidence. The job environment itself is never exported.
     candidates = {
-        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json", *extra,
+        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json", "ancestry-probe.bin", *extra,
         *(f"{label}.{stream}" for label in (
             "mounts", "probe-build", "worker-boundary", "provider-inventory", "benign-worker", "early-trace",
-            "unadmitted-executable",
+            "unadmitted-executable", "ancestry-controller", "ancestry-worker",
             "product-archive", "uv-identity", "runtime-lock-sync", "trace-install",
             "instrumented-pytest-identity", "installed-probe-table",
         ) for stream in ("stdout", "stderr")),

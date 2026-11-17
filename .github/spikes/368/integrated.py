@@ -2,6 +2,7 @@
 
 from collections import Counter
 from copy import deepcopy
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -323,6 +324,18 @@ def calibrate_intake(selected, assignment, catalog, passing, expected_native):
         raise ValueError("missing or unassigned native child was accepted")
 
 
+def authorize_dispatch(packet, receipt, decision):
+    limits = packet.get("ancestry_execution")
+    deadline = limits.get("deadline_utc") if isinstance(limits, dict) else None
+    receipt["dispatch_timing"] = {
+        "decision_utc": decision.isoformat().replace("+00:00", "Z"), "deadline_utc": deadline,
+    }
+    require(isinstance(deadline, str) and re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", deadline),
+            "invalid UTC admission deadline")
+    latest = datetime.strptime(deadline, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    require(decision <= latest, "admission deadline expired before product dispatch")
+
+
 def run_scope(private, raw, receipt, uid, packet, old, snapshot):
     full, selected = old.full_suite, old.selected_suite
     worker = worker_command(STAGED / "worker.sb")
@@ -351,6 +364,7 @@ def run_scope(private, raw, receipt, uid, packet, old, snapshot):
         clear_worker(uid, label)
         details = receipt["invocations"][label] = {}
         if product:
+            authorize_dispatch(packet, receipt, datetime.now(timezone.utc))
             receipt["product_invocation_started"] = True
         events, children = full.observe(
             label, (*args, "-p", "no:cacheprovider", "-c", str(PRODUCT / "packages/aitm-usage/pyproject.toml"),

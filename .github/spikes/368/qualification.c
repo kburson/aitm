@@ -2,9 +2,11 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/acl.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -112,6 +114,113 @@ static int check(int argc, char **argv)
     return 0;
 }
 
+static const char *ancestry_acl(const char *path)
+{
+    static const char empty[] = "!#acl 1\n";
+    static const char deny_delete[] =
+        "!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n";
+    errno = 0;
+    acl_t acl = acl_get_link_np(path, ACL_TYPE_EXTENDED);
+    if (acl == NULL) {
+        return errno == ENOENT ? "none" : NULL;
+    }
+    char *text = acl_to_text(acl, NULL);
+    const char *kind = NULL;
+    if (text != NULL) {
+        if (strcmp(text, empty) == 0) {
+            kind = "empty";
+        } else if (strcmp(text, deny_delete) == 0) {
+            kind = "deny-delete";
+        }
+        acl_free(text);
+    }
+    acl_free(acl);
+    return kind;
+}
+
+static int ancestry(int argc, char **argv, int worker)
+{
+    if (argc != (worker ? 7 : 5)) {
+        return 81;
+    }
+    char *end = NULL;
+    errno = 0;
+    unsigned long number = strtoul(argv[4], &end, 10);
+    if (errno != 0 || end == argv[4] || *end != '\0' || number == 0 || number > UINT_MAX
+        || (worker && (getuid() != number || geteuid() != number))) {
+        return 81;
+    }
+
+    const char *ancestors[] = {"/", "/Users", "/Users/Shared", argv[2], argv[3]};
+    for (size_t i = 0; i < sizeof(ancestors) / sizeof(ancestors[0]); i++) {
+        const char *path = ancestors[i];
+        struct stat info;
+        if (lstat(path, &info) != 0 || !S_ISDIR(info.st_mode)
+            || (info.st_uid != 0 && info.st_uid != number)
+            || ((info.st_mode & (S_IWGRP | S_IWOTH)) && !(info.st_uid == 0 && (info.st_mode & S_ISVTX)))) {
+            fprintf(stderr, "Ancestry metadata refused at %s\n", path);
+            return 82;
+        }
+        const char *kind = ancestry_acl(path);
+        if (kind == NULL) {
+            fprintf(stderr, "Ancestry ACL refused at %s\n", path);
+            return 83;
+        }
+        printf("ANCESTOR %s %s %06o %s\n", path, info.st_uid == 0 ? "root" : "worker",
+               (unsigned int)info.st_mode, kind);
+    }
+    char *physical = realpath(argv[3], NULL);
+    int same = physical != NULL && strcmp(physical, argv[3]) == 0;
+    free(physical);
+    if (!same) {
+        return 84;
+    }
+    printf("PHYSICAL %s\n", argv[3]);
+    if (!worker) {
+        return 0;
+    }
+
+    for (size_t i = 1; i <= 3; i++) {
+        DIR *listing = opendir(ancestors[i]);
+        if (listing != NULL) {
+            closedir(listing);
+            return 85;
+        }
+        if (errno != EPERM) {
+            return 85;
+        }
+        printf("DENY LIST %s EPERM\n", ancestors[i]);
+    }
+    for (int i = 5; i <= 6; i++) {
+        struct stat info;
+        if (lstat(argv[i], &info) == 0 || errno != EPERM) {
+            return 86;
+        }
+        printf("DENY STAT %s EPERM\n", argv[i]);
+        errno = 0;
+        acl_t acl = acl_get_link_np(argv[i], ACL_TYPE_EXTENDED);
+        int error = errno;
+        if (acl != NULL) {
+            acl_free(acl);
+            return 87;
+        }
+        if (error != EPERM) {
+            return 87;
+        }
+        printf("DENY ACL %s EPERM\n", argv[i]);
+    }
+    int data = open(argv[6], O_RDONLY);
+    if (data >= 0) {
+        close(data);
+        return 88;
+    }
+    if (errno != EPERM) {
+        return 88;
+    }
+    printf("DENY DATA %s EPERM\n", argv[6]);
+    return 0;
+}
+
 static int trace(const char *program)
 {
     printf("TARGET %d\n", getpid());
@@ -142,6 +251,12 @@ static int trace(const char *program)
 
 int main(int argc, char **argv)
 {
+    if (argc > 1 && strcmp(argv[1], "ancestry") == 0) {
+        return ancestry(argc, argv, 1);
+    }
+    if (argc > 1 && strcmp(argv[1], "ancestry-readback") == 0) {
+        return ancestry(argc, argv, 0);
+    }
     if (argc == 3 && strcmp(argv[1], "refuse-exec") == 0) {
         execl(argv[2], argv[2], "child", (char *)NULL);
         if (errno != EACCES && errno != EPERM) {
