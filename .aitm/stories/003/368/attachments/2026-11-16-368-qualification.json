@@ -57,34 +57,40 @@
     },
     "prepared_input_artifacts": [
       {
-        "role": "provision.swift",
+        "role": "vm-controller-source",
         "sha256": "7dc5aa6c8e0ff4961cc9d9d17f64228604bd98b50911e4699caecf6b2d0374de",
-        "bytes": 6776
+        "bytes": 6776,
+        "file": "provision.swift"
       },
       {
-        "role": "provision",
+        "role": "signed-cli-vm-installer",
         "sha256": "dd5fdc5ce0058494f299e019ee9a33f49f99b405e1e2f0d0aab062e9c60f4c2d",
-        "bytes": 194880
+        "bytes": 194880,
+        "file": "provision"
       },
       {
-        "role": "provision",
+        "role": "signed-app-vm-console",
         "sha256": "8a7cba5003fb6b10feeac0e0c971161c718abff95c1385f5eaa284a525ba9eef",
-        "bytes": 194864
+        "bytes": 194864,
+        "file": "provision"
       },
       {
-        "role": "input.img",
+        "role": "read-only-diagnostic-disk",
         "sha256": "2ad80477bd64b4c0868fca40c281e5b7afbeedd7a7402d689d26fcf368aba9fb",
-        "bytes": 921600
+        "bytes": 921600,
+        "file": "input.img"
       },
       {
-        "role": "qualification",
+        "role": "user-space-statically-defined-tracing-emitter",
         "sha256": "461b0245837e51b5835d6fd8260bf9cf961b00e3c362eab1056f0b6aafe52209",
-        "bytes": 33792
+        "bytes": 33792,
+        "file": "qualification"
       },
       {
-        "role": "guest-preflight.sh",
+        "role": "guest-early-capability-script",
         "sha256": "609b2895e419e2700f38d97bb2157ffe923ec842459063fbc20414f4983dc472",
-        "bytes": 5715
+        "bytes": 5715,
+        "file": "guest-preflight.sh"
       }
     ],
     "guest_boot_observation": "macOS Setup Assistant reached the first-boot language screen with the software license notice",
@@ -94,7 +100,8 @@
     "guest_sip_readback": null,
     "guest_worker_identity_readback": null,
     "root_guest_probe_launched": false,
-    "root_host_probe_launched": false
+    "root_host_probe_launched": false,
+    "vm_controller_binary_note": "The same compiled code was signed once as the standalone installer and separately in an AppKit bundle for the boot console. Their signed file digests differ."
   },
   "precedent": {
     "run": 43366344563,
@@ -102,7 +109,33 @@
     "artifact_sha256": "cc28de0c3ba2d969a5a1eec6ae5317e6a001d1f1ffc5915180804de26ae4dba0",
     "receipt_sha256": "3993095705929e2ca5793c156aca0b425f4e5cca97608247c5b9529f46dc8dde",
     "source_commit": "1419e3592d36cf90853664c2f22eb41bb26c1cef",
-    "local_execution_evidence": false
+    "local_execution_evidence": false,
+    "recovered_sources": [
+      {
+        "path": ".github/spikes/146/controller.py",
+        "role": "controller and runtime build recipe",
+        "git_blob": "66895a1bece1b23992899af9967314e8653c2316",
+        "sha256": "a8b375ad7f7bf150d6e08ecef93417fccd15979c04dcccda562a30120af8c672"
+      },
+      {
+        "path": ".github/spikes/146/bounded.py",
+        "role": "pinned CPython line probe patch and bounded trace",
+        "git_blob": "6c21ec00c18629723fefca8345736276945594a0",
+        "sha256": "757ef83d4dc0043380209dee17f21bae18552bce585ee9fb42023375a9604928"
+      },
+      {
+        "path": ".github/spikes/146/full_suite.py",
+        "role": "hosted native and pytest probe program and reconciliation",
+        "git_blob": "a2d9752d6d8f4ee377511a39435829d2574b8fe9",
+        "sha256": "f9d08e02d7a339af9ddedd6650c4cd88c75052e011e1dae75489236b5b20a563"
+      },
+      {
+        "path": ".github/spikes/146/reference.json",
+        "role": "hosted pinned catalog inputs",
+        "git_blob": "89e227ed6336d17ca9efc76d91a7b94655745692",
+        "sha256": "7f68d7969a014db9b775d7a36579e3f4a4f36a8b96538df1bc0fe87ebe6cb24f"
+      }
+    ]
   },
   "static_assignment": {
     "scope": "static source and archived inventory cross-check only; no CLI replay or candidate execution in this check",
@@ -207,7 +240,7 @@
   "first_stop": {
     "gate": "runner",
     "reason": "guest-first-boot-license-confirmation-pending",
-    "expected_next": "Finish fresh guest Setup Assistant with an isolated local controller, then verify the guest from the controller account."
+    "expected_next": "Resolve the license checkpoint and finish setup with a guest-only local administrator for the controller role. Verify the restricted worker as a separate identity."
   },
   "gate_results": {
     "runner": "hold-before-worker-and-tracing-preflight",
@@ -218,5 +251,39 @@
   "dependency_disposition": {
     "355": "blocked",
     "native_open_blocker": 368
+  },
+  "attempt": {
+    "start_utc": "2026-11-17T02:17:16+00:00",
+    "start_evidence": "Creation time of the private attempt directory for Apple restore metadata and admission",
+    "finish_utc": "2026-11-17T02:46:12+00:00",
+    "elapsed_seconds": 1736,
+    "measured_agent_hours": null,
+    "conservative_admission_hours_charged": 0.483,
+    "admission_preflight_budget_hours": 2.5,
+    "remaining_admission_budget_hours": 2.017,
+    "accounting": "Charge the entire elapsed provisioning window to admission. This includes download, installation and owner-wait time within the window. There is no separate engaged-time measure."
+  },
+  "scope_decisions_before_provisioning": {
+    "recorded_utc": "2026-11-17T02:19:31+00:00",
+    "basis": "The owner authorized running the accepted #368 plan. The executor recorded these limits for the new disposable guest before installation.",
+    "selected_guest_build": "25G83",
+    "controller_account": "guest-only local administrator, separate from the restricted worker",
+    "proposed_root_controller": "permitted only in the new guest for local diagnostics, role separation and evidence custody",
+    "guest_sip_and_tracing": "leave guest default intact and read back actual state",
+    "guest_tracing_privilege": "Use stock DTrace under the guest-local controller. Read back capability before building an instrumented runtime.",
+    "additional_guest_entitlements": "none authorized or planned",
+    "host_entitlement": "com.apple.security.virtualization on scratch helpers for restore metadata and the disposable guest only",
+    "decision_record_sha256": "3ef44b0e4c66db869f445ec179837293819a2ac1fd010d9347c66e358460cc7b",
+    "limits": "Guest credentials are pending. No guest protection changes, additional privileges, or host elevation were approved or exercised."
+  },
+  "resume": {
+    "local_scratch": "~/Library/Caches/aitm-368-live.1R0LSSSt",
+    "guest_directory_relative": "native-vm",
+    "machine_identifier_file_sha256": "88e396957c70e76c75b21ecf32faa4894dedeb6ff8511819b4af875337e94fdf",
+    "hardware_model_file_sha256": "976e66740c64041cf9f127588f93eabf7efb9e7d3cbaee9582bcded88ba5e8d3",
+    "installer_log_sha256": "2dd9e4e726e7423edaecef4c4323cc61d0feac6bf9a53f75c5c78b35d06f3a1a",
+    "diagnostic_manifest_sha256": "9e9f84766a23c90568cfbcaadedde5e1cbc06d838a752611c9fd4b922499cd07",
+    "baseline_readiness_receipt_sha256": "1c8d839eaf42c66fd904f5d96e425d2bf8cb5880a2ea4a2e24caaa27c529a1f1",
+    "startup_state_at_checkpoint": "guest console at first-boot license notice"
   }
 }
