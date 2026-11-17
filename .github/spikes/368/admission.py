@@ -90,7 +90,7 @@ def put_root(path, mode, source=None):
         good("/usr/bin/sudo", "-n", "/usr/bin/install", "-o", "root", "-g", "wheel", "-m", mode, str(source), str(path))
 
 
-def verify_job(receipt):
+def verify_job(receipt, allowed=ALLOWED):
     head = good("/usr/bin/git", "rev-parse", "HEAD").decode().strip()
     tree = good("/usr/bin/git", "rev-parse", "HEAD^{tree}").decode().strip()
     require(head == os.environ["GITHUB_SHA"] and os.environ["GITHUB_REF"] == BRANCH
@@ -98,8 +98,8 @@ def verify_job(receipt):
             and os.environ["GITHUB_ACTOR"] == "kburson", "workflow job identity differs")
     require(good("/usr/bin/git", "rev-parse", BASE + "^{tree}").decode().strip() == TREE, "product tree differs")
     additions = good("/usr/bin/git", "diff", "--name-status", BASE, head).decode().splitlines()
-    require(sorted(additions) == sorted(f"A\t{path}" for path in ALLOWED), "unexpected experimental tree changes")
-    identities = {path: digest(Path(path)) for path in ALLOWED}
+    require(sorted(additions) == sorted(f"A\t{path}" for path in allowed), "unexpected experimental tree changes")
+    identities = {path: digest(Path(path)) for path in allowed}
     image = os.environ.get("ImageVersion") or os.environ.get("IMAGE_VERSION")
     require(bool(image), "runner image version unavailable")
     info = {
@@ -128,7 +128,7 @@ def worker_command(profile=None):
     return args
 
 
-def prepare_boundary(private, raw, receipt):
+def prepare_boundary(private, raw, receipt, public_inputs=()):
     require(not ROOT.exists() and WORKER not in {row.pw_name for row in pwd.getpwall()}, "prior worker state present")
     put_root(ROOT, "0755")
     put_root(STAGED, "0755")
@@ -174,7 +174,7 @@ def prepare_boundary(private, raw, receipt):
             path.chmod(int(mode, 8))
 
     profile_src = private / "worker.sb"
-    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH))
+    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH), *public_inputs)
     allowed_reads = "\n".join(f'(allow file-read* (subpath {json.dumps(path)}))' for path in roots)
     profile_src.write_text(
         '(version 1)\n(allow default)\n(deny file-read*)\n'
@@ -411,10 +411,10 @@ def build_runtime(private, raw, receipt):
     )
 
 
-def publish(raw, exported, receipt):
+def publish(raw, exported, receipt, extra=()):
     # Stage only explicit harness evidence. The job environment itself is never exported.
     candidates = {
-        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json",
+        "worker.sb", "early.d", "runtime.tar.gz", "runtime-manifest.json", *extra,
         *(f"{label}.{stream}" for label in (
             "mounts", "probe-build", "worker-boundary", "provider-inventory", "benign-worker", "early-trace",
             "product-archive", "uv-identity", "runtime-lock-sync", "trace-install",
