@@ -12,7 +12,7 @@
     "runtime_archive_sha256": "402dda5423f9a0f97cf3b7c3ca25228503a101d552c4772b68ee5d0bc3d441dd"
   },
   "ancestry_execution": {
-    "deadline_utc": "2026-11-17T12:52:24Z",
+    "deadline_utc": "2026-11-17T14:48:02Z",
     "plan_accepted_utc": "2026-11-17T12:31:32Z",
     "plan_sha256": "361618e5244f2c64aaffb98a31a3ea291ee62797f27c700304f41bc7b225885f"
   },
