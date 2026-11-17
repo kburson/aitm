@@ -1,0 +1,395 @@
+{
+  "artifact_id": 14332020353,
+  "failure_phases": [
+    {
+      "exception": {
+        "line": 3865,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3867,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3822,
+        "text": "test_one_use_receipt_routes_only_the_original_verified_mark"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 3896,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3898,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3868,
+        "text": "test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 3926,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3928,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3899,
+        "text": "test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 3954,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3956,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3929,
+        "text": "test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 3978,
+        "text": "E           assert None is not None"
+      },
+      "frame": {
+        "line": 3980,
+        "text": "packages/aitm-usage/tests/test_grok_scope_receipts.py:466: AssertionError"
+      },
+      "heading": {
+        "line": 3957,
+        "text": "test_platform_native_process_custody_has_no_provider_request"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 4012,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 4014,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3981,
+        "text": "test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 4046,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 4048,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 4015,
+        "text": "test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 4079,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 4081,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 4049,
+        "text": "test_first_application_holds_the_revocation_publication_lock"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 4118,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 4120,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 4082,
+        "text": "test_native_marker_cannot_be_applied_by_a_different_scope_owner"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "phase": "call"
+    },
+    {
+      "exception": {
+        "line": 262,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 264,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 11,
+        "text": "ERROR at teardown of test_one_use_receipt_routes_only_the_original_verified_mark"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 516,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 518,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 265,
+        "text": "ERROR at teardown of test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 770,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 772,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 519,
+        "text": "ERROR at teardown of test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 1024,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 1026,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 773,
+        "text": "ERROR at teardown of test_original_envelope_and_sealed_prompt_record_cannot_be_substituted"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 1278,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 1280,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 1027,
+        "text": "ERROR at teardown of test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 1532,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 1534,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 1281,
+        "text": "ERROR at teardown of test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 1786,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 1788,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 1535,
+        "text": "ERROR at teardown of test_module_accepts_exact_native_input_and_prints_nothing"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 2040,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 2042,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 1789,
+        "text": "ERROR at teardown of test_source_approval_profile_and_command_witness_do_not_transfer"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 2294,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 2296,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 2043,
+        "text": "ERROR at teardown of test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 2548,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 2550,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 2297,
+        "text": "ERROR at teardown of test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 2802,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 2804,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 2551,
+        "text": "ERROR at teardown of test_rotation_between_bind_validation_and_publication_refuses_commit"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 3056,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3058,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 2805,
+        "text": "ERROR at teardown of test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 3310,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3312,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3059,
+        "text": "ERROR at teardown of test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 3564,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3566,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3313,
+        "text": "ERROR at teardown of test_first_application_holds_the_revocation_publication_lock"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "phase": "teardown"
+    },
+    {
+      "exception": {
+        "line": 3818,
+        "text": "E       ValueError: not enough values to unpack (expected 1, got 0)"
+      },
+      "frame": {
+        "line": 3820,
+        "text": "packages/aitm-usage/tests/test_monitor_grok_capture.py:474: ValueError"
+      },
+      "heading": {
+        "line": 3567,
+        "text": "ERROR at teardown of test_native_marker_cannot_be_applied_by_a_different_scope_owner"
+      },
+      "node_id": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "phase": "teardown"
+    }
+  ],
+  "hosted_interpreter": {
+    "line": 2,
+    "text": "platform darwin -- Python 3.13.9, pytest-9.2.0, pluggy-1.7.0"
+  },
+  "member": "scoped-product.stdout.log",
+  "member_sha256": "29bca4d35bc219cf6536811e0804f9c7000ffb44a0fcf647521251875d8d271d"
+}
