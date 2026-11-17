@@ -1,0 +1,320 @@
+{
+  "schema": "aitm.spike-qualification-checkpoint/v1",
+  "story": 368,
+  "accepted_plan_sha256": "f4ed0b50d49da73ed5b4f541a26ee4e2d4b00cb2e01a1d20db2182691c7d346a",
+  "verdict": "hold",
+  "first_stop": {
+    "gate": "runner.prerequisite.stock-dtrace",
+    "exit": 83,
+    "reason": "process-provider-unavailable-in-stock-guest-inventory-and-controller-program-refused"
+  },
+  "owner_authority": {
+    "recorded_utc": "2026-11-17T03:11:39Z",
+    "license": "Owner explicitly accepted Apple’s license for the disposable guest and authorized setup and the live #368 run.",
+    "privilege": "Guest-local controller root and stock diagnostics under the accepted plan. Host protections and guest SIP remained enabled."
+  },
+  "attempt": {
+    "start_utc": "2026-11-17T03:11:39+00:00",
+    "finish_utc": "2026-11-17T03:25:09+00:00",
+    "elapsed_seconds": 810,
+    "admission_preflight_budget_hours": 2.5,
+    "prior_elapsed_charge_hours": 0.483,
+    "resumption_elapsed_charge_hours": 0.225,
+    "combined_elapsed_charge_hours": 0.708,
+    "accounting": "Conservative sum of the prior charged interval and the entire resumed interval through evidence export. Review is accounted separately by the plan."
+  },
+  "runtime": {
+    "guest_identifier_sha256": "88e396957c70e76c75b21ecf32faa4894dedeb6ff8511819b4af875337e94fdf",
+    "hardware_model_sha256": "976e66740c64041cf9f127588f93eabf7efb9e7d3cbaee9582bcded88ba5e8d3",
+    "host": {
+      "architecture": "arm64",
+      "macos_version": "26.6.2",
+      "os_build": "25G83",
+      "filesystem": "APFS",
+      "sip": "enabled"
+    },
+    "guest": {
+      "architecture": "arm64",
+      "macos": "26.6.2",
+      "build": "25G83",
+      "filesystem": "APFS",
+      "sip": "enabled",
+      "network_devices": 0,
+      "shared_directories": 0,
+      "read_only_diagnostic_device": true
+    },
+    "restore_image_sha256": "885503b7f4b06609e9a512f2befd40f59730640a3f1233e3892d60affdd51c95",
+    "launch_log_sha256": "a72fde372e4a454ae33730260828a2c51c75bf7f4939f93f97aca15d75d725be",
+    "inputs": [
+      {
+        "role": "vm-console-source",
+        "file": "provision-resumed.swift",
+        "bytes": 6907,
+        "sha256": "fc3af1207375673a438b4bb81375497a34bee69a547b5c3f823192e4eba650ef"
+      },
+      {
+        "role": "signed-vm-console",
+        "file": "provision",
+        "bytes": 194864,
+        "sha256": "50575c368b5aa236c80ccac141c10cb2147fe240028d929b8757858e95e90a28"
+      },
+      {
+        "role": "read-only-boot-input",
+        "file": "input.img",
+        "bytes": 921600,
+        "sha256": "8aab4308432f07329590b6cd84357ffdeb0fa9883360cc1cdbffc636b9c0942f"
+      },
+      {
+        "role": "guest-isolation-and-tracing-preflight",
+        "file": "guest-preflight.sh",
+        "bytes": 7454,
+        "sha256": "76dc6cdf48b2cf18bdbb6743ae952a19e57079bc3b27679a58058e9ec8c0aac8"
+      },
+      {
+        "role": "guest-controller-export-wrapper",
+        "file": "run-preflight.sh",
+        "bytes": 1252,
+        "sha256": "c000d6fc705b7eadb0fa9b9a519c3f253d82c6a2d40bf7c23a8d919063cee2fb"
+      },
+      {
+        "role": "benign-USDT-emitter",
+        "file": "qualification",
+        "bytes": 33792,
+        "sha256": "461b0245837e51b5835d6fd8260bf9cf961b00e3c362eab1056f0b6aafe52209"
+      },
+      {
+        "role": "diagnostic-input-manifest",
+        "file": "SHA256SUMS",
+        "bytes": 248,
+        "sha256": "e988cef6de9c42330a28e7387d990719ec01c8b4e6498405d290866b127a1bb5"
+      }
+    ]
+  },
+  "preflight": {
+    "controller_uid": 0,
+    "worker_uid": 502,
+    "worker_scratch_write_pass": true,
+    "worker_staged_input_read_pass": true,
+    "denials": [
+      "admitted configuration",
+      "admitted assignment",
+      "admitted runtime-source",
+      "admitted test-source",
+      "controller raw-sentinel",
+      "controller verdict-sentinel",
+      "controller control-sentinel",
+      "outside scratch policy sentinel"
+    ],
+    "unchanged_sentinel_hash_count": 9,
+    "network": {
+      "inactive_hardware_links": [
+        "anpi0",
+        "en0"
+      ],
+      "scoped_link_local_ipv6_defaults": [
+        "fe80::%utun0 UGcIg utun0",
+        "fe80::%utun1 UGcIg utun1",
+        "fe80::%utun2 UGcIg utun2",
+        "fe80::%utun3 UGcIg utun3"
+      ],
+      "route_lookups": [
+        "NO_ROUTE -inet default (exit=0): route: writing to routing socket: not in table",
+        "NO_ROUTE -inet 192.0.2.1 (exit=0): route: writing to routing socket: not in table",
+        "NO_ROUTE -inet6 default (exit=0): route: writing to routing socket: not in table",
+        "NO_ROUTE -inet6 2001:db8::1 (exit=0): route: writing to routing socket: not in table",
+        "NO_ROUTE -inet6 2606:4700:4700::1111 (exit=0): route: writing to routing socket: not in table"
+      ],
+      "host_or_network_mounts_detected": false,
+      "diagnostic_input_verified_read_only": true
+    }
+  },
+  "trace": {
+    "readiness": false,
+    "stock_probe_inventory_command": "dtrace -l",
+    "provider_counts": {
+      "dtrace": 3,
+      "profile": 13
+    },
+    "probe_entries": [
+      {
+        "id": 1,
+        "provider": "dtrace",
+        "name": "BEGIN"
+      },
+      {
+        "id": 2,
+        "provider": "dtrace",
+        "name": "END"
+      },
+      {
+        "id": 3,
+        "provider": "dtrace",
+        "name": "ERROR"
+      },
+      {
+        "id": 31,
+        "provider": "profile",
+        "name": "profile-97"
+      },
+      {
+        "id": 32,
+        "provider": "profile",
+        "name": "profile-199"
+      },
+      {
+        "id": 33,
+        "provider": "profile",
+        "name": "profile-499"
+      },
+      {
+        "id": 34,
+        "provider": "profile",
+        "name": "profile-997"
+      },
+      {
+        "id": 35,
+        "provider": "profile",
+        "name": "profile-1999"
+      },
+      {
+        "id": 36,
+        "provider": "profile",
+        "name": "profile-4001"
+      },
+      {
+        "id": 37,
+        "provider": "profile",
+        "name": "profile-4999"
+      },
+      {
+        "id": 38,
+        "provider": "profile",
+        "name": "tick-1"
+      },
+      {
+        "id": 39,
+        "provider": "profile",
+        "name": "tick-10"
+      },
+      {
+        "id": 40,
+        "provider": "profile",
+        "name": "tick-100"
+      },
+      {
+        "id": 41,
+        "provider": "profile",
+        "name": "tick-500"
+      },
+      {
+        "id": 42,
+        "provider": "profile",
+        "name": "tick-1000"
+      },
+      {
+        "id": 43,
+        "provider": "profile",
+        "name": "tick-5000"
+      }
+    ],
+    "required_provider_proc_present": false,
+    "static_syscall_provider_present": false,
+    "inventory_sha256": "8aeddcc5de5b9048a8c6fbe0bb4ea0ee6c9731bb383dfb3d8f03e160a60ca686",
+    "stderr": [
+      "dtrace: system integrity protection is on, some features will not be available",
+      "dtrace: failed to compile script <controller-evidence>/probe.d: line 5: args[ ] may not be referenced because probe description proc:::create matches an unstable set of probes"
+    ],
+    "trace_rows": 0,
+    "trace_benign_worker_launched": false,
+    "worker_wait_observed": false,
+    "usdt_seen": false
+  },
+  "scoped_assignment": {
+    "current_state": "prior static 30-node inventory only; live selection replay and assignment admission were held before this gate",
+    "archived_unique_ids": 30,
+    "executed": 0,
+    "candidate_inventory": "unqualified",
+    "impact_completeness": "unqualified",
+    "candidate_code_resistance": "unqualified",
+    "base_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "base_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+    "inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6"
+  },
+  "diagnostic_history": [
+    {
+      "prior_attempt": "initial IPv6 condition",
+      "finding": "Guest exposed only scoped link-local tunnel defaults. Initial helper rejected all default rows.",
+      "log_sha256": "ecd4518535b56adb14422a03cc4bb467b5f7e346fdcf169677f910e398ec5208"
+    },
+    {
+      "prior_attempt": "first routing parser revision",
+      "finding": "Darwin route lookup returned status zero with a negative routing socket diagnostic. This was classified as a positive route by the helper.",
+      "log_sha256": "b5c0f6dcbc47ee6e86066f9e2e3ec5ebf447909bd43163519389fd61f3ac070c"
+    },
+    {
+      "prior_attempt": "shutdown and app-launch reports",
+      "finding": "VM process returned zero. Subsequent console queries relaunching the app without its arguments produced three uncaught Swift main errors. Fixed the app to return usage status 64 without trapping and rebooted the same guest."
+    }
+  ],
+  "evidence": {
+    "private_root": "~/Library/Caches/aitm-368-live.1R0LSSSt",
+    "export_relative": "resumed-export/diagnostic-v3/aitm368-export.hrfXWUfm",
+    "manifest_sha256": "f863f970f3208465b1c3d19d8f0c178ad2b08a85d69bccf4afe9146da1ddcdbe",
+    "preflight_log_sha256": "df6f7180bc0980c3b2d4488bd9613bf9269bfbd441062024a0516383a78453b5",
+    "trace_program_sha256": "4b393cd280daf2d455d3fec0ab20155320e542ba21fe4c067171abab500d6f97",
+    "protected_export_verified_via_read_only_APFS_mount": true,
+    "fail_closed_records_verified": [
+      {
+        "role": "guest-controller-export",
+        "file": "preflight.log",
+        "bytes": 2079,
+        "sha256": "df6f7180bc0980c3b2d4488bd9613bf9269bfbd441062024a0516383a78453b5"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "trace.stderr",
+        "bytes": 280,
+        "sha256": "d716bbc2c1a267249ee4696c3b1a9a33bbb4b379f15d014443aea3b90f59ab03"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "trace.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "probe.d",
+        "bytes": 332,
+        "sha256": "4b393cd280daf2d455d3fec0ab20155320e542ba21fe4c067171abab500d6f97"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "route-v4.log",
+        "bytes": 381,
+        "sha256": "2eecd386e3426fc7dccb201a3615c452c0ffa7b2211f61049b4374d75b28c95d"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "route-v6.log",
+        "bytes": 3530,
+        "sha256": "29a8f2358cd1228b25954029b9029661d54761b6cec1739c5b09d1533adf45cf"
+      },
+      {
+        "role": "guest-controller-export",
+        "file": "status.txt",
+        "bytes": 3,
+        "sha256": "f1769867b0abc7068f5cb7dd41574a420b3cfa4553856f459857ff8e5a525b13"
+      }
+    ]
+  },
+  "cleanup": {
+    "guest": "cleanly shut down after the stock inventory. VM and controller evidence retained. Disk detached after read-only export.",
+    "product_source_changed": false,
+    "host_security_settings_changed": false
+  },
+  "dependency": {
+    "355_state": "blocked",
+    "355_native_open_blocker": 368
+  }
+}
