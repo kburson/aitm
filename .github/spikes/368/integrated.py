@@ -24,7 +24,7 @@ PRODUCT = ROOT / "source"
 PREFIX = ROOT / "trace-build"
 INSTALL = PREFIX / "installed"
 VENV = PREFIX / "observed-venv"
-EXTRAS = ("calibration.py", "integrated.py", "observed.py", "stage-b-inputs.json")
+EXTRAS = ("calibration.py", "integrated.py", "observed.py", "stage-b-inputs.json", "test_integrated.py")
 FILES = ALLOWED + tuple(f".github/spikes/368/{name}" for name in EXTRAS)
 BUNDLE = ("runtime.tar.gz", "runtime-manifest.json", "receipt.json")
 COMMENT = b"\n# Scratch-only local selection probe for #352.\n"
@@ -33,6 +33,9 @@ NAMESPACE = "aitm-isolated-owner-proposal-v1"
 PRINCIPAL = "aitm-qualification-owner"
 LABELS = ("calibrate-positive", "calibrate-failure", "calibrate-missing", "scoped-product")
 INPUTS = (str(PRODUCT), str(INSTALL), str(VENV))
+EXECUTABLES = (KEYGEN, str(INSTALL / "bin/python3.13"), str(VENV / "bin/python"))
+
+
 def arguments():
     return json.loads((HERE / "stage-b-inputs.json").read_bytes())
 
@@ -134,6 +137,14 @@ def install_bundle(path, private, raw, admission):
     return manifest
 
 
+def replay_report(private, tooling, target, expected):
+    environment = {"PATH": "/usr/bin:/bin", "HOME": str(private), "LC_ALL": "C"}
+    result = run(sys.executable, "-B", "-E", "-s", "-m", "tools.ci.tia.working_tree_report",
+                 "--repo", str(target), "--base", BASE, cwd=tooling, env=environment, timeout=45)
+    require(result.returncode == expected and result.stderr == b"", "trusted report replay refused")
+    return result.stdout
+
+
 def archive_products(private, raw, packet):
     info = packet["scope"]
     checkouts = {}
@@ -150,13 +161,9 @@ def archive_products(private, raw, packet):
             stream.write(COMMENT)
         require(digest(path / info["path"]) == info["content_sha256"], "scratch bytes differ")
     (extra / "aitm-368-extra.txt").write_text("synthetic extra path\n")
-    environment = {"PATH": "/usr/bin:/bin", "HOME": str(private), "LC_ALL": "C"}
-    invocation = (sys.executable, "-B", "-E", "-s", "-m", "tools.ci.tia.working_tree_report")
     for number, target in enumerate((candidate, candidate, extra), 1):
-        result = run(*invocation, "--repo", str(target), "--base", BASE, cwd=tooling, env=environment, timeout=45)
-        (raw / f"hosted-report-{number}.json").write_bytes(result.stdout)
-        expected = 2 if target == extra else 0
-        require(result.returncode == expected and result.stderr == b"", f"report replay {number} refused")
+        data = replay_report(private, tooling, target, 2 if target == extra else 0)
+        (raw / f"hosted-report-{number}.json").write_bytes(data)
     first, second, negative = ((raw / f"hosted-report-{num}.json").read_bytes() for num in (1, 2, 3))
     report = json.loads(first)
     identity = {key: value for key, value in report.items() if key != "snapshot_sha256"}
@@ -196,7 +203,8 @@ def read_native(full, original):
     def parse(data, pid, product):
         events, children = original(data, pid, product)
         phase = None
-        markers = {"start": "setup", "setup-ok": "call", "call-ok": "teardown", "end": None}
+        markers = {"start": "setup", "setup-ok": "call", "call-ok": "teardown",
+                   "setup-failed": "teardown", "call-failed": "teardown", "end": None}
         rows = [line.split(" ", 3) for line in data.decode().splitlines() if line.strip()]
         for _, kind, _, value in sorted(rows, key=lambda row: int(row[0])):
             if kind == "E":
@@ -400,7 +408,7 @@ def main(private, bundle):
                 "authenticated runner image or toolchain drifted")
         receipt["admission"] = packet["admission"]
         receipt["gate"] = "worker-boundary"
-        uid, command, binary = prepare_boundary(private, raw, receipt, INPUTS)
+        uid, command, binary = prepare_boundary(private, raw, receipt, INPUTS, EXECUTABLES)
         receipt["gate"] = "trace-capability"
         trace_attempt(private, raw, receipt, uid, command, binary)
         receipt["gate"] = "runtime-install"
@@ -417,12 +425,12 @@ def main(private, bundle):
         require(product_manifest(PRODUCT) == packet["product_manifest"] and runtime_manifest(INSTALL, VENV) == runtime,
                 "executed source or runtime drifted")
         require(digest(checkouts["candidate"] / scope["path"]) == scope["content_sha256"], "candidate bytes drifted")
-        replay = good(sys.executable, "-B", "-E", "-s", "-m", "tools.ci.tia.working_tree_report",
-                      "--repo", str(checkouts["candidate"]), "--base", BASE, cwd=checkouts["tooling"], timeout=45)
+        replay = replay_report(private, checkouts["tooling"], checkouts["candidate"], 0)
         (raw / "hosted-report-after.json").write_bytes(replay)
         require(replay == (raw / "hosted-report-1.json").read_bytes(), "candidate snapshot changed")
         receipt.update(verdict="PASS", gate="complete")
-    except (ValueError, OSError, subprocess.SubprocessError, KeyError, IndexError) as error:
+    except Exception as error:
+        receipt["failure_type"] = type(error).__name__
         receipt["failure"] = str(error) if isinstance(error, ValueError) else type(error).__name__
     for name in LABELS:
         program = private / f"{name}.d"

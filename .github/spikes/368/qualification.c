@@ -116,6 +116,14 @@ static int trace(const char *program)
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "refuse-exec") == 0) {
+        execl(argv[2], argv[2], "child", (char *)NULL);
+        if (errno != EACCES && errno != EPERM) {
+            return 77;
+        }
+        puts("DENY unadmitted executable");
+        return 0;
+    }
     if (argc == 2 && strcmp(argv[1], "trace") == 0) {
         return trace(argv[0]);
     }
