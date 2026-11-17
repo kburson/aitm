@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 351
 title: "Select the tests affected by uncommitted work"
 kind: "epic"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/351"
 parent: null
 children: [352, 353, 354, 355, 368]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T00:53:39Z"
+updated: "2026-11-17T12:19:46Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -57,3 +57,7 @@ Development does not start from this epic. Codex picks up the child stories afte
 - #353 passed independent review on the first round. Cooperative local results can use direct process exit plus a matching worker receipt. Trusted results require qualified outcome observation and custody outside candidate authority. [Finding](../353/plan/2026-11-16-353-findings.md) · [Review verdict](../353/plan/reviews/2026-11-16-353-independent-findings-review.md).
 
 #354 may proceed to feature planning. Run SAR on its implementation plan before Develop. #355 needs #354's delivered interface and its own reviewed qualification plan for the process boundary.
+
+## Develop
+
+Epic planning and deep-dive assessment are complete. Project 24 records Rank 430, Priority P2, Size Feature, and all five children. #354 is delivered; #355 and #368 remain open and blocked at the accepted qualification boundary. GitHub Project status advanced from Planning to Dev after the issue-planning and metadata preflight.
