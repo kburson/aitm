@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 355
 title: "Run the affected tests before commit"
 kind: "story"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/355"
 parent: 351
 children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T00:21:47Z"
-last-branch: "planning"
+updated: "2026-11-17T00:29:08Z"
+last-branch: "codex/355-precommit-execution"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-355-pre-commit-execution-plan.md", "plan/reviews/2026-11-16-355-plan-sar.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-16-355-pre-commit-execution-plan.md", "plan/reviews/2026-11-16-355-plan-sar.md", "plan/reviews/plan/2026-11-17-2026-11-16-355-pre-commit-execution-plan-review-c67668584e194f580a3052e8f2cef4de/review-c67668584e194f580a3052e8f2cef4de-review-manifest.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,7 @@ Stay blocked until #354 and #353 are accepted. When the process boundary cannot 
 ## Implementation planning
 
 #353 is accepted and #354 is delivered. [Qualification-first plan](plan/2026-11-16-355-pre-commit-execution-plan.md) · [Plan SAR](plan/reviews/2026-11-16-355-plan-sar.md).
+
+## Develop
+
+Opus 5.5 at high effort accepted the exact plan in round two after both findings were resolved. Develop starts at the execution qualification checkpoint. [XPR manifest](plan/reviews/plan/2026-11-17-2026-11-16-355-pre-commit-execution-plan-review-c67668584e194f580a3052e8f2cef4de/review-c67668584e194f580a3052e8f2cef4de-review-manifest.md) · [Final reviewer verdict](plan/reviews/plan/2026-11-17-2026-11-16-355-pre-commit-execution-plan-review-c67668584e194f580a3052e8f2cef4de/review-c67668584e194f580a3052e8f2cef4de-reviewer-response-2.md).
