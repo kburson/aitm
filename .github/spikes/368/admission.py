@@ -176,7 +176,8 @@ def prepare_boundary(private, raw, receipt):
     roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH))
     allowed_reads = "\n".join(f'(allow file-read* (subpath {json.dumps(path)}))' for path in roots)
     profile_src.write_text(
-        '(version 1)\n(allow default)\n(deny file-read*)\n' + allowed_reads +
+        '(version 1)\n(allow default)\n(deny file-read*)\n'
+        '(allow file-read-data (literal "/"))\n' + allowed_reads +
         '\n(deny network*)\n(deny file-write*)\n' +
         f'(allow file-write* (subpath {json.dumps(str(SCRATCH))}) (literal "/dev/null"))\n'
     )
