@@ -1,0 +1,19 @@
+{
+  "directories": 393,
+  "directories_missing_other_read_and_traverse": 0,
+  "driver_sha256": "3a0d4f02b74d7e3d88ae705fd472cf5771f077daee52e50324856a0cf14c9f44",
+  "entries": 8973,
+  "files_missing_other_read": 0,
+  "focused_offline_tests_passed": 11,
+  "implementation_head": "3a0859d163681562b0aeb96c3330846224bb8cc6",
+  "instrumented_interpreter_executed": false,
+  "mach_o_probe_table_sha256": "6f92128660113f8fc0396fc0e02abb0a2ba9e26598f3aef28f063f2b11707b06",
+  "manifest_sha256": "5cf88db0d4a3e6c0137c97e2b31f65ae95b7177ccbe8cf11a2200cff9d86c3b4",
+  "regular_files": 8570,
+  "schema": "aitm.stage-b-dry-restore/v1",
+  "scope": "Unprivileged extraction, exact modes and real ditto copy, manifest and otool readbacks. The hosted root ownership transfer and runtime execution remained outside this local check.",
+  "stdout": "Exact staged and copied runtime modes and manifest match. Mach-O probe table digest matches.\n",
+  "stdout_sha256": "df2b078fa646edf9b8fb465596d22657dd6d2e8fa7832744f2d474fa3e804fe4",
+  "story": 368,
+  "symlinks": 10
+}
