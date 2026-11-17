@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 368
 title: "Qualify protected local pre-commit test observation"
 kind: "spike"
-state: "blocked"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/368"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-17T00:52:11Z"
-updated: "2026-11-17T02:54:05Z"
+updated: "2026-11-17T03:11:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": 6, "size": "M"}
 priority: "P2"
@@ -43,3 +43,7 @@ The owner authorized the live qualification. Started the runner admission gate u
 The offline guest installed and booted to Apple’s license notice. Guest setup awaits the owner’s confirmation. The protected worker, local independent observer and live assignment remain unqualified. The archived 30 IDs were checked statically. Zero product tests ran. Opus 5.5 at high effort independently accepted the HOLD findings in round two.
 
 #368 stays open and #355 remains blocked. [Findings](plan/2026-11-16-368-qualification-results.md) · [Machine receipt](attachments/2026-11-16-368-qualification.json) · [XPR manifest](plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-review-manifest.md) · [Final reviewer response](plan/reviews/qualification/plan/2026-11-17-2026-11-16-368-qualification-results-review-c8e605ff766427ca85555b716fd164d2/review-c8e605ff766427ca85555b716fd164d2-reviewer-response-2.md).
+
+## Live execution resumed
+
+The owner reviewed and accepted Apple’s license for the disposable guest and authorized the live run. The retained guest identity matched the prior receipt. #355 remains blocked.
