@@ -114,6 +114,7 @@ def verify_job(receipt):
         "compiler": good("/usr/bin/xcrun", "clang", "--version").decode().splitlines(),
         "xcode": good("/usr/bin/xcodebuild", "-version").decode().splitlines(),
         "sdk": good("/usr/bin/xcrun", "--sdk", "macosx", "--show-sdk-version").decode().strip(),
+        "native_input_sha256": {"/usr/bin/ssh-keygen": digest(Path("/usr/bin/ssh-keygen"))},
     }
     require(info["architecture"] == "arm64" and "ProductName:" in info["os"][0], "wrong hosted platform")
     receipt["identity"] = info
@@ -374,7 +375,7 @@ def build_runtime(private, raw, receipt):
     require(output(raw, "runtime-lock-sync", sync) == 0, "pinned product lock could not be staged")
     receipt["build"]["lock_sha256"] = digest(project / "uv.lock")
     backend = old.build_trace_python(ROOT, logs, receipt, full=True)
-    install = ROOT / "observed-venv"
+    install = backend.parent / "observed-venv"
     locked_site = locked / "venv/lib/python3.13/site-packages"
 
     def logged(*args, **kwargs):
