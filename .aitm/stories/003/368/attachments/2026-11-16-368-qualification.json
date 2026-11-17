@@ -1,0 +1,222 @@
+{
+  "story": 368,
+  "recorded_at_utc": "2026-11-17T02:46:12+00:00",
+  "accepted_plan_sha256": "f4ed0b50d49da73ed5b4f541a26ee4e2d4b00cb2e01a1d20db2182691c7d346a",
+  "product": {
+    "commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+    "test_inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+    "candidate_inventory": "unqualified",
+    "impact_completeness": "unqualified",
+    "candidate_code_resistance": "unqualified",
+    "delivered_report_replayed_this_attempt": false,
+    "executed_pinned_node_count": 0,
+    "approved_assignment_complete": false,
+    "scope": "Proposed exact reviewed comment-only closure. Local observation and authority remain unqualified."
+  },
+  "host": {
+    "architecture": "arm64",
+    "macos_version": "26.6.2",
+    "os_build": "25G83",
+    "filesystem": "APFS",
+    "sip": "enabled"
+  },
+  "controller_selection": {
+    "name": "Apple Virtualization.framework",
+    "host_os_build": "25G83",
+    "runner": "scratch-built virtual machine controller using Apple SDK",
+    "approval_basis": "Owner-authorized disposable local Apple Silicon macOS/APFS guest under the accepted plan",
+    "reason": "The native configuration can specify zero network and directory-sharing devices before install or first boot."
+  },
+  "setup": {
+    "installer_sealed": {
+      "bytes": 19772231540,
+      "sha256": "885503b7f4b06609e9a512f2befd40f59730640a3f1233e3892d60affdd51c95",
+      "macos_version": "26.6.2",
+      "os_build": "25G83"
+    },
+    "installer_log": [
+      "Install started 2026-11-17T02:36:43Z",
+      "VZ configuration validated, networkDevices=0 directorySharingDevices=0",
+      "Install progress 20%",
+      "Install progress 30%",
+      "Install progress 40%",
+      "Install progress 50%",
+      "Install progress 60%",
+      "Install progress 70%",
+      "Install progress 80%",
+      "Install progress 90%",
+      "Install progress 100%",
+      "Installation complete",
+      "Install completed 2026-11-17T02:40:33Z"
+    ],
+    "configured": {
+      "network_devices": 0,
+      "directory_sharing_devices": 0,
+      "additional_input_disk_read_only": true
+    },
+    "prepared_input_artifacts": [
+      {
+        "role": "provision.swift",
+        "sha256": "7dc5aa6c8e0ff4961cc9d9d17f64228604bd98b50911e4699caecf6b2d0374de",
+        "bytes": 6776
+      },
+      {
+        "role": "provision",
+        "sha256": "dd5fdc5ce0058494f299e019ee9a33f49f99b405e1e2f0d0aab062e9c60f4c2d",
+        "bytes": 194880
+      },
+      {
+        "role": "provision",
+        "sha256": "8a7cba5003fb6b10feeac0e0c971161c718abff95c1385f5eaa284a525ba9eef",
+        "bytes": 194864
+      },
+      {
+        "role": "input.img",
+        "sha256": "2ad80477bd64b4c0868fca40c281e5b7afbeedd7a7402d689d26fcf368aba9fb",
+        "bytes": 921600
+      },
+      {
+        "role": "qualification",
+        "sha256": "461b0245837e51b5835d6fd8260bf9cf961b00e3c362eab1056f0b6aafe52209",
+        "bytes": 33792
+      },
+      {
+        "role": "guest-preflight.sh",
+        "sha256": "609b2895e419e2700f38d97bb2157ffe923ec842459063fbc20414f4983dc472",
+        "bytes": 5715
+      }
+    ],
+    "guest_boot_observation": "macOS Setup Assistant reached the first-boot language screen with the software license notice",
+    "guest_preflight_launched": false,
+    "owner_confirmation_received_by_checkpoint": false,
+    "guest_filesystem_readback": null,
+    "guest_sip_readback": null,
+    "guest_worker_identity_readback": null,
+    "root_guest_probe_launched": false,
+    "root_host_probe_launched": false
+  },
+  "precedent": {
+    "run": 43366344563,
+    "artifact": 14010642704,
+    "artifact_sha256": "cc28de0c3ba2d969a5a1eec6ae5317e6a001d1f1ffc5915180804de26ae4dba0",
+    "receipt_sha256": "3993095705929e2ca5793c156aca0b425f4e5cca97608247c5b9529f46dc8dde",
+    "source_commit": "1419e3592d36cf90853664c2f22eb41bb26c1cef",
+    "local_execution_evidence": false
+  },
+  "static_assignment": {
+    "scope": "static source and archived inventory cross-check only; no CLI replay or candidate execution in this check",
+    "base_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+    "module": "packages/aitm-usage/tests/test_grok_scope_receipts.py",
+    "module_sha256": "24bf90ea7b3e55764f2a50174d764f9cd1ed1f35ff92c86103c4e40730a68382",
+    "fixture": "packages/aitm-usage/tests/test_monitor_grok_capture.py",
+    "fixture_sha256": "545224edfd171671931ae1c1b92c6e0ede8a63aa2f6d7e041ca0c0405d84c6dc",
+    "selected_module_node_ids": [
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[foreign_pid]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[init]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[no_start]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[size]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[uid]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[usec]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[zombie]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+    ],
+    "direct_or_staged_fixture_arguments": [
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+    ],
+    "hosted_required_tests": [
+      "packages/aitm-usage/tests/test_install.py::test_backup_and_restore_reject_inherited_acl",
+      "packages/aitm-usage/tests/test_install.py::test_restore_fences_publication_until_atomic_swap",
+      "packages/aitm-usage/tests/test_ledger.py::test_atomic_cursor_and_revisions",
+      "packages/aitm-usage/tests/test_ledger.py::test_writer_refusal_read_snapshot_and_release_on_process_exit",
+      "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+      "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
+    ],
+    "hosted_required_children": {
+      "cli-help": "tools/ci/tests/test_cli_evidence.py",
+      "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+    },
+    "local_overrides_with_mandatory_or_children": [
+      {
+        "selector": "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
+        "suite": "system",
+        "isolation_group": "system-process",
+        "required_children": [
+          "service-one-shot"
+        ]
+      },
+      {
+        "selector": "tools/ci/tests/test_cli_evidence.py::test_usage_console_help",
+        "mandatory": true,
+        "required_children": [
+          "cli-help"
+        ]
+      }
+    ],
+    "local_module_classification": null
+  },
+  "cleanup": {
+    "parallels_scratch_vm": "Parallels treated a create help probe as a scratch VM name. The introduced stopped VM was removed by exact UUID. The preexisting suspended Windows guest remained registered and suspended.",
+    "guest_for_spike": "Guest retained at first boot for the pending owner setup. No product inputs or raw test evidence were written to it."
+  },
+  "verdict": "hold",
+  "first_stop": {
+    "gate": "runner",
+    "reason": "guest-first-boot-license-confirmation-pending",
+    "expected_next": "Finish fresh guest Setup Assistant with an isolated local controller, then verify the guest from the controller account."
+  },
+  "gate_results": {
+    "runner": "hold-before-worker-and-tracing-preflight",
+    "observer": "not-run",
+    "scoped_assignment": "static-readback-only",
+    "integrated_live_run": "not-run"
+  },
+  "dependency_disposition": {
+    "355": "blocked",
+    "native_open_blocker": 368
+  }
+}
