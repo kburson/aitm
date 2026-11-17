@@ -1,0 +1,16 @@
+{
+  "boundary_stdout": "ALLOW admitted input read\nALLOW scratch write\nDENY admitted and out-of-scratch writes\nDENY controller evidence and credential marker read and write\nDENY checkout and controller home markers read and write\nDENY controller trace device\nALLOW admission root metadata\nDENY admission root listing\nDENY loopback connect\n",
+  "boundary_stdout_sha256": "c0c214d0e7214fe72bf999862bc188d1da64f3aaeaa606d2d505a3ddf2ba10b1",
+  "collection_driver_sha256": "2470a35c00b378a2834822aff9b283c06bbd264a4d99970659a3f2628f01a8cd",
+  "collection_stdout": "Original discovery refused the ancestor. A literal metadata rule and explicit discovery scope collected both IDs. Directory listing stayed denied.\n",
+  "collection_stdout_sha256": "347bcee247000bc6d69b41cf71e39fc129ca97ba18dc9d8a37eb8d2c41a84432",
+  "harness_unit_tests_passed": 11,
+  "implementation_head": "3b603c6aa1c60b3dec895237beb2d3120a6914cf",
+  "local_product_tests": 0,
+  "pytest_version": "9.2.0",
+  "schema": "aitm.368.pytest-discovery-check/v1",
+  "scope": "Synthetic collection and path controls under the ordinary Mac account",
+  "source_attempt": 2,
+  "source_run": 44026166553,
+  "source_runtime": "402dda5423f9a0f97cf3b7c3ca25228503a101d552c4772b68ee5d0bc3d441dd"
+}
