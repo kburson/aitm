@@ -57,6 +57,11 @@ static int check(int argc, char **argv)
     }
     puts("DENY checkout and controller home markers read and write");
 
+    if (!access_denied("/dev/dtrace", O_RDONLY) || !access_denied("/dev/dtrace", O_RDWR)) {
+        return 76;
+    }
+    puts("DENY controller trace device");
+
     struct sockaddr_in listener = {0};
     listener.sin_family = AF_INET;
     listener.sin_port = htons((unsigned short)strtoul(argv[7], NULL, 10));

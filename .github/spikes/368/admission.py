@@ -180,6 +180,9 @@ def prepare_boundary(private, raw, receipt):
         '(allow file-read-data (literal "/"))\n' + allowed_reads +
         '\n(deny network*)\n(deny file-write*)\n' +
         f'(allow file-write* (subpath {json.dumps(str(SCRATCH))}) (literal "/dev/null"))\n'
+        '(deny file-read* file-ioctl (literal "/dev/dtrace"))\n'
+        '(allow file-write-data file-ioctl (require-all (literal "/dev/dtracehelper")'
+        ' (vnode-type CHARACTER-DEVICE)))\n'
     )
     profile = STAGED / "worker.sb"
     put_root(profile, "0444", profile_src)
@@ -252,7 +255,11 @@ def trace_attempt(private, raw, receipt, uid, command, binary):
     require(output(raw, "provider-inventory", stat_result) == 0, "stock DTrace inventory unavailable")
     probes = [row.split() for row in stat_result.stdout.decode().splitlines()]
     providers = dict(sorted(Counter(row[1] for row in probes if len(row) > 1 and row[0].isdigit()).items()))
-    receipt["trace"] = {"static_providers": providers, "passed": False}
+    receipt["trace"] = {
+        "static_provider_count": len(providers),
+        "static_providers": {name: providers[name] for name in ("proc", "syscall") if name in providers},
+        "passed": False,
+    }
     require("proc" in providers and "syscall" in providers, "required stock process or syscall provider unavailable")
 
     program = private / "early.d"
