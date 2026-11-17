@@ -1,28 +1,48 @@
 # #368 queue-inclusive hosted qualification packet
 
-The owner authorized a new admission window after the preceding attempt stayed queued for 11 minutes and 41 seconds through its
-deadline. The prior HOLD recorded zero allocated runners, job steps and product tests. This packet grants two hours from
-`2026-11-17T13:03:02Z` to `2026-11-17T15:03:02Z`. Review and GitHub queue time count toward the window.
-The allowance covers the existing 22-minute job timeout after allocation and leaves time for allocation, preflight and
-normal recovery. [Prior HOLD](2026-11-17-368-hosted-ancestry-run-findings.md) ·
+The prior attempt stayed queued through its deadline after 11 minutes and 41 seconds. The HOLD recorded
+zero allocated runners, job steps and product tests. The owner authorized a new admission window in the #368
+Codex conversation before this packet's opening at `2026-11-17T13:03:02Z`:
+
+> Go ahead and authorize a new admission window for #368 that allows for macOS runner queue time. Get the fresh packet reviewed by Opus 5.5/high, then rerun the full qualification. Keep #355 blocked until its trust requirements are met.
+
+This packet gives review, GitHub queue time and preflight 105 minutes from opening through
+`2026-11-17T14:48:02Z`. [Prior HOLD](2026-11-17-368-hosted-ancestry-run-findings.md) ·
 [Accepted ancestry plan](2026-11-17-368-hosted-ancestry-implementation-plan.md) ·
 [Previously reviewed execution packet](2026-11-17-368-hosted-ancestry-execution-packet.md).
 
 ## Exact time and authority
 
-The owner’s fresh authorization supersedes the expired `2026-11-17T12:52:24Z` admission deadline for this attempt.
-The clock is absolute UTC, including an exact-head retry. The dispatch guard runs after the boundary and trace checks, runtime
-import, report replays and calibration. It reads the runner’s UTC decision and refuses product dispatch after the bound instant
-or on missing or malformed input. If the run is still queued at expiry, cancel it and retain the authenticated run and job
-observations. If a job has started, collect its protected decision and terminal evidence. The two-hour allowance conservatively brings
-cumulative work from 3.301 hours at opening to 5.301 hours at expiry against the six-hour overall cap.
-The new allowance replaces the exhausted admission sub-budget for this attempt. Require Opus 5.5/high acceptance before push.
+The owner's new admission authorization and Opus 5.5/high acceptance of this revised packet together replace the
+exhausted 2.5-hour admission/preflight stop and the 3.75-hour exact-packet ceiling from the previous attempt for
+this run. The fresh absolute dispatch deadline, including an exact-head retry, replaces the expired
+`2026-11-17T12:52:24Z` cutoff. The unchanged overall limit is six cumulative hours.
 
-Workflow head `a3249493cb4216c184a1384112ef316011f060d1`, tree `8dfc90adec7672b4ce3acdf305e8c1b520402b24` and product base `8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7`. The only change from reviewed head
-`f5f1cf8f48804c364375042ba32426a3125b9749` is the deadline string in `.github/spikes/368/stage-b-inputs.json`, blob `3c0e8d65896b09e093b43e1f2313c118fd1cfdf9` and SHA-256
-`8cbbd48d51511ebf73540f4ccc262eab81798800fddd096bec9771000a0cdb2e`. Both packets compared equal after replacing that one string. The other ancestry keys keep the prior
-plan identity and acceptance for provenance. The ten-path dedicated branch scope still applies.
-Verify with `git -C /Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk diff f5f1cf8f48804c364375042ba32426a3125b9749 a3249493cb4216c184a1384112ef316011f060d1 -- .github/spikes/368/stage-b-inputs.json`. All 13 harness unit tests passed.
+| Limit effective for this attempt | Headroom at opening | Headroom at dispatch expiry |
+| --- | ---: | ---: |
+| New admission, review and preflight window (105 minutes) | 105 min | 0 min |
+| New exact-packet ceiling (5.960 cumulative h) | 2.659 h | 0.909 h |
+| Overall ceiling (6.000 cumulative h) | 2.699 h | 0.949 h |
+
+Charge the conservative 3.301 cumulative hours at opening and all elapsed time thereafter, including queue, evidence
+work and review. The charge at dispatch expiry is 5.051 h. Reserve a full 22 minutes for the hosted job, 12 minutes
+for authenticated download and reparse, and 20 minutes for findings review and publication. The 54-minute tail
+brings the worst planned charge to 5.951 h and gives absolute stops at `15:42:34Z` for this packet and
+`15:44:58Z` overall. At the first applicable stop, cease active qualification or unfinished closeout, retain
+authenticated evidence, and record a bounded HOLD. If review still runs at that stop, preserve its receipt and
+report the pending review with the HOLD. No new execution or review starts after the stop.
+
+Require Opus 5.5/high acceptance before push. The dispatch guard runs after the boundary and trace checks, runtime
+import, report replays and calibration. It reads the runner's UTC decision and refuses product dispatch after the
+bound instant or on missing or malformed input. At `14:48:02Z`, if the run is still queued without a runner,
+request cancellation and retain the authenticated run and job observations with the cancellation time. If a job
+has started, collect its protected decision and terminal evidence within the closeout reserve.
+
+Workflow head `56428a6ccc7c525b374f087dc2aa0c06e4cc7eac`, tree `6f61e6d1a8a103d894c3607751cde3f42ca9abcd` and product base `8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7`. The only change from reviewed head
+`f5f1cf8f48804c364375042ba32426a3125b9749` is the deadline string in `.github/spikes/368/stage-b-inputs.json`, blob `4e86f65edb976fc1179dcd9b511bd7a7f65d1b71` and SHA-256
+`2741a763afe3434d232a05aab5f606242a1cacd02550539c7510a2264072bca0`. Both packets compared equal after replacing that one string. The other ancestry keys keep the prior
+plan identity and acceptance for provenance. The dispatch guard in `integrated.py:327-336` reads only the deadline. The ten-path dedicated branch scope still applies.
+Verify with `git -C /Users/kpburson/.codex/worktrees/aitm-344-functional-tia/trunk diff f5f1cf8f48804c364375042ba32426a3125b9749 56428a6ccc7c525b374f087dc2aa0c06e4cc7eac -- .github/spikes/368/stage-b-inputs.json`. All 13 harness unit tests passed.
 
 ## Runtime and required result
 
