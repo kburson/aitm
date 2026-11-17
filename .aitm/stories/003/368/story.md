@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 368
 title: "Qualify protected local pre-commit test observation"
 kind: "spike"
-state: "plan"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/368"
 parent: 351
 children: []
 blocking: [355]
 blocked-by: []
 created: "2026-11-17T00:52:11Z"
-updated: "2026-11-17T01:11:52Z"
+updated: "2026-11-17T02:17:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 6, "size": "M"}
 priority: "P2"
@@ -33,3 +33,7 @@ Can a disposable local macOS/APFS guest establish the protected runner, independ
 ## Plan accepted
 
 SAR and two broker-backed XPR rounds with Opus 5.5 at high effort accepted the exact plan. The execution spike remains in Planning. A bounded qualification can clear #368 as an effective blocker only when #355's remaining trust requirements have an approved scope decision or a verified native successor blocker. [XPR manifest](plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-review-manifest.md) · [Final reviewer verdict](plan/reviews/plan/2026-11-17-2026-11-16-368-protected-local-observation-plan-review-313cdd3310f5b10187ba4f4c97d28a27/review-313cdd3310f5b10187ba4f4c97d28a27-reviewer-response-2.md).
+
+## Execution pickup
+
+The owner authorized the live qualification. Started the runner admission gate under the accepted plan. #355 remains blocked.
