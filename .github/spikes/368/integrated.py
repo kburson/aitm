@@ -70,24 +70,7 @@ def receive(bundle_path, admission):
             "Stage A artifact bytes differ")
 
 
-def install_bundle(path, private, raw, admission):
-    require(digest(path) == admission["archive_sha256"], "transferred archive differs")
-    with zipfile.ZipFile(path) as archive:
-        require(len(archive.namelist()) == len(set(archive.namelist())), "duplicate Stage A export")
-        for name in BUNDLE:
-            with archive.open(name) as origin, (private / name).open("xb") as dest:
-                shutil.copyfileobj(origin, dest)
-    previous = json.loads((private / "receipt.json").read_bytes())
-    require(previous["verdict"] == "PASS" and digest(private / "receipt.json") == admission["receipt_sha256"],
-            "Stage A receipt differs")
-    manifest_path = private / "runtime-manifest.json"
-    runtime_path = private / "runtime.tar.gz"
-    require(digest(manifest_path) == admission["manifest_sha256"]
-            and digest(runtime_path) == admission["runtime_archive_sha256"], "Stage A runtime bytes differ")
-    manifest = json.loads(manifest_path.read_bytes())
-    temp = private / "extracted"
-    temp.mkdir(mode=0o700)
-    roots = [install.relative_to(ROOT) for install in (INSTALL, VENV)]
+def extract_runtime(runtime_path, temp, manifest, roots):
     links = []
     modes = {}
     paths = set()
@@ -121,6 +104,27 @@ def install_bundle(path, private, raw, admission):
             os.lchmod(target, mode)
         else:
             target.chmod(mode)
+
+
+def install_bundle(path, private, raw, admission):
+    require(digest(path) == admission["archive_sha256"], "transferred archive differs")
+    with zipfile.ZipFile(path) as archive:
+        require(len(archive.namelist()) == len(set(archive.namelist())), "duplicate Stage A export")
+        for name in BUNDLE:
+            with archive.open(name) as origin, (private / name).open("xb") as dest:
+                shutil.copyfileobj(origin, dest)
+    previous = json.loads((private / "receipt.json").read_bytes())
+    require(previous["verdict"] == "PASS" and digest(private / "receipt.json") == admission["receipt_sha256"],
+            "Stage A receipt differs")
+    manifest_path = private / "runtime-manifest.json"
+    runtime_path = private / "runtime.tar.gz"
+    require(digest(manifest_path) == admission["manifest_sha256"]
+            and digest(runtime_path) == admission["runtime_archive_sha256"], "Stage A runtime bytes differ")
+    manifest = json.loads(manifest_path.read_bytes())
+    temp = private / "extracted"
+    temp.mkdir(mode=0o700)
+    roots = [install.relative_to(ROOT) for install in (INSTALL, VENV)]
+    extract_runtime(runtime_path, temp, manifest, roots)
     put_root(PREFIX, "0755")
     for relative in roots:
         good("/usr/bin/sudo", "-n", "/usr/bin/ditto", str(temp / relative), str(ROOT / relative), timeout=80)
@@ -390,6 +394,26 @@ def run_scope(private, raw, receipt, uid, packet, old, snapshot):
     require(result["accepted"], "product observation did not reconcile")
 
 
+def describe_os_error(error, private):
+    details = {"errno": error.errno}
+    frame = error.__traceback__
+    while frame is not None:
+        code = frame.tb_frame.f_code
+        path = Path(code.co_filename)
+        location = {"file": path.name, "function": code.co_name, "line": frame.tb_lineno}
+        details["leaf"] = location
+        if path.is_absolute() and path.is_relative_to(HERE):
+            details["spike"] = location
+        frame = frame.tb_next
+    if error.filename is not None:
+        path = Path(os.fsdecode(error.filename))
+        for label, root in (("runtime", ROOT), ("private", private)):
+            if path.is_relative_to(root) and ".." not in path.parts:
+                details["path"] = f"{label}/{path.relative_to(root)}"
+                break
+    return details
+
+
 def main(private, bundle):
     require(private.parent == Path(os.environ["RUNNER_TEMP"]) and not private.exists(), "unexpected evidence directory")
     require(bundle.parent == private.parent and bundle.is_file(), "runtime export unavailable")
@@ -435,11 +459,7 @@ def main(private, bundle):
         receipt["failure_type"] = type(error).__name__
         receipt["failure"] = str(error) if isinstance(error, ValueError) else type(error).__name__
         if isinstance(error, OSError):
-            frames = error.__traceback__
-            while frames.tb_next is not None:
-                frames = frames.tb_next
-            receipt["os_failure"] = {"errno": error.errno, "file": Path(frames.tb_frame.f_code.co_filename).name,
-                                     "function": frames.tb_frame.f_code.co_name, "line": frames.tb_lineno}
+            receipt["os_failure"] = describe_os_error(error, private)
     for name in LABELS:
         program = private / f"{name}.d"
         if program.is_file():

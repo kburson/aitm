@@ -1,10 +1,22 @@
 from collections import Counter
 from copy import deepcopy
+import errno
+from hashlib import sha256
+from io import BytesIO
 import json
+import os
+from pathlib import Path
+import stat
+import tarfile
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
-from integrated import KEYGEN, NAMESPACE, SCRATCH, allow_observed, native_shape, read_native, validate_children
+from integrated import (
+    KEYGEN, NAMESPACE, SCRATCH, allow_observed, describe_os_error, extract_runtime, native_shape,
+    read_native, validate_children,
+)
 
 
 class NativeIntakeTest(unittest.TestCase):
@@ -66,6 +78,57 @@ class NativeIntakeTest(unittest.TestCase):
             allow_observed(observer)
             with self.assertRaises(ValueError):
                 observer.dtrace_program()
+
+
+class RuntimeRestoreTest(unittest.TestCase):
+    def test_symlink_mode_is_restored_under_private_umask(self):
+        with TemporaryDirectory() as stage:
+            root = Path(stage)
+            data = b"verified synthetic runtime"
+            files = {
+                "runtime": {"kind": "directory", "mode": "0755"},
+                "runtime/regular": {"kind": "file", "mode": "0644", "sha256": sha256(data).hexdigest()},
+                "runtime/symlink": {"kind": "symlink", "mode": "0755", "target": "regular"},
+            }
+            archive = root / "runtime.tar.gz"
+            with tarfile.open(archive, "w:gz") as bundle:
+                for name, details in files.items():
+                    entry = tarfile.TarInfo(name)
+                    entry.mode = int(details["mode"], 8)
+                    if details["kind"] == "directory":
+                        entry.type = tarfile.DIRTYPE
+                    elif details["kind"] == "symlink":
+                        entry.type = tarfile.SYMTYPE
+                        entry.linkname = details["target"]
+                    else:
+                        entry.size = len(data)
+                    bundle.addfile(entry, BytesIO(data) if entry.isfile() else None)
+            out = root / "extract"
+            out.mkdir(mode=0o700)
+            old = os.umask(0o077)
+            try:
+                extract_runtime(archive, out, files, [Path("runtime")])
+            finally:
+                os.umask(old)
+            for name, details in files.items():
+                self.assertEqual(stat.S_IMODE((out / name).lstat().st_mode), int(details["mode"], 8))
+            self.assertEqual((out / "runtime/symlink").readlink(), Path("regular"))
+
+    def test_diagnostic_pins_the_spike_frame_and_relative_path(self):
+        private = Path("/private/tmp/368-evidence")
+        hidden = private / "extracted/runtime"
+        refusal = PermissionError(errno.EACCES, "refused", hidden)
+        with patch.object(tarfile, "open", side_effect=refusal):
+            try:
+                extract_runtime(hidden, hidden, {}, [])
+            except PermissionError as received:
+                details = describe_os_error(received, private)
+            else:
+                self.fail("permission refusal did not reach diagnostic")
+        self.assertEqual(details["errno"], errno.EACCES)
+        self.assertEqual(details["spike"]["function"], "extract_runtime")
+        self.assertEqual(details["path"], "private/extracted/runtime")
+        self.assertNotIn("path", describe_os_error(PermissionError(errno.EACCES, "refused", "/private/unapproved"), private))
 
 
 if __name__ == "__main__":
