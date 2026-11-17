@@ -1,0 +1,96 @@
+{
+  "calibration_outcomes_local_synthetic": [
+    {
+      "case": "positive",
+      "exit": 0,
+      "summary": "1 passed in 0.02s"
+    },
+    {
+      "case": "failure",
+      "exit": 1,
+      "summary": "1 failed in 0.02s"
+    },
+    {
+      "case": "failure-with-sibling",
+      "exit": 1,
+      "summary": "1 failed in 0.02s"
+    }
+  ],
+  "code_source": "prepare_boundary delegates to boundary_profile. The same generator uses the local synthetic root, local vetted Python/venv prefixes and executable path in place of the hosted values.",
+  "driver_sha256": "63cc806e3ebcf1d58509fab4441be520f9658508e38dd3063847843aedd7edac",
+  "driver_source": "\"\"\"Exercise the exact sandbox policy with a local trusted runtime and synthetic fixture.\"\"\"\nfrom hashlib import sha256\nimport json\nimport os\nfrom pathlib import Path\nimport re\nimport shutil\nimport subprocess\nimport sys\nfrom tempfile import TemporaryDirectory\n\ncheckout = Path.cwd()\nsys.path.insert(0, str(checkout / \".github/spikes/368\"))\nimport admission\n\ndef digest(value):\n    return sha256(value).hexdigest()\n\nwith TemporaryDirectory(prefix=\"aitm368-protected-discovery-\", dir=\"/Users/Shared\") as directory:\n    root = Path(directory)\n    admission.ROOT = root\n    admission.STAGED = stage = root / \"admitted\"\n    admission.SCRATCH = scratch = root / \"worker\"\n    stage.mkdir()\n    scratch.mkdir()\n    source = root / \"source\"\n    (source / \"calibration\").mkdir(parents=True)\n    (source / \"packages/aitm-usage\").mkdir(parents=True)\n    config = source / \"packages/aitm-usage/pyproject.toml\"\n    shutil.copyfile(checkout / \"packages/aitm-usage/pyproject.toml\", config)\n    fixture = source / \"calibration/test_probe.py\"\n    shutil.copyfile(checkout / \".github/spikes/368/calibration.py\", fixture)\n    (root / \"outside\").write_text(\"synthetic protected marker\\n\")\n    keygen = \"/usr/bin/ssh-keygen\"\n    python = sys.executable\n    native = str(Path(python).resolve())\n    public_inputs = (str(source), sys.base_prefix, sys.prefix)\n    executables = (keygen, native, python)\n    protected = admission.boundary_profile(public_inputs, executables)\n    original = protected.replace(f\"(allow file-read-metadata (literal {json.dumps(str(root))}))\\n\", \"\")\n    revised_policy = stage / \"revised.sb\"\n    original_policy = stage / \"original.sb\"\n    revised_policy.write_text(protected)\n    original_policy.write_text(original)\n    environment = {\"PATH\": \"/usr/bin:/bin\", \"LC_ALL\": \"C\", \"HOME\": str(scratch),\n                   \"TMPDIR\": str(scratch), \"PYTEST_DISABLE_PLUGIN_AUTOLOAD\": \"1\"}\n\n    def launch(policy, opts):\n        args = (\"/usr/bin/sandbox-exec\", \"-f\", str(policy), python, \"-B\", \"-I\", \"-m\", \"pytest\")\n        return subprocess.run((*args, *opts), cwd=source, env=environment, capture_output=True, text=True)\n\n    basic = (\"-p\", \"no:cacheprovider\", \"--rootdir\", str(source))\n    exact = (*basic, \"-c\", str(config), \"--confcutdir\", str(source))\n    rejected = launch(original_policy, (*basic, \"--collect-only\", \"--full-trace\", \"-q\", str(fixture)))\n    assert rejected.returncode == 2, (rejected.returncode, rejected.stderr, rejected.stdout)\n    assert \"PermissionError: [Errno 1] Operation not permitted: '\" + str(root) + \"'\" in rejected.stdout, rejected.stdout\n    frames = re.findall(r\"(^[^\\n]+/_pytest/config/__init__\\.py):(\\d+):[ \\t]*$\", rejected.stdout, re.M)\n    assert frames and \"def _get_directory(path:\" in rejected.stdout, rejected.stdout\n    collected = launch(revised_policy, (*exact, \"--collect-only\", \"-q\", str(fixture)))\n    expected = [\"calibration/test_probe.py::test_failure\", \"calibration/test_probe.py::test_success\"]\n    assert collected.returncode == 0 and collected.stdout.splitlines()[:2] == expected, collected.stdout+collected.stderr\n    control = stage / \"read-controls.py\"\n    control.write_text(\"\"\"import errno, os, sys\nos.stat(sys.argv[1])\nprint(\"ALLOW admission root metadata\")\nfor fn, file, label in [\n    (os.listdir, sys.argv[1], \"admission root listing\"),\n    (os.stat, sys.argv[2], \"admission root child metadata\"),\n]:\n    try:\n        fn(file)\n    except OSError as error:\n        assert error.errno in (errno.EPERM, errno.EACCES)\n        print(\"DENY \" + label)\n    else:\n        raise AssertionError(label)\n\"\"\")\n    protection = subprocess.run((\"/usr/bin/sandbox-exec\", \"-f\", str(revised_policy), python, \"-B\", \"-I\",\n                                 str(control), str(root), str(root/\"outside\")), cwd=source, env=environment,\n                                capture_output=True, text=True)\n    assert not protection.returncode, (protection.stdout,protection.stderr)\n    rows = []\n    for name, target, state in (\n        (\"positive\", str(fixture) + \"::test_success\", 0),\n        (\"failure\", str(fixture) + \"::test_failure\", 1),\n        (\"failure-with-sibling\", str(fixture), 1),\n    ):\n        run = launch(revised_policy, (*exact, \"--basetemp\", str(scratch/name), \"--maxfail=1\", \"-q\", target))\n        assert run.returncode == state, (name, run.returncode, run.stdout, run.stderr)\n        expect = \"1 passed\" if state == 0 else \"1 failed\"\n        assert expect in run.stdout, (name, run.stdout)\n        rows.append({\"case\":name, \"exit\":run.returncode, \"summary\":run.stdout.splitlines()[-1]})\n    print(json.dumps({\n        \"profile_sha256\": digest(revised_policy.read_bytes()), \"original_profile_sha256\": digest(original_policy.read_bytes()),\n        \"profile\": protected, \"original_profile\": original,\n        \"substitutions\":{\"ROOT\":str(root), \"STAGED\":str(stage),\"SCRATCH\":str(scratch),\n                         \"INPUTS\":public_inputs,\"EXECUTABLES\":executables},\n        \"original\":{\"exit\":rejected.returncode,\"denied_path\":str(root),\"errno\":1,\n                    \"last_pytest_frame\":{\"file\":frames[-1][0].split(\"/_pytest/\")[-1],\n                                         \"line\":int(frames[-1][1]),\"function\":\"_get_directory\"},\n                    \"stdout_sha256\":digest(rejected.stdout.encode())},\n        \"revised\":{\"options\":exact, \"exit\":collected.returncode, \"node_ids\":expected,\n                   \"raw_stdout\":collected.stdout, \"stdout_sha256\":digest(collected.stdout.encode())},\n        \"protection_stdout\":protection.stdout,\n        \"calibration_outcomes_local_synthetic\":rows,\n    }, indent=2))\n",
+  "hosted_error": {
+    "errno": 1,
+    "leaf": {
+      "file": "pathlib/_local.py",
+      "function": "stat",
+      "line": 515
+    },
+    "path": "/Users/Shared/aitm368-hosted",
+    "pytest_frame": "The shortened hosted traceback omits this frame."
+  },
+  "implementation_head": "d06b0e7f21a447cabbcd808364377a6736d16892",
+  "local_error_leaf": {
+    "file": "pathlib/_local.py",
+    "function": "stat",
+    "line": 515
+  },
+  "ordinary_local_account": true,
+  "original": {
+    "denied_path": "/Users/Shared/aitm368-protected-discovery-5rqcb_7s",
+    "errno": 1,
+    "exit": 2,
+    "last_pytest_frame": {
+      "file": "config/__init__.py",
+      "function": "_get_directory",
+      "line": 454
+    },
+    "stdout_sha256": "43096809329e0ef285d9c1e44f4f9558ba5c54df5a3f1f2f62e6b0fbf0138db0"
+  },
+  "original_profile": "(version 1)\n(allow default)\n(deny file-read*)\n(allow file-read-data (literal \"/\"))\n(allow file-read* (subpath \"/usr\"))\n(allow file-read* (subpath \"/System\"))\n(allow file-read* (subpath \"/Library/Apple\"))\n(allow file-read* (subpath \"/private/etc\"))\n(allow file-read* (subpath \"/dev\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/admitted\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/worker\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source\"))\n(allow file-read* (subpath \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none\"))\n(allow file-read* (subpath \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv\"))\n(deny network*)\n(deny file-write*)\n(allow file-write* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/worker\") (literal \"/dev/null\"))\n(deny file-read* file-ioctl (literal \"/dev/dtrace\"))\n(allow file-write-data file-ioctl (require-all (literal \"/dev/dtracehelper\") (vnode-type CHARACTER-DEVICE)))\n(deny process-exec*)\n(allow process-exec* (literal \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/admitted/qualification\") (literal \"/usr/bin/ssh-keygen\") (literal \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/bin/python3.13\") (literal \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv/bin/python\"))\n",
+  "original_profile_sha256": "87ff4fd50240068a0cf17c3bf291ef49bb6b0319264f85ee61103b2f9c7da294",
+  "product_tests_executed": 0,
+  "profile": "(version 1)\n(allow default)\n(deny file-read*)\n(allow file-read-data (literal \"/\"))\n(allow file-read* (subpath \"/usr\"))\n(allow file-read* (subpath \"/System\"))\n(allow file-read* (subpath \"/Library/Apple\"))\n(allow file-read* (subpath \"/private/etc\"))\n(allow file-read* (subpath \"/dev\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/admitted\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/worker\"))\n(allow file-read* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source\"))\n(allow file-read* (subpath \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none\"))\n(allow file-read* (subpath \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv\"))\n(deny network*)\n(deny file-write*)\n(allow file-write* (subpath \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/worker\") (literal \"/dev/null\"))\n(deny file-read* file-ioctl (literal \"/dev/dtrace\"))\n(allow file-write-data file-ioctl (require-all (literal \"/dev/dtracehelper\") (vnode-type CHARACTER-DEVICE)))\n(allow file-read-metadata (literal \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s\"))\n(deny process-exec*)\n(allow process-exec* (literal \"/Users/Shared/aitm368-protected-discovery-5rqcb_7s/admitted/qualification\") (literal \"/usr/bin/ssh-keygen\") (literal \"/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/bin/python3.13\") (literal \"/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv/bin/python\"))\n",
+  "profile_sha256": "09fbd4b813478f31c763beac6db8786650e62a9ff8eccf94e7f32c71b47813d2",
+  "protection_stdout": "ALLOW admission root metadata\nDENY admission root listing\nDENY admission root child metadata\n",
+  "pytest": "9.2.0",
+  "python": "3.13.9",
+  "revised": {
+    "exit": 0,
+    "node_ids": [
+      "calibration/test_probe.py::test_failure",
+      "calibration/test_probe.py::test_success"
+    ],
+    "options": [
+      "-p",
+      "no:cacheprovider",
+      "--rootdir",
+      "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source",
+      "-c",
+      "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source/packages/aitm-usage/pyproject.toml",
+      "--confcutdir",
+      "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source"
+    ],
+    "raw_stdout": "calibration/test_probe.py::test_failure\ncalibration/test_probe.py::test_success\n\n2 tests collected in 0.00s\n",
+    "stdout_sha256": "55d9273ac4e2e62bb0c32596514319a89b7dfd5a86825f0cf699e8117a365366"
+  },
+  "schema": "aitm.368.protected-pytest-check/v1",
+  "source_attempt": 2,
+  "source_run": 44026166553,
+  "substitutions": {
+    "EXECUTABLES": [
+      "/usr/bin/ssh-keygen",
+      "/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none/bin/python3.13",
+      "/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv/bin/python"
+    ],
+    "INPUTS": [
+      "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/source",
+      "/Users/kpburson/.local/share/uv/python/cpython-3.13.9-macos-aarch64-none",
+      "/Users/kpburson/Library/Caches/aitm-368-hosted.MVxC2n1K/discovery-venv"
+    ],
+    "ROOT": "/Users/Shared/aitm368-protected-discovery-5rqcb_7s",
+    "SCRATCH": "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/worker",
+    "STAGED": "/Users/Shared/aitm368-protected-discovery-5rqcb_7s/admitted"
+  },
+  "unit_tests_passed": 12
+}
