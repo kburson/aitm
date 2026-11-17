@@ -1,0 +1,73 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 354,
+  "batch": "2026-11-16-verified-delivery",
+  "recorded_at_utc": "2026-11-17T00:06:39.781Z",
+  "source": {
+    "ref": "manual:354-native-turn-boundaries"
+  },
+  "observations": [
+    {
+      "observation_id": "native-354-08f7d5105112c21b8a11dbdadcc0749f",
+      "turn": "turn-1",
+      "actor": "coordinator-1",
+      "phase": "plan-and-implement",
+      "role": "implementer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "paired-native-turn-boundaries",
+      "start_utc": "2026-11-16T21:54:13.645Z",
+      "end_utc": "2026-11-16T22:15:35.496Z",
+      "source": {
+        "sha256": "08f7d5105112c21b8a11dbdadcc0749f6978df80b4c14184ca7f9f4fc95483e9"
+      }
+    },
+    {
+      "observation_id": "native-354-084848b1dd3c1b11d68f918892005bed",
+      "turn": "turn-2",
+      "actor": "coordinator-1",
+      "phase": "delivery",
+      "role": "implementer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "native-turn-through-closeout-checkpoint",
+      "start_utc": "2026-11-16T23:43:52.654Z",
+      "end_utc": "2026-11-17T00:06:39.781Z",
+      "source": {
+        "sha256": "084848b1dd3c1b11d68f918892005bedbb6dbfc622355f0b757a1a87954cd2cd"
+      }
+    },
+    {
+      "observation_id": "native-354-5753698b501ed601d2c988014fd2c589",
+      "turn": "turn-3",
+      "actor": "reviewer-1",
+      "phase": "implementation-review",
+      "role": "reviewer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "complete",
+      "basis": "paired-native-turn-boundaries",
+      "start_utc": "2026-11-16T23:44:22.040Z",
+      "end_utc": "2026-11-16T23:51:33.252Z",
+      "source": {
+        "sha256": "5753698b501ed601d2c988014fd2c5892f1f23326581892e510165dd4a284dd9"
+      }
+    },
+    {
+      "observation_id": "unmeasured-xpr-agent-354",
+      "actor": "reviewer-2",
+      "phase": "plan",
+      "role": "reviewer",
+      "attempt": "attempt-1",
+      "kind": "agent-turn",
+      "coverage": "unknown",
+      "basis": "incomplete-review-timing",
+      "start_utc": null,
+      "end_utc": null,
+      "missing_reason": "provider-review-engagement-unmeasured"
+    }
+  ]
+}

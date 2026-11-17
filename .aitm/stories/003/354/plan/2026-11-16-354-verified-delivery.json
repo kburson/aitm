@@ -1,0 +1,70 @@
+{
+  "story": 354,
+  "status": "verified",
+  "verified_at_utc": "2026-11-17T00:07:00.634Z",
+  "pr": "https://github.com/kburson/aitm/pull/367",
+  "trunk": {
+    "commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+    "tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+    "ordered_parents": [
+      "8799c5a445dd4b51d499132e9a314b64796ae918",
+      "4770d3259d7c4c8db5aaffb0eda9109ae4c65ea3"
+    ],
+    "merged_at_utc": "2026-11-16T23:58:32Z"
+  },
+  "tested_candidate": {
+    "base": "8799c5a445dd4b51d499132e9a314b64796ae918",
+    "head": "4770d3259d7c4c8db5aaffb0eda9109ae4c65ea3",
+    "merge": "efeb60046f418751f66a2b6ed1af50c9c44a9db2",
+    "tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7"
+  },
+  "hosted_pr": {
+    "run_id": 43982501522,
+    "attempt": 1,
+    "verifier_path": "plan/2026-11-16-354-trusted-pr-verifier.json",
+    "verifier_sha256": "5a7542f1893d8e74cdba6763e43fdbaa3da868787b35362e9b8337ce35e3656f"
+  },
+  "independent_source_review": {
+    "path": "plan/reviews/2026-11-16-354-source-review-round-2.md",
+    "sha256": "ca29d7e70858b696766ce0a18da1286baaa986e3640a0e6410125147d79bbd74",
+    "outcome": "pass",
+    "findings_resolved": 2
+  },
+  "local": {
+    "coordinator_passed": 92,
+    "independent_passed": 92,
+    "ruff_check": "pass",
+    "ruff_format": "pass"
+  },
+  "trunk_ci": {
+    "run_id": 43983796124,
+    "url": "https://github.com/kburson/aitm/actions/runs/43983796124",
+    "event": "push",
+    "attempt": 1,
+    "conclusion": "success",
+    "jobs": {
+      "file-checks": "success",
+      "quality": "success",
+      "python": "success",
+      "python-base": "skipped",
+      "collect-evidence": "success",
+      "aitm-ci": "skipped"
+    }
+  },
+  "delivered_cli_probe": {
+    "path": "attachments/2026-11-16-354-delivered-cli-probe.json",
+    "sha256": "bc3795daac9f45d093dc3276ac7c266a1a85b9d3c1f7c7e2eee1bfbfa8ad7838",
+    "pinned_ids": 30,
+    "checkout_writes": false
+  },
+  "signoff": {
+    "path": "retro/2026-11-16-354-delivery.md",
+    "sha256": "89a6b5a6dea5334c486c003de5abf6bc59d6c11e2722e10abdd397c8a13e7cd6",
+    "signed_at_utc": "2026-11-17T00:07:00.634Z"
+  },
+  "timing_receipt": {
+    "path": "attachments/timing/2026-11-16-verified-delivery-354.json",
+    "sha256": "122ff402b2aca0dedfc9188773c994aad914a772cc9ea9fc2a0293e5be0ab5b4",
+    "coverage": "partial"
+  }
+}

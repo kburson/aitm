@@ -1,0 +1,148 @@
+{
+  "cases": [
+    {
+      "case": "fresh-delivered-tree",
+      "custody": {
+        "git_status": "",
+        "head": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+        "index_sha256": "f718566b606e0235b216da7761a242215ef61e7042c762a679eea7bae78e38fe",
+        "path_set_sha256": "9625438500bc36202d73bede3a796328762d23351acf9aef485547995e9b2ebd",
+        "pycache_count": 0,
+        "source_sha256": "c38878eae31799dfde52f3bc1bc5d71bffbbabf7230a9b7a2f7e9ec367846090"
+      },
+      "exit_code": 2,
+      "report": {
+        "mode": "unavailable",
+        "node_ids": [],
+        "reason": "no-local-change",
+        "schema": "aitm.tia-working-tree-report/v1"
+      }
+    },
+    {
+      "case": "admitted-comment",
+      "custody": {
+        "git_status": "M packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+        "head": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+        "index_sha256": "f718566b606e0235b216da7761a242215ef61e7042c762a679eea7bae78e38fe",
+        "path_set_sha256": "9625438500bc36202d73bede3a796328762d23351acf9aef485547995e9b2ebd",
+        "pycache_count": 0,
+        "source_sha256": "d71cd5853453d5f85dfb2c369ff1c9c0efb37f898ae13134a4538bab16101647"
+      },
+      "exit_code": 0,
+      "report": {
+        "authority": {
+          "anchor_commit": "8799c5a445dd4b51d499132e9a314b64796ae918",
+          "anchor_tree": "456a155fbe7d10cb7daafd2bf46f134be78366a8",
+          "finding_sha256": "887517ab530f9d135c07cab95a17ca01bb8dde344211c0247ec99da2b817621c",
+          "inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+          "kind": "reviewed-pinned-obligations",
+          "map_sha256": "a5403981cd9ae6a80eb3f7d8b6d09d34ada0374421bbbb3cc8af534793c272ae",
+          "module": "packages/aitm-usage/tests/test_grok_scope_receipts.py",
+          "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+          "repository": "kburson/aitm",
+          "review_sha256": "7d0dfd66316178aebc0bcad72877cd73e7fc1d2bb4fe08756b142b3bb8abef8d",
+          "selector_sha256": "39bbbe45018fec922a304ae8fcf50bc452f5f28e2c6acc19870adaa0319c03ed"
+        },
+        "base_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+        "base_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+        "candidate_inventory": "unqualified",
+        "consumer_reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+        "content_sha256": "d71cd5853453d5f85dfb2c369ff1c9c0efb37f898ae13134a4538bab16101647",
+        "file_mode": "100644",
+        "impact_completeness": "unqualified",
+        "inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+        "inventory_source": "https://github.com/kburson/aitm/actions/runs/43882437964/attempts/2",
+        "mode": "pinned-mapped-obligations",
+        "module": "packages/aitm-usage/tests/test_grok_scope_receipts.py",
+        "node_ids": [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[foreign_pid]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[init]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[no_start]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[size]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[uid]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[usec]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[zombie]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+        ],
+        "path": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+        "schema": "aitm.tia-working-tree-report/v1",
+        "snapshot_sha256": "4c200d09f78d75be80a13b19646497f39c2e1c5219fa7c1f2492ff8be5c9727d"
+      }
+    },
+    {
+      "case": "extra-path",
+      "custody": {
+        "git_status": "M packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py\n?? extra.txt",
+        "head": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+        "index_sha256": "f718566b606e0235b216da7761a242215ef61e7042c762a679eea7bae78e38fe",
+        "path_set_sha256": "e352876d866969c01b69ca77c2373f33a6017a5de2176c16540165d01d00989d",
+        "pycache_count": 0,
+        "source_sha256": "d71cd5853453d5f85dfb2c369ff1c9c0efb37f898ae13134a4538bab16101647"
+      },
+      "exit_code": 2,
+      "report": {
+        "mode": "unavailable",
+        "node_ids": [],
+        "reason": "unsupported-change",
+        "schema": "aitm.tia-working-tree-report/v1"
+      }
+    },
+    {
+      "case": "unsupported-executable-edit",
+      "custody": {
+        "git_status": "M packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+        "head": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+        "index_sha256": "f718566b606e0235b216da7761a242215ef61e7042c762a679eea7bae78e38fe",
+        "path_set_sha256": "9625438500bc36202d73bede3a796328762d23351acf9aef485547995e9b2ebd",
+        "pycache_count": 0,
+        "source_sha256": "65eb4fa1ca36e4cc0921b9bfc83342137ecc8a7884228ddee5c90768276ea104"
+      },
+      "exit_code": 2,
+      "report": {
+        "mode": "unavailable",
+        "node_ids": [],
+        "reason": "unsupported-change",
+        "schema": "aitm.tia-working-tree-report/v1"
+      }
+    }
+  ],
+  "invocation": [
+    "python",
+    "-B",
+    "-E",
+    "-s",
+    "-m",
+    "tools.ci.tia.working_tree_report",
+    "--repo",
+    ".",
+    "--base",
+    "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7"
+  ],
+  "source": "fresh clone of the verified trunk merge",
+  "story": 354,
+  "tested_at_utc": "2026-11-16T23:59:00Z",
+  "tested_commit": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+  "tested_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7"
+}
