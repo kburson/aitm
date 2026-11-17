@@ -1,0 +1,525 @@
+{
+  "compiled_at": "2026-11-17T06:09:10Z",
+  "coverage": {
+    "candidate_code_resistance": "unqualified",
+    "candidate_inventory": "unqualified",
+    "dependency_355": "blocked",
+    "impact_completeness": "unqualified",
+    "story_368": "open"
+  },
+  "final_failure": "native test, phase or multiplicity differs",
+  "final_gate": "calibration-and-scoped-observation",
+  "hosted_experiment": {
+    "admission_attempts": [
+      {
+        "artifact_archive_digest": "sha256:ec5b2a3865ef6e77411f7d00ec516b636d61d25607d955877bb3cbf3e7e3ddca",
+        "artifact_id": 14300277100,
+        "attempt": 1,
+        "failure": "worker boundary controls refused at -6",
+        "finished_at": "2026-11-17T04:46:55Z",
+        "gate": "worker-boundary",
+        "image": "20261102.0473.1",
+        "job": 133825261121,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44019483743/job/133825261121",
+        "receipt_sha256": "7d0f5656a185cccf52a6dd254c532b28b3b2b893ddb6009a9f59d777d14f4ed4",
+        "run": 44019483743,
+        "started_at": "2026-11-17T04:46:32Z",
+        "trusted_readback": {
+          "process_observation": false,
+          "usdt": false,
+          "worker_controls": false
+        },
+        "verdict": "HOLD",
+        "workflow_head": "d884070e93b3cb7a5a3e2da1e4d560d0aa930165",
+        "workflow_tree": "c1164b4104658c7a02514859cc719f4f10c5aa39"
+      },
+      {
+        "artifact_archive_digest": "sha256:72cceee614efb66b42d7d01ae978df8ac563e09008975f94bd37682a38c367ec",
+        "artifact_id": 14300486943,
+        "attempt": 1,
+        "failure": "missing, duplicate or unbound process trace record",
+        "finished_at": "2026-11-17T04:50:12Z",
+        "gate": "trace-capability",
+        "image": "20261102.0473.1",
+        "job": 133826409919,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44019831612/job/133826409919",
+        "receipt_sha256": "8f094122e8b8d7a497abb4a3ae0df0003e93f81c1e58376d616e80410a825a41",
+        "run": 44019831612,
+        "started_at": "2026-11-17T04:49:40Z",
+        "trusted_readback": {
+          "child": 10758,
+          "parent": 10753,
+          "process_observation": true,
+          "stock_providers": {
+            "proc": 30,
+            "syscall": 1116
+          },
+          "usdt": false,
+          "worker_controls": true
+        },
+        "verdict": "HOLD",
+        "workflow_head": "af3a3a0be97ccdf106e4234585d89bacc38a7da0",
+        "workflow_tree": "70541e505d39ae1812700202eed288eaee4cda3b"
+      },
+      {
+        "artifact_archive_digest": "sha256:39ef2e0d2c615ef5929cb8a6e832cdc74ef7254750804876dcfb345482463f02",
+        "artifact_id": 14300053647,
+        "attempt": 1,
+        "failure": "python3.13 exited 1",
+        "finished_at": "2026-11-17T04:55:10Z",
+        "gate": "runtime-build",
+        "image": "20261112.0504.1",
+        "job": 133827360192,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44020125444/job/133827360192",
+        "receipt_sha256": "6617a9954133c40a431228eb1a443150798227415d28a752071e50c93dba1ed0",
+        "run": 44020125444,
+        "started_at": "2026-11-17T04:52:20Z",
+        "trusted_readback": {
+          "child": 2681,
+          "parent": 2674,
+          "process_observation": true,
+          "stock_providers": {
+            "proc": 30,
+            "syscall": 1116
+          },
+          "usdt": true,
+          "worker_controls": true
+        },
+        "verdict": "HOLD",
+        "workflow_head": "e0a5ac61db3d538ce284fa57f8c77e3984a8fd80",
+        "workflow_tree": "61267baa7b095f0c7b5985530accfeb2cb0b28ed"
+      },
+      {
+        "artifact_archive_digest": "sha256:19a4dc3f9a9b742765ffeaac8a36e5acad400c52e2d324e80d6e053dcf323cc9",
+        "artifact_id": 14300403562,
+        "attempt": 1,
+        "failure": null,
+        "finished_at": "2026-11-17T04:59:09Z",
+        "gate": "complete",
+        "image": "20261102.0473.1",
+        "job": 133828654647,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44020525466/job/133828654647",
+        "receipt_sha256": "33d8cfef9a3f2c234f17c8f4820b5be63886977eac3a097e966f13bf25e06cd2",
+        "run": 44020525466,
+        "started_at": "2026-11-17T04:56:00Z",
+        "trusted_readback": {
+          "child": 2295,
+          "parent": 2285,
+          "process_observation": true,
+          "stock_providers": {
+            "proc": 30,
+            "syscall": 1116
+          },
+          "usdt": true,
+          "worker_controls": true
+        },
+        "verdict": "PASS",
+        "workflow_head": "af8f65395d5f11271b94d7d824c300e1ce88d1eb",
+        "workflow_tree": "672758a41be247be759c5671d3dc09173d94fc65"
+      },
+      {
+        "artifact_archive_digest": "sha256:3841df4cfeca31523065b63d6b66ba72aec58aad4041e91854225d36564936ca",
+        "artifact_id": 14302787413,
+        "attempt": 1,
+        "failure": null,
+        "finished_at": "2026-11-17T05:37:26Z",
+        "gate": "complete",
+        "image": "20261112.0504.1",
+        "job": 133842864198,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44024930299/job/133842864198",
+        "receipt_sha256": "a363e0a3f15683ce2c0c57302c528e80781e1ef30916c67a13b0c54bb1da2b4e",
+        "run": 44024930299,
+        "started_at": "2026-11-17T05:33:26Z",
+        "trusted_readback": {
+          "child": 2203,
+          "parent": 2192,
+          "process_observation": true,
+          "stock_providers": {
+            "proc": 30,
+            "syscall": 1116
+          },
+          "usdt": true,
+          "worker_controls": true
+        },
+        "verdict": "PASS",
+        "workflow_head": "e38d67d0254c0bac77761a48561c7ee5ecad315e",
+        "workflow_tree": "672758a41be247be759c5671d3dc09173d94fc65"
+      }
+    ],
+    "admitted_runtime": {
+      "lock_sha256": "949aa576be20d2b4f2516313fde8426304b0aeda3874751927243f8ff979ae73",
+      "manifest_sha256": "1a5e9f5df23ffba83417532c4d67e9f51bb72f78570c7078027712fa238f11fd",
+      "passed": true,
+      "precedent": "16df827e8335ecb876826f830a8f82a22ae57c28",
+      "precedent_sha256": {
+        "bounded.py": "757ef83d4dc0043380209dee17f21bae18552bce585ee9fb42023375a9604928",
+        "controller.py": "fa98df36db93f08a996f4fb5cc7eb7e479cdc024b1e52d8b86bc260d40a20735",
+        "full_suite.py": "d55d9b8ec7c064fa61a21e9501555594b039f7d39bb31984b7c39a7fafdb0de6",
+        "selected_suite.py": "ee3b9c39ff504a42bc5f8975ddef5a7a55180acd6258c75d38ec4b659a28985e"
+      },
+      "probe_table_sha256": "6f92128660113f8fc0396fc0e02abb0a2ba9e26598f3aef28f063f2b11707b06",
+      "pytest_patches": {
+        "main": "808d4f13e8338261bbecc1595479d51f35867fdc8684d737569f76c60a1c7bdb",
+        "python": "986359ddd9bfcbb13556b573275bef943e140f5964654bededd93d0bd574bfc2",
+        "runner": "d4c2af1158db2b79ca7c092475120dc2bea34ada9d95e6880ba7e4ff3308e30a"
+      },
+      "python_sha256": "a6d5935b3937d7f11b10059b9ce6cd2a03b3919e17c6ffda0326afd06491f734",
+      "runtime_archive_sha256": "402dda5423f9a0f97cf3b7c3ca25228503a101d552c4772b68ee5d0bc3d441dd",
+      "runtime_prefix": "/Users/Shared/aitm368-hosted"
+    },
+    "final_summary": {
+      "call_failures": 1,
+      "direct_pytest_exit": 1,
+      "dispatch_total": 30,
+      "driver_stdout_sha256": "31c442da90c249f061ea6ed9fdb5c4a3e656f316eec56cd44241ba9d4a09ed3e",
+      "dtrace_exit": 0,
+      "expected_direct_native_records": 74,
+      "failure": 23,
+      "hosted_report_sha256": [
+        "5d75994ae61c5482f73f11bcfe3d8592609afec57a1c6172622232bdc61cd7e3",
+        "5d75994ae61c5482f73f11bcfe3d8592609afec57a1c6172622232bdc61cd7e3",
+        "261a5127f2f8438b5074f649d654e7aa6487ccd6d6b7c6659fd8308ac8add4b1"
+      ],
+      "image": "20261112.0504.1",
+      "missing": 0,
+      "observed_direct_native_records": 22,
+      "observed_native_classes": {
+        "keygen_generate": 22,
+        "keygen_sign": 0,
+        "keygen_verify": 0
+      },
+      "os_build": "25G332",
+      "pass": 7,
+      "post_run_hosted_custody_completed": false,
+      "setup_failures": 22,
+      "trace_sha256": "b959da97baef7f6f60686f95c1afd88dbb62e358a3b506f618bcd0ced54284d7",
+      "worker_metadata_tests": {
+        "root_child_metadata_denied": true,
+        "root_directory_listing_denied": true,
+        "root_metadata_read": true,
+        "same_named_scratch_executable_denied": true
+      }
+    },
+    "hosted_image": {
+      "architecture": "arm64",
+      "compiler": [
+        "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+        "Target: arm64-apple-darwin25.6.0",
+        "Thread model: posix",
+        "InstalledDir: /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin"
+      ],
+      "image": "20261112.0504.1",
+      "image_label": "macos26",
+      "native_input_sha256": {
+        "/usr/bin/ssh-keygen": "e9cba2415f13366eb43402ab20218433f585851b4f4a749a6a1e9988e6af9eb5"
+      },
+      "os": [
+        "ProductName:\t\tmacOS",
+        "ProductVersion:\t\t26.7.2",
+        "BuildVersion:\t\t25G332"
+      ],
+      "sdk": "26.5",
+      "sip": "System Integrity Protection status: disabled."
+    },
+    "integrated_attempts": [
+      {
+        "artifact_archive_digest": "sha256:c4bbee591092e184fab88cb73074c33199113097676b20944b157469d28b391d",
+        "artifact_id": 14301926805,
+        "attempt": 1,
+        "conclusion": "failure",
+        "failure": "PermissionError",
+        "failure_type": "PermissionError",
+        "finished_at": "2026-11-17T05:18:57Z",
+        "gate": "runtime-install",
+        "image": "20261102.0473.1",
+        "job": 133837051610,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44023141637/job/133837051610",
+        "observed_product_outcomes": 0,
+        "os_failure": null,
+        "product_invocation_started": false,
+        "receipt_sha256": "be777c1e7374180fe0d262c3f1006c2496868cf61bf0573fa10dda4989debfeb",
+        "run": 44023141637,
+        "snapshot_sha256": null,
+        "started_at": "2026-11-17T05:18:13Z",
+        "trusted_readback": {
+          "early": {
+            "child": 1685,
+            "parent": 1679,
+            "process_observation": true,
+            "stock_providers": {
+              "proc": 30,
+              "syscall": 1116
+            },
+            "usdt": true,
+            "worker_controls": true
+          },
+          "invocations": {}
+        },
+        "verdict": "HOLD",
+        "workflow_head": "58ebe2c2845c87411fab33e8a15d42fc81f077e8",
+        "workflow_tree": "1d1327b32c574529b8252e629dd2f25ae2ca2d5c"
+      },
+      {
+        "artifact_archive_digest": "sha256:b08942a490f7fee6e474667cb96d5e2b8ec6b57d16acacccd3df0166146bbf07",
+        "artifact_id": 14302935823,
+        "attempt": 1,
+        "conclusion": "failure",
+        "failure": "authenticated runner image or toolchain drifted",
+        "failure_type": "ValueError",
+        "finished_at": "2026-11-17T05:32:05Z",
+        "gate": "job-identity",
+        "image": "20261112.0504.1",
+        "job": 133842217391,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44024727968/job/133842217391",
+        "observed_product_outcomes": 0,
+        "os_failure": null,
+        "product_invocation_started": false,
+        "receipt_sha256": "d7ca67e3aa3eb715b6c5ada93ff2b1709b81a4445832db55f10bff62fd565410",
+        "run": 44024727968,
+        "snapshot_sha256": null,
+        "started_at": "2026-11-17T05:31:42Z",
+        "trusted_readback": {
+          "actual_image": "20261112.0504.1",
+          "admitted_image": "20261102.0473.1",
+          "only_drifted_field": "image",
+          "runtime_started": false
+        },
+        "verdict": "HOLD",
+        "workflow_head": "3a0859d163681562b0aeb96c3330846224bb8cc6",
+        "workflow_tree": "d6144f2d9d57927218653ffd93b6a1ce95cdf4bd"
+      },
+      {
+        "artifact_archive_digest": "sha256:e43c738cbed98c66f7dc72f96ecc35ed2e9b16f038daa4951056d7b999fcb2b2",
+        "artifact_id": 14302589208,
+        "attempt": 1,
+        "conclusion": "failure",
+        "failure": "authenticated runner image or toolchain drifted",
+        "failure_type": "ValueError",
+        "finished_at": "2026-11-17T05:44:39Z",
+        "gate": "job-identity",
+        "image": "20261102.0473.1",
+        "job": 133846914034,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44026166553/job/133846914034",
+        "observed_product_outcomes": 0,
+        "os_failure": null,
+        "product_invocation_started": false,
+        "receipt_sha256": "2ed74417ade5d90a99085cbc564c38ff4e580d8edebf81cc8abd8ad331763d9b",
+        "run": 44026166553,
+        "snapshot_sha256": null,
+        "started_at": "2026-11-17T05:44:14Z",
+        "verdict": "HOLD",
+        "workflow_head": "ffe77e3e2d8f5eac625add23b37c30f40025b4ec",
+        "workflow_tree": "65dccbb1fbe2b70fa248b8e175570c1d2bc3a401"
+      },
+      {
+        "artifact_archive_digest": "sha256:346bbd1da597b946ecbb8d8c6323124875b74f8084d70d2820258e4e0eb99d7b",
+        "artifact_id": 14302419973,
+        "attempt": 2,
+        "conclusion": "failure",
+        "failure": "positive observer calibration did not pass",
+        "failure_type": "ValueError",
+        "finished_at": "2026-11-17T05:47:05Z",
+        "gate": "calibration-and-scoped-observation",
+        "image": "20261112.0504.1",
+        "job": 133847401077,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44026166553/job/133847401077",
+        "observed_product_outcomes": 0,
+        "os_failure": null,
+        "product_invocation_started": false,
+        "receipt_sha256": "2246bc7a418e359925a958cc5d6e43ee268a5c4ebe88159e467ecca535efddc3",
+        "run": 44026166553,
+        "snapshot_sha256": "6ee7f9b6d76eb68c95f6063acca447b3c41aa332c47fe36e718d2456542674ff",
+        "started_at": "2026-11-17T05:45:32Z",
+        "trusted_readback": {
+          "early": {
+            "child": 6718,
+            "parent": 6712,
+            "process_observation": true,
+            "stock_providers": {
+              "proc": 30,
+              "syscall": 1116
+            },
+            "usdt": true,
+            "worker_controls": true
+          },
+          "invocations": {
+            "calibrate-positive": {
+              "collection_end": [
+                "0"
+              ],
+              "inventory": [],
+              "native_records": 0,
+              "rejected_at_dispatch": true,
+              "reparsed": true,
+              "trace_pid": 8383
+            }
+          }
+        },
+        "verdict": "HOLD",
+        "workflow_head": "ffe77e3e2d8f5eac625add23b37c30f40025b4ec",
+        "workflow_tree": "65dccbb1fbe2b70fa248b8e175570c1d2bc3a401"
+      },
+      {
+        "artifact_archive_digest": "sha256:7cf4596ed0f8398c265e5f7a9d9657c881a6368211a354d836dd5a11512b1762",
+        "artifact_id": 14303613657,
+        "attempt": 1,
+        "conclusion": "failure",
+        "failure": "native test, phase or multiplicity differs",
+        "failure_type": "ValueError",
+        "finished_at": "2026-11-17T06:05:28Z",
+        "gate": "calibration-and-scoped-observation",
+        "image": "20261112.0504.1",
+        "job": 133854490539,
+        "job_url": "https://github.com/kburson/aitm/actions/runs/44028499403/job/133854490539",
+        "observed_product_outcomes": 30,
+        "os_failure": null,
+        "product_invocation_started": true,
+        "receipt_sha256": "9e7604ce78ef29dab204e6c03a2a62b6a36b47bc697497c43e0f972dfbaeb226",
+        "run": 44028499403,
+        "snapshot_sha256": "6ee7f9b6d76eb68c95f6063acca447b3c41aa332c47fe36e718d2456542674ff",
+        "started_at": "2026-11-17T06:04:21Z",
+        "trusted_readback": {
+          "early": {
+            "child": 7277,
+            "parent": 7200,
+            "process_observation": true,
+            "root_child_metadata_denied": true,
+            "root_metadata_read_and_listing_denied": true,
+            "stock_providers": {
+              "proc": 30,
+              "syscall": 1116
+            },
+            "usdt": true,
+            "worker_controls": true
+          },
+          "invocations": {
+            "calibrate-failure": {
+              "failed": [
+                "calibration/test_probe.py::test_failure"
+              ],
+              "missing": [],
+              "native_records": 0,
+              "passed": [],
+              "reparsed": true
+            },
+            "calibrate-missing": {
+              "failed": [
+                "calibration/test_probe.py::test_failure"
+              ],
+              "missing": [
+                "calibration/test_probe.py::test_success"
+              ],
+              "native_records": 0,
+              "passed": [],
+              "reparsed": true
+            },
+            "calibrate-positive": {
+              "failed": [],
+              "missing": [],
+              "native_records": 1,
+              "passed": [
+                "calibration/test_probe.py::test_success"
+              ],
+              "reparsed": true
+            },
+            "scoped-product": {
+              "failed": [
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_exact_command_cannot_be_reused_in_another_session",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_expired_first_bind_keeps_exact_original_scope_unpublished",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_first_application_holds_the_revocation_publication_lock",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[revoke-producer grant is unavailable]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application[rotate-seal changed]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_platform_native_process_custody_has_no_provider_request",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[replace]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt[revoke]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope"
+              ],
+              "missing": [],
+              "native_records": 22,
+              "passed": [
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[foreign_pid]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[init]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[no_start]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[size]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[uid]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[usec]",
+                "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_process_info_refuses_invalid_custody[zombie]"
+              ],
+              "reparsed": true
+            }
+          },
+          "product_native": {
+            "expected_native_direct_process_records": 74,
+            "failed_phases": {
+              "call-failed": 1,
+              "setup-failed": 22
+            },
+            "native_direct_process_records": 22,
+            "observed_native_classes": {
+              "keygen_generate": 22,
+              "keygen_sign": 0,
+              "keygen_verify": 0
+            },
+            "remaining_native_records": 52
+          }
+        },
+        "verdict": "HOLD",
+        "workflow_head": "d06b0e7f21a447cabbcd808364377a6736d16892",
+        "workflow_tree": "618e81e5c8981b54694ac2e97e5ee8eb8d28caf3"
+      }
+    ]
+  },
+  "local_experiment": {
+    "build": "25G83",
+    "gate": "stock-dtrace-process-tracing",
+    "integrated_local_execution": "unqualified",
+    "macos": "26.6.2",
+    "proc_probes": 0,
+    "product_tests_executed": 0,
+    "receipt_path": "2026-11-16-368-live-tracing-receipt.json",
+    "receipt_sha256": "414b4c095ef003dcaa422ad178ba91f81475aaf67a687584a1593749d45d41df",
+    "sip": "enabled",
+    "syscall_probes": 0,
+    "verdict": "HOLD"
+  },
+  "plan_sha256": "51f56908994e273e9adce20f5d60813cb7b45cddd52051580241f9119e47bba9",
+  "product_head": "8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7",
+  "product_tree": "90f2cc4007a82493029799d1a1cec10a855cc4a7",
+  "schema": "aitm.hosted-observation-paired-findings/v1",
+  "story": 368,
+  "timing": {
+    "hosted_execution_started_at": "2026-11-17T04:38:49Z",
+    "hosted_last_run_finished_at": "2026-11-17T06:05:28Z",
+    "hosted_wall_hours_through_last_run": 1.444,
+    "local_admission_hours_previously_charged": 0.708,
+    "method": "Conservative elapsed time including in-flight tool and review waits. No owner wait included."
+  },
+  "trusted_local_report_replay": {
+    "assigned_nodes": 30,
+    "extra_untracked_path_exit": 2,
+    "extra_untracked_path_reason": "unsupported-change",
+    "extra_untracked_path_sha256": "261a5127f2f8438b5074f649d654e7aa6487ccd6d6b7c6659fd8308ac8add4b1",
+    "inventory_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+    "post_run_report_sha256": "be365757f366739cad588f47aa2db71d33f43e9306f2291182c4088b18c8550a",
+    "report_sha256": [
+      "be365757f366739cad588f47aa2db71d33f43e9306f2291182c4088b18c8550a",
+      "be365757f366739cad588f47aa2db71d33f43e9306f2291182c4088b18c8550a"
+    ],
+    "snapshot_sha256": "4c200d09f78d75be80a13b19646497f39c2e1c5219fa7c1f2492ff8be5c9727d"
+  },
+  "verdict": "HOLD"
+}
