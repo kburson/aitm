@@ -353,7 +353,8 @@ def run_scope(private, raw, receipt, uid, packet, old, snapshot):
         if product:
             receipt["product_invocation_started"] = True
         events, children = full.observe(
-            label, (*args, "-p", "no:cacheprovider", "--rootdir", str(PRODUCT), "--basetemp", str(SCRATCH / "pytest"),
+            label, (*args, "-p", "no:cacheprovider", "-c", str(PRODUCT / "packages/aitm-usage/pyproject.toml"),
+                    "--rootdir", str(PRODUCT), "--confcutdir", str(PRODUCT), "--basetemp", str(SCRATCH / "pytest"),
                     *options, str(PRODUCT / module)),
             worker_args, uid, PRODUCT, PRODUCT / "packages/aitm-usage/src/aitm_usage",
             private, logs, old.command, details, timeout=180, assignment=nodes,

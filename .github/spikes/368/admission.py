@@ -180,7 +180,8 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
     if admitted_executables:
         executables = (str(STAGED / "qualification"), *admitted_executables)
         literals = " ".join(f"(literal {json.dumps(path)})" for path in executables)
-        exec_policy = f"(deny process-exec*)\n(allow process-exec* {literals})\n"
+        metadata = f"(allow file-read-metadata (literal {json.dumps(str(ROOT))}))\n"
+        exec_policy = metadata + f"(deny process-exec*)\n(allow process-exec* {literals})\n"
     profile_src.write_text(
         '(version 1)\n(allow default)\n(deny file-read*)\n'
         '(allow file-read-data (literal "/"))\n' + allowed_reads +
@@ -229,13 +230,20 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
             with server:
                 positive.sendall(b"qualification")
                 require(server.recv(13) == b"qualification", "controller loopback positive control failed")
+        metadata_target = (str(ROOT),) if admitted_executables else ()
         result = run(*command, str(staged_probe), "check", str(markers["input"][0]), str(SCRATCH / "written"),
                      str(markers["outside"][0]), str(markers["controller"][0]), str(markers["credential"][0]),
-                     str(address[1]), str(markers["checkout"][0]), str(markers["controller_home"][0]), timeout=12)
+                     str(address[1]), str(markers["checkout"][0]), str(markers["controller_home"][0]),
+                     *metadata_target, timeout=12)
         require(output(raw, "worker-boundary", result) == 0, f"worker boundary controls refused at {result.returncode}")
         require(b"DENY socket creation" in result.stdout or b"DENY loopback connect" in result.stdout,
                 "missing explicit network denial")
         require(not select.select([listener], [], [], 0.2)[0], "worker connected to protected listener")
+        if admitted_executables:
+            require(b"ALLOW admission root metadata\nDENY admission root listing\n" in result.stdout,
+                    "admission root protected-read controls incomplete")
+            receipt["boundary"]["root_metadata_read"] = True
+            receipt["boundary"]["root_directory_listing_denied"] = True
     for name, (path, mode) in markers.items():
         require(f"{stat.S_IMODE(path.stat().st_mode):04o}" == mode and
                 path.stat().st_uid == receipt["boundary"]["markers"][name]["uid"] and

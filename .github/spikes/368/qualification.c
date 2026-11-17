@@ -1,10 +1,12 @@
 #include <arpa/inet.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -22,7 +24,7 @@ static int access_denied(const char *path, int flags)
 
 static int check(int argc, char **argv)
 {
-    if (argc != 10 || getuid() == 0) {
+    if ((argc != 10 && argc != 11) || getuid() == 0) {
         return 64;
     }
 
@@ -61,6 +63,26 @@ static int check(int argc, char **argv)
         return 76;
     }
     puts("DENY controller trace device");
+    if (argc == 11) {
+        struct stat directory;
+        if (stat(argv[10], &directory) != 0 || !S_ISDIR(directory.st_mode)) {
+            return 78;
+        }
+        DIR *listing = opendir(argv[10]);
+        if (listing != NULL) {
+            errno = 0;
+            struct dirent *next = readdir(listing);
+            int error = errno;
+            closedir(listing);
+            if (next != NULL || (error != EACCES && error != EPERM)) {
+                return 79;
+            }
+        } else if (errno != EACCES && errno != EPERM) {
+            return 79;
+        }
+        puts("ALLOW admission root metadata");
+        puts("DENY admission root listing");
+    }
 
     struct sockaddr_in listener = {0};
     listener.sin_family = AF_INET;
