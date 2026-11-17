@@ -13,6 +13,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from admission import ROOT, boundary_profile
+
 from integrated import (
     KEYGEN, NAMESPACE, SCRATCH, allow_observed, describe_os_error, extract_runtime, native_shape,
     read_native, validate_children,
@@ -78,6 +80,14 @@ class NativeIntakeTest(unittest.TestCase):
             allow_observed(observer)
             with self.assertRaises(ValueError):
                 observer.dtrace_program()
+
+
+class BoundaryProfileTest(unittest.TestCase):
+    def test_metadata_grant_applies_to_the_literal_admission_root_only(self):
+        self.assertNotIn("allow file-read-metadata", boundary_profile())
+        rules = [line for line in boundary_profile(admitted_executables=(KEYGEN,)).splitlines()
+                 if line.startswith("(allow file-read-metadata")]
+        self.assertEqual(rules, [f'(allow file-read-metadata (literal "{ROOT}"))'])
 
 
 class RuntimeRestoreTest(unittest.TestCase):

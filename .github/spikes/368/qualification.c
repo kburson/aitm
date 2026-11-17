@@ -80,8 +80,12 @@ static int check(int argc, char **argv)
         } else if (errno != EACCES && errno != EPERM) {
             return 79;
         }
+        if (stat(argv[4], &directory) == 0 || (errno != EACCES && errno != EPERM)) {
+            return 80;
+        }
         puts("ALLOW admission root metadata");
         puts("DENY admission root listing");
+        puts("DENY admission root child metadata");
     }
 
     struct sockaddr_in listener = {0};

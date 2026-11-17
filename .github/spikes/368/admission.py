@@ -128,6 +128,26 @@ def worker_command(profile=None):
     return args
 
 
+def boundary_profile(public_inputs=(), admitted_executables=()):
+    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH), *public_inputs)
+    allowed_reads = "\n".join(f'(allow file-read* (subpath {json.dumps(path)}))' for path in roots)
+    exec_policy = ""
+    if admitted_executables:
+        executables = (str(STAGED / "qualification"), *admitted_executables)
+        literals = " ".join(f"(literal {json.dumps(path)})" for path in executables)
+        metadata = f"(allow file-read-metadata (literal {json.dumps(str(ROOT))}))\n"
+        exec_policy = metadata + f"(deny process-exec*)\n(allow process-exec* {literals})\n"
+    return (
+        '(version 1)\n(allow default)\n(deny file-read*)\n'
+        '(allow file-read-data (literal "/"))\n' + allowed_reads +
+        '\n(deny network*)\n(deny file-write*)\n' +
+        f'(allow file-write* (subpath {json.dumps(str(SCRATCH))}) (literal "/dev/null"))\n'
+        '(deny file-read* file-ioctl (literal "/dev/dtrace"))\n'
+        '(allow file-write-data file-ioctl (require-all (literal "/dev/dtracehelper")'
+        ' (vnode-type CHARACTER-DEVICE)))\n' + exec_policy
+    )
+
+
 def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executables=()):
     require(not ROOT.exists() and WORKER not in {row.pw_name for row in pwd.getpwall()}, "prior worker state present")
     put_root(ROOT, "0755")
@@ -174,23 +194,8 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
             path.chmod(int(mode, 8))
 
     profile_src = private / "worker.sb"
-    roots = ("/usr", "/System", "/Library/Apple", "/private/etc", "/dev", str(STAGED), str(SCRATCH), *public_inputs)
-    allowed_reads = "\n".join(f'(allow file-read* (subpath {json.dumps(path)}))' for path in roots)
-    exec_policy = ""
-    if admitted_executables:
-        executables = (str(STAGED / "qualification"), *admitted_executables)
-        literals = " ".join(f"(literal {json.dumps(path)})" for path in executables)
-        metadata = f"(allow file-read-metadata (literal {json.dumps(str(ROOT))}))\n"
-        exec_policy = metadata + f"(deny process-exec*)\n(allow process-exec* {literals})\n"
-    profile_src.write_text(
-        '(version 1)\n(allow default)\n(deny file-read*)\n'
-        '(allow file-read-data (literal "/"))\n' + allowed_reads +
-        '\n(deny network*)\n(deny file-write*)\n' +
-        f'(allow file-write* (subpath {json.dumps(str(SCRATCH))}) (literal "/dev/null"))\n'
-        '(deny file-read* file-ioctl (literal "/dev/dtrace"))\n'
-        '(allow file-write-data file-ioctl (require-all (literal "/dev/dtracehelper")'
-        ' (vnode-type CHARACTER-DEVICE)))\n' + exec_policy
-    )
+    profile_src.write_text(boundary_profile(public_inputs, admitted_executables))
+    executables = (str(STAGED / "qualification"), *admitted_executables)
     profile = STAGED / "worker.sb"
     put_root(profile, "0444", profile_src)
     (raw / "worker.sb").write_bytes(profile_src.read_bytes())
@@ -240,10 +245,12 @@ def prepare_boundary(private, raw, receipt, public_inputs=(), admitted_executabl
                 "missing explicit network denial")
         require(not select.select([listener], [], [], 0.2)[0], "worker connected to protected listener")
         if admitted_executables:
-            require(b"ALLOW admission root metadata\nDENY admission root listing\n" in result.stdout,
+            require(b"ALLOW admission root metadata\nDENY admission root listing\n"
+                    b"DENY admission root child metadata\n" in result.stdout,
                     "admission root protected-read controls incomplete")
             receipt["boundary"]["root_metadata_read"] = True
             receipt["boundary"]["root_directory_listing_denied"] = True
+            receipt["boundary"]["root_child_metadata_denied"] = True
     for name, (path, mode) in markers.items():
         require(f"{stat.S_IMODE(path.stat().st_mode):04o}" == mode and
                 path.stat().st_uid == receipt["boundary"]["markers"][name]["uid"] and
