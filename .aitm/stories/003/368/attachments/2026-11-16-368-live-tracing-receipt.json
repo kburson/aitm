@@ -21,7 +21,8 @@
     "prior_elapsed_charge_hours": 0.483,
     "resumption_elapsed_charge_hours": 0.225,
     "combined_elapsed_charge_hours": 0.708,
-    "accounting": "Conservative sum of the prior charged interval and the entire resumed interval through evidence export. Review is accounted separately by the plan."
+    "accounting": "Conservative sum of the prior charged interval and the entire resumed interval through evidence export. Review is accounted separately by the plan.",
+    "paused_interval": "The previous checkpoint stopped at 2026-11-17T02:46:12Z. The interval before this resumption is excluded because the attempt was paused and review is budgeted separately."
   },
   "runtime": {
     "guest_identifier_sha256": "88e396957c70e76c75b21ecf32faa4894dedeb6ff8511819b4af875337e94fdf",
@@ -94,7 +95,7 @@
     "controller_uid": 0,
     "worker_uid": 502,
     "worker_scratch_write_pass": true,
-    "worker_staged_input_read_pass": true,
+    "worker_staged_input_read_pass": null,
     "denials": [
       "admitted configuration",
       "admitted assignment",
@@ -126,6 +127,40 @@
       ],
       "host_or_network_mounts_detected": false,
       "diagnostic_input_verified_read_only": true
+    },
+    "worker_staged_input_access_check_pass": true,
+    "read_write_verification_limits": "test -r and test -x checked input access and executability. An actual admitted-file read was not attempted. The scratch write and eight denial checks were exercised. Content hashes were checked. The controller did not capture independent owner and mode readback.",
+    "sandbox": {
+      "launcher": "/usr/bin/sandbox-exec",
+      "profile": "worker.sb",
+      "profile_sha256": "8d27bf92762b02549eab7ff0107dac813cde6f726eb64652adfdca9edb68d130",
+      "policy": "allow default with network operations denied and writes restricted to worker scratch and /dev/null; protected read denial relies on filesystem permissions",
+      "network_denial_configured": true,
+      "worker_network_operation_exercised": false,
+      "outside_scratch_write_denial_observed": true
+    },
+    "route_parser_controls": {
+      "script": "diagnostic-v3/test-route.sh",
+      "script_sha256": "6ca94c8372cf511a99cc0734d0cdd057a0699a02c56fb88f81e2f84830adf3c2",
+      "tested_function_sha256": "2744568238fda266b036fc829877e0424a23293d0653325fce011fdc00914e65",
+      "pinned_helper": "diagnostic-v3/media/guest-preflight.sh",
+      "function_bytes_match_pinned_helper": true,
+      "retained_replay": "resumed-export/diagnostic-v3/route-parser-controls.log",
+      "retained_replay_sha256": "a39925ec20532f8a7493ba24042f05bcf1c265784b561a27571eaf5f9375b583",
+      "cases": [
+        {
+          "input": "Darwin not in table, exit 0",
+          "outcome": "accepted as no route"
+        },
+        {
+          "input": "positive interface field, exit 0",
+          "outcome": "HOLD"
+        },
+        {
+          "input": "unknown diagnostic, exit 1",
+          "outcome": "HOLD"
+        }
+      ]
     }
   },
   "trace": {
@@ -227,7 +262,16 @@
     "trace_rows": 0,
     "trace_benign_worker_launched": false,
     "worker_wait_observed": false,
-    "usdt_seen": false
+    "usdt_seen": false,
+    "inventory_custody": {
+      "file": "aitm368-probes.log",
+      "role": "executor-captured corroboration of stock DTrace provider availability",
+      "identity": "root via sudo -n in the offline guest controller console",
+      "capture": "Same v3 boot, after the manifest-verified preflight export and before clean shutdown. Script recorded stock dtrace -l to the controller home.",
+      "transfer": "Copied as a separate file during the same host read-only APFS mount after shutdown. Host computed the inventory SHA-256 separately.",
+      "covered_by_controller_export_manifest": false
+    },
+    "dynamic_usdt_provider_availability": "unqualified; the required early emitter was never launched"
   },
   "scoped_assignment": {
     "current_state": "prior static 30-node inventory only; live selection replay and assignment admission were held before this gate",
@@ -311,7 +355,16 @@
   "cleanup": {
     "guest": "cleanly shut down after the stock inventory. VM and controller evidence retained. Disk detached after read-only export.",
     "product_source_changed": false,
-    "host_security_settings_changed": false
+    "host_security_settings_changed": false,
+    "residual_guest_state": {
+      "guest_retired": false,
+      "guest_cleanup_pending": true,
+      "worker_account": "aitm368worker (UID 502)",
+      "guest_run_dir": "/private/var/tmp/aitm368-run.yOfK42bj",
+      "guest_run_pointer": "/private/var/tmp/aitm368-last-evidence",
+      "controller_export": "/Users/aitmcontroller/aitm368-export.hrfXWUfm",
+      "rerun_guard": "Pinned preflight exits 76 if the worker account exists. Preserve the old evidence and use an authorized fresh attempt state before re-running."
+    }
   },
   "dependency": {
     "355_state": "blocked",
