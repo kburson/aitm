@@ -117,7 +117,9 @@ def install_bundle(path, private, raw, admission):
     for target, text in links:
         target.symlink_to(text)
     for target, mode in reversed(list(modes.items())):
-        if not target.is_symlink():
+        if target.is_symlink():
+            os.lchmod(target, mode)
+        else:
             target.chmod(mode)
     put_root(PREFIX, "0755")
     for relative in roots:
@@ -432,6 +434,12 @@ def main(private, bundle):
     except Exception as error:
         receipt["failure_type"] = type(error).__name__
         receipt["failure"] = str(error) if isinstance(error, ValueError) else type(error).__name__
+        if isinstance(error, OSError):
+            frames = error.__traceback__
+            while frames.tb_next is not None:
+                frames = frames.tb_next
+            receipt["os_failure"] = {"errno": error.errno, "file": Path(frames.tb_frame.f_code.co_filename).name,
+                                     "function": frames.tb_frame.f_code.co_name, "line": frames.tb_lineno}
     for name in LABELS:
         program = private / f"{name}.d"
         if program.is_file():
