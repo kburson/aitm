@@ -10,7 +10,7 @@ children: [352, 353, 354, 355, 368]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T12:19:46Z"
+updated: "2026-11-18T02:06:55Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -37,8 +37,8 @@ Spike stories answer one question and create no production software. Feature sto
 1. #352 names the condition that blocks local test selection.
 2. #353 names the process boundary a trusted pre-commit run needs.
 3. #354 reports the affected tests. It is blocked by #352.
-4. #355 runs that list before commit. It requires #354, #353, and #368.
-5. [#368](../368/story.md) qualifies the protected local runner, independent observer, and scoped assignment for #355.
+4. #355 runs that list before commit. It uses the delivered #354 report and the cooperative advisory boundary from #353.
+5. [#368](../368/story.md) investigated the protected runner. The owner accepted its HOLD. #355 does not wait on #368.
 
 ## Starting material
 
@@ -60,4 +60,9 @@ Development does not start from this epic. Codex picks up the child stories afte
 
 ## Develop
 
-Epic planning and deep-dive assessment are complete. Project 24 records Rank 430, Priority P2, Size Feature, and all five children. #354 is delivered; #355 and #368 remain open and blocked at the accepted qualification boundary. GitHub Project status advanced from Planning to Dev after the issue-planning and metadata preflight.
+Epic planning and deep-dive assessment are complete. Project 24 records Rank 430, Priority P2, Size Feature, and all five children. #354 is delivered. The owner accepted the #368 HOLD and removed it as a blocker. #355 is open in develop for the advisory run. #351 stays open until #355 delivers that run. GitHub Project status advanced from Planning to Dev after the issue-planning and metadata preflight.
+
+## Owner scope for #355
+
+#368 stops blocking #355. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. The unqualified protected-runner claims stay written on #368. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md).
+

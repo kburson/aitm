@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 355
 title: "Run the affected tests before commit"
 kind: "story"
-state: "blocked"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/355"
 parent: 351
 children: []
 blocking: []
-blocked-by: [353, 354, 368]
+blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-17T01:11:52Z"
-last-branch: "codex/355-precommit-execution"
+updated: "2026-11-18T02:06:55Z"
+last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
@@ -46,4 +46,6 @@ Opus 5.5 at high effort accepted the exact plan in round two after both findings
 
 The delivered #354 report reproduced all 30 pinned obligations. The strict local execution boundary and scoped assignment authority were unavailable. The accepted plan stops at this checkpoint and records the owner scope decision. [Qualification hold](plan/2026-11-16-355-execution-qualification.md) · [Machine receipt](attachments/2026-11-16-355-execution-qualification.json).
 
-An independently accepted [#368](../368/story.md) qualification is a prerequisite. If a bounded PASS leaves a trust requirement unmet, keep #368 as the open blocker until an owner-approved scope decision or a verified open native successor covers that requirement.
+## Owner scope decision
+
+The owner accepted the [#368](../368/story.md) HOLD and removed it as a blocker. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. #353 and #354 stay accepted prerequisites. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md).
