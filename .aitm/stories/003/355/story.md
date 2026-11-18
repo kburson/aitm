@@ -63,3 +63,5 @@ The hosted macOS queue is investigated by [#371](../371/story.md) under [#370](.
 ## Hosted verification hold
 
 The [independent source review](plan/reviews/2026-11-18-355-source-review.md) passed for PR #369 head `2bd902dbd982188e00e0f21a5b5c3565699c332d` and tree `594971b04a905027b72cac36425dd34c5b16e63e`. The exact advisory proof passed all 30 assigned tests. The first hosted attempt had a base/candidate runner-image mismatch. The next two attempts exhausted hosted macOS arm64 runner capacity with zero Python steps. The [trusted verifier](plan/2026-11-18-355-final-capacity-hold.json) holds the exact candidate. #355 stays in Test until the unchanged workflow can produce and authenticate a successful same-head attempt. #351 remains open. [Latest hosted attempt](https://github.com/kburson/aitm/actions/runs/44308912626/attempts/3).
+
+The owner-requested [retry](https://github.com/kburson/aitm/actions/runs/44308912626/attempts/4) acquired both macOS runners. Candidate Python passed and trusted base Python reached its eight-minute execution limit. The [verifier returned HOLD](plan/2026-11-18-355-attempt-4-verifier-hold.json).
