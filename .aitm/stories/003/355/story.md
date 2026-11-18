@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 355
 title: "Run the affected tests before commit"
 kind: "story"
-state: "develop"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/355"
 parent: 351
 children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T02:11:58Z"
+updated: "2026-11-18T12:45:18Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -49,3 +49,7 @@ The delivered #354 report reproduced all 30 pinned obligations. The strict local
 ## Owner scope decision
 
 The owner accepted the [#368](../368/story.md) HOLD and removed it as a blocker. GitHub closed #368 as Completed at 2026-11-18T02:10:27Z. Project 24 shows Done and Delivered for the completed investigation. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. #353 and #354 stay accepted prerequisites. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md) · [Closure receipt](../368/plan/closure-receipt.json).
+
+## Test
+
+The cooperative runner is in [PR #369](https://github.com/kburson/aitm/pull/369), targeting trunk at `8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7`. GitHub confirmed head `81a6602a7b045f081f597b0e0b3e6480258d01ff`, with clean local source tree `4dffcbcfdfca38febd63463124f2f5e140e70c1d`. [Advisory delivery plan](plan/2026-11-18-355-advisory-delivery.md) · [Hosted CI](https://github.com/kburson/aitm/actions/runs/44306782506).
