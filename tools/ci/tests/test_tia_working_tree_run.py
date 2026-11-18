@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.ci.tia import working_tree_report, working_tree_run
+from tools.ci.tia import local, working_tree_report, working_tree_run
 from tools.ci.tia.local import _Copy, _Invocation, _Runtime
 
 NODES = ["tests/test_scoped.py::test_one", "tests/test_scoped.py::test_two"]
@@ -121,8 +121,8 @@ def test_run_checks_snapshot_before_and_after(
         calls.append((profile, targets, collect))
         return invocation(receipt, 0)
 
-    def prepare(admitted, directory):
-        assert admitted is snapshot
+    def prepare(admitted, directory, *, inspected_checkout):
+        assert admitted is snapshot and inspected_checkout == tmp_path.resolve()
         assert not directory.is_relative_to(tmp_path)
         return SimpleNamespace(pytest=execute, verify=lambda: None)
 
@@ -189,3 +189,28 @@ def test_real_subprocess_reports_failure_and_runs_only_the_named_node(tmp_path):
         "passed",
     ]
     assert "unassigned" not in child.diagnostic
+
+
+@pytest.mark.parametrize("location", ["inspected", "frozen", "external"])
+def test_uv_cache_stays_outside_both_source_trees(tmp_path, monkeypatch, location):
+    inspected = tmp_path / "target"
+    runtime = tmp_path / "runtime"
+    source = runtime / "source"
+    cache_root = {
+        "inspected": inspected / ".git",
+        "frozen": source,
+        "external": tmp_path,
+    }
+    cache = cache_root[location] / "uv-cache"
+    environment = {"XDG_CACHE_HOME": str(cache.parent)}
+
+    def query(args, *, cwd, env):
+        assert args == ["uv", "cache", "dir", "--no-config"]
+        assert cwd == source and env == environment
+        return SimpleNamespace(returncode=0, stdout=os.fsencode(str(cache) + "\n"))
+
+    monkeypatch.setattr(local, "_capture", query)
+    expected = cache if location == "external" else runtime / "uv-cache"
+    assert (
+        local._safe_uv_cache("uv", runtime, source, inspected, environment) == expected
+    )

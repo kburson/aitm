@@ -72,10 +72,11 @@ def run(repo: Path, base_commit: str) -> dict:
     try:
         # As in the stock local runner, keep native fixture ancestors stable
         # and put all runtime writes outside the inspected checkout.
+        inspected = repo.resolve()
         cache = Path.home() / "Library/Caches"
         temp_root = (cache if cache.is_dir() else Path(tempfile.gettempdir())).resolve()
         _checked(
-            not temp_root.is_relative_to(repo.resolve()),
+            not temp_root.is_relative_to(inspected),
             "scratch must be outside the checkout",
         )
         invocation_id = uuid4().hex
@@ -84,7 +85,9 @@ def run(repo: Path, base_commit: str) -> dict:
         ) as directory:
             private = Path(directory)
             _capabilities(private)
-            runtime = _prepare(snapshot, private / "runtime")
+            runtime = _prepare(
+                snapshot, private / "runtime", inspected_checkout=inspected
+            )
             recheck()
             result["invocation_id"] = invocation_id
             try:
