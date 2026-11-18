@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T13:52:04Z"
+updated: "2026-11-18T20:56:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -58,7 +58,7 @@ The initial candidate entered rework after independent source review reproduced 
 
 A follow-up source review reproduced uv writing cache files in the inspected checkout under a repo-local XDG cache. The final candidate resolves uv's cache and redirects any cache inside the inspected or frozen checkout to scratch. [Final candidate CI](https://github.com/kburson/aitm/actions/runs/44308912626).
 
-The hosted macOS queue is investigated by [#371](../371/story.md) under [#370](../370/story.md). #355 continues the accepted advisory command.
+The platform-agnostic selector is [#371](../371/story.md) under [#370](../370/story.md). One Python program selects the affected tests on each operating system's CPython interpreter. #355 continues the accepted advisory command.
 
 ## Hosted verification hold
 

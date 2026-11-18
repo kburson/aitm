@@ -10,7 +10,7 @@ children: [357, 358, 359, 360, 361]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T13:52:04Z"
+updated: "2026-11-18T20:56:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -48,4 +48,4 @@ Read #285, #286, #148, #290, #292, #293, #294, and #337. Advisory shard code and
 
 This epic is independent of #351, #362, and #370. Development does not start from this epic.
 
-Runner platform is #370. This epic classifies tests by execution category and does not choose the operating system.
+#370 decides how one Python program selects affected tests on every operating system. This epic classifies tests by execution category.

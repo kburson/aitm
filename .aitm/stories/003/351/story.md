@@ -10,7 +10,7 @@ children: [352, 353, 354, 355, 368]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T13:52:04Z"
+updated: "2026-11-18T20:56:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -66,7 +66,7 @@ Epic planning and deep-dive assessment are complete. Project 24 records Rank 430
 
 #368 stops blocking #355. GitHub closed #368 as Completed at 2026-11-18T02:10:27Z. Project 24 shows Done and Delivered for the completed investigation. The strict three-gate PASS was not met. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. The unqualified protected-runner claims stay written on #368. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md) · [Closure receipt](../368/plan/closure-receipt.json).
 
-## Linux-first suite
+## One TIA program
 
-Platform support is the independent epic [#370](../370/story.md), investigated by [#371](../371/story.md). #351 still closes when #355 delivers the advisory command. This epic does not move that command off its accepted scope.
+The platform-agnostic selector is the independent epic [#370](../370/story.md), investigated by [#371](../371/story.md). One Python program selects the affected tests. #351 still closes when #355 delivers the advisory command. This epic does not move that command off its accepted scope.
 

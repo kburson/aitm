@@ -61,15 +61,17 @@ The withdrawn stories #144, #145, #146, and #149 through #157, and #159 through 
 
 Development does not start from this note. Codex picks up a feature story after the spike receipts it depends on are accepted.
 
-## Linux-first follow-on
+## Platform-agnostic TIA
 
-Owner decision on 2026-11-18. The tool suite runs on Linux first. macOS is added for tests that need Darwin or APFS. Windows stays a later epic and is not opened here. The owner still develops on macOS.
+Owner decision on 2026-11-18, corrected the same day. TIA is one Python program. Linux, macOS, and later Windows supply a CPython interpreter and run that same source.
 
-The product pytest lane on `macos-26` is blocking delivery because hosted macOS runners are scarce. #355 records that queue failure and stays on the accepted advisory command.
+The job is the test list for a change. Compare the staging area, or HEAD, with the commit where the branch diverges from its parent branch. Follow the chain among tests, imported functions, and libraries, and unwind it to the application. #371 analyzes the Python language facility that makes that program cross-platform.
+
+The owner develops on macOS. Windows stays a later epic for Windows facilities and is not opened here. The hosted `macos-26` queue shortage remains a runner fact recorded on #355. #355 stays on the accepted advisory command.
 
 | Issue | Kind | Rank | Title | Parent | Blocked by |
 | --- | --- | --- | --- | --- | --- |
-| #370 | epic | 480 | Run the TIA suite on Linux first |  | — |
-| #371 | spike | 490 | [Spike] Find how TIA runs on Linux first | #370 | — |
+| #370 | epic | 480 | Select affected tests with one Python program |  | — |
+| #371 | spike | 490 | [Spike] Analyze how one Python TIA program runs everywhere | #370 | — |
 
 #356 through #366 moved up by 20 so the gap stays 10. Their ranks are now 500 through 600. This order is a note, not a blocker edge. #351 still closes when #355 delivers. #371 writes the finding. A feature story for #370 is opened after that finding is accepted.

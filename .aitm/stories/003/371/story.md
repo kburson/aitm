@@ -1,7 +1,7 @@
 ---
 schema: "aitm.story/v0"
 id: 371
-title: "[Spike] Find how TIA runs on Linux first"
+title: "[Spike] Analyze how one Python TIA program runs everywhere"
 kind: "spike"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/371"
@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-18T13:52:04Z"
+updated: "2026-11-18T20:56:33Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -20,37 +20,41 @@ expansions: []
 trips: []
 ---
 
-# [Spike] Find how TIA runs on Linux first
+# [Spike] Analyze how one Python TIA program runs everywhere
 
 [GitHub issue #371](https://github.com/kburson/aitm/issues/371) · [Parent #370](../370/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
 Project 24 Rank 490. Priority P2. Size S. Estimate 3 agent-hours.
 
-Question: what is the smallest change that lets the TIA tool run on Linux first, with macOS added only where a test needs Darwin or APFS?
+Question: how does one Python TIA program run unchanged on every operating system that has a CPython interpreter?
+
+Python is the cross-platform medium, in the same sense that Ruby source runs on a platform Ruby engine, JavaScript runs on a platform Node process, and Java bytecode runs on a platform JVM. The platform-specific piece is the interpreter. The TIA program is one body of source.
+
+## Finding
 
 Answer these four points in one finding:
 
-1. Separate the tests and CI steps that require Darwin or APFS from the tests and steps that run on macOS only because the current gate and suite policy require it. Name the files and jobs.
-2. Can that Linux-first tool stay in Python? If a Python implementation cannot meet the boundary, name the concrete obstacle.
-3. Can a Node.js toolchain select and invoke the existing pytest suite? Say what Node would own and what pytest would still own.
-4. Is Python a poor choice for this agentic tool suite? Judge that from the current agent path, which is uv, pytest, the path map, and the local advisory command. Keep that judgment separate from the shortage of hosted macOS runners.
+1. Python's cross-platform medium. Describe the source program, the platform CPython interpreter, bytecode as a cache for one Python version, and a pure-Python wheel. Name the boundary where a call leaves that medium: an operating-system facility, a native extension, or a path that exists on only one operating system.
+2. The selection job. The diff is the staging area, or HEAD, against the commit where the branch diverges from the parent branch. The dependency list is the chain among tests, imported functions, and libraries, unwound to the application. Show how that analysis reads source and therefore stays inside the portable medium.
+3. The current tree. Classify `tools/ci/tia/python_graph.py`, `tools/ci/path_map.py`, `tools/ci/tia/local.py`, `tools/ci/tia/snapshot.py`, `tools/ci/python_gate.py`, and `tools/ci/tia/suites.json`. Say which of these are already one portable program and which require Darwin, APFS, or a macOS runner. The claim is one source program. Each operating system supplies its own CPython interpreter.
+4. The conclusion. State whether the portable Python subset is sufficient for this selection job. If a current call cannot stay in that subset, name the call. Treat Node.js as a comparison for the interpreter model. A Node implementation is in scope only when this analysis names a gap that pure Python cannot close.
 
-Name the question a later Windows epic would have to answer. Do not open that epic and do not design the Windows solution.
+Name the question a later Windows epic would have to answer about Windows facilities. The same TIA program is the program that epic would run. Do not open that epic and do not design those facilities.
 
 ## Bound
 
-This is research for #370. Write the finding. Do not change production code, CI workflows, the hosted path map, or the #355 advisory command. Do not port the tool to Node in this spike. Do not add a blocker edge.
+This is research for #370. Write the finding. Do not change production code, CI workflows, the hosted path map, or the #355 advisory command. Do not add a blocker edge.
 
 ## Starting material
 
-- `.github/workflows/ci.yml`: `python-base` and `python` use `macos-26`. `quality` and `file-checks` use `ubuntu-24.04`.
-- `tools/ci/python_gate.py` rejects a result unless the capability is Darwin and APFS.
-- `tools/ci/tia/suites.json` marks `product-base`, `product-cli`, and `ci-helpers` as the `darwin-apfs` runner.
-- `docs/ci.md` describes the full product suite on Darwin APFS runners.
-- #355 records the hosted macOS queue failure. [Pull request #369](https://github.com/kburson/aitm/pull/369) attempt 2 waited 15 minutes for both macOS arm64 jobs, and GitHub cancelled them with no runner and zero steps.
-- Node in this repository installs markdownlint for the file lane under `tools/ci/file-lint`. The product tests are pytest.
-- The product already has Linux and Darwin surfaces in `aitm_usage`.
+- `tools/ci/tia/python_graph.py` builds a file-level import graph with the Python `ast` module. It records dynamic imports, wildcards, parse failures, and pytest plugins as unresolved. It is not wired into pull-request selection.
+- `tools/ci/path_map.py` is the delivered pull-request allowlist. It maps reviewed paths to test modules. It is not the import-chain unwind described above.
+- `tools/ci/tia/local.py` refuses to start unless `platform.system()` is Darwin and the filesystem is APFS.
+- `tools/ci/tia/snapshot.py` uses `/usr/bin/git` when `sys.platform` is `darwin`.
+- `tools/ci/python_gate.py` rejects a result unless the capability is Darwin and APFS. `tools/ci/tia/suites.json` marks the product and helper workloads as the `darwin-apfs` runner.
+- `.github/workflows/ci.yml` runs the product pytest jobs on `macos-26`. Quality and file checks run on `ubuntu-24.04`.
+- #355 records the hosted macOS queue failure on [pull request #369](https://github.com/kburson/aitm/pull/369). That shortage is a runner fact. It does not by itself decide the language of the selector.
 
 ## Handoff
 
-The accepted finding names the feature story that would implement the Linux-first boundary. That story is created after acceptance. #356 continues to classify tests by execution category. It does not choose the operating system.
+The accepted finding names the feature story that would make the selector this one program and would select tests from the diff and the dependency chain. That story is created after acceptance. #356 continues to classify tests by execution category. #355 continues the accepted advisory command.
