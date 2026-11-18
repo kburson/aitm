@@ -75,3 +75,5 @@ The owner develops on macOS. Windows stays a later epic for Windows facilities a
 | #371 | spike | 490 | [Spike] Analyze how one Python TIA program runs everywhere | #370 | — |
 
 #356 through #366 moved up by 20 so the gap stays 10. Their ranks are now 500 through 600. This order is a note, not a blocker edge. #351 still closes when #355 delivers. #371 writes the finding. A feature story for #370 is opened after that finding is accepted.
+
+Owner direction later the same day, recorded in [the #370 plan](../../003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md). The Linux suite cleanup comes before the TIA probe. After that cleanup every required test runs on Linux. The probe then lists the tests for a staging area, a commit, or a pull request. The same Python program runs wherever CPython and git are installed.

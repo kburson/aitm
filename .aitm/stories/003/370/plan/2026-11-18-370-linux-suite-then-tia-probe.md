@@ -1,0 +1,169 @@
+# Remove the macOS-only host requirements
+
+Yes. The order is this host cleanup, then a TIA probe. After the cleanup, every required test runs on Linux in the cloud. GitHub has no macOS job in that suite. The TIA program is platform agnostic: the same source runs anywhere the runtimes are installed (CPython 3.13, git, and the POSIX calls below). A developer machine can be a Mac. The cloud run is Linux.
+
+The suite and the product executable run on any host that has those runtimes. APFS, `diskutil`, `chmod +a`, `launchctl`, and `libproc.dylib` stop being requirements. The safety properties those checks protect stay, expressed with `stat`, open flags, and a supervisor the same source starts on Linux and macOS.
+
+Python stays the language. The ledger, the monitors, and the pytest suite are already Python, and the portable half of each host call is already in that source. A second language would reimplement the product. It would not make `st_dev`/`st_ino` or a pid file more portable. Node, Go, and Rust stay available for a later slice only if a spike shows a POSIX call this program cannot make.
+
+This plan does not start development. It does not edit pull request #369 or the #355 advisory command. Those stay on the accepted scope until they land. The replacement is the next trunk work after that. #371's language question is closed by this decision: one Python program, Darwin utilities deleted from the required path. The TIA probe that builds the affected-test list is the step after this cleanup, under #370.
+
+## Properties to keep
+
+These are the behaviors the Darwin checks were standing in for. The replacement has to keep them.
+
+- A private ledger file is mode `0600` or a directory is mode `0700`, owned by the effective uid, opened with `O_NOFOLLOW`, and rejected when a non-owner can write it. Root-owned sticky directories stay allowed as ancestors. This is `ledger._validated_path` and `ledger._private`.
+- The writer-guard directory and the project directory are different physical directories. Identity is `(st_dev, st_ino)` from `ledger._path_id`. Two spellings of the same inode are one directory. That comparison is already in `ledger._guard_path`. The APFS firmlink is one way to get two spellings. A bind mount is another. The check does not ask which filesystem produced them.
+- A private file that carries an extra access grant is refused. An absent ACL is safe. The product never needs to create an ACL in order to start.
+- A published file appears under its final name in one rename. Linux uses `renameat2`. macOS uses `renameatx_np`. Both already live in `host_fs._rename_entries`. Each host uses the call it has.
+- The monitor restarts from a heartbeat the same program writes. Process identity for custody is that heartbeat plus the pid, not a Darwin process structure.
+
+## Where the macOS requirements live
+
+### Gates that refuse the whole suite
+
+These are the deletions. They force `macos-26` even for tests that never touch a firmlink or an ACL.
+
+| Location | What it requires |
+| --- | --- |
+| `.github/workflows/ci.yml` jobs `python-base` (line 28) and `python` (line 134) | `runs-on: macos-26` |
+| `ci.yml` around lines 93–97 and 189–194 | `diskutil` + `plutil`, and `test "$filesystem" = apfs`. The candidate job also records `xcodebuild -version` into `capability.json` |
+| `tools/ci/python_gate.py` around lines 346–350 | Fails the result unless capability is `("Darwin", "apfs")` |
+| `tools/ci/verify_pr.py` around lines 818–825 | Requires platform `(Darwin, apfs)` plus an Xcode string |
+| `tools/ci/tia/baseline.py` around line 254 | Runner identity `("macos-26", "Darwin", "apfs")` |
+| `tools/ci/tia/local.py` lines 35–36, 62–66, 98–124 | Platform `darwin-apfs`, capabilities `apfs`, `darwin`, `native-acl`. Git is hardcoded to `/usr/bin/git`. The probe runs `/bin/df`, `/usr/sbin/diskutil`, and `/bin/chmod +a` |
+| `tools/ci/tia/snapshot.py` line 287 | `/usr/bin/git` when `sys.platform == "darwin"` |
+| `tools/ci/tia/suites.json` | Every workload pair and the only runner are `darwin-apfs`. Profiles require `apfs` and `darwin`. The runner advertises `native-acl` |
+| `tools/ci/policy.json` | Optional skip whose reason is the missing APFS firmlink path |
+| `tools/ci/tests/test_tia_local.py`, `test_python_gate.py`, `test_verify_pr.py`, `test_tia_controls.py`, `test_tia_selection.py`, `test_tia_inventory.py` | Fixtures and assertions that the runner is Darwin APFS |
+
+### Product calls that exist only on Darwin
+
+These stay correct only while a Darwin backend is allowed to be absent. The required executable stops calling them.
+
+| Location | Darwin-only call | Portable replacement already nearby |
+| --- | --- | --- |
+| `packages/aitm-usage/src/aitm_usage/host_fs.py` `_check_mac_acl` | `acl_get_link_np` / `acl_get_fd_np` via libc. Accepts only an empty ACL or the stock home-directory deny-delete ACE | `_check_linux_acl` treats a missing POSIX ACL xattr as safe and any present ACL as unsafe |
+| `host_fs.account_control_root` | `~/Library/Application Support/aitm-usage-control` | `~/.local/state/aitm-usage-control` on Linux |
+| `host_fs._rename_entries` | `renameatx_np` with `RENAME_SWAP` / `RENAME_EXCL` | `renameat2` with `RENAME_EXCHANGE` / `RENAME_NOREPLACE` |
+| `ledger._guard_path` comment and `backup._require_outside` | Comment and tests treat APFS firmlinks as the only alias | The comparison is already `(st_dev, st_ino)` plus the normalized path tail |
+| `install.py` `LaunchControl` and `_libproc` | `/bin/launchctl`, `~/Library/LaunchAgents`, `/usr/lib/libproc.dylib` `proc_pidinfo` / `proc_pidpath` | Linux peer credentials already exist in `monitor_control._LinuxPeer` |
+| `sources/grok_scope_hook.py` | `proc_pidinfo` for parent identity | Same process-identity function the supervisor uses |
+| `host_watch.py` `_Darwin` | FSEvents. `WatchSet` already constructs `_Linux` (inotify) or `_Darwin` from `platform.system()`, and Darwin startup failure falls back to polling | Inotify on Linux. Polling fallback when the native stream is absent |
+| `install.py` consumers: `cli.py`, `qualification.py` | Construct `LaunchControl()` and thread it through activate, restore, and qualification | One supervisor object the CLI constructs. The launchd object is no longer the type of that argument |
+
+### Tests that can run only on a Mac
+
+These encode the properties above by using a real firmlink or a real macOS ACL. Each one is rewritten onto the portable fixture so it runs on Linux. The Darwin path fixture leaves the suite.
+
+- `packages/aitm-usage/tests/test_ledger.py` `test_apfs_firmlink_overlap_refused_before_private_creation` and `test_distinct_apfs_alias_cannot_admit_a_second_writer`. Both call `data_volume_alias`, which prefixes `/System/Volumes/Data`.
+- `packages/aitm-usage/tests/test_install.py` the `skipif(sys.platform != "darwin")` inherited-ACL test, and the skip whose reason is the missing APFS firmlink path (also named by `policy.json`).
+- `packages/aitm-usage/tests/test_host_watch.py` tests that touch `watches._darwin`.
+- `tools/ci/tests/test_tia_local.py` skips unless the host is Darwin.
+
+Tests that only pass `system="Darwin"` as data for an adapter (`test_grok.py`, `test_codex.py`, `test_monitor_adapters.py`, and the qualification tuples) are fixture data about a monitored desktop app. They do not call `diskutil` or `launchctl`. They stay. A Darwin desktop adapter remains a data record. It is not a host requirement.
+
+## Replacement
+
+### Filesystem identity
+
+Keep `_path_id` as `(st_dev, st_ino)`. Keep the ancestry walk in `_validated_path`. Replace the firmlink tests with a fixture that presents two path spellings of one inode.
+
+The fixture is a same-inode pair the test creates without root and without APFS: a directory and a second name created by `os.link` is not available for directories, so the test injects the identity list at the boundary `_physical_ancestry` already returns, using a temporary directory for the real `stat` half and a second spelling whose `lstat` result is the same `(st_dev, st_ino)`. The overlap predicate in `_guard_path` is what the test calls. A real `/System/Volumes/Data` path is not part of the proof.
+
+`backup._require_outside` uses the same identity list. Its test uses the same fixture.
+
+### ACL
+
+The required check becomes: private files and their ancestors grant nothing beyond the mode bits already checked.
+
+- On Linux, `_check_linux_acl` stays. Missing `system.posix_acl_access` / `system.posix_acl_default` is success. A present xattr is a refusal.
+- On Darwin, `_check_mac_acl` stays as the host reader. Empty ACL text is success. Any other ACE is a refusal, including the home-directory deny-delete ACE. That ACE is a macOS default, not a grant the product needs to allow. Dropping the special case removes the last ACL shape that exists only on macOS.
+- On a host whose Python has no ACL read (`getxattr` absent and `acl_get_link_np` absent), the check succeeds. There is no extra grant to refuse. `host_fs.check_private_acl` stops raising "Private ACL validation is unavailable" for that host.
+- Delete the `chmod +a` probe in `local.py`. Delete the `native-acl` capability from `suites.json`. The suite no longer proves that the runner can create a macOS NFSv4 ACL.
+
+The inherited-ACL test in `test_install.py` becomes a test that presents a granting ACL through the Linux xattr path when the kernel returns one, and a direct call of the refusal predicate with the ACL text the Darwin reader would have returned. The required suite does not run `chmod +a`.
+
+### Supervisor
+
+Replace `LaunchControl` as the object `cli.py` and `qualification.py` require.
+
+One `ServiceSupervisor` in `install.py` (or a new module next to it, same package):
+
+- Start writes a pid file and a heartbeat next to the ledger, mode `0600`, then runs the existing service loop in a child process.
+- Stop reads that pid file, signals the child, and waits until the pid file is gone.
+- Status is the heartbeat age and the pid. Qualification reads that record.
+- The same class runs on Linux and macOS. It does not call `/bin/launchctl` and it does not load `/usr/lib/libproc.dylib`.
+
+Process identity for `grok_scope_hook.py` and the old `_process_identity` moves to one function: the supervisor's recorded start time and executable path. On Linux the function may confirm the pid against `/proc/<pid>`. It does not fail closed because `libproc.dylib` is missing.
+
+`launchctl` bootstrap, bootout, enable, and the plist under `~/Library/LaunchAgents` are deleted from the required path in this work. A later epic can teach the same supervisor to write a systemd user unit or a launchd plist. That epic is not this plan. macOS login-time restart is not a requirement for the suite to pass.
+
+### Watch
+
+`WatchSet` already picks inotify or FSEvents. The cloud suite constructs the Linux backend, and where the native stream cannot start it uses the polling fallback. Tests that reach into `_darwin` are rewritten against the public watch events so they run on Linux. The suite has no test that waits on FSEvents.
+
+### CI and the local selector
+
+- `python-base` and `python` run on `ubuntu-24.04`, the same runner `quality` and `file-checks` already use.
+- Delete both `diskutil` / `plutil` / `test "$filesystem" = apfs` blocks.
+- `capability.json` records `os` from `uname -s` and `runtime`. It no longer records filesystem type or Xcode.
+- `python_gate.evaluate` accepts a result whose tests passed. It stops appending "required Darwin APFS capability is absent".
+- `verify_pr.py` stops requiring `(Darwin, apfs)` and an Xcode string. It still requires the runner image string and Python `3.13.9`.
+- `baseline.py` records the Ubuntu image, `Linux`, and the filesystem `df` reports, as an identity of the run. It does not compare that identity to `apfs`.
+- `suites.json` replaces runner `darwin-apfs` with one runner whose capabilities are the portable set: private mode bits, `O_NOFOLLOW`, and exclusive rename. Profiles `product-base`, `product-cli`, and `ci-helpers` require that set. They do not require `apfs`, `darwin`, or `native-acl`.
+- `local.py` deletes `_capabilities`. Git is `shutil.which("git")` on every host, including the Darwin branch in `snapshot.py`.
+- `policy.json` drops the firmlink skip. The portable overlap test runs everywhere, so there is nothing to skip.
+- Cache suffix in the workflow changes from `macos-26-python-3.13.9` to the Ubuntu image plus the same Python version.
+
+The hosted path map (`tools/ci/path_map.py`, `path_map.json`) stays the delivered PR selector. This plan does not rebuild it. #370's import-chain selector is still the later feature, written after this host work, and it is the same Python program.
+
+## Order
+
+Each slice is one function. A slice lands only with its tests. The gate comes off after the portable tests exist, so the safety properties are proved on Ubuntu before Darwin stops being required.
+
+1. **Portable custody tests.** Add the same-inode overlap fixture and the ACL-refusal fixture. Run them on the current macOS suite so the new tests pass before the runner moves. The old firmlink tests still pass on Darwin during this slice.
+2. **Supervisor.** Introduce `ServiceSupervisor`. Point `cli.py` and `qualification.py` at it. Delete `LaunchControl` and `_libproc` from the call path those commands use. `grok_scope_hook.py` calls the shared identity function.
+3. **ACL special case.** Remove the home-directory deny-delete allowance. Confirm the Linux missing-xattr path and the Darwin empty-ACL path both succeed, and any extra ACE or xattr fails.
+4. **Delete the gate.** Edit `suites.json`, `local.py`, `snapshot.py`, `python_gate.py`, `verify_pr.py`, `baseline.py`, `policy.json`, and `ci.yml` as listed above. Move `python-base` and `python` to `ubuntu-24.04`. Update the CI tests that assert the Darwin capability.
+5. **Retire the Darwin-only tests.** Delete `data_volume_alias` from the ledger tests and keep the same-inode fixture. Rewrite the `_darwin` watch tests and the `chmod +a` install test onto the portable fixtures. Delete the `test_tia_local.py` Darwin skip by making that test run on Linux. After this slice the suite has no test that requires a Mac.
+
+#355 / PR #369 stay untouched while they are open. Slice 4 edits `local.py`, which that pull request uses. Start slice 4 from trunk after #369 merges, or from a branch that does not rewrite the #355 advisory command. Slices 1–3 can land beside it when they do not change the advisory launcher's Darwin refusal.
+
+## Verification
+
+On an Ubuntu runner, before the story is called done:
+
+- `uv run --project packages/aitm-usage pytest packages/aitm-usage/tests tools/ci/tests` exits 0. The run does not call `diskutil`, `launchctl`, `plutil`, `xcodebuild`, or `chmod +a`.
+- `python -m tools.ci.tia.local` reaches selection on a Linux checkout. It does not refuse with "Darwin is required", "APFS is required", or "native ACL support is required".
+- A same-inode pair is refused by `Ledger.initialize` with "Writer guard must be outside project state".
+- A file whose ACL xattr is present is refused. A file with no ACL is accepted.
+- `aitm` service start writes the pid file and heartbeat without `/bin/launchctl` on `PATH`.
+- The workflow jobs `python-base` and `python` show `runs-on: ubuntu-24.04`, and a pull-request run completes those jobs.
+- The workflow file contains no `macos-26` runner and no `diskutil` invocation. A pull request goes green with Linux runners only.
+
+The same source still runs on a developer Mac, because that Mac has CPython and git. The cloud suite does not ask for a Mac.
+
+## After this work: the TIA probe
+
+When the Linux suite is the required suite, start the TIA probe under #370. The probe builds the list of tests for one change. It is the same Python program on the developer machine and in the cloud.
+
+The change set is one of these, all compared with the commit where the branch diverges from its parent:
+
+- The staging area, for uncommitted work on the developer machine.
+- `HEAD`, for a local commit.
+- The pull-request head against its base, for a cloud run.
+
+From that diff, the probe follows the chain among tests, imported functions, and libraries and unwinds it to the application. The output is the test list for that commit or pull request. Tests named by the list run on the Linux cloud runners. The probe needs CPython and git. It does not need APFS, a native ACL, or a macOS runner.
+
+The delivered path map stays in place until the probe's list is accepted. The probe writes the list and the evidence that the list is sufficient. Wiring that list into the pull-request gate is the feature story after the probe, still on Linux.
+
+## Out of scope
+
+- Rewriting the product in another language.
+- Opening the Windows epic. Windows facilities are a later epic that runs this same program.
+- Building the TIA test list inside the host-cleanup slices. That probe starts after this work is done.
+- Rebuilding the hosted path map before the probe is accepted.
+- Changing #133, #351's close condition, or the #355 advisory command.
+- A systemd unit or a launchd plist. The supervisor is in-process. OS login items are a later epic.
+- A macOS cloud job. Darwin-only tests are rewritten onto the portable fixtures so the required suite has nothing left that waits on a Mac.

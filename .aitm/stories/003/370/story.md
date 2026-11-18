@@ -10,12 +10,12 @@ children: [371]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-18T20:56:33Z"
+updated: "2026-11-18T23:20:01Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,6 +33,8 @@ The owner develops on macOS. The program is still one program.
 The job is the test list for a change. Compare the staging area, or HEAD, with the commit where the branch diverges from its parent branch. Follow the dependency chain among tests, imported functions, and libraries, and unwind that chain to the application.
 
 #371 analyzes the Python language facility that makes one source program cross-platform, and names every current TIA binding that leaves that facility.
+
+The owner accepted the order on 2026-11-18. First remove the macOS host requirements so every required test runs on Linux in the cloud. Then this epic's probe builds the test list for a staging area, a commit, or a pull request. [Accepted plan](plan/2026-11-18-370-linux-suite-then-tia-probe.md).
 
 This epic is independent of #133, #351, #356, and #362. It is not a child of #133. #351 still closes when #355 delivers the advisory command. #355 stays on that accepted command.
 

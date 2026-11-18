@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-18T20:56:33Z"
+updated: "2026-11-18T23:20:01Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -55,6 +55,14 @@ This is research for #370. Write the finding. Do not change production code, CI 
 - `.github/workflows/ci.yml` runs the product pytest jobs on `macos-26`. Quality and file checks run on `ubuntu-24.04`.
 - #355 records the hosted macOS queue failure on [pull request #369](https://github.com/kburson/aitm/pull/369). That shortage is a runner fact. It does not by itself decide the language of the selector.
 
+## Owner direction
+
+The owner accepted this direction on 2026-11-18. [Plan](../370/plan/2026-11-18-370-linux-suite-then-tia-probe.md).
+
+Python stays the program. CPython is the platform interpreter. The calls that leave the portable medium are the Darwin host requirements: APFS, `diskutil`, `chmod +a`, `launchctl`, and `libproc.dylib`. Those requirements are deleted and replaced with POSIX identity, mode bits, and one supervisor. The required suite then runs on Linux. GitHub has no macOS job for that suite.
+
+The TIA probe starts after that cleanup. It lists the tests for the staging area, for `HEAD`, or for a pull request, each compared with the commit where the branch diverges from its parent. The same program runs wherever CPython and git are installed.
+
 ## Handoff
 
-The accepted finding names the feature story that would make the selector this one program and would select tests from the diff and the dependency chain. That story is created after acceptance. #356 continues to classify tests by execution category. #355 continues the accepted advisory command.
+The feature story that wires the probe's list into the pull-request gate opens after the Linux suite is the required suite and the probe's list is accepted. #356 continues to classify tests by execution category. #355 continues the accepted advisory command. Production code stays unchanged until a feature story is picked up. Pull request #369 stays on its accepted scope.
