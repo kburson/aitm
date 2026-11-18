@@ -8,3 +8,11 @@ The owner scope decision in #368 supersedes the strict observation route of the 
 - [ ] Document the manual pre-commit command and advisory limits. Validate focused and adjacent tests, then replay the actual admitted change on a clean exact-tree scratch checkout with tracked source and raw index readbacks. Verify unsupported input launches zero tests and exercise a real failing cooperative subprocess using benign fixture code. Use authenticated hosted CI and exact-candidate independent source review before merge. After merge repeat the delivered command, publish verified delivery and implementer sign-off, and close #355. Keep #351 open for the requested delivery report.
 
 The local launcher loaded the hosted Python gate on import, which in turn relies on the bare `path_map` module name. Move the gate import into the original stock outcome-validation function. The #355 command can reuse runtime setup without loading the hosted gate.
+
+## Candidate local verification
+
+Head `81a6602a7b045f081f597b0e0b3e6480258d01ff`, tree `4dffcbcfdfca38febd63463124f2f5e140e70c1d`. The focused runner, report, snapshot and path-map suite passed all 113 tests, including the real subprocess failure control. Ruff check and format passed across all 41 CI Python files. Git diff whitespace checks passed.
+
+The [candidate replay](../attachments/2026-11-18-355-candidate-advisory-run.json) used the co-located exact candidate tree and a mixed staged/unstaged comment append. It ran the exact assigned 30 nodes, matched all 90 passing phase records and preserved Git status, the raw index, source bytes, and the absence of Python caches. An additional untracked path returned exit 2 before launch. An unrelated committed change separately returned `unqualified-base` before launch. A separate trusted-tooling checkout also ran all 30 pinned IDs against the #354 delivery base.
+
+The broad local helper run stopped at the first legacy `test_tia_controls.py` failure, reproduced at the #354 baseline with the same `invalid_scope` result. The old stock planner fixture also fails at #354 on its bare `path_map` import. With import delayed, that fixture reaches its preexisting policy input, which currently returns `candidate-inventory: policy: invalid profile`. The delivered runner does not use stock selection or candidate inventory.

@@ -1,0 +1,21 @@
+{
+  "base": "81a6602a7b045f081f597b0e0b3e6480258d01ff",
+  "tree": "4dffcbcfdfca38febd63463124f2f5e140e70c1d",
+  "provenance": "local_advisory",
+  "snapshot_sha256": "5fba55bff018d326d63d9f3940e10293aae0628a5661f310a1f1665d6e355aff",
+  "assignment_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+  "invocation_id": "d934a5238a744de4afa064bcddb063a4",
+  "pytest_returncode": 0,
+  "pytest_seconds": 8.695,
+  "assigned": 30,
+  "collected": 30,
+  "phases": 90,
+  "checkout_writes": false,
+  "extra_path_control": {
+    "status": "unavailable",
+    "reason": "unsupported-change",
+    "exit_code": 2,
+    "invocation_id": null,
+    "pytest_returncode": null
+  }
+}
