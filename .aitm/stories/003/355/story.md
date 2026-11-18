@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T12:45:18Z"
+updated: "2026-11-18T12:53:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -53,3 +53,5 @@ The owner accepted the [#368](../368/story.md) HOLD and removed it as a blocker.
 ## Test
 
 The cooperative runner is in [PR #369](https://github.com/kburson/aitm/pull/369), targeting trunk at `8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7`. GitHub confirmed head `81a6602a7b045f081f597b0e0b3e6480258d01ff`, with clean local source tree `4dffcbcfdfca38febd63463124f2f5e140e70c1d`. [Advisory delivery plan](plan/2026-11-18-355-advisory-delivery.md) · [Hosted CI](https://github.com/kburson/aitm/actions/runs/44306782506).
+
+The initial candidate entered rework after independent source review reproduced a dropped incomplete worker receipt and skipped final snapshot readback. The replacement retains parsed worker receipts on evidence refusal and always performs the final readback after attempting the worker invocation. [Replacement CI](https://github.com/kburson/aitm/actions/runs/44308197226).
