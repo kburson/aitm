@@ -1,0 +1,22 @@
+{
+  "xdg_cache_mode": "xdg",
+  "base": "2bd902dbd982188e00e0f21a5b5c3565699c332d",
+  "tree": "594971b04a905027b72cac36425dd34c5b16e63e",
+  "provenance": "local_advisory",
+  "snapshot_sha256": "2d2b7522dd2781845235ed64ec4f7dcf474441be0481040a13343467f60f76de",
+  "assignment_sha256": "812bc918dd9da7b413786454906d2ec8f486b5624bc8d1deecf9d546928d48e6",
+  "invocation_id": "27fd24b64de1409da342ff7a19d91b4d",
+  "pytest_returncode": 0,
+  "pytest_seconds": 8.358,
+  "assigned": 30,
+  "collected": 30,
+  "phases": 90,
+  "checkout_writes": false,
+  "extra_path_control": {
+    "status": "unavailable",
+    "reason": "unsupported-change",
+    "exit_code": 2,
+    "invocation_id": null,
+    "pytest_returncode": null
+  }
+}

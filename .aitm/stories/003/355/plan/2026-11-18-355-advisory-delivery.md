@@ -26,3 +26,7 @@ The complete exploratory local helper run reported 471 passed, 101 failed and 60
 ## Replacement after independent review
 
 The independent reviewer reproduced loss of a syntactically valid but incomplete pytest receipt and a skipped final snapshot check on the original head. The regression test failed before the fix. The replacement keeps the parsed worker receipt before reconciling it and rechecks the checkout after every attempted worker invocation. The original head's attempt 2 was cancelled as superseded. [Replacement CI run](https://github.com/kburson/aitm/actions/runs/44308197226) and [replacement local replay](../attachments/2026-11-18-355-replacement-advisory-run.json) bind head `725607f24e04877ae36f30ffe200d872e80bac1d` and tree `4b5c76b4f23074e103b120a4c52d7728e4deaa05`.
+
+## Final candidate after cache isolation review
+
+Source review reproduced a successful advisory result that wrote 740 cache paths within the disposable target's Git metadata when `XDG_CACHE_HOME` pointed there. On head `2bd902dbd982188e00e0f21a5b5c3565699c332d`, tree `594971b04a905027b72cac36425dd34c5b16e63e`, the same ambient override leaves its designated cache path absent. The runner queries uv's effective cache, reuses external caches, and routes a cache inside the inspected or frozen source tree to private scratch. It keeps uv setup temporary files in scratch and requires an installed pinned Python. [Candidate replay](../attachments/2026-11-18-355-final-candidate-advisory-run.json) · [Hosted CI](https://github.com/kburson/aitm/actions/runs/44308912626).
