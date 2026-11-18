@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tools.ci import path_map
 
-from .snapshot import LocalRequest, SnapshotUncertain, resolve
+from .snapshot import LocalRequest, Snapshot, SnapshotUncertain, resolve
 
 _SCHEMA = "aitm.tia-working-tree-report/v1"
 _REPOSITORY = "kburson/aitm"
@@ -28,10 +28,15 @@ _MODULE = "packages/aitm-usage/tests/test_grok_scope_receipts.py"
 _REGULAR = {"100644", "100755"}
 _TYPES = dict.fromkeys((*_REGULAR, "120000"), "blob") | {"160000": "commit"}
 _DOC = b"docs/ci.md"
+_LOCAL = b"tools/ci/tia/local.py"
 _DELIVERY_ADDITIONS = {
     b"tools/ci/tia/working_tree_report.py",
     b"tools/ci/tia/working_tree_obligations.json",
     b"tools/ci/tests/test_tia_working_tree_report.py",
+}
+_RUN_ADDITIONS = {
+    b"tools/ci/tia/working_tree_run.py",
+    b"tools/ci/tests/test_tia_working_tree_run.py",
 }
 _COMMENT_WHITESPACE = re.compile(rb"[ \t\n]*")
 _COMMENT_LINE = re.compile(rb"#[\x20-\x7e\t]*")
@@ -69,10 +74,10 @@ def _modified(change, path):
 
 def _delivery_tree(changes):
     additions = set()
-    docs = 0
+    modifications = set()
     for change in changes:
-        if _modified(change, _DOC):
-            docs += 1
+        if _modified(change, _DOC) or _modified(change, _LOCAL):
+            modifications.add(change.new.path)
         elif (
             change.status == "A"
             and change.old is None
@@ -82,10 +87,14 @@ def _delivery_tree(changes):
             additions.add(change.new.path)
         else:
             return False
-    return (
-        docs == 1
-        and additions == _DELIVERY_ADDITIONS
-        and len(changes) == len(_DELIVERY_ADDITIONS) + 1
+    # The admitted release changes only the advisory tooling and guide.
+    # The product, observer, runtime config, selector and lock stay pinned.
+    return len(changes) == len(additions) + len(modifications) and (
+        (additions == _DELIVERY_ADDITIONS and modifications == {_DOC})
+        or (
+            additions == _DELIVERY_ADDITIONS | _RUN_ADDITIONS
+            and modifications == {_DOC, _LOCAL}
+        )
     )
 
 
@@ -106,7 +115,9 @@ def _admitted_change(before, after, base_commit):
     if not all(_modified(change, _PATH) for change in local):
         raise _Unavailable("unsupported-change")
 
-    delivery_paths = _DELIVERY_ADDITIONS | {_DOC} if committed else set()
+    delivery_paths = (
+        _DELIVERY_ADDITIONS | _RUN_ADDITIONS | {_DOC, _LOCAL} if committed else set()
+    )
     effective = [
         change
         for change in after.changes
@@ -191,10 +202,9 @@ def _consumer_reason(before, change, content):
     return result["paths"][0]["reason"]
 
 
-def build_report(repo: Path, base_commit: str) -> dict:
-    """Return the bounded report or a machine-readable unavailability reason."""
+def _report_with_snapshot(repo: Path, base_commit: str) -> tuple[dict, Snapshot | None]:
     if not _COMMIT.fullmatch(base_commit):
-        return _unavailable("invalid-arguments")
+        return _unavailable("invalid-arguments"), None
     request = LocalRequest(_REPOSITORY, "local-effective", _ANCHOR_COMMIT)
     try:
         before, after = resolve(repo, request)
@@ -217,9 +227,9 @@ def build_report(repo: Path, base_commit: str) -> dict:
         if tuple(snapshot.digest for snapshot in refreshed) != identity:
             raise _Unavailable("snapshot-drift")
     except _Unavailable as error:
-        return _unavailable(str(error))
+        return _unavailable(str(error)), None
     except (SnapshotUncertain, OSError):
-        return _unavailable("snapshot-unavailable")
+        return _unavailable("snapshot-unavailable"), None
 
     head = after.provenance.observation.head
     return {
@@ -251,7 +261,13 @@ def build_report(repo: Path, base_commit: str) -> dict:
             "map_sha256": _MAP_SHA256,
             "selector_sha256": _SELECTOR_SHA256,
         },
-    }
+    }, after
+
+
+def build_report(repo: Path, base_commit: str) -> dict:
+    """Return the bounded report or a machine-readable unavailability reason."""
+    report, _ = _report_with_snapshot(repo, base_commit)
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:

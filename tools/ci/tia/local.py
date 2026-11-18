@@ -17,8 +17,6 @@ from hashlib import sha256
 from pathlib import Path
 from time import monotonic
 
-from tools.ci.python_gate import _outcomes
-
 from . import inventory as t02
 from .inventory import SuitePolicy, classify
 from .python_graph import ProviderPolicy, PytestScope
@@ -657,6 +655,8 @@ def _recheck(repo, request, expected):
 
 
 def _profile_result(invocation, rows):
+    from tools.ci.python_gate import _outcomes
+
     expected = {row["nodeid"] for row in rows}
     result = {
         "returncode": invocation.returncode,
