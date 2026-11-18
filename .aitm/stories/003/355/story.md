@@ -57,3 +57,7 @@ The cooperative runner is in [PR #369](https://github.com/kburson/aitm/pull/369)
 The initial candidate entered rework after independent source review reproduced a dropped incomplete worker receipt and skipped final snapshot readback. The replacement retains parsed worker receipts on evidence refusal and always performs the final readback after attempting the worker invocation. [Replacement CI](https://github.com/kburson/aitm/actions/runs/44308197226).
 
 A follow-up source review reproduced uv writing cache files in the inspected checkout under a repo-local XDG cache. The final candidate resolves uv's cache and redirects any cache inside the inspected or frozen checkout to scratch. [Final candidate CI](https://github.com/kburson/aitm/actions/runs/44308912626).
+
+## Hosted verification hold
+
+The [independent source review](plan/reviews/2026-11-18-355-source-review.md) passed for PR #369 head `2bd902dbd982188e00e0f21a5b5c3565699c332d` and tree `594971b04a905027b72cac36425dd34c5b16e63e`. The exact advisory proof passed all 30 assigned tests. The first hosted attempt had a base/candidate runner-image mismatch. The next two attempts exhausted hosted macOS arm64 runner capacity with zero Python steps. The [trusted verifier](plan/2026-11-18-355-final-capacity-hold.json) holds the exact candidate. #355 stays in Test until the unchanged workflow can produce and authenticate a successful same-head attempt. #351 remains open. [Latest hosted attempt](https://github.com/kburson/aitm/actions/runs/44308912626/attempts/3).
