@@ -13,8 +13,8 @@ from .snapshot import SnapshotUncertain
 _PHASES = ("setup", "call", "teardown")
 
 
-def _validate(invocation, nodes):
-    receipt = invocation.receipt()
+def _validate(invocation, receipt, nodes):
+    invocation.check_receipt(receipt)
     _checked(
         set(receipt["collected"]) == set(nodes), "pytest collection differs from report"
     )
@@ -48,7 +48,6 @@ def _validate(invocation, nodes):
         invocation.returncode == int(failed),
         "pytest exit disagrees with phase outcomes",
     )
-    return receipt
 
 
 def run(repo: Path, base_commit: str) -> dict:
@@ -88,15 +87,19 @@ def run(repo: Path, base_commit: str) -> dict:
             runtime = _prepare(snapshot, private / "runtime")
             recheck()
             result["invocation_id"] = invocation_id
-            child = runtime.pytest("pinned", report["node_ids"], collect=False)
-            result.update(
-                pytest_returncode=child.returncode, pytest_seconds=child.seconds
-            )
-            if child.returncode:
-                print(child.diagnostic, file=sys.stderr)
-            result["worker_receipt"] = _validate(child, report["node_ids"])
-            runtime.verify()
-            recheck()
+            try:
+                child = runtime.pytest("pinned", report["node_ids"], collect=False)
+                result.update(
+                    pytest_returncode=child.returncode, pytest_seconds=child.seconds
+                )
+                if child.returncode:
+                    print(child.diagnostic, file=sys.stderr)
+                receipt = child.read_receipt()
+                result["worker_receipt"] = receipt
+                _validate(child, receipt, report["node_ids"])
+                runtime.verify()
+            finally:
+                recheck()
         return result | {
             "status": "failed" if child.returncode else "passed",
             "exit_code": child.returncode,

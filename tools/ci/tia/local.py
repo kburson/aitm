@@ -324,25 +324,31 @@ class _Invocation:
     raw: bytes | None
     diagnostic: str
 
-    def receipt(self):
+    def read_receipt(self):
         try:
-            evidence = t02._read(self.raw, "aitm.pytest-evidence/v1")
-            nodes = evidence.get("collected")
-            _checked(
-                type(evidence.get("exit_code")) is int
-                and evidence["exit_code"] == self.returncode
-                and isinstance(nodes, list)
-                and bool(nodes)
-                and all(isinstance(node, str) and node for node in nodes)
-                and len(set(nodes)) == len(nodes)
-                and evidence.get("deselected") == []
-                and isinstance(evidence.get("reports"), list)
-                and isinstance(evidence.get("children"), list),
-                "pytest-evidence: inconsistent status, collection or reports",
-            )
-            return evidence
+            return t02._read(self.raw, "aitm.pytest-evidence/v1")
         except ValueError as error:
             raise Refusal("pytest-evidence: missing or malformed receipt") from error
+
+    def check_receipt(self, evidence):
+        nodes = evidence.get("collected")
+        _checked(
+            type(evidence.get("exit_code")) is int
+            and evidence["exit_code"] == self.returncode
+            and isinstance(nodes, list)
+            and bool(nodes)
+            and all(isinstance(node, str) and node for node in nodes)
+            and len(set(nodes)) == len(nodes)
+            and evidence.get("deselected") == []
+            and isinstance(evidence.get("reports"), list)
+            and isinstance(evidence.get("children"), list),
+            "pytest-evidence: inconsistent status, collection or reports",
+        )
+
+    def receipt(self):
+        evidence = self.read_receipt()
+        self.check_receipt(evidence)
+        return evidence
 
 
 def _prepare(snapshot, directory):

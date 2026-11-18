@@ -44,7 +44,7 @@ def test_complete_pass_and_failure(phase):
         if phase == "setup":
             receipt["reports"].pop(1)
 
-    assert working_tree_run._validate(invocation(receipt, exit_code), NODES) == receipt
+    working_tree_run._validate(invocation(receipt, exit_code), receipt, NODES)
 
 
 @pytest.mark.parametrize(
@@ -67,29 +67,41 @@ def test_inconsistent_evidence_is_refused(change, exit_code):
     receipt = evidence()
     change(receipt)
     with pytest.raises(working_tree_run.Refusal):
-        working_tree_run._validate(invocation(receipt, exit_code), NODES)
+        working_tree_run._validate(invocation(receipt, exit_code), receipt, NODES)
 
 
 def test_missing_evidence_is_refused():
     with pytest.raises(working_tree_run.Refusal):
-        working_tree_run._validate(_Invocation(0, 0.25, None, ""), NODES)
+        _Invocation(0, 0.25, None, "").read_receipt()
 
 
 @pytest.mark.parametrize(
-    ("initially_available", "drift", "launched", "status", "code"),
+    ("initially_available", "drift", "incomplete", "launched", "status", "code"),
     [
-        (False, None, 0, "unavailable", 2),
-        (True, 1, 0, "unavailable", 2),
-        (True, 2, 1, "unavailable", 2),
-        (True, None, 1, "passed", 0),
+        (False, None, False, 0, "unavailable", 2),
+        (True, 1, False, 0, "unavailable", 2),
+        (True, 2, False, 1, "unavailable", 2),
+        (True, None, False, 1, "passed", 0),
+        (True, None, True, 1, "unavailable", 2),
     ],
 )
 def test_run_checks_snapshot_before_and_after(
-    monkeypatch, tmp_path, initially_available, drift, launched, status, code
+    monkeypatch,
+    tmp_path,
+    initially_available,
+    drift,
+    incomplete,
+    launched,
+    status,
+    code,
 ):
     report = {"mode": "pinned-mapped-obligations", "node_ids": NODES}
     snapshot = object()
     calls = []
+    inspections = []
+    receipt = evidence()
+    if incomplete:
+        receipt["reports"].pop()
     readbacks = iter(
         [
             report | {"snapshot_sha256": "changed" if drift == i else "original"}
@@ -100,13 +112,14 @@ def test_run_checks_snapshot_before_and_after(
     def inspect(repo, base):
         assert repo == tmp_path and base == "base"
         current = next(readbacks)
+        inspections.append(current)
         if not initially_available:
             return working_tree_report._unavailable("unsupported-change"), None
         return current, snapshot
 
     def execute(profile, targets, *, collect):
         calls.append((profile, targets, collect))
-        return invocation(evidence(), 0)
+        return invocation(receipt, 0)
 
     def prepare(admitted, directory):
         assert admitted is snapshot
@@ -123,7 +136,8 @@ def test_run_checks_snapshot_before_and_after(
     assert calls == [("pinned", NODES, False)] * launched
     if launched:
         assert result["pytest_returncode"] == 0
-        assert result["worker_receipt"] == evidence()
+        assert len(inspections) == 3
+        assert result["worker_receipt"] == receipt
 
 
 def test_real_subprocess_reports_failure_and_runs_only_the_named_node(tmp_path):
@@ -165,7 +179,8 @@ def test_real_subprocess_reports_failure_and_runs_only_the_named_node(tmp_path):
 
     assigned = ["test_scoped.py::test_selected"]
     child = runtime.pytest("pinned", assigned, collect=False)
-    receipt = working_tree_run._validate(child, assigned)
+    receipt = child.read_receipt()
+    working_tree_run._validate(child, receipt, assigned)
     assert child.returncode == 1
     assert receipt["collected"] == assigned
     assert [row["outcome"] for row in receipt["reports"]] == [
