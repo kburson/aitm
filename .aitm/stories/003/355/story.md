@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T02:06:55Z"
+updated: "2026-11-18T02:11:58Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -48,4 +48,4 @@ The delivered #354 report reproduced all 30 pinned obligations. The strict local
 
 ## Owner scope decision
 
-The owner accepted the [#368](../368/story.md) HOLD and removed it as a blocker. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. #353 and #354 stay accepted prerequisites. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md).
+The owner accepted the [#368](../368/story.md) HOLD and removed it as a blocker. GitHub closed #368 as Completed at 2026-11-18T02:10:27Z. Project 24 shows Done and Delivered for the completed investigation. #355 delivers the cooperative advisory run from #353: a separate pytest process, the operating-system exit, and a complete receipt matched to the #354 list, labeled advisory. #353 and #354 stay accepted prerequisites. [Decision](../368/plan/2026-11-18-368-owner-scope-decision.md) · [Closure receipt](../368/plan/closure-receipt.json).

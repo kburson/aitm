@@ -1,0 +1,62 @@
+{
+  "story": 368,
+  "parent": 351,
+  "decision_planning_commit": "52ac9996341c52ab55100ef07dd14959346a1690",
+  "board_baseline_commit": "775beb11b65a9ea82e9519c67f00301ff5b4454c",
+  "recorded_at_utc": "2026-11-18T02:11:58Z",
+  "scope": "Investigation complete. The Opus-accepted HOLD is the answer.",
+  "verdict": "hold-accepted",
+  "strict_three_gate_pass": false,
+  "decision_path": "plan/2026-11-18-368-owner-scope-decision.md",
+  "decision_sha256": "b7abb092d546a48dc9c8cc5cfec7ba689dfd2d775a1da21b80f03db49a70e97d",
+  "findings_path": "plan/2026-11-17-368-queue-inclusive-run-findings.md",
+  "findings_sha256": "e5b0a68a1c222db44adce3490a9331b8eea22506bb7198544f89bda3f5c9d360",
+  "review_id": "review-878d48dc52fb7e3aa45b7e4d0000888f",
+  "hosted_run": "https://github.com/kburson/aitm/actions/runs/44090243525/attempts/1",
+  "github_closed_at_utc": "2026-11-18T02:10:27Z",
+  "planning_done_at_utc": "2026-11-18T02:11:58Z",
+  "project_24_readback": {
+    "at": "2026-11-18T02:10:49Z",
+    "issue": {
+      "number": 368,
+      "state": "CLOSED",
+      "stateReason": "COMPLETED",
+      "closedAt": "2026-11-18T02:10:27Z",
+      "parent": {
+        "number": 351
+      }
+    },
+    "item": "PVTI_lAHOABCEY84Bq1hZzhJVsGc",
+    "fields": {
+      "Title": "[Spike] Qualify protected local pre-commit test observation",
+      "Status": "Done",
+      "Priority": "P2",
+      "Size": "M",
+      "Rank": 465.0,
+      "Estimate": 6.0,
+      "Disposition_v0": "Delivered"
+    }
+  },
+  "unblocked": {
+    "issue": 355,
+    "state": "OPEN",
+    "planning_state": "develop",
+    "blocked_by": [
+      353,
+      354
+    ],
+    "project_24": {
+      "Status": "Dev",
+      "Disposition_v0": null,
+      "Rank": 470.0,
+      "Estimate": 3.0,
+      "Size": "S",
+      "Priority": "P2"
+    },
+    "readback_at": "2026-11-18T02:10:49Z"
+  },
+  "fields_left_empty": [
+    "Actual",
+    "Cost"
+  ]
+}
