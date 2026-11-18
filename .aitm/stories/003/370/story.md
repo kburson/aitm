@@ -10,7 +10,7 @@ children: [371]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-18T23:20:01Z"
+updated: "2026-11-18T23:38:27Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #370](https://github.com/kburson/aitm/issues/370) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 480. Priority P2. Size Feature.
+Project 24 Rank 540. Priority P2. Size Feature.
 
 Build the TIA selector once and run that same program anywhere a CPython interpreter is installed. Linux, macOS, and later Windows each supply that interpreter for the same source.
 
@@ -33,6 +33,8 @@ The owner develops on macOS. The program is still one program.
 The job is the test list for a change. Compare the staging area, or HEAD, with the commit where the branch diverges from its parent branch. Follow the dependency chain among tests, imported functions, and libraries, and unwind that chain to the application.
 
 #371 analyzes the Python language facility that makes one source program cross-platform, and names every current TIA binding that leaves that facility.
+
+The Linux suite cleanup is [#372](../372/story.md). It comes before this probe. The order is a note. There is no blocker edge.
 
 The owner accepted the order on 2026-11-18. First remove the macOS host requirements so every required test runs on Linux in the cloud. Then this epic's probe builds the test list for a staging area, a commit, or a pull request. [Accepted plan](plan/2026-11-18-370-linux-suite-then-tia-probe.md).
 
