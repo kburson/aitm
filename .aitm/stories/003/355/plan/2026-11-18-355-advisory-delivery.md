@@ -42,3 +42,11 @@ The final exact local suite passed 117 focused and adjacent tests. Ruff check an
 ## Owner-requested retry
 
 [Attempt 4](https://github.com/kburson/aitm/actions/runs/44308912626/attempts/4) ran on the same reviewed head `2bd902dbd982188e00e0f21a5b5c3565699c332d` and base `8218a69ad6d9d9f33c6383bd5a6cd4930bef21d7`. Both macOS jobs acquired runners. Candidate Python, quality and file checks passed. GitHub cancelled [trusted base Python](https://github.com/kburson/aitm/actions/runs/44308912626/job/134849931289) at its eight-minute limit while collecting trusted base inventory and outcomes. The base artifact upload skipped, the collector failed dependency custody, and attestation skipped. The [trusted verifier](2026-11-18-355-attempt-4-verifier-hold.json) returned HOLD. #355 remains open in Test, with its signed source review intact. #351 remains open.
+
+## Trusted base timeout investigation
+
+The trusted base job requires the full product suite on the exact base for this PR. On [attempt 4](https://github.com/kburson/aitm/actions/runs/44308912626/job/134849931289), the validation step started at 13:53:12 UTC, finished dependency installation at 13:53:30, and brought up the pytest workers at 13:53:46. Pytest reported 94% at 14:00:25, about 399 seconds after worker startup. GitHub cancelled the step at 14:01:07 under the eight-minute job timeout. The run produced neither a final test summary nor the trusted base artifact.
+
+In [attempt 1](https://github.com/kburson/aitm/actions/runs/44308912626/job/134817892959), the same exact base, workflow, three-worker worksteal command and macOS image `20261112.0504.1` reached 94% about 229 seconds after worker startup and passed all 1,516 tests in 298.43 seconds. Attempt 4 had already spent about 170 seconds longer in pytest by 94%. The aggregate progress lines do not identify the tests still running at cancellation or establish the reason for the runtime difference. The candidate Python lane in attempt 4 passed 1,517 tests in 520.57 seconds under its separate 20-minute job limit.
+
+[Attempt 5](https://github.com/kburson/aitm/actions/runs/44308912626/attempts/5) retries the same reviewed head and base with the existing workflow and timeouts.
