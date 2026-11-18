@@ -10,7 +10,7 @@ children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151,
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-16T20:11:51Z"
+updated: "2026-11-18T13:52:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -173,9 +173,10 @@ The full suite already uses three workers and may take up to 20 minutes. [#340](
 
 ## Decomposition
 
-#133 delivered the hosted path map in [#340](../../003/340/story.md), [#341](../../003/341/story.md), and [#344](../../003/344/story.md). The remaining claims now have their own backlog epics. Those epics are independent of #133 and of each other. Later blocks can learn from earlier delivered work. The recommended order is a note only: local test selection, then category shards, then the scheduled-failure flag.
+#133 delivered the hosted path map in [#340](../../003/340/story.md), [#341](../../003/341/story.md), and [#344](../../003/344/story.md). The remaining claims now have their own backlog epics. Those epics are independent of #133 and of each other. Later blocks can learn from earlier delivered work. The recommended order is a note only: local test selection, then the Linux-first platform investigation, then category shards, then the scheduled-failure flag.
 
 - [#351 Select the tests affected by uncommitted work](../../003/351/story.md)
+- [#370 Run the TIA suite on Linux first](../../003/370/story.md)
 - [#356 Shard tests by execution category](../../003/356/story.md)
 - [#362 Flag a scheduled build failure](../../003/362/story.md)
 

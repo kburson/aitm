@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T12:58:11Z"
+updated: "2026-11-18T13:52:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -57,6 +57,8 @@ The cooperative runner is in [PR #369](https://github.com/kburson/aitm/pull/369)
 The initial candidate entered rework after independent source review reproduced a dropped incomplete worker receipt and skipped final snapshot readback. The replacement retains parsed worker receipts on evidence refusal and always performs the final readback after attempting the worker invocation. [Replacement CI](https://github.com/kburson/aitm/actions/runs/44308197226).
 
 A follow-up source review reproduced uv writing cache files in the inspected checkout under a repo-local XDG cache. The final candidate resolves uv's cache and redirects any cache inside the inspected or frozen checkout to scratch. [Final candidate CI](https://github.com/kburson/aitm/actions/runs/44308912626).
+
+The hosted macOS queue is investigated by [#371](../371/story.md) under [#370](../370/story.md). #355 continues the accepted advisory command.
 
 ## Hosted verification hold
 

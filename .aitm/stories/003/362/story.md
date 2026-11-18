@@ -10,7 +10,7 @@ children: [363, 364, 365, 366]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-18T13:52:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #362](https://github.com/kburson/aitm/issues/362) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 540. Priority P2. Size Feature.
+Project 24 Rank 560. Priority P2. Size Feature.
 
 Decompose one claim out of #133 into an independent epic. Publish one flag when the scheduled build fails and clear it when a later scheduled build of the same workflow passes. A person or an agent who checks the flag sees the failing run and the time, and decides what to do.
 

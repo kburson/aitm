@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [365]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-16T19:55:56Z"
+updated: "2026-11-18T13:52:04Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #366](https://github.com/kburson/aitm/issues/366) · [Parent #362](../362/story.md) · [Decomposition](../../001/133/plan/2026-11-16-133-decomposition.md)
 
-Project 24 Rank 580. Priority P2. Size S.
+Project 24 Rank 600. Priority P2. Size S.
 
 Show the current flag when a person or an agent checks it.
 
