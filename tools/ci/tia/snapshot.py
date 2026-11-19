@@ -98,6 +98,16 @@ class LocalRequest:
 
 
 @dataclass(frozen=True)
+class ProbeRequest:
+    repository: str
+    input_kind: str
+    parent_commit: str
+    pr_head: str | None = None
+    tested_commit: str | None = None
+    tested_tree: str | None = None
+
+
+@dataclass(frozen=True)
 class GitEndpoint:
     commit: str
     tree: str
@@ -133,6 +143,21 @@ class HostedProvenance:
 
 
 @dataclass(frozen=True)
+class ProbeProvenance:
+    input_kind: str
+    parent_commit: str
+    merge_base: GitEndpoint
+    head: GitEndpoint
+    tested: GitEndpoint | None
+    git: GitProfile
+
+
+@dataclass(frozen=True)
+class IndexEndpoint:
+    index_digest: str
+
+
+@dataclass(frozen=True)
 class WorktreeEndpoint:
     worktree_digest: str
 
@@ -164,11 +189,11 @@ class Snapshot:
     repository: str
     mode: str
     ref_role: str
-    endpoint_identity: GitEndpoint | WorktreeEndpoint
+    endpoint_identity: GitEndpoint | WorktreeEndpoint | IndexEndpoint
     baseline_identity: GitEndpoint
     entries: tuple[Entry, ...]
     changes: tuple[Change, ...]
-    provenance: HostedProvenance | LocalProvenance
+    provenance: HostedProvenance | LocalProvenance | ProbeProvenance
     _reader: Callable[[Entry], bytes] = field(repr=False, compare=False)
 
     def read_content(self, path: bytes) -> bytes:
@@ -1144,10 +1169,142 @@ def _local(repo: Path, request: LocalRequest) -> tuple[Snapshot, Snapshot]:
     )
 
 
+def _probe_head(git: _Git) -> str:
+    result = git.run("rev-parse", "--verify", "HEAD", failure="missing_object")
+    if not result.endswith(b"\n"):
+        git.refuse("malformed_data")
+    return git.oid(git.text(result[:-1]))
+
+
+def _probe_merge_base(git: _Git, parent: str, head: str) -> GitEndpoint:
+    if git.run("rev-parse", "--is-shallow-repository") != b"false\n":
+        git.refuse("shallow_history")
+    # Ignore grafts when computing the divergence from native Git commits.
+    git.env["GIT_GRAFT_FILE"] = os.devnull
+    try:
+        bases = git.run(
+            "-c",
+            "advice.graftFileDeprecated=false",
+            "merge-base",
+            "--all",
+            parent,
+            head,
+            failure="missing_merge_base",
+        )
+    finally:
+        del git.env["GIT_GRAFT_FILE"]
+    if not bases.endswith(b"\n"):
+        git.refuse("malformed_data")
+    candidates = tuple(git.oid(git.text(line)) for line in bases[:-1].split(b"\n"))
+    if len(candidates) != 1:
+        git.refuse("ambiguous_merge_base")
+    return git.commit(candidates[0])[0]
+
+
+def _probe_index(git: _Git, base: GitEndpoint, old: tuple[Entry, ...]):
+    entries = _index(git)
+
+    def diff(flag):
+        return git.run("diff-index", "--cached", flag, "-r", *_DIFF_FLAGS, base.tree)
+
+    visible = diff("--ita-visible-in-index")
+    if visible != diff("--ita-invisible-in-index"):
+        git.refuse("intent_to_add")
+    return entries, git.changes(visible, old, entries)
+
+
+def _probe(repo: Path, request: ProbeRequest) -> tuple[Snapshot, Snapshot]:
+    kind = request.input_kind
+    pr_values = (request.pr_head, request.tested_commit, request.tested_tree)
+    if (
+        not isinstance(request.repository, str)
+        or not re.fullmatch(r"[^/\s]+/[^/\s]+", request.repository)
+        or kind not in ("index", "head", "pr")
+        or (
+            not all(pr_values)
+            if kind == "pr"
+            else any(v is not None for v in pr_values)
+        )
+    ):
+        raise SnapshotUncertain("local", "identity_mismatch")
+
+    git = _Git(repo, "local")
+    parent, _ = git.commit(git.oid(request.parent_commit, "identity_mismatch"))
+    head_oid = (
+        git.oid(request.pr_head, "identity_mismatch")
+        if kind == "pr"
+        else _probe_head(git)
+    )
+    head, _ = git.commit(head_oid)
+    divergence = _probe_merge_base(git, parent.commit, head.commit)
+
+    base = parent if kind == "pr" else divergence
+    old = git.tree_entries(base.tree)
+    tested = None
+    role = kind
+    if kind == "pr":
+        tested, parents = git.commit(
+            git.oid(request.tested_commit, "identity_mismatch")
+        )
+        if tested.tree != request.tested_tree or parents != (
+            parent.commit,
+            head.commit,
+        ):
+            git.refuse("identity_mismatch")
+        endpoint = tested
+        role = "pr-tested"
+    elif kind == "head":
+        endpoint = head
+    else:
+        entries, changes = _probe_index(git, base, old)
+        endpoint = IndexEndpoint(_sha256(_canonical({"entries": entries})))
+
+    if kind != "index":
+        entries = git.tree_entries(endpoint.tree) if endpoint.tree != base.tree else old
+        changes = git.tree_changes(base, endpoint, old, entries)
+    git.require_blobs(old, entries)
+    if kind == "index" and _probe_index(git, base, old) != (entries, changes):
+        git.refuse("observation_drift")
+    if kind != "pr" and _probe_head(git) != head_oid:
+        git.refuse("observation_drift")
+    if _probe_merge_base(git, parent.commit, head_oid) != divergence:
+        git.refuse("observation_drift")
+
+    provenance = ProbeProvenance(
+        kind, parent.commit, divergence, head, tested, git.profile
+    )
+    return (
+        Snapshot(
+            request.repository,
+            "local",
+            "baseline",
+            base,
+            base,
+            old,
+            changes,
+            provenance,
+            git.read_blob,
+        ),
+        Snapshot(
+            request.repository,
+            "local",
+            role,
+            endpoint,
+            base,
+            entries,
+            changes,
+            provenance,
+            git.read_blob,
+        ),
+    )
+
+
 def resolve(
-    repo: Path, request: HostedRequest | LocalRequest
+    repo: Path, request: HostedRequest | LocalRequest | ProbeRequest
 ) -> tuple[Snapshot, Snapshot]:
     """Resolve the complete pair, before first, or raise typed uncertainty."""
     if isinstance(request, LocalRequest):
         return _local(repo, request)
+    if isinstance(request, ProbeRequest):
+        return _probe(repo, request)
     return _hosted(repo, request)

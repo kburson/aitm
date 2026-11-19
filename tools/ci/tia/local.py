@@ -22,7 +22,13 @@ from . import inventory as t02
 from .inventory import SuitePolicy, classify
 from .python_graph import ProviderPolicy, PytestScope
 from .selection import InventoryExpectation, InventoryPair, SelectionPolicy, select
-from .snapshot import LocalRequest, SnapshotUncertain, _check_path, resolve
+from .snapshot import (
+    LocalRequest,
+    SnapshotUncertain,
+    WorktreeEndpoint,
+    _check_path,
+    resolve,
+)
 
 _PRODUCT = "packages/aitm-usage"
 _CONFIG = f"{_PRODUCT}/pyproject.toml"
@@ -288,12 +294,17 @@ def _env():
     }
 
 
+def _temp_environment(directory):
+    return dict.fromkeys(("TMPDIR", "TMP", "TEMP"), str(directory))
+
+
 @dataclass(frozen=True)
 class _Runtime:
     source: _Copy
     directory: Path
     observer: Path
     observer_sha256: str
+    private_temp: bool = False
 
     @property
     def root(self):
@@ -330,6 +341,10 @@ class _Runtime:
             ),
             "AITM_CI_PYTEST_EVIDENCE": str(receipt),
         }
+        if self.private_temp:
+            private = task / "temp"
+            private.mkdir(mode=0o700)
+            env.update(_temp_environment(private))
         if not collect:
             env["AITM_CI_CHILD_EVIDENCE"] = "1"
         args = [
@@ -435,15 +450,21 @@ def _prepare(snapshot, directory, *, inspected_checkout=None):
     observer = directory / "observer" / "pytest_evidence.py"
     observer.parent.mkdir()
     observer.write_bytes(raw)
-    runtime = _Runtime(copy, directory, observer, _digest(raw))
+    runtime = _Runtime(
+        copy,
+        directory,
+        observer,
+        _digest(raw),
+        private_temp=inspected_checkout is not None,
+    )
     uv = shutil.which("uv")
     _checked(uv is not None, "runtime: uv is required")
     env = _env() | {"UV_PROJECT_ENVIRONMENT": str(directory / "venv")}
     if inspected_checkout is not None:
+        env.update(_temp_environment(directory))
         env["UV_CACHE_DIR"] = str(
             _safe_uv_cache(uv, directory, copy.root, inspected_checkout, env)
         )
-        env["TMPDIR"] = str(directory)
         env["UV_PYTHON_DOWNLOADS"] = "never"
     install = _capture(
         [
@@ -477,8 +498,8 @@ class _Collected:
     targets: dict[str, tuple[str, ...]]
 
 
-def _collect(snapshot, directory):
-    runtime = _prepare(snapshot, directory)
+def _collect(snapshot, directory, *, inspected_checkout=None):
+    runtime = _prepare(snapshot, directory, inspected_checkout=inspected_checkout)
     root = runtime.root
     policy = SuitePolicy(
         (root / _SUITES).read_bytes(), (root / _POLICY).read_bytes(), "full"
@@ -602,13 +623,20 @@ def _json_value(value):
 
 
 def _snapshot_data(before, after):
-    return {
+    identity = {
         "repository": after.repository,
         "base": before.baseline_identity.commit,
         "base_tree": before.baseline_identity.tree,
         "before": before.digest,
         "after": after.digest,
-        "worktree": after.endpoint_identity.worktree_digest,
+    }
+    endpoint = after.endpoint_identity
+    if isinstance(endpoint, WorktreeEndpoint):
+        return identity | {"worktree": endpoint.worktree_digest}
+    return identity | {
+        "input": after.provenance.input_kind,
+        "endpoint": _json_value(asdict(endpoint)),
+        "source": _json_value(asdict(after.provenance)),
     }
 
 
@@ -627,7 +655,7 @@ def _unavailable(reason):
     }
 
 
-def _plan(before, after, private):
+def _plan(before, after, private, *, inspected_checkout=None):
     plan = _unavailable("candidate inventory unavailable")
     plan.update(
         snapshot=_snapshot_data(before, after),
@@ -641,7 +669,9 @@ def _plan(before, after, private):
         ],
     )
     try:
-        candidate = _collect(after, private / "candidate")
+        candidate = _collect(
+            after, private / "candidate", inspected_checkout=inspected_checkout
+        )
     except (Refusal, SnapshotUncertain, OSError, ValueError) as error:
         plan["reasons"] = [f"candidate-inventory: {error}"]
         return plan, None
@@ -655,7 +685,9 @@ def _plan(before, after, private):
     }
     full = {_key(row): row for row in candidate.rows}
     try:
-        baseline = _collect(before, private / "baseline")
+        baseline = _collect(
+            before, private / "baseline", inspected_checkout=inspected_checkout
+        )
     except (Refusal, SnapshotUncertain, OSError, ValueError) as error:
         plan.update(
             mode="full",
@@ -887,6 +919,18 @@ def _emit(plan, result):
             print(error, file=sys.stderr)
 
 
+def _scratch_root(repo):
+    # Keep unrelated activity in the shared temp directory from changing
+    # an ancestor of native custody fixtures during observation.
+    cache = Path.home() / "Library/Caches"
+    root = (cache if cache.is_dir() else Path(tempfile.gettempdir())).resolve()
+    _checked(
+        not root.is_relative_to(repo),
+        "runtime: temporary directory must be outside the checkout",
+    )
+    return root
+
+
 def main(argv=None):
     """Use an explicit Git base to inspect, then optionally run, local obligations."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -905,15 +949,7 @@ def main(argv=None):
         repo, request = _request(args.base)
         before, after = resolve(repo, request)
         identity = (before.digest, after.digest)
-        # The native product fixtures compare directory ctimes along the
-        # entire path. Keep unrelated activity in the shared temp directory
-        # from changing an ancestor of the fixture data during observation.
-        cache = Path.home() / "Library/Caches"
-        temp_root = (cache if cache.is_dir() else Path(tempfile.gettempdir())).resolve()
-        _checked(
-            not temp_root.is_relative_to(repo),
-            "runtime: temporary directory must be outside the checkout",
-        )
+        temp_root = _scratch_root(repo)
         with tempfile.TemporaryDirectory(
             prefix="aitm-tia-local-", dir=temp_root
         ) as path:

@@ -72,6 +72,17 @@ _PORTABLE_MODIFICATIONS = _CURRENT_MODIFICATIONS | {
     b"tools/ci/tests/test_tia_selection.py",
     b"tools/ci/tests/test_tia_shards.py",
 }
+_PROBE_ADDITIONS = _CURRENT_ADDITIONS | {
+    b"tools/ci/tia/probe.py",
+    b"tools/ci/tests/test_tia_probe.py",
+    b"tools/ci/tests/test_tia_probe_snapshots.py",
+}
+_PROBE_MODIFICATIONS = _PORTABLE_MODIFICATIONS | {b"tools/ci/tia/selection.py"}
+_CURRENT_DELIVERIES = (
+    (_CURRENT_ADDITIONS, _CURRENT_MODIFICATIONS),
+    (_CURRENT_ADDITIONS, _PORTABLE_MODIFICATIONS),
+    (_PROBE_ADDITIONS, _PROBE_MODIFICATIONS),
+)
 _LINUX_ONLY = frozenset(
     f"{_MODULE}::test_linux_scope_staging_and_hook_recheck_external_process_incarnation"
     f"[{case}-/bin/sh]"
@@ -114,8 +125,8 @@ def _modified(change, path):
 def _delivery_tree(changes, current):
     additions = set()
     modifications = set()
+    allowed = _PROBE_MODIFICATIONS if current else {_DOC, _LOCAL}
     for change in changes:
-        allowed = _PORTABLE_MODIFICATIONS if current else {_DOC, _LOCAL}
         if (
             change.new
             and change.new.path in allowed
@@ -132,11 +143,9 @@ def _delivery_tree(changes, current):
         else:
             return False
     if current:
-        return (
-            additions == _CURRENT_ADDITIONS
-            and modifications in (_CURRENT_MODIFICATIONS, _PORTABLE_MODIFICATIONS)
-            and len(changes) == len(additions) + len(modifications)
-        )
+        return (additions, modifications) in _CURRENT_DELIVERIES and len(
+            changes
+        ) == len(additions) + len(modifications)
     # The admitted release changes only the advisory tooling and guide.
     # The product, observer, runtime config, selector and lock stay pinned.
     return len(changes) == len(additions) + len(modifications) and (

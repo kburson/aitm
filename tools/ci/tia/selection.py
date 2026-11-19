@@ -19,8 +19,11 @@ from .python_graph import (
 from .snapshot import (
     Entry,
     GitEndpoint,
+    GitProfile,
     HostedProvenance,
+    IndexEndpoint,
     LocalProvenance,
+    ProbeProvenance,
     Snapshot,
     SnapshotUncertain,
     WorktreeEndpoint,
@@ -135,6 +138,58 @@ def _require(condition, reason):
         raise ValueError(reason)
 
 
+def _probe_endpoint(snapshot, *, baseline):
+    provenance = snapshot.provenance
+    kind = provenance.input_kind
+    _require(
+        isinstance(provenance.git, GitProfile)
+        and provenance.git.object_format in ("sha1", "sha256"),
+        "probe snapshot provenance does not match",
+    )
+    oid_size = 40 if provenance.git.object_format == "sha1" else 64
+
+    def oid(value):
+        return isinstance(value, str) and re.fullmatch(
+            rf"[0-9a-f]{{{oid_size}}}", value
+        )
+
+    def git_endpoint(value):
+        return isinstance(value, GitEndpoint) and oid(value.commit) and oid(value.tree)
+
+    _require(
+        git_endpoint(snapshot.baseline_identity)
+        and git_endpoint(provenance.merge_base)
+        and git_endpoint(provenance.head)
+        and oid(provenance.parent_commit)
+        and (
+            (
+                git_endpoint(provenance.tested)
+                and snapshot.baseline_identity.commit == provenance.parent_commit
+            )
+            if kind == "pr"
+            else (
+                kind in ("index", "head")
+                and provenance.tested is None
+                and snapshot.baseline_identity == provenance.merge_base
+            )
+        ),
+        "probe snapshot provenance does not match",
+    )
+    if baseline:
+        return
+    if kind == "index":
+        expected = IndexEndpoint(
+            sha256(_snapshot_canonical({"entries": snapshot.entries})).hexdigest()
+        )
+    else:
+        expected = provenance.tested if kind == "pr" else provenance.head
+    _require(
+        snapshot.ref_role == ("pr-tested" if kind == "pr" else kind)
+        and snapshot.endpoint_identity == expected,
+        "probe snapshot endpoint does not match",
+    )
+
+
 def _endpoint(snapshot, *, baseline):
     _require(
         isinstance(snapshot.baseline_identity, GitEndpoint)
@@ -150,6 +205,9 @@ def _endpoint(snapshot, *, baseline):
     endpoint = snapshot.endpoint_identity
     provenance = snapshot.provenance
     if snapshot.mode == "local":
+        if isinstance(provenance, ProbeProvenance):
+            _probe_endpoint(snapshot, baseline=baseline)
+            return
         _require(
             isinstance(provenance, LocalProvenance)
             and (
@@ -282,7 +340,7 @@ def _pair_changes(before, after, old, new):
     def changed(path):
         if old[path].mode != new[path].mode:
             return True
-        if after.mode == "hosted":
+        if after.mode == "hosted" or isinstance(after.provenance, ProbeProvenance):
             return old[path].content_id != new[path].content_id
         data = after.read_content(path)
         digest = hash_for(after.provenance.git.object_format)
