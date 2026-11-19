@@ -40,7 +40,7 @@ def inputs():
         "lock": "e" * 64,
         "configuration": "f" * 64,
         "runtime": "3.13.9",
-        "image": "macos-26-arm64",
+        "image": "ubuntu24:20261118.1",
     }
     policy = {
         "schema": "aitm.ci-policy/v1",
@@ -74,7 +74,7 @@ def inputs():
                 },
             ],
         },
-        "capability": {"os": "Darwin", "filesystem": "apfs"},
+        "capability": {"os": "Linux", "runtime": "3.13.9", "image": identity["image"]},
         "base": {
             "identity": identity,
             "evidence": evidence("tests/test_core.py::test_keeps_state"),
@@ -149,8 +149,9 @@ def test_exact_floor_accepts_behavior_and_counts(inputs):
         (lambda x: x["child"]["children"][0].update(covered_lines=0), "child"),
         (lambda x: x["child"]["children"][0].update(returncode=-9), "child"),
         (lambda x: x["child"]["children"][0].update(pid=11), "child"),
-        (lambda x: x["capability"].update(os="Linux"), "Darwin"),
-        (lambda x: x["capability"].update(filesystem="hfs"), "Darwin"),
+        (lambda x: x["capability"].update(os="Darwin"), "platform"),
+        (lambda x: x["capability"].update(runtime="3.13.8"), "platform"),
+        (lambda x: x["capability"].update(image=""), "platform"),
     ],
 )
 def test_green_unrelated_evidence_cannot_mask_refusal(inputs, change, reason):

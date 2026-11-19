@@ -343,11 +343,14 @@ def evaluate(
 
     failures = []
     narrowed = _narrowed(selection)
-    if not isinstance(capability, dict) or (
-        capability.get("os"),
-        capability.get("filesystem"),
-    ) != ("Darwin", "apfs"):
-        failures.append("required Darwin APFS capability is absent")
+    if (
+        not isinstance(capability, dict)
+        or capability.get("os") != "Linux"
+        or capability.get("runtime") != "3.13.9"
+        or not isinstance(capability.get("image"), str)
+        or not capability["image"]
+    ):
+        failures.append("required Linux platform evidence is absent")
     if narrowed and selection["mode"] == "checks":
         actual = {}
     else:
