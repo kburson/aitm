@@ -94,7 +94,7 @@ def recorded_full(repo, out, env, prefix, group, targets, expected=None, workers
     launch_env["AITM_CI_PYTEST_EVIDENCE"] = str(evidence)
     if group == "product":
         launch_env["AITM_CI_CHILD_EVIDENCE"] = "1"
-    coverage_path = out / f".coverage-{prefix}-{group}"
+    coverage_path = out / f"coverage-{prefix}-{group}.sqlite"
     launch_env["COVERAGE_FILE"] = str(coverage_path)
     command = [
         str(repo / PRODUCT / ".venv/bin/python"), "-m", "pytest", "-p", "pytest_evidence",
@@ -120,7 +120,8 @@ def recorded_full(repo, out, env, prefix, group, targets, expected=None, workers
         cwd=cwd, env=launch_env, check=True,
     )
     return {"seconds": seconds, "exit": status, "receipt": evidence.name,
-            "outcomes": outcomes, "contexts": contexts_file.name}
+            "outcomes": outcomes, "contexts": contexts_file.name,
+            "coverage_db": coverage_path.name, "coverage_sha256": sha256(coverage_path.read_bytes()).hexdigest()}
 
 
 def run_groups(repo, out, env, prefix, targets, expected=None, workers=0):
@@ -325,6 +326,11 @@ def run(case, out):
                        for hit in read_json(out / row["contexts"])["decoder"] for context in hit["contexts"]})
     assert decoder_contexts(full) == decoder_contexts(selected) == [expected_context]
     assert not read_json(out / full["helpers"]["contexts"])["decoder"]
+    for group in full.values():
+        phase_contexts = read_json(out / group["contexts"])
+        assert phase_contexts["subprocess_patch"]
+        assert any("" in row["contexts"] for row in phase_contexts["console_main_entry"])
+
 
     assert mode == ("selected" if case["case"] in {"bounded","seeded"} else "full")
     if mode == "selected":
