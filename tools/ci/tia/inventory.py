@@ -194,7 +194,7 @@ def _named_records(records, error):
     return records
 
 
-def _profiles(records, ci103):
+def _profiles(records, ci103, *, portable):
     helper_sources = _names(ci103["helpers"], "policy: invalid #103 helper sources")
     _require(
         helper_sources
@@ -205,6 +205,8 @@ def _profiles(records, ci103):
         "tools/ci/tests/test_" + path.removeprefix("tools/ci/")
         for path in helper_sources
     }
+    if portable:
+        helper_targets.add("tools/ci/tests/test_tia_local.py")
     expected = {
         "product-base": ("aitm-usage", {_PRODUCT_TARGET}),
         "product-cli": ("aitm-usage", {_PRODUCT_TARGET, _CLI}),
@@ -363,8 +365,8 @@ def _policy(suite_policy):
         and ci103.get("package") == "aitm-usage",
         "policy: invalid #103 policy",
     )
-    profiles = _profiles(suites["profiles"], ci103)
     runners = _runners(suites["runners"])
+    profiles = _profiles(suites["profiles"], ci103, portable="portable" in runners)
     workloads = _workloads(suites["workloads"], profiles, runners)
     modules = _modules(suites["modules"], profiles)
     overrides = _overrides(suites["overrides"], modules, runners)

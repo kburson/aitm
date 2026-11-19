@@ -10,10 +10,20 @@ _CI = Path(__file__).resolve().parents[1]
 _SUITES = _CI / "tia" / "suites.json"
 _CI103 = _CI / "policy.json"
 _PRODUCT = "packages/aitm-usage/tests/"
+_CAPABILITIES = ("exclusive-rename", "no-follow", "private-mode-bits")
+_RUNNER = {
+    "profile": "portable",
+    "name": "ubuntu-24.04",
+    "os": "Linux",
+    "image": "ubuntu24:fixture",
+    "capability_profile": "portable",
+}
 _HELPERS = [
     "tools/ci/tests/test_file_checks.py",
+    "tools/ci/tests/test_path_map.py",
     "tools/ci/tests/test_pytest_evidence.py",
     "tools/ci/tests/test_python_gate.py",
+    "tools/ci/tests/test_tia_local.py",
     "tools/ci/tests/test_verify_pr.py",
 ]
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
@@ -38,12 +48,6 @@ _REQUIRED = {
     _PRODUCT
     + "test_ledger.py::test_writer_refusal_read_snapshot_and_release_on_process_exit",
 }
-_FIRMLINKS = {
-    _OPTIONAL,
-    _PRODUCT
-    + "test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation",
-    _PRODUCT + "test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer",
-}
 _PRICING = _PRODUCT + "test_grok_pricing.py::"
 _UNIT = {
     _PRICING + "test_grok_rate_classes_do_not_use_claude_defaults",
@@ -52,7 +56,7 @@ _UNIT = {
     _PRICING + "test_legacy_v1_revision_refuses_grok_provider",
 }
 _FIXED_EXPORT = _PRICING + "test_grok_preserves_legacy_rate_digest_and_fixed_export"
-_PRODUCT_IDS = sorted(_REQUIRED | _FIRMLINKS | _UNIT | {_FIXED_EXPORT})
+_PRODUCT_IDS = sorted(_REQUIRED | _UNIT | {_FIXED_EXPORT, _OPTIONAL})
 _LOCAL = {
     "kind": "local_advisory",
     "repository": "kburson/aitm",
@@ -93,16 +97,10 @@ def _scope(profile, binding):
     }[profile]
     return {
         "profile": profile,
-        "platform_scope": "darwin-apfs",
+        "platform_scope": "portable",
         "binding": deepcopy(binding),
-        "runner": {
-            "profile": "darwin-apfs",
-            "name": "macos-26",
-            "os": "Darwin",
-            "filesystem": "apfs",
-            "image": "macos26:fixture",
-        },
-        "capabilities": ["native-acl", "darwin", "apfs"],
+        "runner": _RUNNER.copy(),
+        "capabilities": list(_CAPABILITIES),
         "observer": "2" * 64,
         "controls": {"workflow": "3" * 40, "lock": "4" * 64},
         "receipt_sha256": {"product-base": "5", "product-cli": "6", "ci-helpers": "7"}[
@@ -136,16 +134,16 @@ def _project(collection, workload, *, suites=None, ci103=None):
 
 def test_classification_preserves_parametrized_platform_ids():
     policy = json.loads(_SUITES.read_bytes())
-    runner = deepcopy(policy["runners"]["darwin-apfs"])
-    runner["platform_scope"] = "darwin-apfs-secondary"
+    runner = deepcopy(policy["runners"]["portable"])
+    runner["platform_scope"] = "portable-secondary"
     policy["runners"]["secondary"] = runner
     policy["workloads"]["compare-product-cli"]["required_pairs"].append(
-        ["product-cli", "darwin-apfs-secondary"]
+        ["product-cli", "portable-secondary"]
     )
 
     collection = _collection("product-cli", "product-cli")
     primary, secondary = collection["scopes"]
-    secondary["platform_scope"] = "darwin-apfs-secondary"
+    secondary["platform_scope"] = "portable-secondary"
     secondary["runner"]["profile"] = "secondary"
     prefix = _PRODUCT + "test_service.py::TestPlatform::test_example"
     first = prefix + "[Linux/a::b[é]"
@@ -166,20 +164,16 @@ def test_classification_preserves_parametrized_platform_ids():
     ]
     assert keys == sorted(set(keys))
     assert [(row[2], row[3]) for row in keys if row[3].startswith(prefix)] == [
-        ("darwin-apfs", second),
-        ("darwin-apfs", first),
-        ("darwin-apfs-secondary", first),
+        ("portable", second),
+        ("portable", first),
+        ("portable-secondary", first),
     ]
     by_id = {
-        row["nodeid"]: row
-        for row in obligations
-        if row["platform_scope"] == "darwin-apfs"
+        row["nodeid"]: row for row in obligations if row["platform_scope"] == "portable"
     }
-    assert by_id[_ACL]["required_capabilities"] == ["native-acl"]
+    assert by_id[_ACL]["required_capabilities"] == []
     assert by_id[_ONE_SHOT]["isolation_group"] == "system-process"
     assert by_id[first]["isolation_group"] == "native-process-state"
-    for node in _FIRMLINKS:
-        assert by_id[node]["required_capabilities"] == ["apfs"]
 
     collection["scopes"].reverse()
     for scope in collection["scopes"]:
@@ -199,8 +193,8 @@ def test_classification_preserves_parametrized_platform_ids():
         ("repeated-scope", "scope"),
         ("missing-scope", "scope"),
         ("extra-scope", "scope"),
-        ("missing-apfs", "capability"),
-        ("missing-native-acl", "capability"),
+        ("missing-no-follow", "capability"),
+        ("missing-private-mode-bits", "capability"),
         ("inconsistent-runner", "capability"),
         ("missing-mandatory", "collection"),
         ("unsafe-path", "collection"),
@@ -236,12 +230,12 @@ def test_unclassified_or_duplicate_fails(case, category):
         collection["scopes"].clear()
     elif case == "extra-scope":
         collection["scopes"].append(_scope("ci-helpers", _LOCAL))
-    elif case == "missing-apfs":
-        scope["capabilities"].remove("apfs")
-    elif case == "missing-native-acl":
-        scope["capabilities"].remove("native-acl")
+    elif case == "missing-no-follow":
+        scope["capabilities"].remove("no-follow")
+    elif case == "missing-private-mode-bits":
+        scope["capabilities"].remove("private-mode-bits")
     elif case == "inconsistent-runner":
-        scope["runner"]["filesystem"] = "ext4"
+        scope["runner"]["capability_profile"] = "unknown"
     elif case == "missing-mandatory":
         items.remove(next(row for row in items if row["nodeid"] == _ACL))
     elif case == "unsafe-path":
@@ -256,7 +250,7 @@ def test_unclassified_or_duplicate_fails(case, category):
         )
     elif case == "duplicate-policy-pair":
         suites["workloads"]["full"]["required_pairs"].append(
-            ["product-cli", "darwin-apfs"]
+            ["product-cli", "portable"]
         )
     elif case == "duplicate-json-key":
         collection = _encode(collection).replace(
@@ -275,6 +269,7 @@ def test_unclassified_or_duplicate_fails(case, category):
     elif case == "unexpected-xfail":
         items[0]["disposition"] = "xfail"
     elif case == "wrong-skip-reason":
+        ci103["optional_skips"] = {_OPTIONAL: _SKIP_REASON}
         next(row for row in items if row["nodeid"] == _OPTIONAL).update(
             disposition="allowed_skip", reason="wrong reason"
         )
@@ -296,7 +291,12 @@ def test_ci103_scope_and_child_mapping():
     next(
         row for row in collection["scopes"][0]["items"] if row["nodeid"] == _OPTIONAL
     ).update(disposition="allowed_skip", reason=_SKIP_REASON)
-    product = json.loads(_project(collection, "compare-product-cli"))
+    ci103 = json.loads(_CI103.read_bytes())
+    assert _OPTIONAL not in ci103["optional_skips"]
+    with pytest.raises(ValueError, match="^collection:"):
+        _project(collection, "compare-product-cli")
+    ci103["optional_skips"] = {_OPTIONAL: _SKIP_REASON}
+    product = json.loads(_project(collection, "compare-product-cli", ci103=ci103))
     rows = {row["nodeid"]: row for row in product["obligations"]}
     assert {node for node, row in rows.items() if row["mandatory"]} == _REQUIRED | {
         _CLI
@@ -335,8 +335,14 @@ def test_ci103_scope_and_child_mapping():
         row["nodeid"].partition("::")[0] for row in projected["obligations"]
     } == set(_HELPERS)
     assert {row["owner"] for row in projected["obligations"]} == {"ci-tools"}
-    assert {row["isolation_group"] for row in projected["obligations"]} == {
-        "ci-helper-serial"
+    assert {
+        row["nodeid"].partition("::")[0]: row["isolation_group"]
+        for row in projected["obligations"]
+    } == {
+        path: "test_path_map"
+        if path.endswith("/test_path_map.py")
+        else "ci-helper-serial"
+        for path in _HELPERS
     }
     helpers["scopes"][0]["items"].pop()
     with pytest.raises(ValueError, match="^collection:"):
@@ -344,7 +350,7 @@ def test_ci103_scope_and_child_mapping():
 
     collection["scopes"][0]["items"].pop()
     with pytest.raises(ValueError, match="^collection:"):
-        _project(collection, "compare-product-cli")
+        _project(collection, "compare-product-cli", ci103=ci103)
 
 
 def test_full_inventory_requires_all_policy_pairs():

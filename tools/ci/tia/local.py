@@ -1,12 +1,12 @@
 """Plan or run advisory test impact analysis against a local Git checkout."""
 
 import argparse
+import ctypes
 import errno
 import json
 import os
 import platform
 import re
-import runpy
 import shutil
 import stat
 import subprocess
@@ -102,16 +102,40 @@ def _request(base):
     )
 
 
+def _probe_exclusive_rename(probe, fd):
+    linux = sys.platform == "linux"
+    symbol = "renameat2" if linux else "renameatx_np"
+    rename = getattr(ctypes.CDLL(None, use_errno=True), symbol, None)
+    _checked(rename is not None, "capability: exclusive rename is unavailable")
+    rename.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    rename.restype = ctypes.c_int
+    flags = 0x1 if linux else 0x4  # RENAME_NOREPLACE / RENAME_EXCL
+    (probe / "destination").write_bytes(b"existing")
+    _checked(
+        rename(fd, b"source", fd, b"destination", flags) == -1
+        and ctypes.get_errno() == errno.EEXIST
+        and (probe / "destination").read_bytes() == b"existing",
+        "capability: exclusive rename did not protect an existing destination",
+    )
+    (probe / "destination").unlink()
+    _checked(
+        rename(fd, b"source", fd, b"destination", flags) == 0
+        and not (probe / "source").exists()
+        and (probe / "destination").is_file(),
+        "capability: exclusive rename did not publish",
+    )
+
+
 def _capabilities(private):
     _checked(platform.system() in {"Linux", "Darwin"}, "capability: unsupported host")
     nofollow = getattr(os, "O_NOFOLLOW", None)
     _checked(nofollow is not None, "capability: O_NOFOLLOW is unavailable")
-    # The launcher runs from trusted tooling. Reuse its native filesystem helper
-    # without importing packages from the inspected or frozen snapshot.
-    trusted = Path(__file__).resolve().parents[3]
-    host_fs = runpy.run_path(str(trusted / _PRODUCT / "src/aitm_usage/host_fs.py"))
-    publish = host_fs["publish_noreplace"]
-
     with tempfile.TemporaryDirectory(dir=private) as directory:
         probe = Path(directory)
         fd = os.open(probe, os.O_RDONLY | os.O_DIRECTORY | nofollow)
@@ -144,22 +168,7 @@ def _capabilities(private):
             else:
                 os.close(opened)
                 raise Refusal("capability: O_NOFOLLOW followed a symlink")
-            (probe / "destination").write_bytes(b"existing")
-            try:
-                _checked(
-                    not publish(fd, "source", fd, "destination")
-                    and (probe / "destination").read_bytes() == b"existing",
-                    "capability: exclusive rename overwrote a destination",
-                )
-                (probe / "destination").unlink()
-                _checked(
-                    publish(fd, "source", fd, "destination")
-                    and not (probe / "source").exists()
-                    and (probe / "destination").is_file(),
-                    "capability: exclusive rename did not publish",
-                )
-            except host_fs["HostFilesystemError"] as error:
-                raise Refusal("capability: exclusive rename is unavailable") from error
+            _probe_exclusive_rename(probe, fd)
         finally:
             os.close(fd)
 
@@ -749,6 +758,12 @@ def _profile_result(invocation, rows):
         for row in rows
         if row["optional_skip_reason"] is not None
     }
+    if sys.platform == "darwin":
+        from .working_tree_report import _LINUX_ONLY
+
+        optional.update(
+            dict.fromkeys(expected & _LINUX_ONLY, "Requires the Linux proc filesystem")
+        )
     try:
         outcomes, errors = _outcomes(receipt, optional)
     except (KeyError, TypeError, ValueError):

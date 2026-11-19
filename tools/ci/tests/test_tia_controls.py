@@ -5,7 +5,17 @@ from dataclasses import replace
 from hashlib import sha256
 
 import pytest
-from test_tia_inventory import _CI103, _SUITES, _collection, _project
+from test_tia_inventory import (
+    _ACL,
+    _CAPABILITIES,
+    _CI103,
+    _OPTIONAL,
+    _RUNNER,
+    _SKIP_REASON,
+    _SUITES,
+    _collection,
+    _project,
+)
 from test_tia_snapshot import blob, commit, git, hosted_request, tree
 from tia.controls import (
     ControlApprovals,
@@ -62,16 +72,10 @@ def git_tree(repo, files):
 
 
 def full_lanes():
-    runner = (
-        ("filesystem", "apfs"),
-        ("name", "macos-26"),
-        ("os", "Darwin"),
-        ("profile", "darwin-apfs"),
-    )
-    capabilities = ("apfs", "darwin", "native-acl")
+    runner = tuple(sorted(_RUNNER.items()))
     return (
-        Lane("ci-helpers", "ci-tools", "darwin-apfs", runner, capabilities),
-        Lane("product-cli", "aitm-usage", "darwin-apfs", runner, capabilities),
+        Lane("ci-helpers", "ci-tools", "portable", runner, _CAPABILITIES),
+        Lane("product-cli", "aitm-usage", "portable", runner, _CAPABILITIES),
     )
 
 
@@ -352,7 +356,15 @@ def lineage():
         },
     }
     collection = _collection("product-cli", "ci-helpers", binding=collection_binding)
-    inventory = _project(collection, "full")
+    # The portable production policy need not declare a per-node capability
+    # or an allowed skip. Keep those lineage protections covered explicitly.
+    suites = json.loads(_SUITES.read_bytes())
+    suites["overrides"].append(
+        {"selector": _ACL, "required_capabilities": ["no-follow"]}
+    )
+    ci103 = json.loads(_CI103.read_bytes())
+    ci103["optional_skips"] = {_OPTIONAL: _SKIP_REASON}
+    inventory = _project(collection, "full", suites=suites, ci103=ci103)
     document = json.loads(inventory)
     scopes = document["scopes"]
     owners = {"ci-helpers": "ci-tools", "product-cli": "aitm-usage"}
@@ -386,7 +398,9 @@ def lineage():
         scope for scope in collection["scopes"] if scope["profile"] == "product-cli"
     )
     product_scope["items"].append({"nodeid": nodeid, "disposition": "collected"})
-    resulting = json.loads(_project(collection, "full"))["obligations"]
+    resulting = json.loads(_project(collection, "full", suites=suites, ci103=ci103))[
+        "obligations"
+    ]
     added = next(row for row in resulting if row["nodeid"] == nodeid)
     final = point_for("c" * 40, "2" * 40, resulting, suite_policy, ci_policy)
     reference = QualifiedReference(
@@ -399,7 +413,7 @@ def lineage():
         lanes,
         final,
         (first, unchanged, final),
-        (SuitePolicy(_SUITES.read_bytes(), _CI103.read_bytes(), "full"),),
+        (SuitePolicy(canonical(suites), canonical(ci103), "full"),),
     )
     steps = (
         step_for(target, first, unchanged, (), review=False),
@@ -508,7 +522,7 @@ def test_inventory_holds_on_unverified_or_mismatched_replay(lineage, case):
             else (
                 replace(
                     target.lanes[0],
-                    runner=(("name", "other"), ("profile", "darwin-apfs")),
+                    runner=(("name", "other"), ("profile", "portable")),
                 ),
                 target.lanes[1],
             )
@@ -749,9 +763,9 @@ def test_full_control_scope_checks_every_reviewed_profile_platform_pair(repo):
         {_NESTED_CONTROL: ("100644", b"new")},
     )
     document = json.loads(candidate.suite_policy.suites)
-    secondary = "darwin-apfs-secondary"
+    secondary = "portable-secondary"
     document["runners"][secondary] = {
-        **document["runners"]["darwin-apfs"],
+        **document["runners"]["portable"],
         "platform_scope": secondary,
     }
     document["workloads"]["full"]["required_pairs"].append(["product-cli", secondary])
@@ -873,6 +887,7 @@ def test_successor_reconciles_policy_metadata_at_each_reviewed_revision(lineage)
             ),
             "full",
             suites=policy_document,
+            ci103=json.loads(policy.ci103),
         )
     )
     after = next(

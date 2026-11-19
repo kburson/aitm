@@ -93,8 +93,8 @@ action to the reported snapshot and revalidate it before use.
 
 ## Run pinned obligations before committing
 
-On Linux or macOS with Git on PATH, `uv` and CPython 3.13.9 available, run this command from
-the trusted tooling checkout. Use the exact HEAD of the inspected checkout.
+On Linux or macOS with `uv`, CPython 3.13.9, and Git supporting
+`--no-lazy-fetch` on PATH, run this command from the trusted tooling checkout. Use the exact HEAD of the inspected checkout.
 
 ```sh
 python -B -E -s -m tools.ci.tia.working_tree_run \

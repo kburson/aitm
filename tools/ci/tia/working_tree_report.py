@@ -61,10 +61,15 @@ _CURRENT_MODIFICATIONS = {
 _PORTABLE_MODIFICATIONS = _CURRENT_MODIFICATIONS | {
     b"tools/ci/policy.json",
     b"tools/ci/tia/baseline.py",
+    b"tools/ci/tia/inventory.py",
     b"tools/ci/tia/snapshot.py",
     b"tools/ci/tia/suites.json",
     b"tools/ci/tests/test_tia_baseline.py",
+    b"tools/ci/tests/test_tia_controls.py",
+    b"tools/ci/tests/test_tia_inventory.py",
     b"tools/ci/tests/test_tia_local.py",
+    b"tools/ci/tests/test_tia_selection.py",
+    b"tools/ci/tests/test_tia_shards.py",
 }
 _LINUX_ONLY = frozenset(
     f"{_MODULE}::test_linux_scope_staging_and_hook_recheck_external_process_incarnation"

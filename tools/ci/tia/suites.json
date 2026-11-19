@@ -73,7 +73,8 @@
         "tools/ci/tests/test_pytest_evidence.py",
         "tools/ci/tests/test_python_gate.py",
         "tools/ci/tests/test_verify_pr.py",
-        "tools/ci/tests/test_path_map.py"
+        "tools/ci/tests/test_path_map.py",
+        "tools/ci/tests/test_tia_local.py"
       ],
       "required_capabilities": [
         "private-mode-bits",
@@ -312,6 +313,11 @@
       "isolation_group": "ci-helper-serial"
     },
     "tools/ci/tests/test_python_gate.py": {
+      "owner": "ci-tools",
+      "suite": "integration",
+      "isolation_group": "ci-helper-serial"
+    },
+    "tools/ci/tests/test_tia_local.py": {
       "owner": "ci-tools",
       "suite": "integration",
       "isolation_group": "ci-helper-serial"

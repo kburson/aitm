@@ -350,3 +350,54 @@ def test_portable_capability_probe_on_private_filesystem(tmp_path, monkeypatch):
     probe_root.mkdir(mode=0o700)
     local._capabilities(probe_root)
     assert list(probe_root.iterdir()) == []
+
+
+def test_stock_runner_accepts_only_the_exact_darwin_procfs_skip(monkeypatch):
+    from types import SimpleNamespace
+
+    from tools.ci.tia.working_tree_report import _LINUX_ONLY
+
+    node = min(_LINUX_ONLY)
+    phases = [
+        {
+            "nodeid": node,
+            "when": "setup",
+            "outcome": "skipped",
+            "wasxfail": False,
+            "skip_reason": "Requires the Linux proc filesystem",
+        },
+        {"nodeid": node, "when": "teardown", "outcome": "passed", "wasxfail": False},
+    ]
+    receipt = {
+        "schema": "aitm.pytest-evidence/v1",
+        "collected": [node],
+        "deselected": [],
+        "exit_code": 0,
+        "reports": phases,
+        "children": [],
+    }
+    invocation = SimpleNamespace(returncode=0, seconds=0, receipt=lambda: receipt)
+    rows = [{"nodeid": node, "optional_skip_reason": None, "required_children": []}]
+    monkeypatch.setattr(local.sys, "platform", "darwin")
+    result = local._profile_result(invocation, rows)
+    assert result["outcomes"] == [{"nodeid": node, "outcome": "skipped"}]
+    assert result["errors"] == []
+    phases[0]["skip_reason"] = "Different reason"
+    assert local._profile_result(invocation, rows)["errors"]
+
+    phases[0]["skip_reason"] = "Requires the Linux proc filesystem"
+    monkeypatch.setattr(local.sys, "platform", "linux")
+    assert local._profile_result(invocation, rows)["errors"]
+
+
+def test_capability_probe_does_not_execute_checkout_python(tmp_path, monkeypatch):
+    launcher = tmp_path / "tools/ci/tia/local.py"
+    monkeypatch.setattr(local, "__file__", str(launcher))
+    _write(
+        tmp_path,
+        f"{_PRODUCT}/src/aitm_usage/host_fs.py",
+        "raise AssertionError('candidate Python ran in the planner')\n",
+    )
+    private = tmp_path / "probe"
+    private.mkdir(mode=0o700)
+    local._capabilities(private)

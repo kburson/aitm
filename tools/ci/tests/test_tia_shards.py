@@ -126,7 +126,7 @@ def test_rejects_missing_required_or_requested_and_invalid_timing(source):
 def test_rejects_actual_incompatible_runner(source):
     collection, inventory, expected, _ = source
     raw = json.loads(collection)
-    raw["scopes"][0]["runner"]["filesystem"] = "ext4"
+    raw["scopes"][0]["runner"]["capability_profile"] = "unknown"
     with pytest.raises(ValueError, match="incompatible runner"):
         assign(_encode(raw), inventory, expected, (), {})
 
