@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 383
 title: "Implement an affected-test probe for the index, HEAD, and PR trees"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/383"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T14:06:37Z"
-updated: "2026-11-19T14:53:47Z"
-last-branch: "codex/383-advisory-probe"
+updated: "2026-11-19T15:03:10Z"
+last-branch: "trunk"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
 origin: ".aitm/stories/003/371/plan/2026-11-19-371-portable-python-tia-findings.md"
@@ -40,3 +40,5 @@ Implement one read-only affected-test probe in Python for exact staged index, HE
 4. Deliver a reviewed probe receipt. Keep the hosted path map, workflow, merge authority, and #355 pinned advisory command in their existing roles. Hosted integration has its own later decision.
 
 [Accepted #371 finding](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/371/plan/2026-11-19-371-portable-python-tia-findings.md) · [Parent #370](https://github.com/kburson/aitm/issues/370).
+
+[Delivery sign-off](retro/2026-11-19-383-delivery.md) · [Merge PR #384](https://github.com/kburson/aitm/pull/384).
