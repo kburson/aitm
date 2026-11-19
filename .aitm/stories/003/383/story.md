@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 383
 title: "Implement an affected-test probe for the index, HEAD, and PR trees"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/383"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T14:06:37Z"
-updated: "2026-11-19T14:35:31Z"
+updated: "2026-11-19T14:53:47Z"
 last-branch: "codex/383-advisory-probe"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
 origin: ".aitm/stories/003/371/plan/2026-11-19-371-portable-python-tia-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-383-advisory-probe.md", "plan/reviews/2026-11-19-383-independent-source-review.md", "plan/2026-11-19-383-qualification.md", "plan/2026-11-19-383-qualification.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-383-advisory-probe.md", "plan/reviews/2026-11-19-383-independent-source-review.md", "plan/2026-11-19-383-qualification.md", "plan/2026-11-19-383-qualification.json", "plan/trusted-pr-384.json"], "attachments": []}
 expansions: []
 trips: []
 ---
