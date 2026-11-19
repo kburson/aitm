@@ -1,0 +1,23 @@
+{
+  "schema": "aitm.pytest-suite-inputs/v1",
+  "suite": "grok-ingestion-replay",
+  "target": "packages/aitm-usage/tests/test_grok.py",
+  "bounded_test_body": "test_headless_projection_is_only_corroboration",
+  "shared_paths": {
+    "packages/aitm-usage/src/aitm_usage/ledger.py": "Ledger fixture and product consumers",
+    "packages/aitm-usage/src/aitm_usage/monitor_types.py": "Shared observation types",
+    "packages/aitm-usage/src/aitm_usage/sources/adapter.py": "Shared source adapter",
+    "packages/aitm-usage/src/aitm_usage/sources/grok.py": "Grok replay, capture, delivery, and admission consumers",
+    "packages/aitm-usage/src/aitm_usage/types.py": "Shared data types",
+    "packages/aitm-usage/tests/conftest.py": "Shared pytest setup",
+    "packages/aitm-usage/tests/test_monitor_adapters.py": "Shared Evidence helper",
+    "packages/aitm-usage/tests/fixtures/grok/headless.json": "grok_source is imported by test_monitor_grok_capture",
+    "packages/aitm-usage/tests/fixtures/grok/updates.jsonl": "Replay and other monitor consumers",
+    "packages/aitm-usage/tests/fixtures/grok/usage.json": "Replay and other monitor consumers",
+    "packages/aitm-usage/pyproject.toml": "Package and pytest configuration",
+    "packages/aitm-usage/uv.lock": "Locked dependencies"
+  },
+  "shared_prefixes": [".github/", "tools/ci/"],
+  "runtime": {"python": "3.13.9", "uv": "0.10.6", "os": "ubuntu-24.04"},
+  "fallback": "full"
+}
