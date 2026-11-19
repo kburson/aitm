@@ -458,6 +458,8 @@ def test_headless_projection_is_only_corroboration(grok_source):
         s, s.rows, s.snapshot, headless=lambda _session, prompt: verified[prompt]
     )
     assert len(baseline.observations) == 2 and not baseline.diagnostics
+    assert len({item.key for item in baseline.observations}) == 2
+    assert baseline.observations == _batch(s, s.rows, s.snapshot).observations
     verified[PROMPT_A]["usage"]["input_tokens"] += 1152
     forged = _batch(
         s, s.rows, s.snapshot, headless=lambda _session, prompt: verified[prompt]
