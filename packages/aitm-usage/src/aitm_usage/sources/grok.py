@@ -1,4 +1,4 @@
-"""Read qualified Grok Build whole-turn evidence without assigning a project."""
+"""Read and replay qualified Grok Build whole-turn evidence without assigning a project."""
 
 import json
 from collections.abc import Callable, Iterator
