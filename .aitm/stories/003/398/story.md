@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 398
 title: "Qualify suite selection for a bounded production change on hosted Ubuntu"
 kind: "story"
-state: "backlog"
+state: "refine"
 issue: "https://github.com/kburson/aitm/issues/398"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T21:12:18Z"
-updated: "2026-11-19T21:16:57.153Z"
+updated: "2026-11-19T21:47:40Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-19-370-suite-level-selection.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-398-production-boundary-refine.md"], "attachments": []}
 expansions: []
 trips: []
 ---
