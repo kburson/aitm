@@ -21,7 +21,6 @@ OTHER_PROJECT = UUID("31b124f7-10b8-421d-9c76-74555f86435d")
 NOW = datetime(2026, 11, 9, 14, 0, tzinfo=UTC)
 CANARY = "/private/transcripts/raw-provider-handle-canary"
 ROOT_PREFIX = "Library/Application Support/aitm-usage"
-REAL_HOME = Path.home()
 
 
 @pytest.fixture(autouse=True)
@@ -605,35 +604,34 @@ def test_existing_state_refuses_missing_control_guard(state):
 
 @pytest.mark.parametrize("destination", ["project", "guard"])
 def test_inherited_macos_grant_refused_before_private_creation(
-    tmp_path, modules, destination
+    tmp_path, modules, destination, grant_extra_acl
 ):
     ledger_module, _ = modules
     parent = tmp_path / "grant" if destination == "project" else Path.home() / "Library"
     parent.mkdir(mode=0o700)
-    subprocess.run(
-        [
-            "chmod",
-            "+a",
-            "everyone allow read,search,file_inherit,directory_inherit",
-            parent,
-        ],
-        check=True,
-        capture_output=True,
-    )
+    grant_extra_acl(parent, "system.posix_acl_default")
     root = (parent if destination == "project" else tmp_path) / "project"
-    with pytest.raises(ledger_module.LedgerError):
+    with pytest.raises(ledger_module.LedgerError, match="ACL"):
         ledger_module.Ledger.initialize(root, PROJECT)
     assert not root.exists()
     assert list(parent.iterdir()) == []
 
 
-def test_real_mac_default_ancestry_allows_standard_deny_delete():
-    from aitm_usage.ledger import validate_private_path
+def test_real_mac_default_ancestry_allows_standard_deny_delete(
+    tmp_path, monkeypatch, mac_acl_text
+):
+    from aitm_usage.ledger import LedgerError, validate_private_path
 
-    base = REAL_HOME / "Library" / "Application Support"
-    validate_private_path(
-        base / "aitm-usage-u01-ancestry-probe", directory=True, allow_missing=True
+    base = tmp_path / "private"
+    base.mkdir(mode=0o700)
+    mac_acl_text(
+        base,
+        b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n",
     )
+    monkeypatch.setattr(sys, "platform", "darwin")
+    validate_private_path(base / "ancestry-probe", directory=True, allow_missing=True)
+    with pytest.raises(LedgerError, match="Unsafe private ACL"):
+        validate_private_path(base, directory=True)
 
 
 def test_private_path_rejects_mismatched_owner(state, monkeypatch):
@@ -791,19 +789,15 @@ def test_quota_rejects_foreign_account_reference(state, tmp_path):
         ledger.validate_quota(foreign)
 
 
-def test_extended_grant_on_private_key_refused_before_read(state):
+def test_extended_grant_on_private_key_refused_before_read(state, grant_extra_acl):
     from aitm_usage.ledger import LedgerError
 
     ledger, types = state
-    subprocess.run(
-        ["chmod", "+a", "everyone allow read", ledger.key_path],
-        check=True,
-        capture_output=True,
-    )
+    grant_extra_acl(ledger.key_path, "system.posix_acl_access")
     before = durable_data(ledger)
-    with pytest.raises(LedgerError):
+    with pytest.raises(LedgerError, match="ACL"):
         type(ledger).open(ledger.root, PROJECT)
-    with pytest.raises(LedgerError):
+    with pytest.raises(LedgerError, match="ACL"):
         ledger.apply(types.LedgerBatch())
     assert durable_data(ledger) == before
 
@@ -843,51 +837,59 @@ def test_source_proof_also_requires_exact_wire_shape(state):
         ledger.validate_source_ref(invalid)
 
 
-def data_volume_alias(path):
-    return Path("/System/Volumes/Data") / path.relative_to("/")
-
-
 @pytest.mark.parametrize("existing", [False, True], ids=["missing", "existing"])
 @pytest.mark.parametrize(
     "relation", ["equal", "control-inside-state", "state-inside-control"]
 )
 def test_apfs_firmlink_overlap_refused_before_private_creation(
-    modules, existing, relation
+    modules, existing, relation, tmp_path, monkeypatch
 ):
     ledger_module, _ = modules
+    home = Path.home()
     control = control_directory()
-    physical_project = {
-        "equal": control,
-        "control-inside-state": control.parent,
-        "state-inside-control": control / "project",
+    alias = tmp_path / "alias"
+    alias.mkdir(mode=0o700)
+    project = {
+        "equal": alias / control.relative_to(home),
+        "control-inside-state": alias / control.parent.relative_to(home),
+        "state-inside-control": alias / control.relative_to(home) / "project",
     }[relation]
-    project = data_volume_alias(physical_project)
-    assert Path.home().samefile(data_volume_alias(Path.home()))
-    assert project.resolve() != physical_project.resolve()
     if existing:
-        for path in sorted(
-            {control, physical_project}, key=lambda item: len(item.parts)
-        ):
+        for path in (control, project):
             path.mkdir(mode=0o700, parents=True, exist_ok=True)
-        assert project.samefile(physical_project)
 
+    validate = ledger_module._validated_path
+    home_identity = ledger_module._path_id(home.stat())
+
+    def observed_ancestry(path, **options):
+        ancestry = validate(path, **options)
+        if path == project:
+            depth = len(alias.parts) - 1
+            return (*ancestry[:depth], home_identity, *ancestry[depth + 1 :])
+        return ancestry
+
+    monkeypatch.setattr(ledger_module, "_validated_path", observed_ancestry)
     with pytest.raises(
         ledger_module.LedgerError, match="Writer guard must be outside project state"
     ):
         ledger_module.Ledger.initialize(project, PROJECT)
 
     assert project.exists() == control.exists() == existing
-    assert not list(Path.home().rglob("*.lock"))
-    assert not list(Path.home().rglob("pseudonym.key"))
-    assert not list(Path.home().rglob("usage.sqlite3"))
+    assert not list(tmp_path.rglob("*.lock"))
+    assert not list(tmp_path.rglob("pseudonym.key"))
+    assert not list(tmp_path.rglob("usage.sqlite3"))
 
 
 def test_distinct_apfs_alias_cannot_admit_a_second_writer(tmp_path, modules):
     ledger_module, _ = modules
     root = tmp_path / "project"
     ledger = ledger_module.Ledger.initialize(root, PROJECT)
-    alias = data_volume_alias(root)
-    assert alias.samefile(root)
-    assert ledger_module.Ledger.open(alias, PROJECT).identity == ledger.identity
+    identity = root.stat()
     with ledger.writer():
-        assert try_writer_in_other_process(alias) == "writer-active"
+        alias = root.rename(tmp_path / "alias")
+        try:
+            assert os.path.samestat(alias.stat(), identity)
+            assert ledger_module.Ledger.open(alias, PROJECT).identity == ledger.identity
+            assert try_writer_in_other_process(alias) == "writer-active"
+        finally:
+            alias.rename(root)

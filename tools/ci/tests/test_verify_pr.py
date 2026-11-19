@@ -420,6 +420,7 @@ def override_signed_report(client, verified_signature, transform):
         (("children", 0, "covered_lines"), 0, "child"),
         (("platform", "filesystem"), "other", "Darwin"),
         (("wheel",), "invalid", "wheel"),
+        (("platform",), None, "platform evidence"),
     ],
 )
 def test_signed_payload_claims_do_not_override_trusted_evidence(
@@ -434,6 +435,37 @@ def test_signed_payload_claims_do_not_override_trusted_evidence(
     override_signed_report(client, verified_signature, mutate)
     with pytest.raises(Hold, match=reason):
         client.check()
+
+
+@pytest.mark.parametrize(
+    ("change", "passes"),
+    [
+        ({}, True),
+        ({"runtime": "3.13.8"}, False),
+        ({"image": ""}, False),
+        ({"image": "ubuntu24:other"}, False),
+        ({"filesystem": "apfs"}, False),
+    ],
+)
+def test_ubuntu_evidence_matches_the_pinned_runtime_and_runner(
+    client, verified_signature, change, passes
+):
+    def mutate(report):
+        image = "ubuntu24:20261118.1"
+        report["base_identity"]["image"] = image
+        report["platform"] = {
+            "os": "Linux",
+            "image": image,
+            "runtime": "3.13.9",
+            **change,
+        }
+
+    override_signed_report(client, verified_signature, mutate)
+    if passes:
+        assert client.check()["run_id"] == RUN
+    else:
+        with pytest.raises(Hold, match="platform evidence"):
+            client.check()
 
 
 def test_both_unrounded_coverage_floors_accept_exactly_ninety(

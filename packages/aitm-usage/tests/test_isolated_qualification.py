@@ -19,6 +19,9 @@ from aitm_usage.monitor_scope import ScopeState
 def installed(tmp_path, monkeypatch):
     from aitm_usage import _isolated_qualification as pilot
 
+    monkeypatch.setattr(
+        "aitm_usage.ledger._control_root", lambda: tmp_path / "writer-guards"
+    )
     with monkeypatch.context() as setup:
         setup.setattr(Registry, "_require_live_source", lambda *_, **__: object())
         native = NativeScopeFixture(tmp_path, monkeypatch)

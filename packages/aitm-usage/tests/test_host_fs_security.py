@@ -58,6 +58,26 @@ def test_private_acl_rejects_linux_default_acl_and_unknown_enforcement(
             ledger.validate_private_path(directory / "future", allow_missing=True)
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        b"!#acl 1\n",
+        b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:allow:read\n",
+    ],
+    ids=["empty", "grant"],
+)
+def test_darwin_acl_reader_refuses_a_grant(tmp_path, monkeypatch, mac_acl_text, text):
+    directory = tmp_path / "project"
+    directory.mkdir(mode=0o700)
+    mac_acl_text(directory, text)
+    monkeypatch.setattr(sys, "platform", "darwin")
+    if text == b"!#acl 1\n":
+        ledger.validate_private_path(directory, directory=True)
+    else:
+        with pytest.raises(ledger.LedgerError, match="Unsafe private ACL"):
+            ledger.validate_private_path(directory / "future", allow_missing=True)
+
+
 def test_linux_without_xattr_api_refuses_state_admission(tmp_path, monkeypatch):
     directory = tmp_path / "project"
     directory.mkdir(mode=0o700)
