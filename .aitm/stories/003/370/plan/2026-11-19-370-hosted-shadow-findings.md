@@ -1,6 +1,6 @@
 # #370 hosted Ubuntu shadow findings
 
-**Hold promotion to the required PR gate.** #385 completed the hosted comparison on seven exact PR trees with zero missed failures or outcome mismatches across the five cases that produced a graph assignment. The graph produced no useful narrowing on real repository code, so #385 remains open in Test. Both unavailable cases supplied zero test IDs and had separate full outcomes.
+**Hold promotion to the required PR gate.** #385 completed the hosted comparison on seven exact PR trees with zero missed failures or outcome mismatches across the five cases that produced a graph assignment. The graph produced no useful narrowing on real repository code, so the file-level selector did not qualify for promotion. Both unavailable cases supplied zero test IDs and had separate full outcomes.
 
 [Declared matrix](../../385/plan/2026-11-19-385-shadow-matrix.md) · [Completed hosted run](https://github.com/kburson/aitm/actions/runs/44558382398/attempts/1) · [Verified evidence and exact node inventories](2026-11-19-370-hosted-shadow-evidence.json)
 
@@ -27,3 +27,5 @@ Each row uses one GitHub-hosted Ubuntu 24.04 x64 runner, one exact GitHub-tested
 - The [first shadow run](https://github.com/kburson/aitm/actions/runs/44557441200) used Python under the runner home and failed private ACL checks on the real cases. The completed rerun supplied the exact interpreter path from private scratch and kept all seven PR bindings pinned. Only the experiment harness changed.
 
 The gate, path-map and verifier bytes, pinned #355 runner, live trunk and trunk rules were verified unchanged. The experiment workflow was confined to its dedicated branch. Its result stays advisory. Promotion still needs a representative real change with defensible narrowing and a paired full run.
+
+#385 subsequently closed as a completed experiment. [Suite-level plan](2026-11-19-370-suite-level-selection.md)

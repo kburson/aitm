@@ -6,16 +6,16 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
-children: [371, 383, 385]
+children: [371, 383, 385, 393]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T15:51:46Z"
+updated: "2026-11-19T16:06:30Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -64,4 +64,8 @@ The portable advisory probe shipped in [#383](../383/story.md). The [decision](p
 
 ## Hosted shadow result
 
-The [qualification findings](plan/2026-11-19-370-hosted-shadow-findings.md) record all seven hosted cases. The decision is to hold promotion. Real input assignments were full or unavailable, and fixture narrowing preserved the seeded failure outcomes. #385 remains in Test.
+The [qualification findings](plan/2026-11-19-370-hosted-shadow-findings.md) record all seven hosted cases. The decision is to hold promotion. Real input assignments were full or unavailable, and fixture narrowing preserved the seeded failure outcomes. #385 closed as a completed experiment.
+
+## Suite-level selection
+
+The [current plan](plan/2026-11-19-370-suite-level-selection.md) selects runnable pytest suites from declared inputs using #383's exact Git snapshots. [#393](../393/story.md) is next and qualifies one existing suite on hosted Ubuntu. #370 remains open.

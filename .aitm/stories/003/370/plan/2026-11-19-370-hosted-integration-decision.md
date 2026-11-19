@@ -11,3 +11,5 @@
 ## Next story
 
 [#385](https://github.com/kburson/aitm/issues/385) will compare the graph assignment, current path-map decision, and full outcomes on the same hosted Ubuntu PR trees. It will record test identities, witnesses, fallback and refusal behavior, and timing across representative repository changes and seeded cases. The story calls for zero missed failures in the declared matrix and at least one useful, explainable narrowing on real repository code. The existing hosted gate and #355 retain their authority. Any promotion requires a separate decision on #385's evidence.
+
+#385 completed the experiment. The [suite-level plan](2026-11-19-370-suite-level-selection.md) supersedes this handoff and keeps the promotion hold.
