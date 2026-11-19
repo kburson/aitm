@@ -10,7 +10,7 @@ The bounded input is an edit confined to the body of the existing `test_headless
 
 | Case | Exact candidate change | Expected |
 | --- | --- | --- |
-| bounded | Strengthen the live replay test to assert that a forged headless row does not suppress the unaffected prompt | Select the existing suite. Full and selected outcomes agree. Measure material savings including setup and selection. |
+| bounded | Strengthen the live replay test to assert that valid headless corroboration preserves both distinct native observations | Select the existing suite. Full and selected outcomes agree. Measure material savings including setup and selection. |
 | seeded | Feed a mismatched headless row during the positive replay before any expected conflict | Select the suite. Its existing baseline assertion fails. Full catches exactly the same seeded failure. |
 | shared-fixture | Change whitespace in the tracked headless fixture loaded by multiple suites | Full. Identify the other consumers despite the narrowly named fixture. |
 | shared-source | Clarify the Grok adapter module docstring | Full. The adapter has consumers in multiple suites. |
