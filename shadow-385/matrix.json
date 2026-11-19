@@ -1,0 +1,72 @@
+[
+  {
+    "case": "fixture-green",
+    "pr": 392,
+    "url": "https://github.com/kburson/aitm/pull/392",
+    "base": "3476c0ceb54de39d9019fd3d0d570a9e3a6a2926",
+    "head": "9e6dc16c7455e4be500c796ee7b24824216022d4",
+    "tested": "8813b3cae04dddef49303a7cc1a1334556fa91d6",
+    "tree": "b8d26eff1abcdd97711c1a47bfe30a8950d3539b",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "fixture-missing",
+    "pr": 388,
+    "url": "https://github.com/kburson/aitm/pull/388",
+    "base": "3476c0ceb54de39d9019fd3d0d570a9e3a6a2926",
+    "head": "a9104bafce9d630c3dbeca6535986e622fd7da85",
+    "tested": "51fdd220a018955bb68e2ac895514be6980d8617",
+    "tree": "7906221b8367d3bd355e35125687268d8672777b",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "fixture-red",
+    "pr": 387,
+    "url": "https://github.com/kburson/aitm/pull/387",
+    "base": "3476c0ceb54de39d9019fd3d0d570a9e3a6a2926",
+    "head": "372fa28e0cbbae686e9fc4cbe0d6345e615a4d2c",
+    "tested": "e2b7bcb7c79081a83e45b641ab730e285abb67ae",
+    "tree": "c14405ab03bc51f1cf62cbcd843c19579e318e1e",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "real-config",
+    "pr": 390,
+    "url": "https://github.com/kburson/aitm/pull/390",
+    "base": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+    "head": "179cee8ab4b3731251a51b50830e5caa460fbeaa",
+    "tested": "e335e1ba1ef15b52a1adf0af9df253268aeb2aa6",
+    "tree": "bfd49dd795c051e3df01d6248111d43d25882715",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "real-rename",
+    "pr": 391,
+    "url": "https://github.com/kburson/aitm/pull/391",
+    "base": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+    "head": "4575a39cfe9e278c7523487193f7e2ae131340ab",
+    "tested": "6e03fb0dd966693e0b5057457732dc8c20412c41",
+    "tree": "f1316fa1813b0624c410631382b2e2816d569a2e",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "real-shared",
+    "pr": 389,
+    "url": "https://github.com/kburson/aitm/pull/389",
+    "base": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+    "head": "33b06aa68d9475116f0697bf3ce57bf60cbd71f5",
+    "tested": "a1f6b172e1c2b45dbd213cb8bfca19cd2122780d",
+    "tree": "a45d07afd682b4f8b68e0eef36a62927c645b3d2",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  },
+  {
+    "case": "real-source",
+    "pr": 386,
+    "url": "https://github.com/kburson/aitm/pull/386",
+    "base": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+    "head": "ccba2e5641a55a5a7f21b9257df137501fe47ecd",
+    "tested": "57482874f07b8ea1c0cf9e7742f1f5ae1a11da8f",
+    "tree": "d14222db5025bc45fa5e7ec7b2e7b973bc7a1d28",
+    "tool": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9"
+  }
+]
