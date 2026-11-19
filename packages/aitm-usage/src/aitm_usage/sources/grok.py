@@ -757,7 +757,7 @@ def _reconcile(
 
 
 class GrokAdapter:
-    """Read the pinned macOS writer and service-admitted native lineage."""
+    """Read the pinned macOS writer and replay service-admitted native lineage."""
 
     def __init__(
         self,
