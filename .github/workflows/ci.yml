@@ -89,9 +89,10 @@ jobs:
             test "$(sha256sum "$out/observer/policy.json" | cut -d' ' -f1)" = "$BOOTSTRAP_POLICY_SHA"
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
+          # Keep custody fixtures and the installed Python out of the runner home.
+          fixtures=$(mktemp -d /tmp/aitm-base-fixtures.XXXXXXXX)
+          export UV_PYTHON_INSTALL_DIR="$fixtures/python"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
-          # Keep ancestors stable for the native custody checks during pytest.
-          fixtures=$(mktemp -d "$HOME/aitm-base-fixtures.XXXXXXXX")
           export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
           if (( workers > 0 )); then
             uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
@@ -275,6 +276,11 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-python"
           start=$(date +%s)
+          # Keep custody fixtures and the installed Python out of the runner home.
+          fixtures=$(mktemp -d /tmp/aitm-python-fixtures.XXXXXXXX)
+          export UV_PYTHON_INSTALL_DIR="$fixtures/python"
+          printf 'UV_PYTHON_INSTALL_DIR=%s\n' "$UV_PYTHON_INSTALL_DIR" >> "$GITHUB_ENV"
+          python3 -c 'import os, sys; print({p: os.listxattr(p) for p in sys.argv[1:]})' / /home "$HOME" "$RUNNER_TEMP" /tmp
           cd packages/aitm-usage
           uv sync --locked --python "$PYTHON_VERSION"
           jq -n --arg os "$(uname -s)" \
@@ -287,8 +293,6 @@ jobs:
           export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
           mode=$(jq -er .mode "$out/evidence/selection.json")
-          # Keep native fixtures away from the shared system temp directory and coverage output.
-          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
           if [[ "$mode" == checks ]]; then
             printf '%s\n' '{"schema":"aitm.pytest-evidence/v1","exit_code":0,"collected":[],"deselected":[],"reports":[],"children":[]}' > "$out/evidence/pytest.json"
             printf '%s\n' '{"schema":"aitm.ci-child-evidence/v1","children":[]}' > "$out/evidence/children.json"
@@ -331,7 +335,7 @@ jobs:
           export PATH="$out/gh_2.97.0_linux_amd64/bin:$PATH"
           printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
           COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
-            --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
+            --basetemp "$fixtures/helpers" --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
             tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py \
             tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py \
             tools/ci/tests/test_path_map.py tools/ci/tests/test_tia_local.py
@@ -366,7 +370,7 @@ jobs:
         run: |
           root=$(pwd -P)
           cd packages/aitm-usage
-          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-full-once-fixtures.XXXXXXXX")
+          fixtures=$(mktemp -d /tmp/aitm-full-once-fixtures.XXXXXXXX)
           uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
             --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

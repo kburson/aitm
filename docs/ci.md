@@ -20,7 +20,7 @@ go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
 To verify a hosted PR run, read the authenticated PR, workflow, latest attempt and jobs. Verify the attempt archive and signed subject against the ordinary PR merge ref. Compare the signed source and invocation with the live base and head, workflow and policy controls, and both raw line floors. The signed artifact contains sanitized evidence and creates a public GitHub attestation and Sigstore transparency record.
 
-The isolated Ubuntu base lane uses the delivered observer and policy from the exact target. It places native fixtures under a private runner-home directory because the custody checks include ancestor directory timestamps. The [hosted base qualification](https://github.com/kburson/aitm/actions/runs/43726916730) compares serial and parallel outcomes from the same source and runner image. On initial bootstrap it uses the independently reviewed and digest-pinned standalone blobs. The signer downloads only the exact collector archive, verifies the raw digest and allowed member, and signs the fixed evidence file without candidate checkout or executable input.
+The isolated Ubuntu base lane uses the delivered observer and policy from the exact target. It uses a private scratch directory under the sticky system temporary directory for custody fixtures and their pinned interpreter. The [hosted base qualification](https://github.com/kburson/aitm/actions/runs/43726916730) compares serial and parallel outcomes from the same source and runner image. On initial bootstrap it uses the independently reviewed and digest-pinned standalone blobs. The signer downloads only the exact collector archive, verifies the raw digest and allowed member, and signs the fixed evidence file without candidate checkout or executable input.
 
 ## Verify a pull request from the target
 
@@ -48,6 +48,13 @@ uv run --project packages/aitm-usage --locked --no-dev --python 3.13.9 \
 The file lane checks tracked Markdown and YAML with markdownlint-cli2 and yamllint. Markdown runs against a clean copy of the tracked inputs with the selected configuration. The file lane flags YAML's file-wide lint suppression. It parses tracked JSON strictly and checks the declared CI policy, rate card and activation receipt formats. The existing quality job also runs actionlint for Actions workflow semantics. JSON Lines and compressed evidence use separate formats.
 
 TypeScript reports **not applicable** because the repository has no product TypeScript package. The tooling manifest under `tools/ci/file-lint/` only installs the Markdown checker. The first tracked product TypeScript inputs surface a hold until the product has a working ESLint and typescript-eslint check, `tsc --noEmit`, and Vitest with meaningful behavioral tests and an unrounded 90% V8 line floor.
+
+The macOS FSEvents lifecycle checks can be run on demand from the package directory.
+
+```sh
+cd packages/aitm-usage
+uv run --locked pytest tests/test_host_watch.py native-tests/test_darwin_watch.py
+```
 
 The Python jobs retain the full applicable test inventory, slow test durations, setup and run timings, and the cold or warm cache result. Use those observations when evaluating test scheduling as the suite grows.
 
