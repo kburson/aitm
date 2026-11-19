@@ -96,3 +96,21 @@ def mac_acl_text(monkeypatch):
         monkeypatch.setattr(host_fs, "_mac_acl", lambda: native)
 
     return provide
+
+
+@pytest.fixture
+def alias_directory_identity(monkeypatch):
+    """Expose a second directory spelling at the filesystem metadata boundary."""
+    from pathlib import Path
+
+    lstat = Path.lstat
+
+    def alias_directory(alias, physical):
+        alias.mkdir(mode=0o700)
+
+        def observed_path(path):
+            return lstat(physical if path == alias else path)
+
+        monkeypatch.setattr(Path, "lstat", observed_path)
+
+    return alias_directory

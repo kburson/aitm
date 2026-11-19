@@ -118,7 +118,7 @@ def _absolute(path: Path) -> Path:
 def _require_outside(
     directory: _PinnedPath, path: Path, *, file: bool = False, missing: bool = False
 ) -> None:
-    """Reject physical containment, including alternate APFS path spellings."""
+    """Reject physical containment through any spelling of a directory."""
     directory.check()
     ancestry = _validated_path(
         _absolute(path), directory=not file, allow_missing=missing
