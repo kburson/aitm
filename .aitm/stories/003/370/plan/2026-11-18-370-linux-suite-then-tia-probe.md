@@ -75,14 +75,13 @@ The fixture is a same-inode pair the test creates without root and without APFS:
 
 ### ACL
 
-The required check becomes: private files and their ancestors grant nothing beyond the mode bits already checked.
+[#375](../../375/story.md) preserves the existing private-state policy. A private path must pass the mode, owner, ancestry, and identity checks. ACL validation refuses extra grants and inconclusive reads.
 
-- On Linux, `_check_linux_acl` stays. Missing `system.posix_acl_access` / `system.posix_acl_default` is success. A present xattr is a refusal.
-- On Darwin, `_check_mac_acl` stays as the host reader. Empty ACL text is success. Any other ACE is a refusal, including the home-directory deny-delete ACE. That ACE is a macOS default, not a grant the product needs to allow. Dropping the special case removes the last ACL shape that exists only on macOS.
-- On a host whose Python has no ACL read (`getxattr` absent and `acl_get_link_np` absent), the check succeeds. There is no extra grant to refuse. `host_fs.check_private_acl` stops raising "Private ACL validation is unavailable" for that host.
-- Delete the `chmod +a` probe in `local.py`. Delete the `native-acl` capability from `suites.json`. The suite no longer proves that the runner can create a macOS NFSv4 ACL.
-
-The inherited-ACL test in `test_install.py` becomes a test that presents a granting ACL through the Linux xattr path when the kernel returns one, and a direct call of the refusal predicate with the ACL text the Darwin reader would have returned. The required suite does not run `chmod +a`.
+- On Linux, an absent `system.posix_acl_access` xattr passes. Directories also require an absent `system.posix_acl_default` xattr. `ENODATA` establishes absence. A present ACL xattr is refused as `Unsafe private ACL`.
+- On Darwin, empty ACL text passes. The exact stock macOS home deny-delete ACL passes on ancestors only. The same ACL on a private leaf, any additional ACE, and any other nonempty ACL are refused as `Unsafe private ACL`.
+- Darwin libc can return a null ACL and `ENOENT` for an existing ACL-free path or open file descriptor. The path reader is used with the ledger's path checks. For required existing paths, the ledger validates the object before the ACL read and rechecks its identity afterward, rejecting a missing or changed object.
+- An unavailable reader, any other unsuccessful read, or a failed conversion to ACL text is refused. The control root stays under `~/Library/Application Support/aitm-usage-control` on Darwin and `~/.local/state/aitm-usage-control` on Linux, using the operating-system account home.
+- The required suite keeps the portable custody and ACL fixtures delivered by #377. Native macOS ACL probes remain opt-in. Removing the `chmod +a` probe and the `native-acl` suite capability belongs to #376.
 
 ### Supervisor
 
@@ -124,7 +123,7 @@ Each slice is one function. A slice lands only with its tests. The gate comes of
 
 1. **Portable custody tests.** Add the same-inode overlap fixture and the ACL-refusal fixture. Run them on the current macOS suite so the new tests pass before the runner moves. The old firmlink tests still pass on Darwin during this slice.
 2. **Supervisor.** Introduce `ServiceSupervisor`. Point `cli.py` and `qualification.py` at it. Delete `LaunchControl` and `_libproc` from the call path those commands use. `grok_scope_hook.py` calls the shared identity function.
-3. **ACL special case.** Remove the home-directory deny-delete allowance. Confirm the Linux missing-xattr path and the Darwin empty-ACL path both succeed, and any extra ACE or xattr fails.
+3. **ACL verification.** Confirm the Linux and Darwin absence cases, the ancestor-only stock Darwin ACL, and refusal of grants and inconclusive reads. On Darwin, verify that the ledger refuses a missing or changed required path even when the ACL read returns `ENOENT`.
 4. **Delete the gate.** Edit `suites.json`, `local.py`, `snapshot.py`, `python_gate.py`, `verify_pr.py`, `baseline.py`, `policy.json`, and `ci.yml` as listed above. Move `python-base` and `python` to `ubuntu-24.04`. Update the CI tests that assert the Darwin capability.
 5. **Retire the Darwin-only tests.** Delete `data_volume_alias` from the ledger tests and keep the same-inode fixture. Rewrite the `_darwin` watch tests and the `chmod +a` install test onto the portable fixtures. Delete the `test_tia_local.py` Darwin skip by making that test run on Linux. After this slice the suite has no test that requires a Mac.
 
@@ -137,7 +136,7 @@ On an Ubuntu runner, before the story is called done:
 - `uv run --project packages/aitm-usage pytest packages/aitm-usage/tests tools/ci/tests` exits 0. The run does not call `diskutil`, `launchctl`, `plutil`, `xcodebuild`, or `chmod +a`.
 - `python -m tools.ci.tia.local` reaches selection on a Linux checkout. It does not refuse with "Darwin is required", "APFS is required", or "native ACL support is required".
 - A same-inode pair is refused by `Ledger.initialize` with "Writer guard must be outside project state".
-- A file whose ACL xattr is present is refused. A file with no ACL is accepted.
+- Linux refuses a present ACL xattr and admits an ACL-free file. Darwin admits an ACL-free file and the stock deny-delete ACL on ancestors only. Both platforms refuse an inconclusive ACL read. The Darwin ledger checks also refuse a missing or changed required path after a null ACL result with `ENOENT`.
 - `aitm` service start writes the pid file and heartbeat without `/bin/launchctl` on `PATH`.
 - The workflow jobs `python-base` and `python` show `runs-on: ubuntu-24.04`, and a pull-request run completes those jobs.
 - The workflow file contains no `macos-26` runner and no `diskutil` invocation. A pull request goes green with Linux runners only.
