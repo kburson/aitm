@@ -454,6 +454,7 @@ def test_snapshot_only_does_not_charge(grok_source):
 def test_headless_projection_is_only_corroboration(grok_source):
     s = grok_source
     verified = {entry["requestId"]: entry for entry in s.headless}
+    verified[PROMPT_A]["usage"]["input_tokens"] += 1152
     baseline = _batch(
         s, s.rows, s.snapshot, headless=lambda _session, prompt: verified[prompt]
     )
