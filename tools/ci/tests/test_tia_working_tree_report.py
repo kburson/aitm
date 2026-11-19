@@ -387,3 +387,28 @@ def test_exact_cli_on_production_anchor(tmp_path):
     assert git(target, "rev-parse", "HEAD") == ANCHOR
     assert git(target, "status", "--porcelain=v1") == before == f"M {SOURCE}"
     assert (target / SOURCE).read_bytes() == body
+
+
+def test_exact_cli_qualifies_post_supervisor_anchor(tmp_path):
+    target = tmp_path / "target"
+    git(tmp_path, "clone", "-q", "--shared", "--no-checkout", str(ROOT), str(target))
+    anchor = "4ae28dba1493c2171bd8097e58195198c4001a51"
+    git(target, "checkout", "-q", "--detach", anchor)
+
+    append(target, b"\n# Requalification probe.\n")
+    child = run_cli("--repo", str(target), "--base", anchor)
+    assert child.returncode == 0, child.stdout
+    result = json.loads(child.stdout)
+    assert result["authority"]["anchor_commit"] == anchor
+    assert result["authority"]["consumer_sha256"] == (
+        "709aa6dce1bd3f25d169b8cbde4af009275cfe226e9a752c0260ea8e58e8560f"
+    )
+    assert len(result["node_ids"]) == (38 if sys.platform == "linux" else 36)
+    assert all(node.startswith(MODULE + "::") for node in result["node_ids"])
+
+    write(target, "unrelated.txt", b"Not part of the qualified release.\n")
+    git(target, "add", "unrelated.txt")
+    git(target, "commit", "-qm", "Unrelated committed path")
+    child = run_cli("--repo", str(target), "--base", git(target, "rev-parse", "HEAD"))
+    assert child.returncode == 2
+    unavailable(json.loads(child.stdout), "unqualified-base")

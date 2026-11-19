@@ -17,8 +17,6 @@ from hashlib import sha256
 from pathlib import Path
 from time import monotonic
 
-from tools.ci.python_gate import _outcomes
-
 from . import inventory as t02
 from .inventory import SuitePolicy, classify
 from .python_graph import ProviderPolicy, PytestScope
@@ -326,28 +324,46 @@ class _Invocation:
     raw: bytes | None
     diagnostic: str
 
-    def receipt(self):
+    def read_receipt(self):
         try:
-            evidence = t02._read(self.raw, "aitm.pytest-evidence/v1")
-            nodes = evidence.get("collected")
-            _checked(
-                type(evidence.get("exit_code")) is int
-                and evidence["exit_code"] == self.returncode
-                and isinstance(nodes, list)
-                and bool(nodes)
-                and all(isinstance(node, str) and node for node in nodes)
-                and len(set(nodes)) == len(nodes)
-                and evidence.get("deselected") == []
-                and isinstance(evidence.get("reports"), list)
-                and isinstance(evidence.get("children"), list),
-                "pytest-evidence: inconsistent status, collection or reports",
-            )
-            return evidence
+            return t02._read(self.raw, "aitm.pytest-evidence/v1")
         except ValueError as error:
             raise Refusal("pytest-evidence: missing or malformed receipt") from error
 
+    def check_receipt(self, evidence):
+        nodes = evidence.get("collected")
+        _checked(
+            type(evidence.get("exit_code")) is int
+            and evidence["exit_code"] == self.returncode
+            and isinstance(nodes, list)
+            and bool(nodes)
+            and all(isinstance(node, str) and node for node in nodes)
+            and len(set(nodes)) == len(nodes)
+            and evidence.get("deselected") == []
+            and isinstance(evidence.get("reports"), list)
+            and isinstance(evidence.get("children"), list),
+            "pytest-evidence: inconsistent status, collection or reports",
+        )
 
-def _prepare(snapshot, directory):
+    def receipt(self):
+        evidence = self.read_receipt()
+        self.check_receipt(evidence)
+        return evidence
+
+
+def _safe_uv_cache(uv, directory, source, inspected_checkout, env):
+    query = _capture([uv, "cache", "dir", "--no-config"], cwd=source, env=env)
+    cache = Path(os.fsdecode(query.stdout.removesuffix(b"\n")))
+    _checked(
+        query.returncode == 0 and cache.is_absolute(), "runtime: cannot locate uv cache"
+    )
+    cache = cache.resolve()
+    if cache.is_relative_to(inspected_checkout) or cache.is_relative_to(source):
+        return directory / "uv-cache"
+    return cache
+
+
+def _prepare(snapshot, directory, *, inspected_checkout=None):
     directory.mkdir()
     copy = _freeze(snapshot, directory / "source")
     # A helper can launch its own pytest, whose built-in cache is independent
@@ -371,6 +387,13 @@ def _prepare(snapshot, directory):
     runtime = _Runtime(copy, directory, observer, _digest(raw))
     uv = shutil.which("uv")
     _checked(uv is not None, "runtime: uv is required")
+    env = _env() | {"UV_PROJECT_ENVIRONMENT": str(directory / "venv")}
+    if inspected_checkout is not None:
+        env["UV_CACHE_DIR"] = str(
+            _safe_uv_cache(uv, directory, copy.root, inspected_checkout, env)
+        )
+        env["TMPDIR"] = str(directory)
+        env["UV_PYTHON_DOWNLOADS"] = "never"
     install = _capture(
         [
             uv,
@@ -383,7 +406,7 @@ def _prepare(snapshot, directory):
             copy.root / _PRODUCT,
         ],
         cwd=copy.root,
-        env=_env() | {"UV_PROJECT_ENVIRONMENT": str(directory / "venv")},
+        env=env,
     )
     runtime.verify()
     _checked(
@@ -657,6 +680,8 @@ def _recheck(repo, request, expected):
 
 
 def _profile_result(invocation, rows):
+    from tools.ci.python_gate import _outcomes
+
     expected = {row["nodeid"] for row in rows}
     result = {
         "returncode": invocation.returncode,
