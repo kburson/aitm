@@ -10,12 +10,12 @@ children: [371, 383, 385, 393]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T16:06:30Z"
+updated: "2026-11-19T18:37:02Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md", "plan/2026-11-19-370-grok-suite-shadow-findings.md", "plan/2026-11-19-370-grok-suite-shadow-evidence.json"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -69,3 +69,7 @@ The [qualification findings](plan/2026-11-19-370-hosted-shadow-findings.md) reco
 ## Suite-level selection
 
 The [current plan](plan/2026-11-19-370-suite-level-selection.md) selects runnable pytest suites from declared inputs using #383's exact Git snapshots. [#393](../393/story.md) is next and qualifies one existing suite on hosted Ubuntu. #370 remains open.
+
+## Hosted Grok suite result
+
+[#393](plan/2026-11-19-370-grok-suite-shadow-findings.md) qualified the declared replay test-body boundary. The bounded case passed 33 tests in 3.564 seconds including setup and selection. The matching full run passed 1,776 in 274.003 seconds. Shared inputs selected full. The required gate stays unchanged.

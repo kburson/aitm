@@ -18,3 +18,5 @@ Use independently runnable pytest suites as the unit of TIA selection. Keep one 
 [#393](../../393/story.md) starts by auditing the existing Grok ingestion and replay target, `packages/aitm-usage/tests/test_grok.py`. Its existing fixture inputs give the pilot a concrete boundary to validate. Any source or fixture with other consumers must retain conservative selection. Finish the Ubuntu comparisons and record the result here before considering broader suite coverage or finer selection.
 
 The required workflow, hosted path map, gate, verifier, branch protection, and pinned #355 command keep their current roles. Promotion requires a separate decision.
+
+#393 qualified the declared Grok test-body boundary on hosted Ubuntu. [Findings](2026-11-19-370-grok-suite-shadow-findings.md)

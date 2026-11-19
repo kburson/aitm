@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T16:05:11Z"
-updated: "2026-11-19T18:30:12Z"
+updated: "2026-11-19T18:37:02Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
@@ -34,3 +34,7 @@ Qualify one existing pytest suite with declared inputs on GitHub-hosted Ubuntu. 
 - Require zero missed failures or mismatched selected outcomes in the declared cases, and demonstrate a material total-time saving on a real bounded change. Publish the measured result under #370, including any failures to qualify. Keep the shadow isolated and advisory. Preserve the required workflow, path map, evaluator, verifier, branch rules, and #355 command.
 
 [Completed experiment #385](https://github.com/kburson/aitm/issues/385) · [Git snapshot delivery #383](https://github.com/kburson/aitm/issues/383) · [Parent #370](https://github.com/kburson/aitm/issues/370)
+
+## Hosted Grok suite result
+
+[#393](../370/plan/2026-11-19-370-grok-suite-shadow-findings.md) qualified the declared replay test-body boundary. The bounded case passed 33 tests in 3.564 seconds including setup and selection. The matching full run passed 1,776 in 274.003 seconds. Shared inputs selected full. The required gate stays unchanged.
