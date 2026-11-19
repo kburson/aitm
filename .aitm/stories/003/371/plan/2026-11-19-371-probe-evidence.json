@@ -1,0 +1,136 @@
+{
+  "actual_trunk_ci": "https://github.com/kburson/aitm/actions/runs/44536101270",
+  "collected_only_in_darwin": [
+    "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[45]",
+    "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[78]"
+  ],
+  "collected_only_in_linux": [
+    "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[38]",
+    "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[95]",
+    "packages/aitm-usage/tests/test_host_watch.py::test_linux_kernel_capacity_retires_partial_root_only",
+    "packages/aitm-usage/tests/test_host_watch.py::test_linux_new_and_moved_directories_reconcile",
+    "packages/aitm-usage/tests/test_host_watch.py::test_linux_overlapping_roots_share_descriptor_without_weakening_mask",
+    "packages/aitm-usage/tests/test_host_watch.py::test_linux_registration_bound_falls_back_for_one_root",
+    "packages/aitm-usage/tests/test_host_watch.py::test_linux_reports_real_queue_overflow_and_rebuilds"
+  ],
+  "darwin_cross_check": "local macOS",
+  "linux_reference": "Ubuntu 24.04 container",
+  "platforms": {
+    "linux": {
+      "clean_plan": {
+        "assigned": 7,
+        "mode": "selected"
+      },
+      "focused_test_result": {
+        "passed": 100,
+        "skipped": 1
+      },
+      "input_layer_controls": {
+        "base": "5023860969b719989575ad2a07666a91c909ec12",
+        "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+        "effective_paths": [
+          "docs/ci.md",
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "head_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "index_blob_trimmed_sha256": "98f5fc49f175815b27de0476228f9c0f30ff48e4842dda6475f1d13e3acdd96f",
+        "index_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "platform": "Linux",
+        "python": "3.13.9",
+        "synthetic_tested_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "synthetic_wrong_tree": "identity_mismatch"
+      },
+      "staged_hook_plan": {
+        "assigned": 1776,
+        "mode": "full",
+        "obligation_ids_sha256": "ec1c85737a121efa3834d10cb66cd1291d09f5e06698d60b068a36848f5dc755",
+        "uncertainty_counts": {
+          "dynamic-import": 12,
+          "relative-import-context": 2,
+          "unresolved-import": 24
+        },
+        "witness_path_examples": {
+          "test_accounting_rejects_foreign_reference_through_ledger_admission": [
+            "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "packages/aitm-usage/src/aitm_usage/scope_admission.py",
+            "packages/aitm-usage/src/aitm_usage/monitor_control.py",
+            "packages/aitm-usage/src/aitm_usage/monitor_registry.py",
+            "packages/aitm-usage/tests/conftest.py",
+            "packages/aitm-usage/tests/test_accounting.py"
+          ],
+          "test_module_accepts_exact_native_input_and_prints_nothing": [
+            "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+          ]
+        }
+      }
+    },
+    "mac": {
+      "clean_plan": {
+        "assigned": 7,
+        "mode": "selected"
+      },
+      "focused_test_result": {
+        "passed": 101,
+        "skipped": 0
+      },
+      "input_layer_controls": {
+        "base": "5023860969b719989575ad2a07666a91c909ec12",
+        "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+        "effective_paths": [
+          "docs/ci.md",
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "head_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "index_blob_trimmed_sha256": "98f5fc49f175815b27de0476228f9c0f30ff48e4842dda6475f1d13e3acdd96f",
+        "index_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "platform": "Darwin",
+        "python": "3.13.9",
+        "synthetic_tested_paths": [
+          "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
+        ],
+        "synthetic_wrong_tree": "identity_mismatch"
+      },
+      "staged_hook_plan": {
+        "assigned": 1771,
+        "mode": "full",
+        "obligation_ids_sha256": "607200911bed25ae6ff535df6925d6b23b1a11679773c832dc1c7dad7d16ee38",
+        "uncertainty_counts": {
+          "dynamic-import": 12,
+          "relative-import-context": 2,
+          "unresolved-import": 24
+        },
+        "witness_path_examples": {
+          "test_accounting_rejects_foreign_reference_through_ledger_admission": [
+            "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "packages/aitm-usage/src/aitm_usage/scope_admission.py",
+            "packages/aitm-usage/src/aitm_usage/monitor_control.py",
+            "packages/aitm-usage/src/aitm_usage/monitor_registry.py",
+            "packages/aitm-usage/tests/conftest.py",
+            "packages/aitm-usage/tests/test_accounting.py"
+          ],
+          "test_module_accepts_exact_native_input_and_prints_nothing": [
+            "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+            "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+          ]
+        }
+      }
+    }
+  },
+  "production_map_replay": {
+    "mode": "full",
+    "reason": "audited consumer scope changed"
+  },
+  "purpose": "Disposable probes of unchanged trunk source and fixtures, without hosted PR authentication",
+  "schema": "aitm.371-spike-evidence/v1"
+}
