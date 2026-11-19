@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 398
 title: "Qualify suite selection for a bounded production change on hosted Ubuntu"
 kind: "story"
-state: "planning"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/398"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T21:12:18Z"
-updated: "2026-11-19T21:48:42Z"
+updated: "2026-11-19T21:51:08Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P2"

@@ -26,3 +26,5 @@ Use #383's exact resolver, verify both ordered merge parents, and recheck the sn
 ## Estimate
 
 Retain Size M and 3.5 implementation agent-hours. Allow 0.75 for refinement and boundary proof, 1.0 for shadow cases and harness adaptation, and 1.75 for hosted replay, reconciliation and reporting. Reconsider scope before adding shared production paths or extending the acceptance matrix beyond this bounded pilot.
+
+[Hosted matrix](https://github.com/kburson/aitm/actions/runs/44622813219) · [Exact PR bindings, selector, and declaration](https://github.com/kburson/aitm/tree/780b271d9b4669f6076d40f9d9b0124b2badf097/shadow-398).
