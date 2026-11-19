@@ -412,3 +412,27 @@ def test_exact_cli_qualifies_post_supervisor_anchor(tmp_path):
     child = run_cli("--repo", str(target), "--base", git(target, "rev-parse", "HEAD"))
     assert child.returncode == 2
     unavailable(json.loads(child.stdout), "unqualified-base")
+
+
+def test_probe_delivery_shape_preserves_pinned_advisory_admission():
+    from tools.ci.tia.snapshot import Change, Entry
+
+    new_files = {
+        b"tools/ci/tia/probe.py",
+        b"tools/ci/tests/test_tia_probe.py",
+        b"tools/ci/tests/test_tia_probe_snapshots.py",
+    }
+    changes = [
+        Change("A", None, Entry(path, "100644", "0" * 40))
+        for path in sorted(report._CURRENT_ADDITIONS | new_files)
+    ]
+    changes.extend(
+        Change("M", Entry(path, "100644", "0" * 40), Entry(path, "100644", "1" * 40))
+        for path in sorted(
+            report._PORTABLE_MODIFICATIONS | {b"tools/ci/tia/selection.py"}
+        )
+    )
+    assert report._delivery_tree(changes, current=True)
+    assert not report._delivery_tree(changes[:-1], current=True)
+    extra = Change("A", None, Entry(b"unrelated.py", "100644", "0" * 40))
+    assert not report._delivery_tree([*changes, extra], current=True)

@@ -115,3 +115,33 @@ The result is labeled `local_advisory`. Test phase evidence comes from a pytest
 plugin inside the same-account worker. Use this manual command for cooperative
 local feedback. The original report's candidate inventory and impact
 completeness fields remain unqualified.
+
+## Probe affected tests for exact Git inputs
+
+Run the advisory probe from the tooling checkout with CPython 3.13.9, uv,
+and Git supporting `--no-lazy-fetch`. The inspected checkout is explicit.
+
+```sh
+python -B -E -s -m tools.ci.tia.probe \
+  --repo /path/to/checkout --parent "$parent_commit" --input index
+```
+
+Use the full commit ID of the chosen branch parent in a checkout with full
+Git history. The probe resolves one merge base of that commit and HEAD.
+`index` reads staged blob contents and modes, even if the same file has an unstaged edit. Use `head` to read the
+committed HEAD tree independently of staged, unstaged, and untracked changes.
+
+For `--input pr`, pass the literal PR base as `--parent`, plus the full
+`--pr-head`, `--tested-commit`, and `--tested-tree`. The tested commit
+must have exactly the base and head as its ordered parents. The probe records
+the PR divergence point separately and compares the literal base to the
+tested merge tree. This checks Git object identity. Hosted authentication is
+a separate check.
+
+The JSON plan binds the input, observed inventories, selected pytest IDs,
+witnesses, and uncertainty. Run it on cooperative checkouts. It collects
+pytest inventory in private copies and leaves the inspected Git inputs alone.
+A full decision lists the full applicable candidate inventory. Missing or
+changed inputs or an unavailable candidate inventory return exit 2 with no
+assignment. An emitted plan returns exit 0. The production PR gate continues
+to use the hosted path map.
