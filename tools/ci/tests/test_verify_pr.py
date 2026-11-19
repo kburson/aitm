@@ -418,9 +418,9 @@ def override_signed_report(client, verified_signature, transform):
         ),
         (("base_identity", "observer"), "f" * 64, "trusted base"),
         (("children", 0, "covered_lines"), 0, "child"),
-        (("platform",), None, "platform evidence"),
         (("platform", "filesystem"), "other", "Darwin"),
         (("wheel",), "invalid", "wheel"),
+        (("platform",), None, "platform evidence"),
     ],
 )
 def test_signed_payload_claims_do_not_override_trusted_evidence(
@@ -437,19 +437,31 @@ def test_signed_payload_claims_do_not_override_trusted_evidence(
         client.check()
 
 
-@pytest.mark.parametrize("runtime", ["3.13.9", "3.13.8"])
-def test_ubuntu_evidence_requires_the_pinned_runtime(
-    client, verified_signature, runtime
+@pytest.mark.parametrize(
+    ("change", "passes"),
+    [
+        ({}, True),
+        ({"runtime": "3.13.8"}, False),
+        ({"image": ""}, False),
+        ({"image": "ubuntu24:other"}, False),
+        ({"filesystem": "apfs"}, False),
+    ],
+)
+def test_ubuntu_evidence_matches_the_pinned_runtime_and_runner(
+    client, verified_signature, change, passes
 ):
     def mutate(report):
+        image = "ubuntu24:20261118.1"
+        report["base_identity"]["image"] = image
         report["platform"] = {
             "os": "Linux",
-            "image": "ubuntu24:20261118.1",
-            "runtime": runtime,
+            "image": image,
+            "runtime": "3.13.9",
+            **change,
         }
 
     override_signed_report(client, verified_signature, mutate)
-    if runtime == "3.13.9":
+    if passes:
         assert client.check()["run_id"] == RUN
     else:
         with pytest.raises(Hold, match="platform evidence"):

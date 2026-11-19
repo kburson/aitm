@@ -819,9 +819,9 @@ def report_evidence(
     require(isinstance(platform, dict), "candidate platform evidence is malformed")
     if platform.get("os") == "Linux":
         require(
-            isinstance(platform.get("image"), str)
-            and platform["image"]
-            and platform.get("runtime") == "3.13.9",
+            platform.keys() == {"os", "image", "runtime"}
+            and platform["image"] == report["base_identity"]["image"]
+            and platform["runtime"] == report["base_identity"]["runtime"],
             "required Linux platform evidence missing",
         )
     else:
