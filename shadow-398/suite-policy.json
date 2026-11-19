@@ -1,0 +1,20 @@
+{
+  "schema": "aitm.pytest-suite-inputs/v1",
+  "suite": "grok-ingestion-replay",
+  "target": "packages/aitm-usage/tests/test_grok.py",
+  "bounded_source": "packages/aitm-usage/src/aitm_usage/sources/grok.py",
+  "bounded_function": "_headless_tokens",
+  "reviewed_base": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+  "reviewed_previous_source_sha256": "23d3cb4f3af5d4ff6e433745f269c1d8dd10b9e11c573345fad5453973aa7ae1",
+  "reviewed_outside_sha256": "bf375608f0dc8d603dfa29e647343d9237cfe080ea1a4c2b8f075a6f331709da",
+  "reviewed_candidate_source_sha256": {
+    "87190d4449e4aa1657723597c19f5d08aa2a3e8df4d6dcf0a093869e5702c1df": "bounded",
+    "48ee308be857689d987599d0044d12dbecf4ff48dc0272635808bb181b8a4188": "seeded"
+  },
+  "runtime": {
+    "python": "3.13.9",
+    "uv": "0.10.6",
+    "os": "ubuntu-24.04"
+  },
+  "fallback": "full"
+}
