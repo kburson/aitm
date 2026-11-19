@@ -186,7 +186,6 @@ def run(case, out):
     env.update(
         GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_COUNT="0",
         PYTHONDONTWRITEBYTECODE="1", GIT_TERMINAL_PROMPT="0",
-        UV_PYTHON_INSTALL_DIR=tempfile.mkdtemp(prefix="a385-python-", dir="/var/tmp"),
         PYTHONPATH=str(TOOL / "tools/ci"),
     )
     subprocess.run(["git", "init", "-q", str(repo)], check=True, env=env)
@@ -231,8 +230,14 @@ def run(case, out):
             invalid, _ = probe(case, repo, out, env, label, **changes)
             assert invalid["mode"] == "unavailable" and not invalid["selected"]
             controls[label] = invalid["reasons"]
-    code, setup = timed("setup", ["uv", "sync", "--project", str(repo / PRODUCT), "--locked", "--python", "3.13.9"], TOOL, out, env)
+    code, setup = timed("setup", ["uv", "sync", "--project", str(repo / PRODUCT), "--locked", "--python", sys.executable], TOOL, out, env)
     assert code == 0
+    interpreter = subprocess.check_output(
+        [str(repo / PRODUCT / ".venv/bin/python"), "-c", "from pathlib import Path; import sys; print(Path(sys._base_executable).resolve())"],
+        env=env, text=True,
+    ).strip()
+    assert Path(interpreter) == Path(sys.executable).resolve(), interpreter
+    write(out / "interpreter.json", {"python": interpreter, "version": list(sys.version_info[:3])})
     product_args = ["tests", str(repo / CLI.split("::")[0])]
     helper_args = [str(repo / "tools/ci/tests" / name) for name in HELPERS]
     if case["case"].startswith("fixture-"):
