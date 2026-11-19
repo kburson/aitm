@@ -10,12 +10,12 @@ children: []
 blocking: [126]
 blocked-by: [121, 124, 304, 320]
 created: "2026-11-10T13:58:11Z"
-updated: "2026-11-10T14:00:46Z"
+updated: "2026-11-19T12:56:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["../100/plan/2026-11-19-100-portable-service-amendment.md"], "attachments": []}
 expansions: []
 trips: []
 plan-origin: {"kind": "accepted-parent-plan", "story": 100, "key": "M15", "path": ".aitm/stories/001/100/plan/multi-project-usage-monitor-implementation-plan.md", "publication": "be326aa06bbf0180969ecadb8df74cf4a37a62c4", "raw-sha256": "8899a4d1c35c2e2508d0ae3278f91261795e22bdba9955e96264cb4e414e5f21", "section-sha256": "82fe21e10af9244b8bdb55f85c05dcaa16887e0027f30bd9e4bd4f7da2b79701"}
@@ -45,3 +45,21 @@ This Backlog record is bound to the accepted parent plan at `be326aa06bbf0180969
 ## Native installer prerequisite
 
 [#320](../../003/320/story.md) delivers the owned native hook installers before this rehearsal. [Accepted M10 split](../120/plan/2026-11-15-120-wake-scheduler-installer-split.md).
+
+## Portable service amendment
+
+Owner direction on 2026-11-19. Deliver this section. The accepted excerpt above stays the record of the original leaf. [Amendment](../100/plan/2026-11-19-100-portable-service-amendment.md).
+
+`ServiceSupervisor` starts `python -I` on the approved wheel and passes the project root. The `#!/bin/sh` launcher may remain as a convenience script. The service does not require that script.
+
+The registration file is the JSON record the supervisor writes for the running child. It holds the argument list, the interpreter path, the start time, and the heartbeat socket. `RunAtLoad` and `KeepAlive` are not fields in that record. An Apple plist is not the registration.
+
+The running service is that record plus a fresh heartbeat from the same user. On Linux the process walk reads `/proc/<pid>`. On Darwin the process walk reads `proc_pidinfo` and `proc_pidpath`. A scope hook from a Grok session the person started still passes that walk. The supervisor does not launch Grok.
+
+The supervisor does not call `/bin/launchctl` and does not load a user manager. Login restart, a LaunchAgent, and a systemd user unit are a later epic. An absent user manager is not a failure of this story. The systemd-bus and linger check leaves this leaf.
+
+Refuse an insecure private directory. Refuse a second service, or a legacy writer, that still holds the writer guard. The production activation path still refuses without the M16 cutover receipt.
+
+Product tests of this service run on the Linux runner. A developer machine may be a Mac, and that Mac runs the same program. #128 remains the Mac Codex Desktop carrier qualification. #129 remains the Linux carrier qualification.
+
+This story stays blocked by #121, #124, #304, and #320. It still blocks #126. #320 still owns the native wake-hook installers. Those are provider hook files, not this registration.

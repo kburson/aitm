@@ -10,12 +10,12 @@ children: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124,
 blocking: [2]
 blocked-by: [101, 102]
 created: "2026-11-10T00:36:14Z"
-updated: "2026-11-12T01:09:16Z"
+updated: "2026-11-19T12:56:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: ".aitm/stories/000/83/design/usage-capture-design.md"
-files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/multi-project-usage-monitor-design.md"], "plan": ["plan/multi-project-usage-monitor-implementation-plan.md"], "attachments": []}
+files: {"draft": "draft.md", "events": "events.jsonl", "design": ["design/multi-project-usage-monitor-design.md"], "plan": ["plan/multi-project-usage-monitor-implementation-plan.md", "plan/2026-11-19-100-portable-service-amendment.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -123,3 +123,7 @@ R2 independently passed. The current native graph stays authoritative until the 
 ## Accepted Grok delivery prerequisites
 
 [#329](../../003/329/story.md) owns verified Grok capture at Rank 248. It blocks [#330](../../003/330/story.md), which owns guarded journal delivery at Rank 249 and blocks [#121](../121/story.md). [Accepted amendment](../121/plan/2026-11-15-121-grok-guarded-delivery-amendment.md).
+
+## Portable service amendment
+
+Owner direction on 2026-11-19. The monitor service is one Python program. The host supplies CPython 3.13. [#125](../125/story.md) delivers `ServiceSupervisor` and a JSON registration. The Apple plist, the LaunchAgent, and the systemd user unit leave the first release. Login restart is a later epic. [#128](../128/story.md) stays the Mac Codex Desktop carrier qualification. [#129](../129/story.md) stays the Linux carrier qualification. [Amendment](plan/2026-11-19-100-portable-service-amendment.md).
