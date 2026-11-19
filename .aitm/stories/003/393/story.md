@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-19-370-suite-level-selection.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-393-grok-suite-matrix.md"], "attachments": []}
 expansions: []
 trips: []
 ---
