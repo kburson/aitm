@@ -5,7 +5,7 @@ The owner authorized requalification of the current Grok hook so #355 can finish
 - [x] Audit the hook, native process reader, mapped receipt module and collection on the exact anchor. Pin the full receipt inventory and explicit platform applicability. Retain the same-mode ASCII-comment append rule and the advisory evidence labels.
 - [x] Add a negative-first test for the exact new release shape, a positive two-capture report, and refusal when the deployed checkout contains an unrelated committed change. Verify the old anchor still qualifies. Keep the hosted map and selector bytes and observe their full fallback where the consumer changed. The separate local qualification binds the exact current consumer inventory and verifies the existing declaration using the selector on an in-memory map copy.
 - [x] Qualify exact base and release shape through independent source review. Run the documented #355 command on the PR checkout and after merge. Verify all assigned IDs and phase records, plus unchanged HEAD, index and source after the run.
-- [ ] After verified #369 trunk delivery, port the launcher and its capability proof under #376. Demonstrate the advisory on Linux and Darwin under the same pinned assignment before closing the epic.
+- [x] After verified #369 trunk delivery, port the launcher and its capability proof under #376. Demonstrate the advisory on Linux and Darwin under the same pinned assignment before closing the epic.
 
 ## Qualification evidence
 

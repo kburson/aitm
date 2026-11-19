@@ -143,6 +143,8 @@ On an Ubuntu runner, before the story is called done:
 
 The same source still runs on a developer Mac, because that Mac has CPython and git. The cloud suite does not ask for a Mac.
 
+[Epic #372 delivery sign-off](../../372/retro/2026-11-19-372-delivery.md) records the completed stories, exact final Ubuntu trunk run, and local cross-platform proofs.
+
 ## After this work: the TIA probe
 
 When the Linux suite is the required suite, start the TIA probe under #370. The probe builds the list of tests for one change. It is the same Python program on the developer machine and in the cloud.
