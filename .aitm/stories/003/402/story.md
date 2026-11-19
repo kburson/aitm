@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 402
 title: "Qualify a reusable suite declaration across edits and bases on hosted Ubuntu"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/402"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T22:12:31Z"
-updated: "2026-11-19T22:13:33Z"
+updated: "2026-11-19T23:52:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
@@ -34,3 +34,7 @@ Qualify a repeatable declaration for one real pytest suite in hosted Ubuntu shad
 - Publish the repeatability result and a recommendation for routine hosted advisory integration under #370. Keep the experiment isolated and advisory. Preserve the required workflow, map, evaluator, verifier, branch rules, and pinned #355 command.
 
 [Parent #370](https://github.com/kburson/aitm/issues/370) · [#393 results](https://github.com/kburson/aitm/issues/393) · [#398 results](https://github.com/kburson/aitm/issues/398)
+
+## Replaced
+
+Replaced before work started on 2026-11-19. Do not run this story. [#403](../403/story.md) lists the tests reached by the import chain for one real product change. The acceptance above stays as the record of the story that was filed and then replaced. GitHub #402 is closed as not planned.

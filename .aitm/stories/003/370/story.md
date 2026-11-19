@@ -6,16 +6,16 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
-children: [371, 383, 385, 393, 398, 402]
+children: [371, 383, 385, 393, 398, 402, 403]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T22:13:33Z"
+updated: "2026-11-19T23:52:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md", "plan/2026-11-19-370-grok-suite-shadow-findings.md", "plan/2026-11-19-370-grok-suite-shadow-evidence.json", "plan/2026-11-19-370-bounded-production-shadow-findings.md", "plan/2026-11-19-370-bounded-production-shadow-evidence.json", "plan/2026-11-19-370-suite-hosted-integration-decision.md", "plan/2026-11-19-370-refinement-and-engagement-backfill.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md", "plan/2026-11-19-370-grok-suite-shadow-findings.md", "plan/2026-11-19-370-grok-suite-shadow-evidence.json", "plan/2026-11-19-370-bounded-production-shadow-findings.md", "plan/2026-11-19-370-bounded-production-shadow-evidence.json", "plan/2026-11-19-370-suite-hosted-integration-decision.md", "plan/2026-11-19-370-refinement-and-engagement-backfill.md", "plan/2026-11-19-370-import-chain-list.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -87,3 +87,7 @@ The [#398 shadow findings](plan/2026-11-19-370-bounded-production-shadow-finding
 ## Suite-level hosted integration decision
 
 The [decision](plan/2026-11-19-370-suite-hosted-integration-decision.md) holds routine integration and continues isolated hosted shadow. [#402](../402/story.md) is next. #370 remains open and the required gate retains its current role.
+
+## Import-chain list
+
+[#402](../402/story.md) is replaced before work started. [#403](../403/story.md) lists the tests reached by the import chain for one real product change, and returns full or unavailable when that chain cannot be proved. The #393 and #398 boundaries stay timing evidence. #370 stays open until the #403 receipt is accepted. The required gate retains its current role. [Plan](plan/2026-11-19-370-import-chain-list.md).

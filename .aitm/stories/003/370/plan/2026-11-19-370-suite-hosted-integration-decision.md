@@ -14,3 +14,7 @@ Both experiments used #383's exact PR snapshots, preserved full outcomes on the 
 [#402](../../402/story.md) will qualify a reusable declaration for the same suite on a fresh bounded production edit and after an unrelated base advance. Verify the evidence that permits reuse, and prove fallback on relevant input or dependency drift. Compare assignment, outcomes, and lane time with full Ubuntu controls and the current path map. A successful result informs a separate decision on routine hosted advisory integration. Promotion to merge authority remains a separate decision.
 
 [Hosted #393 findings](2026-11-19-370-grok-suite-shadow-findings.md) · [Hosted #398 findings](2026-11-19-370-bounded-production-shadow-findings.md)
+
+## Superseded
+
+Owner direction on 2026-11-19. #402 is replaced before work started. The next story is [#403](../../403/story.md). It lists affected tests by walking the import chain for one real product change. Routine hosted integration stays held. The required gate stays on the path map. #370 stays open. [Import-chain plan](2026-11-19-370-import-chain-list.md).
