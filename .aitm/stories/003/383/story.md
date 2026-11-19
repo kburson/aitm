@@ -15,7 +15,7 @@ last-branch: "codex/383-advisory-probe"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
 origin: ".aitm/stories/003/371/plan/2026-11-19-371-portable-python-tia-findings.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-383-advisory-probe.md", "plan/reviews/2026-11-19-383-independent-source-review.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-383-advisory-probe.md", "plan/reviews/2026-11-19-383-independent-source-review.md", "plan/2026-11-19-383-qualification.md", "plan/2026-11-19-383-qualification.json"], "attachments": []}
 expansions: []
 trips: []
 ---
