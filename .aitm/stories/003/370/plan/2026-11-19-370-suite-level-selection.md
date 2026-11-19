@@ -22,3 +22,5 @@ Use independently runnable pytest suites as the unit of TIA selection. Keep one 
 [#398](../../398/story.md) extends the experiment to one bounded production change. Audit the headless token decoder first, including its gated call path and downstream consumers. The Grok adapter remains a shared input by default. Establish and declare the specific boundary before running a positive source edit, a seeded source regression, and a shared or out-of-boundary full control. Reuse #383's resolver and compare exact per-test outcomes and elapsed time on matched hosted Ubuntu trees.
 
 The required workflow, hosted path map, gate, verifier, branch protection, and pinned #355 command keep their current roles. Promotion requires a separate decision.
+
+#398 qualified the exact bounded decoder change on hosted Ubuntu. The same-tree suite and full outcomes matched, with 4.316 versus 338.504 seconds on the positive production change. [Findings](2026-11-19-370-bounded-production-shadow-findings.md)

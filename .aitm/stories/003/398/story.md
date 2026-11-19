@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T21:12:18Z"
-updated: "2026-11-19T21:51:08Z"
+updated: "2026-11-19T22:00:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3.5, "size": "M"}
 priority: "P2"
@@ -34,3 +34,7 @@ Qualify suite-level selection for one real, bounded production-code change on ho
 - Record the evidence and disposition under [#370](https://github.com/kburson/aitm/issues/370). Keep the experiment advisory and isolated. Preserve the required workflow, path map, evaluator, verifier, branch rules, and pinned #355 command.
 
 [#393 qualification and scope](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/370/plan/2026-11-19-370-grok-suite-shadow-findings.md)
+
+## Bounded production qualification
+
+The [#398 shadow findings](../370/plan/2026-11-19-370-bounded-production-shadow-findings.md) record a pass for the declared decoder change. Both assigned and full runs caught the seeded failure. The related shared edit selected full. The required gate retains its current role.

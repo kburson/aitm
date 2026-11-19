@@ -10,12 +10,12 @@ children: [371, 383, 385, 393, 398]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T21:12:57Z"
+updated: "2026-11-19T22:00:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md", "plan/2026-11-19-370-grok-suite-shadow-findings.md", "plan/2026-11-19-370-grok-suite-shadow-evidence.json", "plan/2026-11-19-370-refinement-and-engagement-backfill.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md", "plan/2026-11-19-370-hosted-shadow-findings.md", "plan/2026-11-19-370-hosted-shadow-evidence.json", "plan/2026-11-19-370-suite-level-selection.md", "plan/2026-11-19-370-grok-suite-shadow-findings.md", "plan/2026-11-19-370-grok-suite-shadow-evidence.json", "plan/2026-11-19-370-bounded-production-shadow-findings.md", "plan/2026-11-19-370-bounded-production-shadow-evidence.json", "plan/2026-11-19-370-refinement-and-engagement-backfill.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -79,3 +79,7 @@ The [current plan](plan/2026-11-19-370-suite-level-selection.md) selects runnabl
 [#398](../398/story.md) is next. It qualifies one audited production-code boundary against matched full-suite outcomes and timing on hosted Ubuntu. #370 remains open and the required gate retains its current role.
 
 [Project property and engagement backfill](plan/2026-11-19-370-refinement-and-engagement-backfill.md).
+
+## Bounded production qualification
+
+The [#398 shadow findings](plan/2026-11-19-370-bounded-production-shadow-findings.md) record a pass for the declared decoder change. Both assigned and full runs caught the seeded failure. The related shared edit selected full. The required gate retains its current role.
