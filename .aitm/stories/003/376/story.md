@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 376
 title: "Run product tests on the Linux runner"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/376"
 parent: 372
 children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T13:42:09Z"
-last-branch: "codex/376-portable-launcher"
+updated: "2026-11-19T13:49:13Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
