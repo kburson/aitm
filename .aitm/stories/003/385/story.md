@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T15:29:19Z"
-updated: "2026-11-19T15:40:50Z"
+updated: "2026-11-19T15:51:46Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
@@ -34,3 +34,7 @@ Qualify the Python affected-test probe from [#383](https://github.com/kburson/ai
 - Publish the qualification result for a future promotion decision. The required workflow, path map, gate, verifier, branch protection, and pinned #355 command retain their current roles. The shadow result carries no merge authority.
 
 [Portable probe qualification](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/383/plan/2026-11-19-383-qualification.md)
+
+## Hosted shadow result
+
+The [qualification findings](../370/plan/2026-11-19-370-hosted-shadow-findings.md) record all seven hosted cases. The decision is to hold promotion. Real input assignments were full or unavailable, and fixture narrowing preserved the seeded failure outcomes. #385 remains in Test.
