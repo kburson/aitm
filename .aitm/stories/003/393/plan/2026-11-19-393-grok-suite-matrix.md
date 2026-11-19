@@ -17,3 +17,5 @@ The bounded input is an edit confined to the body of the existing `test_headless
 | identity and evidence controls | Wrong tested tree, stale head, truncated receipt | Unavailable or held with no qualified assignment. |
 
 Use comparable runner environments per case, the same locked dependencies, independent test observations, retained exact outcomes, and timing for suite assignment and execution versus full. The full inventory includes product, CLI and the six established helper modules. Keep the required workflow, path map, evaluator, verifier, branch rules and #355 unchanged.
+
+[Hosted matrix](https://github.com/kburson/aitm/actions/runs/44588398041) · [Exact PR bindings and versioned suite declaration](https://github.com/kburson/aitm/tree/881c2ca8827429058976008d3e820540622a54d1/shadow-393).

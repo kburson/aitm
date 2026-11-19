@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 393
 title: "Qualify one declared-input pytest suite in hosted Ubuntu shadow runs"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/393"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T16:05:11Z"
-updated: "2026-11-19T16:06:30Z"
+updated: "2026-11-19T18:30:12Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
