@@ -1,4 +1,4 @@
-"""Dormant producer entry for an authenticated native Grok scope marker."""
+"""Producer entry point for an authenticated native Grok scope marker."""
 
 import json
 import os
