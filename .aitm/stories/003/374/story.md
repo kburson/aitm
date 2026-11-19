@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T01:20:00Z"
+updated: "2026-11-19T04:14:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -28,9 +28,9 @@ Project 24 Rank 510. Priority P2. Size S. Estimate 3 agent-hours.
 
 #377 has moved the required Python jobs to Linux and removed the tests that require a Mac. This pull request runs on that suite.
 
-Introduce `ServiceSupervisor` and point `cli.py` and `qualification.py` at it. Start writes a pid file and a heartbeat, mode `0600`, and runs the service loop in a child process. Stop signals that child and waits until the pid file is gone. Status is the heartbeat age and the pid.
+`ServiceSupervisor` is the AITM service. `cli.py` and `qualification.py` use it. Start writes a pid file and a heartbeat, mode `0600`, and runs the service loop in a child process. Stop signals that child and waits until the pid file is gone. Status is the heartbeat age and the pid. The supervisor does not launch Grok. It does not call `/bin/launchctl` and it does not load `/usr/lib/libproc.dylib`.
 
-`sources/grok_scope_hook.py` and the old process-identity helper call one function: the supervisor's recorded start time and executable path. On Linux the function may confirm the pid against `/proc/<pid>`.
+A scope hook from a Grok session the person started is still accepted. `sources/grok_scope_hook.py` walks the parent chain of its own process, at most 8 hops, and matches the qualified Grok pid, start time, and executable. The supervisor's pid file is the service record. It is not that Grok process.
 
-The class does not call `/bin/launchctl` and does not load `/usr/lib/libproc.dylib`.
+On Linux the walk reads the parent, start time, and executable from `/proc/<pid>`. On Darwin the walk reads them with `proc_pidinfo` and `proc_pidpath`. A hop that cannot be read rejects the hook. The Linux walk does not load `libproc`. The required suite runs the Linux walk.
 
