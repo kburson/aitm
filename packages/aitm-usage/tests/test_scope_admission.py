@@ -25,6 +25,11 @@ PROJECT, GRANT, COMMAND, CONTROL = (UUID(int=i) for i in range(1, 5))
 NOW = datetime(2026, 11, 10, tzinfo=UTC)
 
 
+@pytest.fixture(autouse=True)
+def isolated_writer_guard(tmp_path, monkeypatch):
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+
+
 def _request_file(tmp_path):
     path = tmp_path / "scope.json"
     path.write_text(
