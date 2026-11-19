@@ -10,9 +10,9 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T15:29:19Z"
-updated: "2026-11-19T16:06:30Z"
+updated: "2026-11-19T21:16:57.153Z"
 last-branch: "planning"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-19-370-hosted-integration-decision.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-385-shadow-matrix.md"], "attachments": []}

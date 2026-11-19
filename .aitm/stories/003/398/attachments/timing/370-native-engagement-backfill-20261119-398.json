@@ -1,0 +1,72 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 398,
+  "batch": "370-native-engagement-backfill-20261119",
+  "recorded_at_utc": "2026-11-19T21:16:57.153Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.0f1214e9ca3b37c9b8b45c49",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.436c3e533c9ed88a589ff3c4",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T21:11:50.097Z",
+      "end_utc": "2026-11-19T21:11:50.098Z",
+      "source": {
+        "sha256": "d46974455b3beca8eff56c4e9afdbecc9510b08aad2c9318f4e311d3d88f9b1c"
+      }
+    },
+    {
+      "observation_id": "codex.item.052764163ec41b9bd7c4e240",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.436c3e533c9ed88a589ff3c4",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T21:11:54.433Z",
+      "end_utc": "2026-11-19T21:11:55.136Z",
+      "source": {
+        "sha256": "97992dac48b37a659de3d0931bfcbde123e24fde8067c92bbc359afba53dd4fe"
+      }
+    },
+    {
+      "observation_id": "codex.item.bf6238b5d96778b01d3d40f9",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.436c3e533c9ed88a589ff3c4",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T21:12:17.375Z",
+      "end_utc": "2026-11-19T21:12:18.237Z",
+      "source": {
+        "sha256": "85eb253b59b2e5c6c93532d9b5c8704358519df8ae4ae5223f88ccd75e6bd68f"
+      }
+    },
+    {
+      "observation_id": "codex.item.5281900e8714d7aef0464682",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.436c3e533c9ed88a589ff3c4",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T21:12:25.002Z",
+      "end_utc": "2026-11-19T21:12:30.572Z",
+      "source": {
+        "sha256": "f94fcb6e5c9874823dc49c9913b8a6ee496b4cc164f5a1dc83288a0bc88679ff"
+      }
+    }
+  ]
+}

@@ -10,9 +10,9 @@ children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T14:06:37Z"
-updated: "2026-11-19T15:03:10Z"
+updated: "2026-11-19T21:16:57.153Z"
 last-branch: "trunk"
-estimate: {"agent-hours": null, "size": null}
+estimate: {"agent-hours": 4.0, "size": "M"}
 priority: "P2"
 origin: ".aitm/stories/003/371/plan/2026-11-19-371-portable-python-tia-findings.md"
 files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-383-advisory-probe.md", "plan/reviews/2026-11-19-383-independent-source-review.md", "plan/2026-11-19-383-qualification.md", "plan/2026-11-19-383-qualification.json", "plan/trusted-pr-384.json"], "attachments": []}

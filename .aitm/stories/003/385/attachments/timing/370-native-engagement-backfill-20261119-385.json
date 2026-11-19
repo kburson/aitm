@@ -1,0 +1,1857 @@
+{
+  "schema": "aitm.story-timing-receipt/v1",
+  "project": "aitm",
+  "subject": 385,
+  "batch": "370-native-engagement-backfill-20261119",
+  "recorded_at_utc": "2026-11-19T21:16:57.153Z",
+  "source": {
+    "ref": "codex:completed-progress"
+  },
+  "observations": [
+    {
+      "observation_id": "codex.item.d7e8f6981253328c0a61a9fb",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.2dce2714708c5c15160ad58a",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:29:18.834Z",
+      "end_utc": "2026-11-19T15:29:19.690Z",
+      "source": {
+        "sha256": "6d0a238b50c101a19d9b75bf68af16cb198ec88e30e48a81cc090169057017ce"
+      }
+    },
+    {
+      "observation_id": "codex.item.bbd35bdd7effca3392377e38",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.2dce2714708c5c15160ad58a",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:29:28.817Z",
+      "end_utc": "2026-11-19T15:29:34.557Z",
+      "source": {
+        "sha256": "d669c8b8771df53298be910451224b9b12a8eeb509daa1efff123f04564f96d3"
+      }
+    },
+    {
+      "observation_id": "codex.item.e87b042fdec5ee0e1c6b54c5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:35:15.157Z",
+      "end_utc": "2026-11-19T15:35:16.325Z",
+      "source": {
+        "sha256": "fde2ed0e1a87039fd947da7486b66d900c0cff9a75b05e133348674b9c94407b"
+      }
+    },
+    {
+      "observation_id": "codex.item.14f097a845976323f66f317e",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:35:22.485Z",
+      "end_utc": "2026-11-19T15:35:22.486Z",
+      "source": {
+        "sha256": "514d281d5d65c682cbf3b56e14dced0243d1384333b7faa7a79e4180f6862712"
+      }
+    },
+    {
+      "observation_id": "codex.item.c8f0e1874fedbe6f4126c30f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:35:22.564Z",
+      "end_utc": "2026-11-19T15:35:23.985Z",
+      "source": {
+        "sha256": "2e1bbafe708bfef815f52e7f0462f0edc5087c536ebadb8d18f09dd42efb7e76"
+      }
+    },
+    {
+      "observation_id": "codex.item.da42fdec8e1817e3cd3a22f0",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:35:26.177Z",
+      "end_utc": "2026-11-19T15:35:29.174Z",
+      "source": {
+        "sha256": "9c844ad00b79f684a1727a1fbee57fbda8144e8230c4865d51519179eac39f1f"
+      }
+    },
+    {
+      "observation_id": "codex.item.336c2dbbe741efd6af472f11",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:35:34.161Z",
+      "end_utc": "2026-11-19T15:35:35.209Z",
+      "source": {
+        "sha256": "d5dc410741453d3cec4614070951202f8b20067c956360657e4c97e60bc90f6c"
+      }
+    },
+    {
+      "observation_id": "codex.item.97241e16e2a827688ea30500",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:35:36.918Z",
+      "end_utc": "2026-11-19T15:35:42.827Z",
+      "source": {
+        "sha256": "db5f7213ad0147d45433e69b643d56f9f12c6c837e3c42c47f0742ceb840f1a2"
+      }
+    },
+    {
+      "observation_id": "codex.item.510cc4f7203f6fc927971d4d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:35:48.885Z",
+      "end_utc": "2026-11-19T15:35:49.883Z",
+      "source": {
+        "sha256": "fd26af56b03396a06cf281d66543b19be8be73abf5dd2c68c1af85c5944a5009"
+      }
+    },
+    {
+      "observation_id": "codex.item.56eb803f620a5ee8b931c9f1",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:35:51.810Z",
+      "end_utc": "2026-11-19T15:35:59.601Z",
+      "source": {
+        "sha256": "2459ecfcad598a873563f1be7867cad03d4b88562a8c3a94db3b90b5191a8598"
+      }
+    },
+    {
+      "observation_id": "codex.item.5dcdf6489ae5276c371847a7",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:36:02.566Z",
+      "end_utc": "2026-11-19T15:36:03.667Z",
+      "source": {
+        "sha256": "b52e6c53df807f8b38b0568d89f43c86e000fe8c7476aa14a50b8bd749307d0e"
+      }
+    },
+    {
+      "observation_id": "codex.item.db5042b92eb8b69f0550f2f5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:05.836Z",
+      "end_utc": "2026-11-19T15:36:08.233Z",
+      "source": {
+        "sha256": "99a1cb459e94a405eea9d4b776b40c216941faddd1a7259aec7efa477c89af58"
+      }
+    },
+    {
+      "observation_id": "codex.item.1cc4d170190e3e8ad54a3316",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:36:11.190Z",
+      "end_utc": "2026-11-19T15:36:11.973Z",
+      "source": {
+        "sha256": "b0af2ac3d54375f482ed444381714947dc2a3a16ac929431a712c08eac4a7db8"
+      }
+    },
+    {
+      "observation_id": "codex.item.9d85759ae25c87e43ca7b294",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:14.116Z",
+      "end_utc": "2026-11-19T15:36:16.352Z",
+      "source": {
+        "sha256": "15469b3be3535d2cf0da6c69167906a5ab35fcac7eab153281eb864ac0985f25"
+      }
+    },
+    {
+      "observation_id": "codex.item.b77b0b6c6fcf288096244b6b",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:36:21.775Z",
+      "end_utc": "2026-11-19T15:36:25.847Z",
+      "source": {
+        "sha256": "1b56224a4376eea32def849fe081229395bb980a7f666eeb62a53ba99d90e446"
+      }
+    },
+    {
+      "observation_id": "codex.item.2d03a579aefe64dd9728d161",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:27.630Z",
+      "end_utc": "2026-11-19T15:36:31.010Z",
+      "source": {
+        "sha256": "6d5034694a1c09c7eb88a989f65ab4132dac3a6cec989fa4d05bcffeb2f1ce73"
+      }
+    },
+    {
+      "observation_id": "codex.item.344bf79257a5bebd7796a2c0",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:36:33.375Z",
+      "end_utc": "2026-11-19T15:36:33.973Z",
+      "source": {
+        "sha256": "23463b5283224453f26d7b600ded5385e77c0bb7a895917d2bf350e53a7e45f3"
+      }
+    },
+    {
+      "observation_id": "codex.item.2bbea12e6752319e445555ad",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:37.065Z",
+      "end_utc": "2026-11-19T15:36:40.356Z",
+      "source": {
+        "sha256": "13c58b6e71b53401cd7a8edd4e42f1b6ba259afd22dcfbd6a4421569744c7686"
+      }
+    },
+    {
+      "observation_id": "codex.item.afb810f0f0b88ee4dca71c0a",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:40.370Z",
+      "end_utc": "2026-11-19T15:36:41.347Z",
+      "source": {
+        "sha256": "ec5f84bd48b08e9dd6650c4e98d9caa093dbea6c725a79b469bedc35882446d1"
+      }
+    },
+    {
+      "observation_id": "codex.item.3e740290ee81a55ac65bc8d1",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:36:55.102Z",
+      "end_utc": "2026-11-19T15:36:57.063Z",
+      "source": {
+        "sha256": "a4cb337a3277e311c3f9108956558b2343e84397b0fd9e342b2ee0f4a31e8ecd"
+      }
+    },
+    {
+      "observation_id": "codex.item.0c86ca2ad5017d9cb27af129",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:36:58.072Z",
+      "end_utc": "2026-11-19T15:37:00.264Z",
+      "source": {
+        "sha256": "5ee880daa79ff77a5202e168aa07f1924dcf312ddd404ac8e337a5650cf56dac"
+      }
+    },
+    {
+      "observation_id": "codex.item.75627f49bd34c04c735f1d3d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:37:17.837Z",
+      "end_utc": "2026-11-19T15:37:20.666Z",
+      "source": {
+        "sha256": "a85824d88dcb7c3f07d872b906d6818025bb49c28e9eb3a85fe9faefa2cb8fd5"
+      }
+    },
+    {
+      "observation_id": "codex.item.53105bbf16510204b27c2274",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:37:21.907Z",
+      "end_utc": "2026-11-19T15:37:30.019Z",
+      "source": {
+        "sha256": "c13fc4ca66402d4688f372d46329b1077ffc523725a19cf53368bf66d749f68a"
+      }
+    },
+    {
+      "observation_id": "codex.item.6f4214e2a8a9230a7c060d76",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:37:37.902Z",
+      "end_utc": "2026-11-19T15:37:40.586Z",
+      "source": {
+        "sha256": "47f0248037fc5691e05825242d88c1885becb5f78622231f647a2d53043c6f4e"
+      }
+    },
+    {
+      "observation_id": "codex.item.3a84695c2eb22a5599dc5387",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:37:43.861Z",
+      "end_utc": "2026-11-19T15:37:48.692Z",
+      "source": {
+        "sha256": "9248b0d3653f92906e592fef108aafb31fef84adebcd5577b7a11bfd120cb411"
+      }
+    },
+    {
+      "observation_id": "codex.item.6bab4fd5d7586d9b11f08d5a",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:39:08.328Z",
+      "end_utc": "2026-11-19T15:39:08.331Z",
+      "source": {
+        "sha256": "07849cd5709c9f20a607e915be424b6c9f0ae72e0f5790e1cf4d372bebd5946c"
+      }
+    },
+    {
+      "observation_id": "codex.item.056f7a2bec722dada2ce51b0",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:39:09.872Z",
+      "end_utc": "2026-11-19T15:39:14.584Z",
+      "source": {
+        "sha256": "c8a1bd20721757810e039fa33d2f2ebc9c1b6710ee44293e5eb834906dbbb520"
+      }
+    },
+    {
+      "observation_id": "codex.item.4042a591df8c24f43d1f9b30",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:39:28.460Z",
+      "end_utc": "2026-11-19T15:39:40.248Z",
+      "source": {
+        "sha256": "377856cc265a603267694eda1477dd5847c401df94b45347e36a6d60f911cc40"
+      }
+    },
+    {
+      "observation_id": "codex.item.d4620ad4fafe50192da2abbc",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:39:31.655Z",
+      "end_utc": "2026-11-19T15:39:34.973Z",
+      "source": {
+        "sha256": "0ec99128693d266d5274f770cfe78458004d5084d315b9e4142aaf0988446d37"
+      }
+    },
+    {
+      "observation_id": "codex.item.8a4d4c85a5f80bc5b25c66bd",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:39:54.018Z",
+      "end_utc": "2026-11-19T15:39:55.674Z",
+      "source": {
+        "sha256": "b6f724bd050b2030d7c33c1f42de1afe13d7f2014f3f46fc33b0db8efc0f541c"
+      }
+    },
+    {
+      "observation_id": "codex.item.4d25672381d8632e938d6035",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:03.521Z",
+      "end_utc": "2026-11-19T15:40:11.113Z",
+      "source": {
+        "sha256": "afdf5b204d7d11fb27cc134264ec0d6c56f10d323fee3c0583cb34f2ab7c0df1"
+      }
+    },
+    {
+      "observation_id": "codex.item.c7a956059a8598ed7134193d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:03.524Z",
+      "end_utc": "2026-11-19T15:40:11.234Z",
+      "source": {
+        "sha256": "c8f039e00321636a0e385d875ec9bbc878762f8c1065c650c493fdabc83ca97f"
+      }
+    },
+    {
+      "observation_id": "codex.item.bfad487a68ccd2d4d32cf3e5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:03.534Z",
+      "end_utc": "2026-11-19T15:40:04.728Z",
+      "source": {
+        "sha256": "2c606072ef4d893063b06aeae0c704995b9ec88603447f4c32e6b057bf8ee42f"
+      }
+    },
+    {
+      "observation_id": "codex.item.0a6d6306bf121b3e0064d9bd",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:40:06.368Z",
+      "end_utc": "2026-11-19T15:40:10.839Z",
+      "source": {
+        "sha256": "6d80c632beec5ed2b26416ad5be7da4321566334db794aaea6b548bb6fba3468"
+      }
+    },
+    {
+      "observation_id": "codex.item.ea2afc37d8860e0f173b230c",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:40:14.115Z",
+      "end_utc": "2026-11-19T15:40:15.424Z",
+      "source": {
+        "sha256": "5775d8fb7c1422cd0f5b25398946e912445fe4a578ca1e2f36b3cbba24531881"
+      }
+    },
+    {
+      "observation_id": "codex.item.b66849e1acb3f69a20c8478e",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:21.813Z",
+      "end_utc": "2026-11-19T15:40:23.354Z",
+      "source": {
+        "sha256": "0a9de48b1f78bec3ac55333949c588f26698340b1c18d9a5acd2ced65e2cc056"
+      }
+    },
+    {
+      "observation_id": "codex.item.962cc94c723d41fafb3c19c1",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:40:25.125Z",
+      "end_utc": "2026-11-19T15:40:27.917Z",
+      "source": {
+        "sha256": "9b096914f045135f61bf4f75a5396fb7b49c5518a95f342f931be239229b4ab1"
+      }
+    },
+    {
+      "observation_id": "codex.item.a9c6438bd00c2110377770fe",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:31.848Z",
+      "end_utc": "2026-11-19T15:40:33.527Z",
+      "source": {
+        "sha256": "bc40c1eaa06bdb5f36284e3e8c753c0fac404bffed1f4cae37cde6e9809314dd"
+      }
+    },
+    {
+      "observation_id": "codex.item.f5af1b3a6a8419b9b389a8ca",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:31.848Z",
+      "end_utc": "2026-11-19T15:40:32.484Z",
+      "source": {
+        "sha256": "0775ec1b47ff6014209798cfc4942e6eb061a03513c1af266708cbba0c00ad70"
+      }
+    },
+    {
+      "observation_id": "codex.item.d2f8890af2655ef75a96308d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:40:35.613Z",
+      "end_utc": "2026-11-19T15:40:38.402Z",
+      "source": {
+        "sha256": "e3d0ef6abb74c2fe2195d832db4690e867e2b2bdc6a690077267c29d0c1c217c"
+      }
+    },
+    {
+      "observation_id": "codex.item.757840423190495bd552a5db",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:40:50.529Z",
+      "end_utc": "2026-11-19T15:40:53.073Z",
+      "source": {
+        "sha256": "371fce194b86e1910724fc5559df3e7e91dc3545781f6c512a25a18c252ab870"
+      }
+    },
+    {
+      "observation_id": "codex.item.60edc4242eff0d4520b53fd4",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:40:53.460Z",
+      "end_utc": "2026-11-19T15:40:56.365Z",
+      "source": {
+        "sha256": "952f8a166fb926df92106a4f77fe3b42564906c405b43456ad9181b8fcb108b3"
+      }
+    },
+    {
+      "observation_id": "codex.item.cf9f6f69bf66cffcc39a0bd5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:00.115Z",
+      "end_utc": "2026-11-19T15:41:01.308Z",
+      "source": {
+        "sha256": "2ad3c8990692645e605e3dfc093e4bd30c415952e68110c25c4c1fa20ea19891"
+      }
+    },
+    {
+      "observation_id": "codex.item.8d05a6ff8c9865f14f88b56c",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:41:02.873Z",
+      "end_utc": "2026-11-19T15:41:06.402Z",
+      "source": {
+        "sha256": "5fbefecb5e8d95694f56bd9b7245d932e1252c33fd97e27f9b587b728c81f3f8"
+      }
+    },
+    {
+      "observation_id": "codex.item.50346cfba12acf8eede5fb0f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:11.178Z",
+      "end_utc": "2026-11-19T15:41:11.179Z",
+      "source": {
+        "sha256": "64095308ebec1456a50f8f6b56c1b06d8bd7f76266dce42cf177e6ae305e5645"
+      }
+    },
+    {
+      "observation_id": "codex.item.20edd655928dba4dd9bc17d6",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:11.261Z",
+      "end_utc": "2026-11-19T15:41:12.040Z",
+      "source": {
+        "sha256": "34d64a37c52014f107b635b79c7dbcf9903c5aeaaf5b6648e5ec76055da769eb"
+      }
+    },
+    {
+      "observation_id": "codex.item.d918ced059d5fa25fbf87a6a",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:11.261Z",
+      "end_utc": "2026-11-19T15:41:12.615Z",
+      "source": {
+        "sha256": "85806e99052e9b156945bc6669d06fe3fd1491ecbc59b55cb20bc9ceb68c35db"
+      }
+    },
+    {
+      "observation_id": "codex.item.13db04ac3dbc53d45dc57b00",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:41:14.616Z",
+      "end_utc": "2026-11-19T15:41:16.885Z",
+      "source": {
+        "sha256": "314030a20c8fad2a22673937254d7a97d7778f2b380691199144dba64b1e47a2"
+      }
+    },
+    {
+      "observation_id": "codex.item.d4a23c57d9940af38da6b3cc",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:19.636Z",
+      "end_utc": "2026-11-19T15:41:20.532Z",
+      "source": {
+        "sha256": "f0c1c1821af791106d66c5c711bc662de05d04278d228ad8499b44e129a5942d"
+      }
+    },
+    {
+      "observation_id": "codex.item.eb377f4f8dcd3f737f22efd0",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:41:22.115Z",
+      "end_utc": "2026-11-19T15:41:27.287Z",
+      "source": {
+        "sha256": "3bae50555359a5b358b6ea2f78d5a22b0fe2541bef3e4dc3443363c744e97049"
+      }
+    },
+    {
+      "observation_id": "codex.item.2e2485b6cd606a9de6eba436",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:41:30.661Z",
+      "end_utc": "2026-11-19T15:41:31.829Z",
+      "source": {
+        "sha256": "124cbd1c60dbfbe33151905e06718564234b39f00507ec3d0685fddec769fcf9"
+      }
+    },
+    {
+      "observation_id": "codex.item.b15c113f66470deaa01d936e",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:41:33.842Z",
+      "end_utc": "2026-11-19T15:41:34.637Z",
+      "source": {
+        "sha256": "8d5ee440f230579c95741a5aece178c4417f00e9b3a6780d1cd23cacf823ad35"
+      }
+    },
+    {
+      "observation_id": "codex.item.f8b585080900c7d38d4904d6",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:42:09.369Z",
+      "end_utc": "2026-11-19T15:42:10.792Z",
+      "source": {
+        "sha256": "9786fad935fac0a30418461756763084207bd9a86565577051f2792453c5f334"
+      }
+    },
+    {
+      "observation_id": "codex.item.23fe231a9f6bb3a2d84fa841",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:12.780Z",
+      "end_utc": "2026-11-19T15:42:17.977Z",
+      "source": {
+        "sha256": "386b7e95768860d362d0914696b14ddbba3853c5d250db5736a29c129a7d3525"
+      }
+    },
+    {
+      "observation_id": "codex.item.0c93f54a12399ec6381c6405",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:42:20.332Z",
+      "end_utc": "2026-11-19T15:42:21.928Z",
+      "source": {
+        "sha256": "670341b8741d6d4039a4165b9d3231a4aec36a53bbac248ca2178ad289fe61c3"
+      }
+    },
+    {
+      "observation_id": "codex.item.e59b392e7d4a99a49ea561e7",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:42:20.332Z",
+      "end_utc": "2026-11-19T15:42:21.136Z",
+      "source": {
+        "sha256": "4f19e5a0c1b4bce70852313319cf507d8e3896d14f94247c8b427545a1eee94a"
+      }
+    },
+    {
+      "observation_id": "codex.item.6a628292cfc4c85432035353",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:23.714Z",
+      "end_utc": "2026-11-19T15:42:24.151Z",
+      "source": {
+        "sha256": "e604af1d3294eb4765d1168bdde1ab6ff0504169fb588573a986daebe4c397d6"
+      }
+    },
+    {
+      "observation_id": "codex.item.c610d35ab2b9d63b0cefb3a4",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:24.154Z",
+      "end_utc": "2026-11-19T15:42:25.710Z",
+      "source": {
+        "sha256": "d019a2b874eaaa62f757c92cb2f61f6264262e58f4c0433f4ac76280e19eebd9"
+      }
+    },
+    {
+      "observation_id": "codex.item.b1e36d3b0a385afd08c4adaa",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:25.713Z",
+      "end_utc": "2026-11-19T15:42:41.516Z",
+      "source": {
+        "sha256": "8ea45f3fd06183db8d411f8b06de648be06642f7b8f9ad432ff1115a7f626669"
+      }
+    },
+    {
+      "observation_id": "codex.item.df32f454583f41a20ffadc3d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:41.518Z",
+      "end_utc": "2026-11-19T15:42:41.597Z",
+      "source": {
+        "sha256": "a82809bdbaa338647c3c55ff2afffb1f696f45e8757b5f458b489dd0f4401576"
+      }
+    },
+    {
+      "observation_id": "codex.item.846c045b3cb2b2adf984fe7d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:42:47.324Z",
+      "end_utc": "2026-11-19T15:42:48.580Z",
+      "source": {
+        "sha256": "2cffa7a8a4135dd387aeb59e807fb5349c87606c56380355940240fba45640dd"
+      }
+    },
+    {
+      "observation_id": "codex.item.e522b6eb680389fdf95fb813",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:50.547Z",
+      "end_utc": "2026-11-19T15:42:52.241Z",
+      "source": {
+        "sha256": "71403e3aa041850239a52fc5c317213cccd267b9c3d36184df5ac2dd066d8d44"
+      }
+    },
+    {
+      "observation_id": "codex.item.320604c0b1d26c8c629a26c5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:42:59.447Z",
+      "end_utc": "2026-11-19T15:43:00.171Z",
+      "source": {
+        "sha256": "083dffa78b0bb5104c1404e0c275d373f12d9a35ece0d4d38b5b96592e0622c9"
+      }
+    },
+    {
+      "observation_id": "codex.item.c3b788217a85388a93887167",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:43:05.803Z",
+      "end_utc": "2026-11-19T15:43:06.433Z",
+      "source": {
+        "sha256": "b64a68254a62593de8371a92102c77cda3d7937e54ea7d0d37eda28bcc5a544e"
+      }
+    },
+    {
+      "observation_id": "codex.item.8e1119270858979abf67ad3f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:43:08.883Z",
+      "end_utc": "2026-11-19T15:43:12.561Z",
+      "source": {
+        "sha256": "b31f0749ca6511abeaef283d159560343e67557913fd73ae3fc1aa4082aa957f"
+      }
+    },
+    {
+      "observation_id": "codex.item.9179e9707f26c3f620d05733",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:43:57.187Z",
+      "end_utc": "2026-11-19T15:43:58.639Z",
+      "source": {
+        "sha256": "87663fa1093a8c6e6d8b77d4f0bf86440d8e4bfa289eb6eb73bdbc6701864d39"
+      }
+    },
+    {
+      "observation_id": "codex.item.e92fe7bf9a92ec62bb0dc8e0",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:01.133Z",
+      "end_utc": "2026-11-19T15:44:01.450Z",
+      "source": {
+        "sha256": "34e68142460b5d1ccac7011b59342b61e9ed45f03570feacf8663e9308fa626f"
+      }
+    },
+    {
+      "observation_id": "codex.item.688c5c3b504136bab67e624e",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:44:05.389Z",
+      "end_utc": "2026-11-19T15:44:11.356Z",
+      "source": {
+        "sha256": "c3f403c39fa92b630012f8612a9e17d2c3b9349b5e70308268ce7a0e42a93935"
+      }
+    },
+    {
+      "observation_id": "codex.item.89b91523e4ddc6ef41d319ce",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:44:05.389Z",
+      "end_utc": "2026-11-19T15:44:09.093Z",
+      "source": {
+        "sha256": "af33065dd22611cbd638df5c71475f4fe63efee70338a08531ebfe78a0b1f8d5"
+      }
+    },
+    {
+      "observation_id": "codex.item.758473eb84671de1046cf5c1",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:08.469Z",
+      "end_utc": "2026-11-19T15:44:08.686Z",
+      "source": {
+        "sha256": "cebcd83b8261003256daee536e60adf9d20f9b0bf1622f9fe42779ec36edd51a"
+      }
+    },
+    {
+      "observation_id": "codex.item.7e6b91f0594f538d80714b04",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:08.691Z",
+      "end_utc": "2026-11-19T15:44:09.914Z",
+      "source": {
+        "sha256": "8f54d89074dc86eeb3ffd382485b6af91825151957b26ad8169aca9fdd60ba54"
+      }
+    },
+    {
+      "observation_id": "codex.item.1aff43d184b762c338cf5682",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:20.785Z",
+      "end_utc": "2026-11-19T15:44:22.905Z",
+      "source": {
+        "sha256": "261e103d35f8bd1a8ec51d15c9cb5f13b02ab8ca6aaa65aaff6b8e91ac80a1fc"
+      }
+    },
+    {
+      "observation_id": "codex.item.19527f4ae8dd00fc0b3fdc1a",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:27.342Z",
+      "end_utc": "2026-11-19T15:44:30.263Z",
+      "source": {
+        "sha256": "8e84aba4414f024da80a5ab52a83d6417b746bb211f6e5e0645550f8a00a0f05"
+      }
+    },
+    {
+      "observation_id": "codex.item.3297d26b7d6de83a500d1e62",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:44:35.663Z",
+      "end_utc": "2026-11-19T15:44:37.662Z",
+      "source": {
+        "sha256": "7dd56894b26add22a6b42e6e3c33c4b942a48873fa7e67614e612a3a4d6141a9"
+      }
+    },
+    {
+      "observation_id": "codex.item.bd585e370b7829553d013204",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:44:35.663Z",
+      "end_utc": "2026-11-19T15:44:47.491Z",
+      "source": {
+        "sha256": "6afd27562696ba0effc3990f1ee252eedfbb53a223d897709c918a33c34a0b95"
+      }
+    },
+    {
+      "observation_id": "codex.item.5e3aea527141efb8381c61a5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:47.265Z",
+      "end_utc": "2026-11-19T15:44:51.706Z",
+      "source": {
+        "sha256": "db43a48bc0335866675d369ddcc0efc1f8feb676baa28581e069bfe720b15e59"
+      }
+    },
+    {
+      "observation_id": "codex.item.044d24af1a1ae0fcc8c7fde3",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:44:55.356Z",
+      "end_utc": "2026-11-19T15:45:00.039Z",
+      "source": {
+        "sha256": "493c31f3c1157782d8e9db624892401d5245337b078ce3fd8f01b237c34545ea"
+      }
+    },
+    {
+      "observation_id": "codex.item.e2639716fd21602204ded66d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:44:58.275Z",
+      "end_utc": "2026-11-19T15:45:03.336Z",
+      "source": {
+        "sha256": "8cb6690841dfb87e26eb92b9438120043e7cc57b0d7d3705d32a85f3fd48719f"
+      }
+    },
+    {
+      "observation_id": "codex.item.2cacd1638794eb013548340c",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:03.341Z",
+      "end_utc": "2026-11-19T15:45:04.857Z",
+      "source": {
+        "sha256": "ac0912c26bd94156cb2acbf774bb296e8437122bd84d3098e9174931c6919732"
+      }
+    },
+    {
+      "observation_id": "codex.item.d3d702d756501f5ba8698c35",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:45:19.985Z",
+      "end_utc": "2026-11-19T15:45:22.544Z",
+      "source": {
+        "sha256": "c54c02a561df2a14522691fc631575538eb62401389cc2b3f95ad242cf4a1029"
+      }
+    },
+    {
+      "observation_id": "codex.item.cb0d706f153032e33e14720f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:24.145Z",
+      "end_utc": "2026-11-19T15:45:25.076Z",
+      "source": {
+        "sha256": "d392e970ec63743cb55a7f1de59ef22c5afa3cf949b0200d24c94074549f3ee2"
+      }
+    },
+    {
+      "observation_id": "codex.item.e74bfd0430ab8fa59ef5956d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:45:28.461Z",
+      "end_utc": "2026-11-19T15:45:29.494Z",
+      "source": {
+        "sha256": "e6a52927e3a3717b37166d70b1baf5277d32f0810fca7c88af219b68c4835587"
+      }
+    },
+    {
+      "observation_id": "codex.item.1f8796c3d65557854f8b1a7b",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:31.078Z",
+      "end_utc": "2026-11-19T15:45:32.522Z",
+      "source": {
+        "sha256": "556e0022ea1bfa1aba967631fe031d3b5b93f3ad2f78b409060dc0d510a18ca3"
+      }
+    },
+    {
+      "observation_id": "codex.item.1924903a7e82023ec2ddd419",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:45:39.390Z",
+      "end_utc": "2026-11-19T15:45:40.583Z",
+      "source": {
+        "sha256": "e44c6eafb44e93dcf7c6d3647758204c298f084888544f3ea42ec78fca09569b"
+      }
+    },
+    {
+      "observation_id": "codex.item.8883e6163b0c7322a841a6bb",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:42.181Z",
+      "end_utc": "2026-11-19T15:45:46.511Z",
+      "source": {
+        "sha256": "f6401a2fbb389430d0ffcd4b558f08bde82ac7b078c798a143a488959552ec4f"
+      }
+    },
+    {
+      "observation_id": "codex.item.2925a7736f9a3cde0dbf333e",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:45:49.591Z",
+      "end_utc": "2026-11-19T15:45:50.854Z",
+      "source": {
+        "sha256": "f88c57bcdc73fea45bb35587ba4ace6ef44c9e474ab8a397d01a33248af577a6"
+      }
+    },
+    {
+      "observation_id": "codex.item.47f7847cd72a84520c8993eb",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:52.631Z",
+      "end_utc": "2026-11-19T15:45:53.541Z",
+      "source": {
+        "sha256": "7006bf47117b925209836746db1fadb98d9ef3ce012392113b3d8dce66a0c975"
+      }
+    },
+    {
+      "observation_id": "codex.item.4fa476afa759ccc852aa0ca8",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:45:56.044Z",
+      "end_utc": "2026-11-19T15:46:00.221Z",
+      "source": {
+        "sha256": "02c7ea8c20996030cfd3d31f968d4e0c8c252b33d7f3a53fa9d921ecbff96003"
+      }
+    },
+    {
+      "observation_id": "codex.item.f27fa9e5a2a17cacb1e6942f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:45:58.689Z",
+      "end_utc": "2026-11-19T15:46:02.360Z",
+      "source": {
+        "sha256": "76d8669d18d3a80a6ebeb7616a8936a43d8e33a46b5a5e1cdf57ced964bef3ea"
+      }
+    },
+    {
+      "observation_id": "codex.item.f829b1a022a92af6fba87da9",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:46:04.956Z",
+      "end_utc": "2026-11-19T15:46:06.081Z",
+      "source": {
+        "sha256": "4649b04c5c155119f2fa6b5d467bf90512f669f7a2dd5292fb43ecb8c3ba43eb"
+      }
+    },
+    {
+      "observation_id": "codex.item.81f7afd7af4eb16ce013e8fe",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:46:08.623Z",
+      "end_utc": "2026-11-19T15:46:09.188Z",
+      "source": {
+        "sha256": "2cd0b93c6a88bca80187aea6008053141791a8c5976b8db664ef59561fd17066"
+      }
+    },
+    {
+      "observation_id": "codex.item.b1c0b841b5a020ca2e3708ba",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:46:11.045Z",
+      "end_utc": "2026-11-19T15:46:12.238Z",
+      "source": {
+        "sha256": "3fd9ddf51063d280473adda767280ba2b9a8103e079a60f34f4db154d948c906"
+      }
+    },
+    {
+      "observation_id": "codex.item.9a1be25fdcfb758b9c51ed14",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:46:13.898Z",
+      "end_utc": "2026-11-19T15:46:20.826Z",
+      "source": {
+        "sha256": "c00e77d049ed32c07e83d8df826edf4579172f0e7f47c3872e875b015b7b3b9a"
+      }
+    },
+    {
+      "observation_id": "codex.item.05765ee8249de2f720f8e43d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:47:18.114Z",
+      "end_utc": "2026-11-19T15:47:19.704Z",
+      "source": {
+        "sha256": "c11b2fcf2d5525776b6ad379bdf1bfbb17d5d7be8ddc573b2c4425a405680c4c"
+      }
+    },
+    {
+      "observation_id": "codex.item.32d9e8c1da4bff0b10e9894b",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:47:21.187Z",
+      "end_utc": "2026-11-19T15:47:21.939Z",
+      "source": {
+        "sha256": "f74a670332d250bca88495c614f4373e761bf29f7e10916a58d2324d1f714440"
+      }
+    },
+    {
+      "observation_id": "codex.item.0520e82366326d78e447ba26",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:47:25.442Z",
+      "end_utc": "2026-11-19T15:47:26.941Z",
+      "source": {
+        "sha256": "2d2bfa47a52d4edc008f4fd5dfab7832a5152c6a3c650c35a32b2d00f36da293"
+      }
+    },
+    {
+      "observation_id": "codex.item.276adcc20ce5e45dcdeb6ed7",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:47:28.096Z",
+      "end_utc": "2026-11-19T15:47:33.420Z",
+      "source": {
+        "sha256": "0c5f76b6a80d9819b25e1bea09f734de5d687e555a987de8767d22eba77f101b"
+      }
+    },
+    {
+      "observation_id": "codex.item.eabcdc9d2ebc6d96a2cd1ca8",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:47:36.262Z",
+      "end_utc": "2026-11-19T15:47:37.324Z",
+      "source": {
+        "sha256": "5d735e63c0e087a465b2b63b5ed55bc9ae83fcfebf20510e01a76abb372d5770"
+      }
+    },
+    {
+      "observation_id": "codex.item.f44aef65e261f40b3ac00cbf",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:47:39.573Z",
+      "end_utc": "2026-11-19T15:47:44.004Z",
+      "source": {
+        "sha256": "26e4a69878e3de20825e4168e844f347d7c136303b20beec9bacb7e297684f47"
+      }
+    },
+    {
+      "observation_id": "codex.item.66eda671827967749e355a32",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:47:50.596Z",
+      "end_utc": "2026-11-19T15:47:50.665Z",
+      "source": {
+        "sha256": "86d27fcf7c35003f2f7bf12a4ba4bb93a2816ca51500e312e7e79be0565e7362"
+      }
+    },
+    {
+      "observation_id": "codex.item.684ebf5360a048c6c0a12097",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:47:52.806Z",
+      "end_utc": "2026-11-19T15:47:53.690Z",
+      "source": {
+        "sha256": "2fdf2fa64311e059c6a937c32e81f22e00eabb6545229463a38cf6500827bc82"
+      }
+    },
+    {
+      "observation_id": "codex.item.90f7344a60bcc6b12cca3b14",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:48:48.653Z",
+      "end_utc": "2026-11-19T15:48:50.332Z",
+      "source": {
+        "sha256": "6889e58ac6bbdc352e146797cd448d1b9e46eba8ee0338793d3e0f58205e9a59"
+      }
+    },
+    {
+      "observation_id": "codex.item.bd3d115698d4c0d4007c81e5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:48:53.087Z",
+      "end_utc": "2026-11-19T15:48:55.895Z",
+      "source": {
+        "sha256": "7c2d0220e8fb08e8265243a311c26820a21fc16549ce0e73177bed08794fefdf"
+      }
+    },
+    {
+      "observation_id": "codex.item.0448e47df97834845db87adf",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:49:01.189Z",
+      "end_utc": "2026-11-19T15:49:02.546Z",
+      "source": {
+        "sha256": "04b19bb9d2ee82ee0caf093e9a44220f8474856af22e4dd95717fca6c9da1f0f"
+      }
+    },
+    {
+      "observation_id": "codex.item.cc0ab3d3bc622c5e58583741",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:49:02.549Z",
+      "end_utc": "2026-11-19T15:49:12.620Z",
+      "source": {
+        "sha256": "33df1a705119bd70d9a44808c7ae56a9e01ab902532642484ee1cc54f2b45e15"
+      }
+    },
+    {
+      "observation_id": "codex.item.eef7b0c432f0800fdefbb2e5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:50:06.181Z",
+      "end_utc": "2026-11-19T15:50:07.944Z",
+      "source": {
+        "sha256": "7a8d7a6964758aec7ddd4ec0ec852cc2f2b93475c11de2465c250afbc6caf3e4"
+      }
+    },
+    {
+      "observation_id": "codex.item.c23910ca827812e3541925ce",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:50:14.571Z",
+      "end_utc": "2026-11-19T15:50:22.267Z",
+      "source": {
+        "sha256": "4fbef3afc8e3540f8af066a202016c1402314a841c4137e29c5ccb5760ba1a95"
+      }
+    },
+    {
+      "observation_id": "codex.item.316acff29c0226cea42f615f",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:50:18.091Z",
+      "end_utc": "2026-11-19T15:50:18.938Z",
+      "source": {
+        "sha256": "d81bcfdfc0505c5a10ba6944617c82e25cf527f15d72265d04bbe1d65769196c"
+      }
+    },
+    {
+      "observation_id": "codex.item.31a2be3005de238452296727",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:50:26.229Z",
+      "end_utc": "2026-11-19T15:50:27.351Z",
+      "source": {
+        "sha256": "fd4d9b2a32067f73d1804abe70dcb549fa608f45c8692c28274e4d6beabd8b0f"
+      }
+    },
+    {
+      "observation_id": "codex.item.6587cd3fe280a3c50429af20",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:50:29.347Z",
+      "end_utc": "2026-11-19T15:50:32.323Z",
+      "source": {
+        "sha256": "c958c1ed16d5ef40c36cc5776398b7db71a9e54410d34a7449de2a5d6cd06018"
+      }
+    },
+    {
+      "observation_id": "codex.item.244ebdc6a28e08a191309df5",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:50:53.753Z",
+      "end_utc": "2026-11-19T15:50:54.945Z",
+      "source": {
+        "sha256": "1f12603faa04eca8225d46af7c3888fb5e7fb045d8a1383577a2e94488696914"
+      }
+    },
+    {
+      "observation_id": "codex.item.d04e80852f4e2cfcdc726104",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:50:57.705Z",
+      "end_utc": "2026-11-19T15:51:00.492Z",
+      "source": {
+        "sha256": "128c4f4927c17775a33ae63a11893375877ebb6800b709d0a3e38b423ceb5e0a"
+      }
+    },
+    {
+      "observation_id": "codex.item.feb18af556e375a17815080c",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:51:00.497Z",
+      "end_utc": "2026-11-19T15:51:01.736Z",
+      "source": {
+        "sha256": "df1be74eb2d484d500bf44888fdad3e88ad475326de849eaddaff11e22d8baf6"
+      }
+    },
+    {
+      "observation_id": "codex.item.41aea2f5c2591fefcde602ef",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:51:46.322Z",
+      "end_utc": "2026-11-19T15:51:48.733Z",
+      "source": {
+        "sha256": "508c3d22da56eac0f4c99dcdfca0053322c66299acb84e57256c874828ef1f8e"
+      }
+    },
+    {
+      "observation_id": "codex.item.1a863adfb99c27375e9fcf3d",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:51:49.364Z",
+      "end_utc": "2026-11-19T15:51:50.520Z",
+      "source": {
+        "sha256": "3c2f32c1d3ba8866a2bc4c5bea89c159a3e1bc0c0561204052800dbc0e76c7ee"
+      }
+    },
+    {
+      "observation_id": "codex.item.2cd931be7a08177b282d5ae6",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:52:05.868Z",
+      "end_utc": "2026-11-19T15:52:09.845Z",
+      "source": {
+        "sha256": "e16a6b8cfa48fac09c3c85a254500ca92dcb6fcc3fb790b93c8d5121fcec33de"
+      }
+    },
+    {
+      "observation_id": "codex.item.5ea622d276aea2faf4e3158a",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:52:05.868Z",
+      "end_utc": "2026-11-19T15:52:24.081Z",
+      "source": {
+        "sha256": "9ac575e08fcf0e6bf3f486c33a445e575ad30f4b18d399e48cec6c649f469d81"
+      }
+    },
+    {
+      "observation_id": "codex.item.3cc5a475d4564a355d9671f2",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:52:08.388Z",
+      "end_utc": "2026-11-19T15:52:09.973Z",
+      "source": {
+        "sha256": "898329ec29d3f69b9014262dbf72e7a802643498cc143063f65dd0e9547d79cf"
+      }
+    },
+    {
+      "observation_id": "codex.item.747fb4ededaf5c828939e666",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T15:52:14.625Z",
+      "end_utc": "2026-11-19T15:52:16.400Z",
+      "source": {
+        "sha256": "aed20c196868d0bd3ffdd7048e826bf7a50a795dba41fe1b134c807c7c8c0d55"
+      }
+    },
+    {
+      "observation_id": "codex.item.0bb56a2c4592d724e3091bdd",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.e8f087387302fe555ff33fd9",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:52:25.599Z",
+      "end_utc": "2026-11-19T15:52:31.366Z",
+      "source": {
+        "sha256": "f6134e777ae6ad61f58adc3a8abcbaeb234bda0b9dc174f3726076ed8ecef5c0"
+      }
+    },
+    {
+      "observation_id": "codex.item.c3c9dceb57ff346b1480bc6c",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.205458c903a276585899b931",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:56:38.531Z",
+      "end_utc": "2026-11-19T15:56:39.687Z",
+      "source": {
+        "sha256": "05df5f186721fd302a96b28b853b9d9e847d2c5fbd8699c4029bd2e7434323bb"
+      }
+    },
+    {
+      "observation_id": "codex.item.b5ed4fdb4fa50b5108b9e7ff",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.205458c903a276585899b931",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-progress-boundaries",
+      "start_utc": "2026-11-19T15:56:39.688Z",
+      "end_utc": "2026-11-19T15:56:41.818Z",
+      "source": {
+        "sha256": "fa4178a23e30c5a384a2f51edbcd4a144984d61dc1e9ed3c8ab12c4f4075bd67"
+      }
+    },
+    {
+      "observation_id": "codex.item.c3f95f736f15a82a036f8f48",
+      "actor": "codex.a24cbd2185016c5e2b98a608",
+      "turn": "codex.turn.c9781cc125ddf095e4201583",
+      "phase": null,
+      "role": null,
+      "kind": "agent-turn",
+      "coverage": "partial",
+      "basis": "codex-completed-command-boundaries",
+      "start_utc": "2026-11-19T16:05:33.193Z",
+      "end_utc": "2026-11-19T16:05:38.411Z",
+      "source": {
+        "sha256": "d309182362e7031fe3a44151b7daabd517a60f6347d43c7499b79aab93d04f30"
+      }
+    }
+  ]
+}
