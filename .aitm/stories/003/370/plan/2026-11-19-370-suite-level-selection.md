@@ -17,10 +17,8 @@ Use independently runnable pytest suites as the unit of TIA selection. Keep one 
 
 [#393](../../393/story.md) qualified the existing Grok ingestion and replay suite for a change confined to a declared test body across four exact hosted Ubuntu PR trees. The bounded lane passed 33 tests in 3.564 seconds including setup and selection. Its same-runner full reference passed 1,776 tests in 274.003 seconds. Both lanes caught the same seeded failure. Shared fixture and adapter changes selected full. [Findings](2026-11-19-370-grok-suite-shadow-findings.md)
 
-## Next story
+[#398](../../398/story.md) qualified the exact decoder refactor and seeded control on one pinned base. The positive edit took 4.316 seconds for the replay suite versus 338.504 seconds for the exact full run. Both lanes caught the seeded failure. Shared changes selected full. [Findings](2026-11-19-370-bounded-production-shadow-findings.md)
 
-[#398](../../398/story.md) extends the experiment to one bounded production change. Audit the headless token decoder first, including its gated call path and downstream consumers. The Grok adapter remains a shared input by default. Establish and declare the specific boundary before running a positive source edit, a seeded source regression, and a shared or out-of-boundary full control. Reuse #383's resolver and compare exact per-test outcomes and elapsed time on matched hosted Ubuntu trees.
+## Hosted integration decision and next story
 
-The required workflow, hosted path map, gate, verifier, branch protection, and pinned #355 command keep their current roles. Promotion requires a separate decision.
-
-#398 qualified the exact bounded decoder change on hosted Ubuntu. The same-tree suite and full outcomes matched, with 4.316 versus 338.504 seconds on the positive production change. [Findings](2026-11-19-370-bounded-production-shadow-findings.md)
+The [integration decision](2026-11-19-370-suite-hosted-integration-decision.md) continues isolated hosted shadow and holds routine integration. [#402](../../402/story.md) will qualify a reusable suite declaration for a fresh production edit and across an unrelated base advance. Changes that invalidate the declaration must yield full or unavailable. The required workflow, path map, gate, verifier, branch rules and #355 command retain their current roles.
