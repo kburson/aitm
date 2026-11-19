@@ -231,7 +231,7 @@ def test_stops_on_checkout_drift_before_execution(checkout, monkeypatch, capsys)
 def test_unsupported_capability_refuses_before_pytest(checkout, monkeypatch, capsys):
     repo, base = checkout
     monkeypatch.chdir(repo)
-    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(local.platform, "system", lambda: "Windows")
     assert local.main(["--base", base, "--run"]) == 2
     data = json.loads(capsys.readouterr().out)
     assert data["plan"]["mode"] == "unavailable"
@@ -342,3 +342,11 @@ def test_native_fixtures_avoid_the_shared_temporary_ancestor(
     assert json.loads(capsys.readouterr().out)["plan"]["provenance"] == "local_advisory"
     assert len(observed) == 1 and observed[0].parent == cache.resolve()
     assert not observed[0].exists()
+
+
+def test_portable_capability_probe_on_private_filesystem(tmp_path, monkeypatch):
+    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
+    probe_root = tmp_path / "private"
+    probe_root.mkdir(mode=0o700)
+    local._capabilities(probe_root)
+    assert list(probe_root.iterdir()) == []

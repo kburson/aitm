@@ -11,7 +11,6 @@ import selectors
 import shutil
 import stat
 import subprocess
-import sys
 import tempfile
 import time
 from bisect import bisect_left
@@ -282,12 +281,6 @@ class _Git:
             self.root = repo.resolve(strict=True)
         except (OSError, RuntimeError, ValueError):
             self.refuse("unreadable_input")
-        # Apple Git on the qualified macOS lane has the offline control. PATH may
-        # instead name a separate installation that lacks it.
-        executable = "/usr/bin/git" if sys.platform == "darwin" else shutil.which("git")
-        if executable is None:
-            self.refuse("unsupported_profile")
-        self.command = (os.path.abspath(executable), *_GIT_FLAGS)
         self.env = {
             key: value
             for key, value in os.environ.items()
@@ -297,12 +290,11 @@ class _Git:
             GIT_CONFIG_NOSYSTEM="1",
             GIT_CONFIG_SYSTEM=os.devnull,
             GIT_CONFIG_GLOBAL=os.devnull,
+            GIT_ATTR_NOSYSTEM="1",
             GIT_TERMINAL_PROMPT="0",
             LC_ALL="C",
         )
-        version = self.run("--version", failure="unsupported_profile")
-        if not re.fullmatch(rb"git version [0-9]+\.[^\x00\n]+\n", version):
-            self.refuse("unsupported_profile")
+        version = self._resolve_git()
         root = self.run("rev-parse", "--show-toplevel", failure="unreadable_input")
         if not root.endswith(b"\n") or os.path.realpath(root[:-1]) != os.fsencode(
             self.root
@@ -316,6 +308,23 @@ class _Git:
         )
         self.oid_size = hashlib.new(self.profile.object_format).digest_size
         self.oid_pattern = re.compile(rf"[0-9a-f]{{{self.oid_size * 2}}}")
+
+    def _resolve_git(self) -> bytes:
+        # A PATH entry can contain Git without the mandatory offline controls.
+        for directory in dict.fromkeys(os.get_exec_path()):
+            executable = shutil.which("git", path=directory or ".")
+            if executable is None:
+                continue
+            self.command = (os.path.abspath(executable), *_GIT_FLAGS)
+            try:
+                version = self.run("--version", failure="unsupported_profile")
+            except SnapshotUncertain as error:
+                if error.reason != "unsupported_profile":
+                    raise
+                continue
+            if re.fullmatch(rb"git version [0-9]+\.[^\x00\n]+\n", version):
+                return version
+        self.refuse("unsupported_profile")
 
     def refuse(self, reason: str):
         raise SnapshotUncertain(self.mode, reason)

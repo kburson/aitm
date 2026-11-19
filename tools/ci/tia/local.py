@@ -1,11 +1,12 @@
 """Plan or run advisory test impact analysis against a local Git checkout."""
 
 import argparse
+import errno
 import json
 import os
 import platform
-import plistlib
 import re
+import runpy
 import shutil
 import stat
 import subprocess
@@ -30,8 +31,8 @@ _OBSERVER = "tools/ci/pytest_evidence.py"
 _POLICY = "tools/ci/policy.json"
 _SUITES = "tools/ci/tia/suites.json"
 _EDGES = "tools/ci/tia/edges.json"
-_PLATFORM = "darwin-apfs"
-_CAPABILITIES = ("apfs", "darwin", "native-acl")
+_PLATFORM = "portable"
+_CAPABILITIES = ("private-mode-bits", "no-follow", "exclusive-rename")
 _SCHEMA = "aitm.tia-local/v1"
 _PROVENANCE = "local_advisory"
 
@@ -61,7 +62,15 @@ def _git(cwd, *args):
     env = {
         name: value for name, value in os.environ.items() if not name.startswith("GIT_")
     }
-    return _capture(["/usr/bin/git", "-C", cwd, *args], cwd=cwd, env=env)
+    env.update(
+        GIT_CONFIG_NOSYSTEM="1",
+        GIT_CONFIG_GLOBAL=os.devnull,
+        GIT_ATTR_NOSYSTEM="1",
+        GIT_TERMINAL_PROMPT="0",
+    )
+    executable = shutil.which("git")
+    _checked(executable is not None, "repository: Git is unavailable on PATH")
+    return _capture([os.path.abspath(executable), "-C", cwd, *args], cwd=cwd, env=env)
 
 
 def _request(base):
@@ -94,32 +103,65 @@ def _request(base):
 
 
 def _capabilities(private):
-    _checked(platform.system() == "Darwin", "capability: Darwin is required")
-    disk = _capture(["/bin/df", "-P", private], cwd=private)
-    lines = disk.stdout.splitlines()
-    _checked(
-        disk.returncode == 0 and len(lines) == 2 and lines[1].split(),
-        "capability: cannot identify the private test volume",
-    )
-    info = _capture(
-        ["/usr/sbin/diskutil", "info", "-plist", os.fsdecode(lines[1].split()[0])],
-        cwd=private,
-    )
-    _checked(info.returncode == 0, "capability: cannot inspect the private test volume")
-    try:
-        filesystem = plistlib.loads(info.stdout)["FilesystemType"]
-    except (ValueError, KeyError, plistlib.InvalidFileException) as error:
-        raise Refusal("capability: cannot establish filesystem type") from error
-    _checked(filesystem == "apfs", "capability: APFS is required")
-    probe = private / "acl-probe"
-    probe.touch()
-    try:
-        result = _capture(
-            ["/bin/chmod", "+a", "everyone allow read", probe], cwd=private
-        )
-        _checked(result.returncode == 0, "capability: native ACL support is required")
-    finally:
-        probe.unlink()
+    _checked(platform.system() in {"Linux", "Darwin"}, "capability: unsupported host")
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    _checked(nofollow is not None, "capability: O_NOFOLLOW is unavailable")
+    # The launcher runs from trusted tooling. Reuse its native filesystem helper
+    # without importing packages from the inspected or frozen snapshot.
+    trusted = Path(__file__).resolve().parents[3]
+    host_fs = runpy.run_path(str(trusted / _PRODUCT / "src/aitm_usage/host_fs.py"))
+    publish = host_fs["publish_noreplace"]
+
+    with tempfile.TemporaryDirectory(dir=private) as directory:
+        probe = Path(directory)
+        fd = os.open(probe, os.O_RDONLY | os.O_DIRECTORY | nofollow)
+        try:
+            mode = os.fstat(fd)
+            _checked(
+                mode.st_uid == os.geteuid() and stat.S_IMODE(mode.st_mode) == 0o700,
+                "capability: private directory mode bits are unavailable",
+            )
+            source = os.open(
+                "source",
+                os.O_CREAT | os.O_EXCL | os.O_WRONLY | nofollow,
+                0o600,
+                dir_fd=fd,
+            )
+            try:
+                _checked(
+                    stat.S_IMODE(os.fstat(source).st_mode) == 0o600,
+                    "capability: private file mode bits are unavailable",
+                )
+            finally:
+                os.close(source)
+            os.symlink("source", "link", dir_fd=fd)
+            try:
+                opened = os.open("link", os.O_RDONLY | nofollow, dir_fd=fd)
+            except OSError as error:
+                _checked(
+                    error.errno == errno.ELOOP, "capability: O_NOFOLLOW probe failed"
+                )
+            else:
+                os.close(opened)
+                raise Refusal("capability: O_NOFOLLOW followed a symlink")
+            (probe / "destination").write_bytes(b"existing")
+            try:
+                _checked(
+                    not publish(fd, "source", fd, "destination")
+                    and (probe / "destination").read_bytes() == b"existing",
+                    "capability: exclusive rename overwrote a destination",
+                )
+                (probe / "destination").unlink()
+                _checked(
+                    publish(fd, "source", fd, "destination")
+                    and not (probe / "source").exists()
+                    and (probe / "destination").is_file(),
+                    "capability: exclusive rename did not publish",
+                )
+            except host_fs["HostFilesystemError"] as error:
+                raise Refusal("capability: exclusive rename is unavailable") from error
+        finally:
+            os.close(fd)
 
 
 def _link_destination(path, data, directories, files):
@@ -479,8 +521,8 @@ def _collect(snapshot, directory):
                 "runner": {
                     "profile": _PLATFORM,
                     "name": "local",
-                    "os": "Darwin",
-                    "filesystem": "apfs",
+                    "os": platform.system(),
+                    "capability_profile": _PLATFORM,
                 },
                 "capabilities": list(_CAPABILITIES),
                 "observer": runtime.observer_sha256,
