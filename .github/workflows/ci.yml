@@ -90,7 +90,7 @@ jobs:
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
           # Keep custody fixtures and the installed Python out of the runner home.
-          fixtures=$(mktemp -d /tmp/aitm-base-fixtures.XXXXXXXX)
+          fixtures=$(mktemp -d /var/tmp/aitm-base-fixtures.XXXXXXXX)
           export UV_PYTHON_INSTALL_DIR="$fixtures/python"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
           export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
@@ -277,10 +277,9 @@ jobs:
           out="$RUNNER_TEMP/aitm-python"
           start=$(date +%s)
           # Keep custody fixtures and the installed Python out of the runner home.
-          fixtures=$(mktemp -d /tmp/aitm-python-fixtures.XXXXXXXX)
+          fixtures=$(mktemp -d /var/tmp/aitm-python-fixtures.XXXXXXXX)
           export UV_PYTHON_INSTALL_DIR="$fixtures/python"
           printf 'UV_PYTHON_INSTALL_DIR=%s\n' "$UV_PYTHON_INSTALL_DIR" >> "$GITHUB_ENV"
-          python3 -c 'import os, sys; print({p: os.listxattr(p) for p in sys.argv[1:]})' / /home "$HOME" "$RUNNER_TEMP" /tmp
           cd packages/aitm-usage
           uv sync --locked --python "$PYTHON_VERSION"
           jq -n --arg os "$(uname -s)" \
@@ -370,7 +369,7 @@ jobs:
         run: |
           root=$(pwd -P)
           cd packages/aitm-usage
-          fixtures=$(mktemp -d /tmp/aitm-full-once-fixtures.XXXXXXXX)
+          fixtures=$(mktemp -d /var/tmp/aitm-full-once-fixtures.XXXXXXXX)
           uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
             --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
