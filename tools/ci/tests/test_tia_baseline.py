@@ -416,6 +416,14 @@ def proof(request):
         "observation_sha256": digest(helper_raw),
         "raw": helper_raw,
     }
+    boundaries = BOUNDARIES
+    if linux:
+        boundaries = {
+            **BOUNDARIES,
+            "setup": "Python behavior step start to product and helper test bucket start",
+            "test": "parallel product and serial helper test bucket",
+            "lane_wall": "Python behavior step start through installed wheel smoke",
+        }
     observations = {}
     for key, lane, gate, kind in [
         ("pr_candidate", pr, result, "pr_verifier"),
@@ -446,7 +454,7 @@ def proof(request):
         }
         seconds = dict(
             zip(
-                BOUNDARIES,
+                boundaries,
                 [
                     2,
                     1,
@@ -467,7 +475,7 @@ def proof(request):
                 "boundary": boundary,
                 "reference": "historical timing receipt",
             }
-            for name, boundary in BOUNDARIES.items()
+            for name, boundary in boundaries.items()
         }
         for name in ("test_only", "unit", "integration", "billed_cost"):
             metrics[name] = {
@@ -567,6 +575,16 @@ def test_baseline_projects_canonical_ubuntu_evidence(proof):
     if "filesystem" in capability:
         expected["filesystem"] = "ext4"
     assert pr["binding"]["platform"] == expected
+    metrics = projected["timings"]["pr_candidate"]["warm"]["metrics"]
+    assert metrics["setup"]["boundary"] == (
+        "Python behavior step start to product and helper test bucket start"
+    )
+    assert (
+        metrics["test"]["boundary"] == "parallel product and serial helper test bucket"
+    )
+    assert metrics["lane_wall"]["boundary"] == (
+        "Python behavior step start through installed wheel smoke"
+    )
     assert pr["coverage"]["helpers"]["lines"] == {
         "covered_lines": 45,
         "num_statements": 50,

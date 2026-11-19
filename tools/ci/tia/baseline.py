@@ -89,6 +89,12 @@ _BOUNDARIES = {
     "feedback": "run created to last applicable job completion",
     "runner_consumption": "sum of non-skipped job elapsed time",
 }
+_LINUX_BOUNDARIES = {
+    **_BOUNDARIES,
+    "setup": "Python behavior step start to product and helper test bucket start",
+    "test": "parallel product and serial helper test bucket",
+    "lane_wall": "Python behavior step start through installed wheel smoke",
+}
 _UNMEASURED = {"test_only", "unit", "integration", "billed_cost"}
 
 
@@ -981,6 +987,9 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
     slots = _map(slots, "timing: cold or warm slot missing", ("cold", "warm"))
     raw_lane = receipts["python"]["timings.json"][0]
     values = _timing_values(jobs, verified, raw_lane)
+    boundaries = (
+        _LINUX_BOUNDARIES if binding["platform"]["os"] == "Linux" else _BOUNDARIES
+    )
     if candidate is not None:
         _require(
             _same(
@@ -1032,7 +1041,7 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
         metrics = _map(
             slot["metrics"],
             "timing: incomplete metrics",
-            _BOUNDARIES.keys() | _UNMEASURED,
+            boundaries.keys() | _UNMEASURED,
         )
         for key, seconds in values.items():
             metric = _map(
@@ -1042,7 +1051,7 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
             )
             _require(
                 _same(metric["seconds"], seconds)
-                and metric["boundary"] == _BOUNDARIES[key]
+                and metric["boundary"] == boundaries[key]
                 and _text(metric["reference"]),
                 "timing: measurement or provenance disagrees",
             )
