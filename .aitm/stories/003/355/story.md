@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 355
 title: "Run the affected tests before commit"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/355"
 parent: 351
 children: []
 blocking: []
 blocked-by: [353, 354]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T20:56:33Z"
-last-branch: "planning"
+updated: "2026-11-19T12:36:41Z"
+last-branch: "codex/355-precommit-execution"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
