@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 371
 title: "[Spike] Analyze how one Python TIA program runs everywhere"
 kind: "spike"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/371"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T13:57:57Z"
+updated: "2026-11-19T14:08:03Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-19-371-portable-python-tia-findings.md", "plan/reviews/2026-11-19-371-independent-findings-review.md"], "attachments": ["plan/2026-11-19-371-probe-evidence.json"]}
 expansions: []
 trips: []
 ---
@@ -64,3 +64,7 @@ The TIA probe starts after that cleanup. It lists the tests for the staging area
 ## Handoff
 
 The feature story that wires the probe's list into the pull-request gate opens after the Linux suite is the required suite and the probe's list is accepted. #356 continues to classify tests by execution category. #355 continues the accepted advisory command. Production code stays unchanged until a feature story is picked up. Pull request #369 stays on its accepted scope.
+
+## Accepted finding
+
+Independent review passed on the exact current trunk. Linux and macOS produced the same dependency witnesses and fallback decision. [Finding](plan/2026-11-19-371-portable-python-tia-findings.md) · [Probe evidence](plan/2026-11-19-371-probe-evidence.json) · [Review](plan/reviews/2026-11-19-371-independent-findings-review.md) · [Follow-on #383](../383/story.md).

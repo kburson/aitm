@@ -6,11 +6,11 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
-children: [371]
+children: [371, 383]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T01:20:00Z"
+updated: "2026-11-19T14:08:03Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -53,3 +53,7 @@ A feature story is opened after that finding is accepted. The finding chooses th
 The spike writes the finding. Production code, CI, the hosted path map, and #355 stay unchanged. Windows stays a later epic for operating-system facilities. That later epic runs this same program. It is not opened here.
 
 Development does not start from this epic.
+
+## Implementation handoff
+
+The accepted [#371 finding](../371/plan/2026-11-19-371-portable-python-tia-findings.md) opens [#383](../383/story.md) for the advisory index, HEAD and PR probe. Hosted gate integration follows separate qualification.

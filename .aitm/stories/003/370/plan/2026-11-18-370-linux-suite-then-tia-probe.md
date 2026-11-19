@@ -159,6 +159,8 @@ From that diff, the probe follows the chain among tests, imported functions, and
 
 The delivered path map stays in place until the probe's list is accepted. The probe writes the list and the evidence that the list is sufficient. Wiring that list into the pull-request gate is the feature story after the probe, still on Linux.
 
+The accepted [#371 finding](../../371/plan/2026-11-19-371-portable-python-tia-findings.md) has been recorded. Pick up [#383](../../383/story.md) for the advisory probe.
+
 ## Out of scope
 
 - Rewriting the product in another language.
