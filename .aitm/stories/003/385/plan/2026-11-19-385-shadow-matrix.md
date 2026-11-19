@@ -14,3 +14,5 @@ Run the unchanged probe from trunk `f2ff2b6f073fa769261b44fb0c05a055da7eb1c9` in
 | negative controls | Wrong tree, stale head, truncated full phase receipt | Refuse mismatched Git inputs and reject incomplete full outcome evidence. |
 
 Keep the required workflow, map, verifier, branch protections, and #355 unchanged. The experiment branches and draft PRs are qualification inputs only.
+
+The [hosted run](https://github.com/kburson/aitm/actions/runs/44557441200) uses the [pinned case matrix](https://github.com/kburson/aitm/blob/8fa9b69ed6f74074eef556e1886f5538efdcb14a/shadow-385/matrix.json) and its adjacent harness.

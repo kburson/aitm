@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 385
 title: "Qualify the affected-test probe in hosted Ubuntu shadow runs"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/385"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T15:29:19Z"
-updated: "2026-11-19T15:30:20Z"
+updated: "2026-11-19T15:40:50Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: "P2"
