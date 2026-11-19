@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 373
 title: "Prove private ledger custody without APFS"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/373"
 parent: 372
 children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T03:19:01Z"
+updated: "2026-11-19T03:28:37Z"
 last-branch: "codex/373-physical-custody"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
