@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 373
 title: "Prove private ledger custody without APFS"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/373"
 parent: 372
 children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T03:28:37Z"
-last-branch: "codex/373-physical-custody"
+updated: "2026-11-19T03:36:05Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
