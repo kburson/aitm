@@ -74,7 +74,7 @@ Version 1 supports an edit confined to appending LF-terminated ASCII comments
 and blank lines to the audited Grok scope hook source, with the original bytes
 and file mode preserved. It admits the evidence anchor shown above and the
 post-supervisor anchor at `4ae28dba1493c2171bd8097e58195198c4001a51`, plus
-their reviewed tooling delivery shapes. Other committed changes require fresh
+their reviewed tooling delivery shapes, including the portable launcher. Other committed changes require fresh
 qualification. Use separate
 checkouts if the inspected checkout contains edits to the tooling. Git-ignored
 files are outside the effective snapshot.
@@ -93,8 +93,8 @@ action to the reported snapshot and revalidate it before use.
 
 ## Run pinned obligations before committing
 
-On macOS/APFS with `uv` and CPython 3.13.9 available, run this command from
-the trusted tooling checkout. Use the exact HEAD of the inspected checkout.
+On Linux or macOS with `uv`, CPython 3.13.9, and Git supporting
+`--no-lazy-fetch` on PATH, run this command from the trusted tooling checkout. Use the exact HEAD of the inspected checkout.
 
 ```sh
 python -B -E -s -m tools.ci.tia.working_tree_run \

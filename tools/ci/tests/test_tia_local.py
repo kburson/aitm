@@ -231,7 +231,7 @@ def test_stops_on_checkout_drift_before_execution(checkout, monkeypatch, capsys)
 def test_unsupported_capability_refuses_before_pytest(checkout, monkeypatch, capsys):
     repo, base = checkout
     monkeypatch.chdir(repo)
-    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(local.platform, "system", lambda: "Windows")
     assert local.main(["--base", base, "--run"]) == 2
     data = json.loads(capsys.readouterr().out)
     assert data["plan"]["mode"] == "unavailable"
@@ -342,3 +342,85 @@ def test_native_fixtures_avoid_the_shared_temporary_ancestor(
     assert json.loads(capsys.readouterr().out)["plan"]["provenance"] == "local_advisory"
     assert len(observed) == 1 and observed[0].parent == cache.resolve()
     assert not observed[0].exists()
+
+
+def test_portable_capability_probe_on_private_filesystem(tmp_path, monkeypatch):
+    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
+    probe_root = tmp_path / "private"
+    probe_root.mkdir(mode=0o700)
+    local._capabilities(probe_root)
+    assert list(probe_root.iterdir()) == []
+
+
+def test_stock_runner_accepts_only_the_exact_darwin_procfs_skip(monkeypatch):
+    from types import SimpleNamespace
+
+    from tools.ci.tia.working_tree_report import _LINUX_ONLY
+
+    node = min(_LINUX_ONLY)
+    phases = [
+        {
+            "nodeid": node,
+            "when": "setup",
+            "outcome": "skipped",
+            "wasxfail": False,
+            "skip_reason": "Requires the Linux proc filesystem",
+        },
+        {"nodeid": node, "when": "teardown", "outcome": "passed", "wasxfail": False},
+    ]
+    receipt = {
+        "schema": "aitm.pytest-evidence/v1",
+        "collected": [node],
+        "deselected": [],
+        "exit_code": 0,
+        "reports": phases,
+        "children": [],
+    }
+    invocation = SimpleNamespace(returncode=0, seconds=0, receipt=lambda: receipt)
+    rows = [{"nodeid": node, "optional_skip_reason": None, "required_children": []}]
+    monkeypatch.setattr(local.sys, "platform", "darwin")
+    result = local._profile_result(invocation, rows)
+    assert result["outcomes"] == [{"nodeid": node, "outcome": "skipped"}]
+    assert result["errors"] == []
+    phases[0]["skip_reason"] = "Different reason"
+    assert local._profile_result(invocation, rows)["errors"]
+
+    phases[0]["skip_reason"] = "Requires the Linux proc filesystem"
+    monkeypatch.setattr(local.sys, "platform", "linux")
+    assert local._profile_result(invocation, rows)["errors"]
+
+
+def test_capability_probe_does_not_execute_checkout_python(tmp_path, monkeypatch):
+    launcher = tmp_path / "tools/ci/tia/local.py"
+    monkeypatch.setattr(local, "__file__", str(launcher))
+    _write(
+        tmp_path,
+        f"{_PRODUCT}/src/aitm_usage/host_fs.py",
+        "raise AssertionError('candidate Python ran in the planner')\n",
+    )
+    private = tmp_path / "probe"
+    private.mkdir(mode=0o700)
+    local._capabilities(private)
+
+
+def test_profile_receipt_validation_imports_without_pythonpath():
+    child = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-E",
+            "-s",
+            "-c",
+            "from types import SimpleNamespace\n"
+            "from tools.ci.tia import local\n"
+            "invocation = SimpleNamespace(returncode=0, seconds=0, receipt=lambda: "
+            "{'collected': [], 'reports': [], 'children': []})\n"
+            "result = local._profile_result(invocation, [])\n"
+            "assert result['errors'] == ['invalid pytest evidence']\n",
+        ],
+        cwd=_SOURCE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert child.returncode == 0, child.stderr

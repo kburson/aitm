@@ -12,9 +12,7 @@
     "packages/aitm-usage/tests/test_service.py::test_one_shot_status_uses_collecting_subprocess_pid",
     "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
   ],
-  "optional_skips": {
-    "packages/aitm-usage/tests/test_install.py::test_backup_refuses_store_through_physical_path_alias": "The host does not expose the matching APFS firmlink path"
-  },
+  "optional_skips": {},
   "required_children": ["cli-help", "service-one-shot"],
   "pr_jobs": ["python-base", "python", "quality", "file-checks"],
   "push_jobs": ["python", "quality", "file-checks"]

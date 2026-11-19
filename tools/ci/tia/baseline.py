@@ -23,8 +23,9 @@ _PUSH = "trunk_push"
 _WORKFLOW = ".github/workflows/ci.yml"
 _CONTROLS = ("workflow", "policy", "observer", "gate", "lock", "verifier")
 _IDENTITIES = ("observer", "policy", "lock", "configuration")
-_CAPABILITY = ("os", "filesystem", "image", "xcode")
-_PLATFORM = (*_CAPABILITY, "runner", "python", "uv")
+_DARWIN_CAPABILITY = ("os", "filesystem", "image", "xcode")
+_PLATFORM = ("runner", "os", "image", "python", "uv")
+_BRANCH_COUNTS = ("covered_branches", "num_branches")
 _ATTEMPT = (
     "repository",
     "repository_id",
@@ -46,7 +47,13 @@ _HELPERS = (
     "tools/ci/verify_pr.py",
     "tools/ci/file_checks.py",
 )
+_LINUX_HELPERS = (*_HELPERS, "tools/ci/path_map.py")
 _TARGETS = {path.replace("tools/ci/", "tools/ci/tests/test_") for path in _HELPERS}
+_LINUX_TARGETS = {
+    *_TARGETS,
+    "tools/ci/tests/test_path_map.py",
+    "tools/ci/tests/test_tia_local.py",
+}
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
 _PRODUCT_ROOT = "src/aitm_usage"
 _PRODUCT_TESTS = "packages/aitm-usage/tests/"
@@ -81,6 +88,12 @@ _BOUNDARIES = {
     "collector": "collector start to completion",
     "feedback": "run created to last applicable job completion",
     "runner_consumption": "sum of non-skipped job elapsed time",
+}
+_LINUX_BOUNDARIES = {
+    **_BOUNDARIES,
+    "setup": "Python behavior step start to product and helper test bucket start",
+    "test": "parallel product and serial helper test bucket",
+    "lane_wall": "Python behavior step start through installed wheel smoke",
 }
 _UNMEASURED = {"test_only", "unit", "integration", "billed_cost"}
 
@@ -245,13 +258,31 @@ def _binding(binding, role):
     identities = _map(
         binding["identities"], "binding: incomplete control digests", _IDENTITIES
     )
-    platform = _map(binding["platform"], "binding: incomplete platform", _PLATFORM)
+    platform = _map(binding["platform"], "binding: incomplete platform")
+    linux = platform.get("os") == "Linux"
+    if linux:
+        fields = set(_PLATFORM)
+        if role != _BASE and "filesystem" in platform:
+            fields.add("filesystem")
+        platform_matches = (
+            platform.get("runner") == "ubuntu-24.04"
+            and _text(platform.get("image"))
+            and platform["image"].startswith("ubuntu24:")
+            and _text(platform["image"].removeprefix("ubuntu24:"))
+        )
+    else:
+        fields = (*_PLATFORM, "filesystem", "xcode")
+        platform_matches = (
+            platform.get("runner"),
+            platform.get("os"),
+            platform.get("filesystem"),
+        ) == ("macos-26", "Darwin", "apfs")
+    _map(platform, "binding: incomplete platform", fields)
     _require(
         all(_digest(value, 40) for value in controls.values())
         and all(_digest(value) for value in identities.values())
         and all(_text(value) for value in platform.values())
-        and (platform["runner"], platform["os"], platform["filesystem"])
-        == ("macos-26", "Darwin", "apfs")
+        and platform_matches
         and (platform["python"], platform["uv"]) == ("3.13.9", "0.10.6"),
         "binding: invalid controls or historical platform",
     )
@@ -293,6 +324,13 @@ def _join_roles(pr, base, push):
                 "controls",
                 "identities",
                 "platform",
+            )
+        )
+        and (
+            pr["platform"]["os"] != "Linux"
+            or all(
+                pr["platform"][key] == base["platform"][key]
+                for key in ("runner", "os", "image")
             )
         )
         and push["run_id"] != pr["run_id"]
@@ -347,6 +385,8 @@ def _archive_records(role, binding, archives, raw, verified):
         expected = _MEMBERS[kind] | (
             {"expected-base.json"} if kind == "python" and role == _PR else set()
         )
+        if binding["platform"]["os"] == "Linux" and kind in {"base", "python"}:
+            expected = expected | {"selection.json"}
         _require(
             archive.get("name") == name
             and _integer(archive.get("id"), 1)
@@ -371,7 +411,15 @@ def _archive_records(role, binding, archives, raw, verified):
         records[kind] = {}
         for member, text in texts.items():
             _require(isinstance(text, str), "receipt: expected original UTF-8 text")
-            records[kind][member] = (_decode(text), _hash(text))
+            document = _decode(text)
+            if member == "selection.json":
+                schema = "v1" if role == _PUSH else "v2"
+                _schema(document, f"aitm.path-selection/{schema}")
+                _require(
+                    document.get("mode") == "full",
+                    "selection: baseline requires the full suite",
+                )
+            records[kind][member] = (document, _hash(text))
     _require(
         _same(archives, verified.get("archives")), "archive: verified custody disagrees"
     )
@@ -410,7 +458,7 @@ def _verify(role, document):
     return binding, jobs, records, verified
 
 
-def _policy(document):
+def _policy(document, *, linux):
     _schema(document, "aitm.ci-policy/v1")
     helpers = _names(document.get("helpers"), _path, "policy: invalid helper scope")
     required = _names(
@@ -427,7 +475,7 @@ def _policy(document):
         and document.get("product_root") == _PRODUCT_ROOT
         and _integer(document.get("line_floor"))
         and document["line_floor"] == 90
-        and set(helpers) == set(_HELPERS)
+        and set(helpers) == set(_LINUX_HELPERS if linux else _HELPERS)
         and sorted(document.get("required_children", [])) == sorted(_LABELS)
         and sorted(document.get("pr_jobs", [])) == sorted(("python-base", *_LANES))
         and sorted(document.get("push_jobs", [])) == sorted(_LANES),
@@ -513,7 +561,8 @@ def _base_projection(binding, receipts, verified, outcomes):
         policy_digest == expected["policy"],
         "digest: trusted base policy bytes disagree",
     )
-    nodes = _product_outcomes(base["evidence"], outcomes, _policy(policy), base=True)
+    policy = _policy(policy, linux=binding["platform"]["os"] == "Linux")
+    nodes = _product_outcomes(base["evidence"], outcomes, policy, base=True)
     _require(
         base["evidence"].get("children") == [],
         "receipt: base lane must be product-only",
@@ -633,7 +682,15 @@ def _step(job, name):
 
 def _tested_projection(binding, jobs, receipts, verified, outcomes, baseline_count):
     py = receipts["python"]
-    capability = {key: binding["platform"][key] for key in _CAPABILITY}
+    platform = binding["platform"]
+    linux = platform["os"] == "Linux"
+    if linux:
+        capability = {key: platform[key] for key in ("os", "image")}
+        capability["runtime"] = platform["python"]
+        if "filesystem" in platform:
+            capability["filesystem"] = platform["filesystem"]
+    else:
+        capability = {key: platform[key] for key in _DARWIN_CAPABILITY}
     _require(
         _same(py["capability.json"][0], capability), "binding: raw capability disagrees"
     )
@@ -643,7 +700,7 @@ def _tested_projection(binding, jobs, receipts, verified, outcomes, baseline_cou
         and _hash(policy_text) == binding["identities"]["policy"],
         "digest: verified policy bytes disagree",
     )
-    policy = _policy(_decode(policy_text))
+    policy = _policy(_decode(policy_text), linux=linux)
     observer, observer_digest = py["pytest.json"]
     nodes = _product_outcomes(observer, outcomes, policy)
     sources, source_digest = py["product-inventory.json"]
@@ -741,13 +798,31 @@ def _signed_candidate(binding, receipts, verified, projected, base_identity):
         all(candidate.get(key) == value for key, value in digests.items()),
         "digest: signed subject disagrees with raw inventory, base or wheel",
     )
+    branches = {key: value["branches"] for key, value in projected["coverage"].items()}
+    if binding["platform"]["os"] == "Linux":
+        base_selection = receipts["base"]["selection.json"][0]
+        candidate_selection = receipts["python"]["selection.json"][0]
+        _require(
+            _same(candidate.get("selection"), candidate_selection)
+            and _same(candidate_selection, base_selection),
+            "selection: signed, trusted-base or candidate selection disagrees",
+        )
+        # The attestation records report-wide branches, including helper files
+        # outside the policy's line coverage floor.
+        totals = _map(
+            receipts["python"]["helper-coverage.json"][0]["totals"],
+            "coverage: missing signed helper branch summary",
+        )
+        _require(
+            all(_integer(totals.get(key)) for key in _BRANCH_COUNTS)
+            and totals["covered_branches"] <= totals["num_branches"],
+            "coverage: invalid signed helper branch summary",
+        )
+        branches["helpers"] = {key: totals[key] for key in _BRANCH_COUNTS}
     _require(
         _same(candidate.get("result"), verified["result"])
         and _same(candidate.get("children"), projected["children"]["receipts"])
-        and _same(
-            candidate.get("branches"),
-            {key: value["branches"] for key, value in projected["coverage"].items()},
-        ),
+        and _same(candidate.get("branches"), branches),
         "verification: signed and replayed result, children or branches disagree",
     )
     return candidate
@@ -777,12 +852,15 @@ def _helper_collection(collection, binding):
         argv = shlex.split(command)
     except ValueError as error:
         raise ValueError("helper: malformed collection command") from error
+    expected_targets = (
+        _LINUX_TARGETS if binding["platform"]["os"] == "Linux" else _TARGETS
+    )
     _require(
-        set(targets) == _TARGETS
-        and {_node_source(node) for node in nodes} == _TARGETS
+        set(targets) == expected_targets
+        and {_node_source(node) for node in nodes} == expected_targets
         and nodes == sorted(nodes)
         and sha256(_encode(nodes)).hexdigest() == collection.get("sha256")
-        and set(argv[-len(targets) :]) == _TARGETS
+        and set(argv[-len(targets) :]) == expected_targets
         and all(
             arg in argv
             for arg in ("uv", "--locked", "pytest_evidence", "--collect-only")
@@ -909,6 +987,9 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
     slots = _map(slots, "timing: cold or warm slot missing", ("cold", "warm"))
     raw_lane = receipts["python"]["timings.json"][0]
     values = _timing_values(jobs, verified, raw_lane)
+    boundaries = (
+        _LINUX_BOUNDARIES if binding["platform"]["os"] == "Linux" else _BOUNDARIES
+    )
     if candidate is not None:
         _require(
             _same(
@@ -960,7 +1041,7 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
         metrics = _map(
             slot["metrics"],
             "timing: incomplete metrics",
-            _BOUNDARIES.keys() | _UNMEASURED,
+            boundaries.keys() | _UNMEASURED,
         )
         for key, seconds in values.items():
             metric = _map(
@@ -970,7 +1051,7 @@ def _timings(role, slots, binding, jobs, verified, receipts, candidate=None):
             )
             _require(
                 _same(metric["seconds"], seconds)
-                and metric["boundary"] == _BOUNDARIES[key]
+                and metric["boundary"] == boundaries[key]
                 and _text(metric["reference"]),
                 "timing: measurement or provenance disagrees",
             )

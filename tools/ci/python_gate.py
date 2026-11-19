@@ -6,7 +6,10 @@ import re
 from hashlib import sha256
 from pathlib import Path
 
-from path_map import SELECTION_SCHEMA
+if __package__:
+    from .path_map import SELECTION_SCHEMA
+else:
+    from path_map import SELECTION_SCHEMA
 
 PHASES = ("setup", "call", "teardown")
 IDENTITY_DIGESTS = {

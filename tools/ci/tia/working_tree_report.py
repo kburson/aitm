@@ -58,6 +58,20 @@ _CURRENT_MODIFICATIONS = {
     b"tools/ci/tia/working_tree_report.py",
     b"tools/ci/tests/test_tia_working_tree_report.py",
 }
+_PORTABLE_MODIFICATIONS = _CURRENT_MODIFICATIONS | {
+    b"tools/ci/policy.json",
+    b"tools/ci/python_gate.py",
+    b"tools/ci/tia/baseline.py",
+    b"tools/ci/tia/inventory.py",
+    b"tools/ci/tia/snapshot.py",
+    b"tools/ci/tia/suites.json",
+    b"tools/ci/tests/test_tia_baseline.py",
+    b"tools/ci/tests/test_tia_controls.py",
+    b"tools/ci/tests/test_tia_inventory.py",
+    b"tools/ci/tests/test_tia_local.py",
+    b"tools/ci/tests/test_tia_selection.py",
+    b"tools/ci/tests/test_tia_shards.py",
+}
 _LINUX_ONLY = frozenset(
     f"{_MODULE}::test_linux_scope_staging_and_hook_recheck_external_process_incarnation"
     f"[{case}-/bin/sh]"
@@ -101,7 +115,7 @@ def _delivery_tree(changes, current):
     additions = set()
     modifications = set()
     for change in changes:
-        allowed = _CURRENT_MODIFICATIONS if current else {_DOC, _LOCAL}
+        allowed = _PORTABLE_MODIFICATIONS if current else {_DOC, _LOCAL}
         if (
             change.new
             and change.new.path in allowed
@@ -120,7 +134,7 @@ def _delivery_tree(changes, current):
     if current:
         return (
             additions == _CURRENT_ADDITIONS
-            and modifications == _CURRENT_MODIFICATIONS
+            and modifications in (_CURRENT_MODIFICATIONS, _PORTABLE_MODIFICATIONS)
             and len(changes) == len(additions) + len(modifications)
         )
     # The admitted release changes only the advisory tooling and guide.

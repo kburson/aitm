@@ -6,6 +6,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import pytest
+from test_tia_inventory import _CAPABILITIES, _RUNNER, _SKIP_REASON
 from tia.inventory import SuitePolicy, classify
 from tia.python_graph import ProviderPolicy, PytestScope, UnresolvedScope
 from tia.selection import (
@@ -159,15 +160,10 @@ def _inventory(
     def lane(profile, items):
         return {
             "profile": profile,
-            "platform_scope": "darwin-apfs",
+            "platform_scope": "portable",
             "binding": binding,
-            "runner": {
-                "profile": "darwin-apfs",
-                "name": "fixture",
-                "os": "Darwin",
-                "filesystem": "apfs",
-            },
-            "capabilities": ["native-acl", "darwin", "apfs"],
+            "runner": _RUNNER.copy(),
+            "capabilities": list(_CAPABILITIES),
             "observer": "2" * 64,
             "controls": {"workflow": "3" * 40},
             "receipt_sha256": "5" * 64,
@@ -207,9 +203,9 @@ def _inventory(
         }
     )
     collection_doc = json.loads(source)
-    if "second-apfs" in json.loads(suite)["runners"]:
+    if "second-portable" in json.loads(suite)["runners"]:
         second = lane("product-cli", items)
-        second["platform_scope"] = second["runner"]["profile"] = "second-apfs"
+        second["platform_scope"] = second["runner"]["profile"] = "second-portable"
         collection_doc["scopes"].append(second)
     rules = SuitePolicy(suite, ci103, "full")
     raw = classify(_encode(collection_doc), rules)
@@ -222,16 +218,16 @@ def _inventory(
     return raw, expected
 
 
-def _inputs(before, after, **kwargs):
-    old, old_expected = _inventory(before)
-    new, new_expected = _inventory(after, **kwargs)
+def _inputs(before, after, *, ci103=_CI103, **kwargs):
+    old, old_expected = _inventory(before, ci103=ci103)
+    new, new_expected = _inventory(after, ci103=ci103, **kwargs)
     return InventoryPair(old, new), SelectionPolicy(
         old_expected, new_expected, _GRAPH, _EMPTY
     )
 
 
 def _key(node, owner="aitm-usage"):
-    return ("pytest", owner, "darwin-apfs", node)
+    return ("pytest", owner, "portable", node)
 
 
 def _reencode_candidate(pair, policy, mutation):
@@ -498,11 +494,13 @@ def test_known_edge_plus_unbounded_reader_runs_full(repo):
     _write(repo, "src/leaf.py", b"VALUE = 2\n")
     before, after = _snapshots(repo, base)
     suite = json.loads(_SUITES)
-    suite["runners"]["second-apfs"] = {
-        **suite["runners"]["darwin-apfs"],
-        "platform_scope": "second-apfs",
+    suite["runners"]["second-portable"] = {
+        **suite["runners"]["portable"],
+        "platform_scope": "second-portable",
     }
-    suite["workloads"]["full"]["required_pairs"].append(["product-cli", "second-apfs"])
+    suite["workloads"]["full"]["required_pairs"].append(
+        ["product-cli", "second-portable"]
+    )
     raw_suite = _encode(suite)
     old, old_expected = _inventory(before, suite=raw_suite)
     new, new_expected = _inventory(after, suite=raw_suite)
@@ -519,7 +517,7 @@ def test_known_edge_plus_unbounded_reader_runs_full(repo):
     )
     assert result.mode == "full"
     assert _key(_NODE) in result.selected
-    assert ("pytest", "aitm-usage", "second-apfs", _NODE) in result.selected
+    assert ("pytest", "aitm-usage", "second-portable", _NODE) in result.selected
     assert (
         _key("tools/ci/tests/test_verify_pr.py::test_fixture", "ci-tools")
         in result.selected
@@ -676,7 +674,9 @@ def test_allowed_skip_is_kept_and_same_key_disposition_change_runs_full(repo):
     base = _commit(repo)
     _write(repo, _PRODUCT + "test_install.py", b"VALUE = 2\n")
     before, after = _snapshots(repo, base)
-    pair, policy = _inputs(before, after, skip=True)
+    ci103 = json.loads(_CI103)
+    ci103["optional_skips"] = {_OPTIONAL: _SKIP_REASON}
+    pair, policy = _inputs(before, after, ci103=_encode(ci103), skip=True)
     result = select(before, after, pair, policy)
     assert result.mode == "full"
     assert result.changed_obligations == (_key(_OPTIONAL),)

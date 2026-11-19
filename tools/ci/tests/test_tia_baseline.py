@@ -154,7 +154,28 @@ def bind_verification(role, kind, result=None, **details):
 
 
 @pytest.fixture
-def proof():
+def proof(request):
+    linux, filesystem = getattr(request, "param", (False, None))
+    policy = POLICY
+    platform = PLATFORM
+    targets = TARGETS
+    runner_name = "macos-26"
+    if linux:
+        platform = {
+            "os": "Linux",
+            "image": "ubuntu24:20261116.133.1",
+            "runtime": "3.13.9",
+        }
+        if filesystem is not None:
+            platform["filesystem"] = filesystem
+        runner_name = "ubuntu-24.04"
+        policy = {**POLICY, "helpers": [*HELPERS, "tools/ci/path_map.py"]}
+        targets = [
+            *TARGETS,
+            "tools/ci/tests/test_path_map.py",
+            "tools/ci/tests/test_tia_local.py",
+        ]
+
     controls = dict(
         zip(
             ("workflow", "policy", "observer", "gate", "lock", "verifier"),
@@ -165,9 +186,13 @@ def proof():
     controls = {name: value * 40 for name, value in controls.items()}
     ids = {
         "observer": "a" * 64,
-        "policy": digest(dump(POLICY)),
+        "policy": digest(dump(policy)),
         "lock": "c" * 64,
         "configuration": "d" * 64,
+    }
+    base_image = platform["image"] if linux else "base-image"
+    platform_binding = {
+        key: value for key, value in platform.items() if key != "runtime"
     }
     shared = {
         "repository_id": 2,
@@ -178,8 +203,8 @@ def proof():
         "controls": controls,
         "identities": ids,
         "platform": {
-            **PLATFORM,
-            "runner": "macos-26",
+            **platform_binding,
+            "runner": runner_name,
             "python": "3.13.9",
             "uv": "0.10.6",
         },
@@ -193,7 +218,7 @@ def proof():
         **ids,
         "observer": "f" * 64,
         "runtime": "3.13.9",
-        "image": "base-image",
+        "image": base_image,
     }
     pr_binding = {
         **shared,
@@ -214,8 +239,10 @@ def proof():
         "tree": base_tree,
         "parents": [],
         "identities": {key: identity[key] for key in ids},
-        "platform": {**shared["platform"], "image": "base-image"},
+        "platform": {**shared["platform"], "image": base_image},
     }
+    if linux:
+        base_binding["platform"].pop("filesystem", None)
     push_binding = {
         **shared,
         "event": "push",
@@ -247,9 +274,22 @@ def proof():
     trusted["jobs"] = {"python-base": deepcopy(pr["jobs"]["python-base"])}
     base_doc = {"identity": identity, "evidence": receipt([BASE_NODE], [])}
     base_name = "aitm-ci-base-a1"
-    add_archive(
-        trusted, "base", 40, {"base.json": base_doc, "base-policy.json": POLICY}
-    )
+    base_receipts = {"base.json": base_doc, "base-policy.json": policy}
+    selection = {
+        "schema": "aitm.path-selection/v2",
+        "source": "base",
+        "mode": "full",
+        "key": "full",
+        "tests": [],
+        "paths": [],
+        "children": {
+            "cli-help": "tools/ci/tests/test_cli_evidence.py",
+            "service-one-shot": "packages/aitm-usage/tests/test_service.py",
+        },
+    }
+    if linux:
+        base_receipts["selection.json"] = selection
+    add_archive(trusted, "base", 40, base_receipts)
     for field in ("raw", "archives"):
         pr[field][base_name] = deepcopy(trusted[field][base_name])
     bind_verification(trusted, "pr_base", {"tests": 1})
@@ -265,18 +305,23 @@ def proof():
         "pytest.json": receipt([BASE_NODE, CLI_NODE], children),
         "product-inventory.json": source_paths,
         "product-coverage.json": coverage(source_paths),
-        "helper-coverage.json": coverage(HELPERS),
+        "helper-coverage.json": coverage(
+            [*policy["helpers"], "tools/ci/tia/local.py"] if linux else HELPERS
+        ),
         "children.json": {
             "schema": "aitm.ci-child-evidence/v1",
             "children": child_coverage,
         },
-        "capability.json": PLATFORM,
+        "capability.json": platform,
         "wheel.json": {"digest": "9" * 64},
         "timings.json": raw_lane,
     }
     counts = {
         "product": {"covered_lines": 9, "num_statements": 10},
-        "helpers": {"covered_lines": 36, "num_statements": 40},
+        "helpers": {
+            "covered_lines": 9 * len(policy["helpers"]),
+            "num_statements": 10 * len(policy["helpers"]),
+        },
     }
     result = {
         "passed": True,
@@ -298,25 +343,36 @@ def proof():
         "source_inventory": digest(dump(source_paths)),
         "baseline": digest(dump(base_doc)),
         "controls": controls,
-        "jobs": dict.fromkeys(POLICY["pr_jobs"], "success"),
+        "jobs": dict.fromkeys(policy["pr_jobs"], "success"),
         "checkouts": {
-            **dict.fromkeys([*POLICY["pr_jobs"], "collector"], tested),
+            **dict.fromkeys([*policy["pr_jobs"], "collector"], tested),
             "python-base": base,
         },
         "result": result,
         "children": child_coverage,
         "timings": {**raw_lane, "hosted_seconds": 10, "queue": 2},
         "wheel": "9" * 64,
-        "platform": PLATFORM,
+        "platform": platform,
         "base_identity": identity,
         "branches": {
             "product": {"covered_branches": 1, "num_branches": 2},
-            "helpers": {"covered_branches": 4, "num_branches": 8},
+            "helpers": {
+                "covered_branches": len(targets),
+                "num_branches": 2 * len(targets),
+            },
         },
     }
-    add_archive(
-        pr, "python", 41, {**py, "expected-base.json": identity}, ["product-junit.xml"]
-    )
+    pr_python = {**py, "expected-base.json": identity}
+    if linux:
+        pr_python["selection.json"] = candidate["selection"] = selection
+        py["selection.json"] = {
+            "schema": "aitm.path-selection/v1",
+            "source": "push",
+            "mode": "full",
+            "key": "full",
+            "tests": [],
+        }
+    add_archive(pr, "python", 41, pr_python, ["product-junit.xml"])
     add_archive(push, "python", 42, py, ["product-junit.xml"])
     add_archive(pr, "collector", 43, {"candidate.json": candidate})
     add_archive(
@@ -337,19 +393,19 @@ def proof():
         },
     )
 
-    helper_ids = sorted(f"{target}::test_help" for target in TARGETS)
+    helper_ids = sorted(f"{target}::test_help" for target in targets)
     helper_raw = dump(receipt(helper_ids, []) | {"reports": []})
     roles["helper_collection"] = {
         "kind": "local_advisory",
         "tree": tree,
         "lock": ids["lock"],
         "observer": ids["observer"],
-        "targets": TARGETS,
+        "targets": targets,
         "command": "PYTHONPATH=tools/ci uv run --project packages/aitm-usage --locked "
-        "python -m pytest -p pytest_evidence --collect-only -q " + " ".join(TARGETS),
+        "python -m pytest -p pytest_evidence --collect-only -q " + " ".join(targets),
         "runner": {
-            "os": "Darwin",
-            "filesystem": "apfs",
+            "os": platform["os"],
+            "filesystem": "ext4" if linux else "apfs",
             "python": "3.13.9",
             "uv": "0.10.6",
         },
@@ -360,6 +416,14 @@ def proof():
         "observation_sha256": digest(helper_raw),
         "raw": helper_raw,
     }
+    boundaries = BOUNDARIES
+    if linux:
+        boundaries = {
+            **BOUNDARIES,
+            "setup": "Python behavior step start to product and helper test bucket start",
+            "test": "parallel product and serial helper test bucket",
+            "lane_wall": "Python behavior step start through installed wheel smoke",
+        }
     observations = {}
     for key, lane, gate, kind in [
         ("pr_candidate", pr, result, "pr_verifier"),
@@ -377,7 +441,7 @@ def proof():
         details = {
             "created_at": "2026-01-01T00:00:00Z",
             "cache": cache,
-            "policy": dump(POLICY),
+            "policy": dump(policy),
         }
         if lane is pr:
             details["subject_digest"] = digest(dump(candidate))
@@ -390,7 +454,7 @@ def proof():
         }
         seconds = dict(
             zip(
-                BOUNDARIES,
+                boundaries,
                 [
                     2,
                     1,
@@ -411,7 +475,7 @@ def proof():
                 "boundary": boundary,
                 "reference": "historical timing receipt",
             }
-            for name, boundary in BOUNDARIES.items()
+            for name, boundary in boundaries.items()
         }
         for name in ("test_only", "unit", "integration", "billed_cost"):
             metrics[name] = {
@@ -492,6 +556,76 @@ def test_baseline_projects_exact_pair(proof):
         ]
         == 21
     )
+
+
+@pytest.mark.parametrize("proof", [(True, None), (True, "ext4")], indirect=True)
+def test_baseline_projects_canonical_ubuntu_evidence(proof):
+    projected = json.loads(project(proof))
+    pr = projected["roles"]["pr_candidate"]
+    expected = {
+        "runner": "ubuntu-24.04",
+        "os": "Linux",
+        "image": "ubuntu24:20261116.133.1",
+        "python": "3.13.9",
+        "uv": "0.10.6",
+    }
+    capability = json.loads(
+        proof[0]["roles"]["pr_candidate"]["raw"]["aitm-ci-python-a1"]["capability.json"]
+    )
+    if "filesystem" in capability:
+        expected["filesystem"] = "ext4"
+    assert pr["binding"]["platform"] == expected
+    metrics = projected["timings"]["pr_candidate"]["warm"]["metrics"]
+    assert metrics["setup"]["boundary"] == (
+        "Python behavior step start to product and helper test bucket start"
+    )
+    assert (
+        metrics["test"]["boundary"] == "parallel product and serial helper test bucket"
+    )
+    assert metrics["lane_wall"]["boundary"] == (
+        "Python behavior step start through installed wheel smoke"
+    )
+    assert pr["coverage"]["helpers"]["lines"] == {
+        "covered_lines": 45,
+        "num_statements": 50,
+    }
+    assert pr["coverage"]["helpers"]["branches"] == {
+        "covered_branches": 5,
+        "num_branches": 10,
+    }
+    assert set(projected["helper_collection"]["targets"]) == {
+        "tools/ci/tests/test_python_gate.py",
+        "tools/ci/tests/test_pytest_evidence.py",
+        "tools/ci/tests/test_verify_pr.py",
+        "tools/ci/tests/test_file_checks.py",
+        "tools/ci/tests/test_path_map.py",
+        "tools/ci/tests/test_tia_local.py",
+    }
+
+
+@pytest.mark.parametrize("proof", [(True, None)], indirect=True)
+def test_baseline_rejects_filesystem_outside_authenticated_capability(proof):
+    pr = proof[0]["roles"]["pr_candidate"]
+    pr["binding"]["platform"]["filesystem"] = "ext4"
+    pr["verification"]["binding"]["platform"]["filesystem"] = "ext4"
+    for profile in ("cold", "warm"):
+        proof[1]["observations"]["pr_candidate"][profile]["binding"]["platform"][
+            "filesystem"
+        ] = "ext4"
+    push = proof[0]["roles"]["trunk_push"]
+    push["binding"]["platform"]["filesystem"] = "ext4"
+    push["verification"]["binding"]["platform"]["filesystem"] = "ext4"
+    with pytest.raises(ValueError, match="raw capability disagrees"):
+        project(proof)
+
+
+@pytest.mark.parametrize("proof", [(True, "ext4")], indirect=True)
+def test_baseline_requires_separate_filesystem_evidence_for_base(proof):
+    base = proof[0]["roles"]["pr_base"]
+    base["binding"]["platform"]["filesystem"] = "ext4"
+    base["verification"]["binding"]["platform"]["filesystem"] = "ext4"
+    with pytest.raises(ValueError, match="binding: incomplete platform"):
+        project(proof)
 
 
 def set_at(document, path, value):
