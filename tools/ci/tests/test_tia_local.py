@@ -319,7 +319,9 @@ def test_nested_pytest_cache_stays_outside_bound_source(checkout, tmp_path):
     assert not cache.resolve().is_relative_to(runtime.root)
 
 
-def test_fixtures_use_a_private_cache_ancestor(checkout, tmp_path, monkeypatch, capsys):
+def test_native_fixtures_avoid_the_shared_temporary_ancestor(
+    checkout, tmp_path, monkeypatch, capsys
+):
     repo, base = checkout
     cache = tmp_path / "home/Library/Caches"
     cache.mkdir(parents=True)
