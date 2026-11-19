@@ -248,12 +248,12 @@ def _stored_accounting(usage: _Row) -> _Accounting:
 def _headless_tokens(record: _Row) -> GrokTokenCounts:
     usage = _object(record.get("usage"))
     return GrokTokenCounts(
-        _int(usage, "input_tokens"),
-        _int(usage, "cache_read_input_tokens"),
-        _int(usage, "cache_creation_input_tokens"),
-        _int(usage, "output_tokens"),
-        _optional_count(usage, "reasoning_tokens"),
-        _int(usage, "total_tokens"),
+        uncached_input_tokens=_int(usage, "input_tokens"),
+        cache_read_tokens=_int(usage, "cache_read_input_tokens"),
+        cache_creation_tokens=_int(usage, "cache_creation_input_tokens"),
+        output_tokens=_int(usage, "output_tokens"),
+        reasoning_output_tokens=_optional_count(usage, "reasoning_tokens"),
+        total_tokens=_int(usage, "total_tokens"),
     )
 
 
