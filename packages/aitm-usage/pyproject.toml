@@ -24,3 +24,5 @@ parallel = true
 relative_files = true
 source = ["aitm_usage"]
 patch = ["subprocess"]
+
+# Shadow qualification configuration input.
