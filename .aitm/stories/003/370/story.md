@@ -6,11 +6,11 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
-children: [371, 383, 385, 393]
+children: [371, 383, 385, 393, 398]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T18:37:02Z"
+updated: "2026-11-19T21:12:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -68,8 +68,12 @@ The [qualification findings](plan/2026-11-19-370-hosted-shadow-findings.md) reco
 
 ## Suite-level selection
 
-The [current plan](plan/2026-11-19-370-suite-level-selection.md) selects runnable pytest suites from declared inputs using #383's exact Git snapshots. [#393](../393/story.md) is next and qualifies one existing suite on hosted Ubuntu. #370 remains open.
+The [current plan](plan/2026-11-19-370-suite-level-selection.md) selects runnable pytest suites from declared inputs using #383's exact Git snapshots. [#393](../393/story.md) qualified one existing suite on hosted Ubuntu. #370 remains open.
 
 ## Hosted Grok suite result
 
 [#393](plan/2026-11-19-370-grok-suite-shadow-findings.md) qualified the declared replay test-body boundary. The bounded case passed 33 tests in 3.564 seconds including setup and selection. The matching full run passed 1,776 in 274.003 seconds. Shared inputs selected full. The required gate stays unchanged.
+
+## Production-code handoff
+
+[#398](../398/story.md) is next. It qualifies one audited production-code boundary against matched full-suite outcomes and timing on hosted Ubuntu. #370 remains open and the required gate retains its current role.

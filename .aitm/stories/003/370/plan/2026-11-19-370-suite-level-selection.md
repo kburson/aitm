@@ -13,10 +13,12 @@ Use independently runnable pytest suites as the unit of TIA selection. Keep one 
 3. Let pytest discover node IDs from the selected target during execution. Use those IDs and their outcomes to verify coverage of the assignment. Selecting suites avoids the pilot's dependence on an exhaustive per-node inventory for both snapshots. Renames or deletions that change an unqualified target or boundary fail closed.
 4. Compare the suite assignment, the current path-map decision, and complete full-suite outcomes for the same hosted Ubuntu PR tree. Measure setup, selection, execution, and elapsed time. Require a defensible real narrowing with useful elapsed-time savings and zero missed failures in the declared cases. Shared-input fallback and invalid identity must be exercised.
 
+## Completed qualification
+
+[#393](../../393/story.md) qualified the existing Grok ingestion and replay suite for a change confined to a declared test body across four exact hosted Ubuntu PR trees. The bounded lane passed 33 tests in 3.564 seconds including setup and selection. Its same-runner full reference passed 1,776 tests in 274.003 seconds. Both lanes caught the same seeded failure. Shared fixture and adapter changes selected full. [Findings](2026-11-19-370-grok-suite-shadow-findings.md)
+
 ## Next story
 
-[#393](../../393/story.md) starts by auditing the existing Grok ingestion and replay target, `packages/aitm-usage/tests/test_grok.py`. Its existing fixture inputs give the pilot a concrete boundary to validate. Any source or fixture with other consumers must retain conservative selection. Finish the Ubuntu comparisons and record the result here before considering broader suite coverage or finer selection.
+[#398](../../398/story.md) extends the experiment to one bounded production change. Audit the headless token decoder first, including its gated call path and downstream consumers. The Grok adapter remains a shared input by default. Establish and declare the specific boundary before running a positive source edit, a seeded source regression, and a shared or out-of-boundary full control. Reuse #383's resolver and compare exact per-test outcomes and elapsed time on matched hosted Ubuntu trees.
 
 The required workflow, hosted path map, gate, verifier, branch protection, and pinned #355 command keep their current roles. Promotion requires a separate decision.
-
-#393 qualified the declared Grok test-body boundary on hosted Ubuntu. [Findings](2026-11-19-370-grok-suite-shadow-findings.md)
