@@ -103,3 +103,37 @@ def test_missing_candidate_inventory_never_returns_a_list(
     assert plan["mode"] == "unavailable"
     assert plan["selected"] == []
     assert "candidate-inventory" in plan["reasons"][0]
+
+
+def test_probe_worker_uses_private_temporary_directories(tmp_path, monkeypatch):
+    import os
+
+    inspected = tmp_path / "inspected"
+    inspected.mkdir()
+    keys = ("TMPDIR", "TMP", "TEMP")
+    for key in keys:
+        monkeypatch.setenv(key, str(inspected))
+
+    def freeze(snapshot, root):
+        observer = root / local._OBSERVER
+        observer.parent.mkdir(parents=True)
+        observer.write_bytes(b"")
+        return local._Copy(root, frozenset(), {})
+
+    def capture(args, *, cwd, env):
+        if list(args[1:3]) == ["cache", "dir"]:
+            return subprocess.CompletedProcess(
+                args, 0, os.fsencode(inspected) + b"\n", b""
+            )
+        if "-m" in args:
+            for key in keys:
+                assert env[key] == str(tmp_path / "runtime/collect-/product-cli/temp")
+        return subprocess.CompletedProcess(args, 0, b"", b"")
+
+    monkeypatch.setattr(local, "_freeze", freeze)
+    monkeypatch.setattr(local, "_capture", capture)
+    monkeypatch.setattr(local._Runtime, "verify", lambda self: None)
+    runtime = local._prepare(
+        object(), tmp_path / "runtime", inspected_checkout=inspected
+    )
+    runtime.pytest("product-cli", ("product",), collect=True)

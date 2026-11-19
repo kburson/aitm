@@ -294,12 +294,17 @@ def _env():
     }
 
 
+def _temp_environment(directory):
+    return dict.fromkeys(("TMPDIR", "TMP", "TEMP"), str(directory))
+
+
 @dataclass(frozen=True)
 class _Runtime:
     source: _Copy
     directory: Path
     observer: Path
     observer_sha256: str
+    private_temp: bool = False
 
     @property
     def root(self):
@@ -336,6 +341,10 @@ class _Runtime:
             ),
             "AITM_CI_PYTEST_EVIDENCE": str(receipt),
         }
+        if self.private_temp:
+            private = task / "temp"
+            private.mkdir(mode=0o700)
+            env.update(_temp_environment(private))
         if not collect:
             env["AITM_CI_CHILD_EVIDENCE"] = "1"
         args = [
@@ -441,15 +450,21 @@ def _prepare(snapshot, directory, *, inspected_checkout=None):
     observer = directory / "observer" / "pytest_evidence.py"
     observer.parent.mkdir()
     observer.write_bytes(raw)
-    runtime = _Runtime(copy, directory, observer, _digest(raw))
+    runtime = _Runtime(
+        copy,
+        directory,
+        observer,
+        _digest(raw),
+        private_temp=inspected_checkout is not None,
+    )
     uv = shutil.which("uv")
     _checked(uv is not None, "runtime: uv is required")
     env = _env() | {"UV_PROJECT_ENVIRONMENT": str(directory / "venv")}
     if inspected_checkout is not None:
+        env.update(_temp_environment(directory))
         env["UV_CACHE_DIR"] = str(
             _safe_uv_cache(uv, directory, copy.root, inspected_checkout, env)
         )
-        env["TMPDIR"] = str(directory)
         env["UV_PYTHON_DOWNLOADS"] = "never"
     install = _capture(
         [
