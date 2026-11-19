@@ -401,3 +401,26 @@ def test_capability_probe_does_not_execute_checkout_python(tmp_path, monkeypatch
     private = tmp_path / "probe"
     private.mkdir(mode=0o700)
     local._capabilities(private)
+
+
+def test_profile_receipt_validation_imports_without_pythonpath():
+    child = subprocess.run(
+        [
+            sys.executable,
+            "-B",
+            "-E",
+            "-s",
+            "-c",
+            "from types import SimpleNamespace\n"
+            "from tools.ci.tia import local\n"
+            "invocation = SimpleNamespace(returncode=0, seconds=0, receipt=lambda: "
+            "{'collected': [], 'reports': [], 'children': []})\n"
+            "result = local._profile_result(invocation, [])\n"
+            "assert result['errors'] == ['invalid pytest evidence']\n",
+        ],
+        cwd=_SOURCE,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert child.returncode == 0, child.stderr

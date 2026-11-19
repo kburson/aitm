@@ -60,6 +60,7 @@ _CURRENT_MODIFICATIONS = {
 }
 _PORTABLE_MODIFICATIONS = _CURRENT_MODIFICATIONS | {
     b"tools/ci/policy.json",
+    b"tools/ci/python_gate.py",
     b"tools/ci/tia/baseline.py",
     b"tools/ci/tia/inventory.py",
     b"tools/ci/tia/snapshot.py",
