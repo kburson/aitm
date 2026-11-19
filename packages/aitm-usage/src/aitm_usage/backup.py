@@ -594,8 +594,8 @@ def restore(
 ) -> RestoreReceipt:
     """Restore a stopped registered project under its lifecycle and writer guards."""
     # Lifecycle operations use this module for snapshots, while the public
-    # restore entry point requires the same launchd preflight as the CLI.
-    from .install import LaunchControl, restore_for_agent
+    # restore entry point requires the same stopped-service preflight as the CLI.
+    from .install import ServiceSupervisor, restore_for_agent
 
     try:
         if (
@@ -606,7 +606,7 @@ def restore(
         ledger = Ledger.open(_absolute(destination), expected.project_id)
         if ledger.identity != expected:
             raise BackupError("Restore target identity mismatch")
-        return restore_for_agent(ledger, source, LaunchControl())
+        return restore_for_agent(ledger, source, ServiceSupervisor(ledger))
     except (BackupError, WriterActive):
         raise
     except (LedgerError, OSError, ValueError, sqlite3.Error):

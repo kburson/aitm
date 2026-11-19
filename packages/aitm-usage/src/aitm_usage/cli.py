@@ -5,6 +5,7 @@ import sqlite3
 import subprocess
 import sys
 from dataclasses import asdict
+from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -14,10 +15,11 @@ from .backup import backup
 from .export import export_as_of
 from .install import (
     InstallError,
-    LaunchControl,
+    ServiceSupervisor,
     install_wheel,
     prune_version,
     restore_for_agent,
+    start_agent,
     stop_agent,
 )
 from .ledger import (
@@ -286,9 +288,15 @@ def _status_command(args: argparse.Namespace) -> int:
         ledger = open_project(args.legacy_state_dir)
     except (LedgerError, OSError, ValueError, sqlite3.Error):
         ledger = None
-    _print_result(
-        status_report(args.legacy_state_dir.absolute(), ledger), as_json=args.json
+    result = status_report(args.legacy_state_dir.absolute(), ledger)
+    raw = result["heartbeat"]
+    age = (
+        None
+        if raw is None
+        else (datetime.now(UTC) - datetime.fromisoformat(raw)).total_seconds()
     )
+    result["heartbeat_age_seconds"] = age if age is not None and age >= 0 else None
+    _print_result(result, as_json=args.json)
     return 0
 
 
@@ -307,7 +315,7 @@ def _qualify_command(args: argparse.Namespace) -> int:
     except (LedgerError, OSError, ValueError, sqlite3.Error):
         return _collector_failure(args, "ledger-read-gap")
     try:
-        result = verify_installed_activation(receipt, ledger, LaunchControl())
+        result = verify_installed_activation(receipt, ledger, ServiceSupervisor(ledger))
     except QualificationError as error:
         return _collector_failure(args, str(error))
     except (
@@ -332,32 +340,34 @@ def _lifecycle_command(args: argparse.Namespace) -> int:
         if action == "backup":
             payload = {"status": "backed-up", **backup(ledger, args.output).as_dict()}
         else:
-            launchctl = LaunchControl()
+            supervisor = ServiceSupervisor(ledger)
             if action in {"install", "upgrade"}:
                 receipt = install_wheel(
                     ledger,
                     args.wheel,
                     args.interpreter,
-                    launchctl,
+                    supervisor,
                     action=action,
                     expected_sha256=args.wheel_sha256,
                     dry_run=args.dry_run,
                 )
+            elif action == "start":
+                receipt = start_agent(ledger, supervisor, dry_run=args.dry_run)
             elif action == "restore":
-                receipt = restore_for_agent(ledger, args.backup, launchctl)
+                receipt = restore_for_agent(ledger, args.backup, supervisor)
             elif action == "prune":
                 receipt = prune_version(
                     ledger,
                     args.runtime_version,
                     args.wheel_sha256,
                     args.backup,
-                    launchctl,
+                    supervisor,
                     dry_run=args.dry_run,
                 )
             else:
                 receipt = stop_agent(
                     ledger,
-                    launchctl,
+                    supervisor,
                     uninstall=action == "uninstall",
                     dry_run=args.dry_run,
                 )
@@ -473,7 +483,7 @@ def main() -> int:
     collect.set_defaults(handler=_collect_command, continuous=False)
     service = groups.add_parser("service").add_subparsers(required=True)
     service.add_parser("run").set_defaults(handler=_collect_command, continuous=True)
-    for action in ("install", "upgrade", "stop", "uninstall", "prune"):
+    for action in ("install", "upgrade", "start", "stop", "uninstall", "prune"):
         lifecycle = service.add_parser(action)
         lifecycle.add_argument("--dry-run", action="store_true")
         lifecycle.add_argument("--json", action="store_true")

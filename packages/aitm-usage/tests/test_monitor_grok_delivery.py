@@ -365,12 +365,15 @@ def test_pinned_grok_destination_restore_preserves_row_and_lost_ack(
     monkeypatch,
 ):
     class StoppedLaunchControl:
+        def __init__(self, _ledger):
+            pass
+
         plist_directory = tmp_path / "LaunchAgents"
 
         def job(self, label):
             return None
 
-    monkeypatch.setattr(install, "LaunchControl", StoppedLaunchControl)
+    monkeypatch.setattr(install, "ServiceSupervisor", StoppedLaunchControl)
     f = isolated_grok_capture
     config = tmp_path / "registration-input.json"
     config.write_text(
@@ -494,7 +497,7 @@ def test_grok_journal_snapshot_restores_private_rows_and_new_writer_holds(
     monkeypatch,
 ):
     # Exhausting the fixture releases the original physical coordinator lease.
-    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch)
+    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch, request=None)
     f = next(retained)
     prompt_text = "synthetic private prompt"
     user = json.loads(f.rows[1])
@@ -630,7 +633,7 @@ def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
 ):
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch)
+    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch, request=None)
     f = next(retained)
     journal = RoutingJournal(f.writer, f.state)
     monkeypatch.setattr(
