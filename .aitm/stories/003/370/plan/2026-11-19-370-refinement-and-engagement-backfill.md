@@ -5,13 +5,13 @@ Project 24 estimates are in agent-hours. The three delivered stories have retros
 | Story | Size | Estimate hours | Actual hours | Observed ms | Evidence through UTC | Source |
 | --- | --- | ---: | ---: | ---: | --- | --- |
 | [#383](https://github.com/kburson/aitm/issues/383) | M | 4.0 | 0.5355 | 1,927,886 | 2026-11-19T15:03:21.473Z | [Receipt](../../383/attachments/timing/370-native-engagement-backfill-20261119-383.json) |
-| [#385](https://github.com/kburson/aitm/issues/385) | M | 4.0 | 0.0877 | 315,712 | 2026-11-19T16:05:38.411Z | [Receipt](../../385/attachments/timing/370-native-engagement-backfill-20261119-385.json) |
-| [#393](https://github.com/kburson/aitm/issues/393) | S | 3.0 | 0.0551 | 198,498 | 2026-11-19T18:37:56.750Z | [Receipt](../../393/attachments/timing/370-native-engagement-backfill-20261119-393.json) |
+| [#385](https://github.com/kburson/aitm/issues/385) | M | 4.0 | 0.0862 | 310,494 | 2026-11-19T15:56:41.818Z | [Receipt](../../385/attachments/timing/370-native-engagement-backfill-20261119-385.json) |
+| [#393](https://github.com/kburson/aitm/issues/393) | S | 3.0 | 0.0537 | 193,280 | 2026-11-19T18:37:56.750Z | [Receipt](../../393/attachments/timing/370-native-engagement-backfill-20261119-393.json) |
 | [#398](https://github.com/kburson/aitm/issues/398) | M | 3.5 | 0.0020 | 7,136 | 2026-11-19T21:12:30.572Z | [Receipt](../../398/attachments/timing/370-native-engagement-backfill-20261119-398.json) |
 
-Total observed engagement across the four stories was **0.6803 agent-hours** (2,449,232 ms). All four Actual values have partial coverage. #398 covers attributable scoping and filing so far.
+Total observed engagement across the four stories was **0.6774 agent-hours** (2,438,796 ms). All four Actual values have partial coverage. #398 covers attributable scoping and filing so far.
 
-Actual is the union of attributable completed Codex reasoning, progress and command intervals per agent. Independent agents contribute separately. The #383 total includes the coordinator, snapshot implementer, cross-platform qualifier, and source reviewer. Shared handoff work was counted only where an action could be assigned to one story. Explicit waits, passive hosted run watches, owner wait, unbound gaps, and lifecycle dates were excluded. Local execution and bounded tool calls count when attributable. Raw sessions and unverified work are outside the receipts. Calculate hours from the exact milliseconds and round once to four decimal places. These partial observations cannot calibrate the estimates.
+Actual is the union of attributable completed Codex reasoning, progress and command intervals per agent. Independent agents contribute separately. The #383 total includes the coordinator, snapshot implementer, cross-platform qualifier, and source reviewer. Shared handoff work was counted only where an action could be assigned to one story. The dashboard excluded the 5.218-second same-agent overlap between #385 closure and #393 intake from both stories. Explicit waits, passive hosted run watches, owner wait, unbound gaps, and lifecycle dates were excluded. Local execution and bounded tool calls count when attributable. Raw sessions and unverified work are outside the receipts. Calculate hours from the exact milliseconds and round once to four decimal places. These partial observations cannot calibrate the estimates.
 
 ## Sizing basis
 
