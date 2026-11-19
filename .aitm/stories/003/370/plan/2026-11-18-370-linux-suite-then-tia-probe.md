@@ -95,6 +95,8 @@ External Grok sessions remain supported. The hook walks its own ancestry up to e
 
 Verify a real portable start, status and stop across controller instances, the mode-0600 heartbeat, wrong-incarnation stop refusal, missing or replaced PID records during normal transitions, and refusal of a reaped child. Verify stale records, legacy registration, writer exclusion, and existing recovery and restore tests. Exercise Linux external Grok staging and hook ancestry together, including a changed incarnation refusal. Keep the required suite on Ubuntu. Use macOS to check portable service execution and the Darwin Grok adapter.
 
+Delivered to trunk in [PR #381](https://github.com/kburson/aitm/pull/381). The [delivery sign-off](../../374/retro/2026-11-18-374-delivery.md) records the exact Ubuntu trunk run and Grok's review.
+
 
 ### Watch
 
