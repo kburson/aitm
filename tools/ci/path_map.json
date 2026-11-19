@@ -1,0 +1,60 @@
+{
+  "schema": "aitm.path-map/v2",
+  "full_prefixes": [
+    ".github/",
+    "tools/ci/"
+  ],
+  "full_names": [
+    ".coveragerc",
+    ".pytest.toml",
+    ".ruff.toml",
+    "conftest.py",
+    "coverage.py",
+    "pyproject.toml",
+    "pytest.ini",
+    "pytest.py",
+    "pytest.toml",
+    "ruff.toml",
+    "setup.cfg",
+    "sitecustomize.py",
+    "tox.ini",
+    "usercustomize.py",
+    "uv.lock"
+  ],
+  "children": {
+    "cli-help": "tools/ci/tests/test_cli_evidence.py",
+    "service-one-shot": "packages/aitm-usage/tests/test_service.py"
+  },
+  "rules": [
+    {
+      "prefix": "README.md",
+      "tests": [],
+      "reason": "Repository overview only. File and quality checks still run."
+    },
+    {
+      "prefix": "docs/blocked-by.md",
+      "tests": [],
+      "reason": "Operator documentation only. File and quality checks still run."
+    },
+    {
+      "prefix": "packages/aitm-usage/src/aitm_usage/ledger.py",
+      "reason": "Shared Ledger consumers span ownership, storage, admission and service tests."
+    },
+    {
+      "prefix": "packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok_scope_receipts.py"
+      ],
+      "reason": "The hook runs through main and bind_grok_prompt in test_grok_scope_receipts.py, including process ancestry and receipt binding.",
+      "consumer_digest": "2639670c519b121e314a047116c9e175a070d67446469fb464f39bd629d2daee"
+    },
+    {
+      "prefix": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+      "tests": [
+        "packages/aitm-usage/tests/test_grok.py"
+      ],
+      "reason": "test_grok.py reads the headless rows and reconciles their request IDs and usage against native Grok observations.",
+      "consumer_digest": "e77fba4489d2f052e5f3f580cdeef5800931605642b2b1abddef227e775961a0"
+    }
+  ]
+}
