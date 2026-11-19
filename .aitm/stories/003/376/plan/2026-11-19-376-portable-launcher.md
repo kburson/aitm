@@ -6,3 +6,7 @@
 2. Use a portable suite covering the current product modules and all six Ubuntu helper test targets. Keep Darwin's exact procfs skip handling local and scoped by node and reason. Remove the retired firmlink skip from hosted policy.
 3. Read the Ubuntu baseline runtime and image from authenticated evidence. Keep historic Darwin evidence support. Preserve a reported filesystem value if the raw authenticated capability records one. The frozen #377 workflow records OS, runtime and image and omits filesystem. Do not infer the runner filesystem from a separate machine.
 4. Keep the hosted workflow and selector bytes, and review the exact changes that preserve the #354 anchor and release scope. Verify the actual launcher and #355 advisory on both platforms, run trusted CI, then replay the delivered trunk commit before closing #376 and its parent.
+
+## Hosted verification
+
+[PR #382 attempt 1](https://github.com/kburson/aitm/actions/runs/44527861244/attempts/1) passed both Python lanes, quality and file checks. The base used `ubuntu24:20261116.133.1` and the candidate used `ubuntu24:20261111.370.1`. Replaying the collector on the original artifacts reproduced the sole failure `missing or drifted trusted base identity`. The two selection documents were identical. Product coverage was 14,738 of 16,252 lines and helper coverage was 1,042 of 1,114. The full workflow was rerun on the same refs to obtain fresh producer evidence without weakening the identity check.
