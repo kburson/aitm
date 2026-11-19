@@ -412,39 +412,25 @@ def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch
     assert ledger.as_of().sequence == 1
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="uses macOS inherited ACL")
-def test_backup_and_restore_reject_inherited_acl(project, tmp_path):
+def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_acl):
     from aitm_usage.backup import BackupError, backup, restore
 
     _, ledger, _ = project
     blocked = tmp_path / "inheriting"
     blocked.mkdir(mode=0o700)
-    subprocess.run(
-        [
-            "/bin/chmod",
-            "+a",
-            "everyone allow list,read,file_inherit,directory_inherit",
-            blocked,
-        ],
-        check=True,
-    )
-    try:
-        target = blocked / "refused"
-        with pytest.raises(BackupError):
-            backup(ledger, target)
-        assert not target.exists()
+    grant_extra_acl(blocked, "system.posix_acl_default")
+    target = blocked / "refused"
+    with pytest.raises(
+        BackupError, match="Invalid private backup source or destination"
+    ):
+        backup(ledger, target)
+    assert not target.exists()
 
-        bundle = tmp_path / "backup"
-        backup(ledger, bundle)
-        target.mkdir(mode=0o700)
-        assert "inherited" in subprocess.check_output(
-            ["/bin/ls", "-lde", target], text=True
-        )
-        bundle.rename(target / "backup")
-        with pytest.raises(BackupError):
-            restore(target / "backup", ledger.root, ledger.identity)
-    finally:
-        subprocess.run(["/bin/chmod", "-RN", blocked], check=True)
+    bundle = tmp_path / "backup"
+    backup(ledger, bundle)
+    bundle.rename(blocked / "backup")
+    with pytest.raises(BackupError, match="Invalid private restore bundle or target"):
+        restore(blocked / "backup", ledger.root, ledger.identity)
 
 
 def _wheel(parent, suffix, *, incompatible=False, legacy=False):
@@ -540,7 +526,12 @@ class _FakeLaunchControl:
         return job
 
     def process(self, pid):
-        return install._process_identity(pid)
+        if sys.platform == "darwin":
+            return install._process_identity(pid)
+        if self.child is None or self.child.pid != pid or self.child.poll() is not None:
+            return None
+        executable = (Path("/proc") / str(pid) / "exe").resolve(strict=True)
+        return install._ProcessIdentity(pid, self.started, executable)
 
     def is_disabled(self, label):
         return self.disabled
@@ -585,6 +576,7 @@ class _FakeLaunchControl:
             if mode == "fresh"
             else [sys._base_executable, "-I", "-S", "-c", "import time; time.sleep(60)"]
         )
+        self.started = datetime.now(UTC)
         self.child = subprocess.Popen(
             argv,
             env=install._ENVIRONMENT,
@@ -666,7 +658,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert installed["wheel_sha256"] == first_digest
     assert installed["poll_interval_seconds"] == 15
     assert len(control.bootstraps) == 1
-    process = install._process_identity(control.loaded.pid)
+    process = control.process(control.loaded.pid)
     assert process.pid == control.child.pid
     assert process.executable == interpreter
     assert process.started < datetime.fromisoformat(installed["heartbeat"])
@@ -986,7 +978,7 @@ def test_same_pid_with_different_start_cannot_certify_health(
     agent = install._Agent(ledger, launch_control)
     program = launch_control.loaded.program
     runtime = install._runtime_for(agent, program)
-    process = install._process_identity(launch_control.loaded.pid)
+    process = launch_control.process(launch_control.loaded.pid)
     changed = replace(process, started=process.started + timedelta(microseconds=1))
     inspections = iter([process, changed])
     monkeypatch.setattr(launch_control, "process", lambda pid: next(inspections))
@@ -1006,19 +998,28 @@ def test_backup_refuses_output_inside_replaceable_store(project):
     assert not directory.exists()
 
 
-def test_backup_refuses_store_through_physical_path_alias(project):
-    from aitm_usage.backup import BackupError, backup
-    from aitm_usage.ledger import _validated_path
+def test_backup_refuses_store_through_physical_path_alias(
+    project, tmp_path, monkeypatch
+):
+    from aitm_usage import backup as recovery
 
     _, ledger, _ = project
     store = ledger.database_path.parent
-    alias = Path("/System/Volumes/Data") / store.relative_to("/")
-    if not alias.is_dir() or not alias.samefile(store) or alias == store:
-        pytest.skip("The host does not expose the matching APFS firmlink path")
-    _validated_path(alias, directory=True)
-    with pytest.raises(BackupError, match="overlaps"):
-        backup(ledger, alias / "nested-backup")
-    assert not (store / "nested-backup").exists()
+    alias = tmp_path / "alias"
+    alias.mkdir(mode=0o700)
+    destination = alias / "nested-backup"
+    validate = recovery._validated_path
+
+    def physical_ancestry(path, **options):
+        ancestry = validate(path, **options)
+        if path == destination:
+            return (*ancestry[:-1], (store.stat().st_dev, store.stat().st_ino))
+        return ancestry
+
+    monkeypatch.setattr(recovery, "_validated_path", physical_ancestry)
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.backup(ledger, destination)
+    assert not destination.exists()
 
 
 def test_restore_preserves_backup_inside_replaceable_store(project, tmp_path):

@@ -127,6 +127,14 @@ import venv
 from pathlib import Path
 
 class CollectorEnv(venv.EnvBuilder):
+    def ensure_directories(self, env_dir):
+        context = super().ensure_directories(env_dir)
+        # CPython creates this alias on 64-bit Linux. The launcher uses lib.
+        alias = Path(env_dir) / 'lib64'
+        if sys.platform == 'linux' and alias.is_symlink() and os.readlink(alias) == 'lib':
+            alias.unlink()
+        return context
+
     def setup_python(self, context):
         os.symlink(sys.executable, Path(context.bin_path) / 'python')
 

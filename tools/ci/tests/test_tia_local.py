@@ -10,6 +10,7 @@ from tia import local
 from tia.snapshot import LocalRequest, resolve
 
 _SOURCE = Path(__file__).resolve().parents[3]
+_PYTHONPATH = os.pathsep.join(map(str, (_SOURCE, _SOURCE / "tools/ci")))
 _PRODUCT = "packages/aitm-usage"
 _SAMPLE = f"{_PRODUCT}/src/aitm_usage/sample.py"
 _ACCOUNTING = f"{_PRODUCT}/tests/test_accounting.py"
@@ -83,8 +84,12 @@ def checkout(tmp_path):
         _node(repo, node, "service-one-shot" if node == _SERVICE else None)
     _node(repo, _CLI, "cli-help")
     _node(repo, _OTHER)
-    for helper in policy["helpers"]:
-        _node(repo, "tools/ci/tests/test_" + Path(helper).name + "::test_helper")
+    suites = json.loads((repo / "tools/ci/tia/suites.json").read_bytes())
+    targets = suites["profiles"]["ci-helpers"]["targets"]
+    policy["helpers"] = [target.replace("tests/test_", "") for target in targets]
+    _write(repo, "tools/ci/policy.json", json.dumps(policy))
+    for target in targets:
+        _node(repo, target + "::test_helper")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-qm", "fixture")
     return repo, _git(repo, "rev-parse", "HEAD")
@@ -92,18 +97,21 @@ def checkout(tmp_path):
 
 def _cli(repo, base, flag, **injected):
     return subprocess.run(
-        [sys.executable, "-m", "tools.ci.tia.local", "--base", base, flag],
+        [
+            sys.executable,
+            "-c",
+            "from tools.ci.tia import local; local._capabilities = lambda _: None; "
+            "raise SystemExit(local.main())",
+            "--base",
+            base,
+            flag,
+        ],
         cwd=repo,
-        env={**os.environ, "PYTHONPATH": str(_SOURCE), **injected},
+        env={**os.environ, "PYTHONPATH": _PYTHONPATH, **injected},
         text=True,
         capture_output=True,
         check=False,
     )
-
-
-def _native():
-    if sys.platform != "darwin" or shutil.which("uv") is None:
-        pytest.skip("requires the local Darwin APFS and uv route")
 
 
 def test_frozen_copy_rejects_changed_bytes_and_added_inputs(checkout, tmp_path):
@@ -130,7 +138,6 @@ def test_frozen_copy_rejects_changed_bytes_and_added_inputs(checkout, tmp_path):
 
 
 def test_local_dirty_snapshot_never_mints_hosted_proof(checkout):
-    _native()
     repo, base = checkout
     _write(repo, _SAMPLE, "VALUE = 2\n")
     observed = _cli(
@@ -156,7 +163,6 @@ def test_local_dirty_snapshot_never_mints_hosted_proof(checkout):
 
 
 def test_selected_run_reports_real_failure_and_plan_identity(checkout):
-    _native()
     repo, base = checkout
     _write(repo, _SAMPLE, "VALUE = 0\n")
     observed = _cli(repo, base, "--run")
@@ -175,9 +181,9 @@ def test_selected_run_reports_real_failure_and_plan_identity(checkout):
 
 
 def test_selection_failure_runs_entire_applicable_suite(checkout, monkeypatch, capsys):
-    _native()
     repo, base = checkout
     _write(repo, _SAMPLE, "VALUE = 2\n")
+    monkeypatch.setattr(local, "_capabilities", lambda _: None)
     monkeypatch.chdir(repo)
 
     def broken(*args):
@@ -203,9 +209,9 @@ def test_selection_failure_runs_entire_applicable_suite(checkout, monkeypatch, c
 
 
 def test_stops_on_checkout_drift_before_execution(checkout, monkeypatch, capsys):
-    _native()
     repo, base = checkout
     _write(repo, _SAMPLE, "VALUE = 2\n")
+    monkeypatch.setattr(local, "_capabilities", lambda _: None)
     monkeypatch.chdir(repo)
     build = local._plan
 
@@ -225,7 +231,11 @@ def test_stops_on_checkout_drift_before_execution(checkout, monkeypatch, capsys)
 def test_unsupported_capability_refuses_before_pytest(checkout, monkeypatch, capsys):
     repo, base = checkout
     monkeypatch.chdir(repo)
-    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
+
+    def unavailable(_private):
+        raise local.Refusal("capability: fixture unavailable")
+
+    monkeypatch.setattr(local, "_capabilities", unavailable)
     assert local.main(["--base", base, "--run"]) == 2
     data = json.loads(capsys.readouterr().out)
     assert data["plan"]["mode"] == "unavailable"
@@ -234,7 +244,6 @@ def test_unsupported_capability_refuses_before_pytest(checkout, monkeypatch, cap
 
 
 def test_missing_child_is_not_a_local_pass(checkout):
-    _native()
     repo, base = checkout
     _write(repo, _CLI.split("::")[0], "def test_usage_console_help():\n    pass\n")
     observed = _cli(repo, base, "--run")
@@ -256,7 +265,7 @@ def test_bad_base_ref_reports_unavailable(checkout):
     observed = subprocess.run(
         [sys.executable, "-m", "tools.ci.tia.local", "--base=--not-a-ref", "--plan"],
         cwd=repo,
-        env={**os.environ, "PYTHONPATH": str(_SOURCE)},
+        env={**os.environ, "PYTHONPATH": _PYTHONPATH},
         text=True,
         capture_output=True,
         check=False,
@@ -277,7 +286,6 @@ def test_copy_recreates_a_relative_symlink_in_its_own_directory(checkout, tmp_pa
 
 
 def test_candidate_collection_that_mutates_copy_is_refused(checkout):
-    _native()
     repo, base = checkout
     _write(
         repo,
@@ -296,7 +304,6 @@ def test_candidate_collection_that_mutates_copy_is_refused(checkout):
 
 
 def test_nested_pytest_cache_stays_outside_bound_source(checkout, tmp_path):
-    _native()
     repo, base = checkout
     helper = "tools/ci/tests/test_python_gate.py"
     _write(
@@ -316,9 +323,7 @@ def test_nested_pytest_cache_stays_outside_bound_source(checkout, tmp_path):
     assert not cache.resolve().is_relative_to(runtime.root)
 
 
-def test_native_fixtures_avoid_the_shared_temporary_ancestor(
-    checkout, tmp_path, monkeypatch, capsys
-):
+def test_fixtures_use_a_private_cache_ancestor(checkout, tmp_path, monkeypatch, capsys):
     repo, base = checkout
     cache = tmp_path / "home/Library/Caches"
     cache.mkdir(parents=True)

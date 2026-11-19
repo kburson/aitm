@@ -436,6 +436,25 @@ def test_signed_payload_claims_do_not_override_trusted_evidence(
         client.check()
 
 
+@pytest.mark.parametrize("runtime", ["3.13.9", "3.13.8"])
+def test_ubuntu_evidence_requires_the_pinned_runtime(
+    client, verified_signature, runtime
+):
+    def mutate(report):
+        report["platform"] = {
+            "os": "Linux",
+            "image": "ubuntu24:20261118.1",
+            "runtime": runtime,
+        }
+
+    override_signed_report(client, verified_signature, mutate)
+    if runtime == "3.13.9":
+        assert client.check()["run_id"] == RUN
+    else:
+        with pytest.raises(Hold, match="platform evidence"):
+            client.check()
+
+
 def test_both_unrounded_coverage_floors_accept_exactly_ninety(
     client, verified_signature
 ):
