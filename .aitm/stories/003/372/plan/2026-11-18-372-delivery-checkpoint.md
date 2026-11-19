@@ -1,0 +1,9 @@
+# #372 delivery checkpoint
+
+- [#377](../../377/retro/2026-11-18-377-delivery.md) is delivered and closed. The required Python jobs run on Ubuntu 24.04 with CPython 3.13.9. The existing exact-base, coverage, child-process, and attestation gate passed before merge and on the delivered workflow.
+- [#373](https://github.com/kburson/aitm/issues/373) passed independent review, the Ubuntu PR run, and the trusted verifier. [PR #380](https://github.com/kburson/aitm/pull/380) merged. Post-merge verification is recorded in the story sign-off.
+- [#374](https://github.com/kburson/aitm/issues/374) needs an explicit product decision about externally launched Grok. The service supervisor can authenticate and stop a child it owns. The current Grok marker path also verifies an external process's incarnation and executable in both admission and the hook. A service PID file cannot authenticate that external ancestor. Keeping that workflow requires a separate platform-backed process identity path. Requiring a managed launch changes which Grok sessions can mark scope.
+- [#375](https://github.com/kburson/aitm/issues/375) needs an explicit ACL decision. The stock macOS ancestor carries a deny-delete ACE under the default control root. Rejecting it would prevent regular state admission there. An unavailable ACL reader also leaves enforcement unknown. Accepting a stock deny-only ancestor policy while refusing both grants and inconclusive inspection preserves current Mac operation. Rejecting all ACLs requires a separately designed clean control path for those Macs.
+- [#376](https://github.com/kburson/aitm/issues/376) retains the recorded sequencing constraint for the local launcher. [PR #369](https://github.com/kburson/aitm/pull/369) is still open.
+
+The epic remains open while the supervisor, ACL policy, and launcher work are pending.

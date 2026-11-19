@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 372
 title: "Run the required suite on Linux"
 kind: "epic"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/372"
 parent: null
 children: [373, 374, 375, 376, 377]
 blocking: []
 blocked-by: []
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T01:20:00Z"
+updated: "2026-11-19T03:29:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-372-delivery-checkpoint.md"], "attachments": []}
 expansions: []
 trips: []
 ---
