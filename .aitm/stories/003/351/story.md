@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 351
 title: "Select the tests affected by uncommitted work"
 kind: "epic"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/351"
 parent: null
 children: [352, 353, 354, 355, 368]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T20:56:33Z"
-last-branch: "planning"
+updated: "2026-11-19T13:57:57Z"
+last-branch: "trunk"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
@@ -58,7 +58,7 @@ Development does not start from this epic. Codex picks up the child stories afte
 
 #354 may proceed to feature planning. Run SAR on its implementation plan before Develop. #355 needs #354's delivered interface and its own reviewed qualification plan for the process boundary.
 
-## Develop
+## Historical development checkpoint
 
 Epic planning and deep-dive assessment are complete. Project 24 records Rank 430, Priority P2, Size Feature, and all five children. #354 is delivered. The owner accepted the #368 HOLD and removed it as a blocker. #355 is open in develop for the advisory run. #351 stays open until #355 delivers that run. GitHub Project status advanced from Planning to Dev after the issue-planning and metadata preflight.
 
@@ -70,3 +70,7 @@ Epic planning and deep-dive assessment are complete. Project 24 records Rank 430
 
 The platform-agnostic selector is the independent epic [#370](../370/story.md), investigated by [#371](../371/story.md). One Python program selects the affected tests. #351 still closes when #355 delivers the advisory command. This epic does not move that command off its accepted scope.
 
+
+## Verified delivery
+
+The accepted cooperative advisory scope passed on the current Linux and Darwin trunk baseline. GitHub #351 is closed as Completed and Project 24 is Done. [Delivery sign-off](retro/2026-11-19-351-delivery.md).

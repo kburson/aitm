@@ -107,3 +107,17 @@ Owner correction on 2026-11-19T01:20:00Z. GitHub is limiting macOS CI instances.
 | #376 | story | 530 | Run product tests on the Linux runner | #372 | #377 |
 
 The filed table above stays as the record of the first filing. Ranks 480 and 540 through 660 stay. #133 stays done and does not gain these issues as children. There is still no blocker edge between #372 and #370.
+
+## Linux delivery checkpoint
+
+[#372](../../003/372/retro/2026-11-19-372-delivery.md) is complete. The exact trunk baseline is `5023860969b719989575ad2a07666a91c909ec12` with tree `3fb7143978706746cebdedf31f51a98c306e16db`. Required `python-base` and `python` PR jobs use `ubuntu-24.04`. The full [Ubuntu trunk run](https://github.com/kburson/aitm/actions/runs/44536101270) passed 1,525 behavior tests and 251 CI tool tests. The same launcher passed on Linux and macOS using CPython 3.13.9, Git with offline snapshot controls, and the private mode, no-follow, and exclusive-rename capability checks. The authenticated hosted record supplies the Ubuntu image and runtime and omits filesystem metadata.
+
+[#351](../../003/351/retro/2026-11-19-351-delivery.md) is closed. Its shipped #354/#355 command handles the pinned, comment-append Grok hook scope with cooperative receipts on both systems. The local replay assigned 38 Linux tests and 36 Darwin tests. This is bounded evidence for the probe and carries no claim of general candidate inventory, impact completeness or protected execution.
+
+The delivered #103/#133 PR path map remains authoritative with full fallback under uncertainty. Its bytes match #344. For an ASCII comment append to the current audited Grok hook, the hosted selector returns full because the consumer digest changed. The local pinned advisory can still execute its separately qualified assignment. Preserve that distinction in the probe.
+
+### Next pickup
+
+**[#371](../../003/371/story.md), Rank 550, is the next story.** The research spike under #370 should audit the actual post-#372 tree, distinguish Python source analysis from Git and operating-system capabilities, and name the remaining gaps for one Python selector. Compare the staging area, HEAD, or PR head to the appropriate branch divergence point. Check whether the current file-level AST graph can explain test-to-application paths, and document unresolved imports, pytest inputs, and the conservative fallback. Use Linux for the reference evidence and macOS as a portability cross-check. Preserve the accepted scope for later Windows facilities.
+
+The accepted finding defines the follow-on #370 probe feature. The probe should retain exact change and dependency evidence, compare its selected inventory and outcomes against a full Ubuntu control, and fall back to the full applicable suite when evidence is incomplete. Review that result before a separate story changes the live PR gate. #356 starts with #357 at Rank 570 and retains its own category-shard sequence. #362 retains its separate warning scope and the #361 scheduled-run prerequisite for #365. These pickups remain independent of the closed #133 epic.

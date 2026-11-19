@@ -10,7 +10,7 @@ children: [138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151,
 blocking: []
 blocked-by: []
 created: "2026-11-10T15:32:13Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-19T13:57:57Z"
 last-branch: "planning"
 estimate: {"agent-hours": 146.5, "size": "XL"}
 priority: "P2"
@@ -33,6 +33,10 @@ repaired trunk. Agents continue working, pushing and integrating into
 non-default parents throughout the hold.
 
 This is a follow-on to the delivered [#103 CI quality gates](../103/story.md).
+
+## Linux follow-on plan
+
+#133 closed on the delivered hosted PR path-map scope. #372 moved required CI to Ubuntu and #351 delivered its bounded local advisory run. #371 is the next pickup under #370. [Current Linux plan](plan/2026-11-16-133-decomposition.md#linux-delivery-checkpoint).
 
 ## Current Stop the Line amendment
 
