@@ -6,16 +6,16 @@ kind: "epic"
 state: "backlog"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
-children: [371, 383]
+children: [371, 383, 385]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T14:08:03Z"
+updated: "2026-11-19T15:30:20Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-370-linux-suite-then-tia-probe.md", "plan/2026-11-19-370-hosted-integration-decision.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -57,3 +57,7 @@ Development does not start from this epic.
 ## Implementation handoff
 
 The accepted [#371 finding](../371/plan/2026-11-19-371-portable-python-tia-findings.md) opens [#383](../383/story.md) for the advisory index, HEAD and PR probe. Hosted gate integration follows separate qualification.
+
+## Hosted integration decision
+
+The portable advisory probe shipped in [#383](../383/story.md). The [decision](plan/2026-11-19-370-hosted-integration-decision.md) holds promotion to the required gate and advances [#385](../385/story.md) for hosted Ubuntu shadow qualification. That story compares the graph assignment with exact full-suite outcomes and the current path map on the same PR trees. #370 remains open.
