@@ -1,0 +1,386 @@
+{
+  "schema": "aitm.tia-advisory-trunk-readback/v1",
+  "platforms": [
+    {
+      "platform": "ubuntu",
+      "mode": "full",
+      "selected_count": 1776,
+      "trunk_commit": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+      "trunk_tree": "875bb2e29df63abaa39c874215658bf3f9c9f6c8",
+      "qualified_inventory_equal": true,
+      "selected_nodeids_sha256": "ec1c85737a121efa3834d10cb66cd1291d09f5e06698d60b068a36848f5dc755",
+      "wrong_pr_identity_refused": true,
+      "endpoint_identities": {
+        "head": {
+          "after": "eefdde7df58edcb6c325ddf49ee54b5264d4c6440dd30b4fbbe6a19353fbe2f4",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "8b17669ca20d94cc6c6f7ec69e4ba1c1fe0d6faa7d2dbaed6d792137e2ccb632",
+          "endpoint": {
+            "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+            "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+          },
+          "input": "head",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.51.2"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "head",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": null
+          }
+        },
+        "index": {
+          "after": "17afa2d2c31d2546d70d72cc61e56ce0bf3d8ad02305152193d4bce64a76045a",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "2954c3a049defb728ab8955243fb6d766be5258f246d606949f0ee7a7773fadf",
+          "endpoint": {
+            "index_digest": "a5d88a6a887588737335b8512d2409726940bca88ec7784c67ff0ae8deaa021a"
+          },
+          "input": "index",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.51.2"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "index",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": null
+          }
+        },
+        "pr": {
+          "after": "c8ec19a7ef3fe59699080af8900ddbe21866477d42d05ea7c927c599efb824da",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "d1298f0dc4c072c3e61d6efc0d3a94a3157293e3f198de93e9ef192748243ee1",
+          "endpoint": {
+            "commit": "be39d49ccf6d5e48dc1f10b2b2ff8d4606efc12b",
+            "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+          },
+          "input": "pr",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.51.2"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "pr",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": {
+              "commit": "be39d49ccf6d5e48dc1f10b2b2ff8d4606efc12b",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            }
+          }
+        }
+      }
+    },
+    {
+      "platform": "macos",
+      "mode": "full",
+      "selected_count": 1771,
+      "trunk_commit": "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+      "trunk_tree": "875bb2e29df63abaa39c874215658bf3f9c9f6c8",
+      "qualified_inventory_equal": true,
+      "selected_nodeids_sha256": "607200911bed25ae6ff535df6925d6b23b1a11679773c832dc1c7dad7d16ee38",
+      "wrong_pr_identity_refused": true,
+      "endpoint_identities": {
+        "head": {
+          "after": "09d0eebcd2e8514739fc719446c18fcaab7e10358540497d5964a870e7630b01",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "2d5a4f667ffeef4a59281f70a8b9f0486e9c32fd47d0ce6f4ee5c5cf5b21992e",
+          "endpoint": {
+            "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+            "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+          },
+          "input": "head",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.54.0 (Apple Git-157)"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "head",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": null
+          }
+        },
+        "index": {
+          "after": "dca253e4c238309557534eb56eeaec43e7adb68f561d9fe5ad37222f7622a3a6",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "af4a057af55f628f38d3446660e1323f05434f582cf09687cf1dc641801442a0",
+          "endpoint": {
+            "index_digest": "a5d88a6a887588737335b8512d2409726940bca88ec7784c67ff0ae8deaa021a"
+          },
+          "input": "index",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.54.0 (Apple Git-157)"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "index",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": null
+          }
+        },
+        "pr": {
+          "after": "637dc090eb8d51de0ef3b1e9d86176682025a499a091e1efa62c9571a399c6a5",
+          "base": "5023860969b719989575ad2a07666a91c909ec12",
+          "base_tree": "3fb7143978706746cebdedf31f51a98c306e16db",
+          "before": "c1752086209dcee2b178e92e3c385909e6711419128b9c15dad3790d4265b0c1",
+          "endpoint": {
+            "commit": "be39d49ccf6d5e48dc1f10b2b2ff8d4606efc12b",
+            "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+          },
+          "input": "pr",
+          "repository": "local/checkout",
+          "source": {
+            "git": {
+              "config_scope": "repository-only",
+              "diff_flags": [
+                "--raw",
+                "--no-abbrev",
+                "-z",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-O/dev/null",
+                "--no-relative",
+                "--ignore-submodules=none",
+                "--find-renames=50%",
+                "-l1000"
+              ],
+              "flags": [
+                "--no-replace-objects",
+                "--no-lazy-fetch",
+                "--no-optional-locks",
+                "-c",
+                "core.fsmonitor=false",
+                "-c",
+                "core.untrackedCache=false",
+                "-c",
+                "core.ignoreCase=false",
+                "-c",
+                "core.precomposeUnicode=false",
+                "-c",
+                "protocol.allow=never"
+              ],
+              "object_format": "sha1",
+              "version": "git version 2.54.0 (Apple Git-157)"
+            },
+            "head": {
+              "commit": "e199b1608cbba73d59a7f3717328d796e64714fd",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            },
+            "input_kind": "pr",
+            "merge_base": {
+              "commit": "5023860969b719989575ad2a07666a91c909ec12",
+              "tree": "3fb7143978706746cebdedf31f51a98c306e16db"
+            },
+            "parent_commit": "5023860969b719989575ad2a07666a91c909ec12",
+            "tested": {
+              "commit": "be39d49ccf6d5e48dc1f10b2b2ff8d4606efc12b",
+              "tree": "d39c32b176442180a287a664c105c37778ae2d1a"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "trunk_ci": {
+    "url": "https://github.com/kburson/aitm/actions/runs/44548784849",
+    "attempt": 1,
+    "status": "success",
+    "mode": "full",
+    "product_count": 1525,
+    "product_nodeids_sha256": "3b88af7ea9d7a6bba72f70d32e9471540307fa9bec2efbe4bef233d112b5179e",
+    "matches_authenticated_pr": true
+  },
+  "hosted_controls_identical": true,
+  "trunk_rules_readback_identical": true
+}
