@@ -167,3 +167,11 @@ The delivered path map stays in place until the probe's list is accepted. The pr
 - Changing #133, #351's close condition, or the #355 advisory command.
 - A systemd unit or a launchd plist. The supervisor is in-process. OS login items are a later epic.
 - A macOS cloud job. Darwin-only tests are rewritten onto the portable fixtures so the required suite has nothing left that waits on a Mac.
+
+## Owner correction: remove the Mac tests first
+
+Owner direction on 2026-11-19T01:20:00Z, after the five stories were filed. GitHub is limiting macOS CI instances. If the tests that require a Mac stay on the required path, #373, #374, #375, and #376 cannot pass CI. #377 is rank 490 and blocks those four.
+
+#377 also moves `python-base` and `python` to `ubuntu-24.04`, deletes the `diskutil`, `plutil`, APFS, and `xcodebuild` steps, and stops `python_gate.py` and `verify_pr.py` from failing a result that is not Darwin APFS. Deleting the tests while those jobs stay on `macos-26` would still queue the pull request. The jobs replace `shasum` and the macOS `gh` archive with `sha256sum` and the Linux `gh` archive. `local.py` stays out of #377 because pull request #369 already edits it.
+
+#376 keeps `suites.json`, `baseline.py`, `local.py`, the snapshot git path, and the `policy.json` firmlink skip. The `local.py` edit still starts after pull request #369 merges. That wait is a note. The slice list in Order stays as the record of the accepted plan. The backlog order is the table in the decomposition addendum.

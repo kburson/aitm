@@ -10,7 +10,7 @@ children: [371]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-19T01:20:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -35,6 +35,8 @@ The job is the test list for a change. Compare the staging area, or HEAD, with t
 #371 analyzes the Python language facility that makes one source program cross-platform, and names every current TIA binding that leaves that facility.
 
 The Linux suite cleanup is [#372](../372/story.md). It comes before this probe. The order is a note. There is no blocker edge.
+
+Inside that cleanup, [#377](../377/story.md) is first. It removes the tests that require a Mac and moves the required Python jobs to Linux. #373, #374, #375, and #376 wait on #377. GitHub is limiting macOS CI instances, so those later stories cannot pass CI until #377 lands.
 
 The owner accepted the order on 2026-11-18. First remove the macOS host requirements so every required test runs on Linux in the cloud. Then this epic's probe builds the test list for a staging area, a commit, or a pull request. [Accepted plan](plan/2026-11-18-370-linux-suite-then-tia-probe.md).
 

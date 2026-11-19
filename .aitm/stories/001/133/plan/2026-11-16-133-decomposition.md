@@ -92,3 +92,18 @@ Owner request on 2026-11-18T23:38:27Z. Filed #372 Run the required suite on Linu
 | #377 | story | 530 | Remove tests that require a Mac | #372 | #373, #376 |
 
 #370, #371, and #356 through #366 moved up by 60 so the gap stays 10. Their ranks are now 540 through 660. This order is a note, not a blocker edge. The Linux suite cleanup comes before the TIA probe. #133 stays done and does not gain these issues as children.
+
+## Mac tests come off first
+
+Owner correction on 2026-11-19T01:20:00Z. GitHub is limiting macOS CI instances. The required `python-base` and `python` jobs run on `macos-26`, so a story that still needs those jobs cannot pass CI. #377 is first. It removes the tests that require a Mac and moves those two jobs to `ubuntu-24.04`. #373, #374, #375, and #376 wait on #377.
+
+| Issue | Kind | Rank | Title | Parent | Blocked by |
+| --- | --- | --- | --- | --- | --- |
+| #372 | epic | 480 | Run the required suite on Linux |  | — |
+| #377 | story | 490 | Remove tests that require a Mac | #372 | — |
+| #373 | story | 500 | Prove private ledger custody without APFS | #372 | #377 |
+| #374 | story | 510 | Supervise the service without launchctl | #372 | #377 |
+| #375 | story | 520 | Refuse an extra file grant without a macOS ACL | #372 | #377 |
+| #376 | story | 530 | Run product tests on the Linux runner | #372 | #377 |
+
+The filed table above stays as the record of the first filing. Ranks 480 and 540 through 660 stay. #133 stays done and does not gain these issues as children. There is still no blocker edge between #372 and #370.
