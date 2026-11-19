@@ -617,12 +617,21 @@ def test_inherited_macos_grant_refused_before_private_creation(
     assert list(parent.iterdir()) == []
 
 
-def test_real_mac_default_ancestry_allows_standard_deny_delete(tmp_path):
-    from aitm_usage.ledger import validate_private_path
+def test_real_mac_default_ancestry_allows_standard_deny_delete(
+    tmp_path, monkeypatch, mac_acl_text
+):
+    from aitm_usage.ledger import LedgerError, validate_private_path
 
     base = tmp_path / "private"
     base.mkdir(mode=0o700)
+    mac_acl_text(
+        base,
+        b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n",
+    )
+    monkeypatch.setattr(sys, "platform", "darwin")
     validate_private_path(base / "ancestry-probe", directory=True, allow_missing=True)
+    with pytest.raises(LedgerError, match="Unsafe private ACL"):
+        validate_private_path(base, directory=True)
 
 
 def test_private_path_rejects_mismatched_owner(state, monkeypatch):

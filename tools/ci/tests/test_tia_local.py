@@ -231,11 +231,7 @@ def test_stops_on_checkout_drift_before_execution(checkout, monkeypatch, capsys)
 def test_unsupported_capability_refuses_before_pytest(checkout, monkeypatch, capsys):
     repo, base = checkout
     monkeypatch.chdir(repo)
-
-    def unavailable(_private):
-        raise local.Refusal("capability: fixture unavailable")
-
-    monkeypatch.setattr(local, "_capabilities", unavailable)
+    monkeypatch.setattr(local.platform, "system", lambda: "Linux")
     assert local.main(["--base", base, "--run"]) == 2
     data = json.loads(capsys.readouterr().out)
     assert data["plan"]["mode"] == "unavailable"

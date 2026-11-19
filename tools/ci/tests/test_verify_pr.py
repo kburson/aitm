@@ -418,6 +418,7 @@ def override_signed_report(client, verified_signature, transform):
         ),
         (("base_identity", "observer"), "f" * 64, "trusted base"),
         (("children", 0, "covered_lines"), 0, "child"),
+        (("platform",), None, "platform evidence"),
         (("platform", "filesystem"), "other", "Darwin"),
         (("wheel",), "invalid", "wheel"),
     ],
