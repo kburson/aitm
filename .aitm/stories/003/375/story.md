@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 375
 title: "Refuse an extra file grant without a macOS ACL"
 kind: "story"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/375"
 parent: 372
 children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T04:10:00Z"
-last-branch: "planning"
+updated: "2026-11-19T04:20:33Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
