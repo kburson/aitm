@@ -999,24 +999,15 @@ def test_backup_refuses_output_inside_replaceable_store(project):
 
 
 def test_backup_refuses_store_through_physical_path_alias(
-    project, tmp_path, monkeypatch
+    project, tmp_path, alias_directory_identity
 ):
     from aitm_usage import backup as recovery
 
     _, ledger, _ = project
     store = ledger.database_path.parent
     alias = tmp_path / "alias"
-    alias.mkdir(mode=0o700)
+    alias_directory_identity(alias, store)
     destination = alias / "nested-backup"
-    validate = recovery._validated_path
-
-    def physical_ancestry(path, **options):
-        ancestry = validate(path, **options)
-        if path == destination:
-            return (*ancestry[:-1], (store.stat().st_dev, store.stat().st_ino))
-        return ancestry
-
-    monkeypatch.setattr(recovery, "_validated_path", physical_ancestry)
     with pytest.raises(recovery.BackupError, match="overlaps"):
         recovery.backup(ledger, destination)
     assert not destination.exists()

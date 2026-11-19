@@ -842,13 +842,13 @@ def test_source_proof_also_requires_exact_wire_shape(state):
     "relation", ["equal", "control-inside-state", "state-inside-control"]
 )
 def test_apfs_firmlink_overlap_refused_before_private_creation(
-    modules, existing, relation, tmp_path, monkeypatch
+    modules, existing, relation, tmp_path, alias_directory_identity
 ):
     ledger_module, _ = modules
     home = Path.home()
     control = control_directory()
     alias = tmp_path / "alias"
-    alias.mkdir(mode=0o700)
+    alias_directory_identity(alias, home)
     project = {
         "equal": alias / control.relative_to(home),
         "control-inside-state": alias / control.parent.relative_to(home),
@@ -858,17 +858,6 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
         for path in (control, project):
             path.mkdir(mode=0o700, parents=True, exist_ok=True)
 
-    validate = ledger_module._validated_path
-    home_identity = ledger_module._path_id(home.stat())
-
-    def observed_ancestry(path, **options):
-        ancestry = validate(path, **options)
-        if path == project:
-            depth = len(alias.parts) - 1
-            return (*ancestry[:depth], home_identity, *ancestry[depth + 1 :])
-        return ancestry
-
-    monkeypatch.setattr(ledger_module, "_validated_path", observed_ancestry)
     with pytest.raises(
         ledger_module.LedgerError, match="Writer guard must be outside project state"
     ):

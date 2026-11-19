@@ -352,7 +352,7 @@ def _guard_path(root: Path, project_id: UUID) -> Path:
         raise LedgerError("A project UUID is required")
     control = _project_path(_control_root())
     project_ancestry = _physical_ancestry(root)
-    # APFS firmlinks can share a physical ancestor without sharing its path spelling.
+    # Different spellings can resolve to the same physical ancestor.
     for control_identity, control_tail in _physical_ancestry(control):
         for project_identity, project_tail in project_ancestry:
             if control_identity == project_identity:
