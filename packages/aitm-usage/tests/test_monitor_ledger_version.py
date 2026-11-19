@@ -258,12 +258,15 @@ def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
     )
 
     class StoppedLaunchControl:
+        def __init__(self, _ledger):
+            pass
+
         plist_directory = tmp_path / "LaunchAgents"
 
         def job(self, label):
             return None
 
-    monkeypatch.setattr(install, "LaunchControl", StoppedLaunchControl)
+    monkeypatch.setattr(install, "ServiceSupervisor", StoppedLaunchControl)
     sequence = project.as_of().sequence
     project.upgrade_monitor_schema(sequence)
     store = ledger.Ledger.open(project.root, PROJECT)
