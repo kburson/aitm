@@ -16,7 +16,7 @@ These are the behaviors the Darwin checks were standing in for. The replacement 
 - The writer-guard directory and the project directory are different physical directories. Identity is `(st_dev, st_ino)` from `ledger._path_id`. Two spellings of the same inode are one directory. That comparison is already in `ledger._guard_path`. The APFS firmlink is one way to get two spellings. A bind mount is another. The check does not ask which filesystem produced them.
 - A private file that carries an extra access grant is refused. An absent ACL is safe. The product never needs to create an ACL in order to start.
 - A published file appears under its final name in one rename. Linux uses `renameat2`. macOS uses `renameatx_np`. Both already live in `host_fs._rename_entries`. Each host uses the call it has.
-- The monitor restarts from a heartbeat the same program writes. Process identity for custody is that heartbeat plus the pid, not a Darwin process structure.
+- The monitor restarts from a heartbeat the same program writes. Service custody uses the private owner lease, the child record, and the service heartbeat. External Grok custody uses a host process reader.
 
 ## Where the macOS requirements live
 
@@ -48,7 +48,7 @@ These stay correct only while a Darwin backend is allowed to be absent. The requ
 | `host_fs._rename_entries` | `renameatx_np` with `RENAME_SWAP` / `RENAME_EXCL` | `renameat2` with `RENAME_EXCHANGE` / `RENAME_NOREPLACE` |
 | `ledger._guard_path` comment and `backup._require_outside` | Comment and tests treat APFS firmlinks as the only alias | The comparison is already `(st_dev, st_ino)` plus the normalized path tail |
 | `install.py` `LaunchControl` and `_libproc` | `/bin/launchctl`, `~/Library/LaunchAgents`, `/usr/lib/libproc.dylib` `proc_pidinfo` / `proc_pidpath` | Linux peer credentials already exist in `monitor_control._LinuxPeer` |
-| `sources/grok_scope_hook.py` | `proc_pidinfo` for parent identity | Same process-identity function the supervisor uses |
+| `sources/grok_scope_hook.py` and `scope_admission.py` | Darwin-specific external process identity | Shared Linux and Darwin readers for external Grok staging and hook verification |
 | `host_watch.py` `_Darwin` | FSEvents. `WatchSet` already constructs `_Linux` (inotify) or `_Darwin` from `platform.system()`, and Darwin startup failure falls back to polling | Inotify on Linux. Polling fallback when the native stream is absent |
 | `install.py` consumers: `cli.py`, `qualification.py` | Construct `LaunchControl()` and thread it through activate, restore, and qualification | One supervisor object the CLI constructs. The launchd object is no longer the type of that argument |
 
@@ -85,18 +85,16 @@ The fixture is a same-inode pair the test creates without root and without APFS:
 
 ### Supervisor
 
-Replace `LaunchControl` as the object `cli.py` and `qualification.py` require.
+[#374](../../374/story.md) uses one portable `ServiceSupervisor` for the AITM service. Route CLI install, upgrade, stop, uninstall, restore, and qualification through it. Public `backup.restore` uses the same stopped-writer preflight as CLI restore. Keep the exact wheel, registration, recovery journal, and writer exclusion checks.
 
-One `ServiceSupervisor` in `install.py` (or a new module next to it, same package):
+- A detached owner process holds a per-project private lease and launches the existing installed service command as its child. Retain the child handle in the owner. Store the registration and mode-0600 PID record in the private account control area. The record binds the exact command, launch incarnation, child PID and recorded start time. The service loop writes its own private heartbeat. Qualification binds a fresh heartbeat to that child and the approved runtime.
+- Stop disables respawn and sends a private request bound to the current launch incarnation. Only the owner signals and reaps its own child. The owner removes the PID record after reaping, and stop waits for both record removal and lease release. An unowned, malformed, or stale record blocks lifecycle operations and requires explicit recovery. PID and heartbeat fields alone cannot authorize a signal. Upgrade, uninstall, and restore retain their existing lifecycle and writer exclusion checks.
+- A legacy macOS LaunchAgent registration blocks managed lifecycle operations until the operator unloads it and retires its plist. The portable supervisor never invokes launchctl. Keep the retained wheel and backup artifacts available for the new supervisor. There is no login-time installation in this story.
 
-- Start writes a pid file and a heartbeat next to the ledger, mode `0600`, then runs the existing service loop in a child process.
-- Stop reads that pid file, signals the child, and waits until the pid file is gone.
-- Status is the heartbeat age and the pid. Qualification reads that record.
-- The same class runs on Linux and macOS. It does not call `/bin/launchctl` and it does not load `/usr/lib/libproc.dylib`.
+External Grok sessions remain supported. The hook walks its own ancestry up to eight hops and checks the qualified PID, birth time, and executable identity. Share the host process reader between `stage_grok_attempt` and the hook. Linux reads `/proc` and Darwin reads `proc_pidinfo` and `proc_pidpath` through a lazy Darwin adapter used by Grok. Recheck process identity before committing the receipt and before accepting the hook. Missing, unstable, or mismatched observations refuse custody. The AITM supervisor has its own managed-process record.
 
-Process identity for `grok_scope_hook.py` and the old `_process_identity` moves to one function: the supervisor's recorded start time and executable path. On Linux the function may confirm the pid against `/proc/<pid>`. It does not fail closed because `libproc.dylib` is missing.
+Verify a real portable start, status and stop across controller instances, fail-closed handling of stale records and legacy registration, and existing recovery and restore tests. Exercise Linux external Grok staging and hook ancestry together, including a changed incarnation refusal. Keep the required suite on Ubuntu. Use macOS to check portable service execution and the Darwin Grok adapter.
 
-`launchctl` bootstrap, bootout, enable, and the plist under `~/Library/LaunchAgents` are deleted from the required path in this work. A later epic can teach the same supervisor to write a systemd user unit or a launchd plist. That epic is not this plan. macOS login-time restart is not a requirement for the suite to pass.
 
 ### Watch
 
@@ -122,7 +120,7 @@ The hosted path map (`tools/ci/path_map.py`, `path_map.json`) stays the delivere
 Each slice is one function. A slice lands only with its tests. The gate comes off after the portable tests exist, so the safety properties are proved on Ubuntu before Darwin stops being required.
 
 1. **Portable custody tests.** Add the same-inode overlap fixture and the ACL-refusal fixture. Run them on the current macOS suite so the new tests pass before the runner moves. The old firmlink tests still pass on Darwin during this slice.
-2. **Supervisor.** Introduce `ServiceSupervisor`. Point `cli.py` and `qualification.py` at it. Delete `LaunchControl` and `_libproc` from the call path those commands use. `grok_scope_hook.py` calls the shared identity function.
+2. **Supervisor.** Introduce `ServiceSupervisor` for CLI lifecycle, qualification, and public restore. Share the external process identity reader between Grok receipt staging and hook verification.
 3. **ACL verification.** Confirm the Linux and Darwin absence cases, the ancestor-only stock Darwin ACL, and refusal of grants and inconclusive reads. On Darwin, verify that the ledger refuses a missing or changed required path even when the ACL read returns `ENOENT`.
 4. **Delete the gate.** Edit `suites.json`, `local.py`, `snapshot.py`, `python_gate.py`, `verify_pr.py`, `baseline.py`, `policy.json`, and `ci.yml` as listed above. Move `python-base` and `python` to `ubuntu-24.04`. Update the CI tests that assert the Darwin capability.
 5. **Retire the Darwin-only tests.** Delete `data_volume_alias` from the ledger tests and keep the same-inode fixture. Rewrite the `_darwin` watch tests and the `chmod +a` install test onto the portable fixtures. Delete the `test_tia_local.py` Darwin skip by making that test run on Linux. After this slice the suite has no test that requires a Mac.
