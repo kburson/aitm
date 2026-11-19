@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 377
 title: "Remove tests that require a Mac"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/377"
 parent: 372
 children: []
 blocking: [373, 374, 375, 376]
 blocked-by: []
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T01:20:00Z"
-last-branch: "planning"
+updated: "2026-11-19T02:40:34Z"
+last-branch: "codex/377-ubuntu-python-ci"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-18-377-linux-ci-checkpoint.md"], "attachments": []}
 expansions: []
 trips: []
 ---
