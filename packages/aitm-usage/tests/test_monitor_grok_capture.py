@@ -1,5 +1,6 @@
 import json
 from hashlib import sha256
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -323,7 +324,7 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_c
 
 
 @pytest.fixture
-def isolated_grok_capture(tmp_path, monkeypatch):
+def isolated_grok_capture(tmp_path, monkeypatch, request):
     import subprocess
     from dataclasses import replace
     from datetime import UTC, datetime, timedelta
@@ -345,8 +346,14 @@ def isolated_grok_capture(tmp_path, monkeypatch):
     expected = _LiveSourceTuple(
         "grok", "grok-build-macos", "Darwin", "arm64", "1.0.77", 1
     )
-    binary = tmp_path / "candidate"
-    binary.write_bytes(b"isolated Grok image for exact owner signature tests")
+    binary = getattr(request, "param", None)
+    if binary is None:
+        binary = tmp_path / "candidate"
+        binary.write_bytes(b"isolated Grok image for exact owner signature tests")
+        image_name = "candidate"
+    else:
+        binary = Path(binary)
+        image_name = "candidate ) image"
     digest = sha256(binary.read_bytes()).hexdigest()
     monkeypatch.setattr(
         pilot,
@@ -389,7 +396,7 @@ def isolated_grok_capture(tmp_path, monkeypatch):
 
     with (
         control.writer() as writer,
-        pilot._OpenedExecutable.copy(binary, tmp_path / "image" / "candidate") as image,
+        pilot._OpenedExecutable.copy(binary, tmp_path / "image" / image_name) as image,
     ):
         layout = pilot._PilotLayout.create(
             tmp_path / "control",
@@ -525,6 +532,7 @@ def isolated_grok_capture(tmp_path, monkeypatch):
             )
 
         yield SimpleNamespace(
+            executable=image.path,
             writer=writer,
             state=state,
             reader=reader,

@@ -816,14 +816,23 @@ def report_evidence(
         "trusted base runner or runtime evidence missing",
     )
     platform = report["platform"]
-    require(
-        (platform["os"], platform["filesystem"]) == ("Darwin", "apfs")
-        and all(
-            isinstance(platform[key], str) and platform[key]
-            for key in ("image", "xcode")
-        ),
-        "required Darwin APFS evidence missing",
-    )
+    require(isinstance(platform, dict), "candidate platform evidence is malformed")
+    if platform.get("os") == "Linux":
+        require(
+            platform.keys() == {"os", "image", "runtime"}
+            and platform["image"] == report["base_identity"]["image"]
+            and platform["runtime"] == report["base_identity"]["runtime"],
+            "required Linux platform evidence missing",
+        )
+    else:
+        require(
+            (platform.get("os"), platform.get("filesystem")) == ("Darwin", "apfs")
+            and all(
+                isinstance(platform.get(key), str) and platform[key]
+                for key in ("image", "xcode")
+            ),
+            "required Darwin APFS evidence missing",
+        )
     require(digest(report["wheel"], 64), "candidate wheel digest missing")
     for key in ("inventory", "source_inventory", "baseline"):
         require(digest(report[key], 64), f"candidate {key} digest missing")

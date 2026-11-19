@@ -14,7 +14,7 @@ from .backup import _DATABASE, _KEY, _MANIFEST, _authority_names, _json
 from .export import _check_snapshot, _render
 from .install import (
     InstallReceipt,
-    LaunchControl,
+    ServiceSupervisor,
     _Agent,
     _read_owned,
     _record_name,
@@ -546,7 +546,7 @@ def _verify_running(
     ledger: Ledger,
     collector: _CollectorEvidence,
     lifecycle: InstallReceipt,
-    launchctl: LaunchControl,
+    supervisor: ServiceSupervisor,
 ) -> dict:
     start, activation = _activation_times(
         lifecycle,
@@ -554,19 +554,19 @@ def _verify_running(
         collector.version,
         collector.wheel_sha256,
         collector.interpreter_version,
-        ("installed", "already-active"),
+        ("installed", "started", "already-active"),
     )
     _require(
         (start, activation)
         == (collector.producer_started, collector.activation_heartbeat),
         "lifecycle-evidence",
     )
-    agent = _Agent(ledger, launchctl)
+    agent = _Agent(ledger, supervisor)
     control = _guard_path(ledger.root, ledger.identity.project_id).parent
     _require(not _path_exists(control / _record_name(agent)), "recovery-pending")
     plist = agent.read()
     _require(
-        bool(plist) and not launchctl.is_disabled(agent.label), "service-unavailable"
+        bool(plist) and not supervisor.is_disabled(agent.label), "service-unavailable"
     )
     runtime = _runtime_for(agent, agent.program(plist))
     _require(
@@ -614,7 +614,7 @@ def _verify_running(
         <= heartbeat
         <= datetime.fromisoformat(last.heartbeat)
         and collector.heartbeat <= heartbeat
-        and not launchctl.is_disabled(agent.label)
+        and not supervisor.is_disabled(agent.label)
         and not _path_exists(control / _record_name(agent)),
         "service-changed",
     )
@@ -1530,7 +1530,7 @@ def _codex_child(row: dict, ledger: Ledger, parent: SourceRef) -> bool:
 
 
 def verify_installed_activation(
-    receipt: ActivationReceipt, ledger: Ledger, launchctl: LaunchControl
+    receipt: ActivationReceipt, ledger: Ledger, supervisor: ServiceSupervisor
 ) -> QualificationResult:
     """Bind a sanitized receipt to private evidence and the current registered service."""
     result = validate_activation_receipt(receipt)
@@ -1609,7 +1609,7 @@ def verify_installed_activation(
     # Inspect the live process after reading historical evidence and selected sources.
     live_view = ledger.as_of()
     _verify_selected_sources(ledger, live_view, receipt.providers, card)
-    current = _verify_running(ledger, collector, proof.lifecycle, launchctl)
+    current = _verify_running(ledger, collector, proof.lifecycle, supervisor)
     _require(
         current["status_sequence"] >= captured.report.sequence
         and current["sequence"] >= live_view.sequence

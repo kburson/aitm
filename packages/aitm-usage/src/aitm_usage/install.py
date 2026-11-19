@@ -1,12 +1,10 @@
-"""Owned macOS LaunchAgent lifecycle and exact, offline wheel environments."""
+"""Owned service lifecycle and exact, offline wheel environments."""
 
-import ctypes
 import hashlib
 import io
 import json
 import os
 import plistlib
-import pwd
 import re
 import shlex
 import shutil
@@ -19,7 +17,6 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime, timedelta
 from email.parser import BytesParser
-from functools import cache
 from pathlib import Path
 from secrets import token_hex
 from uuid import UUID, uuid4
@@ -58,6 +55,7 @@ from .ledger import (
 )
 from .scopes import _publish, _read_private
 from .service import _read_status, load_registration, status_report
+from .supervisor import InstallError, ManagedProcess, ServiceJob, ServiceSupervisor
 from .types import Registration
 
 _VERSIONS = "versions"
@@ -127,6 +125,14 @@ import venv
 from pathlib import Path
 
 class CollectorEnv(venv.EnvBuilder):
+    def ensure_directories(self, env_dir):
+        context = super().ensure_directories(env_dir)
+        # CPython creates this alias on 64-bit Linux. The launcher uses lib.
+        alias = Path(env_dir) / 'lib64'
+        if sys.platform == 'linux' and alias.is_symlink() and os.readlink(alias) == 'lib':
+            alias.unlink()
+        return context
+
     def setup_python(self, context):
         os.symlink(sys.executable, Path(context.bin_path) / 'python')
 
@@ -148,202 +154,10 @@ _CONSOLE_ENTRY = b"[console_scripts]\naitm-usage = aitm_usage.cli:main\n"
 _DIST_FILES = {"METADATA", "WHEEL", "entry_points.txt", "RECORD"}
 
 
-class InstallError(LedgerError):
-    """A sanitized lifecycle failure suitable for a CLI status."""
-
-    def __init__(self, message: str, *, status: str | None = None):
-        super().__init__(message)
-        self.status = status
-
-
-@dataclass(frozen=True, slots=True)
-class LaunchJob:
-    label: str
-    plist: Path
-    program: Path
-    arguments: tuple[str, ...]
-    pid: int | None
-
-
-@dataclass(frozen=True, slots=True)
-class _ProcessIdentity:
-    pid: int
-    started: datetime
-    executable: Path
-
-
 @dataclass(frozen=True, slots=True)
 class _Health:
     heartbeat: str
-    process: _ProcessIdentity
-
-
-class _BSDProcessInfo(ctypes.Structure):
-    # Darwin sys/proc_info.h, PROC_PIDTBSDINFO.
-    _fields_ = [
-        ("flags", ctypes.c_uint32),
-        ("status", ctypes.c_uint32),
-        ("xstatus", ctypes.c_uint32),
-        ("pid", ctypes.c_uint32),
-        ("parent_pid", ctypes.c_uint32),
-        ("uid", ctypes.c_uint32),
-        ("credentials", ctypes.c_uint32 * 6),
-        ("command", ctypes.c_char * 16),
-        ("name", ctypes.c_char * 32),
-        ("terminal_and_priority", ctypes.c_uint32 * 6),
-        ("start_seconds", ctypes.c_uint64),
-        ("start_microseconds", ctypes.c_uint64),
-    ]
-
-
-@cache
-def _libproc() -> ctypes.CDLL:
-    library = ctypes.CDLL("/usr/lib/libproc.dylib", use_errno=True)
-    library.proc_pidinfo.argtypes = [
-        ctypes.c_int,
-        ctypes.c_int,
-        ctypes.c_uint64,
-        ctypes.c_void_p,
-        ctypes.c_int,
-    ]
-    library.proc_pidinfo.restype = ctypes.c_int
-    library.proc_pidpath.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_uint32]
-    library.proc_pidpath.restype = ctypes.c_int
-    return library
-
-
-def _process_identity(pid: int) -> _ProcessIdentity | None:
-    if type(pid) is not int or not 0 < pid < 2**31:
-        return None
-    try:
-        library = _libproc()
-
-        def incarnation() -> tuple[int, int] | None:
-            info = _BSDProcessInfo()
-            size = ctypes.sizeof(info)
-            if (
-                library.proc_pidinfo(pid, 3, 0, ctypes.byref(info), size) != size
-                or info.pid != pid
-                or info.uid != os.geteuid()
-                or info.status == 5  # SZOMB
-                or not info.start_seconds
-                or info.start_microseconds >= 1_000_000
-            ):
-                return None
-            return info.start_seconds, info.start_microseconds
-
-        before = incarnation()
-        buffer = ctypes.create_string_buffer(4096)  # PROC_PIDPATHINFO_MAXSIZE
-        if (
-            before is None
-            or library.proc_pidpath(pid, buffer, len(buffer)) <= 0
-            or incarnation() != before
-        ):
-            return None
-        start = datetime.fromtimestamp(before[0], UTC) + timedelta(
-            microseconds=before[1]
-        )
-        executable = Path(os.fsdecode(buffer.value)).resolve(strict=True)
-        return _ProcessIdentity(pid, start, executable)
-    except (AttributeError, OSError, ValueError, OverflowError, RuntimeError):
-        return None
-
-
-class LaunchControl:
-    """The GUI launchd boundary. Unknown inspection results fail closed."""
-
-    activation_timeout = 120
-
-    @property
-    def plist_directory(self) -> Path:
-        return Path(pwd.getpwuid(os.geteuid()).pw_dir) / "Library" / "LaunchAgents"
-
-    @property
-    def domain(self) -> str:
-        return f"gui/{os.geteuid()}"
-
-    def _run(self, *args: str) -> subprocess.CompletedProcess:
-        try:
-            return subprocess.run(
-                ["/bin/launchctl", *args],
-                env=_ENVIRONMENT,
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-        except (OSError, subprocess.SubprocessError):
-            raise InstallError("Unable to inspect or control launchd") from None
-
-    def _required(self, *args: str) -> str:
-        result = self._run(*args)
-        if result.returncode:
-            raise InstallError("Unable to control the owned LaunchAgent")
-        return result.stdout
-
-    def job(self, label: str) -> LaunchJob | None:
-        target = f"{self.domain}/{label}"
-        result = self._run("print", target)
-        if result.returncode:
-            # Distinguish an absent service from an unavailable GUI domain or
-            # an authorization/inspection failure on the project host.
-            absent = (
-                f'Could not find service "{label}" in domain for user gui: '
-                f"{os.geteuid()}"
-            )
-            if result.returncode == 113 and absent in result.stderr.splitlines():
-                return None
-            raise InstallError("Unable to inspect the owned LaunchAgent")
-        return _parse_job(target, label, result.stdout)
-
-    def process(self, pid: int) -> _ProcessIdentity | None:
-        return _process_identity(pid)
-
-    def is_disabled(self, label: str) -> bool:
-        data = self._required("print-disabled", self.domain)
-        if not (
-            data.strip().startswith("disabled services = {")
-            and data.strip().endswith("}")
-        ):
-            raise InstallError("Unable to verify LaunchAgent enablement")
-        states = re.findall(rf'^\s*"{re.escape(label)}" => (\w+)\s*$', data, re.M)
-        if len(states) > 1 or (states and states[0] not in {"enabled", "disabled"}):
-            raise InstallError("Unable to verify LaunchAgent enablement")
-        return states == ["disabled"]
-
-    def disable(self, label: str) -> None:
-        self._required("disable", f"{self.domain}/{label}")
-
-    def enable(self, label: str) -> None:
-        self._required("enable", f"{self.domain}/{label}")
-
-    def bootout(self, label: str) -> None:
-        self._required("bootout", f"{self.domain}/{label}")
-
-    def bootstrap(self, path: Path) -> None:
-        self._required("bootstrap", self.domain, str(path))
-
-
-def _parse_job(target: str, label: str, output: str) -> LaunchJob:
-    if not output.startswith(f"{target} = {{\n"):
-        raise InstallError("Unexpected LaunchAgent inspection format")
-
-    def field(name: str) -> str:
-        values = re.findall(rf"^\t{re.escape(name)} = ([^\n]+)$", output, re.M)
-        if len(values) != 1:
-            raise InstallError("Incomplete LaunchAgent inspection")
-        return values[0]
-
-    blocks = re.findall(r"^\targuments = \{\n((?:\t\t[^\n]+\n)+)\t\}$", output, re.M)
-    pids = re.findall(r"^\tpid = ([1-9][0-9]*)$", output, re.M)
-    if field("type") != "LaunchAgent" or len(blocks) != 1 or len(pids) > 1:
-        raise InstallError("Unable to verify the loaded LaunchAgent")
-    return LaunchJob(
-        label,
-        Path(field("path")),
-        Path(field("program")),
-        tuple(line[2:] for line in blocks[0].splitlines()),
-        int(pids[0]) if pids and field("state") == "running" else None,
-    )
+    process: ManagedProcess
 
 
 @dataclass(frozen=True, slots=True)
@@ -404,18 +218,18 @@ def _open_parent(path: Path) -> Iterator[int]:
         path.with_name(".usage-parent-validation"), directory=False, allow_missing=True
     )
     if len(ancestry) != len(path.parents):
-        raise InstallError("LaunchAgent or runtime ancestry is unavailable")
+        raise InstallError("service or runtime ancestry is unavailable")
     fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
         if _path_id(os.fstat(fd)) != ancestry[-1]:
-            raise InstallError("LaunchAgent or runtime ancestry changed")
+            raise InstallError("service or runtime ancestry changed")
         yield fd
         if ancestry != _validated_path(
             path.with_name(".usage-parent-validation"),
             directory=False,
             allow_missing=True,
         ):
-            raise InstallError("LaunchAgent or runtime ancestry changed")
+            raise InstallError("service or runtime ancestry changed")
     finally:
         os.close(fd)
 
@@ -872,7 +686,7 @@ def _prepare(ledger: Ledger, wheel: _Wheel, interpreter: Path) -> _Runtime:
 @dataclass(frozen=True, slots=True)
 class _Agent:
     ledger: Ledger
-    launchctl: LaunchControl
+    supervisor: ServiceSupervisor
 
     @property
     def label(self) -> str:
@@ -880,7 +694,7 @@ class _Agent:
 
     @property
     def plist(self) -> Path:
-        return self.launchctl.plist_directory / f"{self.label}.plist"
+        return self.supervisor.plist_directory / f"{self.label}.plist"
 
     def payload(self, executable: Path) -> dict:
         _runtime_layout(self.ledger, executable)
@@ -912,7 +726,7 @@ class _Agent:
             ValueError,
         ):
             pass
-        raise InstallError("LaunchAgent plist is not an owned registration")
+        raise InstallError("Invalid owned service registration")
 
     def read(self) -> bytes:
         _validated_path(self.plist, directory=False, allow_missing=True)
@@ -930,7 +744,7 @@ class _Agent:
             _ensure_private_directory(self.plist.parent)
         with _open_parent(self.plist) as parent:
             if self.read() != expected:
-                raise InstallError("LaunchAgent plist changed during the operation")
+                raise InstallError("Service registration changed during the operation")
             if data:
                 stage = f".usage-plist-{token_hex(16)}"
                 fd = os.open(
@@ -958,8 +772,8 @@ class _Agent:
                 os.unlink(self.plist.name, dir_fd=parent)
             os.fsync(parent)
 
-    def inspect(self, *owned: bytes) -> LaunchJob | None:
-        job = self.launchctl.job(self.label)
+    def inspect(self, *owned: bytes) -> ServiceJob | None:
+        job = self.supervisor.job(self.label)
         if job is None:
             return None
         for data in owned:
@@ -973,30 +787,30 @@ class _Agent:
                     == tuple(self.payload(executable)["ProgramArguments"])
                 ):
                     return job
-        raise InstallError("Loaded LaunchAgent does not match an owned registration")
+        raise InstallError("Running service does not match its owned registration")
 
     def stop(self, *owned: bytes) -> None:
         self.inspect(*owned)
-        if not self.launchctl.is_disabled(self.label):
-            self.launchctl.disable(self.label)
+        if not self.supervisor.is_disabled(self.label):
+            self.supervisor.disable(self.label)
         if self.inspect(*owned) is not None:
             try:
-                self.launchctl.bootout(self.label)
+                self.supervisor.bootout(self.label)
             except InstallError:
                 if self.inspect(*owned) is not None:
                     raise
         deadline = time.monotonic() + _STOP_TIMEOUT
         while self.inspect(*owned) is not None:
             if time.monotonic() >= deadline:
-                raise InstallError("LaunchAgent did not unload")
+                raise InstallError("Service did not stop")
             time.sleep(0.1)
         self.require_stopped(disabled=True)
 
     def require_stopped(self, *, disabled: bool) -> None:
-        if self.launchctl.job(self.label) is not None or (
-            disabled and not self.launchctl.is_disabled(self.label)
+        if self.supervisor.job(self.label) is not None or (
+            disabled and not self.supervisor.is_disabled(self.label)
         ):
-            raise InstallError("LaunchAgent is not confirmed stopped")
+            raise InstallError("Service is not confirmed stopped")
 
     def healthy(
         self, runtime: _Runtime, plist: bytes, after: datetime
@@ -1004,7 +818,7 @@ class _Agent:
         job = self.inspect(plist)
         if not runtime.witness_capable or job is None or job.pid is None:
             return None
-        process = self.launchctl.process(job.pid)
+        process = self.supervisor.process(job.pid)
         if (
             process is None
             or process.pid != job.pid
@@ -1034,7 +848,7 @@ class _Agent:
             raise InstallError(
                 "Launch registration or runtime changed during health verification"
             )
-        if self.inspect(plist) != job or self.launchctl.process(job.pid) != process:
+        if self.inspect(plist) != job or self.supervisor.process(job.pid) != process:
             return None
         return _Health(raw, process)
 
@@ -1042,24 +856,24 @@ class _Agent:
         if not runtime.witness_capable:
             raise InstallError("Runtime cannot provide service process evidence")
         if self.read() != plist or self.inspect(plist) is not None:
-            raise InstallError("Unexpected LaunchAgent state before bootstrap")
+            raise InstallError("Unexpected service state before start")
         if _runtime_for(self, runtime.executable) != runtime:
-            raise InstallError("Installed runtime changed before bootstrap")
-        if self.launchctl.is_disabled(self.label):
-            self.launchctl.enable(self.label)
+            raise InstallError("Installed runtime changed before start")
+        if self.supervisor.is_disabled(self.label):
+            self.supervisor.enable(self.label)
         previous = _read_status(self.ledger.root)
         started = datetime.now(UTC)
         if previous is not None:
             started = max(started, previous.heartbeat)
-        self.launchctl.bootstrap(self.plist)
-        deadline = time.monotonic() + self.launchctl.activation_timeout
+        self.supervisor.bootstrap(self.plist, runtime.interpreter)
+        deadline = time.monotonic() + self.supervisor.activation_timeout
         while True:
             health = self.healthy(runtime, plist, started)
             if health is not None:
                 return health
             if time.monotonic() >= deadline:
                 raise InstallError(
-                    "LaunchAgent did not provide a fresh compatible heartbeat"
+                    "Service did not provide a fresh compatible heartbeat"
                 )
             time.sleep(0.2)
 
@@ -1111,12 +925,14 @@ def _lifecycle(agent: _Agent) -> Iterator[tuple[_PinnedPath, _PinnedPath]]:
 
 
 @contextmanager
-def _stopped_writer(agent: _Agent, operation_guard: _PinnedPath) -> Iterator[None]:
+def _stopped_writer(
+    agent: _Agent, operation_guard: _PinnedPath, *, disabled: bool = True
+) -> Iterator[None]:
     ledger = agent.ledger
     deadline = time.monotonic() + _STOP_TIMEOUT
     with ExitStack() as stack:
         while True:
-            agent.require_stopped(disabled=True)
+            agent.require_stopped(disabled=disabled)
             try:
                 guard = stack.enter_context(
                     project_guard(ledger.root, ledger.identity.project_id)
@@ -1130,7 +946,7 @@ def _stopped_writer(agent: _Agent, operation_guard: _PinnedPath) -> Iterator[Non
             else:
                 break
         project = stack.enter_context(_pin_directory(ledger.root))
-        agent.require_stopped(disabled=True)
+        agent.require_stopped(disabled=disabled)
         for pin in (guard, local, project, operation_guard):
             pin.check()
         if (
@@ -1200,11 +1016,11 @@ def _recover(agent: _Agent, directory: _PinnedPath, guard: _PinnedPath) -> None:
         if operation.was_loaded:
             assert prior is not None
             agent.start(prior, operation.prior)
-        if operation.was_disabled != agent.launchctl.is_disabled(agent.label):
+        if operation.was_disabled != agent.supervisor.is_disabled(agent.label):
             action = (
-                agent.launchctl.disable
+                agent.supervisor.disable
                 if operation.was_disabled
-                else agent.launchctl.enable
+                else agent.supervisor.enable
             )
             action(agent.label)
         guard.check()
@@ -1280,7 +1096,7 @@ def _activate(
         previous,
         candidate,
         prior_job is not None,
-        agent.launchctl.is_disabled(agent.label),
+        agent.supervisor.is_disabled(agent.label),
         backup_id,
         "",
     )
@@ -1313,7 +1129,7 @@ def _activate(
     _clear_record(agent, directory)
     return _receipt(
         agent,
-        "upgraded" if action == "upgrade" else "installed",
+        {"upgrade": "upgraded", "start": "started"}.get(action, "installed"),
         runtime,
         health=health,
         saved=saved,
@@ -1333,13 +1149,13 @@ def _check_install_plan(agent: _Agent, action: str, wheel: _Wheel) -> None:
 
 
 def install_agent(
-    project: Registration, executable: Path, launchctl: LaunchControl
+    project: Registration, executable: Path, supervisor: ServiceSupervisor
 ) -> InstallReceipt:
     """Apply an install for an already prepared, exact owned executable."""
     ledger = Ledger.open(project.state_root, project.project_id)
     if load_registration(ledger) != project:
         raise InstallError("Expected the current accepted project registration")
-    agent = _Agent(ledger, launchctl)
+    agent = _Agent(ledger, supervisor)
     with _lifecycle(agent) as (directory, guard):
         _recover(agent, directory, guard)
         return _activate(
@@ -1351,7 +1167,7 @@ def install_wheel(
     ledger: Ledger,
     wheel_path: Path,
     interpreter: Path,
-    launchctl: LaunchControl,
+    supervisor: ServiceSupervisor,
     *,
     action: str,
     expected_sha256: str | None = None,
@@ -1359,10 +1175,10 @@ def install_wheel(
 ) -> InstallReceipt:
     """Plan or apply an install or upgrade from one exact local wheel."""
     if action not in {"install", "upgrade"}:
-        raise InstallError("Unknown LaunchAgent installation action")
+        raise InstallError("Unknown service installation action")
     load_registration(ledger)
     wheel = _wheel(wheel_path, expected_sha256)
-    agent = _Agent(ledger, launchctl)
+    agent = _Agent(ledger, supervisor)
     if dry_run:
         version = _interpreter(interpreter)
         _check_install_plan(agent, action, wheel)
@@ -1381,15 +1197,46 @@ def install_wheel(
         return _activate(agent, runtime, action, directory, guard)
 
 
+def start_agent(
+    ledger: Ledger,
+    supervisor: ServiceSupervisor,
+    *,
+    dry_run: bool = False,
+) -> InstallReceipt:
+    """Start the exact previously registered service runtime."""
+    load_registration(ledger)
+    agent = _Agent(ledger, supervisor)
+
+    def registered_runtime() -> tuple[bytes, _Runtime]:
+        registration = agent.read()
+        if not registration:
+            raise InstallError("Install an owned service before starting it")
+        return registration, _runtime_for(agent, agent.program(registration))
+
+    if dry_run:
+        control = _guard_path(ledger.root, ledger.identity.project_id).parent
+        if _path_exists(control / _record_name(agent)):
+            raise InstallError(
+                "Resolve the interrupted lifecycle operation before start"
+            )
+        registration, runtime = registered_runtime()
+        agent.inspect(registration)
+        return _receipt(agent, "planned", runtime)
+    with _lifecycle(agent) as (directory, guard):
+        _recover(agent, directory, guard)
+        _, runtime = registered_runtime()
+        return _activate(agent, runtime, "start", directory, guard)
+
+
 def stop_agent(
     ledger: Ledger,
-    launchctl: LaunchControl,
+    supervisor: ServiceSupervisor,
     *,
     uninstall: bool = False,
     dry_run: bool = False,
 ) -> InstallReceipt:
     """Disable respawn and optionally remove only the owned plist."""
-    agent = _Agent(ledger, launchctl)
+    agent = _Agent(ledger, supervisor)
     if dry_run:
         agent.inspect(agent.read())
         return _receipt(agent, "planned")
@@ -1400,17 +1247,17 @@ def stop_agent(
         if previous:
             guard.check()
             agent.stop(previous)
-            with _stopped_writer(agent, guard):
-                if uninstall:
-                    agent.write(b"", previous)
+        with _stopped_writer(agent, guard, disabled=bool(previous)):
+            if uninstall and previous:
+                agent.write(b"", previous)
     return _receipt(agent, "uninstalled" if uninstall else "stopped")
 
 
 def restore_for_agent(
-    ledger: Ledger, source: Path, launchctl: LaunchControl
+    ledger: Ledger, source: Path, supervisor: ServiceSupervisor
 ) -> RestoreReceipt:
-    """Restore only after the managed LaunchAgent is absent and cannot respawn."""
-    agent = _Agent(ledger, launchctl)
+    """Restore only after the managed service is absent and cannot respawn."""
+    agent = _Agent(ledger, supervisor)
     with _lifecycle(agent) as (directory, guard):
         if _read_private(directory, _record_name(agent)) is not None:
             raise InstallError(
@@ -1421,7 +1268,7 @@ def restore_for_agent(
         def stopped() -> None:
             guard.check()
             if agent.read() != plist:
-                raise InstallError("LaunchAgent registration changed before restore")
+                raise InstallError("service registration changed before restore")
             agent.require_stopped(disabled=bool(plist))
 
         stopped()
@@ -1433,14 +1280,14 @@ def prune_version(
     version: str,
     digest: str,
     source: Path,
-    launchctl: LaunchControl,
+    supervisor: ServiceSupervisor,
     *,
     dry_run: bool = False,
 ) -> InstallReceipt:
     """Remove an explicitly selected inactive environment with retained recovery data."""
     if not _VERSION_DIR.fullmatch(f"{version}-{digest}"):
         raise InstallError("Expected an exact version and SHA-256 for pruning")
-    agent = _Agent(ledger, launchctl)
+    agent = _Agent(ledger, supervisor)
     with _lifecycle(agent) as (control, guard):
         if _read_private(control, _record_name(agent)) is not None:
             raise InstallError(

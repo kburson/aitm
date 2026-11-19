@@ -817,8 +817,11 @@ def grok_mark(
 def _grok_process_ref(
     evidence: _ServiceEvidence, pid: int, started: datetime
 ) -> SourceRef:
+    from .process_identity import process_reference_domain
+
     return evidence.pseudonymize(
-        "grok-scope-process", f"{pid}:{started.astimezone(UTC).isoformat()}"
+        "grok-scope-process",
+        f"{process_reference_domain()}{pid}:{started.astimezone(UTC).isoformat()}",
     )
 
 
@@ -884,8 +887,8 @@ def stage_grok_attempt(
     pid: int,
 ) -> SourceRef:
     """Stage one already sealed owner mark for the qualified native launch."""
-    from .install import _process_identity
     from .monitor_control import ControlInbox
+    from .process_identity import read_process_identity
 
     lease = writer.lease
     now = datetime.now(UTC)
@@ -896,7 +899,7 @@ def stage_grok_attempt(
         live = writer._require_live_source(approved)
         qualification_record = _grok_qualification_record_ref(root, evidence)
         writer._require_live_source(approved, prior=live)
-        process = _process_identity(pid)
+        process = read_process_identity(pid)
         if process is None:
             raise LedgerError("Grok scope native process is unavailable")
         image = _grok_image_ref(evidence, process.executable)
@@ -975,7 +978,7 @@ def stage_grok_attempt(
                     raise LedgerError("Grok qualification revision changed")
                 writer._require_live_source(approved, prior=live)
                 if (
-                    _process_identity(pid) != process
+                    read_process_identity(pid) != process
                     or _grok_image_ref(evidence, process.executable) != image
                     or _grok_checkout_ref(
                         writer, evidence, request.scope.project_id, checkout

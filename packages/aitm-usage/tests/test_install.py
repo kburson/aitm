@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import plistlib
+import socket
 import sqlite3
 import subprocess
 import sys
@@ -60,12 +61,15 @@ def project(tmp_path, monkeypatch, capsys):
     ledger = Ledger.open(root, PROJECT)
 
     class StoppedLaunchControl:
+        def __init__(self, _ledger):
+            pass
+
         plist_directory = tmp_path / "LaunchAgents"
 
         def job(self, label):
             return None
 
-    monkeypatch.setattr(install, "LaunchControl", StoppedLaunchControl)
+    monkeypatch.setattr(install, "ServiceSupervisor", StoppedLaunchControl)
 
     def command(*args, expected=0):
         monkeypatch.setattr(
@@ -259,9 +263,9 @@ def test_public_restore_refuses_a_loaded_job_before_store_swap(
     source = tmp_path / "backup"
     backup(ledger, source)
     before = ledger.database_path.parent.stat().st_ino
-    control = install.LaunchControl()
+    control = install.ServiceSupervisor(ledger)
     monkeypatch.setattr(control, "job", lambda label: object())
-    monkeypatch.setattr(install, "LaunchControl", lambda: control)
+    monkeypatch.setattr(install, "ServiceSupervisor", lambda _ledger: control)
     with pytest.raises(BackupError):
         restore(source, ledger.root, ledger.identity)
     assert ledger.database_path.parent.stat().st_ino == before
@@ -412,39 +416,25 @@ def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch
     assert ledger.as_of().sequence == 1
 
 
-@pytest.mark.skipif(sys.platform != "darwin", reason="uses macOS inherited ACL")
-def test_backup_and_restore_reject_inherited_acl(project, tmp_path):
+def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_acl):
     from aitm_usage.backup import BackupError, backup, restore
 
     _, ledger, _ = project
     blocked = tmp_path / "inheriting"
     blocked.mkdir(mode=0o700)
-    subprocess.run(
-        [
-            "/bin/chmod",
-            "+a",
-            "everyone allow list,read,file_inherit,directory_inherit",
-            blocked,
-        ],
-        check=True,
-    )
-    try:
-        target = blocked / "refused"
-        with pytest.raises(BackupError):
-            backup(ledger, target)
-        assert not target.exists()
+    grant_extra_acl(blocked, "system.posix_acl_default")
+    target = blocked / "refused"
+    with pytest.raises(
+        BackupError, match="Invalid private backup source or destination"
+    ):
+        backup(ledger, target)
+    assert not target.exists()
 
-        bundle = tmp_path / "backup"
-        backup(ledger, bundle)
-        target.mkdir(mode=0o700)
-        assert "inherited" in subprocess.check_output(
-            ["/bin/ls", "-lde", target], text=True
-        )
-        bundle.rename(target / "backup")
-        with pytest.raises(BackupError):
-            restore(target / "backup", ledger.root, ledger.identity)
-    finally:
-        subprocess.run(["/bin/chmod", "-RN", blocked], check=True)
+    bundle = tmp_path / "backup"
+    backup(ledger, bundle)
+    bundle.rename(blocked / "backup")
+    with pytest.raises(BackupError, match="Invalid private restore bundle or target"):
+        restore(blocked / "backup", ledger.root, ledger.identity)
 
 
 def _wheel(parent, suffix, *, incompatible=False, legacy=False):
@@ -540,7 +530,9 @@ class _FakeLaunchControl:
         return job
 
     def process(self, pid):
-        return install._process_identity(pid)
+        if self.child is None or self.child.pid != pid or self.child.poll() is not None:
+            return None
+        return install.ManagedProcess(pid, self.started, self.interpreter)
 
     def is_disabled(self, label):
         return self.disabled
@@ -558,7 +550,7 @@ class _FakeLaunchControl:
         else:
             self.close()
 
-    def bootstrap(self, path):
+    def bootstrap(self, path, interpreter):
         from aitm_usage.ledger import WriterActive
 
         assert not self.disabled
@@ -585,13 +577,15 @@ class _FakeLaunchControl:
             if mode == "fresh"
             else [sys._base_executable, "-I", "-S", "-c", "import time; time.sleep(60)"]
         )
+        self.interpreter = interpreter
+        self.started = datetime.now(UTC)
         self.child = subprocess.Popen(
             argv,
             env=install._ENVIRONMENT,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-        self.loaded = install.LaunchJob(
+        self.loaded = install.ServiceJob(
             label, path, Path(program), tuple(value["ProgramArguments"]), self.child.pid
         )
         if mode == "one-shot":
@@ -622,7 +616,7 @@ class _FakeLaunchControl:
 @pytest.fixture
 def launch_control(project, tmp_path, monkeypatch):
     control = _FakeLaunchControl(tmp_path / "LaunchAgents", project[1])
-    monkeypatch.setattr(cli, "LaunchControl", lambda: control)
+    monkeypatch.setattr(cli, "ServiceSupervisor", lambda _ledger: control)
     yield control
     control.close()
 
@@ -666,7 +660,7 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert installed["wheel_sha256"] == first_digest
     assert installed["poll_interval_seconds"] == 15
     assert len(control.bootstraps) == 1
-    process = install._process_identity(control.loaded.pid)
+    process = control.process(control.loaded.pid)
     assert process.pid == control.child.pid
     assert process.executable == interpreter
     assert process.started < datetime.fromisoformat(installed["heartbeat"])
@@ -921,7 +915,7 @@ def test_upgrade_refuses_witness_incapable_running_prior(
     args = tuple(plistlib.loads(plist)["ProgramArguments"])
     child = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     launch_control.child = child
-    launch_control.loaded = install.LaunchJob(
+    launch_control.loaded = install.ServiceJob(
         agent.label, agent.plist, prior.executable, args, child.pid
     )
     deadline = time.monotonic() + 5
@@ -986,7 +980,7 @@ def test_same_pid_with_different_start_cannot_certify_health(
     agent = install._Agent(ledger, launch_control)
     program = launch_control.loaded.program
     runtime = install._runtime_for(agent, program)
-    process = install._process_identity(launch_control.loaded.pid)
+    process = launch_control.process(launch_control.loaded.pid)
     changed = replace(process, started=process.started + timedelta(microseconds=1))
     inspections = iter([process, changed])
     monkeypatch.setattr(launch_control, "process", lambda pid: next(inspections))
@@ -1006,19 +1000,19 @@ def test_backup_refuses_output_inside_replaceable_store(project):
     assert not directory.exists()
 
 
-def test_backup_refuses_store_through_physical_path_alias(project):
-    from aitm_usage.backup import BackupError, backup
-    from aitm_usage.ledger import _validated_path
+def test_backup_refuses_store_through_physical_path_alias(
+    project, tmp_path, alias_directory_identity
+):
+    from aitm_usage import backup as recovery
 
     _, ledger, _ = project
     store = ledger.database_path.parent
-    alias = Path("/System/Volumes/Data") / store.relative_to("/")
-    if not alias.is_dir() or not alias.samefile(store) or alias == store:
-        pytest.skip("The host does not expose the matching APFS firmlink path")
-    _validated_path(alias, directory=True)
-    with pytest.raises(BackupError, match="overlaps"):
-        backup(ledger, alias / "nested-backup")
-    assert not (store / "nested-backup").exists()
+    alias = tmp_path / "alias"
+    alias_directory_identity(alias, store)
+    destination = alias / "nested-backup"
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.backup(ledger, destination)
+    assert not destination.exists()
 
 
 def test_restore_preserves_backup_inside_replaceable_store(project, tmp_path):
@@ -1339,3 +1333,156 @@ def test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues(
         assert envelope.body.request == proposal
         assert writer.command_status(command_id) is None
         assert not (monitor_root / "scope-v1.json").exists()
+
+
+def test_portable_supervisor_reaps_owned_service_across_controllers(
+    project, tmp_path, monkeypatch
+):
+    from aitm_usage import supervisor as managed_service
+    from aitm_usage.ledger import LedgerError, _pin_directory
+    from aitm_usage.scopes import _publish
+    from aitm_usage.supervisor import ServiceSupervisor
+
+    _, ledger, command = project
+    wheel, digest = _wheel(tmp_path, "supervised")
+    supervisor = ServiceSupervisor(ledger)
+    interpreter = Path(sys._base_executable).resolve(strict=True)
+    label = f"org.aitm.usage.{ledger.identity.project_id}"
+
+    try:
+        receipt = install.install_wheel(
+            ledger,
+            wheel,
+            interpreter,
+            supervisor,
+            action="install",
+            expected_sha256=digest,
+        )
+        assert receipt.status == "installed"
+        observer = ServiceSupervisor(ledger)
+        job = observer.job(label)
+        assert job.pid == receipt.producer_pid
+        assert observer.process(job.pid).executable == interpreter
+        pid_record = supervisor.plist_directory / f"{label}.pid.json"
+        assert pid_record.stat().st_mode & 0o777 == 0o600
+        saved = pid_record.read_bytes()
+        assert (ledger.root / service.STATUS_NAME).stat().st_mode & 0o777 == 0o600
+
+        with _pin_directory(supervisor.plist_directory) as directory:
+            _publish(directory, f"{label}.stop", b"previous-incarnation")
+        assert observer.process(job.pid) is not None
+
+        for transient in (None, LedgerError("record replaced while reading")):
+            read = managed_service._read_private
+            calls = []
+
+            def read_during_transition(directory, name):
+                if name == pid_record.name and not calls:
+                    calls.append(name)
+                    if transient is not None:
+                        raise transient
+                    return None
+                return read(directory, name)
+
+            with monkeypatch.context() as patch:
+                patch.setattr(managed_service, "_read_private", read_during_transition)
+                assert observer.job(label) == job
+                assert calls == [pid_record.name]
+    finally:
+        assert install.stop_agent(ledger, ServiceSupervisor(ledger)).status == "stopped"
+
+    assert not pid_record.exists()
+    assert observer.job(label) is None
+    assert observer.is_disabled(label)
+    with pytest.raises(ProcessLookupError):
+        os.kill(job.pid, 0)
+
+    try:
+        restarted = command("service", "start")
+        assert restarted["status"] == "started"
+        status = command("status")
+        assert status["producer_pid"] == restarted["producer_pid"]
+        assert status["heartbeat_age_seconds"] >= 0
+        assert command("service", "start")["status"] == "already-active"
+    finally:
+        assert command("service", "stop")["status"] == "stopped"
+
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        stale = json.loads(saved)
+        stale["pid"] = unrelated.pid
+        raw = json.dumps(stale, sort_keys=True, separators=(",", ":")).encode()
+        pid_record.write_bytes(raw)
+        pid_record.chmod(0o600)
+        with pytest.raises(install.InstallError, match="stale"):
+            install.stop_agent(ledger, ServiceSupervisor(ledger))
+        assert pid_record.read_bytes() == raw
+        assert unrelated.poll() is None
+    finally:
+        unrelated.terminate()
+        unrelated.wait(timeout=5)
+
+
+def test_portable_supervisor_holds_existing_legacy_registration(
+    project, tmp_path, monkeypatch
+):
+    from aitm_usage.supervisor import ServiceSupervisor
+
+    _, ledger, _ = project
+    legacy = tmp_path / "legacy.plist"
+    legacy.touch()
+    supervisor = ServiceSupervisor(ledger)
+    monkeypatch.setattr(supervisor, "_legacy_registration", lambda: legacy)
+    with pytest.raises(install.InstallError, match="legacy LaunchAgent"):
+        install.stop_agent(ledger, supervisor, dry_run=True)
+    assert legacy.exists()
+    assert not supervisor.plist_directory.exists()
+
+
+def test_portable_supervisor_refuses_stop_without_writer_exclusion(
+    project, monkeypatch
+):
+    from aitm_usage.ledger import WriterActive
+    from aitm_usage.supervisor import ServiceSupervisor
+
+    _, ledger, _ = project
+    monkeypatch.setattr(install, "_STOP_TIMEOUT", 0)
+    with ledger.writer(), pytest.raises(WriterActive):
+        install.stop_agent(ledger, ServiceSupervisor(ledger))
+
+
+def test_portable_supervisor_owner_refuses_a_reaped_child():
+    from tempfile import TemporaryDirectory
+    from threading import Thread
+
+    from aitm_usage.supervisor import _confirms_live_child, _Launch, _respond
+
+    with (
+        TemporaryDirectory(
+            prefix="aitm-owner-test-", dir=Path("/tmp").resolve()
+        ) as directory,
+        socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server,
+    ):
+        endpoint = Path(directory) / "owner"
+        server.bind(str(endpoint))
+        endpoint.chmod(0o600)
+        server.listen(1)
+        server.settimeout(2)
+        started = datetime.now(UTC)
+        child = subprocess.Popen([sys.executable, "-c", "pass"])
+        assert child.wait(timeout=5) == 0
+        record = _Launch(
+            "a" * 32,
+            (sys.executable, "--project", directory, "service", "run"),
+            str(Path(sys._base_executable).resolve()),
+            str(endpoint),
+            child.pid,
+            started,
+        )
+        responder = Thread(target=_respond, args=(server, child, record), daemon=True)
+        responder.start()
+        try:
+            assert not _confirms_live_child(record)
+        finally:
+            responder.join(3)
+        assert not responder.is_alive()

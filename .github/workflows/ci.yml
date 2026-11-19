@@ -25,7 +25,7 @@ env:
 jobs:
   python-base:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: macos-26
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     permissions:
       contents: read
@@ -85,16 +85,14 @@ jobs:
               python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > "$out/observer/pytest_evidence.py"
             gh api "repos/$GITHUB_REPOSITORY/git/blobs/$BOOTSTRAP_POLICY_BLOB" --jq .content |
               python3 -c 'import base64,sys; sys.stdout.buffer.write(base64.b64decode(sys.stdin.read()))' > "$out/observer/policy.json"
-            test "$(shasum -a 256 "$out/observer/pytest_evidence.py" | cut -d' ' -f1)" = "$BOOTSTRAP_OBSERVER_SHA"
-            test "$(shasum -a 256 "$out/observer/policy.json" | cut -d' ' -f1)" = "$BOOTSTRAP_POLICY_SHA"
+            test "$(sha256sum "$out/observer/pytest_evidence.py" | cut -d' ' -f1)" = "$BOOTSTRAP_OBSERVER_SHA"
+            test "$(sha256sum "$out/observer/policy.json" | cut -d' ' -f1)" = "$BOOTSTRAP_POLICY_SHA"
           fi
           cp "$out/observer/policy.json" "$out/evidence/base-policy.json"
+          # Keep custody fixtures and the installed Python out of the runner home.
+          fixtures=$(mktemp -d /var/tmp/aitm-base-fixtures.XXXXXXXX)
+          export UV_PYTHON_INSTALL_DIR="$fixtures/python"
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
-          # Keep ancestors stable for the native custody checks during pytest.
-          fixtures=$(mktemp -d "$HOME/aitm-base-fixtures.XXXXXXXX")
-          device=$(df -P "$fixtures" | awk 'NR==2 {print $1}')
-          filesystem=$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)
-          test "$filesystem" = apfs
           export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
           if (( workers > 0 )); then
             uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
@@ -115,7 +113,7 @@ jobs:
               --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
           fi
           cd packages/aitm-usage
-          sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
+          sha() { sha256sum "$1" | cut -d' ' -f1; }
           jq -n --arg base "$BASE" --arg tree "$(git rev-parse 'HEAD^{tree}')" \
             --arg observer "$(sha "$out/observer/pytest_evidence.py")" --arg policy "$(sha "$out/observer/policy.json")" \
             --arg lock "$(sha uv.lock)" --arg configuration "$(sha pyproject.toml)" \
@@ -131,7 +129,7 @@ jobs:
 
   python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: macos-26
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       actions: read
@@ -155,7 +153,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           enable-cache: true
           cache-dependency-glob: packages/aitm-usage/uv.lock
-          cache-suffix: macos-26-python-3.13.9
+          cache-suffix: ubuntu-24.04-python-3.13.9
       - name: Qualify and record exact candidate inputs
         id: qualify
         env:
@@ -170,7 +168,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
             test "$(git cat-file -p HEAD | awk '/^$/{exit} /^parent /{print $2}')" = "$(printf '%s\n%s' "$BASE" "$PR_HEAD")"
-            sha() { shasum -a 256 | cut -d' ' -f1; }
+            sha() { sha256sum | cut -d' ' -f1; }
             if git cat-file -e "$BASE:tools/ci/pytest_evidence.py" 2>/dev/null && git cat-file -e "$BASE:tools/ci/policy.json" 2>/dev/null; then
               observer=$(git show "$BASE:tools/ci/pytest_evidence.py" | sha)
               policy=$(git show "$BASE:tools/ci/policy.json" | sha)
@@ -186,12 +184,6 @@ jobs:
               --arg runtime "$PYTHON_VERSION" --arg image "${ImageOS:?}:${ImageVersion:?}" \
               '{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image}' > "$out/evidence/expected-base.json"
           fi
-          device=$(df -P "$RUNNER_TEMP" | awk 'NR==2 {print $1}')
-          filesystem=$(diskutil info -plist "$device" | plutil -extract FilesystemType raw -)
-          jq -n --arg os "$(uname -s)" --arg filesystem "$filesystem" \
-            --arg image "${ImageOS:?}:${ImageVersion:?}" --arg xcode "$(xcodebuild -version)" \
-            '{$os,$filesystem,$image,$xcode}' > "$out/evidence/capability.json"
-          test "$filesystem" = apfs
           test -d "$root/packages/aitm-usage/src/aitm_usage"
           git ls-tree -r --name-only -z HEAD -- packages/aitm-usage/src/aitm_usage |
             python3 -c 'import json,sys; paths=sys.stdin.buffer.read().decode().split(chr(0)); print(json.dumps([p.removeprefix("packages/aitm-usage/") for p in paths if p.endswith(".py")]))' \
@@ -284,16 +276,22 @@ jobs:
           root=$(pwd -P)
           out="$RUNNER_TEMP/aitm-python"
           start=$(date +%s)
+          # Keep custody fixtures and the installed Python out of the runner home.
+          fixtures=$(mktemp -d /var/tmp/aitm-python-fixtures.XXXXXXXX)
+          export UV_PYTHON_INSTALL_DIR="$fixtures/python"
+          printf 'UV_PYTHON_INSTALL_DIR=%s\n' "$UV_PYTHON_INSTALL_DIR" >> "$GITHUB_ENV"
           cd packages/aitm-usage
           uv sync --locked --python "$PYTHON_VERSION"
+          jq -n --arg os "$(uname -s)" \
+            --arg runtime "$(uv run --locked python -I -c 'import platform; print(platform.python_version())')" \
+            --arg image "${ImageOS:?}:${ImageVersion:?}" \
+            '{$os,$runtime,$image}' > "$out/evidence/capability.json"
           ready=$(date +%s)
           workers=3
           mkdir -p "$out/observer"
           export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
           mode=$(jq -er .mode "$out/evidence/selection.json")
-          # Keep native fixtures away from the shared system temp directory and coverage output.
-          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-python-fixtures.XXXXXXXX")
           if [[ "$mode" == checks ]]; then
             printf '%s\n' '{"schema":"aitm.pytest-evidence/v1","exit_code":0,"collected":[],"deselected":[],"reports":[],"children":[]}' > "$out/evidence/pytest.json"
             printf '%s\n' '{"schema":"aitm.ci-child-evidence/v1","children":[]}' > "$out/evidence/children.json"
@@ -328,18 +326,18 @@ jobs:
           fi
           cd "$root"
           unset AITM_CI_PYTEST_EVIDENCE AITM_CI_CHILD_EVIDENCE
-          gh_asset=gh_2.97.0_macOS_arm64.zip
+          gh_asset=gh_2.97.0_linux_amd64.tar.gz
           curl --fail --silent --show-error --location --retry 3 \
             "https://github.com/cli/cli/releases/download/v2.97.0/$gh_asset" -o "$out/$gh_asset"
-          (cd "$out" && printf '%s  %s\n' a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e "$gh_asset" | shasum -a 256 -c -)
-          unzip -q "$out/$gh_asset" -d "$out"
-          export PATH="$out/gh_2.97.0_macOS_arm64/bin:$PATH"
+          (cd "$out" && printf '%s  %s\n' a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112 "$gh_asset" | sha256sum -c -)
+          tar -xzf "$out/$gh_asset" -C "$out"
+          export PATH="$out/gh_2.97.0_linux_amd64/bin:$PATH"
           printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
           COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
-            --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
+            --basetemp "$fixtures/helpers" --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
             tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py \
             tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py \
-            tools/ci/tests/test_path_map.py
+            tools/ci/tests/test_path_map.py tools/ci/tests/test_tia_local.py
           cache=cold
           if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
           jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
@@ -353,11 +351,11 @@ jobs:
           wheels=("$out"/wheel/*.whl)
           test "${#wheels[@]}" = 1
           wheel=${wheels[0]}
-          shasum -a 256 "$wheel" > "$out/wheel.sha256"
+          sha256sum "$wheel" > "$out/wheel.sha256"
           uv export --locked --no-dev --no-emit-project --format requirements.txt > "$out/runtime.txt"
           uv venv --python "$PYTHON_VERSION" "$out/install"
           uv pip sync --python "$out/install/bin/python" "$out/runtime.txt"
-          shasum -a 256 -c "$out/wheel.sha256"
+          sha256sum -c "$out/wheel.sha256"
           uv pip install --python "$out/install/bin/python" --no-deps "$wheel"
           "$out/install/bin/python" -I -c 'from pathlib import Path; import sys, aitm_usage; assert Path(aitm_usage.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())'
           "$out/install/bin/aitm-usage" --help > "$out/help"
@@ -371,7 +369,7 @@ jobs:
         run: |
           root=$(pwd -P)
           cd packages/aitm-usage
-          fixtures=$(mktemp -d "$RUNNER_TEMP/aitm-full-once-fixtures.XXXXXXXX")
+          fixtures=$(mktemp -d /var/tmp/aitm-full-once-fixtures.XXXXXXXX)
           uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
             --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
