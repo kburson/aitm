@@ -72,14 +72,17 @@ python -B -E -s -m tools.ci.tia.working_tree_report \
 
 Version 1 supports an edit confined to appending LF-terminated ASCII comments
 and blank lines to the audited Grok scope hook source, with the original bytes
-and file mode preserved. It admits the evidence anchor shown above and a tree
-with the reviewed #354 report or #355 advisory tooling paths. Other committed
-changes require fresh qualification. Use separate
+and file mode preserved. It admits the evidence anchor shown above and the
+post-supervisor anchor at `4ae28dba1493c2171bd8097e58195198c4001a51`, plus
+their reviewed tooling delivery shapes. Other committed changes require fresh
+qualification. Use separate
 checkouts if the inspected checkout contains edits to the tooling. Git-ignored
 files are outside the effective snapshot.
 
 A positive JSON report exits 0 with `mode: pinned-mapped-obligations`, the observed
-snapshot, the admission evidence, and the 30 pinned test IDs. The candidate
+snapshot, the admission evidence, and the pinned test IDs. The original anchor
+assigns 30 tests. The post-supervisor inventory assigns 38 on Linux and 36 on
+Darwin, and reports the platform and any excluded Linux-only IDs. The candidate
 inventory and impact completeness are both `unqualified`. The command reads
 captured data without importing candidate Python or running tests.
 

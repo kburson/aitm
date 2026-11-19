@@ -3,6 +3,7 @@
 import argparse
 import json
 import re
+import sys
 from hashlib import sha1, sha256
 from pathlib import Path
 
@@ -23,6 +24,16 @@ _INVENTORY_PATH = Path(__file__).with_name("working_tree_obligations.json")
 _INVENTORY_SOURCE = (
     "https://github.com/kburson/aitm/actions/runs/43882437964/attempts/2"
 )
+_CURRENT_COMMIT = "4ae28dba1493c2171bd8097e58195198c4001a51"
+_CURRENT_TREE = "06aecaada0792e8ad38bce2b261e1c1ccd5529dd"
+_CURRENT_FINDING = "f2dbf633807ffb4ee7bd8e28583d2ea1145593069f105fe235f2bedcd61135a9"
+_CURRENT_REVIEW = "5500828229f5affdbe4734e14d837b734fd18d2ac017a559936d42b31bbc3592"
+_CURRENT_CONSUMER = "709aa6dce1bd3f25d169b8cbde4af009275cfe226e9a752c0260ea8e58e8560f"
+_CURRENT_INVENTORY = "7262ead5d97060cb789d9c17efb87952747313d4ea82f36c32c7cc9ef7ace3c3"
+_CURRENT_INVENTORY_PATH = Path(__file__).with_name(
+    "working_tree_obligations_current.json"
+)
+_CURRENT_SOURCE = "https://github.com/kburson/aitm/actions/runs/44460849859/attempts/1"
 _PATH = b"packages/aitm-usage/src/aitm_usage/sources/grok_scope_hook.py"
 _MODULE = "packages/aitm-usage/tests/test_grok_scope_receipts.py"
 _REGULAR = {"100644", "100755"}
@@ -38,6 +49,20 @@ _RUN_ADDITIONS = {
     b"tools/ci/tia/working_tree_run.py",
     b"tools/ci/tests/test_tia_working_tree_run.py",
 }
+_CURRENT_ADDITIONS = _RUN_ADDITIONS | {
+    b"tools/ci/tia/working_tree_obligations_current.json",
+}
+_CURRENT_MODIFICATIONS = {
+    _DOC,
+    _LOCAL,
+    b"tools/ci/tia/working_tree_report.py",
+    b"tools/ci/tests/test_tia_working_tree_report.py",
+}
+_LINUX_ONLY = frozenset(
+    f"{_MODULE}::test_linux_scope_staging_and_hook_recheck_external_process_incarnation"
+    f"[{case}-/bin/sh]"
+    for case in ("live", "stale")
+)
 _COMMENT_WHITESPACE = re.compile(rb"[ \t\n]*")
 _COMMENT_LINE = re.compile(rb"#[\x20-\x7e\t]*")
 _COMMIT = re.compile(r"[0-9a-f]{40}")
@@ -72,11 +97,16 @@ def _modified(change, path):
     )
 
 
-def _delivery_tree(changes):
+def _delivery_tree(changes, current):
     additions = set()
     modifications = set()
     for change in changes:
-        if _modified(change, _DOC) or _modified(change, _LOCAL):
+        allowed = _CURRENT_MODIFICATIONS if current else {_DOC, _LOCAL}
+        if (
+            change.new
+            and change.new.path in allowed
+            and _modified(change, change.new.path)
+        ):
             modifications.add(change.new.path)
         elif (
             change.status == "A"
@@ -87,6 +117,12 @@ def _delivery_tree(changes):
             additions.add(change.new.path)
         else:
             return False
+    if current:
+        return (
+            additions == _CURRENT_ADDITIONS
+            and modifications == _CURRENT_MODIFICATIONS
+            and len(changes) == len(additions) + len(modifications)
+        )
     # The admitted release changes only the advisory tooling and guide.
     # The product, observer, runtime config, selector and lock stay pinned.
     return len(changes) == len(additions) + len(modifications) and (
@@ -98,26 +134,43 @@ def _delivery_tree(changes):
     )
 
 
-def _admitted_change(before, after, base_commit):
-    provenance = after.provenance
-    head = provenance.observation.head
-    committed = provenance.committed_changes
-    if (
-        before.endpoint_identity.tree != _ANCHOR_TREE
-        or head.commit != base_commit
-        or (head.commit == _ANCHOR_COMMIT and committed)
-        or (head.commit != _ANCHOR_COMMIT and not _delivery_tree(committed))
+def _qualified_snapshots(repo, base_commit):
+    observed = False
+    for anchor, tree, current in (
+        (_CURRENT_COMMIT, _CURRENT_TREE, True),
+        (_ANCHOR_COMMIT, _ANCHOR_TREE, False),
     ):
-        raise _Unavailable("unqualified-base")
+        request = LocalRequest(_REPOSITORY, "local-effective", anchor)
+        try:
+            before, after = resolve(repo, request)
+        except (SnapshotUncertain, OSError):
+            continue
+        observed = True
+        provenance = after.provenance
+        head = provenance.observation.head
+        committed = provenance.committed_changes
+        if (
+            before.endpoint_identity.tree == tree
+            and head.commit == base_commit
+            and (
+                not committed
+                if head.commit == anchor
+                else _delivery_tree(committed, current)
+            )
+        ):
+            return before, after, request, current
+    raise _Unavailable("unqualified-base" if observed else "snapshot-unavailable")
+
+
+def _admitted_change(after):
+    provenance = after.provenance
     local = provenance.staged_changes + provenance.unstaged_changes
     if not local:
         raise _Unavailable("no-local-change")
     if not all(_modified(change, _PATH) for change in local):
         raise _Unavailable("unsupported-change")
 
-    delivery_paths = (
-        _DELIVERY_ADDITIONS | _RUN_ADDITIONS | {_DOC, _LOCAL} if committed else set()
-    )
+    delivery_paths = {change.new.path for change in provenance.committed_changes}
     effective = [
         change
         for change in after.changes
@@ -144,26 +197,35 @@ def _matches_comment_suffix(content, start):
         start = end + 1
 
 
-def _pinned_ids():
+def _pinned_ids(current):
+    inventory = _CURRENT_INVENTORY_PATH if current else _INVENTORY_PATH
+    digest = _CURRENT_INVENTORY if current else _INVENTORY_SHA256
+    count = 38 if current else 30
     try:
-        raw = _INVENTORY_PATH.read_bytes()
+        raw = inventory.read_bytes()
         nodes = json.loads(raw)
     except (OSError, ValueError):
         raise _Unavailable("inventory-unavailable") from None
     if (
-        sha256(raw).hexdigest() != _INVENTORY_SHA256
+        sha256(raw).hexdigest() != digest
         or not isinstance(nodes, list)
-        or len(nodes) != 30
+        or len(nodes) != count
         or not all(
             isinstance(node, str) and node.startswith(_MODULE + "::") for node in nodes
         )
         or len(set(nodes)) != len(nodes)
     ):
         raise _Unavailable("inventory-unavailable")
-    return sorted(nodes)
+    excluded = []
+    if current:
+        if not _LINUX_ONLY.issubset(nodes) or sys.platform not in {"darwin", "linux"}:
+            raise _Unavailable("inventory-unavailable")
+        if sys.platform == "darwin":
+            excluded = sorted(_LINUX_ONLY)
+    return sorted(set(nodes).difference(excluded)), excluded, digest
 
 
-def _consumer_reason(before, change, content):
+def _consumer_reason(before, change, content, current):
     try:
         raw_map = before.read_content(path_map.MAP_PATH.encode("ascii"))
         selector = before.read_content(path_map.SELECTOR_PATH.encode("ascii"))
@@ -192,9 +254,19 @@ def _consumer_reason(before, change, content):
                 ).hexdigest(),
             }
         }
-        result = path_map.select(
-            [path], json.loads(raw_map), base=entries, candidate=candidate
-        )
+        document = json.loads(raw_map)
+        if current:
+            rules = [rule for rule in document["rules"] if rule["prefix"] == path]
+            if (
+                len(rules) != 1
+                or rules[0].get("tests") != [_MODULE]
+                or path_map.consumer_digest(entries, path, document["full_names"])
+                != _CURRENT_CONSUMER
+            ):
+                raise _Unavailable("selector-unavailable")
+            # The local evidence qualifies only this declaration on the exact anchor.
+            rules[0]["consumer_digest"] = _CURRENT_CONSUMER
+        result = path_map.select([path], document, base=entries, candidate=candidate)
     except (KeyError, OSError, ValueError, SnapshotUncertain):
         raise _Unavailable("selector-unavailable") from None
     if result["mode"] != "mapped" or result["tests"] != [_MODULE]:
@@ -205,10 +277,9 @@ def _consumer_reason(before, change, content):
 def _report_with_snapshot(repo: Path, base_commit: str) -> tuple[dict, Snapshot | None]:
     if not _COMMIT.fullmatch(base_commit):
         return _unavailable("invalid-arguments"), None
-    request = LocalRequest(_REPOSITORY, "local-effective", _ANCHOR_COMMIT)
     try:
-        before, after = resolve(repo, request)
-        change = _admitted_change(before, after, base_commit)
+        before, after, request, current_anchor = _qualified_snapshots(repo, base_commit)
+        change = _admitted_change(after)
         prior = before.read_content(_PATH)
         current = after.read_content(_PATH)
         if (
@@ -217,8 +288,8 @@ def _report_with_snapshot(repo: Path, base_commit: str) -> tuple[dict, Snapshot 
             or not _matches_comment_suffix(current, len(prior))
         ):
             raise _Unavailable("unsupported-change")
-        reason = _consumer_reason(before, change, current)
-        nodes = _pinned_ids()
+        reason = _consumer_reason(before, change, current, current_anchor)
+        nodes, excluded, inventory_digest = _pinned_ids(current_anchor)
         identity = (before.digest, after.digest)
         try:
             refreshed = resolve(repo, request)
@@ -232,7 +303,7 @@ def _report_with_snapshot(repo: Path, base_commit: str) -> tuple[dict, Snapshot 
         return _unavailable("snapshot-unavailable"), None
 
     head = after.provenance.observation.head
-    return {
+    result = {
         "schema": _SCHEMA,
         "mode": "pinned-mapped-obligations",
         "base_commit": head.commit,
@@ -243,25 +314,30 @@ def _report_with_snapshot(repo: Path, base_commit: str) -> tuple[dict, Snapshot 
         "content_sha256": change.new.content_id,
         "consumer_reason": reason,
         "module": _MODULE,
-        "inventory_sha256": _INVENTORY_SHA256,
-        "inventory_source": _INVENTORY_SOURCE,
+        "inventory_sha256": inventory_digest,
+        "inventory_source": _CURRENT_SOURCE if current_anchor else _INVENTORY_SOURCE,
         "node_ids": nodes,
         "candidate_inventory": "unqualified",
         "impact_completeness": "unqualified",
         "authority": {
             "kind": "reviewed-pinned-obligations",
             "repository": _REPOSITORY,
-            "anchor_commit": _ANCHOR_COMMIT,
-            "anchor_tree": _ANCHOR_TREE,
+            "anchor_commit": _CURRENT_COMMIT if current_anchor else _ANCHOR_COMMIT,
+            "anchor_tree": before.endpoint_identity.tree,
             "path": _PATH.decode("ascii"),
             "module": _MODULE,
-            "finding_sha256": _FINDING_SHA256,
-            "review_sha256": _REVIEW_SHA256,
-            "inventory_sha256": _INVENTORY_SHA256,
+            "finding_sha256": _CURRENT_FINDING if current_anchor else _FINDING_SHA256,
+            "review_sha256": _CURRENT_REVIEW if current_anchor else _REVIEW_SHA256,
+            "inventory_sha256": inventory_digest,
             "map_sha256": _MAP_SHA256,
             "selector_sha256": _SELECTOR_SHA256,
         },
-    }, after
+    }
+    if current_anchor:
+        result["inventory_platform"] = sys.platform
+        result["excluded_node_ids"] = excluded
+        result["authority"]["consumer_sha256"] = _CURRENT_CONSUMER
+    return result, after
 
 
 def build_report(repo: Path, base_commit: str) -> dict:
