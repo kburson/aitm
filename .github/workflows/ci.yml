@@ -183,11 +183,6 @@ jobs:
               --arg runtime "$PYTHON_VERSION" --arg image "${ImageOS:?}:${ImageVersion:?}" \
               '{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image}' > "$out/evidence/expected-base.json"
           fi
-          python=$(uv python find --no-project "$PYTHON_VERSION")
-          jq -n --arg os "$(uname -s)" \
-            --arg runtime "$("$python" -I -c 'import platform; print(platform.python_version())')" \
-            --arg image "${ImageOS:?}:${ImageVersion:?}" \
-            '{$os,$runtime,$image}' > "$out/evidence/capability.json"
           test -d "$root/packages/aitm-usage/src/aitm_usage"
           git ls-tree -r --name-only -z HEAD -- packages/aitm-usage/src/aitm_usage |
             python3 -c 'import json,sys; paths=sys.stdin.buffer.read().decode().split(chr(0)); print(json.dumps([p.removeprefix("packages/aitm-usage/") for p in paths if p.endswith(".py")]))' \
@@ -282,6 +277,10 @@ jobs:
           start=$(date +%s)
           cd packages/aitm-usage
           uv sync --locked --python "$PYTHON_VERSION"
+          jq -n --arg os "$(uname -s)" \
+            --arg runtime "$(uv run --locked python -I -c 'import platform; print(platform.python_version())')" \
+            --arg image "${ImageOS:?}:${ImageVersion:?}" \
+            '{$os,$runtime,$image}' > "$out/evidence/capability.json"
           ready=$(date +%s)
           workers=3
           mkdir -p "$out/observer"
