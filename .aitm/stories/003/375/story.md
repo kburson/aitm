@@ -10,7 +10,7 @@ children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T01:20:00Z"
+updated: "2026-11-19T04:10:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -28,7 +28,13 @@ Project 24 Rank 520. Priority P2. Size S. Estimate 3 agent-hours.
 
 #377 has moved the required Python jobs to Linux. This pull request runs on that suite.
 
-A private file and its ancestors grant nothing beyond the mode bits already checked. A missing ACL is success. A present extra grant is a refusal. Drop the home-directory deny-delete allowance in `host_fs._check_mac_acl`. A host with no ACL read succeeds, because there is no extra grant to refuse.
+`host_fs.check_private_acl` does all of the following.
+
+- An absent ACL is success. On Darwin the text is `!#acl 1\n`. On Linux `system.posix_acl_access` is absent, and on a directory `system.posix_acl_default` is absent.
+- A grant is a refusal, reported as `Unsafe private ACL`. A present Linux ACL xattr is a grant. Any Darwin ACE is a grant except the one ancestor ACE below.
+- An ancestor that carries only the stock macOS home deny-delete ACE still passes. The accepted text is `!#acl 1\n` followed by `group:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete`. That ACE is allowed on ancestors only. The same ACE on the private file is a refusal. Any other ACE on an ancestor is a refusal.
+- An inconclusive read is a refusal. A missing ACL reader, a failed `acl_get_link_np`, `acl_get_fd_np`, or `getxattr`, or ACL text that cannot be classified stays a refusal: `Private ACL validation is unavailable`, `Unable to validate private ACL`, or `Unable to classify private ACL`.
+- The control directory stays `~/Library/Application Support/aitm-usage-control` on Darwin and `~/.local/state/aitm-usage-control` on Linux.
 
 The required suite does not run `chmod +a`. Deleting the `native-acl` capability from `tools/ci/tia/suites.json` belongs to #376.
 
