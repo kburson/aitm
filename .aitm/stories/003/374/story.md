@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 374
 title: "Supervise the service without launchctl"
 kind: "story"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/374"
 parent: 372
 children: []
 blocking: []
 blocked-by: [377]
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T04:14:00Z"
-last-branch: "planning"
+updated: "2026-11-19T04:48:24Z"
+last-branch: "codex/374-service-supervisor"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-18-370-linux-suite-then-tia-probe.md"
