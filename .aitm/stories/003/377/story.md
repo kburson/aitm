@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 377
 title: "Remove tests that require a Mac"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/377"
 parent: 372
 children: []
 blocking: [373, 374, 375, 376]
 blocked-by: []
 created: "2026-11-18T23:38:27Z"
-updated: "2026-11-19T02:40:34Z"
+updated: "2026-11-19T03:16:35Z"
 last-branch: "codex/377-ubuntu-python-ci"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
