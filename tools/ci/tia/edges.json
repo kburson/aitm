@@ -1,0 +1,27 @@
+{
+  "schema": "aitm.tia-edges/v1",
+  "edges": [
+    {
+      "id": "monitor-default-rate-card",
+      "consumer": "packages/aitm-usage/src/aitm_usage/pricing.py",
+      "input": "packages/aitm-usage/src/aitm_usage/rates/monitor/2026-11-10.json",
+      "kind": "runtime-file",
+      "rationale": "The default monitor rate loader in pricing.py reads this JSON rate card."
+    },
+    {
+      "id": "cli-help-subprocess",
+      "consumer": "tools/ci/tests/test_cli_evidence.py",
+      "input": "packages/aitm-usage/src/aitm_usage/cli.py",
+      "kind": "subprocess",
+      "rationale": "The smoke test starts the aitm-usage console script, whose entry point in packages/aitm-usage/pyproject.toml is aitm_usage.cli:main."
+    },
+    {
+      "id": "grok-headless-fixture",
+      "consumer": "packages/aitm-usage/tests/test_grok.py",
+      "input": "packages/aitm-usage/tests/fixtures/grok/headless.json",
+      "kind": "fixture",
+      "rationale": "The grok_source fixture in test_grok.py reads headless.json for native usage corroboration."
+    }
+  ],
+  "path_rules": []
+}
