@@ -1,0 +1,60 @@
+{
+  "focused_tests": {
+    "count": 168,
+    "result": "pass",
+    "source_tree": "b8ca66991842e6b360cf09f0e36b25c693d48390"
+  },
+  "last_required_gate": "collect-evidence",
+  "last_required_gate_passed_at": "2026-11-20T13:40:53Z",
+  "merge": "9843874bd00ffa1255b3595987106d5af51dceb3",
+  "merge_method": "merge commit",
+  "merge_parents": [
+    "f2ff2b6f073fa769261b44fb0c05a055da7eb1c9",
+    "fefa1b1a2a1201d052a109d7e15090705253e26e"
+  ],
+  "merged_at": "2026-11-20T13:34:57Z",
+  "native_github_approval_on_exact_head": false,
+  "observed_trunk": "9843874bd00ffa1255b3595987106d5af51dceb3",
+  "owner_approval": "reported by owner",
+  "pr": 406,
+  "pr_ci": "https://github.com/kburson/aitm/actions/runs/44739335469/attempts/1",
+  "required_controls_changed": [],
+  "reviewed_head": "fefa1b1a2a1201d052a109d7e15090705253e26e",
+  "shadow_ci": "https://github.com/kburson/aitm/actions/runs/44739335720/attempts/1",
+  "story": 403,
+  "tree": "b8ca66991842e6b360cf09f0e36b25c693d48390",
+  "trunk_ci": "https://github.com/kburson/aitm/actions/runs/44745570866",
+  "trunk_ci_jobs": {
+    "aitm-ci": {
+      "ended": "2026-11-20T13:40:53Z",
+      "result": "skipped",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136322826632"
+    },
+    "collect-evidence": {
+      "ended": "2026-11-20T13:40:53Z",
+      "result": "success",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136322694894"
+    },
+    "file-checks": {
+      "ended": "2026-11-20T13:35:24Z",
+      "result": "success",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136319865268"
+    },
+    "python": {
+      "ended": "2026-11-20T13:40:38Z",
+      "result": "success",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136319864947"
+    },
+    "python-base": {
+      "ended": "2026-11-20T13:35:00Z",
+      "result": "skipped",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136319867415"
+    },
+    "quality": {
+      "ended": "2026-11-20T13:35:19Z",
+      "result": "success",
+      "url": "https://github.com/kburson/aitm/actions/runs/44745570866/job/136319865144"
+    }
+  },
+  "verified_at": "2026-11-20T13:42:00Z"
+}

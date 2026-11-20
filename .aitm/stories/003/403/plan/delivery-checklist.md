@@ -22,3 +22,9 @@ The previous receipts bind head `9b5f22c2`. The owner's two review findings requ
 - [x] Requalified the archived trees on final head `fefa1b1a2a1201d052a109d7e15090705253e26e`. [Same-tree receipt](../../370/plan/2026-11-20-370-import-chain-review-requalification.md).
 - [x] Verified required CI on the corrected head. [CI](https://github.com/kburson/aitm/actions/runs/44739335469/attempts/1) · [Verifier](2026-11-20-403-owner-review-required-ci.json).
 - [x] Recorded the [independent source re-review](reviews/2026-11-20-403-owner-review-follow-up.md) and verified both GitHub threads are resolved.
+
+## Verified delivery
+
+- [x] Verified the merged commit `9843874bd00ffa1255b3595987106d5af51dceb3` and its exact reviewed tree on trunk.
+- [x] Verified successful [Ubuntu trunk CI](https://github.com/kburson/aitm/actions/runs/44745570866) and recorded the [trunk readback](../retro/2026-11-20-403-trunk-readback.json).
+- [x] Signed the [delivery retrospective](../retro/2026-11-20-403-delivery.md).
