@@ -172,3 +172,16 @@ inspect its category and profile logs. Rerun into a new directory. Add
 
 The ordinary affected-test command and the hosted PR path-map check remain the
 usual entry points for validating a change.
+
+## Manual hosted category sweep
+
+Dispatch **Category full sweep** on the default branch. The workflow publishes
+one separate job per nonempty category and host assignment, then verifies the
+exact union. Ubuntu owns shared IDs and Linux-only IDs. Darwin owns the opt-in
+native cases and Darwin-only IDs. Each job collects its full host inventory to
+detect drift before running its assigned profile slices.
+
+The reconcile job requires every planned receipt for its source and workflow
+attempt. A passing run uploads `category-verdict.json`, including the empty
+categories and per-job timings. A failed or incomplete worker prevents a passing
+verdict. Re-run all jobs for a fresh attempt.

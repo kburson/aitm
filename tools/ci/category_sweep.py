@@ -10,6 +10,7 @@ import signal
 import subprocess
 import sys
 from collections import Counter, defaultdict
+from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -401,9 +402,8 @@ def read_catalog(path, host):
     return result
 
 
-def sweep(repository, output, *, serial=False):
-    source = identity(repository)
-    host = sys.platform
+@contextmanager
+def isolated_roots():
     cache = Path.home() / ".cache" / "aitm-category-sweep"
     cache.mkdir(mode=0o700, parents=True, exist_ok=True)
     with (
@@ -412,28 +412,40 @@ def sweep(repository, output, *, serial=False):
     ):
         scratch = Path(directory).resolve()
         short_scratch = Path(short_directory).resolve()
-        # Provision the common ancestor before source readers start. Some
-        # fixtures intentionally detect metadata changes along the entire path.
+        # Establish the common ancestor before source readers start.
         for lane in ("collect", "serial", *CATEGORIES):
             (scratch / lane).mkdir(mode=0o700)
             (short_scratch / lane).mkdir(mode=0o700)
-        collector = scratch / "collect" / "checkout"
-        env, temp = workspace(repository, collector, source, short_scratch / "collect")
-        catalog = read_catalog(collector / CATALOG, host)
-        collect_out = scratch / "observations"
-        collect_out.mkdir(mode=0o700)
-        collections = {}
-        for profile, path in PROFILES.items():
-            data = pytest_profile(
-                collector, temp, env, collect_out, profile, path, collect=True
-            )
-            require(
-                data["schema"] == PYTEST_SCHEMA
-                and data["exit_code"] == 0
-                and not data["deselected"],
-                f"invalid collection receipt: {profile}",
-            )
-            collections[profile] = data["collected"]
+        yield scratch, short_scratch
+
+
+def collect_profiles(repository, source, scratch, short_scratch):
+    collector = scratch / "collect" / "checkout"
+    env, temp = workspace(repository, collector, source, short_scratch / "collect")
+    collect_out = scratch / "observations"
+    collect_out.mkdir(mode=0o700)
+    collections = {}
+    for profile, path in PROFILES.items():
+        data = pytest_profile(
+            collector, temp, env, collect_out, profile, path, collect=True
+        )
+        require(
+            data["schema"] == PYTEST_SCHEMA
+            and data["exit_code"] == 0
+            and not data["deselected"],
+            f"invalid collection receipt: {profile}",
+        )
+        collections[profile] = data["collected"]
+    require(identity(collector) == source, "collection source changed")
+    return collections
+
+
+def sweep(repository, output, *, serial=False):
+    source = identity(repository)
+    host = sys.platform
+    with isolated_roots() as (scratch, short_scratch):
+        catalog = read_catalog(repository / CATALOG, host)
+        collections = collect_profiles(repository, source, scratch, short_scratch)
         lanes = assign(collections, catalog)
         if serial:
             lanes = {"serial": collections}
