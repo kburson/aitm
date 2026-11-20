@@ -41,6 +41,10 @@ def slot_name(slot):
     return "-".join(slot)
 
 
+def artifact_name(slot, context):
+    return f"category-a{context['attempt']}-{slot_name(slot)}"
+
+
 def slot_plan(source, slot, profiles, context):
     host, category = slot
     return {
@@ -53,7 +57,7 @@ def slot_plan(source, slot, profiles, context):
 
 
 def aggregate(assignments, source, context, artifacts):
-    expected = {slot_name(slot) for slot in assignments}
+    expected = {artifact_name(slot, context) for slot in assignments}
     actual = {path.name for path in artifacts.iterdir()}
     sweep.require(
         actual == expected,
@@ -63,7 +67,7 @@ def aggregate(assignments, source, context, artifacts):
     children = Counter()
     receipts = {}
     for slot, profiles in assignments.items():
-        artifact = artifacts / slot_name(slot)
+        artifact = artifacts / artifact_name(slot, context)
         plan = slot_plan(source, slot, profiles, context)
         receipt = sweep.verify(plan, artifact, require_children=False)
         timing = sweep.read(artifact / "timing.json")

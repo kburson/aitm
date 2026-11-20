@@ -46,3 +46,6 @@ def test_attempt_is_included_in_worker_plan_binding():
     one = hosted.slot_plan(*args, {"run_id": "123", "attempt": "1"})
     two = hosted.slot_plan(*args, {"run_id": "123", "attempt": "2"})
     assert sweep.digest(sweep.encoded(one)) != sweep.digest(sweep.encoded(two))
+    assert hosted.artifact_name(args[1], one["run"]) != hosted.artifact_name(
+        args[1], two["run"]
+    )
