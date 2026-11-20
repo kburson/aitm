@@ -1,0 +1,168 @@
+{
+  "children": {
+    "cli-help": 1,
+    "service-one-shot": 1
+  },
+  "empty_categories": [
+    "slow-unit"
+  ],
+  "exact_phase_parity": true,
+  "jobs": {
+    "darwin / local-integration": {
+      "bootstrap_seconds": 10.0,
+      "completed": "2026-11-20T22:51:34Z",
+      "created": "2026-11-20T22:51:03Z",
+      "execution_seconds": 0.702,
+      "job_id": 136619916280,
+      "plan_sha256": "9b5bd038083ddd13c69a85755fb699692a2be6b4924f2f2d66aad5d5cfcf4f06",
+      "queue_seconds": 2.0,
+      "setup_seconds": 14.113,
+      "started": "2026-11-20T22:51:05Z",
+      "wall_seconds": 29.0
+    },
+    "darwin / systems-integration": {
+      "bootstrap_seconds": 8.0,
+      "completed": "2026-11-20T22:51:30Z",
+      "created": "2026-11-20T22:51:03Z",
+      "execution_seconds": 1.294,
+      "job_id": 136619916321,
+      "plan_sha256": "b67120cf1e5e075632199786033633f0eef97cebb14e65fa475cdcd6c0315f31",
+      "queue_seconds": 2.0,
+      "setup_seconds": 10.461,
+      "started": "2026-11-20T22:51:05Z",
+      "wall_seconds": 25.0
+    },
+    "linux / fast-unit": {
+      "bootstrap_seconds": 12.0,
+      "completed": "2026-11-20T22:51:33Z",
+      "created": "2026-11-20T22:51:03Z",
+      "execution_seconds": 3.93,
+      "job_id": 136619916364,
+      "plan_sha256": "67d37413e04dc23e3265ef55ed2d38a74f3c7a2213599fcc814b3b65602fcd76",
+      "queue_seconds": 2.0,
+      "setup_seconds": 5.849,
+      "started": "2026-11-20T22:51:05Z",
+      "wall_seconds": 28.0
+    },
+    "linux / local-integration": {
+      "bootstrap_seconds": 12.0,
+      "completed": "2026-11-20T22:55:33Z",
+      "created": "2026-11-20T22:51:03Z",
+      "execution_seconds": 245.015,
+      "job_id": 136619916300,
+      "plan_sha256": "ab289db19558db7047d0853e7c1ef1463e700a999aae6710efe338470dfecd15",
+      "queue_seconds": 2.0,
+      "setup_seconds": 5.535,
+      "started": "2026-11-20T22:51:05Z",
+      "wall_seconds": 268.0
+    },
+    "linux / systems-integration": {
+      "bootstrap_seconds": 5.0,
+      "completed": "2026-11-20T22:54:31Z",
+      "created": "2026-11-20T22:51:03Z",
+      "execution_seconds": 187.445,
+      "job_id": 136619916215,
+      "plan_sha256": "c6f5013b1c3558323f1cb22463201e64c173607554a1d6bc844477659d5b4093",
+      "queue_seconds": 2.0,
+      "setup_seconds": 7.46,
+      "started": "2026-11-20T22:51:05Z",
+      "wall_seconds": 206.0
+    },
+    "plan": {
+      "completed": "2026-11-20T22:51:03Z",
+      "created": "2026-11-20T22:50:52Z",
+      "job_id": 136619833735,
+      "queue_seconds": 2.0,
+      "started": "2026-11-20T22:50:54Z",
+      "wall_seconds": 9.0
+    },
+    "reconcile": {
+      "completed": "2026-11-20T22:55:50Z",
+      "created": "2026-11-20T22:55:33Z",
+      "job_id": 136621885420,
+      "queue_seconds": 3.0,
+      "started": "2026-11-20T22:55:36Z",
+      "wall_seconds": 14.0
+    }
+  },
+  "observed_skips": [
+    [
+      "tools/ci/tests/test_tia_snapshot.py::test_local_git_config_and_path_identity",
+      "filesystem has no normalization aliases"
+    ]
+  ],
+  "reconciled_verdict_sha256": "9886365bedde0f35aded9efd6b97a849abad4565fc9786bfdb4703fb3dbc8c7e",
+  "registration": "2026-11-20T22:50:51Z",
+  "run_url": "https://github.com/kburson/aitm/actions/runs/44832254172",
+  "source": {
+    "commit": "4ae7a3b3d062d702d0d8ccfd1adc113b1732a0f8",
+    "tree": "367cea87bc0f2d9b9266e0004f5de4ede17b6b5b"
+  },
+  "started": "2026-11-20T22:50:51Z",
+  "total_ids": 2333,
+  "total_phases": 7083,
+  "updated": "2026-11-20T22:55:50Z",
+  "workflow": {
+    "attempt": "1",
+    "event": "workflow_dispatch",
+    "repository": "kburson/aitm",
+    "run_id": "44832254172",
+    "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+  },
+  "artifacts": [
+    {
+      "id": 14677451233,
+      "name": "category-a1-darwin-local-integration",
+      "digest": "sha256:936a5df80083d44f4367bdfa963b99de330d3cc1b197276e0985878fa21b2ca3"
+    },
+    {
+      "id": 14677576165,
+      "name": "category-a1-darwin-systems-integration",
+      "digest": "sha256:42ef34cbffdae848782ec29e7d3466f2af70f770c710487b2a6dc9debad304ce"
+    },
+    {
+      "id": 14677760930,
+      "name": "category-a1-linux-fast-unit",
+      "digest": "sha256:58e76f965cbf64d29b0c8b193cf1baed6048c501c5a631edbc51872110e429e7"
+    },
+    {
+      "id": 14677241202,
+      "name": "category-a1-linux-local-integration",
+      "digest": "sha256:2a5bf14139ddf790bd0a9ceab8a35e1096cf057dc9dc45e2ce7bd76d58c88137"
+    },
+    {
+      "id": 14677276901,
+      "name": "category-a1-linux-systems-integration",
+      "digest": "sha256:c5beff4e37b7dc73548fb97985a98d953b87dd58ae11971bf7c222bf74245063"
+    },
+    {
+      "id": 14677811494,
+      "name": "category-verdict-a1",
+      "digest": "sha256:9471806e883b53da1ecd5ddd5c4363ee36ee54f8739cc300774187ef8c70b497"
+    }
+  ],
+  "serial_parity": {
+    "cross_host_ids": 2333,
+    "reference": {
+      "darwin": {
+        "matched_ids": 17,
+        "matched_phases": 51,
+        "serial_ids": 2326,
+        "source": {
+          "commit": "0f3d5e8db1f05680f303c956bbee6c67a9a5dd18",
+          "tree": "367cea87bc0f2d9b9266e0004f5de4ede17b6b5b"
+        }
+      },
+      "linux": {
+        "matched_ids": 2316,
+        "matched_phases": 7032,
+        "serial_ids": 2331,
+        "source": {
+          "commit": "0f3d5e8db1f05680f303c956bbee6c67a9a5dd18",
+          "tree": "367cea87bc0f2d9b9266e0004f5de4ede17b6b5b"
+        }
+      }
+    },
+    "same_source_phase_parity": true
+  }
+}

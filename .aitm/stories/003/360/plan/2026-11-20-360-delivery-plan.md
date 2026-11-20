@@ -12,8 +12,8 @@ Deliver a manually triggered CI full sweep with matching semantics.
 
 - [x] Bind the shared local manifest and result contract from #359. Decide workflow and runner mapping after #358's capability results and the local proof. Preserve the ordinary CI workflow's inputs, required checks and authority.
 - [x] Add a separately dispatched workflow with distinct compatible category jobs and an aggregate job. Give each job isolated inputs and outputs. Bind artifacts to source, workflow run, attempt, profile and shard. Apply the accepted exclusive and platform requirements.
-- [ ] Verify hosted exact-ID and outcome parity with the local reference, including required children. Exercise a failing category and a missing, cancelled or stale receipt. Capture queue, setup and execution intervals and make the job verdict readable without relying on a single shard result.
-- [ ] Deliver through the existing PR gate. Record exact hosted success and the negative control before handing off to #361.
+- [x] Verify hosted exact-ID and outcome parity with the local reference, including required children. Exercise a failing category and a missing, cancelled or stale receipt. Capture queue, setup and execution intervals and make the job verdict readable without relying on a single shard result.
+- [x] Deliver through the existing PR gate. Record exact hosted success and the negative control before handing off to #361.
 
 ## Test checkpoint
 
@@ -60,3 +60,7 @@ After six completed exact-head attempts, #410 remains open. Five attempts passed
 PR #414 restored the ordinary trunk push job names before #411 closed. At the updated base, [Grok requested an explicit managed Python root and regression coverage](https://github.com/kburson/aitm/pull/410#pullrequestreview-6000315078). The revised candidate pre-creates that owner-only Linux directory and passes the scratch path through both callers. Both new Linux and Darwin setup cases are included in the exclusive catalog. The [exact revised local rehearsal](../attachments/2026-11-20-360-revised-local-matrix.json) passed 2,333 IDs in five jobs with the reproducing ACL on Linux. The candidate also passed 172 focused tests and the repository-pinned lint and format checks.
 
 [PR #410](https://github.com/kburson/aitm/pull/410) merged at `4ae7a3b3d062d702d0d8ccfd1adc113b1732a0f8` after #411 was verified closed and Done, the exact [Grok re-review](https://github.com/kburson/aitm/pull/410#pullrequestreview-6000345326) passed, all six [canonical PR jobs](https://github.com/kburson/aitm/actions/runs/44830699642/attempts/1) succeeded and the [trusted verifier](../attachments/2026-11-20-360-pr410-trusted-verifier.json) passed. Remote trunk contained the reviewed head on its exact tested tree. Hosted acceptance is still pending at this checkpoint.
+
+## Hosted acceptance
+
+[Manual dispatch 44832254172, attempt 1](https://github.com/kburson/aitm/actions/runs/44832254172/attempts/1) passed all five category workers on the delivered trunk source. The [authenticated acceptance receipt](../attachments/2026-11-20-360-hosted-acceptance.json) contains exact outcome and serial parity, timings, the verified six archive digests and the independently reproduced verdict digest. The first hosted refusal remains the recorded negative control. The [signed closeout](../retro/2026-11-20-360-sign-off.md) releases #361.
