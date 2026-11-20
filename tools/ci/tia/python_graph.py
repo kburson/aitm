@@ -424,6 +424,15 @@ class _GraphBuilder:
         except (SyntaxError, ValueError, RecursionError):
             self._unknown(path, "python-parse")
             return
+        if (
+            self.scoped_imports
+            and path.rpartition(b"/")[2] == b"__init__.py"
+            and any(
+                isinstance(node, ast.Name) and node.id == "__path__" for node in nodes
+            )
+        ):
+            # The initializer can redirect child imports beyond the indexed roots.
+            self._unknown(path, "package-search-path")
         for node in nodes:
             if isinstance(node, ast.Import):
                 for alias in node.names:

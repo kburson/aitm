@@ -1029,3 +1029,41 @@ def test_probe_import_uncertainty_matches_the_target_or_reached_reader(
         if item.reader == hidden.encode() and item.code == reason
     } == {"before", "after"}
     assert (_key(node) in result.selected) == (mode == "full")
+
+
+def test_probe_cannot_discard_imports_through_a_mutated_package_path(repo):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    _write(
+        repo,
+        "src/pkg/__init__.py",
+        b"from pathlib import Path\n__path__.append(str(Path(__file__).parents[1] / 'alt'))\n",
+    )
+    _write(repo, "src/alt/__init__.py", b"")
+    _write(repo, "src/alt/leaf.py", b"enabled = True\n")
+    _write(repo, _TARGET, b"from alt import leaf\ndef test_use(): assert leaf\n")
+    _write(
+        repo, hidden, b"import pkg.leaf\ndef test_hidden(): assert pkg.leaf.enabled\n"
+    )
+    base = _commit(repo)
+    _write(repo, "src/alt/leaf.py", b"enabled = False\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("pathlib",))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert _witnesses(result, b"src/alt/leaf.py")
+    assert result.mode == "full"
+    assert _key(node) in result.selected
+    assert {
+        item.side
+        for path in result.paths
+        for item in path.uncertainties
+        if item.code == "package-search-path"
+    } == {"before", "after"}
