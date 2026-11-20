@@ -622,10 +622,12 @@ class _SideGraph:
     missing: dict
     declarations: set
     tests: dict
+    scoped_imports: bool
 
 
 def _side_graph(snapshot, entries, inventory, surviving, provider, declarations):
-    graph = build_graph(snapshot, provider)
+    scoped = isinstance(snapshot.provenance, ProbeProvenance)
+    graph = build_graph(snapshot, provider, scoped_imports=scoped)
     reverse = defaultdict(list)
     missing = defaultdict(list)
     declared_endpoints = set()
@@ -675,7 +677,9 @@ def _side_graph(snapshot, entries, inventory, surviving, provider, declarations)
                     None,
                 )
             )
-    return _SideGraph(reverse, tuple(unresolved), missing, declared_endpoints, tests)
+    return _SideGraph(
+        reverse, tuple(unresolved), missing, declared_endpoints, tests, scoped
+    )
 
 
 def _walk(seed, reverse):
@@ -713,12 +717,20 @@ def _trace(path, sides, graphs, rule):
             if keys := graph.tests.get(consumer):
                 hops = _hops(consumer, reached)
                 witnesses.extend(Witness(path, key, side, hops) for key in keys)
+        if graph.scoped_imports:
+            for consumer in reached:
+                if consumer.rpartition(b"/")[2] == b"conftest.py":
+                    uncertainties.append(Uncertainty("shared-conftest", side, consumer))
         for record in graph.unresolved:
             bounds = record.possible_inputs
-            if bounds is None or any(
-                candidate == prefix or candidate.startswith(prefix + b"/")
-                for candidate in reached
-                for prefix in bounds
+            if (
+                bounds is None
+                or (graph.scoped_imports and record.reader in reached)
+                or any(
+                    candidate == prefix or candidate.startswith(prefix + b"/")
+                    for candidate in reached
+                    for prefix in bounds
+                )
             ):
                 uncertainties.append(
                     Uncertainty(
@@ -813,6 +825,10 @@ def select(
 
     try:
         provider_digest = _policy_digest(policy.provider)
+        if isinstance(after.provenance, ProbeProvenance):
+            provider_digest = sha256(
+                f"scoped-imports:{provider_digest}".encode()
+            ).hexdigest()
     except ValueError as error:
         reasons.append(f"provider-policy: {error}")
     try:
@@ -863,6 +879,14 @@ def select(
             obligation_reasons=tuple(obligations),
             **common,
         )
+
+    if isinstance(after.provenance, ProbeProvenance):
+        agreement = after.provenance.path_agreement
+        if agreement and (agreement.divergence_only or agreement.tested_only):
+            reasons.append(
+                f"pr-path-set-mismatch: divergence-only {agreement.divergence_only!r}, "
+                f"tested-only {agreement.tested_only!r}"
+            )
 
     removed = changed = ()
     if old is not None:

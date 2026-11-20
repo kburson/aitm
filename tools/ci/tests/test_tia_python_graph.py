@@ -447,3 +447,44 @@ def test_bound_read_failure_refuses_graph():
 def test_invalid_policy_cannot_authorize_a_graph(rules):
     with pytest.raises(ValueError):
         build_graph(Endpoint({}), rules)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"import importlib\nresult = importlib.import_module('pkg.leaf')",
+        b"from importlib import import_module\ndef load():\n    name = 'pkg.leaf'\n    return import_module(name)",
+    ],
+)
+def test_probe_bounds_canonical_loads_to_file_and_initializer(body):
+    reader = b"tests/test_reader.py"
+    init = b"app/pkg/__init__.py"
+    leaf = b"app/pkg/leaf.py"
+    graph = build_graph(
+        Endpoint({reader: body, init: b"", leaf: b""}),
+        policy(b"app", b"tests", external_modules=("importlib",)),
+        scoped_imports=True,
+    )
+    assert (
+        UnresolvedScope(reader, "dynamic-import", "", (init, leaf)) in graph.unresolved
+    )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"import importlib\nloader = importlib.import_module",
+        b"import importlib\nimportlib.import_module('pkg.leaf')\nimportlib.import_module(name)",
+        b"import importlib as imp\nimp.import_module('pkg.leaf')",
+        b"import importlib\ndef load():\n    name = 'pkg.leaf'\n    def other():\n        nonlocal name\n        name = 'pkg.other'\n    return importlib.import_module(name)",
+        b"import importlib\nimportlib.import_module('.leaf', 'pkg')",
+    ],
+)
+def test_probe_preserves_uncertainty_for_unsupported_dynamic_use(body):
+    reader = b"tests/test_reader.py"
+    graph = build_graph(
+        Endpoint({reader: body, b"app/pkg/leaf.py": b""}),
+        policy(b"app", b"tests", external_modules=("importlib",)),
+        scoped_imports=True,
+    )
+    assert UnresolvedScope(reader, "dynamic-import", "", None) in graph.unresolved
