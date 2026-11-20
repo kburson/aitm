@@ -145,3 +145,30 @@ A full decision lists the full applicable candidate inventory. Missing or
 changed inputs or an unavailable candidate inventory return exit 2 with no
 assignment. An emitted plan returns exit 0. The production PR gate continues
 to use the hosted path map.
+
+## Local category sweep
+
+Run the opt-in full sweep from a clean AITM checkout with Python 3.13, uv,
+Git, and the native tools used by the suite. The checkout needs complete
+Git history, including the historical planning fixture
+`17761cc1928fd916cf32a9c078d4a742bfcb32b8`. Use a new output directory outside
+the checkout.
+
+```sh
+python3.13 -m tools.ci.category_sweep run --output /tmp/aitm-sweep
+```
+
+The command collects five profiles, reconciles the exact IDs to the reviewed
+Darwin or Linux catalog, and runs the nonempty categories concurrently. The
+catalog includes the known platform differences and leaves an empty category
+visible in the plan. A changed inventory requires a reviewed catalog update
+before the full sweep can pass.
+
+Each category gets a standalone checkout, locked environment, private temporary
+state and separate output. The coordinator validates every phase and the two
+required child-process results before writing `result.json`. If a run fails,
+inspect its category and profile logs. Rerun into a new directory. Add
+`--serial` for the unsharded reference on the same committed source.
+
+The ordinary affected-test command and the hosted PR path-map check remain the
+usual entry points for validating a change.
