@@ -32,3 +32,9 @@ The [local cross-host receipt](../attachments/2026-11-20-360-local-matrix.json) 
 ## Source merge
 
 [PR #409](https://github.com/kburson/aitm/pull/409) merged as `7ba4045e1b3cac6d2348975b70edc62acf4e8a5d` after the [same-head CI retry](https://github.com/kburson/aitm/actions/runs/44777136829/attempts/2), exact-head Grok review and [trusted verifier](../attachments/2026-11-20-360-trusted-verifier.json) passed. Authenticated trunk contains the reviewed head and matches the tested tree. #360 stays in Review pending actual hosted success and the incomplete-run control.
+
+## Real hosted failure and correction
+
+[First hosted dispatch](https://github.com/kburson/aitm/actions/runs/44779614794) ran five shards on the delivered tree. Both Darwin jobs passed and published receipts. The Linux jobs refused custody fixtures whose path traversed an extended ACL on `/home`. Reconcile rejected the unsuccessful workers and published no overall verdict. [Authenticated failure summary](../attachments/2026-11-20-360-first-hosted-refusal.json).
+
+[PR #410](https://github.com/kburson/aitm/pull/410) moves Linux checkouts, fixtures and managed Python to private `/var/tmp` storage. A disposable guest with a real `/home` ACL reproduced the original failure and the corrected fast-unit shard passed under the same ACL. The complete corrected matrix and the exact-head PR gates precede repeat hosted qualification.

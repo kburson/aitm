@@ -1,0 +1,76 @@
+{
+  "run": {
+    "html_url": "https://github.com/kburson/aitm/actions/runs/44779614794",
+    "head_sha": "7ba4045e1b3cac6d2348975b70edc62acf4e8a5d",
+    "run_attempt": 1,
+    "event": "workflow_dispatch",
+    "conclusion": "failure",
+    "created_at": "2026-11-20T17:03:59Z",
+    "run_started_at": "2026-11-20T17:03:59Z"
+  },
+  "jobs": [
+    {
+      "name": "plan",
+      "conclusion": "success",
+      "started_at": "2026-11-20T17:04:03Z",
+      "completed_at": "2026-11-20T17:04:17Z",
+      "failed_step": null
+    },
+    {
+      "name": "darwin / systems-integration",
+      "conclusion": "success",
+      "started_at": "2026-11-20T17:04:22Z",
+      "completed_at": "2026-11-20T17:05:00Z",
+      "failed_step": null
+    },
+    {
+      "name": "linux / systems-integration",
+      "conclusion": "failure",
+      "started_at": "2026-11-20T17:04:22Z",
+      "completed_at": "2026-11-20T17:04:48Z",
+      "failed_step": "Run the assigned category"
+    },
+    {
+      "name": "linux / fast-unit",
+      "conclusion": "failure",
+      "started_at": "2026-11-20T17:04:22Z",
+      "completed_at": "2026-11-20T17:04:43Z",
+      "failed_step": "Run the assigned category"
+    },
+    {
+      "name": "darwin / local-integration",
+      "conclusion": "success",
+      "started_at": "2026-11-20T17:04:37Z",
+      "completed_at": "2026-11-20T17:05:09Z",
+      "failed_step": null
+    },
+    {
+      "name": "linux / local-integration",
+      "conclusion": "failure",
+      "started_at": "2026-11-20T17:04:22Z",
+      "completed_at": "2026-11-20T17:05:43Z",
+      "failed_step": "Run the assigned category"
+    },
+    {
+      "name": "reconcile",
+      "conclusion": "failure",
+      "started_at": "2026-11-20T17:05:46Z",
+      "completed_at": "2026-11-20T17:05:53Z",
+      "failed_step": "Reject failing or incomplete worker jobs"
+    }
+  ],
+  "artifacts": [
+    {
+      "name": "category-a1-darwin-systems-integration",
+      "id": 14652385663,
+      "digest": "sha256:699f6740b447e715f60abd7bb5d5e8e8013c34393ab0b76bc21073fcc1f30443"
+    },
+    {
+      "name": "category-a1-darwin-local-integration",
+      "id": 14652110879,
+      "digest": "sha256:2165e069078aee247e8c503529479c5e7c4beebee95c17b889e76aa192fa8b66"
+    }
+  ],
+  "passing_verdict": false,
+  "reason": "Ubuntu custody validation refused an extended POSIX ACL on /home. The aggregate rejected unsuccessful workers."
+}
