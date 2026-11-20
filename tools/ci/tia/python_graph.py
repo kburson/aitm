@@ -287,6 +287,7 @@ class _GraphBuilder:
             for scope in self.policy.pytest_scopes
             for path in scope.test_paths
         )
+        self.invocation_roots = roots.union(self.policy.import_roots)
         self.sources.update(
             path for path in self.entries if b"/" not in path and path.endswith(b".py")
         )
@@ -321,7 +322,7 @@ class _GraphBuilder:
     def _name_bounds(self, name):
         parts = name.split(".")
         if name not in self.owners:
-            return None
+            return self._missing_module_bounds(parts, require_package=True)
         return tuple(
             sorted(
                 {
@@ -331,6 +332,33 @@ class _GraphBuilder:
                 }
             )
         )
+
+    def _missing_module_bounds(self, parts, *, require_package=False):
+        """Bound a missing spelling to module files under supported import roots."""
+        bounds = set()
+        locations = set()
+        for stop in range(1, len(parts)):
+            suffix = "/".join(parts[stop:]).encode()
+            for owner in self.owners.get(".".join(parts[:stop]), ()):
+                if owner.kind == "package-init":
+                    directory = owner.path.rpartition(b"/")[0]
+                    bounds.add(owner.path)
+                elif owner.kind == "namespace":
+                    directory = owner.path
+                    bounds.add(directory + b"/__init__.py")
+                else:
+                    continue
+                locations.add(directory + b"/" + suffix)
+        if require_package and not locations:
+            return None
+        if not require_package:
+            stem = "/".join(parts).encode()
+            locations.update(
+                root + b"/" + stem if root else stem for root in self.invocation_roots
+            )
+        for location in locations:
+            bounds.update((location + b".py", location + b"/__init__.py"))
+        return tuple(sorted(bounds))
 
     def _resolve_import(self, reader, name):
         parts = name.split(".")
@@ -350,7 +378,8 @@ class _GraphBuilder:
         if name not in self.owners and (
             parts[0] in self.owners or parts[0] not in self.policy.external_modules
         ):
-            self._unknown(reader, "unresolved-import", name)
+            bounds = self._missing_module_bounds(parts) if self.scoped_imports else None
+            self._unknown(reader, "unresolved-import", name, bounds)
 
     def _from_import(self, reader, node):
         if node.level:
@@ -421,7 +450,7 @@ class _GraphBuilder:
                 resolved = [self._name_bounds(name) for name in names or ()]
                 bounds = (
                     tuple(sorted({file for group in resolved for file in group}))
-                    if names is not None and all(resolved)
+                    if resolved and all(resolved)
                     else None
                 )
             self._unknown(path, "dynamic-import", prefixes=bounds)

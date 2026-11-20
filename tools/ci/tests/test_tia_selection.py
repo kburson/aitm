@@ -962,3 +962,70 @@ def test_probe_shared_input_forces_full_when_reached_transitively(repo):
         "before",
         "after",
     }
+
+
+@pytest.mark.parametrize(
+    ("source", "target", "mode", "reason"),
+    [
+        (b"import pkg.missing\n", "pkg/leaf", "selected", "unresolved-import"),
+        (b"import missing\n", "pkg/leaf", "selected", "unresolved-import"),
+        (
+            b"import pkg.missing\nimport pkg.leaf\n",
+            "pkg/leaf",
+            "full",
+            "unresolved-import",
+        ),
+        (
+            b"from importlib.util import find_spec\nfind_spec('pkg.leaf')\n",
+            "pkg/leaf",
+            "full",
+            "dynamic-import",
+        ),
+        (
+            b"import importlib\nimportlib.util.find_spec('pkg')\n",
+            "pkg/__init__",
+            "full",
+            "dynamic-import",
+        ),
+    ],
+)
+def test_probe_import_uncertainty_matches_the_target_or_reached_reader(
+    repo, source, target, mode, reason
+):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    path = f"src/{target}.py"
+    _write(repo, "src/pkg/__init__.py", b"")
+    _write(repo, "src/pkg/leaf.py", b"")
+    direct_import = (
+        b"import pkg\n" if target.endswith("__init__") else b"import pkg.leaf\n"
+    )
+    _write(repo, _TARGET, direct_import)
+    _write(repo, hidden, source)
+    base = _commit(repo)
+    _write(repo, path, b"VALUE = 1\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("importlib",))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert result.mode == mode
+    assert _witnesses(result, path.encode())
+    (disposition,) = result.paths
+    records = (
+        disposition.uncertainties
+        if mode == "full"
+        else disposition.disjoint_uncertainties
+    )
+    assert {
+        item.side
+        for item in records
+        if item.reader == hidden.encode() and item.code == reason
+    } == {"before", "after"}
+    assert (_key(node) in result.selected) == (mode == "full")

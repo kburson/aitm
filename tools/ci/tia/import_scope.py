@@ -119,7 +119,6 @@ def dynamic_modules(tree):
     nodes = tuple(ast.walk(tree))
     parents = {child: node for node in nodes for child in ast.iter_child_nodes(node)}
     names = set()
-    recognized = False
     for node in nodes:
         if isinstance(node, ast.alias):
             declaration = parents[node]
@@ -186,14 +185,6 @@ def dynamic_modules(tree):
         name = _module_argument(call.args[0], scope, statement)
         if name is None:
             return None
-        recognized = True
-        if (
-            member == "find_spec"
-            or isinstance(loader, ast.Attribute)
-            and loader.attr == "find_spec"
-        ):
-            # A canonical spec lookup can import the parent, but leaves the target unloaded.
-            name = name.rpartition(".")[0]
-        if name:
-            names.add(name)
-    return tuple(sorted(names)) if recognized else None
+        # A spec lookup observes the target even if it only imports the parent.
+        names.add(name)
+    return tuple(sorted(names)) if names else None

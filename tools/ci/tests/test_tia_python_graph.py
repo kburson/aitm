@@ -569,20 +569,36 @@ def test_probe_keeps_hidden_consumers_conservative(
     )
 
 
-def test_probe_bounds_canonical_find_spec_to_parent_initializers():
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("pkg", (b"app/pkg/__init__.py",)),
+        ("pkg.leaf", (b"app/pkg/__init__.py", b"app/pkg/leaf.py")),
+        (
+            "pkg.missing",
+            (
+                b"app/pkg/__init__.py",
+                b"app/pkg/missing.py",
+                b"app/pkg/missing/__init__.py",
+            ),
+        ),
+        ("unknown", None),
+    ],
+)
+def test_probe_find_spec_accounts_for_the_named_module(name, expected):
     reader = b"tests/test_reader.py"
-    init = b"app/pkg/__init__.py"
     graph = build_graph(
         Endpoint(
             {
-                reader: b"from importlib.util import find_spec\nfind_spec('pkg.missing')",
-                init: b"",
+                reader: f"from importlib.util import find_spec\nfind_spec({name!r})".encode(),
+                b"app/pkg/__init__.py": b"",
+                b"app/pkg/leaf.py": b"",
             }
         ),
         policy(b"app", b"tests", external_modules=("importlib",)),
         scoped_imports=True,
     )
-    assert UnresolvedScope(reader, "dynamic-import", "", (init,)) in graph.unresolved
+    assert UnresolvedScope(reader, "dynamic-import", "", expected) in graph.unresolved
 
 
 def test_probe_bounds_canonical_resource_lookup_to_the_package():
