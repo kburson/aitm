@@ -25,13 +25,7 @@ env:
 jobs:
   python-base:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    name: ${{ matrix.job }}
-    strategy:
-      matrix:
-        include:
-          - job: python-base
-            runner: ubuntu-24.04
-    runs-on: ${{ matrix.runner }}
+    runs-on: &linux_python_runner ubuntu-24.04
     timeout-minutes: 8
     permissions:
       contents: read
@@ -53,7 +47,7 @@ jobs:
       - name: Run isolated trusted base inventory and outcomes
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          RUNNER_LABEL: ${{ matrix.runner }}
+          RUNNER_LABEL: *linux_python_runner
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
@@ -139,13 +133,7 @@ jobs:
 
   python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    name: ${{ matrix.job }}
-    strategy:
-      matrix:
-        include:
-          - job: python
-            runner: ubuntu-24.04
-    runs-on: ${{ matrix.runner }}
+    runs-on: *linux_python_runner
     timeout-minutes: 20
     permissions:
       actions: read
@@ -174,7 +162,7 @@ jobs:
         id: qualify
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
-          RUNNER_LABEL: ${{ matrix.runner }}
+          RUNNER_LABEL: *linux_python_runner
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
@@ -289,7 +277,7 @@ jobs:
       - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
-          RUNNER_LABEL: ${{ matrix.runner }}
+          RUNNER_LABEL: *linux_python_runner
         shell: bash
         run: |
           root=$(pwd -P)
