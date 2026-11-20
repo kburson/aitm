@@ -179,7 +179,8 @@ Dispatch **Category full sweep** on the default branch. The workflow publishes
 one separate job per nonempty category and host assignment, then verifies the
 exact union. Ubuntu owns shared IDs and Linux-only IDs. Darwin owns the opt-in
 native cases and Darwin-only IDs. Each job collects its full host inventory to
-detect drift before running its assigned profile slices.
+detect drift before running its assigned profile slices. Workers retain the
+same pinned historical planning fixture used by the local sweep.
 
 The reconcile job requires every planned receipt for its source and workflow
 attempt. A passing run uploads `category-verdict.json`, including the empty
