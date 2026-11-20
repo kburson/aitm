@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 356
 title: "Shard tests by execution category"
 kind: "epic"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/356"
 parent: null
 children: [357, 358, 359, 360, 361]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:22:44Z"
+updated: "2026-11-20T14:30:11Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"

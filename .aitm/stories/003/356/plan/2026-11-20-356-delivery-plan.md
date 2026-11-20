@@ -10,6 +10,8 @@ Coordinate the research, local, hosted and scheduled full-sweep work.
 
 ## Sequence and release evidence
 
+Move the parent epic into Dev before moving any child into Dev.
+
 | Child | Prerequisite | Evidence handed forward |
 | --- | --- | --- |
 | [#357](../../357/story.md) | Owner pickup | Exact category register, timing provenance, exception and platform inventory |
