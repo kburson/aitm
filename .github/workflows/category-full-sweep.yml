@@ -1,0 +1,147 @@
+name: Category full sweep
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/trunk' && github.event.repository.default_branch == 'trunk'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.assign.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Assign the exact host matrix
+        id: assign
+        shell: bash
+        run: |
+          matrix=$(python -m tools.ci.hosted_category_sweep matrix)
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
+  shards:
+    needs: plan
+    name: ${{ matrix.host }} / ${{ matrix.category }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Retain the exact historical planning fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture=17761cc1928fd916cf32a9c078d4a742bfcb32b8
+          if ! git cat-file -e "$fixture^{commit}"; then
+            git fetch --no-tags origin "$fixture"
+          fi
+          git update-ref refs/tags/aitm-category-sweep-planning-fixture "$fixture"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Pin the GitHub CLI used by the suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          cli=$(mktemp -d "$RUNNER_TEMP/category-gh.XXXXXX")
+          cd "$cli"
+          case "$(uname -s):$(uname -m)" in
+            Linux:x86_64)
+              archive=gh_2.97.0_linux_amd64.tar.gz
+              hash=a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112
+              directory=gh_2.97.0_linux_amd64
+              ;;
+            Darwin:arm64)
+              archive=gh_2.97.0_macOS_arm64.zip
+              hash=a58b8fd77b417a38f47a0b54d1370c59b0fcdb324ccc9ca002b0998f7c4c999e
+              directory=gh_2.97.0_macOS_arm64
+              ;;
+            *) exit 1 ;;
+          esac
+          curl --fail --silent --show-error --location --retry 3 \
+            "https://github.com/cli/cli/releases/download/v2.97.0/$archive" -o "$archive"
+          printf '%s  %s\n' "$hash" "$archive" | shasum -a 256 -c -
+          case "$archive" in
+            *.tar.gz) tar -xzf "$archive" ;;
+            *.zip) unzip -q "$archive" ;;
+          esac
+          printf '%s/bin\n' "$cli/$directory" >> "$GITHUB_PATH"
+      - name: Run the assigned category
+        shell: bash
+        env:
+          SWEEP_HOST: ${{ matrix.host }}
+          SWEEP_CATEGORY: ${{ matrix.category }}
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/category-run"
+          if ! python -m tools.ci.hosted_category_sweep execute "$SWEEP_HOST" "$SWEEP_CATEGORY" "$output"; then
+            if [[ -d "$output" ]]; then
+              find "$output" -name '*.log' -exec tail -n 80 {} +
+            fi
+            exit 1
+          fi
+          receipt="$RUNNER_TEMP/category-receipt"
+          mkdir -p "$receipt/$SWEEP_CATEGORY"
+          cp "$output/timing.json" "$receipt/"
+          cp "$output/$SWEEP_CATEGORY/"*.json "$receipt/$SWEEP_CATEGORY/"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: category-a${{ github.run_attempt }}-${{ matrix.host }}-${{ matrix.category }}
+          path: ${{ runner.temp }}/category-receipt
+          if-no-files-found: error
+          retention-days: 14
+
+  reconcile:
+    if: always() && needs.plan.result == 'success'
+    needs: [plan, shards]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Reject failing or incomplete worker jobs
+        shell: bash
+        env:
+          WORKER_RESULT: ${{ needs.shards.result }}
+        run: test "$WORKER_RESULT" = success
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.1
+        with:
+          path: ${{ runner.temp }}/category-artifacts
+          pattern: category-a${{ github.run_attempt }}-*
+      - name: Verify exact assignment and outcomes
+        shell: bash
+        run: |
+          python -m tools.ci.hosted_category_sweep aggregate \
+            "$RUNNER_TEMP/category-artifacts" "$RUNNER_TEMP/category-verdict.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: category-verdict-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/category-verdict.json
+          if-no-files-found: error
+          retention-days: 14
