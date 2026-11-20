@@ -97,3 +97,9 @@ The [decision](plan/2026-11-19-370-suite-hosted-integration-decision.md) holds r
 #403 qualified two exact Ubuntu PR trees. The divergent-base `host_watch.py` mutation assigned 20 tests in 27.361 seconds and reproduced all 8 seeded failures from the 1,776-test full suite, which took 208.701 seconds. The `monitor_registry.py` case reached shared `conftest.py` and all 1,776 tests passed in full fallback. #370 stays open for receipt acceptance. The required gate is unchanged.
 
 [Findings](plan/2026-11-20-370-import-chain-shadow-findings.md) · [Evidence](plan/2026-11-20-370-import-chain-shadow-evidence.json).
+
+## Import-chain review requalification
+
+#403 requalified head `fefa1b1a` on the original two Ubuntu PR trees after the owner review fixes. The watch change assigned 20 tests in 26.546 seconds and reproduced all 8 seeded failures from the 1,776-test full run in 206.400 seconds. The shared-conftest case assigned all 1,776 tests and passed. #370 remains open and the required gate is unchanged.
+
+[Findings](plan/2026-11-20-370-import-chain-review-requalification.md) · [Exact evidence](plan/2026-11-20-370-import-chain-review-requalification.json).

@@ -19,3 +19,7 @@ The required workflow, path map, evaluator, verifier, branch rules, and pinned #
 ## Hosted import-chain qualification
 
 [Findings](2026-11-20-370-import-chain-shadow-findings.md) · [Exact evidence](2026-11-20-370-import-chain-shadow-evidence.json).
+
+## Review requalification
+
+[Findings](2026-11-20-370-import-chain-review-requalification.md) · [Exact evidence](2026-11-20-370-import-chain-review-requalification.json).

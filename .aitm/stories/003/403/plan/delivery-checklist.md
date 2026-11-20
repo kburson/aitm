@@ -19,6 +19,6 @@ Earlier shadow results were superseded as independent implementation review iden
 The previous receipts bind head `9b5f22c2`. The owner's two review findings require fresh validation on `f980ba24d12c5b1e290cf18bb70f1c25d98eac7c`, tree `c5e96878b6f239445eb4dc5eecf26af270ef7284`.
 
 - [x] Added failing regressions and corrected named `find_spec` targets and missing static import applicability.
-- [ ] Requalify the archived narrow and fallback trees with the fixed probe. [Hosted shadow run](https://github.com/kburson/aitm/actions/runs/44739079991).
-- [ ] Verify required PR CI and its exact-tree disposition. [Required CI](https://github.com/kburson/aitm/actions/runs/44739079517).
-- [ ] Record the independent source re-review and resolve the two GitHub threads.
+- [x] Requalified the archived trees on final head `fefa1b1a2a1201d052a109d7e15090705253e26e`. [Same-tree receipt](../../370/plan/2026-11-20-370-import-chain-review-requalification.md).
+- [x] Verified required CI on the corrected head. [CI](https://github.com/kburson/aitm/actions/runs/44739335469/attempts/1) · [Verifier](2026-11-20-403-owner-review-required-ci.json).
+- [x] Recorded the [independent source re-review](reviews/2026-11-20-403-owner-review-follow-up.md) and verified both GitHub threads are resolved.

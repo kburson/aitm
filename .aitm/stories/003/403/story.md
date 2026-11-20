@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 403
 title: "List affected tests from the import chain for one real change"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/403"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T23:50:50Z"
-updated: "2026-11-20T12:50:45Z"
+updated: "2026-11-20T13:01:33Z"
 last-branch: "codex/403-import-chain"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
@@ -66,3 +66,7 @@ The exact candidate is in [PR #406](https://github.com/kburson/aitm/pull/406). T
 Both hosted Ubuntu shadow cases qualified on `9b5f22c2f49250fe5c9208ccb13df9fc7bccba6e`. [Findings](../370/plan/2026-11-20-370-import-chain-shadow-findings.md) · [Exact evidence](../370/plan/2026-11-20-370-import-chain-shadow-evidence.json).
 
 Required CI and the delivered verifier passed on the exact implementation PR. [Independent source review and CI receipt](plan/reviews/2026-11-20-403-source-review.md).
+
+## Owner review follow-up
+
+#403 requalified head `fefa1b1a` on the original two Ubuntu PR trees after the owner review fixes. The watch change assigned 20 tests in 26.546 seconds and reproduced all 8 seeded failures from the 1,776-test full run in 206.400 seconds. The shared-conftest case assigned all 1,776 tests and passed. #370 remains open and the required gate is unchanged. [Source re-review](plan/reviews/2026-11-20-403-owner-review-follow-up.md) · [Same-tree results](../370/plan/2026-11-20-370-import-chain-review-requalification.md).
