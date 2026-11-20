@@ -209,7 +209,7 @@ def run(case, out):
     )
     subprocess.run(["git", "init", "-q", str(repo)], check=True, env=env)
     subprocess.run(["git", "remote", "add", "origin", f"https://github.com/{REPOSITORY}.git"], check=True, cwd=repo, env=env)
-    subprocess.run(["git", "fetch", "-q", "origin", f"refs/pull/{case['pr']}/merge"], check=True, cwd=repo, env=env)
+    subprocess.run(["git", "fetch", "-q", "origin", case["tested"]], check=True, cwd=repo, env=env)
     subprocess.run(["git", "checkout", "-q", "--detach", "FETCH_HEAD"], check=True, cwd=repo, env=env)
     assert git(repo, "rev-parse", "HEAD").decode() == case["tested"]
     assert git(repo, "rev-parse", "HEAD^{tree}").decode() == case["tree"]
