@@ -264,7 +264,7 @@ def identity(repository):
     return {"commit": commit, "tree": tree}
 
 
-def workspace(repository, target, source):
+def workspace(repository, target, source, short_temp):
     subprocess.run(
         [
             "git",
@@ -295,12 +295,12 @@ def workspace(repository, target, source):
         git(target, "cat-file", "-t", HISTORICAL_PIN) == "commit",
         "historical planning object is missing",
     )
-    temp = target.parent / f"t-{target.name}"
+    temp = target.parent / "fixtures"
     temp.mkdir(mode=0o700)
     env = environment() | {
-        "TMPDIR": str(temp),
-        "TMP": str(temp),
-        "TEMP": str(temp),
+        "TMPDIR": str(short_temp),
+        "TMP": str(short_temp),
+        "TEMP": str(short_temp),
         "UV_CACHE_DIR": str(temp / "uv"),
         "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
     }
@@ -363,10 +363,10 @@ def pytest_profile(repository, temp, env, output, profile, target, *, collect=Fa
     return read(receipt)
 
 
-def run_worker(repository, scratch, output, plan, lane):
-    target = scratch / lane
+def run_worker(repository, scratch, short_scratch, output, plan, lane):
+    target = scratch / lane / "checkout"
     output.mkdir(mode=0o700)
-    env, temp = workspace(repository, target, plan["source"])
+    env, temp = workspace(repository, target, plan["source"], short_scratch / lane)
     assigned = plan["lanes"][lane]
     for profile in PROFILES:
         if profile not in assigned:
@@ -404,10 +404,21 @@ def read_catalog(path, host):
 def sweep(repository, output, *, serial=False):
     source = identity(repository)
     host = sys.platform
-    with TemporaryDirectory(prefix="as-", dir="/tmp") as directory:
+    cache = Path.home() / ".cache" / "aitm-category-sweep"
+    cache.mkdir(mode=0o700, parents=True, exist_ok=True)
+    with (
+        TemporaryDirectory(prefix="as-", dir=cache) as directory,
+        TemporaryDirectory(prefix="at-", dir="/tmp") as short_directory,
+    ):
         scratch = Path(directory).resolve()
-        collector = scratch / "collect"
-        env, temp = workspace(repository, collector, source)
+        short_scratch = Path(short_directory).resolve()
+        # Provision the common ancestor before source readers start. Some
+        # fixtures intentionally detect metadata changes along the entire path.
+        for lane in ("collect", "serial", *CATEGORIES):
+            (scratch / lane).mkdir(mode=0o700)
+            (short_scratch / lane).mkdir(mode=0o700)
+        collector = scratch / "collect" / "checkout"
+        env, temp = workspace(repository, collector, source, short_scratch / "collect")
         catalog = read_catalog(collector / CATALOG, host)
         collect_out = scratch / "observations"
         collect_out.mkdir(mode=0o700)
@@ -442,6 +453,7 @@ def sweep(repository, output, *, serial=False):
                 "worker",
                 str(repository),
                 str(scratch),
+                str(short_scratch),
                 str(output),
                 lane,
             ]
@@ -463,7 +475,7 @@ def main():
         "--serial", action="store_true", help="run the unsharded full reference"
     )
     worker = commands.add_parser("worker", help=argparse.SUPPRESS)
-    for name in ("repository", "scratch", "output"):
+    for name in ("repository", "scratch", "short_scratch", "output"):
         worker.add_argument(name, type=Path)
     worker.add_argument("lane", choices=(*CATEGORIES, "serial"))
     args = parser.parse_args()
@@ -471,7 +483,12 @@ def main():
         if args.command == "worker":
             plan = read(args.output / "plan.json")
             run_worker(
-                args.repository, args.scratch, args.output / args.lane, plan, args.lane
+                args.repository,
+                args.scratch,
+                args.short_scratch,
+                args.output / args.lane,
+                plan,
+                args.lane,
             )
         else:
             output = args.output.resolve()
