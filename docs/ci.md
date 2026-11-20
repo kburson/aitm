@@ -180,14 +180,20 @@ run fails, inspect its category and profile logs. Rerun into a new directory. Ad
 The ordinary affected-test command and the hosted PR path-map check remain the
 usual entry points for validating a change.
 
-## Manual hosted category sweep
+## Hosted category sweep
 
-Dispatch **Category full sweep** on the default branch. The workflow publishes
-one separate job per nonempty category and host assignment, then verifies the
-exact union. Ubuntu owns shared IDs and Linux-only IDs. Darwin owns the opt-in
-native cases and Darwin-only IDs. Each job collects its full host inventory to
-detect drift before running its assigned profile slices. Workers retain the
-same pinned historical planning fixture used by the local sweep.
+**Category full sweep** runs daily at 23:23 UTC on `trunk`. You can also dispatch
+it manually on `trunk`. The two triggers share one concurrency group. An
+active run finishes, and GitHub can replace the one pending run with a newer
+request. To disable the daily trigger, remove the `schedule` block through a
+PR and keep `workflow_dispatch`.
+
+The workflow publishes one separate job per nonempty category and host
+assignment, then verifies the exact union. Ubuntu owns shared IDs and
+Linux-only IDs. Darwin owns the opt-in native cases and Darwin-only IDs. Each
+job collects its full host inventory to detect drift before running its
+assigned profile slices. Workers retain the same pinned historical planning
+fixture used by the local sweep.
 
 The reconcile job requires every planned receipt for its source and workflow
 attempt. A passing run uploads `category-verdict.json`, including the empty
@@ -197,3 +203,17 @@ verdict. Re-run all jobs for a fresh attempt.
 Use Actions job timestamps for queue delays and workflow bootstrap. Each shard
 receipt separates collection and environment setup from test execution and
 receipt sealing. Failed test output is available in the shard's Actions log.
+
+Check the scheduled event history against the expected UTC slot.
+
+```sh
+gh run list --workflow category-full-sweep.yml --event schedule --branch trunk \
+  --json databaseId,createdAt,startedAt,headSha,status,conclusion,url
+```
+
+GitHub may register a scheduled event after the expected slot. Compare the
+slot with the run's registration and start timestamps. Record an absent slot
+when there is no corresponding scheduled run and note any later arrival. For a
+registered run, use its run ID and attempt to find the expected worker
+artifacts and `category-verdict-a<attempt>`. A failed, cancelled or incomplete
+attempt has no passing verdict. A manual run has its own event and receipts.
