@@ -91,3 +91,9 @@ The [decision](plan/2026-11-19-370-suite-hosted-integration-decision.md) holds r
 ## Import-chain list
 
 [#402](../402/story.md) is replaced before work started. [#403](../403/story.md) lists the tests reached by the import chain for one real product change, and returns full or unavailable when that chain cannot be proved. A same-function constant binding qualifies as a dynamic-import prefix. The pull-request graph stays on the literal base and the tested merge. The #393 and #398 boundaries stay timing evidence. #370 stays open until the #403 receipt is accepted. The required gate retains its current role. [Plan](plan/2026-11-19-370-import-chain-list.md).
+
+## Hosted import-chain qualification
+
+#403 qualified two exact Ubuntu PR trees. The divergent-base `host_watch.py` mutation assigned 20 tests in 27.361 seconds and reproduced all 8 seeded failures from the 1,776-test full suite, which took 208.701 seconds. The `monitor_registry.py` case reached shared `conftest.py` and all 1,776 tests passed in full fallback. #370 stays open for receipt acceptance. The required gate is unchanged.
+
+[Findings](plan/2026-11-20-370-import-chain-shadow-findings.md) · [Evidence](plan/2026-11-20-370-import-chain-shadow-evidence.json).

@@ -15,3 +15,7 @@ Hosted Ubuntu compares a product-only seeded regression with the full run on the
 The required workflow, path map, evaluator, verifier, branch rules, and pinned #355 command retain their current roles. Keep #370 open until the advisory #403 receipt is accepted. Promotion into the required gate remains a separate decision.
 
 [#403 plan](../../403/story.md) · [#385 findings](2026-11-19-370-hosted-shadow-findings.md) · [First Astra SAR](../../403/plan/reviews/sar-2026-11-20-import-chain/reviewer-response-1.md)
+
+## Hosted import-chain qualification
+
+[Findings](2026-11-20-370-import-chain-shadow-findings.md) · [Exact evidence](2026-11-20-370-import-chain-shadow-evidence.json).

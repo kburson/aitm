@@ -60,3 +60,7 @@ An accepted selection includes the reached surviving pytest IDs plus the existin
 ## Implementation and testing
 
 The exact candidate is in [PR #406](https://github.com/kburson/aitm/pull/406). Track the hosted shadow qualification and required CI in the [delivery checklist](plan/delivery-checklist.md).
+
+## Hosted import-chain qualification
+
+Both hosted Ubuntu shadow cases qualified on `9b5f22c2f49250fe5c9208ccb13df9fc7bccba6e`. [Findings](../370/plan/2026-11-20-370-import-chain-shadow-findings.md) · [Exact evidence](../370/plan/2026-11-20-370-import-chain-shadow-evidence.json).
