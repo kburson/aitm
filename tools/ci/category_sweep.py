@@ -306,6 +306,10 @@ def workspace(repository, target, source, short_temp):
         "UV_CACHE_DIR": str(temp / "uv"),
         "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
     }
+    if sys.platform == "linux":
+        # The hosted runner home can carry ACLs that custody checks refuse.
+        env["UV_PYTHON_INSTALL_DIR"] = str(target.parent.parent / "python")
+        env["UV_MANAGED_PYTHON"] = "1"
     subprocess.run(
         [
             "uv",
@@ -408,10 +412,13 @@ def read_catalog(path, host):
 
 @contextmanager
 def isolated_roots():
-    cache = Path.home() / ".cache" / "aitm-category-sweep"
-    cache.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if sys.platform == "linux":
+        parent = Path("/var/tmp")
+    else:
+        parent = Path.home() / ".cache" / "aitm-category-sweep"
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     with (
-        TemporaryDirectory(prefix="as-", dir=cache) as directory,
+        TemporaryDirectory(prefix="as-", dir=parent) as directory,
         TemporaryDirectory(prefix="at-", dir="/tmp") as short_directory,
     ):
         scratch = Path(directory).resolve()
