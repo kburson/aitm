@@ -41,6 +41,7 @@ def inputs():
         "configuration": "f" * 64,
         "runtime": "3.13.9",
         "image": "ubuntu24:20261118.1",
+        "runner": "ubuntu-24.04",
     }
     policy = {
         "schema": "aitm.ci-policy/v1",
@@ -74,7 +75,16 @@ def inputs():
                 },
             ],
         },
-        "capability": {"os": "Linux", "runtime": "3.13.9", "image": identity["image"]},
+        "capability": {
+            "os": "Linux",
+            "runtime": "3.13.9",
+            "image": identity["image"],
+            "runner": identity["runner"],
+        },
+        "base_runner": {
+            "schema": "aitm.path-selection-skip/v1",
+            "platform": {key: identity[key] for key in ("runner", "image", "runtime")},
+        },
         "base": {
             "identity": identity,
             "evidence": evidence("tests/test_core.py::test_keeps_state"),
@@ -97,6 +107,41 @@ def test_exact_floor_accepts_behavior_and_counts(inputs):
         "product": {"covered_lines": 9, "num_statements": 10},
         "helpers": {"covered_lines": 18, "num_statements": 20},
     }
+
+    for release in ("24", "26"):
+        changed = copy.deepcopy(inputs)
+        actual = changed["base"]["identity"]
+        expected = changed["expected_base"]
+        candidate = changed["capability"]
+        for lane in (actual, expected, candidate):
+            lane["runner"] = f"ubuntu-{release}.04"
+        actual["image"] = f"ubuntu{release}:20261116.376.1"
+        expected["image"] = candidate["image"] = f"ubuntu{release}:20261116.133.1"
+        assert evaluate(**changed)["passed"]
+
+        for field in (
+            "runner",
+            "image",
+            "runtime",
+            "base",
+            "tree",
+            "observer",
+            "policy",
+            "lock",
+            "configuration",
+        ):
+            incomplete = copy.deepcopy(changed)
+            del incomplete["base"]["identity"][field]
+            assert not evaluate(**incomplete)["passed"]
+
+        for field, value in (
+            ("runner", "ubuntu-22.04"),
+            ("image", "ubuntu22:20261116.133.1"),
+            ("runtime", "3.13.8"),
+        ):
+            invalid = copy.deepcopy(changed)
+            invalid["base"]["identity"][field] = value
+            assert not evaluate(**invalid)["passed"]
 
 
 @pytest.mark.parametrize(
@@ -425,6 +470,8 @@ def test_mapped_cli_does_not_read_base_evidence(tmp_path, inputs, capsys):
         write("children", inputs["child"]),
         "--capability",
         write("capability", inputs["capability"]),
+        "--base-runner",
+        write("base-runner", inputs["base_runner"]),
         "--selection",
         write("selection", inputs["selection"]),
     ]
