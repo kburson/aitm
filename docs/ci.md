@@ -171,9 +171,10 @@ visible in the plan. A changed inventory requires a reviewed catalog update
 before the full sweep can pass.
 
 Each category gets a standalone checkout, locked environment, private temporary
-state and separate output. The coordinator validates every phase and the two
-required child-process results before writing `result.json`. If a run fails,
-inspect its category and profile logs. Rerun into a new directory. Add
+state and separate output. Linux keeps the workspace, custody fixtures and
+managed Python under a private directory in `/var/tmp`. The coordinator checks
+every phase and both required child results before writing `result.json`. If a
+run fails, inspect its category and profile logs. Rerun into a new directory. Add
 `--serial` for the unsharded reference on the same committed source.
 
 The ordinary affected-test command and the hosted PR path-map check remain the

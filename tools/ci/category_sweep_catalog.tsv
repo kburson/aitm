@@ -2330,3 +2330,5 @@ tools/ci/tests/test_category_sweep.py::test_supervisor_surfaces_real_pytest_fail
 tools/ci/tests/test_hosted_category_sweep.py::test_hosted_assignment_covers_exact_union_and_runs_native_on_darwin	fast-unit	yes	yes
 tools/ci/tests/test_hosted_category_sweep.py::test_hosted_reconciliation_refuses_missing_or_unexpected_artifacts	local-integration	yes	yes
 tools/ci/tests/test_hosted_category_sweep.py::test_attempt_is_included_in_worker_plan_binding	fast-unit	yes	yes
+tools/ci/tests/test_category_sweep.py::test_workspace_uses_private_platform_roots[linux]	fast-unit	yes	yes
+tools/ci/tests/test_category_sweep.py::test_workspace_uses_private_platform_roots[darwin]	fast-unit	yes	yes

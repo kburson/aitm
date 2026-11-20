@@ -2,6 +2,8 @@ import json
 import os
 import signal
 import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -30,6 +32,54 @@ def test_inventory_drift_or_duplicate_refuses():
                 {"product": inventory},
                 {UNIT: "fast-unit", SYSTEM: "systems-integration"},
             )
+
+
+@pytest.mark.parametrize("host", ["linux", "darwin"])
+def test_workspace_uses_private_platform_roots(tmp_path, monkeypatch, host):
+    monkeypatch.setattr(sweep, "sys", SimpleNamespace(platform=host))
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("UV_PYTHON_INSTALL_DIR", raising=False)
+    monkeypatch.delenv("UV_MANAGED_PYTHON", raising=False)
+    source = {"commit": "commit", "tree": "tree"}
+    monkeypatch.setattr(sweep, "identity", lambda _: source)
+    monkeypatch.setattr(
+        sweep,
+        "git",
+        lambda _, command, *args: {
+            "checkout": "",
+            "rev-parse": "false"
+            if args == ("--is-shallow-repository",)
+            else str(tmp_path),
+            "cat-file": "commit",
+        }[command],
+    )
+
+    def run(args, *, env, check, cwd=None):
+        if args[0] == "git":
+            args[-1].mkdir(parents=True)
+        elif host == "linux":
+            managed_python = Path(env["UV_PYTHON_INSTALL_DIR"])
+            assert managed_python == scratch / "python"
+            assert managed_python.stat().st_mode & 0o777 == 0o700
+            assert env["UV_MANAGED_PYTHON"] == "1"
+        else:
+            assert "UV_PYTHON_INSTALL_DIR" not in env
+            assert "UV_MANAGED_PYTHON" not in env
+
+    monkeypatch.setattr(sweep, "subprocess", SimpleNamespace(run=run))
+    with sweep.isolated_roots() as (scratch, short_scratch):
+        parent = (
+            Path("/var/tmp")
+            if host == "linux"
+            else tmp_path / ".cache/aitm-category-sweep"
+        )
+        assert scratch.parent == parent.resolve()
+        assert scratch.stat().st_mode & 0o777 == 0o700
+        assert short_scratch.parent == Path("/tmp").resolve()
+        target = scratch / "collect" / "nested" / "checkout"
+        sweep.workspace(
+            tmp_path, target, source, short_scratch / "collect", scratch=scratch
+        )
 
 
 def stock(node=UNIT, *, outcome="passed", exit_code=0):

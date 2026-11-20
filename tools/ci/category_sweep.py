@@ -266,7 +266,7 @@ def identity(repository):
     return {"commit": commit, "tree": tree}
 
 
-def workspace(repository, target, source, short_temp):
+def workspace(repository, target, source, short_temp, *, scratch):
     subprocess.run(
         [
             "git",
@@ -306,6 +306,10 @@ def workspace(repository, target, source, short_temp):
         "UV_CACHE_DIR": str(temp / "uv"),
         "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
     }
+    if sys.platform == "linux":
+        # The hosted runner home can carry ACLs that custody checks refuse.
+        env["UV_PYTHON_INSTALL_DIR"] = str(scratch / "python")
+        env["UV_MANAGED_PYTHON"] = "1"
     subprocess.run(
         [
             "uv",
@@ -369,7 +373,9 @@ def run_worker(repository, scratch, short_scratch, output, plan, lane):
     started = monotonic()
     target = scratch / lane / "checkout"
     output.mkdir(mode=0o700)
-    env, temp = workspace(repository, target, plan["source"], short_scratch / lane)
+    env, temp = workspace(
+        repository, target, plan["source"], short_scratch / lane, scratch=scratch
+    )
     prepared = monotonic()
     assigned = plan["lanes"][lane]
     for profile in PROFILES:
@@ -408,15 +414,20 @@ def read_catalog(path, host):
 
 @contextmanager
 def isolated_roots():
-    cache = Path.home() / ".cache" / "aitm-category-sweep"
-    cache.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if sys.platform == "linux":
+        parent = Path("/var/tmp")
+    else:
+        parent = Path.home() / ".cache" / "aitm-category-sweep"
+        parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     with (
-        TemporaryDirectory(prefix="as-", dir=cache) as directory,
+        TemporaryDirectory(prefix="as-", dir=parent) as directory,
         TemporaryDirectory(prefix="at-", dir="/tmp") as short_directory,
     ):
         scratch = Path(directory).resolve()
         short_scratch = Path(short_directory).resolve()
         # Establish the common ancestor before source readers start.
+        if sys.platform == "linux":
+            (scratch / "python").mkdir(mode=0o700)
         for lane in ("collect", "serial", *CATEGORIES):
             (scratch / lane).mkdir(mode=0o700)
             (short_scratch / lane).mkdir(mode=0o700)
@@ -425,7 +436,9 @@ def isolated_roots():
 
 def collect_profiles(repository, source, scratch, short_scratch):
     collector = scratch / "collect" / "checkout"
-    env, temp = workspace(repository, collector, source, short_scratch / "collect")
+    env, temp = workspace(
+        repository, collector, source, short_scratch / "collect", scratch=scratch
+    )
     collect_out = scratch / "observations"
     collect_out.mkdir(mode=0o700)
     collections = {}
