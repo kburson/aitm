@@ -32,3 +32,5 @@ The existing scheduled full suite shadow runs at 03:47 UTC and has separate rece
 The [manual rehearsal](https://github.com/kburson/aitm/actions/runs/44834609313/attempts/1) passed on the activated default branch. Its [authenticated receipt](../attachments/2026-11-20-361-manual-acceptance.json) matches the #360 acceptance run for all 2,333 IDs and 7,083 phases, includes both required successful children and verifies all six artifact digests. The real schedule event remains the final activation test.
 
 At 2026-11-20T23:34:22Z GitHub's schedule-filtered workflow API still showed zero registered runs. The [first-slot observation](../attachments/2026-11-20-361-first-slot-checkpoint.json) captures the authenticated result. This is a pending registration, and does not establish that the event was dropped. Story #361 stays in review.
+
+The follow-up check at 2026-11-20T23:53:21Z again returned zero registered scheduled runs. The manual result and deployed source are verified. Closure requires a recorded schedule event and reconciled receipt from its actual attempt.

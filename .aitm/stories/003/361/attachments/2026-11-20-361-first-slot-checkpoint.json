@@ -1,11 +1,15 @@
 {
-  "observation": "no scheduled event registered at check time",
+  "branch": "trunk",
   "expected_slot": "2026-11-20T23:23:00Z",
+  "known_passing_manual_run": 44834609313,
+  "latest_check": {
+    "at": "2026-11-20T23:53:21Z",
+    "registered_runs": 0
+  },
+  "observation": "no scheduled event registered at check time",
   "observed_at": "2026-11-20T23:34:22Z",
   "registered_runs": 0,
-  "workflow_id": 425235652,
-  "branch": "trunk",
   "source": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
   "workflow_blob": "b4f3f4bc22c9f93d4e7e02f7c012da7dbe20ae52",
-  "known_passing_manual_run": 44834609313
+  "workflow_id": 425235652
 }
