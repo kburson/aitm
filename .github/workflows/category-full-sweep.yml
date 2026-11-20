@@ -2,13 +2,21 @@ name: Category full sweep
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '23 23 * * *'
+
+concurrency:
+  group: category-full-sweep-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   plan:
-    if: github.ref == 'refs/heads/trunk' && github.event.repository.default_branch == 'trunk'
+    if: >-
+      github.ref == 'refs/heads/trunk' &&
+      (github.event_name == 'schedule' || github.event.repository.default_branch == 'trunk')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
