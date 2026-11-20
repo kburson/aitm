@@ -7,7 +7,7 @@
     "head": "92f54d8fe506bb424db7200b2e0c5b2e01534d45",
     "tested": "52d3f13fe7ec9e31cca5f7af74c4b8abbfb4aa67",
     "tree": "878a56d30c07fe37c28305976439d96350cc1ca0",
-    "tool": "fec4c256f51dc11dd9b96c7dd338d32760c8edfa"
+    "tool": "58ed7a11741e9c2507072a33849495f4c8afe99d"
   },
   {
     "case": "narrow",
@@ -17,6 +17,6 @@
     "head": "dcb0143a1f11480e2c9320f778fc0dcedf435b9e",
     "tested": "4f825997a90979e7482b53f390597e857ca68704",
     "tree": "546665c24af2fb203d7ecd8f96b48dcc20f6a9da",
-    "tool": "fec4c256f51dc11dd9b96c7dd338d32760c8edfa"
+    "tool": "58ed7a11741e9c2507072a33849495f4c8afe99d"
   }
 ]
