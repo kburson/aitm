@@ -401,21 +401,26 @@ class _GraphBuilder:
                     self._resolve_import(path, alias.name)
             elif isinstance(node, ast.ImportFrom):
                 self._from_import(path, node)
-        loader_module_present = self.scoped_imports and any(
+        loader_reference_present = self.scoped_imports and any(
             isinstance(node, ast.Import)
             and any(
                 alias.name.partition(".")[0] in _DYNAMIC_LOADERS for alias in node.names
             )
+            or isinstance(node, ast.ImportFrom)
+            and not node.level
+            and node.module in {"importlib", "importlib.util"}
+            or isinstance(node, ast.Name)
+            and node.id == "__builtins__"
             for node in nodes
         )
-        if loader_module_present or _dynamic_import_present(nodes):
+        if loader_reference_present or _dynamic_import_present(nodes):
             bounds = self.dynamic_bounds.get(path)
             if self.scoped_imports:
                 names = None if "importlib" in self.owners else dynamic_modules(tree)
                 resolved = [self._name_bounds(name) for name in names or ()]
                 bounds = (
                     tuple(sorted({file for group in resolved for file in group}))
-                    if resolved and all(resolved)
+                    if names is not None and all(resolved)
                     else None
                 )
             self._unknown(path, "dynamic-import", prefixes=bounds)

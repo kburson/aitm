@@ -478,6 +478,11 @@ def test_probe_bounds_canonical_loads_to_file_and_initializer(body):
         b"import importlib as imp\nimp.import_module('pkg.leaf')",
         b"import importlib\ndef load():\n    name = 'pkg.leaf'\n    def other():\n        nonlocal name\n        name = 'pkg.other'\n    return importlib.import_module(name)",
         b"import importlib\nimportlib.import_module('.leaf', 'pkg')",
+        b"import importlib\nimport builtins as b\nimportlib.import_module('pkg.leaf')\nload = b.__import__",
+        b"import importlib\nf = lambda: importlib.import_module('pkg.leaf')",
+        b"from importlib.util import find_spec as locate\nlocate('pkg.leaf')",
+        b"from importlib import util as locate\nlocate.find_spec('pkg.leaf')",
+        b"load = __builtins__['__import__']",
     ],
 )
 def test_probe_preserves_uncertainty_for_unsupported_dynamic_use(body):
@@ -488,3 +493,90 @@ def test_probe_preserves_uncertainty_for_unsupported_dynamic_use(body):
         scoped_imports=True,
     )
     assert UnresolvedScope(reader, "dynamic-import", "", None) in graph.unresolved
+
+
+def test_probe_resolves_repository_and_pytest_aliases_and_relative_child():
+    source = b"tools/ci/tia/leaf.py"
+    helper = b"tools/ci/tests/test_helper.py"
+    endpoint = Endpoint(
+        {
+            source: b"",
+            b"tools/ci/tia/reader.py": b"from . import leaf",
+            helper: b"from tools.ci.tia import leaf",
+            b"tools/ci/tests/test_peer.py": b"import test_helper",
+        }
+    )
+    settings = policy(
+        b"tools/ci",
+        pytest_scopes=(PytestScope("helper", (helper,), (), b"tools/ci/tests", ()),),
+    )
+    graph = build_graph(endpoint, settings, scoped_imports=True)
+    assert (b"tools/ci/tia/reader.py", source, "import") in edges(graph)
+    assert (helper, source, "import") in edges(graph)
+    assert (b"tools/ci/tests/test_peer.py", helper, "import") in edges(graph)
+    assert not graph.unresolved
+
+
+@pytest.mark.parametrize(
+    ("reader_source", "extra", "changed", "reason"),
+    [
+        (
+            b"from pkg import *",
+            {b"app/pkg/__init__.py": b"__all__ = ['child']", b"app/pkg/child.py": b""},
+            b"app/pkg/child.py",
+            "wildcard-import",
+        ),
+        (
+            b"pytest_plugins = ('plugin',)",
+            {b"app/plugin.py": b""},
+            b"app/plugin.py",
+            "pytest-plugin",
+        ),
+        (b"def", {b"app/leaf.py": b""}, b"app/leaf.py", "python-parse"),
+    ],
+)
+def test_probe_keeps_hidden_consumers_conservative(
+    reader_source, extra, changed, reason
+):
+    from collections import defaultdict
+
+    from tia.selection import _SideGraph, _trace
+
+    direct = b"tests/test_direct.py"
+    hidden = b"tests/test_hidden.py"
+    module = ".".join(
+        part.decode() for part in changed.removeprefix(b"app/")[:-3].split(b"/")
+    )
+    graph = build_graph(
+        Endpoint(extra | {direct: f"import {module}".encode(), hidden: reader_source}),
+        policy(b"app", b"tests"),
+        scoped_imports=True,
+    )
+    reverse = defaultdict(list)
+    for edge in graph.edges:
+        reverse[edge.input].append(edge)
+    key = ("pytest", "aitm", "portable", "tests/test_direct.py::test_passes")
+    side = _SideGraph(reverse, graph.unresolved, {}, set(), {direct: (key,)}, True)
+    disposition, witnesses = _trace(changed, ("after",), {"after": side}, None)
+    assert [witness.key for witness in witnesses] == [key]
+    assert disposition.disposition == "uncertain"
+    assert any(
+        item.code == reason and item.reader == hidden
+        for item in disposition.uncertainties
+    )
+
+
+def test_probe_bounds_canonical_find_spec_to_parent_initializers():
+    reader = b"tests/test_reader.py"
+    init = b"app/pkg/__init__.py"
+    graph = build_graph(
+        Endpoint(
+            {
+                reader: b"from importlib.util import find_spec\nfind_spec('pkg.missing')",
+                init: b"",
+            }
+        ),
+        policy(b"app", b"tests", external_modules=("importlib",)),
+        scoped_imports=True,
+    )
+    assert UnresolvedScope(reader, "dynamic-import", "", (init,)) in graph.unresolved

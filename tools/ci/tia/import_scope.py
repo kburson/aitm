@@ -40,7 +40,8 @@ def _context(node, parents, tree):
     while statement in parents:
         parent = parents[statement]
         if parent is tree or isinstance(parent, _SCOPES):
-            if statement in getattr(parent, "body", ()):
+            body = getattr(parent, "body", None)
+            if isinstance(body, list) and statement in body:
                 return parent, statement
             return None, None
         statement = parent
@@ -100,22 +101,34 @@ def dynamic_modules(tree):
     nodes = tuple(ast.walk(tree))
     parents = {child: node for node in nodes for child in ast.iter_child_nodes(node)}
     names = set()
+    recognized = False
     for node in nodes:
         if isinstance(node, ast.alias):
-            if node.name in {"importlib", "import_module", "find_spec"} and node.asname:
-                return None
-            if (
-                node.name == "__import__"
-                or node.name == "*"
-                and isinstance(parents[node], ast.ImportFrom)
-                and parents[node].module in {"importlib", "builtins"}
+            declaration = parents[node]
+            if isinstance(declaration, ast.Import) and (
+                node.name == "builtins"
+                or node.name.partition(".")[0] == "importlib"
+                and (node.asname or node.name != "importlib")
             ):
                 return None
+            if isinstance(declaration, ast.ImportFrom) and not declaration.level:
+                module = declaration.module
+                if module == "builtins" and node.name in {"__import__", "*"}:
+                    return None
+                if module in {"importlib", "importlib.util"} and (
+                    node.asname
+                    or (module, node.name)
+                    not in {
+                        ("importlib", "import_module"),
+                        ("importlib.util", "find_spec"),
+                    }
+                ):
+                    return None
         if not isinstance(node, ast.Name) or not isinstance(node.ctx, ast.Load):
             continue
         loader = parents[node]
         match node.id:
-            case "__import__":
+            case "__import__" | "__builtins__":
                 return None
             case "import_module":
                 module, member = "importlib", "import_module"
@@ -156,5 +169,14 @@ def dynamic_modules(tree):
         name = _module_argument(call.args[0], scope, statement)
         if name is None:
             return None
-        names.add(name)
-    return tuple(sorted(names)) if names else None
+        recognized = True
+        if (
+            member == "find_spec"
+            or isinstance(loader, ast.Attribute)
+            and loader.attr == "find_spec"
+        ):
+            # A canonical spec lookup can import the parent, but leaves the target unloaded.
+            name = name.rpartition(".")[0]
+        if name:
+            names.add(name)
+    return tuple(sorted(names)) if recognized else None

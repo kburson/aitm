@@ -23,10 +23,12 @@ from .snapshot import (
     HostedProvenance,
     IndexEndpoint,
     LocalProvenance,
+    PRPathAgreement,
     ProbeProvenance,
     Snapshot,
     SnapshotUncertain,
     WorktreeEndpoint,
+    changed_paths,
 )
 from .snapshot import (
     _canonical as _snapshot_canonical,
@@ -103,6 +105,7 @@ class PathDisposition:
     disposition: Literal["resolved", "non-test", "uncertain"]
     rules: tuple[str, ...] = ()
     uncertainties: tuple[Uncertainty, ...] = ()
+    disjoint_uncertainties: tuple[Uncertainty, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -175,6 +178,19 @@ def _probe_endpoint(snapshot, *, baseline):
         ),
         "probe snapshot provenance does not match",
     )
+    agreement = provenance.path_agreement
+    if kind == "pr":
+        _require(isinstance(agreement, PRPathAgreement), "PR path agreement missing")
+        divergence = set(agreement.divergence_to_head)
+        tested = set(agreement.base_to_tested)
+        _require(
+            tuple(sorted(divergence - tested)) == agreement.divergence_only
+            and tuple(sorted(tested - divergence)) == agreement.tested_only
+            and tested == changed_paths(snapshot.changes),
+            "PR path agreement does not match",
+        )
+    else:
+        _require(agreement is None, "unexpected PR path agreement")
     if baseline:
         return
     if kind == "index":
@@ -704,6 +720,7 @@ def _hops(path, parent):
 
 def _trace(path, sides, graphs, rule):
     uncertainties = []
+    disjoint = []
     witnesses = []
     graph_evidence = False
     for side in sides:
@@ -723,6 +740,13 @@ def _trace(path, sides, graphs, rule):
                     uncertainties.append(Uncertainty("shared-conftest", side, consumer))
         for record in graph.unresolved:
             bounds = record.possible_inputs
+            evidence = Uncertainty(
+                record.reason,
+                side,
+                record.reader,
+                record.detail,
+                possible_inputs=bounds,
+            )
             if (
                 bounds is None
                 or (graph.scoped_imports and record.reader in reached)
@@ -732,15 +756,9 @@ def _trace(path, sides, graphs, rule):
                     for prefix in bounds
                 )
             ):
-                uncertainties.append(
-                    Uncertainty(
-                        record.reason,
-                        side,
-                        record.reader,
-                        record.detail,
-                        possible_inputs=bounds,
-                    )
-                )
+                uncertainties.append(evidence)
+            elif graph.scoped_imports:
+                disjoint.append(evidence)
         invalid_declarations = {
             item for candidate in reached for item in graph.missing.get(candidate, ())
         }
@@ -767,7 +785,12 @@ def _trace(path, sides, graphs, rule):
         uncertainties.append(Uncertainty("unclassified-change"))
     return (
         PathDisposition(
-            path, sides, disposition, (rule.rule,) if rule else (), tuple(uncertainties)
+            path,
+            sides,
+            disposition,
+            (rule.rule,) if rule else (),
+            tuple(uncertainties),
+            tuple(disjoint),
         ),
         witnesses,
     )
