@@ -1,0 +1,35 @@
+{
+  "category_counts": {
+    "exception": 0,
+    "fast-unit": 483,
+    "local-integration": 1570,
+    "slow-unit": 0,
+    "systems-integration": 268
+  },
+  "closure_owner": "OpenAI Codex /root",
+  "delivery_kind": "research findings",
+  "disposition": "PASS",
+  "evidence": "attachments/2026-11-20-357-classification-evidence.json",
+  "evidence_sha256": "1cbb04230b7fcbb34b8b1677d6a447a1bf33ed4efd80d5faaf71395e80514607",
+  "files": 71,
+  "finding": "plan/2026-11-20-357-classification-findings.md",
+  "finding_sha256": "2d265ab16b2f9aa66ab3c161af0d18beac1146f3fc111b0c4ed90720be20de81",
+  "issue": "https://github.com/kburson/aitm/issues/357",
+  "nodeids": 2321,
+  "review": "plan/reviews/2026-11-20-357-independent-findings-review.md",
+  "review_sha256": "ffe3a1461b17efa4a66ef148c6103332a40ce96a56da84f633920e307ba3ce57",
+  "reviewed_planning_commit": "0898a270d0a1daf1d5f2afaf5e9b15649fe23b33",
+  "reviewer": "OpenAI Codex /root/review357",
+  "schema": "aitm.357-delivery/v1",
+  "source": {
+    "commit": "9843874bd00ffa1255b3595987106d5af51dceb3",
+    "tree": "b8ca66991842e6b360cf09f0e36b25c693d48390"
+  },
+  "story": 357,
+  "target": "refs/heads/planning",
+  "verification": [
+    "Verified the remote planning branch contains the exact independently reviewed finding and attachment manifest.",
+    "Reconciled exact platform collection, witness, timing and category rows and confirmed target hashes."
+  ],
+  "verified_utc": "2026-11-20T14:59:13Z"
+}

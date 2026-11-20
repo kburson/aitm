@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 357
 title: "[Spike] Classify tests into execution categories"
 kind: "spike"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/357"
 parent: 356
 children: []
 blocking: [358, 359]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:55:45Z"
+updated: "2026-11-20T14:59:13Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-357-delivery-plan.md", "plan/2026-11-20-357-collection-checkpoint.md", "plan/2026-11-20-357-classification-findings.md"], "attachments": ["attachments/2026-11-20-357-category-register.tsv", "attachments/2026-11-20-357-classification-evidence.json", "attachments/2026-11-20-357-collected-nodeids.tsv", "attachments/2026-11-20-357-source-witnesses.tsv", "attachments/2026-11-20-357-ubuntu-nodeids.tsv", "attachments/2026-11-20-357-unit-timing.tsv", "attachments/phase_timing.py"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-357-delivery-plan.md", "plan/2026-11-20-357-collection-checkpoint.md", "plan/2026-11-20-357-classification-findings.md", "plan/reviews/2026-11-20-357-independent-findings-review.md", "plan/2026-11-20-357-delivery.json"], "attachments": ["attachments/2026-11-20-357-category-register.tsv", "attachments/2026-11-20-357-classification-evidence.json", "attachments/2026-11-20-357-collected-nodeids.tsv", "attachments/2026-11-20-357-source-witnesses.tsv", "attachments/2026-11-20-357-ubuntu-nodeids.tsv", "attachments/2026-11-20-357-unit-timing.tsv", "attachments/phase_timing.py"]}
 expansions: []
 trips: []
 ---
@@ -49,3 +49,5 @@ This is research for #356. Write the classification. The suite, the hosted path 
 [First collection checkpoint](plan/2026-11-20-357-collection-checkpoint.md).
 
 [Classification findings](plan/2026-11-20-357-classification-findings.md) and [reconciled evidence](attachments/2026-11-20-357-classification-evidence.json).
+
+[Independent acceptance](plan/reviews/2026-11-20-357-independent-findings-review.md) · [Delivery receipt](plan/2026-11-20-357-delivery.json) · [Sign-off](retro/2026-11-20-357-sign-off.md).

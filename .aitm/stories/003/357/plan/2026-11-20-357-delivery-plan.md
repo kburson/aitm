@@ -15,7 +15,7 @@ Build and independently review the exact category inventory.
 - [x] Collect matching Ubuntu profile evidence before claiming platform parity. Report any unavailable collection profile, skip or missing ID explicitly. Keep opt-in native IDs in the register.
 - [x] Establish a repeatable timing baseline with isolated runs. Record setup, call and teardown separately, along with cold/warm effects. Start with a provisional 100 ms median total-phase cutoff over three valid observations for unit cases only. Reconsider it against the measured distribution before publishing and mark unstable or unmeasured placements. Historical durations are leads.
 - [x] Reconcile the register against every captured ID with a duplicate check and exact set difference. Verify source/fixture witnesses, exception reasons and timing provenance.
-- [ ] Have an independent reviewer reproduce collection, check mixed families and boundary cases, and accept the exact finding before releasing dependents.
+- [x] Have an independent reviewer reproduce collection, check mixed families and boundary cases, and accept the exact finding before releasing dependents.
 
 ## Classification rules to validate
 
