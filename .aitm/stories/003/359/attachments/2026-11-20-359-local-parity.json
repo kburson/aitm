@@ -1,0 +1,78 @@
+{
+  "exact_phase_parity": true,
+  "host": "darwin",
+  "runs": {
+    "parallel": {
+      "children": {
+        "cli-help": 1,
+        "service-one-shot": 1
+      },
+      "lanes": {
+        "fast-unit": 487,
+        "local-integration": 1569,
+        "slow-unit": 0,
+        "systems-integration": 265
+      },
+      "phase_reports": 7045,
+      "plan_sha256": "99282dfd3b28f9141b1d60cb9f7a2548445ff0bf2f87acc5a7389ca5e5c65b5c",
+      "receipts": {
+        "fast-unit/board.json": "be5c446a0c762354ab99dd1639ed2c3c30a0c4bb5e2de8fd134c1d77d35c8864",
+        "fast-unit/ci.json": "10cac5a458b981ad730bdba787408148d6018807702b63e37318f79f197adc9c",
+        "fast-unit/dashboard.json": "5451906c19254cbe761199baa0e29bdd6afba69492759747ec219e4e87174aa1",
+        "fast-unit/product.json": "1ef3e74a2004cbc8f3122b80e6f82169750cb105bbd256f174ec8234d7061611",
+        "local-integration/board.json": "51fe46d62bed67ef336eec7addbab33da9804767e64d54174d3c8aad86dc4e11",
+        "local-integration/ci.json": "da20772e23c4b2e67949408c9b039c46215a1f5adf0f0ac36ef8d8e22f6ec4c2",
+        "local-integration/dashboard.json": "bdbe5d4e77ff843d7921ffbd35b392543d386fcbb2ae908c4127575b2ac20c84",
+        "local-integration/product.json": "a982cd40e7509332e8d123ca4c96261c4ef7b579c2db86ee753d9ce07c040e55",
+        "systems-integration/ci.json": "1b7f842aa9cc739997b5013d5368b816bb45d8d0e22692275bfa3bdd8ecbdba3",
+        "systems-integration/dashboard.json": "56b47088b4466a846f9da1081a835ef98b7ad79e2374e24659f436a7f244e0b0",
+        "systems-integration/native.json": "be91a313349aaed79a4e767d2096664b3efa1c3090b3568365d6da70517b8df3",
+        "systems-integration/product.json": "c2fe4742ca06a9df248e32a83d0dfecbbf34dfd6df203a6e839feabffdbdda86"
+      },
+      "skips": [
+        [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[live-/bin/sh]",
+          "Requires the Linux proc filesystem"
+        ],
+        [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]",
+          "Requires the Linux proc filesystem"
+        ]
+      ],
+      "tests": 2321
+    },
+    "serial": {
+      "children": {
+        "cli-help": 1,
+        "service-one-shot": 1
+      },
+      "lanes": {
+        "serial": 2321
+      },
+      "phase_reports": 7045,
+      "plan_sha256": "5b6146493164a09ca31a47eb0cd06cac138db33bc2b40a92153aae7fc919ea02",
+      "receipts": {
+        "serial/board.json": "342dc5d7256e3ca8e10496fd4b289ffce3fb12b51f6dd6ad4cb7f534b9520ae1",
+        "serial/ci.json": "022f41c84bd1da2c227f66139a5d845b00610287ff7eeee0e43c9eb74a24773e",
+        "serial/dashboard.json": "d62f83c4dea9130587d6725412e092445844fb41320f328be6678839f3625f9a",
+        "serial/native.json": "be91a313349aaed79a4e767d2096664b3efa1c3090b3568365d6da70517b8df3",
+        "serial/product.json": "0dc2cf0afdc82c5562a8287c6a8ec8be71b86e7cddd8fde748c4ca5fc5d21fe6"
+      },
+      "skips": [
+        [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[live-/bin/sh]",
+          "Requires the Linux proc filesystem"
+        ],
+        [
+          "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]",
+          "Requires the Linux proc filesystem"
+        ]
+      ],
+      "tests": 2321
+    }
+  },
+  "source": {
+    "commit": "1ae9553498e37591d1a6e583954e9af6a2bb883d",
+    "tree": "56a2841e8091d6a2b848ff1744cfb75256e6fc9c"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "base": "9843874bd00ffa1255b3595987106d5af51dceb3",
+  "head": "1ae9553498e37591d1a6e583954e9af6a2bb883d",
+  "local": "attachments/2026-11-20-359-local-parity.json",
+  "merge": "aded698fdcae8616adefc21c6a64b4f560d7ca3e",
+  "merged_at": "2026-11-20T16:35:18Z",
+  "pr": 408,
+  "retrospective": "retro/2026-11-20-359-sign-off.md",
+  "review": {
+    "native_url": "https://github.com/kburson/aitm/pull/408#pullrequestreview-5995982257",
+    "provider": "Grok web (Fast)",
+    "submitted_at": "2026-11-20T16:29:36Z",
+    "verdict": "PASS"
+  },
+  "story": 359,
+  "tree": "56a2841e8091d6a2b848ff1744cfb75256e6fc9c",
+  "verified_at": "2026-11-20T16:36:21Z",
+  "verifier": "attachments/2026-11-20-359-trusted-verifier.json"
+}

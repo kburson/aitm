@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 359
 title: "Run a local full sweep as category shards"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/359"
 parent: 356
 children: []
 blocking: [360]
 blocked-by: [357, 358]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T16:10:14Z"
+updated: "2026-11-20T16:36:21Z"
 last-branch: "codex/359-local-category-sweep"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-359-delivery-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-359-delivery-plan.md", "plan/2026-11-20-359-delivery.json", "plan/reviews/2026-11-20-359-grok-pr-review.md"], "attachments": ["attachments/2026-11-20-359-local-parity.json", "attachments/2026-11-20-359-trusted-verifier.json"]}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,5 @@ Stay blocked until #357 and #358 are accepted.
 [Delivery plan](plan/2026-11-20-359-delivery-plan.md).
 
 [Local sweep candidate](https://github.com/kburson/aitm/pull/408).
+
+[Verified delivery](plan/2026-11-20-359-delivery.json) · [Grok review](plan/reviews/2026-11-20-359-grok-pr-review.md) · [Sign-off](retro/2026-11-20-359-sign-off.md).
