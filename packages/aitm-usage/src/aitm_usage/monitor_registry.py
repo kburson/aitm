@@ -1,4 +1,4 @@
-"""Private monitor project, installation and native capture authority."""
+"""Shared monitor inputs. Private monitor project, installation and native capture authority."""
 
 import hmac
 import os
