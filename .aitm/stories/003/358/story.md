@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 358
 title: "[Spike] Find what blocks parallel category runs"
 kind: "spike"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/358"
 parent: 356
 children: []
 blocking: [359]
 blocked-by: [357]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T16:04:54Z"
+updated: "2026-11-20T16:04:59Z"
 last-branch: "codex/358-category-isolation"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
