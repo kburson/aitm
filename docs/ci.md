@@ -186,3 +186,7 @@ The reconcile job requires every planned receipt for its source and workflow
 attempt. A passing run uploads `category-verdict.json`, including the empty
 categories and per-job timings. A failed or incomplete worker prevents a passing
 verdict. Re-run all jobs for a fresh attempt.
+
+Use Actions job timestamps for queue delays and workflow bootstrap. Each shard
+receipt separates collection and environment setup from test execution and
+receipt sealing. Failed test output is available in the shard's Actions log.

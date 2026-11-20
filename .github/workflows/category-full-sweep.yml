@@ -92,11 +92,17 @@ jobs:
           SWEEP_CATEGORY: ${{ matrix.category }}
         run: |
           set -euo pipefail
-          python -m tools.ci.hosted_category_sweep execute "$SWEEP_HOST" "$SWEEP_CATEGORY" "$RUNNER_TEMP/category-run"
+          output="$RUNNER_TEMP/category-run"
+          if ! python -m tools.ci.hosted_category_sweep execute "$SWEEP_HOST" "$SWEEP_CATEGORY" "$output"; then
+            if [[ -d "$output" ]]; then
+              find "$output" -name '*.log' -exec tail -n 80 {} +
+            fi
+            exit 1
+          fi
           receipt="$RUNNER_TEMP/category-receipt"
           mkdir -p "$receipt/$SWEEP_CATEGORY"
-          cp "$RUNNER_TEMP/category-run/timing.json" "$receipt/"
-          cp "$RUNNER_TEMP/category-run/$SWEEP_CATEGORY/"*.json "$receipt/$SWEEP_CATEGORY/"
+          cp "$output/timing.json" "$receipt/"
+          cp "$output/$SWEEP_CATEGORY/"*.json "$receipt/$SWEEP_CATEGORY/"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: category-a${{ github.run_attempt }}-${{ matrix.host }}-${{ matrix.category }}

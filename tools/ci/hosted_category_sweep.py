@@ -128,15 +128,14 @@ def execute(repository, source, context, catalog, slot, profiles, output):
     with sweep.isolated_roots() as (scratch, short_scratch):
         collections = sweep.collect_profiles(repository, source, scratch, short_scratch)
         sweep.assign(collections, catalog)
-        execution_start = monotonic()
-        sweep.run_worker(
+        collection_seconds = monotonic() - setup_start
+        worker_setup_seconds, execution_seconds = sweep.run_worker(
             repository, scratch, short_scratch, output / category, plan, category
         )
-        finished = monotonic()
     timing = {
         "plan_sha256": sweep.digest(sweep.encoded(plan)),
-        "collection_setup_seconds": round(execution_start - setup_start, 3),
-        "worker_setup_and_execution_seconds": round(finished - execution_start, 3),
+        "setup_seconds": round(collection_seconds + worker_setup_seconds, 3),
+        "execution_seconds": round(execution_seconds, 3),
     }
     (output / "timing.json").write_bytes(sweep.encoded(timing))
 

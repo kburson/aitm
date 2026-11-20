@@ -13,6 +13,7 @@ from collections import Counter, defaultdict
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from time import monotonic
 
 PROFILES = {
     "product": "packages/aitm-usage/tests",
@@ -365,9 +366,11 @@ def pytest_profile(repository, temp, env, output, profile, target, *, collect=Fa
 
 
 def run_worker(repository, scratch, short_scratch, output, plan, lane):
+    started = monotonic()
     target = scratch / lane / "checkout"
     output.mkdir(mode=0o700)
     env, temp = workspace(repository, target, plan["source"], short_scratch / lane)
+    prepared = monotonic()
     assigned = plan["lanes"][lane]
     for profile in PROFILES:
         if profile not in assigned:
@@ -384,6 +387,7 @@ def run_worker(repository, scratch, short_scratch, output, plan, lane):
         identity(target) == plan["source"], "worker source changed during execution"
     )
     seal(plan, lane, output)
+    return prepared - started, monotonic() - prepared
 
 
 def read_catalog(path, host):
