@@ -1,0 +1,459 @@
+{
+  "all_exits_zero": false,
+  "archive_sha256": "84bdae431ef12c98746a024dd1ca6213fd1613857ea27599e33ccbbfd59ab784",
+  "children": {
+    "parallel": [
+      {
+        "count": 1,
+        "label": "cli-help",
+        "returncode": 0
+      },
+      {
+        "count": 1,
+        "label": "service-one-shot",
+        "returncode": 0
+      }
+    ],
+    "serial": [
+      {
+        "count": 1,
+        "label": "cli-help",
+        "returncode": 0
+      },
+      {
+        "count": 1,
+        "label": "service-one-shot",
+        "returncode": 0
+      }
+    ]
+  },
+  "elapsed": {
+    "parallel_seconds": 437,
+    "parallel_setup_and_execution_seconds": 440,
+    "serial_seconds": 615,
+    "three_product_shards_overlap_seconds": 2.268
+  },
+  "focused_replays": {
+    "replays": {
+      "shell-background-service": {
+        "collected": [
+          "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
+        ],
+        "end_ns": 1795189837073173000,
+        "exit_code": 1,
+        "signal_handler": "1",
+        "start_ns": 1795189818299693000
+      },
+      "standalone-fast-concurrent": {
+        "collected": [
+          "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_rate_classes_do_not_use_claude_defaults"
+        ],
+        "end_ns": 1795189837418789000,
+        "exit_code": 0,
+        "signal_handler": "<built-in function default_int_handler>",
+        "start_ns": 1795189837199411000
+      },
+      "standalone-history-concurrent": {
+        "collected": [
+          "tools/story_dashboard/tests/test_timing.py::TimingMetrics::test_real_seed_parity_at_historical_pin"
+        ],
+        "end_ns": 1795189841787775000,
+        "exit_code": 0,
+        "signal_handler": "<built-in function default_int_handler>",
+        "start_ns": 1795189837874494000
+      },
+      "standalone-history-serial": {
+        "collected": [
+          "tools/story_dashboard/tests/test_timing.py::TimingMetrics::test_real_seed_parity_at_historical_pin"
+        ],
+        "end_ns": 1795189811845491000,
+        "exit_code": 0,
+        "signal_handler": "<built-in function default_int_handler>",
+        "start_ns": 1795189807906343000
+      },
+      "standalone-service-concurrent": {
+        "collected": [
+          "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
+        ],
+        "end_ns": 1795189842406693000,
+        "exit_code": 0,
+        "signal_handler": "<built-in function default_int_handler>",
+        "start_ns": 1795189837199409000
+      },
+      "standalone-service-serial": {
+        "collected": [
+          "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state"
+        ],
+        "end_ns": 1795189817431718000,
+        "exit_code": 0,
+        "signal_handler": "<built-in function default_int_handler>",
+        "start_ns": 1795189811970509000
+      }
+    },
+    "signal_probe": {
+      "foreground": "<built-in function default_int_handler>",
+      "noninteractive_shell_background": "1"
+    }
+  },
+  "host": {
+    "arch": "arm64",
+    "filesystem": "APFS",
+    "os": "macOS 26.6.2",
+    "pytest": "9.2.0",
+    "python": "3.13.9",
+    "uv": "0.10.6"
+  },
+  "inventory_source": "accepted #357 exact Darwin register",
+  "nodeids_per_layout": 2314,
+  "observed_skips": {
+    "parallel": [
+      {
+        "nodeid": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[live-/bin/sh]",
+        "reasons": [
+          "Requires the Linux proc filesystem"
+        ]
+      },
+      {
+        "nodeid": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]",
+        "reasons": [
+          "Requires the Linux proc filesystem"
+        ]
+      }
+    ],
+    "serial": [
+      {
+        "nodeid": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[live-/bin/sh]",
+        "reasons": [
+          "Requires the Linux proc filesystem"
+        ]
+      },
+      {
+        "nodeid": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_and_hook_recheck_external_process_incarnation[stale-/bin/sh]",
+        "reasons": [
+          "Requires the Linux proc filesystem"
+        ]
+      }
+    ]
+  },
+  "outcomes_identical": false,
+  "parallel_category_totals": {
+    "fast-unit": 483,
+    "local-integration": 1568,
+    "slow-unit": 0,
+    "systems-integration": 263
+  },
+  "phase_report_differences": [
+    {
+      "nodeid": "packages/aitm-usage/tests/test_service_process.py::test_real_service_crash_enrollment_and_private_state",
+      "parallel": [
+        [
+          "setup",
+          "passed",
+          false,
+          null,
+          1
+        ],
+        [
+          "call",
+          "failed",
+          false,
+          null,
+          1
+        ],
+        [
+          "teardown",
+          "passed",
+          false,
+          null,
+          1
+        ]
+      ],
+      "serial": [
+        [
+          "setup",
+          "passed",
+          false,
+          null,
+          1
+        ],
+        [
+          "call",
+          "passed",
+          false,
+          null,
+          1
+        ],
+        [
+          "teardown",
+          "passed",
+          false,
+          null,
+          1
+        ]
+      ]
+    }
+  ],
+  "register_sha256": "0204389741ccefb4a1e1f013b8547c9f9b418dd462a0131d4c69e8cd10e7ba3c",
+  "runs": [
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 1,
+      "execution": "serial",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189361,
+      "phase_reports": 45,
+      "profile": "native",
+      "sha256": "be91a313349aaed79a4e767d2096664b3efa1c3090b3568365d6da70517b8df3",
+      "started_epoch_second": 1795189360,
+      "tests": 15
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 2
+      },
+      "elapsed_seconds": 344,
+      "execution": "serial",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189090,
+      "phase_reports": 4555,
+      "profile": "product",
+      "sha256": "501db737d215a4cf483e167a6e62a312868da373b738a09e44562e926c4a76f0",
+      "started_epoch_second": 1795188746,
+      "tests": 1519
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 0,
+      "execution": "serial",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189343,
+      "phase_reports": 39,
+      "profile": "board",
+      "sha256": "342dc5d7256e3ca8e10496fd4b289ffce3fb12b51f6dd6ad4cb7f534b9520ae1",
+      "started_epoch_second": 1795189343,
+      "tests": 13
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 253,
+      "execution": "serial",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189343,
+      "phase_reports": 2118,
+      "profile": "ci",
+      "sha256": "8612c6acd4f3adb5effbd31b4c4e7add5ef9d0df8a28669f63632e004bb8c0ab",
+      "started_epoch_second": 1795189090,
+      "tests": 706
+    },
+    {
+      "checks": {
+        "failed": 1,
+        "skipped": 0
+      },
+      "elapsed_seconds": 17,
+      "execution": "serial",
+      "exit_code": 1,
+      "finished_epoch_second": 1795189360,
+      "phase_reports": 257,
+      "profile": "dashboard",
+      "sha256": "ebab020d9fdf29637cbe7930250a4c6e14f848c61f523e1898de7f92f3eefc91",
+      "started_epoch_second": 1795189343,
+      "tests": 61
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 2,
+      "execution": "fast-unit",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189369,
+      "phase_reports": 318,
+      "profile": "product",
+      "sha256": "1ef3e74a2004cbc8f3122b80e6f82169750cb105bbd256f174ec8234d7061611",
+      "started_epoch_second": 1795189367,
+      "tests": 106
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 1,
+      "execution": "fast-unit",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189370,
+      "phase_reports": 1038,
+      "profile": "ci",
+      "sha256": "ea1d8f86477332aa0b19552d5156083afdec2d248abd7346f800d4c3362f9d74",
+      "started_epoch_second": 1795189369,
+      "tests": 346
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 1,
+      "execution": "fast-unit",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189371,
+      "phase_reports": 36,
+      "profile": "board",
+      "sha256": "be5c446a0c762354ab99dd1639ed2c3c30a0c4bb5e2de8fd134c1d77d35c8864",
+      "started_epoch_second": 1795189370,
+      "tests": 12
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 0,
+      "execution": "fast-unit",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189371,
+      "phase_reports": 77,
+      "profile": "dashboard",
+      "sha256": "5451906c19254cbe761199baa0e29bdd6afba69492759747ec219e4e87174aa1",
+      "started_epoch_second": 1795189371,
+      "tests": 19
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 256,
+      "execution": "local-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189623,
+      "phase_reports": 3891,
+      "profile": "product",
+      "sha256": "a982cd40e7509332e8d123ca4c96261c4ef7b579c2db86ee753d9ce07c040e55",
+      "started_epoch_second": 1795189367,
+      "tests": 1297
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 170,
+      "execution": "local-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189793,
+      "phase_reports": 717,
+      "profile": "ci",
+      "sha256": "d111a8cf64075ea60e54aa5edc98666b018817eda5d727a93e9e7f9e095ec1a3",
+      "started_epoch_second": 1795189623,
+      "tests": 239
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 1,
+      "execution": "local-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189794,
+      "phase_reports": 3,
+      "profile": "board",
+      "sha256": "51fe46d62bed67ef336eec7addbab33da9804767e64d54174d3c8aad86dc4e11",
+      "started_epoch_second": 1795189793,
+      "tests": 1
+    },
+    {
+      "checks": {
+        "failed": 1,
+        "skipped": 0
+      },
+      "elapsed_seconds": 9,
+      "execution": "local-integration",
+      "exit_code": 1,
+      "finished_epoch_second": 1795189803,
+      "phase_reports": 133,
+      "profile": "dashboard",
+      "sha256": "46ff4a2e68d100c3e98e26e23b787c90bf605844a5d2e4c2a509c3ac80782b40",
+      "started_epoch_second": 1795189794,
+      "tests": 31
+    },
+    {
+      "checks": {
+        "failed": 1,
+        "skipped": 2
+      },
+      "elapsed_seconds": 116,
+      "execution": "systems-integration",
+      "exit_code": 1,
+      "finished_epoch_second": 1795189482,
+      "phase_reports": 346,
+      "profile": "product",
+      "sha256": "c5aa276a310a67b89c02676df4a9245102caa4d053e165a5a588a07e08b0e811",
+      "started_epoch_second": 1795189366,
+      "tests": 116
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 87,
+      "execution": "systems-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189569,
+      "phase_reports": 363,
+      "profile": "ci",
+      "sha256": "0152e80ecd4d7f269d1db5976c128034a1215fcb9f57ac292d5d57258126e2d9",
+      "started_epoch_second": 1795189482,
+      "tests": 121
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 7,
+      "execution": "systems-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189576,
+      "phase_reports": 47,
+      "profile": "dashboard",
+      "sha256": "56b47088b4466a846f9da1081a835ef98b7ad79e2374e24659f436a7f244e0b0",
+      "started_epoch_second": 1795189569,
+      "tests": 11
+    },
+    {
+      "checks": {
+        "failed": 0,
+        "skipped": 0
+      },
+      "elapsed_seconds": 1,
+      "execution": "systems-integration",
+      "exit_code": 0,
+      "finished_epoch_second": 1795189577,
+      "phase_reports": 45,
+      "profile": "native",
+      "sha256": "be91a313349aaed79a4e767d2096664b3efa1c3090b3568365d6da70517b8df3",
+      "started_epoch_second": 1795189576,
+      "tests": 15
+    }
+  ],
+  "schema": "aitm.358-isolation-experiment/v1",
+  "source": {
+    "commit": "9843874bd00ffa1255b3595987106d5af51dceb3",
+    "tree": "b8ca66991842e6b360cf09f0e36b25c693d48390"
+  }
+}
