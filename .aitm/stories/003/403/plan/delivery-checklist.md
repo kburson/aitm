@@ -13,3 +13,12 @@ Earlier shadow results were superseded as independent implementation review iden
 [Advisory qualification findings](../../370/plan/2026-11-20-370-import-chain-shadow-findings.md) and [archived evidence](../../370/plan/2026-11-20-370-import-chain-shadow-evidence.json).
 
 [Independent source review](reviews/2026-11-20-403-source-review.md) and [required CI verifier receipt](2026-11-20-403-required-ci.json). The implementation PR remains open for review.
+
+## Owner review follow-up
+
+The previous receipts bind head `9b5f22c2`. The owner's two review findings require fresh validation on `f980ba24d12c5b1e290cf18bb70f1c25d98eac7c`, tree `c5e96878b6f239445eb4dc5eecf26af270ef7284`.
+
+- [x] Added failing regressions and corrected named `find_spec` targets and missing static import applicability.
+- [ ] Requalify the archived narrow and fallback trees with the fixed probe. [Hosted shadow run](https://github.com/kburson/aitm/actions/runs/44739079991).
+- [ ] Verify required PR CI and its exact-tree disposition. [Required CI](https://github.com/kburson/aitm/actions/runs/44739079517).
+- [ ] Record the independent source re-review and resolve the two GitHub threads.

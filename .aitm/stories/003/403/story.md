@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 403
 title: "List affected tests from the import chain for one real change"
 kind: "story"
-state: "review"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/403"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T23:50:50Z"
-updated: "2026-11-20T02:54:19Z"
+updated: "2026-11-20T12:50:45Z"
 last-branch: "codex/403-import-chain"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
