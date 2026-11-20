@@ -11,3 +11,7 @@
 ## Producer rehearsal
 
 The separate producer candidate passed 227 related tests and workflow lint. In a local replay of #410 attempt 6, the new gate accepted the downloaded test evidence after adding each requested label obtained from the corresponding authenticated GitHub job record. The two observed images were `ubuntu24:20261116.376.1` and `ubuntu24:20261116.133.1`, both for `ubuntu-24.04` and Python 3.13.9. This replay exercised the gate. A live signed receipt and current trusted verifier are required for delivery.
+
+[Draft PR #413](https://github.com/kburson/aitm/pull/413) exercises the new producer in Actions before rollout. The first run showed that GitHub appended the matrix value to static job names. An explicit job name from the one-row matrix restored `python-base` and `python` in the [next Actions run](https://github.com/kburson/aitm/actions/runs/44822847471). The authenticated job records preserve the `ubuntu-24.04` label for both lanes. [Grok accepted that draft revision](https://github.com/kburson/aitm/pull/413#pullrequestreview-5999817940).
+
+The [reader's first attempt](https://github.com/kburson/aitm/actions/runs/44821288070/attempts/1) passed both Python jobs and was rejected by the old same-image comparison. [Attempt 2](https://github.com/kburson/aitm/actions/runs/44821288070/attempts/2) failed in the existing monitor coverage fixture before evidence collection. The reader remains subject to the current trusted gate.
