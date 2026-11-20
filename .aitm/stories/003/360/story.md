@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 360
 title: "Run a CI full sweep as category shards"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/360"
 parent: 356
 children: []
 blocking: [361]
 blocked-by: [359]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:22:44Z"
-last-branch: "planning"
+updated: "2026-11-20T16:40:34Z"
+last-branch: "codex/360-hosted-category-sweep"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
@@ -41,3 +41,5 @@ Stay blocked until #359 is accepted. The schedule is #361.
 - Keep the ordinary hosted PR path-map and merge controls in their existing roles. #361 owns the scheduled trigger.
 
 [Delivery plan](plan/2026-11-20-360-delivery-plan.md).
+
+[Hosted sweep candidate](https://github.com/kburson/aitm/pull/409).
