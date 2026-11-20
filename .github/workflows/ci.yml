@@ -25,7 +25,13 @@ env:
 jobs:
   python-base:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
+    name: ${{ matrix.job }}
+    strategy:
+      matrix:
+        include:
+          - job: python-base
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 8
     permissions:
       contents: read
@@ -47,6 +53,7 @@ jobs:
       - name: Run isolated trusted base inventory and outcomes
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
+          RUNNER_LABEL: ${{ matrix.runner }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}
@@ -70,7 +77,9 @@ jobs:
             fi
             mode=$(jq -er .mode "$out/evidence/selection.json")
             if [[ "$mode" != full ]]; then
-              printf '%s\n' '{"schema":"aitm.path-selection-skip/v1"}' > "$out/evidence/base-skip.json"
+              jq -n --arg runner "$RUNNER_LABEL" --arg image "${ImageOS:?}:${ImageVersion:?}" \
+                --arg runtime "$(python -c 'import platform; print(platform.python_version())')" \
+                '{schema:"aitm.path-selection-skip/v1",platform:{$runner,$image,$runtime}}' > "$out/evidence/base-skip.json"
               exit 0
             fi
           fi
@@ -118,8 +127,9 @@ jobs:
             --arg observer "$(sha "$out/observer/pytest_evidence.py")" --arg policy "$(sha "$out/observer/policy.json")" \
             --arg lock "$(sha uv.lock)" --arg configuration "$(sha pyproject.toml)" \
             --arg runtime "$(uv run --locked python -c 'import platform; print(platform.python_version())')" \
-            --arg image "${ImageOS:?}:${ImageVersion:?}" --slurpfile evidence "$out/outcomes.json" \
-            '{identity:{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image},evidence:$evidence[0]}' > "$out/evidence/base.json"
+            --arg runner "$RUNNER_LABEL" --arg image "${ImageOS:?}:${ImageVersion:?}" \
+            --slurpfile evidence "$out/outcomes.json" \
+            '{identity:{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$runner,$image},evidence:$evidence[0]}' > "$out/evidence/base.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: upload
         with:
@@ -129,7 +139,13 @@ jobs:
 
   python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
+    name: ${{ matrix.job }}
+    strategy:
+      matrix:
+        include:
+          - job: python
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
       actions: read
@@ -158,6 +174,7 @@ jobs:
         id: qualify
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
+          RUNNER_LABEL: ${{ matrix.runner }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         shell: bash
@@ -181,8 +198,9 @@ jobs:
               --arg observer "$observer" --arg policy "$policy" \
               --arg lock "$(git show "$BASE:packages/aitm-usage/uv.lock" | sha)" \
               --arg configuration "$(git show "$BASE:packages/aitm-usage/pyproject.toml" | sha)" \
-              --arg runtime "$PYTHON_VERSION" --arg image "${ImageOS:?}:${ImageVersion:?}" \
-              '{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$image}' > "$out/evidence/expected-base.json"
+              --arg runtime "$PYTHON_VERSION" --arg runner "$RUNNER_LABEL" \
+              --arg image "${ImageOS:?}:${ImageVersion:?}" \
+              '{$base,$tree,$observer,$policy,$lock,$configuration,$runtime,$runner,$image}' > "$out/evidence/expected-base.json"
           fi
           test -d "$root/packages/aitm-usage/src/aitm_usage"
           git ls-tree -r --name-only -z HEAD -- packages/aitm-usage/src/aitm_usage |
@@ -271,6 +289,7 @@ jobs:
       - name: Run parallel behavior suite and retain exact coverage
         env:
           UV_CACHE_HIT: ${{ steps.uv.outputs.cache-hit }}
+          RUNNER_LABEL: ${{ matrix.runner }}
         shell: bash
         run: |
           root=$(pwd -P)
@@ -284,8 +303,8 @@ jobs:
           uv sync --locked --python "$PYTHON_VERSION"
           jq -n --arg os "$(uname -s)" \
             --arg runtime "$(uv run --locked python -I -c 'import platform; print(platform.python_version())')" \
-            --arg image "${ImageOS:?}:${ImageVersion:?}" \
-            '{$os,$runtime,$image}' > "$out/evidence/capability.json"
+            --arg runner "$RUNNER_LABEL" --arg image "${ImageOS:?}:${ImageVersion:?}" \
+            '{$os,$runtime,$runner,$image}' > "$out/evidence/capability.json"
           ready=$(date +%s)
           workers=3
           mkdir -p "$out/observer"
@@ -549,6 +568,8 @@ jobs:
               base_args=(--base-evidence "$RUNNER_TEMP/aitm-baseline/base.json"
                          --base-policy "$RUNNER_TEMP/aitm-baseline/base-policy.json"
                          --expected-base "$input/expected-base.json")
+            else
+              base_args=(--base-runner "$RUNNER_TEMP/aitm-baseline/base-skip.json")
             fi
           fi
           python3 tools/ci/python_gate.py --mode "$mode" --policy tools/ci/policy.json \
@@ -560,8 +581,12 @@ jobs:
           cat "$out/disposition.json"
           if [[ "$mode" == pr ]]; then
             baseline_file="$RUNNER_TEMP/aitm-baseline/base.json"
-            if [[ "$selection_mode" != full ]]; then
+            if [[ "$selection_mode" == full ]]; then
+              jq -e .identity "$baseline_file" > "$out/base-identity.json"
+            else
               baseline_file="$RUNNER_TEMP/aitm-baseline/base-skip.json"
+              jq -e --slurpfile expected "$input/expected-base.json" \
+                '$expected[0] + .platform' "$baseline_file" > "$out/base-identity.json"
             fi
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT" > "$out/run.json"
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" > "$out/jobs.json"
@@ -572,7 +597,7 @@ jobs:
                 {hosted_seconds:(($matches[0].completed_at|fromdateiso8601)-$start),
                  queue:(if $run[0].run_attempt==1 then $start-($run[0].created_at|fromdateiso8601) else null end)}
               end' > "$out/provider-timing.json"
-            jq -n --arg schema aitm.ci-candidate/v2 --argjson run "$GITHUB_RUN_ID" \
+            jq -n --arg schema aitm.ci-candidate/v3 --argjson run "$GITHUB_RUN_ID" \
               --argjson attempt "$GITHUB_RUN_ATTEMPT" --argjson pr "$PR_NUMBER" \
               --arg head "$PR_HEAD" --arg base "$BASE" --arg tested "$GITHUB_SHA" \
               --arg tree "$(git rev-parse 'HEAD^{tree}')" --argjson jobs "$JOB_RESULTS" \
@@ -587,7 +612,7 @@ jobs:
               --arg baseline "$(sha256sum "$baseline_file" | cut -d' ' -f1)" \
               --slurpfile result "$out/disposition.json" --slurpfile child "$input/children.json" \
               --slurpfile timings "$input/timings.json" --slurpfile provider_timing "$out/provider-timing.json" --slurpfile wheel "$input/wheel.json" \
-              --slurpfile platform "$input/capability.json" --slurpfile base_identity "$input/expected-base.json" \
+              --slurpfile platform "$input/capability.json" --slurpfile base_identity "$out/base-identity.json" \
               --slurpfile product "$input/product-coverage.json" --slurpfile helpers "$input/helper-coverage.json" \
               --slurpfile selection "$input/selection.json" \
               '{$schema,$run,$attempt,$pr,$head,$base,$tested,$tree,$inventory,$source_inventory,$baseline,
@@ -676,7 +701,7 @@ jobs:
 
           report = json.loads(subject)
           if (
-              report.get("schema") != "aitm.ci-candidate/v2"
+              report.get("schema") != "aitm.ci-candidate/v3"
               or report.get("run") != int(os.environ["GITHUB_RUN_ID"])
               or report.get("attempt") != int(os.environ["GITHUB_RUN_ATTEMPT"])
               or report.get("tested") != os.environ["GITHUB_SHA"]

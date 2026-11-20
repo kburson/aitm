@@ -32,6 +32,12 @@ python tools/ci/verify_pr.py --repo kburson/aitm --pr 123 --target trunk --outpu
 
 The verifier reads GitHub and writes the local result. For a reviewed gate-control change, pass `--reviewed-tree <tested-tree-sha>` from the existing source review. A stale run, incomplete attempt, invalid bundle or mismatched merge holds the result. The verifier does not change branch protection or merge the PR.
 
+The signed Linux receipt records the requested runner label and observed image
+build for each Python job. Both requests must match the same versioned Ubuntu
+label, both images must match that Ubuntu release, and both interpreters must
+match the pinned runtime. Different image builds of that release can pass.
+The verifier checks each request against the authenticated Actions job labels.
+
 ## Check maintained files locally
 
 Use Node 24.22.2 and the locked lint environments from the repository root.
