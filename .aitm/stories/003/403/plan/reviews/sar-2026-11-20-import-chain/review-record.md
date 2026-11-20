@@ -12,3 +12,11 @@
 [Independent reviewer response](reviewer-response-1.md)
 
 The disposition applies to the pinned revision. This round records the findings and leaves the story and plan bytes as reviewed. The local counterexamples evaluate the proposal. Hosted acceptance and the #370 decision remain open.
+
+## Round 2 disposition
+
+**Pass for the revised plan.** Astra 6.2 checked all five round-one findings and confirmed the final reviewed planning revision `181797b901c833af09d317efbc7a63654d3c508f` against the same trunk. The #403 story SHA-256 is `5f4095b586375cb10bf1e79f747285195c7456c8f54100cd7e1cdafce09add72`. The linked import-chain plan SHA-256 is `bc1e0fd8d52913d341979e4499cb771478476f7322f3c0100bae0b4d40a9afae`.
+
+[Author response](author-response-1.md) · [Independent final review](reviewer-response-2.md)
+
+This pass applies to the plan. Implementation and hosted qualification remain pending.
