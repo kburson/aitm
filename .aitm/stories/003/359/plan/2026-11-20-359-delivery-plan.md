@@ -20,3 +20,9 @@ Deliver the opt-in local full sweep from the accepted research.
 Both research predecessors have delivered. The local implementation in [PR #408](https://github.com/kburson/aitm/pull/408) uses the five pytest profiles and reviewed #357 category catalog. It checks inventory before execution, makes standalone copies with the historical planning fixture, and runs each nonempty lane in a supervised process group that preserves the service signal disposition. Per-lane seals bind the plan and hashes of the stock pytest phase and child evidence. The serial mode is the full unsharded reference. The intake catalog adds seven specifically witnessed contract tests.
 
 Target `trunk`, base `9843874bd00ffa1255b3595987106d5af51dceb3`, head `ab9cba596dcf780e950e382ade6010648f572ea6`, tree `27246059c946b67ffa9229c59b6cbc72dd71d4eb`. The story is in Test. Seven focused contract tests passed. Serial and parallel full runs on the same tree and canonical CI have started. Grok must review the current exact head before merge.
+
+## Replacement candidate
+
+Initial head `ab9cba596dcf780e950e382ade6010648f572ea6` passed canonical CI and the full serial sweep of 2,321. Two full concurrent attempts refused a monitor journal fixture setup at the source-custody guard. The first failed case passed five focused replays. A controlled sibling creation invalidated the ancestor ctime check while preserving the file's identity and contents.
+
+[PR #408](https://github.com/kburson/aitm/pull/408) now has head `1ae9553498e37591d1a6e583954e9af6a2bb883d`, tree `56a2841e8091d6a2b848ff1744cfb75256e6fc9c`, against base `9843874bd00ffa1255b3595987106d5af51dceb3`. The runner provisions all lane directories before launching and moves pytest basetemp outside shared system temp. It retains a short private TMPDIR for native socket fixtures. All seven focused tests pass. Fresh exact local runs and canonical CI are in progress. The first head's results remain historical.
