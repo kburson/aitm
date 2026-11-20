@@ -28,3 +28,4 @@ The previous receipts bind head `9b5f22c2`. The owner's two review findings requ
 - [x] Verified the merged commit `9843874bd00ffa1255b3595987106d5af51dceb3` and its exact reviewed tree on trunk.
 - [x] Verified successful [Ubuntu trunk CI](https://github.com/kburson/aitm/actions/runs/44745570866) and recorded the [trunk readback](../retro/2026-11-20-403-trunk-readback.json).
 - [x] Signed the [delivery retrospective](../retro/2026-11-20-403-delivery.md).
+- [x] Verified the GitHub issue closed at `2026-11-20T13:42:15Z` and the Project item is Done.

@@ -103,3 +103,13 @@ The [decision](plan/2026-11-19-370-suite-hosted-integration-decision.md) holds r
 #403 requalified head `fefa1b1a` on the original two Ubuntu PR trees after the owner review fixes. The watch change assigned 20 tests in 26.546 seconds and reproduced all 8 seeded failures from the 1,776-test full run in 206.400 seconds. The shared-conftest case assigned all 1,776 tests and passed. #370 remains open and the required gate is unchanged.
 
 [Findings](plan/2026-11-20-370-import-chain-review-requalification.md) · [Exact evidence](plan/2026-11-20-370-import-chain-review-requalification.json).
+
+## Acceptance check after #403 delivery
+
+Technical acceptance for the advisory scope is satisfied. The #371 spike and #383 implementation delivered the single Python probe and qualified staged-index, HEAD and PR inputs on Ubuntu and macOS. #385, #393 and #398 completed their recorded shadow experiments. #402 was superseded and is closed as not planned. All six required children are closed as completed.
+
+#403 delivered the reviewed import-chain selector on trunk at `9843874bd00ffa1255b3595987106d5af51dceb3`. The focused regressions preserve exact input identity and both graph sides, and verify inventory and uncertainty fallbacks. On the original two hosted Ubuntu PR trees, the divergent-base watch mutation assigned 20 tests and reproduced all eight failures in the 1,776-test reference. The independent shared-conftest case selected all 1,776 and passed. Both comparisons had zero missed failures and zero selected-outcome mismatches. The archived receipt binds the reviewed source, exact PR trees, inventories, outcomes and timings.
+
+The plan requires acceptance of the advisory receipt before #370 closes. The owner's approval and merge of PR #406 completes story delivery. Epic receipt acceptance and the epic sign-off remain open. Promotion into the required gate is a separate decision under the reviewed plan.
+
+[Exact qualification](plan/2026-11-20-370-import-chain-review-requalification.md) · [Trunk delivery](../403/retro/2026-11-20-403-delivery.md) · [Reviewed scope](plan/2026-11-19-370-import-chain-list.md).

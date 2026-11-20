@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 403
 title: "List affected tests from the import chain for one real change"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/403"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T23:50:50Z"
-updated: "2026-11-20T13:01:33Z"
-last-branch: "codex/403-import-chain"
+updated: "2026-11-20T13:42:19Z"
+last-branch: "trunk"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-19-370-import-chain-list.md"
@@ -70,3 +70,7 @@ Required CI and the delivered verifier passed on the exact implementation PR. [I
 ## Owner review follow-up
 
 #403 requalified head `fefa1b1a` on the original two Ubuntu PR trees after the owner review fixes. The watch change assigned 20 tests in 26.546 seconds and reproduced all 8 seeded failures from the 1,776-test full run in 206.400 seconds. The shared-conftest case assigned all 1,776 tests and passed. #370 remains open and the required gate is unchanged. [Source re-review](plan/reviews/2026-11-20-403-owner-review-follow-up.md) · [Same-tree results](../370/plan/2026-11-20-370-import-chain-review-requalification.md).
+
+## Delivered
+
+PR #406 landed on trunk at `9843874bd00ffa1255b3595987106d5af51dceb3`. Exact-tree CI and the advisory requalification passed. GitHub issue #403 closed and its Project item is Done. [Signed delivery and readback](retro/2026-11-20-403-delivery.md).
