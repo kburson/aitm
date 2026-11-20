@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 403
 title: "List affected tests from the import chain for one real change"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/403"
 parent: 370
 children: []
 blocking: []
 blocked-by: []
 created: "2026-11-19T23:50:50Z"
-updated: "2026-11-20T02:23:09Z"
-last-branch: "planning"
+updated: "2026-11-20T02:54:19Z"
+last-branch: "codex/403-import-chain"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/370/plan/2026-11-19-370-import-chain-list.md"
@@ -56,3 +56,7 @@ An accepted selection includes the reached surviving pytest IDs plus the existin
 6. Verify complete pytest inventories and per-node phases for the hosted comparisons. Treat absent, stale, incomplete or conflicting evidence as a hold on qualification. Publish the advisory receipt under #370 and keep #370 open until it is accepted. Gate promotion remains a separate decision.
 
 [Parent #370](https://github.com/kburson/aitm/issues/370) · [#383 probe](https://github.com/kburson/aitm/issues/383) · [#385 findings](https://github.com/kburson/aitm/blob/planning/.aitm/stories/003/370/plan/2026-11-19-370-hosted-shadow-findings.md) · [First SAR](plan/reviews/sar-2026-11-20-import-chain/reviewer-response-1.md)
+
+## Implementation and testing
+
+The exact candidate is in [PR #406](https://github.com/kburson/aitm/pull/406). Track the hosted shadow qualification and required CI in the [delivery checklist](plan/delivery-checklist.md).
