@@ -1,0 +1,40 @@
+{
+  "pr": 410,
+  "head": "79c5be2b397a1fc37ede93ea69f65f7c951f22bd",
+  "canonical_run": 44780376663,
+  "attempts": [
+    {
+      "attempt": 2,
+      "reason": "candidate monitor journal fixture refused an unverified native journal cursor",
+      "verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-20T17:24:07.015559+00:00"
+      }
+    },
+    {
+      "attempt": 3,
+      "reason": "base and candidate runner images differ",
+      "base_image": "ubuntu24/20261116.376",
+      "candidate_image": "ubuntu24/20261116.133",
+      "verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-20T17:31:03.388015+00:00"
+      }
+    },
+    {
+      "attempt": 4,
+      "reason": "base and candidate runner images differ",
+      "base_image": "ubuntu24/20261116.376",
+      "candidate_image": "ubuntu24/20261116.133",
+      "verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-20T17:37:52.435413+00:00"
+      }
+    }
+  ],
+  "initial_merge_trunk_ci": "https://github.com/kburson/aitm/actions/runs/44779557116/attempts/2",
+  "disposition": "hold until a complete passing same-head canonical attempt and trusted verifier"
+}
