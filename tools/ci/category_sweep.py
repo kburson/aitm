@@ -266,7 +266,7 @@ def identity(repository):
     return {"commit": commit, "tree": tree}
 
 
-def workspace(repository, target, source, short_temp):
+def workspace(repository, target, source, short_temp, *, scratch):
     subprocess.run(
         [
             "git",
@@ -308,7 +308,7 @@ def workspace(repository, target, source, short_temp):
     }
     if sys.platform == "linux":
         # The hosted runner home can carry ACLs that custody checks refuse.
-        env["UV_PYTHON_INSTALL_DIR"] = str(target.parent.parent / "python")
+        env["UV_PYTHON_INSTALL_DIR"] = str(scratch / "python")
         env["UV_MANAGED_PYTHON"] = "1"
     subprocess.run(
         [
@@ -373,7 +373,9 @@ def run_worker(repository, scratch, short_scratch, output, plan, lane):
     started = monotonic()
     target = scratch / lane / "checkout"
     output.mkdir(mode=0o700)
-    env, temp = workspace(repository, target, plan["source"], short_scratch / lane)
+    env, temp = workspace(
+        repository, target, plan["source"], short_scratch / lane, scratch=scratch
+    )
     prepared = monotonic()
     assigned = plan["lanes"][lane]
     for profile in PROFILES:
@@ -424,6 +426,8 @@ def isolated_roots():
         scratch = Path(directory).resolve()
         short_scratch = Path(short_directory).resolve()
         # Establish the common ancestor before source readers start.
+        if sys.platform == "linux":
+            (scratch / "python").mkdir(mode=0o700)
         for lane in ("collect", "serial", *CATEGORIES):
             (scratch / lane).mkdir(mode=0o700)
             (short_scratch / lane).mkdir(mode=0o700)
@@ -432,7 +436,9 @@ def isolated_roots():
 
 def collect_profiles(repository, source, scratch, short_scratch):
     collector = scratch / "collect" / "checkout"
-    env, temp = workspace(repository, collector, source, short_scratch / "collect")
+    env, temp = workspace(
+        repository, collector, source, short_scratch / "collect", scratch=scratch
+    )
     collect_out = scratch / "observations"
     collect_out.mkdir(mode=0o700)
     collections = {}
