@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 411
 title: "Accept any build of the requested runner label"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/411"
 parent: 356
 children: []
 blocking: [360]
 blocked-by: []
 created: "2026-11-20T21:18:00Z"
-updated: "2026-11-20T21:28:00Z"
-last-branch: "planning"
+updated: "2026-11-20T21:31:19Z"
+last-branch: "codex/411-runner-receipt-verifier"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/003/360/plan/2026-11-20-360-delivery-plan.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-411-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
