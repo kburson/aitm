@@ -1,0 +1,16 @@
+{
+  "closure_owner": "OpenAI Codex /root",
+  "delivered_planning_commit": "4c358c2840ce70664604b788a20c5d9cec9c1ec5",
+  "delivery": "plan/2026-11-20-357-delivery.json",
+  "direct_dependents": {
+    "358": "unblocked",
+    "359": "still blocked by #358"
+  },
+  "disposition": "COMPLETED",
+  "github_closed_utc": "2026-11-20T14:59:50Z",
+  "issue": "https://github.com/kburson/aitm/issues/357",
+  "project": 24,
+  "status": "Done",
+  "story": 357,
+  "verified_utc": "2026-11-20T14:59:53Z"
+}
