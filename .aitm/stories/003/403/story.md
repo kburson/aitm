@@ -24,7 +24,7 @@ trips: []
 
 [GitHub issue #403](https://github.com/kburson/aitm/issues/403) · [Parent #370](../370/story.md) · [Plan](../370/plan/2026-11-19-370-import-chain-list.md).
 
-List the affected pytest tests for one real product change by walking reverse import edges in #383's Python probe. #385 showed that every real case fell back because the graph applied unbounded uncertainty to every path. #393 and #398 measured the existing Grok replay boundary. Preserve that evidence and use a different real product input here.
+List the affected pytest tests for one real product change by walking reverse import edges in #383's Python probe. #385 found three full-suite decisions under unbounded uncertainty and one unavailable decision because the inventory could not classify a renamed test module. #393 and #398 measured the existing Grok replay boundary. Preserve that evidence and use a different real product input here.
 
 ## Exact inputs and compatibility
 
