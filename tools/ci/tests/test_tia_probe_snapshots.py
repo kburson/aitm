@@ -213,3 +213,40 @@ def test_probe_pr_inventory_requires_a_well_formed_tested_endpoint(repo):
     )
     with pytest.raises(ValueError, match="probe snapshot provenance"):
         _endpoint(candidate, baseline=False)
+
+
+@pytest.mark.parametrize("merge_only", [False, True])
+def test_probe_pr_compares_both_path_sets_with_rename_and_delete(repo, merge_only):
+    keep = b"identical renamed bytes\n"
+    base_tree = _tree(repo, old=keep, deleted=b"deleted")
+    divergence = commit(repo, base_tree)
+    parent = commit(
+        repo, _tree(repo, old=keep, deleted=b"deleted", unrelated=b"docs"), divergence
+    )
+    head = commit(repo, _tree(repo, new=keep), divergence)
+    files = {"new": keep, "unrelated": b"docs"}
+    if merge_only:
+        files["merge_only"] = b"merge-only content"
+        files["deleted"] = b"deleted"
+    tested_tree = _tree(repo, **files)
+    tested = commit(repo, tested_tree, parent, head)
+    before, after = resolve(
+        repo, ProbeRequest(_REPOSITORY, "pr", parent, head, tested, tested_tree)
+    )
+    agreement = after.provenance.path_agreement
+    assert agreement.divergence_to_head == (b"deleted", b"new", b"old")
+    assert agreement.divergence_only == ((b"deleted",) if merge_only else ())
+    assert agreement.tested_only == ((b"merge_only",) if merge_only else ())
+    assert agreement.base_to_tested == tuple(
+        sorted(
+            (set(agreement.divergence_to_head) - set(agreement.divergence_only))
+            | set(agreement.tested_only)
+        )
+    )
+    _endpoint(before, baseline=True)
+    _endpoint(after, baseline=False)
+    with pytest.raises(ValueError, match="PR path agreement missing"):
+        _endpoint(
+            replace(after, provenance=replace(after.provenance, path_agreement=None)),
+            baseline=False,
+        )

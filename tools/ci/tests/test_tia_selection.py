@@ -16,7 +16,13 @@ from tia.selection import (
     SelectionPolicy,
     select,
 )
-from tia.snapshot import HostedBinding, HostedRequest, LocalRequest, resolve
+from tia.snapshot import (
+    HostedBinding,
+    HostedRequest,
+    LocalRequest,
+    ProbeRequest,
+    resolve,
+)
 
 _CI = Path(__file__).resolve().parents[1]
 _SUITES = (_CI / "tia/suites.json").read_bytes()
@@ -853,3 +859,211 @@ def test_project_manifest_traces_measured_grok_fixture(repo):
     )
     assert fallback.mode == "full"
     assert _key(node) in fallback.selected
+
+
+@pytest.mark.parametrize(
+    "hidden_source",
+    [
+        b"from pkg import *\ndef test_hidden(): assert changed.enabled\n",
+        b"pytest_plugins = ('pkg.changed',)\ndef test_hidden(enabled): assert enabled\n",
+        (
+            b"import importlib\n"
+            b"from importlib.machinery import SourceFileLoader\n"
+            b"importlib.import_module('pkg.other')\n"
+            b"def test_hidden():\n"
+            b"    assert SourceFileLoader('hidden', 'src/pkg/changed.py').load_module().enabled\n"
+        ),
+    ],
+)
+def test_probe_falls_back_with_direct_and_hidden_obligations(repo, hidden_source):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    _write(repo, "src/pkg/__init__.py", b"__all__ = ['changed']\n")
+    _write(repo, "src/pkg/other.py", b"")
+
+    def changed_module(enabled):
+        return (
+            f"import pytest\nenabled = {enabled}\n"
+            "@pytest.fixture(name='enabled')\ndef enabled_fixture(): return enabled\n"
+        ).encode()
+
+    _write(repo, "src/pkg/changed.py", changed_module(True))
+    _write(repo, _TARGET, b"from pkg import changed\ndef test_use(): assert changed\n")
+    _write(repo, hidden, hidden_source)
+    base = _commit(repo)
+    _write(repo, "src/pkg/changed.py", changed_module(False))
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("importlib", "pytest"))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert result.mode == "full"
+    assert {_key(_NODE), _key(node)} <= set(result.selected)
+    assert any(witness.key == _key(_NODE) for witness in result.witnesses)
+    assert any(
+        item.reader == hidden.encode()
+        for path in result.paths
+        for item in path.uncertainties
+    )
+
+
+def test_probe_pr_path_mismatch_keeps_complete_candidate_assignment(repo):
+    _write(repo, "deleted.txt", b"delete on head only\n")
+    divergence = _commit(repo)
+    _write(repo, "base.txt", b"base advance\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "--detach", divergence)
+    (repo / "deleted.txt").unlink()
+    head = _commit(repo)
+    _git(repo, "checkout", "--detach", base)
+    _write(repo, _TARGET, b"VALUE = 1\n")
+    kept = _commit(repo)
+    tested_tree = _git(repo, "rev-parse", f"{kept}^{{tree}}")
+    tested = _git(repo, "commit-tree", tested_tree, "-p", base, "-p", head, "-m", "PR")
+    before, after = resolve(
+        repo, ProbeRequest(_REPO, "pr", base, head, tested, tested_tree)
+    )
+    pair, policy = _inputs(before, after)
+    result = select(before, after, pair, policy)
+    assert result.mode == "full"
+    (mismatch,) = (
+        reason for reason in result.reasons if reason.startswith("pr-path-set-mismatch")
+    )
+    assert "divergence-only (b'deleted.txt',)" in mismatch
+    assert f"tested-only ({_TARGET.encode()!r},)" in mismatch
+    assert _key(_NODE) in result.selected
+    assert len(result.selected) == len(json.loads(pair.after)["obligations"])
+
+
+def test_probe_shared_input_forces_full_when_reached_transitively(repo):
+    _write(repo, "src/leaf.py", b"VALUE = 1\n")
+    _write(repo, "src/transit.py", b"import leaf\n")
+    _write(repo, _TARGET, b"import transit\n")
+    base = _commit(repo)
+    _write(repo, "src/leaf.py", b"VALUE = 2\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    pair, policy = _inputs(before, after)
+    manifest = _manifest(rules=[_rule("conditional", "src/transit.py", "shared-input")])
+    result = select(before, after, pair, replace(policy, manifest=manifest))
+    assert result.mode == "full"
+    assert _witnesses(result, b"src/leaf.py")
+    assert {
+        item.side
+        for item in result.paths[0].uncertainties
+        if item.rule == "conditional"
+    } == {
+        "before",
+        "after",
+    }
+
+
+@pytest.mark.parametrize(
+    ("source", "target", "mode", "reason"),
+    [
+        (b"import pkg.missing\n", "pkg/leaf", "selected", "unresolved-import"),
+        (b"import missing\n", "pkg/leaf", "selected", "unresolved-import"),
+        (
+            b"import pkg.missing\nimport pkg.leaf\n",
+            "pkg/leaf",
+            "full",
+            "unresolved-import",
+        ),
+        (
+            b"from importlib.util import find_spec\nfind_spec('pkg.leaf')\n",
+            "pkg/leaf",
+            "full",
+            "dynamic-import",
+        ),
+        (
+            b"import importlib\nimportlib.util.find_spec('pkg')\n",
+            "pkg/__init__",
+            "full",
+            "dynamic-import",
+        ),
+    ],
+)
+def test_probe_import_uncertainty_matches_the_target_or_reached_reader(
+    repo, source, target, mode, reason
+):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    path = f"src/{target}.py"
+    _write(repo, "src/pkg/__init__.py", b"")
+    _write(repo, "src/pkg/leaf.py", b"")
+    direct_import = (
+        b"import pkg\n" if target.endswith("__init__") else b"import pkg.leaf\n"
+    )
+    _write(repo, _TARGET, direct_import)
+    _write(repo, hidden, source)
+    base = _commit(repo)
+    _write(repo, path, b"VALUE = 1\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("importlib",))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert result.mode == mode
+    assert _witnesses(result, path.encode())
+    (disposition,) = result.paths
+    records = (
+        disposition.uncertainties
+        if mode == "full"
+        else disposition.disjoint_uncertainties
+    )
+    assert {
+        item.side
+        for item in records
+        if item.reader == hidden.encode() and item.code == reason
+    } == {"before", "after"}
+    assert (_key(node) in result.selected) == (mode == "full")
+
+
+def test_probe_cannot_discard_imports_through_a_mutated_package_path(repo):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    _write(
+        repo,
+        "src/pkg/__init__.py",
+        b"from pathlib import Path\n__path__.append(str(Path(__file__).parents[1] / 'alt'))\n",
+    )
+    _write(repo, "src/alt/__init__.py", b"")
+    _write(repo, "src/alt/leaf.py", b"enabled = True\n")
+    _write(repo, _TARGET, b"from alt import leaf\ndef test_use(): assert leaf\n")
+    _write(
+        repo, hidden, b"import pkg.leaf\ndef test_hidden(): assert pkg.leaf.enabled\n"
+    )
+    base = _commit(repo)
+    _write(repo, "src/alt/leaf.py", b"enabled = False\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("pathlib",))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert _witnesses(result, b"src/alt/leaf.py")
+    assert result.mode == "full"
+    assert _key(node) in result.selected
+    assert {
+        item.side
+        for path in result.paths
+        for item in path.uncertainties
+        if item.code == "package-search-path"
+    } == {"before", "after"}

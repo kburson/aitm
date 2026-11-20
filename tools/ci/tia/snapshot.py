@@ -143,6 +143,20 @@ class HostedProvenance:
 
 
 @dataclass(frozen=True)
+class PRPathAgreement:
+    divergence_to_head: tuple[bytes, ...]
+    base_to_tested: tuple[bytes, ...]
+    divergence_only: tuple[bytes, ...]
+    tested_only: tuple[bytes, ...]
+
+
+def changed_paths(changes):
+    return {
+        entry.path for change in changes for entry in (change.old, change.new) if entry
+    }
+
+
+@dataclass(frozen=True)
 class ProbeProvenance:
     input_kind: str
     parent_commit: str
@@ -150,6 +164,7 @@ class ProbeProvenance:
     head: GitEndpoint
     tested: GitEndpoint | None
     git: GitProfile
+    path_agreement: PRPathAgreement | None = None
 
 
 @dataclass(frozen=True)
@@ -1270,8 +1285,25 @@ def _probe(repo: Path, request: ProbeRequest) -> tuple[Snapshot, Snapshot]:
     if _probe_merge_base(git, parent.commit, head_oid) != divergence:
         git.refuse("observation_drift")
 
+    agreement = None
+    if tested is not None:
+        head_paths = changed_paths(
+            git.tree_changes(
+                divergence,
+                head,
+                git.tree_entries(divergence.tree),
+                git.tree_entries(head.tree),
+            )
+        )
+        tested_paths = changed_paths(changes)
+        agreement = PRPathAgreement(
+            tuple(sorted(head_paths)),
+            tuple(sorted(tested_paths)),
+            tuple(sorted(head_paths - tested_paths)),
+            tuple(sorted(tested_paths - head_paths)),
+        )
     provenance = ProbeProvenance(
-        kind, parent.commit, divergence, head, tested, git.profile
+        kind, parent.commit, divergence, head, tested, git.profile, agreement
     )
     return (
         Snapshot(

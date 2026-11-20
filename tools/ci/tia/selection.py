@@ -24,9 +24,11 @@ from .snapshot import (
     IndexEndpoint,
     LocalProvenance,
     ProbeProvenance,
+    PRPathAgreement,
     Snapshot,
     SnapshotUncertain,
     WorktreeEndpoint,
+    changed_paths,
 )
 from .snapshot import (
     _canonical as _snapshot_canonical,
@@ -103,6 +105,7 @@ class PathDisposition:
     disposition: Literal["resolved", "non-test", "uncertain"]
     rules: tuple[str, ...] = ()
     uncertainties: tuple[Uncertainty, ...] = ()
+    disjoint_uncertainties: tuple[Uncertainty, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -175,6 +178,19 @@ def _probe_endpoint(snapshot, *, baseline):
         ),
         "probe snapshot provenance does not match",
     )
+    agreement = provenance.path_agreement
+    if kind == "pr":
+        _require(isinstance(agreement, PRPathAgreement), "PR path agreement missing")
+        divergence = set(agreement.divergence_to_head)
+        tested = set(agreement.base_to_tested)
+        _require(
+            tuple(sorted(divergence - tested)) == agreement.divergence_only
+            and tuple(sorted(tested - divergence)) == agreement.tested_only
+            and tested == changed_paths(snapshot.changes),
+            "PR path agreement does not match",
+        )
+    else:
+        _require(agreement is None, "unexpected PR path agreement")
     if baseline:
         return
     if kind == "index":
@@ -622,10 +638,12 @@ class _SideGraph:
     missing: dict
     declarations: set
     tests: dict
+    scoped_imports: bool
 
 
 def _side_graph(snapshot, entries, inventory, surviving, provider, declarations):
-    graph = build_graph(snapshot, provider)
+    scoped = isinstance(snapshot.provenance, ProbeProvenance)
+    graph = build_graph(snapshot, provider, scoped_imports=scoped)
     reverse = defaultdict(list)
     missing = defaultdict(list)
     declared_endpoints = set()
@@ -675,7 +693,9 @@ def _side_graph(snapshot, entries, inventory, surviving, provider, declarations)
                     None,
                 )
             )
-    return _SideGraph(reverse, tuple(unresolved), missing, declared_endpoints, tests)
+    return _SideGraph(
+        reverse, tuple(unresolved), missing, declared_endpoints, tests, scoped
+    )
 
 
 def _walk(seed, reverse):
@@ -698,8 +718,10 @@ def _hops(path, parent):
     return tuple(reversed(result))
 
 
-def _trace(path, sides, graphs, rule):
+def _trace(path, sides, graphs, rules):
+    rule = rules.get(path)
     uncertainties = []
+    disjoint = []
     witnesses = []
     graph_evidence = False
     for side in sides:
@@ -713,22 +735,36 @@ def _trace(path, sides, graphs, rule):
             if keys := graph.tests.get(consumer):
                 hops = _hops(consumer, reached)
                 witnesses.extend(Witness(path, key, side, hops) for key in keys)
+        if graph.scoped_imports:
+            for consumer in reached:
+                if consumer.rpartition(b"/")[2] == b"conftest.py":
+                    uncertainties.append(Uncertainty("shared-conftest", side, consumer))
+                shared = rules.get(consumer)
+                if consumer != path and shared and shared.kind == "shared-input":
+                    uncertainties.append(
+                        Uncertainty("shared-input", side, consumer, rule=shared.rule)
+                    )
         for record in graph.unresolved:
             bounds = record.possible_inputs
-            if bounds is None or any(
-                candidate == prefix or candidate.startswith(prefix + b"/")
-                for candidate in reached
-                for prefix in bounds
-            ):
-                uncertainties.append(
-                    Uncertainty(
-                        record.reason,
-                        side,
-                        record.reader,
-                        record.detail,
-                        possible_inputs=bounds,
-                    )
+            evidence = Uncertainty(
+                record.reason,
+                side,
+                record.reader,
+                record.detail,
+                possible_inputs=bounds,
+            )
+            if (
+                bounds is None
+                or (graph.scoped_imports and record.reader in reached)
+                or any(
+                    candidate == prefix or candidate.startswith(prefix + b"/")
+                    for candidate in reached
+                    for prefix in bounds
                 )
+            ):
+                uncertainties.append(evidence)
+            elif graph.scoped_imports:
+                disjoint.append(evidence)
         invalid_declarations = {
             item for candidate in reached for item in graph.missing.get(candidate, ())
         }
@@ -755,7 +791,12 @@ def _trace(path, sides, graphs, rule):
         uncertainties.append(Uncertainty("unclassified-change"))
     return (
         PathDisposition(
-            path, sides, disposition, (rule.rule,) if rule else (), tuple(uncertainties)
+            path,
+            sides,
+            disposition,
+            (rule.rule,) if rule else (),
+            tuple(uncertainties),
+            tuple(disjoint),
         ),
         witnesses,
     )
@@ -813,6 +854,10 @@ def select(
 
     try:
         provider_digest = _policy_digest(policy.provider)
+        if isinstance(after.provenance, ProbeProvenance):
+            provider_digest = sha256(
+                f"scoped-imports:{provider_digest}".encode()
+            ).hexdigest()
     except ValueError as error:
         reasons.append(f"provider-policy: {error}")
     try:
@@ -864,6 +909,14 @@ def select(
             **common,
         )
 
+    if isinstance(after.provenance, ProbeProvenance):
+        agreement = after.provenance.path_agreement
+        if agreement and (agreement.divergence_only or agreement.tested_only):
+            reasons.append(
+                f"pr-path-set-mismatch: divergence-only {agreement.divergence_only!r}, "
+                f"tested-only {agreement.tested_only!r}"
+            )
+
     removed = changed = ()
     if old is not None:
         removed = tuple(sorted(old.keys() - new.keys()))
@@ -895,7 +948,7 @@ def select(
 
     dispositions, witnesses = [], []
     for path, sides in paths.items():
-        disposition, matched = _trace(path, sides, graphs, rules.get(path))
+        disposition, matched = _trace(path, sides, graphs, rules)
         dispositions.append(disposition)
         witnesses.extend(matched)
     selected_keys = {item.key for item in witnesses} | {

@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
 
+from .import_scope import dynamic_modules, importlib_module, metadata_version_import
 from .snapshot import Snapshot
 
 _REGULAR = {"100644", "100755"}
@@ -222,9 +223,10 @@ def _declares_pytest_plugins(nodes):
 
 
 class _GraphBuilder:
-    def __init__(self, snapshot, policy):
+    def __init__(self, snapshot, policy, *, scoped_imports=False):
         self.snapshot = snapshot
         self.policy = policy
+        self.scoped_imports = scoped_imports
         self.entries = {entry.path: entry.mode for entry in snapshot.entries}
         self.sources = set()
         self.contexts = defaultdict(set)
@@ -276,26 +278,114 @@ class _GraphBuilder:
                 if parts and path + b"/__init__.py" not in self.entries:
                     self.owners[".".join(parts)].add(_ModuleOwner(path, "namespace"))
 
+    def _add_invocation_aliases(self):
+        # The probe runs pytest from the repository or package root, with its
+        # explicit helper modules also importable from their pytest directory.
+        roots = {b""}
+        roots.update(
+            path.rpartition(b"/")[0]
+            for scope in self.policy.pytest_scopes
+            for path in scope.test_paths
+        )
+        self.invocation_roots = roots.union(self.policy.import_roots)
+        self.sources.update(
+            path for path in self.entries if b"/" not in path and path.endswith(b".py")
+        )
+        for path in tuple(self.sources):
+            directory = path.rpartition(b"/")[0]
+            while directory:
+                initializer = directory + b"/__init__.py"
+                if initializer in self.entries:
+                    self.sources.add(initializer)
+                directory = directory.rpartition(b"/")[0]
+        for root in sorted(roots):
+            offset = len(root) + 1 if root else 0
+            for path in sorted(self.sources):
+                if not _under(path, root):
+                    continue
+                parts = _module_parts(path[offset:-3])
+                if not parts:
+                    continue
+                initializer = len(parts) > 1 and parts[-1] == "__init__"
+                name = parts[:-1] if initializer else parts
+                kind = "package-init" if initializer else "import"
+                self.owners[".".join(name)].add(_ModuleOwner(path, kind))
+                self.contexts[path].add(name if initializer else name[:-1])
+                for count in range(1, len(name)):
+                    relative = "/".join(name[:count]).encode()
+                    directory = root + b"/" + relative if root else relative
+                    if directory + b"/__init__.py" not in self.entries:
+                        self.owners[".".join(name[:count])].add(
+                            _ModuleOwner(directory, "namespace")
+                        )
+
+    def _name_bounds(self, name):
+        parts = name.split(".")
+        if name not in self.owners:
+            return self._missing_module_bounds(parts, require_package=True)
+        return tuple(
+            sorted(
+                {
+                    owner.path
+                    for stop in range(1, len(parts) + 1)
+                    for owner in self.owners.get(".".join(parts[:stop]), ())
+                }
+            )
+        )
+
+    def _missing_module_bounds(self, parts, *, require_package=False):
+        """Bound a missing spelling to module files under supported import roots."""
+        bounds = set()
+        locations = set()
+        for stop in range(1, len(parts)):
+            suffix = "/".join(parts[stop:]).encode()
+            for owner in self.owners.get(".".join(parts[:stop]), ()):
+                if owner.kind == "package-init":
+                    directory = owner.path.rpartition(b"/")[0]
+                    bounds.add(owner.path)
+                elif owner.kind == "namespace":
+                    directory = owner.path
+                    bounds.add(directory + b"/__init__.py")
+                else:
+                    continue
+                locations.add(directory + b"/" + suffix)
+        if require_package and not locations:
+            return None
+        if not require_package:
+            stem = "/".join(parts).encode()
+            locations.update(
+                root + b"/" + stem if root else stem for root in self.invocation_roots
+            )
+        for location in locations:
+            bounds.update((location + b".py", location + b"/__init__.py"))
+        return tuple(sorted(bounds))
+
     def _resolve_import(self, reader, name):
         parts = name.split(".")
         for stop in range(1, len(parts) + 1):
             prefix = ".".join(parts[:stop])
             candidates = self.owners.get(prefix, ())
             if len(candidates) > 1:
-                self._unknown(reader, "ambiguous-module", prefix)
+                self._unknown(
+                    reader,
+                    "ambiguous-module",
+                    prefix,
+                    self._name_bounds(prefix) if self.scoped_imports else None,
+                )
             for owner in candidates:
                 if owner.kind != "namespace":
                     self._edge(reader, owner.path, owner.kind, "python-ast")
         if name not in self.owners and (
             parts[0] in self.owners or parts[0] not in self.policy.external_modules
         ):
-            self._unknown(reader, "unresolved-import", name)
+            bounds = self._missing_module_bounds(parts) if self.scoped_imports else None
+            self._unknown(reader, "unresolved-import", name, bounds)
 
     def _from_import(self, reader, node):
         if node.level:
             contexts = self.contexts.get(reader, ())
             valid = [context for context in contexts if len(context) >= node.level]
-            if len(contexts) != 1 or not valid:
+            if not valid or (not self.scoped_imports and len(contexts) != 1):
                 self._unknown(reader, "relative-import-context", node.module or "")
             module_parts = tuple(node.module.split(".")) if node.module else ()
             names = {
@@ -329,20 +419,50 @@ class _GraphBuilder:
             return
         content = self.snapshot.read_content(path)
         try:
-            nodes = tuple(ast.walk(ast.parse(content)))
+            tree = ast.parse(content)
+            nodes = tuple(ast.walk(tree))
         except (SyntaxError, ValueError, RecursionError):
             self._unknown(path, "python-parse")
             return
+        if (
+            self.scoped_imports
+            and path.rpartition(b"/")[2] == b"__init__.py"
+            and any(
+                isinstance(node, ast.Name) and node.id == "__path__" for node in nodes
+            )
+        ):
+            # The initializer can redirect child imports beyond the indexed roots.
+            self._unknown(path, "package-search-path")
         for node in nodes:
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     self._resolve_import(path, alias.name)
             elif isinstance(node, ast.ImportFrom):
                 self._from_import(path, node)
-        if _dynamic_import_present(nodes):
-            self._unknown(
-                path, "dynamic-import", prefixes=self.dynamic_bounds.get(path)
+        loader_reference_present = self.scoped_imports and any(
+            isinstance(node, ast.Import)
+            and any(
+                alias.name.partition(".")[0] in _DYNAMIC_LOADERS for alias in node.names
             )
+            or isinstance(node, ast.ImportFrom)
+            and not node.level
+            and (node.module == "builtins" or importlib_module(node.module))
+            and not metadata_version_import(node)
+            or isinstance(node, ast.Name)
+            and node.id == "__builtins__"
+            for node in nodes
+        )
+        if loader_reference_present or _dynamic_import_present(nodes):
+            bounds = self.dynamic_bounds.get(path)
+            if self.scoped_imports:
+                names = None if "importlib" in self.owners else dynamic_modules(tree)
+                resolved = [self._name_bounds(name) for name in names or ()]
+                bounds = (
+                    tuple(sorted({file for group in resolved for file in group}))
+                    if resolved and all(resolved)
+                    else None
+                )
+            self._unknown(path, "dynamic-import", prefixes=bounds)
         if _declares_pytest_plugins(nodes):
             self._unknown(path, "pytest-plugin")
 
@@ -409,6 +529,8 @@ class _GraphBuilder:
 
     def build(self, digest):
         self._index_sources()
+        if self.scoped_imports:
+            self._add_invocation_aliases()
         self._pytest_inputs()
         self._package_dependencies()
         for path in sorted(self.sources):
@@ -430,7 +552,13 @@ class _GraphBuilder:
         )
 
 
-def build_graph(snapshot: Snapshot, provider_policy: ProviderPolicy) -> Graph:
+def build_graph(
+    snapshot: Snapshot, provider_policy: ProviderPolicy, *, scoped_imports=False
+) -> Graph:
     """Return exact endpoint dependencies and the inputs they could not establish."""
     digest = _policy_digest(provider_policy)
-    return _GraphBuilder(snapshot, provider_policy).build(digest)
+    if scoped_imports:
+        digest = sha256(f"scoped-imports:{digest}".encode()).hexdigest()
+    return _GraphBuilder(
+        snapshot, provider_policy, scoped_imports=scoped_imports
+    ).build(digest)
