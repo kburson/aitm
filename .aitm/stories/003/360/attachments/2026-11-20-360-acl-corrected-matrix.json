@@ -1,0 +1,87 @@
+{
+  "children": {
+    "cli-help": 1,
+    "service-one-shot": 1
+  },
+  "empty_categories": [
+    "slow-unit"
+  ],
+  "matches_same_workload_serial_reference": true,
+  "normalized_phase_sha256": "930af886288cf1523fc2b28015704fd41e9327735008ec8709765a9a2c32316e",
+  "observed_phases": 7077,
+  "reproduced_failure_before_fix": "Unsafe private ACL",
+  "run": {
+    "attempt": "1",
+    "event": "workflow_dispatch",
+    "repository": "kburson/aitm",
+    "run_id": "local-360-acl",
+    "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+  },
+  "runner_note": "Real POSIX default ACL on /home in nonroot ARM64 Ubuntu 24.04 guest. Darwin ran natively on Apple Silicon.",
+  "slots": {
+    "darwin-local-integration": {
+      "children": {},
+      "plan_sha256": "d42bcfe909d44c3539a2cb2c29e204f761d33fda86ed012aa9fb0f8d23fc9bea",
+      "status": "pass",
+      "tested": 2,
+      "timing": {
+        "execution_seconds": 0.661,
+        "plan_sha256": "d42bcfe909d44c3539a2cb2c29e204f761d33fda86ed012aa9fb0f8d23fc9bea",
+        "setup_seconds": 8.053
+      }
+    },
+    "darwin-systems-integration": {
+      "children": {},
+      "plan_sha256": "8ddd5fe76fb1c2cc99eb697940a0c5c61e0b9ab9bf9276c0477728b70ba64b97",
+      "status": "pass",
+      "tested": 15,
+      "timing": {
+        "execution_seconds": 1.38,
+        "plan_sha256": "8ddd5fe76fb1c2cc99eb697940a0c5c61e0b9ab9bf9276c0477728b70ba64b97",
+        "setup_seconds": 7.768
+      }
+    },
+    "linux-fast-unit": {
+      "children": {},
+      "plan_sha256": "1b5e0f7f28e3081c900a00d56a8f385fe83a3561bf4e3674254d545c950796bd",
+      "status": "pass",
+      "tested": 489,
+      "timing": {
+        "execution_seconds": 5.582,
+        "plan_sha256": "1b5e0f7f28e3081c900a00d56a8f385fe83a3561bf4e3674254d545c950796bd",
+        "setup_seconds": 10.306
+      }
+    },
+    "linux-local-integration": {
+      "children": {},
+      "plan_sha256": "19074b1faa0b2fdb6ee752b684368a175dc6edc184da2e5b388356ee172592a2",
+      "status": "pass",
+      "tested": 1570,
+      "timing": {
+        "execution_seconds": 298.158,
+        "plan_sha256": "19074b1faa0b2fdb6ee752b684368a175dc6edc184da2e5b388356ee172592a2",
+        "setup_seconds": 10.87
+      }
+    },
+    "linux-systems-integration": {
+      "children": {
+        "cli-help": 1,
+        "service-one-shot": 1
+      },
+      "plan_sha256": "1ff67974f9c671101c2bf93cca78985df606ab90ce38fe0e7cb721ad3b056f09",
+      "status": "pass",
+      "tested": 255,
+      "timing": {
+        "execution_seconds": 153.796,
+        "plan_sha256": "1ff67974f9c671101c2bf93cca78985df606ab90ce38fe0e7cb721ad3b056f09",
+        "setup_seconds": 12.086
+      }
+    }
+  },
+  "source": {
+    "commit": "79c5be2b397a1fc37ede93ea69f65f7c951f22bd",
+    "tree": "ec601fd22cd1a2d308e0c0a9b1c01589e860f95c"
+  },
+  "status": "pass",
+  "tested": 2331
+}
