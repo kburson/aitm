@@ -495,7 +495,7 @@ class WatchSet:
         self._closing = Event()
         self._callback_pressure = Event()
         self._startup = tuple(
-            WatchEvent(key, WatchKind.RECONCILE, "startup") for key in self._roots
+            WatchEvent(key, WatchKind.RECONCILE, "seeded-startup") for key in self._roots
         )
         self._hints: dict[SourceRef, WatchEvent] = {}
         self._priority: dict[SourceRef, WatchEvent] = {}
