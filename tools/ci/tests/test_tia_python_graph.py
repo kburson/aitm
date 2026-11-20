@@ -560,7 +560,7 @@ def test_probe_keeps_hidden_consumers_conservative(
         reverse[edge.input].append(edge)
     key = ("pytest", "aitm", "portable", "tests/test_direct.py::test_passes")
     side = _SideGraph(reverse, graph.unresolved, {}, set(), {direct: (key,)}, True)
-    disposition, witnesses = _trace(changed, ("after",), {"after": side}, None)
+    disposition, witnesses = _trace(changed, ("after",), {"after": side}, {})
     assert [witness.key for witness in witnesses] == [key]
     assert disposition.disposition == "uncertain"
     assert any(

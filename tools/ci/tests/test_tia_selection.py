@@ -939,3 +939,26 @@ def test_probe_pr_path_mismatch_keeps_complete_candidate_assignment(repo):
     assert f"tested-only ({_TARGET.encode()!r},)" in mismatch
     assert _key(_NODE) in result.selected
     assert len(result.selected) == len(json.loads(pair.after)["obligations"])
+
+
+def test_probe_shared_input_forces_full_when_reached_transitively(repo):
+    _write(repo, "src/leaf.py", b"VALUE = 1\n")
+    _write(repo, "src/transit.py", b"import leaf\n")
+    _write(repo, _TARGET, b"import transit\n")
+    base = _commit(repo)
+    _write(repo, "src/leaf.py", b"VALUE = 2\n")
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    pair, policy = _inputs(before, after)
+    manifest = _manifest(rules=[_rule("conditional", "src/transit.py", "shared-input")])
+    result = select(before, after, pair, replace(policy, manifest=manifest))
+    assert result.mode == "full"
+    assert _witnesses(result, b"src/leaf.py")
+    assert {
+        item.side
+        for item in result.paths[0].uncertainties
+        if item.rule == "conditional"
+    } == {
+        "before",
+        "after",
+    }

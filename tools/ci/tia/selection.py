@@ -718,7 +718,8 @@ def _hops(path, parent):
     return tuple(reversed(result))
 
 
-def _trace(path, sides, graphs, rule):
+def _trace(path, sides, graphs, rules):
+    rule = rules.get(path)
     uncertainties = []
     disjoint = []
     witnesses = []
@@ -738,6 +739,11 @@ def _trace(path, sides, graphs, rule):
             for consumer in reached:
                 if consumer.rpartition(b"/")[2] == b"conftest.py":
                     uncertainties.append(Uncertainty("shared-conftest", side, consumer))
+                shared = rules.get(consumer)
+                if consumer != path and shared and shared.kind == "shared-input":
+                    uncertainties.append(
+                        Uncertainty("shared-input", side, consumer, rule=shared.rule)
+                    )
         for record in graph.unresolved:
             bounds = record.possible_inputs
             evidence = Uncertainty(
@@ -942,7 +948,7 @@ def select(
 
     dispositions, witnesses = [], []
     for path, sides in paths.items():
-        disposition, matched = _trace(path, sides, graphs, rules.get(path))
+        disposition, matched = _trace(path, sides, graphs, rules)
         dispositions.append(disposition)
         witnesses.extend(matched)
     selected_keys = {item.key for item in witnesses} | {
