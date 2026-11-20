@@ -35,3 +35,7 @@ The first [trunk run after the producer merge](https://github.com/kburson/aitm/a
 The completed producer trunk run passed canonical CI, but the [authenticated advisory reader refused its unexpected push job](../attachments/2026-11-20-411-trunk-push-name-refusal.json). [Grok passed PR #414](https://github.com/kburson/aitm/pull/414#pullrequestreview-6000122133) on its exact base/head/tree. The [canonical attempt](https://github.com/kburson/aitm/actions/runs/44827384828) and post-merge advisory proof remain delivery gates.
 
 PR #414 passed Grok, all six canonical checks and the exact-tree trusted verifier, then merged as `92777dc6bd1b7c7761b99bdf7cb02dd91200f24a`. Closure waits for the new canonical push and ordinary advisory reader to pass.
+
+## Final compatibility verification
+
+The corrected trunk run passed, and authenticated Actions records confirmed the skipped trusted-base name is `python-base`. The advisory reader progressed past job validation. It still refuses the pre-existing `selection.json` archive member, independently confirmed in identical archive inventories from #409, #412 and #414. This is outside the runner-label change. The [compatibility receipt](../attachments/2026-11-20-411-trunk-compatibility.json) and [sign-off](../retro/2026-11-20-411-sign-off.md) record the verified result.
