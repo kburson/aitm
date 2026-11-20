@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 411
 title: "Accept any build of the requested runner label"
 kind: "story"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/411"
 parent: 356
 children: []
 blocking: [360]
 blocked-by: []
 created: "2026-11-20T21:18:00Z"
-updated: "2026-11-20T21:56:22Z"
+updated: "2026-11-20T22:11:35Z"
 last-branch: "codex/411-runner-receipt-workflow"
 estimate: {"agent-hours": 3, "size": "S"}
 priority: "P2"
