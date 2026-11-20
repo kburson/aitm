@@ -16,7 +16,13 @@ from tia.selection import (
     SelectionPolicy,
     select,
 )
-from tia.snapshot import HostedBinding, HostedRequest, LocalRequest, resolve
+from tia.snapshot import (
+    HostedBinding,
+    HostedRequest,
+    LocalRequest,
+    ProbeRequest,
+    resolve,
+)
 
 _CI = Path(__file__).resolve().parents[1]
 _SUITES = (_CI / "tia/suites.json").read_bytes()
@@ -853,3 +859,83 @@ def test_project_manifest_traces_measured_grok_fixture(repo):
     )
     assert fallback.mode == "full"
     assert _key(node) in fallback.selected
+
+
+@pytest.mark.parametrize(
+    "hidden_source",
+    [
+        b"from pkg import *\ndef test_hidden(): assert changed.enabled\n",
+        b"pytest_plugins = ('pkg.changed',)\ndef test_hidden(enabled): assert enabled\n",
+        (
+            b"import importlib\n"
+            b"from importlib.machinery import SourceFileLoader\n"
+            b"importlib.import_module('pkg.other')\n"
+            b"def test_hidden():\n"
+            b"    assert SourceFileLoader('hidden', 'src/pkg/changed.py').load_module().enabled\n"
+        ),
+    ],
+)
+def test_probe_falls_back_with_direct_and_hidden_obligations(repo, hidden_source):
+    hidden = _PRODUCT + "test_grok.py"
+    node = hidden + "::test_hidden"
+    _write(repo, "src/pkg/__init__.py", b"__all__ = ['changed']\n")
+    _write(repo, "src/pkg/other.py", b"")
+
+    def changed_module(enabled):
+        return (
+            f"import pytest\nenabled = {enabled}\n"
+            "@pytest.fixture(name='enabled')\ndef enabled_fixture(): return enabled\n"
+        ).encode()
+
+    _write(repo, "src/pkg/changed.py", changed_module(True))
+    _write(repo, _TARGET, b"from pkg import changed\ndef test_use(): assert changed\n")
+    _write(repo, hidden, hidden_source)
+    base = _commit(repo)
+    _write(repo, "src/pkg/changed.py", changed_module(False))
+    _commit(repo)
+    before, after = resolve(repo, ProbeRequest(_REPO, "head", base))
+    old, old_expected = _inventory(before, extra=(_NODE, _OPTIONAL, node))
+    new, new_expected = _inventory(after, extra=(_NODE, _OPTIONAL, node))
+    provider = replace(_GRAPH, external_modules=("importlib", "pytest"))
+    result = select(
+        before,
+        after,
+        InventoryPair(old, new),
+        SelectionPolicy(old_expected, new_expected, provider, _EMPTY),
+    )
+    assert result.mode == "full"
+    assert {_key(_NODE), _key(node)} <= set(result.selected)
+    assert any(witness.key == _key(_NODE) for witness in result.witnesses)
+    assert any(
+        item.reader == hidden.encode()
+        for path in result.paths
+        for item in path.uncertainties
+    )
+
+
+def test_probe_pr_path_mismatch_keeps_complete_candidate_assignment(repo):
+    _write(repo, "deleted.txt", b"delete on head only\n")
+    divergence = _commit(repo)
+    _write(repo, "base.txt", b"base advance\n")
+    base = _commit(repo)
+    _git(repo, "checkout", "--detach", divergence)
+    (repo / "deleted.txt").unlink()
+    head = _commit(repo)
+    _git(repo, "checkout", "--detach", base)
+    _write(repo, _TARGET, b"VALUE = 1\n")
+    kept = _commit(repo)
+    tested_tree = _git(repo, "rev-parse", f"{kept}^{{tree}}")
+    tested = _git(repo, "commit-tree", tested_tree, "-p", base, "-p", head, "-m", "PR")
+    before, after = resolve(
+        repo, ProbeRequest(_REPO, "pr", base, head, tested, tested_tree)
+    )
+    pair, policy = _inputs(before, after)
+    result = select(before, after, pair, policy)
+    assert result.mode == "full"
+    (mismatch,) = (
+        reason for reason in result.reasons if reason.startswith("pr-path-set-mismatch")
+    )
+    assert "divergence-only (b'deleted.txt',)" in mismatch
+    assert f"tested-only ({_TARGET.encode()!r},)" in mismatch
+    assert _key(_NODE) in result.selected
+    assert len(result.selected) == len(json.loads(pair.after)["obligations"])

@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
 
-from .import_scope import dynamic_modules
+from .import_scope import dynamic_modules, importlib_module, metadata_version_import
 from .snapshot import Snapshot
 
 _REGULAR = {"100644", "100755"}
@@ -408,7 +408,8 @@ class _GraphBuilder:
             )
             or isinstance(node, ast.ImportFrom)
             and not node.level
-            and node.module in {"importlib", "importlib.util"}
+            and importlib_module(node.module)
+            and not metadata_version_import(node)
             or isinstance(node, ast.Name)
             and node.id == "__builtins__"
             for node in nodes

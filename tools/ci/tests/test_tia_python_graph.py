@@ -483,6 +483,8 @@ def test_probe_bounds_canonical_loads_to_file_and_initializer(body):
         b"from importlib.util import find_spec as locate\nlocate('pkg.leaf')",
         b"from importlib import util as locate\nlocate.find_spec('pkg.leaf')",
         b"load = __builtins__['__import__']",
+        b"from importlib.machinery import SourceFileLoader\nload = SourceFileLoader",
+        b"import importlib\nimportlib.import_module('pkg.leaf')\nfrom importlib.resources import files as package_files",
     ],
 )
 def test_probe_preserves_uncertainty_for_unsupported_dynamic_use(body):
@@ -573,6 +575,22 @@ def test_probe_bounds_canonical_find_spec_to_parent_initializers():
         Endpoint(
             {
                 reader: b"from importlib.util import find_spec\nfind_spec('pkg.missing')",
+                init: b"",
+            }
+        ),
+        policy(b"app", b"tests", external_modules=("importlib",)),
+        scoped_imports=True,
+    )
+    assert UnresolvedScope(reader, "dynamic-import", "", (init,)) in graph.unresolved
+
+
+def test_probe_bounds_canonical_resource_lookup_to_the_package():
+    reader = b"tests/test_reader.py"
+    init = b"app/pkg/__init__.py"
+    graph = build_graph(
+        Endpoint(
+            {
+                reader: b"from importlib.resources import files\nfiles('pkg').joinpath('fixture.json')",
                 init: b"",
             }
         ),

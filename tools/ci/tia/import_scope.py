@@ -12,6 +12,24 @@ _SCOPES = (
     ast.DictComp,
     ast.GeneratorExp,
 )
+_LOAD_MEMBERS = {
+    "import_module": "importlib",
+    "find_spec": "importlib.util",
+    "files": "importlib.resources",
+}
+
+
+def importlib_module(module):
+    return bool(module and module.partition(".")[0] == "importlib")
+
+
+def metadata_version_import(node):
+    # This lookup reads distribution metadata and does not load a package.
+    return (
+        isinstance(node, ast.ImportFrom)
+        and node.module == "importlib.metadata"
+        and all(alias.name == "version" and not alias.asname for alias in node.names)
+    )
 
 
 def _binds(node, name):
@@ -115,13 +133,10 @@ def dynamic_modules(tree):
                 module = declaration.module
                 if module == "builtins" and node.name in {"__import__", "*"}:
                     return None
-                if module in {"importlib", "importlib.util"} and (
-                    node.asname
-                    or (module, node.name)
-                    not in {
-                        ("importlib", "import_module"),
-                        ("importlib.util", "find_spec"),
-                    }
+                if (
+                    importlib_module(module)
+                    and not metadata_version_import(declaration)
+                    and (node.asname or _LOAD_MEMBERS.get(node.name) != module)
                 ):
                     return None
         if not isinstance(node, ast.Name) or not isinstance(node.ctx, ast.Load):
@@ -130,12 +145,14 @@ def dynamic_modules(tree):
         match node.id:
             case "__import__" | "__builtins__":
                 return None
-            case "import_module":
-                module, member = "importlib", "import_module"
-                loader = node
-            case "find_spec":
-                # Unrelated hooks with this name cannot prove an import target.
-                module, member = "importlib.util", "find_spec"
+            case member if member in _LOAD_MEMBERS:
+                if member == "files" and not any(
+                    isinstance(item, ast.ImportFrom)
+                    and item.module == "importlib.resources"
+                    for item in nodes
+                ):
+                    continue
+                module = _LOAD_MEMBERS[member]
                 loader = node
             case "importlib":
                 module, member = "importlib", None
