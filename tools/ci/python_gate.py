@@ -193,19 +193,29 @@ def _line_totals(document, *, root=None, names):
     return {"covered_lines": covered, "num_statements": total}
 
 
-def _trusted_identity(actual, expected):
-    if not isinstance(actual, dict) or actual != expected:
+def _trusted_identity(actual, expected, capability):
+    if (
+        not isinstance(actual, dict)
+        or not isinstance(expected, dict)
+        or not isinstance(capability, dict)
+        or actual.keys() != IDENTITY_DIGESTS.keys() | {"runner", "image", "runtime"}
+        or expected.keys() != actual.keys()
+        or any(
+            expected[key] != capability.get(key)
+            for key in ("runner", "image", "runtime")
+        )
+        or not linux_runner_pair(actual, expected)
+    ):
         return False
     for key, length in IDENTITY_DIGESTS.items():
         value = actual.get(key)
         if (
             not isinstance(value, str)
+            or expected[key] != value
             or re.fullmatch(f"[0-9a-f]{{{length}}}", value) is None
         ):
             return False
-    return all(
-        isinstance(actual.get(key), str) and actual[key] for key in ("runtime", "image")
-    )
+    return True
 
 
 def _child_errors(document, observed, required):
@@ -354,6 +364,7 @@ def evaluate(
     base_policy=None,
     mode="pr",
     selection=None,
+    base_runner=None,
 ):
     if problem := _policy_error(policy):
         return _disposition([problem])
@@ -367,11 +378,18 @@ def evaluate(
     if (
         not isinstance(capability, dict)
         or capability.get("os") != "Linux"
-        or capability.get("runtime") != "3.13.9"
-        or not isinstance(capability.get("image"), str)
-        or not capability["image"]
+        or not linux_runner_pair(capability, capability)
     ):
         failures.append("required Linux platform evidence is absent")
+    elif mode == "pr" and narrowed:
+        if (
+            not isinstance(base_runner, dict)
+            or base_runner.get("schema") != "aitm.path-selection-skip/v1"
+            or not isinstance(base_runner.get("platform"), dict)
+            or base_runner["platform"].keys() != {"runner", "image", "runtime"}
+            or not linux_runner_pair(base_runner["platform"], capability)
+        ):
+            failures.append("required trusted base runner evidence is absent")
     if narrowed and selection["mode"] == "checks":
         actual = {}
     else:
@@ -407,7 +425,7 @@ def evaluate(
     baseline = {}
     if mode == "pr" and not narrowed:
         if not isinstance(base, dict) or not _trusted_identity(
-            base.get("identity"), expected_base
+            base.get("identity"), expected_base, capability
         ):
             failures.append("missing or drifted trusted base identity")
         elif problem := _policy_error(base_policy):
@@ -496,6 +514,7 @@ def main(argv=None):
         "capability",
         "base-evidence",
         "base-policy",
+        "base-runner",
         "expected-base",
         "needs",
         "selection",
@@ -545,6 +564,7 @@ def main(argv=None):
                     base_policy,
                     args.mode,
                     selection,
+                    _read(args.base_runner) if args.mode == "pr" and narrowed else None,
                 )
         except (OSError, ValueError) as exc:
             result = _disposition([f"invalid evidence: {exc}"])
