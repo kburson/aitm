@@ -1,0 +1,18 @@
+{
+  "base": "5393b8972698d7725ab41189a38226dfcc11c3d2",
+  "disposition": "PASS",
+  "head": "bcd23343416998b403d026abb0ca87ba351a5b40",
+  "merge_sha": "5937d81b6b3ab7bdd20f8296e743c5b96580d249",
+  "merged_at": "2026-11-20T16:04:10Z",
+  "pr": 407,
+  "review": "plan/reviews/2026-11-20-358-grok-pr-review.md",
+  "review_model": "grok-4.7-build-fast",
+  "review_state": "COMMENTED",
+  "review_submitted_at": "2026-11-20T16:04:05Z",
+  "review_text_sha256": "51578e57ccf312cc79dc0f4b33eac6bdc76983dd7213745e775ca70d7a552921",
+  "review_url": "https://github.com/kburson/aitm/pull/407#pullrequestreview-5995618345",
+  "sign_off": "retro/2026-11-20-358-sign-off.md",
+  "story": 358,
+  "target": "planning",
+  "verified_at": "2026-11-20T16:04:54Z"
+}

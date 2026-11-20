@@ -16,6 +16,6 @@ Prove which categories can start together and what must be isolated.
 - [x] Inspect runner and dependency setup for independent hosted jobs. Retain approved probe receipts if available and explicitly list hosted claims that still need validation. Name any host-wide reservation, incapable runner, or workload that must serialize.
 - [x] Publish command and result evidence, exact test witnesses, and a matrix with compatible pairs, isolation, platform and fallback rules. Work in disposable fixtures and planning evidence only.
 
-- [ ] Verify Grok's independent exact-head PR review before merge.
+- [x] Verify Grok's independent exact-head PR review before merge.
 
 [Findings](2026-11-20-358-isolation-findings.md).

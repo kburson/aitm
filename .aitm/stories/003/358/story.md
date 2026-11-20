@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 358
 title: "[Spike] Find what blocks parallel category runs"
 kind: "spike"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/358"
 parent: 356
 children: []
 blocking: [359]
 blocked-by: [357]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T15:33:56Z"
+updated: "2026-11-20T16:04:54Z"
 last-branch: "codex/358-category-isolation"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-358-delivery-plan.md", "plan/2026-11-20-358-isolation-findings.md"], "attachments": ["attachments/2026-11-20-358-isolation-evidence.json", "attachments/2026-11-20-358-local-evidence.zip"]}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-358-delivery-plan.md", "plan/2026-11-20-358-isolation-findings.md", "plan/reviews/2026-11-20-358-grok-pr-review.md", "plan/2026-11-20-358-delivery.json"], "attachments": ["attachments/2026-11-20-358-isolation-evidence.json", "attachments/2026-11-20-358-local-evidence.zip"]}
 expansions: []
 trips: []
 ---
@@ -49,3 +49,5 @@ Stay blocked until #357 is accepted.
 [Delivery plan](plan/2026-11-20-358-delivery-plan.md).
 
 [Isolation findings](plan/2026-11-20-358-isolation-findings.md) · [Experiment evidence](attachments/2026-11-20-358-isolation-evidence.json).
+
+[Grok review](plan/reviews/2026-11-20-358-grok-pr-review.md) · [Delivered planning evidence](plan/2026-11-20-358-delivery.json) · [Sign-off](retro/2026-11-20-358-sign-off.md).
