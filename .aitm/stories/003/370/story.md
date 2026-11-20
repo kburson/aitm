@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 370
 title: "Select affected tests with one Python program"
 kind: "epic"
-state: "backlog"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/370"
 parent: null
 children: [371, 383, 385, 393, 398, 402, 403]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-20T01:26:00Z"
-last-branch: "planning"
+updated: "2026-11-20T13:57:00Z"
+last-branch: "trunk"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
@@ -113,3 +113,7 @@ Technical acceptance for the advisory scope is satisfied. The #371 spike and #38
 The plan requires acceptance of the advisory receipt before #370 closes. The owner's approval and merge of PR #406 completes story delivery. Epic receipt acceptance and the epic sign-off remain open. Promotion into the required gate is a separate decision under the reviewed plan.
 
 [Exact qualification](plan/2026-11-20-370-import-chain-review-requalification.md) · [Trunk delivery](../403/retro/2026-11-20-403-delivery.md) · [Reviewed scope](plan/2026-11-19-370-import-chain-list.md).
+
+## Closed
+
+The owner accepted the advisory receipt on 2026-11-20 and closed this epic. The import-chain selector stays advisory. Promotion into the required gate remains a separate decision. [Sign-off](retro/2026-11-20-370-close.md).
