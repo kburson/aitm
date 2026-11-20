@@ -25,7 +25,12 @@ from path_map import (
     SELECTOR_PATH,
     select_candidate,
 )
-from python_gate import _policy_error, selected_execution_errors
+from python_gate import (
+    RUNNER_RECEIPT_SCHEMA,
+    _policy_error,
+    linux_runner_pair,
+    selected_execution_errors,
+)
 
 WORKFLOW = ".github/workflows/ci.yml"
 GH_VERSION = "2.97.0"
@@ -457,6 +462,7 @@ def verify_jobs(github, pull, selected, path, started, suite, required):
         "required job missing, duplicated or unexpected in selected attempt",
     )
     result = {}
+    runner_labels = {}
     for job in jobs:
         job_id = job["id"]
         require(
@@ -481,7 +487,8 @@ def verify_jobs(github, pull, selected, path, started, suite, required):
             f"required job {job['name']} does not match its authenticated check record",
         )
         result[job["name"]] = job_id
-    return result
+        runner_labels[job["name"]] = job.get("labels")
+    return result, runner_labels
 
 
 def commit(github, sha):
@@ -776,9 +783,14 @@ def report_evidence(
     controls,
     base_identity,
     expected_selection=None,
+    runner_labels=None,
 ):
     report = decode_json(subject)
-    require(report["schema"] == "aitm.ci-candidate/v2", "candidate schema disagrees")
+    schema = report["schema"]
+    require(
+        schema in ("aitm.ci-candidate/v2", RUNNER_RECEIPT_SCHEMA),
+        "candidate schema disagrees",
+    )
     expected = {
         "pr": pull.number,
         "head": pull.head,
@@ -817,7 +829,18 @@ def report_evidence(
     )
     platform = report["platform"]
     require(isinstance(platform, dict), "candidate platform evidence is malformed")
-    if platform.get("os") == "Linux":
+    if schema == RUNNER_RECEIPT_SCHEMA:
+        baseline = report["base_identity"]
+        require(
+            platform.keys() == {"os", "image", "runtime", "runner"}
+            and platform["os"] == "Linux"
+            and linux_runner_pair(baseline, platform)
+            and runner_labels is not None
+            and runner_labels.get("python-base") == [baseline["runner"]]
+            and runner_labels.get("python") == [platform["runner"]],
+            "required Linux platform evidence disagrees with the authenticated runner labels",
+        )
+    elif platform.get("os") == "Linux":
         require(
             platform.keys() == {"os", "image", "runtime"}
             and platform["image"] == report["base_identity"]["image"]
@@ -951,7 +974,7 @@ def verify_pr(github, number, target, checkout, *, reviewed_tree=None):
         policy, controls, base_identity, expected_selection = verify_controls(
             github, pull, tree, reviewed_tree
         )
-        jobs = verify_jobs(
+        jobs, runner_labels = verify_jobs(
             github,
             pull,
             selected,
@@ -975,6 +998,7 @@ def verify_pr(github, number, target, checkout, *, reviewed_tree=None):
             controls,
             base_identity,
             expected_selection,
+            runner_labels,
         )
         require(
             live_pull(github, number, target) == pull

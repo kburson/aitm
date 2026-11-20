@@ -467,6 +467,52 @@ def test_ubuntu_evidence_matches_the_pinned_runtime_and_runner(
         with pytest.raises(Hold, match="platform evidence"):
             client.check()
 
+    for release in ("24", "26"):
+        runner = f"ubuntu-{release}.04"
+        for job in client.documents[JOBS][0]["jobs"]:
+            if job["name"] in {"python", "python-base"}:
+                job["labels"] = [runner]
+
+        def mixed(report):
+            report["schema"] = "aitm.ci-candidate/v3"
+            report["base_identity"].update(
+                runner=runner, image=f"ubuntu{release}:20261116.376.1"
+            )
+            report["platform"] = {
+                "os": "Linux",
+                "runtime": "3.13.9",
+                "runner": runner,
+                "image": f"ubuntu{release}:20261116.133.1",
+                **change,
+            }
+
+        override_signed_report(client, verified_signature, mixed)
+        if passes or change == {"image": "ubuntu24:other"} and release == "24":
+            assert client.check()["run_id"] == RUN
+        else:
+            with pytest.raises(Hold, match="platform evidence"):
+                client.check()
+
+        if passes:
+            base_job = next(
+                job
+                for job in client.documents[JOBS][0]["jobs"]
+                if job["name"] == "python-base"
+            )
+            base_job["labels"] = ["ubuntu-22.04"]
+            with pytest.raises(Hold, match="authenticated runner labels"):
+                client.check()
+
+            base_job["labels"] = [runner]
+
+            def missing(report):
+                mixed(report)
+                del report["base_identity"]["runner"]
+
+            override_signed_report(client, verified_signature, missing)
+            with pytest.raises(Hold, match="platform evidence"):
+                client.check()
+
 
 def test_both_unrounded_coverage_floors_accept_exactly_ninety(
     client, verified_signature
