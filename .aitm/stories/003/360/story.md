@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 360
 title: "Run a CI full sweep as category shards"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/360"
 parent: 356
 children: []
 blocking: [361]
 blocked-by: [359]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T16:40:34Z"
+updated: "2026-11-20T17:03:32Z"
 last-branch: "codex/360-hosted-category-sweep"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"

@@ -28,3 +28,7 @@ Deliver a manually triggered CI full sweep with matching semantics.
 The [local cross-host receipt](../attachments/2026-11-20-360-local-matrix.json) records 2,331 IDs in five assignments, 7,077 phase reports, both required child results, and the empty slow-unit category. The final tree and earlier workflow candidate have identical test IDs and phase outcomes. Missing the Darwin systems shard caused refusal with no verdict. The rehearsal used local Apple Silicon Darwin and an ARM64 Ubuntu guest. Hosted Linux uses x64.
 
 [Final CI attempt 1](https://github.com/kburson/aitm/actions/runs/44777136829/attempts/1) passed both Python jobs. The collector refused the trusted base because its runner image was `ubuntu24:20261116.376.1` and the candidate used `ubuntu24:20261116.133.1`. The repository requires exact image identity. [Attempt 2](https://github.com/kburson/aitm/actions/runs/44777136829/attempts/2) reruns all jobs at the same reviewed head. The [verifier hold](../attachments/2026-11-20-360-attempt-1-hold.json) remains part of the record.
+
+## Source merge
+
+[PR #409](https://github.com/kburson/aitm/pull/409) merged as `7ba4045e1b3cac6d2348975b70edc62acf4e8a5d` after the [same-head CI retry](https://github.com/kburson/aitm/actions/runs/44777136829/attempts/2), exact-head Grok review and [trusted verifier](../attachments/2026-11-20-360-trusted-verifier.json) passed. Authenticated trunk contains the reviewed head and matches the tested tree. #360 stays in Review pending actual hosted success and the incomplete-run control.
