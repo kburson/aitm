@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 357
 title: "[Spike] Classify tests into execution categories"
 kind: "spike"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/357"
 parent: 356
 children: []
 blocking: [358, 359]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-20T14:22:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-357-delivery-plan.md", "plan/2026-11-20-357-collection-checkpoint.md"], "attachments": ["attachments/2026-11-20-357-collected-nodeids.tsv"]}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,13 @@ This is research for #356. Write the classification. The suite, the hosted path 
 ## Handoff
 
 #358 and #359 stay blocked until this receipt is accepted.
+
+## Acceptance criteria
+
+- Pin source commit and tree, locked tooling, platform and all pytest collection roots. Preserve exact parameterized IDs and two agreeing clean collections. Document optional native profiles, source discovery and profile differences.
+- Give every collected ID one category or an explicit exception, with a source or fixture witness and reason. Use timing to distinguish fast unit from slow unit. Cite the timing profile and keep unmeasured or ambiguous placement visible.
+- Reconcile the register against the collection and the #285 family audit. Publish categorized and exception counts, exact set differences and any collection caveats. Obtain independent acceptance of the dated findings before releasing #358 or #359.
+
+[Delivery plan](plan/2026-11-20-357-delivery-plan.md).
+
+[First collection checkpoint](plan/2026-11-20-357-collection-checkpoint.md).

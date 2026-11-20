@@ -10,12 +10,12 @@ children: []
 blocking: [360]
 blocked-by: [357, 358]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-20T14:22:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-359-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -33,3 +33,11 @@ Run a local full sweep as the category shards named by the accepted #357 and #35
 An agent can start one local full sweep and have the categories run in parallel. The ordinary affected-test command remains the short path. This story adds no CI job and no schedule.
 
 Stay blocked until #357 and #358 are accepted.
+
+## Acceptance criteria
+
+- Provide one opt-in command for the local full sweep. Run eligible categories concurrently with the agreed private or exclusive resources, using the accepted mapping and platform rules.
+- Reconcile the disjoint union of shard assignments and terminal test outcomes to the exact full collection. Refuse an overall pass when a required test, outcome, child witness or shard is missing, duplicated, failed, interrupted or ran against a different source.
+- Prove parity against the serial reference, exercise one failing test and one missing worker result, and document the invocation and rerun behavior. Keep the ordinary affected-test command in its existing role.
+
+[Delivery plan](plan/2026-11-20-359-delivery-plan.md).

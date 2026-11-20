@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 356
 title: "Shard tests by execution category"
 kind: "epic"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/356"
 parent: null
 children: [357, 358, 359, 360, 361]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-20T14:22:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-356-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -49,3 +49,13 @@ Read #285, #286, #148, #290, #292, #293, #294, and #337. Advisory shard code and
 This epic is independent of #351, #362, and #370. Development does not start from this epic.
 
 #370 decides how one Python program selects affected tests on every operating system. This epic classifies tests by execution category.
+
+## Full-sweep acceptance
+
+- Reconcile shards to the exact collected inventory for the declared source and runner profiles. Every eligible ID has one assignment. Record platform exclusions, registration or collection failures, skip reasons, and exceptions by exact ID. A test outside the four categories still needs an explicit disposition before the sweep can claim completeness.
+- Demonstrate isolation and account for passed, failed, skipped and missing outcomes. Compare with the serial reference of the same source and workload. Report elapsed time and, for hosted runs, setup and queue time.
+- Observe an actual scheduled default-branch sweep with an authentic run and attempt, exact source and complete per-shard receipts. Record any delay or missing result as such. The ordinary local selector, hosted PR path map and governed #103 gate keep their existing authority. #362 owns failure-flag behavior, and #351 and #370 remain independent.
+
+The delivery sequence follows the accepted evidence from one child to the next. #357 is active. The downstream plans are conditional until the named receipts are accepted.
+
+[Delivery plan](plan/2026-11-20-356-delivery-plan.md).

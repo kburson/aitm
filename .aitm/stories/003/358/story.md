@@ -10,12 +10,12 @@ children: []
 blocking: [359]
 blocked-by: [357]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-20T14:22:44Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-20-358-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -39,3 +39,11 @@ Stay blocked until #357 is accepted.
 ## Handoff
 
 #359 implements the accepted classification and this finding together.
+
+## Acceptance criteria
+
+- On the accepted #357 inventory, compare serial and concurrent pytest invocations locally and assess separately hosted jobs on the required runner profiles. Record which cases were demonstrated and which remain unverified.
+- Identify shared fixture, checkout, cache, coverage, subprocess, filesystem, tool and host-state dependencies with exact test witnesses. Record minimum isolation, platform requirements and tests that require exclusive execution.
+- Publish the commands, outcomes, timings, constraints, and a scheduling and isolation matrix for #359. A discrepancy needs a reproduced witness and explicit disposition. Independent acceptance of the diagnostic receipt releases #359.
+
+[Delivery plan](plan/2026-11-20-358-delivery-plan.md).
