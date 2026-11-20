@@ -3,7 +3,7 @@ schema: "aitm.story/v0"
 id: 403
 title: "List affected tests from the import chain for one real change"
 kind: "story"
-state: "test"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/403"
 parent: 370
 children: []
@@ -64,3 +64,5 @@ The exact candidate is in [PR #406](https://github.com/kburson/aitm/pull/406). T
 ## Hosted import-chain qualification
 
 Both hosted Ubuntu shadow cases qualified on `9b5f22c2f49250fe5c9208ccb13df9fc7bccba6e`. [Findings](../370/plan/2026-11-20-370-import-chain-shadow-findings.md) · [Exact evidence](../370/plan/2026-11-20-370-import-chain-shadow-evidence.json).
+
+Required CI and the delivered verifier passed on the exact implementation PR. [Independent source review and CI receipt](plan/reviews/2026-11-20-403-source-review.md).
