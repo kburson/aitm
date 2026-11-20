@@ -483,6 +483,7 @@ def test_probe_bounds_canonical_loads_to_file_and_initializer(body):
         b"from importlib.util import find_spec as locate\nlocate('pkg.leaf')",
         b"from importlib import util as locate\nlocate.find_spec('pkg.leaf')",
         b"load = __builtins__['__import__']",
+        b"from builtins import __dict__ as namespace\nload = namespace['__import__']",
         b"from importlib.machinery import SourceFileLoader\nload = SourceFileLoader",
         b"import importlib\nimportlib.import_module('pkg.leaf')\nfrom importlib.resources import files as package_files",
     ],

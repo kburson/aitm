@@ -408,7 +408,7 @@ class _GraphBuilder:
             )
             or isinstance(node, ast.ImportFrom)
             and not node.level
-            and importlib_module(node.module)
+            and (node.module == "builtins" or importlib_module(node.module))
             and not metadata_version_import(node)
             or isinstance(node, ast.Name)
             and node.id == "__builtins__"

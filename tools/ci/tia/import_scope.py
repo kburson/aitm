@@ -131,7 +131,7 @@ def dynamic_modules(tree):
                 return None
             if isinstance(declaration, ast.ImportFrom) and not declaration.level:
                 module = declaration.module
-                if module == "builtins" and node.name in {"__import__", "*"}:
+                if module == "builtins":
                     return None
                 if (
                     importlib_module(module)
