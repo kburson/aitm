@@ -25,3 +25,9 @@ The corrected draft passed all six canonical jobs. Its [attestation-verified mix
 [PR #413](https://github.com/kburson/aitm/pull/413) now targets that merge with head `ae528b4c81eab9219bb436fb431a5d786d602bdf`. The producer tree remains `cd0aab63aa3787ed7924fb73faf533e1a6b0ae2c`. The published [canonical attempt](https://github.com/kburson/aitm/actions/runs/44824703079), exact re-review and delivered reader gate completion.
 
 [Grok passed the final producer head](https://github.com/kburson/aitm/pull/413#pullrequestreview-5999954753). The reader merge passed the [ordinary trunk run](https://github.com/kburson/aitm/actions/runs/44824687998). Producer attempt 1 on the new base passed the candidate Python job but failed the existing trusted-base recovery-fence fixture. Attempt 2 reruns all jobs at the same reviewed head.
+
+## Trunk push compatibility correction
+
+The first [trunk run after the producer merge](https://github.com/kburson/aitm/actions/runs/44826712099) exposed a pre-matrix condition behavior. GitHub reported the skipped `python-base` lane as `matrix.job`, which violates the advisory push reader's exact job-name contract. This issue reopened and #360 returned to its dependency hold.
+
+[PR #414](https://github.com/kburson/aitm/pull/414) removes the display-name expression and reuses the same versioned Ubuntu scalar where the workflow schedules each Python job and records its requested label. The producer, signer, verifier and pinned runtime retain the established receipt behavior. A hosted PR and a real trunk push with authenticated advisory readback gate this correction.
