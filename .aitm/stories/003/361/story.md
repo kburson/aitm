@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 361
 title: "Schedule the category-shard full sweep"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/361"
 parent: 356
 children: []
 blocking: []
 blocked-by: [360]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:22:44Z"
-last-branch: "planning"
+updated: "2026-11-20T22:57:30Z"
+last-branch: "codex/361-schedule-category-sweep"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
