@@ -25,10 +25,12 @@ env:
 jobs:
   python-base:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    name: python-base
+    name: ${{ matrix.job }}
     strategy:
       matrix:
-        runner: [ubuntu-24.04]
+        include:
+          - job: python-base
+            runner: ubuntu-24.04
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 8
     permissions:
@@ -137,10 +139,12 @@ jobs:
 
   python:
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    name: python
+    name: ${{ matrix.job }}
     strategy:
       matrix:
-        runner: [ubuntu-24.04]
+        include:
+          - job: python
+            runner: ubuntu-24.04
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     permissions:
