@@ -50,3 +50,7 @@ The ordinary trunk retry passed. PR #410 attempt 2 encountered an existing monit
 ## Delivery hold
 
 After six completed exact-head attempts, #410 remains open. Five attempts passed both Python jobs but assigned different Ubuntu image builds to the trusted base and candidate. One attempt failed in an existing monitor journal fixture. In [attempt 6](https://github.com/kburson/aitm/actions/runs/44780376663/attempts/6), both Python jobs passed again. Replaying the downloaded evidence through the trusted gate returned `missing or drifted trusted base identity`, and the verifier held. The [Grok verdict](https://github.com/kburson/aitm/pull/410#pullrequestreview-5996538423) and [all-shard ACL rehearsal](../attachments/2026-11-20-360-acl-corrected-matrix.json) remain valid for the current candidate. Merge requires fresh passing canonical evidence, followed by a successful authenticated hosted rerun. #361 remains blocked on that acceptance.
+
+## Resumed after #411
+
+[#411](../../004/411/story.md) is delivered and closed. The signed canonical runner evidence now accepts different builds of the same requested Ubuntu label. PR #410 incorporates that trunk as base `169a356bd1df76dad987ce3b5b2681ca46cbfb1b`, with head `d08d8546ab0026e17bc68bb4ba062af84737b63f` and tree `0dc636bb6359a4242e5b0f07ec20f18883ee1bed`. The same Linux isolation change again received [Grok review](https://github.com/kburson/aitm/pull/410#pullrequestreview-6000086073). The [new canonical run](https://github.com/kburson/aitm/actions/runs/44826916115) uses #411's delivered workflow.
