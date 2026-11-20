@@ -3,15 +3,15 @@ schema: "aitm.story/v0"
 id: 359
 title: "Run a local full sweep as category shards"
 kind: "story"
-state: "backlog"
+state: "test"
 issue: "https://github.com/kburson/aitm/issues/359"
 parent: 356
 children: []
 blocking: [360]
 blocked-by: [357, 358]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:22:44Z"
-last-branch: "planning"
+updated: "2026-11-20T16:10:14Z"
+last-branch: "codex/359-local-category-sweep"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
@@ -41,3 +41,5 @@ Stay blocked until #357 and #358 are accepted.
 - Prove parity against the serial reference, exercise one failing test and one missing worker result, and document the invocation and rerun behavior. Keep the ordinary affected-test command in its existing role.
 
 [Delivery plan](plan/2026-11-20-359-delivery-plan.md).
+
+[Local sweep candidate](https://github.com/kburson/aitm/pull/408).
