@@ -1,0 +1,144 @@
+{
+  "children": {
+    "cli-help": 1,
+    "service-one-shot": 1
+  },
+  "empty_categories": [
+    "slow-unit"
+  ],
+  "exact_phase_parity": true,
+  "jobs": {
+    "darwin / local-integration": {
+      "bootstrap_seconds": 10.0,
+      "completed": "2026-11-20T23:09:49Z",
+      "created": "2026-11-20T23:09:16Z",
+      "execution_seconds": 0.7,
+      "job_id": 136627850174,
+      "plan_sha256": "0728431cc1fe7ec67333472853b5695dffcc043e80763c707edb95f3537a30dc",
+      "queue_seconds": 3.0,
+      "setup_seconds": 13.413,
+      "started": "2026-11-20T23:09:19Z",
+      "wall_seconds": 30.0
+    },
+    "darwin / systems-integration": {
+      "bootstrap_seconds": 10.0,
+      "completed": "2026-11-20T23:09:52Z",
+      "created": "2026-11-20T23:09:16Z",
+      "execution_seconds": 1.647,
+      "job_id": 136627850142,
+      "plan_sha256": "34955de9d436209654c7a1218555168661a5b5b5b9a1a6639c679e26036c1b5c",
+      "queue_seconds": 3.0,
+      "setup_seconds": 15.005,
+      "started": "2026-11-20T23:09:19Z",
+      "wall_seconds": 33.0
+    },
+    "linux / fast-unit": {
+      "bootstrap_seconds": 6.0,
+      "completed": "2026-11-20T23:09:40Z",
+      "created": "2026-11-20T23:09:16Z",
+      "execution_seconds": 5.539,
+      "job_id": 136627850029,
+      "plan_sha256": "67ee41b4686c0b6bbafafa1e151dbe5c9138ebda390e5378e68dd854365d9a28",
+      "queue_seconds": 2.0,
+      "setup_seconds": 7.287,
+      "started": "2026-11-20T23:09:18Z",
+      "wall_seconds": 22.0
+    },
+    "linux / local-integration": {
+      "bootstrap_seconds": 10.0,
+      "completed": "2026-11-20T23:13:44Z",
+      "created": "2026-11-20T23:09:16Z",
+      "execution_seconds": 244.694,
+      "job_id": 136627850002,
+      "plan_sha256": "1d6ecbb946fbd861ae065597d6f337f9c745d67a360b19a953a86db002f87fe9",
+      "queue_seconds": 2.0,
+      "setup_seconds": 5.786,
+      "started": "2026-11-20T23:09:18Z",
+      "wall_seconds": 266.0
+    },
+    "linux / systems-integration": {
+      "bootstrap_seconds": 13.0,
+      "completed": "2026-11-20T23:12:02Z",
+      "created": "2026-11-20T23:09:16Z",
+      "execution_seconds": 138.915,
+      "job_id": 136627850024,
+      "plan_sha256": "8b504a65f2f6da972ea4f87c4fd6743578a001e921b3116f6bb701b1a88185a8",
+      "queue_seconds": 3.0,
+      "setup_seconds": 5.836,
+      "started": "2026-11-20T23:09:19Z",
+      "wall_seconds": 163.0
+    },
+    "plan": {
+      "completed": "2026-11-20T23:09:16Z",
+      "created": "2026-11-20T23:08:59Z",
+      "job_id": 136627731582,
+      "queue_seconds": 3.0,
+      "started": "2026-11-20T23:09:02Z",
+      "wall_seconds": 14.0
+    },
+    "reconcile": {
+      "completed": "2026-11-20T23:13:53Z",
+      "created": "2026-11-20T23:13:44Z",
+      "job_id": 136629766087,
+      "queue_seconds": 2.0,
+      "started": "2026-11-20T23:13:46Z",
+      "wall_seconds": 7.0
+    }
+  },
+  "observed_skips": [
+    [
+      "tools/ci/tests/test_tia_snapshot.py::test_local_git_config_and_path_identity",
+      "filesystem has no normalization aliases"
+    ]
+  ],
+  "reconciled_verdict_sha256": "59e7dac88d4384fef40cc65931c8dfa92977c2aa24603142310199ba1c7d6d83",
+  "registration": "2026-11-20T23:08:57Z",
+  "run_url": "https://github.com/kburson/aitm/actions/runs/44834609313",
+  "source": {
+    "commit": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+    "tree": "508f236b0712256cc4570d30395baa01a4053936"
+  },
+  "started": "2026-11-20T23:08:57Z",
+  "total_ids": 2333,
+  "total_phases": 7083,
+  "updated": "2026-11-20T23:13:53Z",
+  "workflow": {
+    "attempt": "1",
+    "event": "workflow_dispatch",
+    "repository": "kburson/aitm",
+    "run_id": "44834609313",
+    "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+  },
+  "artifacts": [
+    {
+      "id": 14678226057,
+      "name": "category-a1-darwin-local-integration",
+      "digest": "sha256:83854b30508a15a208e18d28ba35eb297a42c0775945bcf8be326d60b209147c"
+    },
+    {
+      "id": 14678081603,
+      "name": "category-a1-darwin-systems-integration",
+      "digest": "sha256:6d61b833abf2853c39a686f488243f09b9cfeb0f3bd40f89379a3946e2afcd62"
+    },
+    {
+      "id": 14678201195,
+      "name": "category-a1-linux-fast-unit",
+      "digest": "sha256:36c8d264b0d1485da123f34c1292be5ace1d21a2668869f960c360f28197dbae"
+    },
+    {
+      "id": 14676528923,
+      "name": "category-a1-linux-local-integration",
+      "digest": "sha256:347c040cfa053d308825981c6d72ea715ecbc1225477d811d40e6c9647657e73"
+    },
+    {
+      "id": 14678081973,
+      "name": "category-a1-linux-systems-integration",
+      "digest": "sha256:87a60fe153f1a2b348adda7900d7af843e7593ad0067f37e4feaed95329ef05f"
+    },
+    {
+      "id": 14678800004,
+      "name": "category-verdict-a1",
+      "digest": "sha256:7c6a5fcf879bfd7c86c1809b142325189fc2159771cede6c3422912422ca8276"
+    }
+  ]
+}

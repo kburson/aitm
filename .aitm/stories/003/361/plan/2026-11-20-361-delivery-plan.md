@@ -28,3 +28,5 @@ The existing scheduled full suite shadow runs at 03:47 UTC and has separate rece
 ## Default-branch activation
 
 [PR #415](https://github.com/kburson/aitm/pull/415) merged at 23:08:52 UTC as `8ab84ba0590286d4655ea94e4d9de99f25ea1f2e` after the [exact-head Grok pass](https://github.com/kburson/aitm/pull/415#pullrequestreview-6000515753), all six [canonical PR jobs](https://github.com/kburson/aitm/actions/runs/44833232145/attempts/1) and the [trusted verifier](../attachments/2026-11-20-361-trusted-verifier.json). The workflow fetched from GitHub at trunk matched the reviewed tree. [Manual rehearsal](https://github.com/kburson/aitm/actions/runs/44834609313) registered on that merge and its first expected scheduled slot is 2026-11-20 23:23 UTC.
+
+The [manual rehearsal](https://github.com/kburson/aitm/actions/runs/44834609313/attempts/1) passed on the activated default branch. Its [authenticated receipt](../attachments/2026-11-20-361-manual-acceptance.json) matches the #360 acceptance run for all 2,333 IDs and 7,083 phases, includes both required successful children and verifies all six artifact digests. The real schedule event remains the final activation test.
