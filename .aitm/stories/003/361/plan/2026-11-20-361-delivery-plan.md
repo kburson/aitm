@@ -24,3 +24,7 @@ The existing scheduled full suite shadow runs at 03:47 UTC and has separate rece
 ## Test checkpoint
 
 [PR #415](https://github.com/kburson/aitm/pull/415) adds the trigger and operator instructions after #360 closed. The manual event still checks the trunk ref and repository default branch. GitHub targets the default branch for scheduled events, so the same trunk requirement applies there without relying on manual event metadata. Actionlint v1.7.12 passed, the existing execution jobs were compared byte for byte and the separate advisory workflow was verified on its existing 03:47 UTC slot. The [canonical PR run](https://github.com/kburson/aitm/actions/runs/44833232145) and exact-head Grok review are in progress.
+
+## Default-branch activation
+
+[PR #415](https://github.com/kburson/aitm/pull/415) merged at 23:08:52 UTC as `8ab84ba0590286d4655ea94e4d9de99f25ea1f2e` after the [exact-head Grok pass](https://github.com/kburson/aitm/pull/415#pullrequestreview-6000515753), all six [canonical PR jobs](https://github.com/kburson/aitm/actions/runs/44833232145/attempts/1) and the [trusted verifier](../attachments/2026-11-20-361-trusted-verifier.json). The workflow fetched from GitHub at trunk matched the reviewed tree. [Manual rehearsal](https://github.com/kburson/aitm/actions/runs/44834609313) registered on that merge and its first expected scheduled slot is 2026-11-20 23:23 UTC.
