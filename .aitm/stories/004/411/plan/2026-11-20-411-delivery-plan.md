@@ -23,3 +23,5 @@ The corrected draft passed all six canonical jobs. Its [attestation-verified mix
 [Reader attempt 3](https://github.com/kburson/aitm/actions/runs/44821288070/attempts/3) passed all six canonical checks with matching runner images. The current target [trusted verifier](../attachments/2026-11-20-411-reader-trusted-pass.json) passed the exact tree. After Grok review, PR #412 merged as `abf6a243c08d07d8f0936f56b20dd30c7eea2ba5`.
 
 [PR #413](https://github.com/kburson/aitm/pull/413) now targets that merge with head `ae528b4c81eab9219bb436fb431a5d786d602bdf`. The producer tree remains `cd0aab63aa3787ed7924fb73faf533e1a6b0ae2c`. The published [canonical attempt](https://github.com/kburson/aitm/actions/runs/44824703079), exact re-review and delivered reader gate completion.
+
+[Grok passed the final producer head](https://github.com/kburson/aitm/pull/413#pullrequestreview-5999954753). The reader merge passed the [ordinary trunk run](https://github.com/kburson/aitm/actions/runs/44824687998). Producer attempt 1 on the new base passed the candidate Python job but failed the existing trusted-base recovery-fence fixture. Attempt 2 reruns all jobs at the same reviewed head.
