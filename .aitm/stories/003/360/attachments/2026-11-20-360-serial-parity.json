@@ -1,0 +1,24 @@
+{
+  "cross_host_ids": 2331,
+  "reference": {
+    "darwin": {
+      "matched_ids": 17,
+      "matched_phases": 51,
+      "serial_ids": 2324,
+      "source": {
+        "commit": "5ee2254c1ae1d0ba16c399c019420111711f0ecf",
+        "tree": "99107162ebdb02b1d5139e9cce16d9ff449e4c2f"
+      }
+    },
+    "linux": {
+      "matched_ids": 2314,
+      "matched_phases": 7026,
+      "serial_ids": 2329,
+      "source": {
+        "commit": "5ee2254c1ae1d0ba16c399c019420111711f0ecf",
+        "tree": "99107162ebdb02b1d5139e9cce16d9ff449e4c2f"
+      }
+    }
+  },
+  "same_source_phase_parity": true
+}
