@@ -1,0 +1,25 @@
+{
+  "schema": "aitm.ci-candidate/v3",
+  "pr": 413,
+  "head": "b2279b04ce8934d3b2f62dab65a93c8fb6c7a6dd",
+  "base": "7ba4045e1b3cac6d2348975b70edc62acf4e8a5d",
+  "tested": "cc0969be40ca057c1ce1bb37d67be6f6c0b4969f",
+  "tree": "cd0aab63aa3787ed7924fb73faf533e1a6b0ae2c",
+  "attempt": 1,
+  "base_runner": {
+    "runner": "ubuntu-24.04",
+    "image": "ubuntu24:20261116.133.1",
+    "runtime": "3.13.9"
+  },
+  "candidate_runner": {
+    "runner": "ubuntu-24.04",
+    "image": "ubuntu24:20261116.376.1",
+    "runtime": "3.13.9"
+  },
+  "tests": 1525,
+  "baseline_tests": 1524,
+  "run": "https://github.com/kburson/aitm/actions/runs/44822847471/attempts/1",
+  "subject_sha256": "8202b96c699b2850af8285321e47815c2527eec24dbe33090df9a302d5bfadb9",
+  "attestation": "verified",
+  "scope": "draft producer rehearsal before reader deployment"
+}
