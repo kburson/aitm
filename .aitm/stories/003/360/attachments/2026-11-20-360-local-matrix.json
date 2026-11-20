@@ -1,0 +1,96 @@
+{
+  "children": {
+    "cli-help": 1,
+    "service-one-shot": 1
+  },
+  "empty_categories": [
+    "slow-unit"
+  ],
+  "matches_prior_cross_host_rehearsal": true,
+  "missing_slot_control": {
+    "aggregate_rejected": true,
+    "artifact": "category-a1-darwin-systems-integration"
+  },
+  "normalized_phase_sha256": "930af886288cf1523fc2b28015704fd41e9327735008ec8709765a9a2c32316e",
+  "observed_phases": 7077,
+  "run": {
+    "attempt": "1",
+    "event": "workflow_dispatch",
+    "repository": "kburson/aitm",
+    "run_id": "local-360-final",
+    "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+  },
+  "runner_note": "Local Apple Silicon Darwin and nonroot ARM64 Ubuntu 24.04 guest. Hosted Linux uses x64.",
+  "skips": [
+    [
+      "tools/ci/tests/test_tia_snapshot.py::test_local_git_config_and_path_identity",
+      "filesystem has no normalization aliases"
+    ]
+  ],
+  "slots": {
+    "darwin-local-integration": {
+      "children": {},
+      "plan_sha256": "d90a148d383c4ff9d63cee7360c6294f74786cde8808c2fca77e80a7bef335f7",
+      "status": "pass",
+      "tested": 2,
+      "timing": {
+        "execution_seconds": 0.564,
+        "plan_sha256": "d90a148d383c4ff9d63cee7360c6294f74786cde8808c2fca77e80a7bef335f7",
+        "setup_seconds": 9.189
+      }
+    },
+    "darwin-systems-integration": {
+      "children": {},
+      "plan_sha256": "cb0e40e59a3fa5036e429ebd186f2fba7c3277606b7d13cb59fb03b5070dec72",
+      "status": "pass",
+      "tested": 15,
+      "timing": {
+        "execution_seconds": 1.148,
+        "plan_sha256": "cb0e40e59a3fa5036e429ebd186f2fba7c3277606b7d13cb59fb03b5070dec72",
+        "setup_seconds": 7.694
+      }
+    },
+    "linux-fast-unit": {
+      "children": {},
+      "plan_sha256": "1b76f7fdbbb2b867384f28057943584251804fde35cdd7964a6b6fe5eb6eb7da",
+      "status": "pass",
+      "tested": 489,
+      "timing": {
+        "execution_seconds": 5.031,
+        "plan_sha256": "1b76f7fdbbb2b867384f28057943584251804fde35cdd7964a6b6fe5eb6eb7da",
+        "setup_seconds": 6.508
+      }
+    },
+    "linux-local-integration": {
+      "children": {},
+      "plan_sha256": "811fbae8c089793bd0f92d1e2b8a17d0714d2b0c2bed7761abcb405b3dbe9831",
+      "status": "pass",
+      "tested": 1570,
+      "timing": {
+        "execution_seconds": 333.281,
+        "plan_sha256": "811fbae8c089793bd0f92d1e2b8a17d0714d2b0c2bed7761abcb405b3dbe9831",
+        "setup_seconds": 7.673
+      }
+    },
+    "linux-systems-integration": {
+      "children": {
+        "cli-help": 1,
+        "service-one-shot": 1
+      },
+      "plan_sha256": "c0d4ce52387230b5760a7172d6decc41595281f97367396869b75ce398147c74",
+      "status": "pass",
+      "tested": 255,
+      "timing": {
+        "execution_seconds": 139.781,
+        "plan_sha256": "c0d4ce52387230b5760a7172d6decc41595281f97367396869b75ce398147c74",
+        "setup_seconds": 7.127
+      }
+    }
+  },
+  "source": {
+    "commit": "5ee2254c1ae1d0ba16c399c019420111711f0ecf",
+    "tree": "99107162ebdb02b1d5139e9cce16d9ff449e4c2f"
+  },
+  "status": "pass",
+  "tested": 2331
+}
