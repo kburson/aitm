@@ -21,6 +21,24 @@ IDENTITY_DIGESTS = {
     "configuration": 64,
 }
 
+RUNNER_RECEIPT_SCHEMA = "aitm.ci-candidate/v3"
+
+
+def linux_runner_pair(base, candidate):
+    runner = base.get("runner")
+    if not isinstance(runner, str) or runner != candidate.get("runner"):
+        return False
+    release = re.fullmatch(r"ubuntu-([1-9][0-9]*)\.[0-9]{2}", runner)
+    if release is None:
+        return False
+    image = rf"ubuntu{release[1]}:[A-Za-z0-9][A-Za-z0-9._-]*"
+    return all(
+        lane.get("runtime") == "3.13.9"
+        and isinstance(lane.get("image"), str)
+        and re.fullmatch(image, lane["image"])
+        for lane in (base, candidate)
+    )
+
 
 def _unique_names(values):
     return (
