@@ -1,0 +1,82 @@
+{
+  "children": {
+    "cli-help": 1,
+    "service-one-shot": 1
+  },
+  "empty_categories": [
+    "slow-unit"
+  ],
+  "run": {
+    "attempt": "1",
+    "event": "workflow_dispatch",
+    "repository": "kburson/aitm",
+    "run_id": "local-360-private",
+    "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+  },
+  "slots": {
+    "darwin-local-integration": {
+      "children": {},
+      "plan_sha256": "3ca185786b8f7c5fe7b8e85dc2c35d9a773c4310102d0ccfc13cb029405d124e",
+      "status": "pass",
+      "tested": 2,
+      "timing": {
+        "execution_seconds": 0.762,
+        "plan_sha256": "3ca185786b8f7c5fe7b8e85dc2c35d9a773c4310102d0ccfc13cb029405d124e",
+        "setup_seconds": 16.425
+      }
+    },
+    "darwin-systems-integration": {
+      "children": {},
+      "plan_sha256": "c14dfa876ea226958fcc8d91a6d63b597b664d580755f3bd2af75ecac146f8a3",
+      "status": "pass",
+      "tested": 15,
+      "timing": {
+        "execution_seconds": 1.31,
+        "plan_sha256": "c14dfa876ea226958fcc8d91a6d63b597b664d580755f3bd2af75ecac146f8a3",
+        "setup_seconds": 8.318
+      }
+    },
+    "linux-fast-unit": {
+      "children": {},
+      "plan_sha256": "d6a6dd960077ba66bcb41c08a7650a4d982c4da7d2a9d6a237bc18792ca91249",
+      "status": "pass",
+      "tested": 491,
+      "timing": {
+        "execution_seconds": 6.222,
+        "plan_sha256": "d6a6dd960077ba66bcb41c08a7650a4d982c4da7d2a9d6a237bc18792ca91249",
+        "setup_seconds": 14.258
+      }
+    },
+    "linux-local-integration": {
+      "children": {},
+      "plan_sha256": "0540a398463439e3eb5bd9f5af3db9f1b09cd020761f83e7efdfc9c11dfca29e",
+      "status": "pass",
+      "tested": 1570,
+      "timing": {
+        "execution_seconds": 330.09,
+        "plan_sha256": "0540a398463439e3eb5bd9f5af3db9f1b09cd020761f83e7efdfc9c11dfca29e",
+        "setup_seconds": 12.14
+      }
+    },
+    "linux-systems-integration": {
+      "children": {
+        "cli-help": 1,
+        "service-one-shot": 1
+      },
+      "plan_sha256": "6beaa091705a6b1e579aeb4f04db9ce4a8cc53b8b18c0068289e20eb4ff42894",
+      "status": "pass",
+      "tested": 255,
+      "timing": {
+        "execution_seconds": 149.302,
+        "plan_sha256": "6beaa091705a6b1e579aeb4f04db9ce4a8cc53b8b18c0068289e20eb4ff42894",
+        "setup_seconds": 13.875
+      }
+    }
+  },
+  "source": {
+    "commit": "0f3d5e8db1f05680f303c956bbee6c67a9a5dd18",
+    "tree": "367cea87bc0f2d9b9266e0004f5de4ede17b6b5b"
+  },
+  "status": "pass",
+  "tested": 2333
+}
