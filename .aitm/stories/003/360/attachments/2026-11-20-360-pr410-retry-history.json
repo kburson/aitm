@@ -33,8 +33,48 @@
         "status": "hold",
         "verified_at": "2026-11-20T17:37:52.435413+00:00"
       }
+    },
+    {
+      "attempt": 5,
+      "reason": "base and candidate runner images differ",
+      "base_image": "ubuntu24/20261116.376",
+      "candidate_image": "ubuntu24/20261116.133",
+      "verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-20T17:45:10.193906+00:00"
+      }
+    },
+    {
+      "attempt": 6,
+      "reason": "base and candidate runner images differ",
+      "base_image": "ubuntu24/20261116.376",
+      "candidate_image": "ubuntu24/20261116.133",
+      "verifier": {
+        "reason": "selected attempt is not complete and successful",
+        "status": "hold",
+        "verified_at": "2026-11-20T17:52:14.864562+00:00"
+      },
+      "authenticated_artifact_gate_replay": {
+        "baseline_tests": 0,
+        "coverage": {
+          "helpers": {
+            "covered_lines": 1042,
+            "num_statements": 1114
+          },
+          "product": {
+            "covered_lines": 14738,
+            "num_statements": 16252
+          }
+        },
+        "failures": [
+          "missing or drifted trusted base identity"
+        ],
+        "passed": false,
+        "tests": 1525
+      }
     }
   ],
   "initial_merge_trunk_ci": "https://github.com/kburson/aitm/actions/runs/44779557116/attempts/2",
-  "disposition": "hold until a complete passing same-head canonical attempt and trusted verifier"
+  "disposition": "held on the sixth complete exact-head attempt. Requires a passing fresh canonical attempt with matching runner identities before merge and corrected hosted qualification."
 }
