@@ -6,11 +6,11 @@ kind: "epic"
 state: "develop"
 issue: "https://github.com/kburson/aitm/issues/356"
 parent: null
-children: [357, 358, 359, 360, 361]
+children: [357, 358, 359, 360, 361, 411]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T14:30:11Z"
+updated: "2026-11-20T21:18:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -59,3 +59,7 @@ This epic is independent of #351, #362, and #370. Development does not start fro
 The delivery sequence follows the accepted evidence from one child to the next. #357 is active. The downstream plans are conditional until the named receipts are accepted.
 
 [Delivery plan](plan/2026-11-20-356-delivery-plan.md).
+
+## Ubuntu 24.04 receipt
+
+[#411](../../004/411/story.md) accepts any observed build of the requested `ubuntu-24.04` label in the trusted pull-request receipt. [#360](../360/story.md) stays blocked by #411 until that receipt is accepted. The ordinary path map and the pinned #355 command stay unchanged.

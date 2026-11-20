@@ -8,9 +8,9 @@ issue: "https://github.com/kburson/aitm/issues/360"
 parent: 356
 children: []
 blocking: [361]
-blocked-by: [359]
+blocked-by: [359, 411]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-20T17:09:21Z"
+updated: "2026-11-20T21:18:00Z"
 last-branch: "codex/360-hosted-runner-isolation"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -43,3 +43,7 @@ Stay blocked until #359 is accepted. The schedule is #361.
 [Delivery plan](plan/2026-11-20-360-delivery-plan.md).
 
 [Hosted sweep candidate](https://github.com/kburson/aitm/pull/409).
+
+## Trusted image build
+
+[#411](../../004/411/story.md) blocks this story. The trusted receipt must accept any observed build of the requested `ubuntu-24.04` label before a canonical run of PR #410 can pass. Do not fold that rule change into PR #410.
