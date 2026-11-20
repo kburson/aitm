@@ -274,8 +274,12 @@ def run(case, out):
     watch = "packages/aitm-usage/tests/test_host_watch.py"
     if mode == "selected":
         assert len(set(assignments["product"])) == len(assignments["product"])
-        assert set(assignments["product"]) - {CLI}
-        assert all(item.startswith(watch+"::") or item == CLI for item in assignments["product"])
+        mandatory = {item["key"][-1] for item in planned["selection"]["obligation_reasons"]
+                     if item["code"] == "mandatory"}
+        witnessed = {item["key"][-1] for item in planned["selection"]["witnesses"] if item["hops"]}
+        actual = set(assignments["product"] + assignments["helpers"])
+        assert actual == mandatory | witnessed
+        assert any(item.startswith(watch + "::") and item not in mandatory for item in witnessed)
         old = temp / "baseline"
         subprocess.run(["git","worktree","add","--detach",str(old),case["base"]],cwd=repo,env=env,check=True)
         assert not git(repo, "diff", "--name-only", case["base"], case["tested"], "--", watch)
@@ -328,6 +332,7 @@ def run(case, out):
         assert all(baseline["product"]["outcomes"][node] == "passed" for node in failures)
         witnessed = {entry["key"][-1] for entry in planned["selection"]["witnesses"] if entry["hops"]}
         assert set(failures) <= witnessed
+        assert set(failures) - mandatory
     else:
         assert not failures
     write(out / "summary.json", identity | {

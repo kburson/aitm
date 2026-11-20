@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: a655a69e8819a9124735197a90bc955a8a31d336
+          ref: 599cabad03e6e8391b7e53581171e8b130aab494
           path: trusted
           persist-credentials: false
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2
