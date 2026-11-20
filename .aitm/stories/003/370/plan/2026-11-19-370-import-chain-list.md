@@ -4,9 +4,15 @@
 
 #393 and #398 showed that a reviewed boundary of `test_grok.py` can run 33 tests in about 4 seconds while the full lane runs 1,776. That saving belongs to one hash-pinned decoder body on one base. It does not list the tests for an arbitrary change. Another declaration of that suite would repeat the same measurement.
 
-#383 already walks imports for the staged index, HEAD, and a pull request against the parent-branch divergence commit. #385 showed that walk returning full on real product trees. An unresolved record with no `possible_inputs` is applied to every changed path. The product tree carries `dynamic-import`, `unresolved-import`, and `relative-import-context` records. The fixture narrowed because it had none of those records.
+#383 already walks imports for the staged index, for HEAD against the divergence commit, and for a pull request from the literal base to the tested merge. #385 showed that walk returning full on real product trees. An unresolved record with no `possible_inputs` is applied to every changed path. The product tree carries `dynamic-import`, `unresolved-import`, and `relative-import-context` records. The fixture narrowed because it had none of those records.
 
 #403 changes that applicability rule and proves the walk on one real product change. A record applies only when it can hide a reverse edge to the changed path, or when the walk already goes through the uncertain file. A non-literal dynamic import still forces full. A shared `conftest.py` in the walk still forces full. A missing snapshot or inventory stays unavailable.
+
+## Refinement
+
+Owner direction on 2026-11-20. A dynamic-import call qualifies when its module argument is a string literal, or a name assigned exactly once by a direct statement of the same function to one string literal. `test_claude.py` `adapter` and `test_codex.py` `adapter` qualify. An alias of the loader, or any richer binding, stays full.
+
+Index and HEAD still diff the divergence commit. The pull-request graph stays the #383 pair: the literal PR base against the tested merge. Record the divergence of that base and the PR head. When the divergence-to-head path set and the base-to-merge path set differ, the mode is full. When they match, the import-chain list is compared with the full run on the tested merge. A divergent-base pull request can be the narrow case or the full case. It does not add a third hosted product run.
 
 The required workflow, path map, evaluator, verifier, branch rules, and the pinned #355 command stay unchanged. The #403 receipt is the evidence for a later close of #370. Promotion of the list into the required gate remains a separate decision.
 

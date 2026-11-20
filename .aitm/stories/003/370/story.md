@@ -10,7 +10,7 @@ children: [371, 383, 385, 393, 398, 402, 403]
 blocking: []
 blocked-by: []
 created: "2026-11-18T13:52:04Z"
-updated: "2026-11-19T23:52:00Z"
+updated: "2026-11-20T01:26:00Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
@@ -90,4 +90,4 @@ The [decision](plan/2026-11-19-370-suite-hosted-integration-decision.md) holds r
 
 ## Import-chain list
 
-[#402](../402/story.md) is replaced before work started. [#403](../403/story.md) lists the tests reached by the import chain for one real product change, and returns full or unavailable when that chain cannot be proved. The #393 and #398 boundaries stay timing evidence. #370 stays open until the #403 receipt is accepted. The required gate retains its current role. [Plan](plan/2026-11-19-370-import-chain-list.md).
+[#402](../402/story.md) is replaced before work started. [#403](../403/story.md) lists the tests reached by the import chain for one real product change, and returns full or unavailable when that chain cannot be proved. A same-function constant binding qualifies as a dynamic-import prefix. The pull-request graph stays on the literal base and the tested merge. The #393 and #398 boundaries stay timing evidence. #370 stays open until the #403 receipt is accepted. The required gate retains its current role. [Plan](plan/2026-11-19-370-import-chain-list.md).
