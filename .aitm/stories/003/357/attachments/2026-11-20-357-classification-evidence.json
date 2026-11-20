@@ -1,0 +1,267 @@
+{
+  "artifact_sha256": {
+    "2026-11-20-357-category-register.tsv": "0204389741ccefb4a1e1f013b8547c9f9b418dd462a0131d4c69e8cd10e7ba3c",
+    "2026-11-20-357-collected-nodeids.tsv": "fde21675b90b5d9a4a4d2d733d7d3a0289fee540b0457d03daf8bb44d166d9f2",
+    "2026-11-20-357-source-witnesses.tsv": "c4cff59caccff4c144c0121f839919b9840e0539f412ac6c3cf3140c3c962f52",
+    "2026-11-20-357-ubuntu-nodeids.tsv": "592c60a65e5241fcdbfc3ffbcc944a511731f6f28eef6e8ab66f240cf5577d0b",
+    "2026-11-20-357-unit-timing.tsv": "8c3fc8a040fea7d5dfe4036a4cb80fc9b4f68892422b51007ffe874f4bb81433",
+    "phase_timing.py": "4ee1590fcc7c520b9644b5df8a660cb364a9bbd3df74a84796ad6ee79bc08d91"
+  },
+  "category_counts": {
+    "exception": 0,
+    "fast-unit": 483,
+    "local-integration": 1570,
+    "slow-unit": 0,
+    "systems-integration": 268
+  },
+  "collection": {
+    "darwin_only": [
+      "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[45]",
+      "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[78]"
+    ],
+    "duplicate_register_ids": [],
+    "extra_register_ids": [],
+    "families": 71,
+    "missing_register_ids": [],
+    "profiles": {
+      "darwin": {
+        "board": 13,
+        "ci": 706,
+        "dashboard": 61,
+        "native": 15,
+        "product": 1519
+      },
+      "ubuntu": {
+        "board": 13,
+        "ci": 706,
+        "dashboard": 61,
+        "native": 15,
+        "product": 1524
+      }
+    },
+    "successful_agreeing_runs_per_profile": 2,
+    "ubuntu_only": [
+      "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[38]",
+      "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement[95]",
+      "packages/aitm-usage/tests/test_host_watch.py::test_linux_kernel_capacity_retires_partial_root_only",
+      "packages/aitm-usage/tests/test_host_watch.py::test_linux_new_and_moved_directories_reconcile",
+      "packages/aitm-usage/tests/test_host_watch.py::test_linux_overlapping_roots_share_descriptor_without_weakening_mask",
+      "packages/aitm-usage/tests/test_host_watch.py::test_linux_registration_bound_falls_back_for_one_root",
+      "packages/aitm-usage/tests/test_host_watch.py::test_linux_reports_real_queue_overflow_and_rebuilds"
+    ],
+    "union": 2321
+  },
+  "counts_by_host": {
+    "darwin": {
+      "exception": 0,
+      "fast-unit": 483,
+      "local-integration": 1568,
+      "slow-unit": 0,
+      "systems-integration": 263
+    },
+    "ubuntu": {
+      "exception": 0,
+      "fast-unit": 483,
+      "local-integration": 1568,
+      "slow-unit": 0,
+      "systems-integration": 268
+    }
+  },
+  "exceptions": [],
+  "historical_285": {
+    "added": 585,
+    "changed_conftests": [
+      "packages/aitm-usage/tests/conftest.py"
+    ],
+    "changed_retained_families": [
+      "packages/aitm-usage/tests/test_host_fs_security.py",
+      "packages/aitm-usage/tests/test_install.py",
+      "packages/aitm-usage/tests/test_ledger.py",
+      "packages/aitm-usage/tests/test_monitor_adapters.py",
+      "packages/aitm-usage/tests/test_monitor_control.py",
+      "packages/aitm-usage/tests/test_monitor_journal.py",
+      "packages/aitm-usage/tests/test_monitor_ledger_version.py",
+      "packages/aitm-usage/tests/test_monitor_registry.py",
+      "packages/aitm-usage/tests/test_monitor_scope.py",
+      "packages/aitm-usage/tests/test_scope_admission.py",
+      "tools/ci/tests/test_python_gate.py",
+      "tools/ci/tests/test_tia_baseline.py",
+      "tools/ci/tests/test_tia_controls.py",
+      "tools/ci/tests/test_tia_inventory.py",
+      "tools/ci/tests/test_tia_local.py",
+      "tools/ci/tests/test_tia_python_graph.py",
+      "tools/ci/tests/test_tia_selection.py",
+      "tools/ci/tests/test_tia_shards.py",
+      "tools/ci/tests/test_verify_pr.py"
+    ],
+    "common": 1736,
+    "new_families": [
+      "packages/aitm-usage/native-tests/test_darwin_acl.py",
+      "packages/aitm-usage/native-tests/test_darwin_watch.py",
+      "packages/aitm-usage/tests/test_grok_scope_receipts.py",
+      "packages/aitm-usage/tests/test_host_watch.py",
+      "packages/aitm-usage/tests/test_isolated_qualification.py",
+      "packages/aitm-usage/tests/test_monitor_coverage.py",
+      "packages/aitm-usage/tests/test_monitor_delivery.py",
+      "packages/aitm-usage/tests/test_monitor_grok_capture.py",
+      "packages/aitm-usage/tests/test_monitor_grok_delivery.py",
+      "packages/aitm-usage/tests/test_monitor_grok_enrollment.py",
+      "packages/aitm-usage/tests/test_monitor_inventory.py",
+      "packages/aitm-usage/tests/test_monitor_qualification.py",
+      "packages/aitm-usage/tests/test_monitor_recovery_fence.py",
+      "packages/aitm-usage/tests/test_monitor_scheduler.py",
+      "tools/board_sync/tests/test_blocked_by.py",
+      "tools/board_sync/tests/test_local_sync.py",
+      "tools/ci/tests/test_ci_fast_story_shadow.py",
+      "tools/ci/tests/test_ci_scheduled_shadow.py",
+      "tools/ci/tests/test_path_map.py",
+      "tools/ci/tests/test_tia_probe.py",
+      "tools/ci/tests/test_tia_probe_snapshots.py",
+      "tools/ci/tests/test_tia_working_tree_report.py",
+      "tools/ci/tests/test_tia_working_tree_run.py",
+      "tools/story_dashboard/tests/test_attribution.py",
+      "tools/story_dashboard/tests/test_evidence.py",
+      "tools/story_dashboard/tests/test_render.py",
+      "tools/story_dashboard/tests/test_snapshot.py",
+      "tools/story_dashboard/tests/test_timing.py",
+      "tools/story_dashboard/tests/test_usage.py"
+    ],
+    "removed": [
+      "tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-Darwin0]",
+      "tools/ci/tests/test_python_gate.py::test_green_unrelated_evidence_cannot_mask_refusal[<lambda>-Darwin1]",
+      "tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-apfs-capability]",
+      "tools/ci/tests/test_tia_inventory.py::test_unclassified_or_duplicate_fails[missing-native-acl-capability]"
+    ],
+    "removed_families": [],
+    "source_commit": "a85d088fdb0a4e36c78b848cc1c2bd1b1f2b08b2"
+  },
+  "host_probes": {
+    "darwin": {
+      "passed": 39,
+      "skipped (Requires the Linux proc filesystem)": 2
+    },
+    "ubuntu": {
+      "passed": 31,
+      "skipped (requires FSEvents)": 12,
+      "skipped (requires macOS ACLs)": 3
+    }
+  },
+  "hosts": {
+    "darwin": {
+      "OS": "macOS 26.6.2 (25G83)",
+      "arch": "arm64",
+      "filesystem": "APFS"
+    },
+    "ubuntu": {
+      "OS": "Ubuntu 24.04.5 LTS",
+      "arch": "arm64",
+      "image": "sha256:2ba08ac828933ba37e76cd42ce315532850bce55b6daa55cd3c819f3a55c0179",
+      "mode": "Docker, local"
+    }
+  },
+  "pytest": "9.2.0",
+  "python": "3.13.9",
+  "schema": "aitm.357-classification-evidence/v1",
+  "source": {
+    "commit": "9843874bd00ffa1255b3595987106d5af51dceb3",
+    "tree": "b8ca66991842e6b360cf09f0e36b25c693d48390"
+  },
+  "unit_timing": {
+    "crossed_cutoff_ids": [
+      "tools/ci/tests/test_tia_probe.py::test_ambiguous_input_options_are_unavailable[pr-extra0]",
+      "tools/story_dashboard/tests/test_snapshot.py::SnapshotFixture::test_commit_source_links_are_canonical"
+    ],
+    "max_us": 90533,
+    "median_us": 610,
+    "p95_us": 6605,
+    "runs": [
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "board",
+        "requested": 12,
+        "sample": "first"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "ci",
+        "requested": 346,
+        "sample": "first"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "dashboard",
+        "requested": 19,
+        "sample": "first"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "product",
+        "requested": 106,
+        "sample": "first"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "board",
+        "requested": 12,
+        "sample": "warm-1"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "ci",
+        "requested": 346,
+        "sample": "warm-1"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "dashboard",
+        "requested": 19,
+        "sample": "warm-1"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "product",
+        "requested": 106,
+        "sample": "warm-1"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "board",
+        "requested": 12,
+        "sample": "warm-2"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "ci",
+        "requested": 346,
+        "sample": "warm-2"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "dashboard",
+        "requested": 19,
+        "sample": "warm-2"
+      },
+      {
+        "exit_code": 0,
+        "host": "darwin",
+        "profile": "product",
+        "requested": 106,
+        "sample": "warm-2"
+      }
+    ],
+    "threshold_us": 100000,
+    "valid_median_count": 483
+  },
+  "uv": "0.10.6"
+}
