@@ -145,3 +145,5 @@ A full decision lists the full applicable candidate inventory. Missing or
 changed inputs or an unavailable candidate inventory return exit 2 with no
 assignment. An emitted plan returns exit 0. The production PR gate continues
 to use the hosted path map.
+
+<!-- Unrelated base advance for the #403 advisory case. -->
