@@ -12,8 +12,8 @@ Run the accepted CI sweep on a recurring schedule.
 
 - [x] Inspect the default-branch schedule and #360 workflow, current runner capacity and downstream receipt consumers. Choose a documented UTC cadence, overlap policy and enable/disable path. Decide whether to share or supersede the existing advisory schedule from that evidence and update any dependent contract through its owning scope.
 - [x] Add one schedule trigger using #360's sweep implementation and receipts. Document the expected slot, delay, run and attempt identifiers and operator readback for missed or incomplete results.
-- [ ] Prove the trigger wiring with static checks and a manual run, then deliver through the governed PR gate. Observe the first actual scheduled run and reconcile all planned shard outcomes to its exact source and attempt. Retain the observed delay and gaps where applicable.
-- [ ] Obtain independent acceptance of the activation evidence and record the schedule's handoff to epic acceptance.
+- [x] Prove the trigger wiring with static checks and a manual run, then deliver through the governed PR gate. Observe the first actual scheduled run and reconcile all planned shard outcomes to its exact source and attempt. Retain the observed delay and gaps where applicable.
+- [x] Obtain independent acceptance of the activation evidence and record the schedule's handoff to epic acceptance.
 
 ## Activation checkpoint
 
@@ -34,3 +34,7 @@ The [manual rehearsal](https://github.com/kburson/aitm/actions/runs/44834609313/
 At 2026-11-20T23:34:22Z GitHub's schedule-filtered workflow API still showed zero registered runs. The [first-slot observation](../attachments/2026-11-20-361-first-slot-checkpoint.json) captures the authenticated result. This is a pending registration, and does not establish that the event was dropped. Story #361 stays in review.
 
 The follow-up check at 2026-11-20T23:53:21Z again returned zero registered scheduled runs. The manual result and deployed source are verified. Closure requires a recorded schedule event and reconciled receipt from its actual attempt.
+
+## Scheduled acceptance
+
+[GitHub schedule run 44864075824, attempt 1](https://github.com/kburson/aitm/actions/runs/44864075824/attempts/1) closed the registration gap. The [activation receipt](../attachments/2026-11-21-361-scheduled-acceptance.json) records actual registration, job start, exact source, all shard outcomes and verdict reconciliation. [Grok accepted the activation evidence](../attachments/2026-11-21-361-grok-activation-review.md). See the [signed closeout](../retro/2026-11-21-361-sign-off.md).

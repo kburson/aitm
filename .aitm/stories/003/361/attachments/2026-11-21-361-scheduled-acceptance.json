@@ -1,0 +1,165 @@
+{
+  "expected_slot": "2026-11-20T23:23:00Z",
+  "manual": {
+    "run_url": "https://github.com/kburson/aitm/actions/runs/44834609313",
+    "source": {
+      "commit": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+      "tree": "508f236b0712256cc4570d30395baa01a4053936"
+    },
+    "verified_artifacts": 6,
+    "workflow": {
+      "attempt": "1",
+      "event": "workflow_dispatch",
+      "repository": "kburson/aitm",
+      "run_id": "44834609313",
+      "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+    }
+  },
+  "plan_start_delay_seconds": 16754.0,
+  "registration_delay_seconds": 16752.0,
+  "schedule": {
+    "artifacts": [
+      {
+        "digest": "sha256:3c3ddba8c388f230d85d12a64770a38a5e2bacf221bf590243d0c4af0051fe7f",
+        "id": 14691430704,
+        "name": "category-a1-darwin-local-integration"
+      },
+      {
+        "digest": "sha256:6b18274b80825366ccc49cd7f32a835c2cdb61a9a1810992a12fd5be3bd0a1e9",
+        "id": 14690867535,
+        "name": "category-a1-darwin-systems-integration"
+      },
+      {
+        "digest": "sha256:dcb6d65ac5583612cbdd17195a4f3f36a12a48ab3f52ff50f78215137ffe1028",
+        "id": 14691355780,
+        "name": "category-a1-linux-fast-unit"
+      },
+      {
+        "digest": "sha256:1393afda8a21784f112393be42a92adc73a4caf7a30e395e5e81e8b7ef3d5b35",
+        "id": 14690937910,
+        "name": "category-a1-linux-local-integration"
+      },
+      {
+        "digest": "sha256:1b79115ef8e6eab674250f8c27d9639afedbdfc0dcb3e7970ca537552d8d2df8",
+        "id": 14690039577,
+        "name": "category-a1-linux-systems-integration"
+      },
+      {
+        "digest": "sha256:5fd8de9e94b417f5986e247639d64876fae60ee71d29a9dc5edf29d16e3d1216",
+        "id": 14690239351,
+        "name": "category-verdict-a1"
+      }
+    ],
+    "children": {
+      "cli-help": 1,
+      "service-one-shot": 1
+    },
+    "empty_categories": [
+      "slow-unit"
+    ],
+    "exact_phase_parity": true,
+    "jobs": {
+      "darwin / local-integration": {
+        "bootstrap_seconds": 8.0,
+        "completed": "2026-11-21T04:02:47Z",
+        "created": "2026-11-21T04:02:20Z",
+        "execution_seconds": 0.542,
+        "job_id": 136723744623,
+        "plan_sha256": "8140c2ddec16fe7bbf026cc375b579682193fe1d6e5dfb1fdad7dfffac0aac0b",
+        "queue_seconds": 2.0,
+        "setup_seconds": 10.133,
+        "started": "2026-11-21T04:02:22Z",
+        "wall_seconds": 25.0
+      },
+      "darwin / systems-integration": {
+        "bootstrap_seconds": 8.0,
+        "completed": "2026-11-21T04:02:50Z",
+        "created": "2026-11-21T04:02:20Z",
+        "execution_seconds": 1.295,
+        "job_id": 136723744674,
+        "plan_sha256": "ae637a94d2a8969613b528559bb781cd7a0f799830aee443a3d2285335c2070d",
+        "queue_seconds": 2.0,
+        "setup_seconds": 12.445,
+        "started": "2026-11-21T04:02:22Z",
+        "wall_seconds": 28.0
+      },
+      "linux / fast-unit": {
+        "bootstrap_seconds": 11.0,
+        "completed": "2026-11-21T04:02:48Z",
+        "created": "2026-11-21T04:02:20Z",
+        "execution_seconds": 3.931,
+        "job_id": 136723744644,
+        "plan_sha256": "ea5c8322acf603b13d1202645d6236da693f6f05f317a1c84856d923fc6c9c84",
+        "queue_seconds": 2.0,
+        "setup_seconds": 6.032,
+        "started": "2026-11-21T04:02:22Z",
+        "wall_seconds": 26.0
+      },
+      "linux / local-integration": {
+        "bootstrap_seconds": 10.0,
+        "completed": "2026-11-21T04:06:52Z",
+        "created": "2026-11-21T04:02:20Z",
+        "execution_seconds": 251.788,
+        "job_id": 136723744656,
+        "plan_sha256": "3e7c733b8bc971e77978b5830e66412cff4eb9792cc68ddbc6ff5e2bb449486b",
+        "queue_seconds": 1.0,
+        "setup_seconds": 7.182,
+        "started": "2026-11-21T04:02:21Z",
+        "wall_seconds": 271.0
+      },
+      "linux / systems-integration": {
+        "bootstrap_seconds": 9.0,
+        "completed": "2026-11-21T04:05:02Z",
+        "created": "2026-11-21T04:02:20Z",
+        "execution_seconds": 141.205,
+        "job_id": 136723744730,
+        "plan_sha256": "e1ce3ef064d1a1cc8e9cbc485db73729de9a6a964e8e4cff4b60064e3a3e2f7f",
+        "queue_seconds": 2.0,
+        "setup_seconds": 7.243,
+        "started": "2026-11-21T04:02:22Z",
+        "wall_seconds": 160.0
+      },
+      "plan": {
+        "completed": "2026-11-21T04:02:19Z",
+        "created": "2026-11-21T04:02:12Z",
+        "job_id": 136723715306,
+        "queue_seconds": 2.0,
+        "started": "2026-11-21T04:02:14Z",
+        "wall_seconds": 5.0
+      },
+      "reconcile": {
+        "completed": "2026-11-21T04:07:10Z",
+        "created": "2026-11-21T04:06:53Z",
+        "job_id": 136724930189,
+        "queue_seconds": 2.0,
+        "started": "2026-11-21T04:06:55Z",
+        "wall_seconds": 15.0
+      }
+    },
+    "observed_skips": [
+      [
+        "tools/ci/tests/test_tia_snapshot.py::test_local_git_config_and_path_identity",
+        "filesystem has no normalization aliases"
+      ]
+    ],
+    "reconciled_verdict_sha256": "01bdf4efa8a5e178bbbba48e380d8be5472b9f1df7053fb154a159011ead00f9",
+    "registration": "2026-11-21T04:02:12Z",
+    "run_url": "https://github.com/kburson/aitm/actions/runs/44864075824",
+    "source": {
+      "commit": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+      "tree": "508f236b0712256cc4570d30395baa01a4053936"
+    },
+    "started": "2026-11-21T04:02:12Z",
+    "total_ids": 2333,
+    "total_phases": 7083,
+    "updated": "2026-11-21T04:07:11Z",
+    "workflow": {
+      "attempt": "1",
+      "event": "schedule",
+      "repository": "kburson/aitm",
+      "run_id": "44864075824",
+      "workflow": "kburson/aitm/.github/workflows/category-full-sweep.yml@refs/heads/trunk"
+    }
+  },
+  "scheduled_plan_started": "2026-11-21T04:02:14Z"
+}
