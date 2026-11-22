@@ -4,5 +4,6 @@
   "provisioner_id": 1082467,
   "app_bot_id": null,
   "app_id": null,
-  "installation_id": null
+  "installation_id": null,
+  "activation_floor": 4
 }

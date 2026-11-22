@@ -34,6 +34,7 @@ BINDING_FIELDS = {
     "app_bot_id",
     "app_id",
     "installation_id",
+    "activation_floor",
 }
 FAILURES = {"failure", "timed_out"}
 IGNORED = {"cancelled", "action_required", "neutral", "skipped", "stale"}
@@ -190,7 +191,8 @@ def load_binding():
         isinstance(binding, dict)
         and set(binding) == BINDING_FIELDS
         and all(positive(value) for value in binding.values())
-        and binding["app_bot_id"] != SHARED_ACTIONS_BOT,
+        and binding["app_bot_id"] != SHARED_ACTIONS_BOT
+        and binding["activation_floor"] >= FLOOR,
         "publisher issue and dedicated App binding have not been provisioned",
     )
     return binding
@@ -236,6 +238,10 @@ def validate_snapshot(repo, binding):
         binding["app_bot_id"] != SHARED_ACTIONS_BOT
         and editor == {"__typename": "Bot", "databaseId": binding["app_bot_id"]},
         "advisory edit was not attributed to the dedicated App",
+    )
+    require(
+        record["run"]["run_number"] >= binding["activation_floor"],
+        "advisory record predates its reviewed activation floor",
     )
     utc_timestamp(edited_at)
     return Snapshot(body, edited_at, editor["databaseId"], record)
@@ -450,7 +456,7 @@ def read_attempt(github, run):
     return route, attempt
 
 
-def select_record(github, runs, previous):
+def select_record(github, runs, previous, activation_floor):
     old = previous["run"] if previous else None
     if old:
         same = runs.get(old["run_number"])
@@ -471,7 +477,7 @@ def select_record(github, runs, previous):
                 and attempt["conclusion"] == old["conclusion"],
                 "scheduled history conflicts with the persisted watermark",
             )
-    minimum = old["run_number"] + 1 if old else FLOOR
+    minimum = old["run_number"] + 1 if old else activation_floor
     for number in sorted(runs, reverse=True):
         if number < minimum:
             break
@@ -501,12 +507,12 @@ def select_record(github, runs, previous):
     return None
 
 
-def reconcile(github, previous):
+def reconcile(github, previous, *, activation_floor=FLOOR):
     verify_target(github)
     for _ in range(2):
         cutoff = datetime.now(timezone.utc).replace(microsecond=0)
         runs = history(github, cutoff)
-        replacement = select_record(github, runs, previous)
+        replacement = select_record(github, runs, previous, activation_floor)
         if runs == history(github, cutoff):
             require(
                 previous is not None or replacement is not None,
@@ -516,10 +522,10 @@ def reconcile(github, previous):
     raise Hold("scheduled history membership did not stabilize")
 
 
-def publish(github, store):
+def publish(github, store, *, activation_floor=FLOOR):
     initial = store.read()
     for _ in range(2):
-        desired = reconcile(github, initial.record)
+        desired = reconcile(github, initial.record, activation_floor=activation_floor)
         if desired is None:
             return "unchanged"
         body = render_body(desired)
@@ -554,8 +560,12 @@ def main(argv=None):
             )
             app_token = os.environ.pop("SWEEP_FLAG_APP_TOKEN", None)
             require(app_token, "dedicated App installation token unavailable")
-            store = IssueStore(github, load_binding(), app_token)
-            print(f"Scheduled sweep advisory: {publish(github, store)}")
+            binding = load_binding()
+            store = IssueStore(github, binding, app_token)
+            result = publish(
+                github, store, activation_floor=binding["activation_floor"]
+            )
+            print(f"Scheduled sweep advisory: {result}")
     except Hold as exc:
         print(f"Scheduled sweep reconciliation unavailable: {exc}", file=sys.stderr)
         return 2

@@ -247,10 +247,10 @@ queries. It makes a body-only update with the installation token.
 
 A malformed body, unexpected editor, inaccessible issue, or unverified
 newer run causes the publisher to report unavailable reconciliation. The
-last verifiable decision remains visible with its result time. For a closed
+last verified decision remains visible while the stored record is valid. For a closed
 issue, verify its identity and body before restoring access. For a corrupt or
 missing record, stop the publisher and retain the issue edit history. Recover
-through a reviewed replacement binding with a floor at or above the last
-verified run number. If that number cannot be established, require a verified
+through a reviewed replacement binding. Set its `activation_floor` at or
+above the last verified run number. If that number cannot be established, require a verified
 scheduled run registered after the publisher was paused before initializing
 the replacement. Run the same reconciliation after restoring the binding.

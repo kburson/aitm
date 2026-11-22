@@ -19,6 +19,7 @@ BINDING = {
     "app_bot_id": 222,
     "app_id": 333,
     "installation_id": 444,
+    "activation_floor": 4,
 }
 
 
@@ -301,6 +302,8 @@ def test_actor_and_issue_identity_bound_to_validated_body():
     }
     repo = {"nameWithOwner": flag.REPO, "databaseId": flag.REPO_ID, "issue": issue}
     assert flag.validate_snapshot(repo, BINDING).record == record
+    with pytest.raises(Hold, match="predates its reviewed activation floor"):
+        flag.validate_snapshot(repo, dict(BINDING, activation_floor=7))
     with pytest.raises(Hold):
         flag.validate_snapshot(repo, dict(BINDING, issue_id=1))
     issue["editor"]["databaseId"] = 41898282
@@ -404,3 +407,38 @@ def test_equal_result_after_ambiguous_patch_does_not_retry_a_different_update(
     with pytest.raises(Hold, match="changed during publication"):
         flag.publish(Provider(attempt(5, "failure")), store)
     assert store.record == different and len(store.writes) == 1
+
+
+def test_replacement_binding_cannot_bootstrap_from_pre_recovery_result():
+    older = attempt(5, "failure")
+    qualifying = attempt(7, "failure")
+    store = Store()
+    with pytest.raises(Hold, match="no verified initial sweep result"):
+        flag.publish(Provider(older), store, activation_floor=7)
+    assert not store.writes
+    assert (
+        flag.publish(Provider(older, qualifying), store, activation_floor=7) == "active"
+    )
+    assert store.record == decision(qualifying, "active")
+
+
+def test_unverified_newer_candidate_preserves_existing_clear_over_older_failure():
+    saved = attempt(5, "success")
+    failure = attempt(7, "failure")
+    unverified = attempt(8, "success")
+    store = Store(decision(saved, "clear"))
+    github = Provider(saved, failure, unverified)
+    github.job_passing = False
+    with pytest.raises(Hold, match="lacks one exact reconcile"):
+        flag.publish(github, store)
+    assert store.record == decision(saved, "clear") and not store.writes
+
+
+def test_baseline_cannot_be_reinterpreted_as_a_failure():
+    floor = attempt(
+        4, "failure", run_id=44864075824, sha="8ab84ba0590286d4655ea94e4d9de99f25ea1f2e"
+    )
+    store = Store()
+    with pytest.raises(Hold):
+        flag.publish(Provider(floor), store)
+    assert not store.writes

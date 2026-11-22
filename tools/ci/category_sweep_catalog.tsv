@@ -2358,3 +2358,6 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_capped_history_subdivides_and_
 tools/ci/tests/test_scheduled_sweep_flag.py::test_same_count_paging_rejects_duplicate_run_identity	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_missing_history_preserves_existing_but_cannot_initialize	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_equal_result_after_ambiguous_patch_does_not_retry_a_different_update	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_replacement_binding_cannot_bootstrap_from_pre_recovery_result	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_newer_candidate_preserves_existing_clear_over_older_failure	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_baseline_cannot_be_reinterpreted_as_a_failure	fast-unit	yes	yes
