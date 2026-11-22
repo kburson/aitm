@@ -217,3 +217,40 @@ when there is no corresponding scheduled run and note any later arrival. For a
 registered run, use its run ID and attempt to find the expected worker
 artifacts and `category-verdict-a<attempt>`. A failed, cancelled or incomplete
 attempt has no passing verdict. A manual run has its own event and receipts.
+
+### Scheduled sweep advisory
+
+[The advisory issue](https://github.com/kburson/aitm/issues/418) shows the
+last verified scheduled result and its exact original attempt. A failure or
+timeout sets the flag. Only a later scheduled run with verified reconciliation
+clears it. A rerun, cancelled run, manual sweep or missing slot does not alter
+the decision. The timestamp is GitHub's last update time for the accepted
+original attempt. It is not a heartbeat.
+
+Completion and manual requests use the same serialized publisher. After a
+missed update or a failed publisher job, reconcile from authenticated Actions
+history on `trunk`.
+
+```sh
+gh workflow run scheduled-sweep-flag.yml --ref trunk
+gh run list --workflow scheduled-sweep-flag.yml --branch trunk --limit 5
+```
+
+Provision the dedicated App with Issues write and implicit Metadata read on
+this repository only. Store the private key in the trunk-only
+`scheduled-sweep-advisory` environment as `SWEEP_FLAG_APP_PRIVATE_KEY`.
+Keep the App, installation, editor and issue identities in the reviewed
+`tools/ci/scheduled_sweep_flag.json` binding. Verify App-authored body readback
+on an isolated issue before enabling production publication. The publisher
+uses the separate workflow token for read-only evidence and issue identity
+queries. It makes a body-only update with the installation token.
+
+A malformed body, unexpected editor, inaccessible issue, or unverified
+newer run causes the publisher to report unavailable reconciliation. The
+last verifiable decision remains visible with its result time. For a closed
+issue, verify its identity and body before restoring access. For a corrupt or
+missing record, stop the publisher and retain the issue edit history. Recover
+through a reviewed replacement binding with a floor at or above the last
+verified run number. If that number cannot be established, require a verified
+scheduled run registered after the publisher was paused before initializing
+the replacement. Run the same reconciliation after restoring the binding.

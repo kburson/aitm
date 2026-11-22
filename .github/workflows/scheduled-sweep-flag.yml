@@ -1,0 +1,65 @@
+name: Publish scheduled sweep advisory
+
+on:
+  workflow_run:
+    workflows: [Category full sweep]
+    types: [completed]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: scheduled-category-sweep-advisory
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.repository == 'kburson/aitm' &&
+      github.repository_id == '1450406435' &&
+      github.ref == 'refs/heads/trunk' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.workflow_id == 425235652 &&
+        github.event.workflow_run.event == 'schedule' &&
+        github.event.workflow_run.head_branch == 'trunk' &&
+        github.event.workflow_run.head_repository.id == 1450406435))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: scheduled-sweep-advisory
+    permissions:
+      actions: read
+      checks: read
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.10.6'
+          python-version: '3.13.9'
+          enable-cache: false
+      - name: Read reviewed publisher binding
+        id: binding
+        run: python tools/ci/scheduled_sweep_flag.py binding >> "$GITHUB_OUTPUT"
+      - name: Mint the dedicated App installation token
+        id: app
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          app-id: ${{ steps.binding.outputs.app_id }}
+          private-key: ${{ secrets.SWEEP_FLAG_APP_PRIVATE_KEY }}
+          owner: kburson
+          repositories: aitm
+          permission-issues: write
+      - name: Reconcile and read back the advisory
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SWEEP_FLAG_APP_TOKEN: ${{ steps.app.outputs.token }}
+          EXPECTED_INSTALLATION: ${{ steps.binding.outputs.installation_id }}
+          ACTUAL_INSTALLATION: ${{ steps.app.outputs.installation-id }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_INSTALLATION" = "$ACTUAL_INSTALLATION"
+          python tools/ci/scheduled_sweep_flag.py publish
