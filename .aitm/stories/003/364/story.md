@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 364
 title: "[Spike] Find where a person and an agent can read one flag"
 kind: "spike"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/364"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:29:31Z"
+updated: "2026-11-22T00:37:02Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -37,3 +37,5 @@ Choose one durable location for the warning that a person can inspect and an age
 [Delivery plan](plan/2026-11-21-364-delivery-plan.md).
 
 [Research receipt](plan/2026-11-21-364-advisory-store-contract.md) and [evidence](attachments/2026-11-21-364-storage-examples.json).
+
+[Delivery sign-off](retro/2026-11-21-364-sign-off.md).
