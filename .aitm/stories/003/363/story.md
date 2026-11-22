@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 363
 title: "[Spike] Identify the run a failure flag should watch"
 kind: "spike"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/363"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:17:39Z"
+updated: "2026-11-22T00:24:25Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-363-delivery-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-363-delivery-plan.md", "plan/2026-11-21-363-scheduled-run-contract.md"], "attachments": ["attachments/2026-11-21-363-actions-evidence.json"]}
 expansions: []
 trips: []
 ---
@@ -35,3 +35,5 @@ Confirm that the flag watches the production scheduled Category full sweep from 
 - Deliver the research receipt via a PR to `planning` with independent Grok PR review on the current candidate before merge. #365 consumes the accepted receipt.
 
 [Delivery plan](plan/2026-11-21-363-delivery-plan.md).
+
+[Research receipt](plan/2026-11-21-363-scheduled-run-contract.md) and [evidence](attachments/2026-11-21-363-actions-evidence.json).
