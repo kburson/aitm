@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 364
 title: "[Spike] Find where a person and an agent can read one flag"
 kind: "spike"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/364"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-22T00:17:43Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-364-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -26,14 +26,12 @@ trips: []
 
 Project 24 Rank 640. Priority P2. Size S.
 
-Question: where can one current flag be stored so a person and an agent can both read it, while the flag stays off the merge route, off required status checks, and outside workspace control?
+Choose one durable location for the warning that a person can inspect and an agent can query. Evaluate a dedicated GitHub issue with one versioned record and a generated summary as the leading candidate.
 
-Name one place and the exact fields a check would read. Explain how that place leaves merges and workspaces unaffected.
+## Acceptance
 
-## Bound
+- Specify how the publisher binds the target, which permissions it needs, and how readers access it. Restrict publication to the one advisory record. Keep the publisher outside the sweep workflow and outside merge and workspace authority.
+- Define exact fields for active and clear results, evidence link and UTC time, the persisted #363 ordering watermark, and the response when the record is uninitialized, unavailable or invalid. Keep the decision and watermark in one update.
+- Deliver the research receipt via a PR to `planning` with independent Grok PR review on the current candidate before merge. #365 reconciles the storage and evidence contracts at JIT.
 
-This is research for #362. Write the finding. Publish no flag and leave branch protection unchanged.
-
-## Handoff
-
-#365 stores the flag in the place this receipt names.
+[Delivery plan](plan/2026-11-21-364-delivery-plan.md).

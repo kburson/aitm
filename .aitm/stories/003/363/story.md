@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 363
 title: "[Spike] Identify the run a failure flag should watch"
 kind: "spike"
-state: "backlog"
+state: "planning"
 issue: "https://github.com/kburson/aitm/issues/363"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-22T00:17:39Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-363-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -26,14 +26,12 @@ trips: []
 
 Project 24 Rank 630. Priority P2. Size S.
 
-Question: which current workflow is the scheduled build this flag should watch, and what is absent when no production scheduled run exists?
+Confirm that the flag watches the production scheduled Category full sweep from #361 in `kburson/aitm`, workflow ID `425235652`, path `.github/workflows/category-full-sweep.yml`, event `schedule`, branch `trunk`.
 
-Name the repository, workflow file, and event. When the run does not exist yet, name the story that would create it and stop. The candidate story is #361 under #356. Leave the blocker graph unchanged. Create no workflow in this spike.
+## Acceptance
 
-## Bound
+- Read the canonical workflow metadata and exact attempt for [verified run 44864075824](https://github.com/kburson/aitm/actions/runs/44864075824/attempts/1). Record the authenticated identity, source, timestamps and successful same-attempt reconcile job.
+- Define the activation floor and ordering key, what constitutes a qualifying failure or success, and the disposition of manual events, reruns, cancellations, incomplete runs, delayed or missing slots, and API errors. Specify the rule for a newer qualifying failure while the flag is active.
+- Deliver the research receipt via a PR to `planning` with independent Grok PR review on the current candidate before merge. #365 consumes the accepted receipt.
 
-This is research for #362. Write the finding. A schedule, a flag, and a merge rule stay unimplemented here.
-
-## Handoff
-
-#365 records the flag for the run this receipt names. When the run is not in production yet, that feature stays blocked until the run exists.
+[Delivery plan](plan/2026-11-21-363-delivery-plan.md).

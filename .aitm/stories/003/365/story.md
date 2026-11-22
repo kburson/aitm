@@ -10,12 +10,12 @@ children: []
 blocking: [366]
 blocked-by: [363, 364]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-18T23:38:27Z"
+updated: "2026-11-22T00:16:14Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-365-delivery-plan.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -26,10 +26,13 @@ trips: []
 
 Project 24 Rank 650. Priority P2. Size S.
 
-Record one flag from the run named by the accepted #363 receipt, in the place named by the accepted #364 receipt.
+Publish one durable advisory from the authenticated scheduled sweep into the store specified by #364. Begin development after both #363 and #364 receipts are accepted and their ordering and storage contracts agree.
 
-## Development
+## Acceptance
 
-Set the flag when that run fails. Clear it when a later run of the same workflow passes. Store the run identity and the time. Merges, workspace pause, and repair-owner nomination stay outside this story. This story does not create the watched run.
+- A qualifying failure sets or refreshes the alert with the exact attempt and time. A distinct later verified scheduled success clears it. Duplicate, stale, unrelated, cancelled or incomplete events preserve the last verified decision.
+- Reconcile from authenticated Actions history. Serialize the two publication triggers and retain the ordering watermark on clear. Fail safely on incomplete history, store errors and ambiguous writes. Verify deterministic replay using an isolated record.
+- Bind the publisher to the one advisory store outside the sweep workflow. Verify the deployed record against authentic scheduled history and document recovery for missed updates.
+- Deliver the PR to `trunk` with canonical CI, trusted verification and an independent Grok PR review on the current candidate before merging. #366 begins after verified delivery.
 
-Stay blocked until #363 and #364 are accepted. When #363 names a run that is not in production yet, stay blocked until that run exists.
+[Delivery plan](plan/2026-11-21-365-delivery-plan.md).
