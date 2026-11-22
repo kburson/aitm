@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 364
 title: "[Spike] Find where a person and an agent can read one flag"
 kind: "spike"
-state: "planning"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/364"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:17:43Z"
+updated: "2026-11-22T00:29:31Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-364-delivery-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-364-delivery-plan.md", "plan/2026-11-21-364-advisory-store-contract.md"], "attachments": ["attachments/2026-11-21-364-storage-examples.json"]}
 expansions: []
 trips: []
 ---
@@ -35,3 +35,5 @@ Choose one durable location for the warning that a person can inspect and an age
 - Deliver the research receipt via a PR to `planning` with independent Grok PR review on the current candidate before merge. #365 reconciles the storage and evidence contracts at JIT.
 
 [Delivery plan](plan/2026-11-21-364-delivery-plan.md).
+
+[Research receipt](plan/2026-11-21-364-advisory-store-contract.md) and [evidence](attachments/2026-11-21-364-storage-examples.json).

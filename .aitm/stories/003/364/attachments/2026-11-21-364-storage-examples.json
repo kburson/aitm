@@ -1,0 +1,99 @@
+{
+  "observed_at": "2026-11-22T00:29:07+00:00",
+  "read_only_probe": {
+    "repository": {
+      "default_branch": "trunk",
+      "full_name": "kburson/aitm",
+      "has_issues": true,
+      "id": 1450406435,
+      "visibility": "public"
+    },
+    "rest_issue": {
+      "has_body": true,
+      "html_url": "https://github.com/kburson/aitm/issues/362",
+      "id": 6429214304,
+      "is_pull_request": false,
+      "number": 362,
+      "repository_url": "https://api.github.com/repos/kburson/aitm",
+      "state": "open"
+    },
+    "web_http_status": 200,
+    "graphql": {
+      "node": {
+        "__typename": "Bot",
+        "databaseId": 41898282,
+        "login": "github-actions"
+      },
+      "repository": {
+        "databaseId": 1450406435,
+        "issue": {
+          "author": {
+            "__typename": "User",
+            "databaseId": 1082467
+          },
+          "databaseId": 6429214304,
+          "editor": {
+            "__typename": "User",
+            "databaseId": 1082467
+          },
+          "hasBody": "string",
+          "lastEditedAt": "2026-11-22T00:18:14Z",
+          "number": 362,
+          "state": "OPEN"
+        },
+        "nameWithOwner": "kburson/aitm"
+      }
+    },
+    "workflow_permissions": {
+      "can_approve_pull_request_reviews": false,
+      "default_workflow_permissions": "read"
+    }
+  },
+  "examples": {
+    "clear_using_363_baseline": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "clear",
+      "run": {
+        "repository_id": 1450406435,
+        "workflow_id": 425235652,
+        "run_id": 44864075824,
+        "run_number": 4,
+        "run_attempt": 1,
+        "head_sha": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+        "conclusion": "success",
+        "result_at": "2026-11-21T04:07:11Z"
+      }
+    },
+    "active_using_synthetic_run": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "active",
+      "run": {
+        "repository_id": 1450406435,
+        "workflow_id": 425235652,
+        "run_id": 90000000001,
+        "run_number": 5,
+        "run_attempt": 1,
+        "head_sha": "1111111111111111111111111111111111111111",
+        "conclusion": "failure",
+        "result_at": "2026-11-22T00:01:00Z"
+      }
+    },
+    "provisioned_never_written": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "uninitialized",
+      "run": null
+    },
+    "uninitialized_reader_output": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "unavailable",
+      "run": null,
+      "reason": "uninitialized"
+    },
+    "invalid_reader_output": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "unavailable",
+      "run": null,
+      "reason": "invalid-record"
+    }
+  }
+}
