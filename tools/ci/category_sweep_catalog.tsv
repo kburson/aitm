@@ -2368,3 +2368,20 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_baseline_cannot_be_reinterpret
 tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[200-{"id": 42}-expected0]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[404-{"message": "Not Found"}-None]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[403-{"message": "Forbidden"}-hold]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_authenticates_linked_attempt_without_writing[active-failure]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_authenticates_linked_attempt_without_writing[clear-success]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[uninitialized-uninitialized]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[malformed-invalid-record]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[unreadable-store-unavailable]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[unreachable-attempt-evidence-unavailable]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[missing-reconcile-evidence-unavailable]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[manual-run-evidence-mismatch]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[edited-conclusion-evidence-mismatch]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[edited-timestamp-evidence-mismatch]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[prior-to-activation-invalid-record]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[active-failure-False]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[active-failure-True]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[clear-success-False]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[clear-success-True]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[unavailable-None-False]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_check_cli_returns_status_and_keeps_formats_consistent[unavailable-None-True]	fast-unit	yes	yes
