@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 365
 title: "Record the scheduled-failure flag"
 kind: "story"
-state: "test"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/365"
 parent: 362
 children: []
 blocking: [366]
 blocked-by: [363, 364]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T21:34:06Z"
+updated: "2026-11-22T21:45:03Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -40,3 +40,5 @@ Publish one durable advisory from the authenticated scheduled sweep into the sto
 [Pickup and candidate verification](plan/2026-11-21-365-jit-and-test.md).
 
 [Owner-approved Actions token amendment](plan/2026-11-22-365-actions-token-amendment.md).
+
+[Verified delivery and sign-off](retro/2026-11-22-365-sign-off.md).

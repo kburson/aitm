@@ -1,0 +1,33 @@
+{
+  "publisher": {
+    "id": 45073742200,
+    "run_attempt": 1,
+    "head_sha": "3d70251d35b8e7ffba794d32bfdd83502fd62478",
+    "head_branch": "trunk",
+    "workflow_id": 427172534,
+    "path": ".github/workflows/scheduled-sweep-flag.yml",
+    "event": "workflow_dispatch",
+    "conclusion": "success",
+    "html_url": "https://github.com/kburson/aitm/actions/runs/45073742200",
+    "created_at": "2026-11-22T21:44:05Z",
+    "updated_at": "2026-11-22T21:44:28Z"
+  },
+  "advisory": {
+    "issue": "https://github.com/kburson/aitm/issues/418",
+    "body_matches_authentic_run": true,
+    "display_state": "clear",
+    "run": {
+      "repository_id": 1450406435,
+      "workflow_id": 425235652,
+      "run_id": 44979940079,
+      "run_number": 5,
+      "run_attempt": 1,
+      "head_sha": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+      "conclusion": "success",
+      "result_at": "2026-11-22T03:22:17Z"
+    },
+    "attempt_url": "https://github.com/kburson/aitm/actions/runs/44979940079/attempts/1",
+    "edited_at": "2026-11-22T21:44:23Z",
+    "editor_id": 41898282
+  }
+}
