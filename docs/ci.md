@@ -217,3 +217,44 @@ when there is no corresponding scheduled run and note any later arrival. For a
 registered run, use its run ID and attempt to find the expected worker
 artifacts and `category-verdict-a<attempt>`. A failed, cancelled or incomplete
 attempt has no passing verdict. A manual run has its own event and receipts.
+
+### Scheduled sweep advisory
+
+[The advisory issue](https://github.com/kburson/aitm/issues/418) shows the
+last verified scheduled result and its exact original attempt. A failure or
+timeout sets the flag. Only a later scheduled run with verified reconciliation
+clears it. A rerun, cancelled run, manual sweep or missing slot does not alter
+the decision. The timestamp is GitHub's last update time for the accepted
+original attempt. It is not a heartbeat.
+
+Completion and manual requests use the same serialized publisher. After a
+missed update or a failed publisher job, reconcile from authenticated Actions
+history on `trunk`.
+
+```sh
+gh workflow run scheduled-sweep-flag.yml --ref trunk
+gh run list --workflow scheduled-sweep-flag.yml --branch trunk --limit 5
+```
+
+The publisher uses its built-in Actions token and updates only the body of
+the issue pinned in `tools/ci/scheduled_sweep_flag.json`. The issue is an
+editable advisory cache. Open its linked sweep attempt and verify the
+source and conclusion in GitHub Actions before acting on the flag.
+Reconciliation derives the result from authenticated Actions history. An
+unverified newer result or unavailable history leaves the body as it was.
+
+Use the issue's edit history to inspect changes to #418. A valid manual
+edit cannot set the run ordering used by reconciliation. A newer cached
+link missing from the run list is checked directly against Actions. A
+dead or unrelated link cannot suppress a verified result. If the body is
+malformed, use its edit history to recover the last generated advisory and
+verify the linked result before reconciling again. For backlog item changes
+and timing, see the `planning` branch history.
+
+For a closed
+issue, verify its identity and body before restoring access. For a corrupt or
+missing record, stop the publisher and retain the issue edit history. Recover
+through a reviewed replacement binding. Set its `activation_floor` at or
+above the last verified run number. If that number cannot be established, require a verified
+scheduled run registered after the publisher was paused before initializing
+the replacement. Run the same reconciliation after restoring the binding.

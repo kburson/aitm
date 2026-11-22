@@ -2332,3 +2332,39 @@ tools/ci/tests/test_hosted_category_sweep.py::test_hosted_reconciliation_refuses
 tools/ci/tests/test_hosted_category_sweep.py::test_attempt_is_included_in_worker_plan_binding	fast-unit	yes	yes
 tools/ci/tests/test_category_sweep.py::test_workspace_uses_private_platform_roots[linux]	fast-unit	yes	yes
 tools/ci/tests/test_category_sweep.py::test_workspace_uses_private_platform_roots[darwin]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_failure_refresh_clear_and_replayed_notification	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_manually_rerun_failure_stays_decisive_original_attempt	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_newer_nondecisive_evidence_keeps_watermark[queued-None]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_newer_nondecisive_evidence_keeps_watermark[completed-cancelled]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_newer_nondecisive_evidence_keeps_watermark[completed-neutral]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[event-workflow_dispatch]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[workflow_id-123]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[head_branch-staging]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[head_repository-value3]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[run_attempt-2]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_invalid_higher_original_attempt_preserves_warning[conclusion-unknown]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[missing-job]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[wrong-blob]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[missing-attempt]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[wrong-check]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unstable_listing_stops_before_writing	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision[111]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision[41898282]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_authentic_attempt_repairs_a_contradictory_cached_result	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_newer_linked_attempt_unavailability_does_not_clear_warning	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unrelated_cached_link_cannot_block_verified_sweep	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_ambiguous_write_readback_and_retry	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_changed_store_before_patch_never_overwrites	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_body_strict_json_round_trip_and_canonical_link	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_issue_identity_bound_and_editor_retained_as_metadata	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_patch_only_sends_body_through_the_existing_github_client	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_capped_history_subdivides_and_deduplicates_boundary	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_same_count_paging_rejects_duplicate_run_identity	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_missing_history_preserves_existing_but_cannot_initialize	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_equal_result_after_ambiguous_patch_does_not_retry_a_different_update	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_replacement_binding_cannot_bootstrap_from_pre_recovery_result	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_newer_candidate_preserves_existing_clear_over_older_failure	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_baseline_cannot_be_reinterpreted_as_a_failure	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[200-{"id": 42}-expected0]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[404-{"message": "Not Found"}-None]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[403-{"message": "Forbidden"}-hold]	fast-unit	yes	yes
