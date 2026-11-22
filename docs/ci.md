@@ -244,7 +244,9 @@ Reconciliation derives the result from authenticated Actions history. An
 unverified newer result or unavailable history leaves the body as it was.
 
 Use the issue's edit history to inspect changes to #418. A valid manual
-edit cannot set the run ordering used by reconciliation. If the body is
+edit cannot set the run ordering used by reconciliation. A newer cached
+link missing from the run list is checked directly against Actions. A
+dead or unrelated link cannot suppress a verified result. If the body is
 malformed, use its edit history to recover the last generated advisory and
 verify the linked result before reconciling again. For backlog item changes
 and timing, see the `planning` branch history.

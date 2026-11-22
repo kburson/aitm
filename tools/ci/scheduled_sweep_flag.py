@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -24,7 +25,6 @@ FLOOR_SHA = "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e"
 SCHEDULE_DEPLOYED = datetime(2026, 11, 20, 23, 8, 52, tzinfo=timezone.utc)
 SCHEMA = "aitm.scheduled-sweep-flag/v1"
 TITLE = "Scheduled category full sweep advisory"
-SHARED_ACTIONS_BOT = 41898282
 BINDING_PATH = Path(__file__).with_suffix(".json")
 BINDING_FIELDS = {
     "issue_number",
@@ -263,6 +263,43 @@ class IssueStore:
         )
 
 
+class SweepGitHub(GitHub):
+    def optional_attempt(self, run_id):
+        """Distinguish a missing cached link from an unavailable GitHub API."""
+        try:
+            response = subprocess.run(
+                [
+                    "gh",
+                    "api",
+                    "--hostname",
+                    "github.com",
+                    "--method",
+                    "GET",
+                    "--include",
+                    f"repos/{REPO}/actions/runs/{run_id}/attempts/1",
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            raise Hold("cached attempt unavailable") from None
+        headers, separator, body = response.stdout.partition("\n\n")
+        status = headers.splitlines()[0].split() if headers else []
+        if response.returncode != 0 and status[1:2] == ["404"]:
+            return None
+        require(
+            response.returncode == 0
+            and status[1:2] == ["200"]
+            and separator
+            and len(body.encode()) <= 65536,
+            "cached attempt unavailable",
+        )
+        return decode_json(body)
+
+
 def verify_target(github):
     repo = github.document("")
     require(
@@ -390,9 +427,11 @@ def verify_success(github, run, attempt, route):
     )
 
 
-def read_attempt(github, run):
-    route = f"actions/runs/{run.run_id}/attempts/1"
-    attempt = github.document(route)
+def attempt_route(run_id):
+    return f"actions/runs/{run_id}/attempts/1"
+
+
+def record_for_attempt(github, run, attempt):
     require(
         identity(attempt) == run
         and type(attempt["run_attempt"]) is int
@@ -402,7 +441,7 @@ def read_attempt(github, run):
     )
     status, conclusion = attempt["status"], attempt["conclusion"]
     if status in PENDING and conclusion is None:
-        return route, None
+        return None
     require(
         status == "completed" and isinstance(conclusion, str),
         "unrecognized original attempt status",
@@ -417,7 +456,26 @@ def read_attempt(github, run):
         conclusion in FAILURES | IGNORED | {"success"},
         "unrecognized original attempt conclusion",
     )
-    return route, attempt
+    if conclusion in IGNORED:
+        return None
+    if conclusion == "success":
+        verify_success(github, run, attempt, attempt_route(run.run_id))
+    return validate_record(
+        {
+            "schema": SCHEMA,
+            "state": "clear" if conclusion == "success" else "active",
+            "run": {
+                "repository_id": REPO_ID,
+                "workflow_id": WORKFLOW_ID,
+                "run_id": run.run_id,
+                "run_number": run.number,
+                "run_attempt": 1,
+                "head_sha": run.source,
+                "conclusion": conclusion,
+                "result_at": attempt["updated_at"],
+            },
+        }
+    )
 
 
 def select_record(github, runs, activation_floor):
@@ -425,52 +483,58 @@ def select_record(github, runs, activation_floor):
         if number < activation_floor:
             break
         run = runs[number]
-        route, attempt = read_attempt(github, run)
-        if attempt is None or attempt["conclusion"] in IGNORED:
-            continue
-        conclusion = attempt["conclusion"]
-        if conclusion == "success":
-            verify_success(github, run, attempt, route)
-        return validate_record(
-            {
-                "schema": SCHEMA,
-                "state": "clear" if conclusion == "success" else "active",
-                "run": {
-                    "repository_id": REPO_ID,
-                    "workflow_id": WORKFLOW_ID,
-                    "run_id": run.run_id,
-                    "run_number": number,
-                    "run_attempt": 1,
-                    "head_sha": run.source,
-                    "conclusion": conclusion,
-                    "result_at": attempt["updated_at"],
-                },
-            }
-        )
+        attempt = github.document(attempt_route(run.run_id))
+        decision = record_for_attempt(github, run, attempt)
+        if decision:
+            return decision
     return None
 
 
-def reconcile(github, *, activation_floor=FLOOR):
+def check_cached_link(github, cached, desired, runs, activation_floor):
+    """Treat a newer cached link as a hint when it is missing from the listing."""
+    if not cached:
+        return desired
+    run = cached["run"]
+    minimum = desired["run"]["run_number"] + 1 if desired else activation_floor
+    if run["run_number"] < minimum or any(
+        row.run_id == run["run_id"] for row in runs.values()
+    ):
+        return desired
+    attempt = github.optional_attempt(run["run_id"])
+    if attempt is None or (
+        attempt["workflow_id"],
+        attempt["event"],
+        attempt["head_branch"],
+    ) != (WORKFLOW_ID, "schedule", BRANCH):
+        return desired
+    linked = identity(attempt)
+    require(
+        linked.run_id == run["run_id"], "cached attempt endpoint disagrees with its ID"
+    )
+    if linked.number < minimum:
+        return desired
+    return record_for_attempt(github, linked, attempt) or desired
+
+
+def reconcile(github, *, activation_floor=FLOOR, cached=None):
     verify_target(github)
     for _ in range(2):
         cutoff = datetime.now(timezone.utc).replace(microsecond=0)
         runs = history(github, cutoff)
-        replacement = select_record(github, runs, activation_floor)
+        desired = select_record(github, runs, activation_floor)
+        desired = check_cached_link(github, cached, desired, runs, activation_floor)
         if runs == history(github, cutoff):
-            require(replacement is not None, "no verified sweep result")
-            return replacement
+            require(desired is not None, "no verified sweep result")
+            return desired
     raise Hold("scheduled history membership did not stabilize")
 
 
 def publish(github, store, *, activation_floor=FLOOR):
     initial = store.read()
     for _ in range(2):
-        desired = reconcile(github, activation_floor=activation_floor)
-        if initial.record and initial.editor_id == SHARED_ACTIONS_BOT:
-            require(
-                desired["run"]["run_number"] >= initial.record["run"]["run_number"],
-                "visible history is older than the cached Actions result",
-            )
+        desired = reconcile(
+            github, activation_floor=activation_floor, cached=initial.record
+        )
         body = render_body(desired)
         if initial.body == body:
             return "unchanged"
@@ -495,7 +559,7 @@ def main(argv=None):
         if args.operation == "bootstrap-body":
             print(render_body(None), end="")
         else:
-            github = GitHub(REPO)
+            github = SweepGitHub(REPO)
             require(
                 os.environ.get("GH_TOKEN"), "authenticated Actions token unavailable"
             )

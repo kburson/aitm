@@ -101,6 +101,11 @@ class Provider:
             return dict(self.job, head_sha=SHA, app=self.app, check_suite={"id": 50})
         raise AssertionError(path)
 
+    def optional_attempt(self, run_id):
+        if run_id in self.attempt_error:
+            raise Hold("cached attempt unavailable")
+        return deepcopy(self.runs.get(run_id))
+
     def pages(self, path, key):
         self.paths.append(path)
         if key == "workflow_runs":
@@ -149,8 +154,9 @@ def test_failure_refresh_clear_and_replayed_notification():
     assert store.record == decision(newer, "active")
     assert flag.publish(Provider(newer, first, passed), store) == "clear"
     assert store.record == decision(passed, "clear")
-    with pytest.raises(Hold, match="older than the cached Actions result"):
-        flag.publish(Provider(first, newer), store)
+    incomplete_index = Provider(first, newer, passed)
+    incomplete_index.listed.pop()
+    assert flag.publish(incomplete_index, store) == "unchanged"
     assert flag.publish(Provider(passed), store) == "unchanged"
     assert len(store.writes) == 3
 
@@ -236,10 +242,11 @@ def test_unstable_listing_stops_before_writing(monkeypatch):
     assert not store.writes
 
 
-def test_edit_cannot_supply_a_result_or_block_the_authentic_decision():
+@pytest.mark.parametrize("editor_id", [111, 41898282])
+def test_edit_cannot_supply_a_result_or_block_the_authentic_decision(editor_id):
     edited = attempt(50, "success")
     actual = attempt(7, "failure")
-    store = Store(decision(edited, "clear"), editor_id=111)
+    store = Store(decision(edited, "clear"), editor_id=editor_id)
     assert flag.publish(Provider(actual), store) == "active"
     assert store.record == decision(actual, "active")
     assert len(store.writes) == 1
@@ -249,6 +256,26 @@ def test_authentic_attempt_repairs_a_contradictory_cached_result():
     actual = attempt(5, "failure")
     store = Store(decision(dict(actual, conclusion="success"), "clear"))
     assert flag.publish(Provider(actual), store) == "active"
+    assert store.record == decision(actual, "active")
+
+
+def test_newer_linked_attempt_unavailability_does_not_clear_warning():
+    previous, older = attempt(8, "failure"), attempt(5, "success")
+    github = Provider(older, previous)
+    github.listed.pop()
+    github.attempt_error.add(previous["id"])
+    store = Store(decision(previous, "active"))
+    with pytest.raises(Hold, match="cached attempt unavailable"):
+        flag.publish(github, store)
+    assert not store.writes
+
+
+def test_unrelated_cached_link_cannot_block_verified_sweep():
+    edited, actual = attempt(50, "success"), attempt(7, "failure")
+    github = Provider(actual, dict(edited, event="workflow_dispatch"))
+    github.listed.pop()
+    store = Store(decision(edited, "clear"))
+    assert flag.publish(github, store) == "active"
     assert store.record == decision(actual, "active")
 
 
@@ -440,3 +467,31 @@ def test_baseline_cannot_be_reinterpreted_as_a_failure():
     with pytest.raises(Hold):
         flag.publish(Provider(floor), store)
     assert not store.writes
+
+
+@pytest.mark.parametrize(
+    "code,body,expected",
+    [
+        (200, '{"id": 42}', {"id": 42}),
+        (404, '{"message": "Not Found"}', None),
+        (403, '{"message": "Forbidden"}', "hold"),
+    ],
+)
+def test_cached_attempt_lookup_distinguishes_missing_from_unavailable(
+    monkeypatch, code, body, expected
+):
+    from subprocess import CompletedProcess
+
+    def response(args, **kwargs):
+        assert args[-1] == "repos/kburson/aitm/actions/runs/42/attempts/1"
+        return CompletedProcess(
+            args, int(code != 200), f"HTTP/2.0 {code} Status\n\n{body}"
+        )
+
+    monkeypatch.setattr(flag.subprocess, "run", response)
+    github = flag.SweepGitHub(flag.REPO)
+    if expected == "hold":
+        with pytest.raises(Hold, match="cached attempt unavailable"):
+            github.optional_attempt(42)
+    else:
+        assert github.optional_attempt(42) == expected

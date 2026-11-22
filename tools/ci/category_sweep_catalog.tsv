@@ -2348,8 +2348,11 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clear
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[missing-attempt]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[wrong-check]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unstable_listing_stops_before_writing	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision[111]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision[41898282]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_authentic_attempt_repairs_a_contradictory_cached_result	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_newer_linked_attempt_unavailability_does_not_clear_warning	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_unrelated_cached_link_cannot_block_verified_sweep	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_ambiguous_write_readback_and_retry	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_changed_store_before_patch_never_overwrites	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_body_strict_json_round_trip_and_canonical_link	fast-unit	yes	yes
@@ -2362,3 +2365,6 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_equal_result_after_ambiguous_p
 tools/ci/tests/test_scheduled_sweep_flag.py::test_replacement_binding_cannot_bootstrap_from_pre_recovery_result	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_newer_candidate_preserves_existing_clear_over_older_failure	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_baseline_cannot_be_reinterpreted_as_a_failure	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[200-{"id": 42}-expected0]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[404-{"message": "Not Found"}-None]	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[403-{"message": "Forbidden"}-hold]	fast-unit	yes	yes
