@@ -1,4 +1,3 @@
-import json
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -15,10 +14,6 @@ SHA = "a" * 40
 BINDING = {
     "issue_number": 999,
     "issue_id": 1000,
-    "provisioner_id": 111,
-    "app_bot_id": 222,
-    "app_id": 333,
-    "installation_id": 444,
     "activation_floor": 4,
 }
 
@@ -118,14 +113,17 @@ class Provider:
 
 
 class Store:
-    def __init__(self, record=None):
+    def __init__(self, record=None, editor_id=41898282):
         self.record = record
+        self.editor_id = editor_id if record else None
         self.writes = []
         self.fail_before = False
         self.fail_after = False
 
     def read(self):
-        return flag.Snapshot(flag.render_body(self.record), None, None, self.record)
+        return flag.Snapshot(
+            flag.render_body(self.record), None, self.editor_id, self.record
+        )
 
     def write(self, body):
         self.writes.append(body)
@@ -133,6 +131,7 @@ class Store:
             self.fail_before = False
             raise Hold("ambiguous")
         self.record = flag.parse_body(body)
+        self.editor_id = 41898282
         if self.fail_after:
             raise Hold("ambiguous")
 
@@ -150,7 +149,8 @@ def test_failure_refresh_clear_and_replayed_notification():
     assert store.record == decision(newer, "active")
     assert flag.publish(Provider(newer, first, passed), store) == "clear"
     assert store.record == decision(passed, "clear")
-    assert flag.publish(Provider(first, newer), store) == "unchanged"
+    with pytest.raises(Hold, match="older than the cached Actions result"):
+        flag.publish(Provider(first, newer), store)
     assert flag.publish(Provider(passed), store) == "unchanged"
     assert len(store.writes) == 3
 
@@ -236,13 +236,20 @@ def test_unstable_listing_stops_before_writing(monkeypatch):
     assert not store.writes
 
 
-def test_equal_run_with_conflicting_outcome_holds_even_with_later_failure():
-    previous = attempt(5, "failure")
-    conflicting = dict(previous, conclusion="cancelled")
-    store = Store(decision(previous, "active"))
-    with pytest.raises(Hold):
-        flag.publish(Provider(conflicting, attempt(7, "failure")), store)
-    assert not store.writes
+def test_edit_cannot_supply_a_result_or_block_the_authentic_decision():
+    edited = attempt(50, "success")
+    actual = attempt(7, "failure")
+    store = Store(decision(edited, "clear"), editor_id=111)
+    assert flag.publish(Provider(actual), store) == "active"
+    assert store.record == decision(actual, "active")
+    assert len(store.writes) == 1
+
+
+def test_authentic_attempt_repairs_a_contradictory_cached_result():
+    actual = attempt(5, "failure")
+    store = Store(decision(dict(actual, conclusion="success"), "clear"))
+    assert flag.publish(Provider(actual), store) == "active"
+    assert store.record == decision(actual, "active")
 
 
 def test_ambiguous_write_readback_and_retry():
@@ -288,7 +295,7 @@ def test_body_strict_json_round_trip_and_canonical_link():
             flag.parse_body(malformed)
 
 
-def test_actor_and_issue_identity_bound_to_validated_body():
+def test_issue_identity_bound_and_editor_retained_as_metadata():
     record = decision(attempt(5, "failure"), "active")
     issue = {
         "number": 999,
@@ -302,16 +309,11 @@ def test_actor_and_issue_identity_bound_to_validated_body():
     }
     repo = {"nameWithOwner": flag.REPO, "databaseId": flag.REPO_ID, "issue": issue}
     assert flag.validate_snapshot(repo, BINDING).record == record
-    with pytest.raises(Hold, match="predates its reviewed activation floor"):
-        flag.validate_snapshot(repo, dict(BINDING, activation_floor=7))
     with pytest.raises(Hold):
         flag.validate_snapshot(repo, dict(BINDING, issue_id=1))
-    issue["editor"]["databaseId"] = 41898282
-    with pytest.raises(Hold):
-        flag.validate_snapshot(repo, BINDING)
+    issue["editor"] = {"__typename": "User", "databaseId": 111}
+    assert flag.validate_snapshot(repo, BINDING).editor_id == 111
     issue["body"] = flag.render_body(None)
-    with pytest.raises(Hold):
-        flag.validate_snapshot(repo, BINDING)
     issue.update(lastEditedAt=None, editor=None)
     assert flag.validate_snapshot(repo, BINDING).record is None
     issue["state"] = "CLOSED"
@@ -319,28 +321,23 @@ def test_actor_and_issue_identity_bound_to_validated_body():
         flag.validate_snapshot(repo, BINDING)
 
 
-def test_patch_only_sends_body_with_separate_token(monkeypatch):
-    captured = {}
+def test_patch_only_sends_body_through_the_existing_github_client():
+    class GitHub:
+        def command(self, args, limit):
+            assert args == [
+                "api",
+                "--hostname",
+                "github.com",
+                "--method",
+                "PATCH",
+                "repos/kburson/aitm/issues/999",
+                "--raw-field",
+                "body=body text",
+            ]
+            assert limit == 65536
+            return b"{}"
 
-    def run(args, **kwargs):
-        captured.update(args=args, **kwargs)
-
-    monkeypatch.setattr(flag.subprocess, "run", run)
-    monkeypatch.setenv("GH_TOKEN", "synthetic-evidence-token")
-    flag.IssueStore(None, BINDING, "synthetic-app-token").write("body text")
-    assert captured["args"] == [
-        "gh",
-        "api",
-        "--hostname",
-        "github.com",
-        "--method",
-        "PATCH",
-        "repos/kburson/aitm/issues/999",
-        "--input",
-        "-",
-    ]
-    assert json.loads(captured["input"]) == {"body": "body text"}
-    assert captured["env"]["GH_TOKEN"] == "synthetic-app-token"
+    flag.IssueStore(GitHub(), BINDING).write("body text")
 
 
 def test_capped_history_subdivides_and_deduplicates_boundary(monkeypatch):
@@ -386,9 +383,10 @@ def test_same_count_paging_rejects_duplicate_run_identity():
 def test_missing_history_preserves_existing_but_cannot_initialize():
     stored = decision(attempt(5, "failure"), "active")
     store = Store(stored)
-    assert flag.publish(Provider(), store) == "unchanged"
+    with pytest.raises(Hold, match="no verified sweep result"):
+        flag.publish(Provider(), store)
     assert store.record == stored and not store.writes
-    with pytest.raises(Hold, match="no verified initial sweep result"):
+    with pytest.raises(Hold, match="no verified sweep result"):
         flag.publish(Provider(), Store())
 
 
@@ -413,7 +411,7 @@ def test_replacement_binding_cannot_bootstrap_from_pre_recovery_result():
     older = attempt(5, "failure")
     qualifying = attempt(7, "failure")
     store = Store()
-    with pytest.raises(Hold, match="no verified initial sweep result"):
+    with pytest.raises(Hold, match="no verified sweep result"):
         flag.publish(Provider(older), store, activation_floor=7)
     assert not store.writes
     assert (

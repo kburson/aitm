@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import re
-import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -30,10 +29,6 @@ BINDING_PATH = Path(__file__).with_suffix(".json")
 BINDING_FIELDS = {
     "issue_number",
     "issue_id",
-    "provisioner_id",
-    "app_bot_id",
-    "app_id",
-    "installation_id",
     "activation_floor",
 }
 FAILURES = {"failure", "timed_out"}
@@ -67,8 +62,7 @@ query($number: Int!) {
     databaseId nameWithOwner
     issue(number: $number) {
       number databaseId state title body lastEditedAt
-      author { __typename ... on User { databaseId } }
-      editor { __typename ... on Bot { databaseId } }
+      editor { __typename ... on Bot { databaseId } ... on User { databaseId } }
     }
   }
 }
@@ -191,9 +185,8 @@ def load_binding():
         isinstance(binding, dict)
         and set(binding) == BINDING_FIELDS
         and all(positive(value) for value in binding.values())
-        and binding["app_bot_id"] != SHARED_ACTIONS_BOT
         and binding["activation_floor"] >= FLOOR,
-        "publisher issue and dedicated App binding have not been provisioned",
+        "invalid advisory issue binding",
     )
     return binding
 
@@ -224,34 +217,16 @@ def validate_snapshot(repo, binding):
     )
     body, edited_at, editor = issue["body"], issue["lastEditedAt"], issue["editor"]
     record = parse_body(body)
-    if record is None:
-        require(
-            body == render_body(None)
-            and edited_at is None
-            and editor is None
-            and issue["author"]
-            == {"__typename": "User", "databaseId": binding["provisioner_id"]},
-            "uninitialized advisory has unexpected author or edit",
-        )
-        return Snapshot(body, None, None, None)
-    require(
-        binding["app_bot_id"] != SHARED_ACTIONS_BOT
-        and editor == {"__typename": "Bot", "databaseId": binding["app_bot_id"]},
-        "advisory edit was not attributed to the dedicated App",
-    )
-    require(
-        record["run"]["run_number"] >= binding["activation_floor"],
-        "advisory record predates its reviewed activation floor",
-    )
-    utc_timestamp(edited_at)
-    return Snapshot(body, edited_at, editor["databaseId"], record)
+    if edited_at is not None:
+        utc_timestamp(edited_at)
+    editor_id = editor.get("databaseId") if isinstance(editor, dict) else None
+    return Snapshot(body, edited_at, editor_id, record)
 
 
 class IssueStore:
-    def __init__(self, github, binding, app_token=None):
+    def __init__(self, github, binding):
         self.github = github
         self.binding = binding
-        self.app_token = app_token
 
     def read(self):
         response = decode_json(
@@ -273,30 +248,19 @@ class IssueStore:
         return validate_snapshot(response["data"]["repository"], self.binding)
 
     def write(self, body):
-        require(self.app_token, "dedicated App installation token unavailable")
-        try:
-            subprocess.run(
-                [
-                    "gh",
-                    "api",
-                    "--hostname",
-                    "github.com",
-                    "--method",
-                    "PATCH",
-                    f"repos/{REPO}/issues/{self.binding['issue_number']}",
-                    "--input",
-                    "-",
-                ],
-                input=json.dumps({"body": body}),
-                text=True,
-                check=True,
-                timeout=30,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                env=dict(os.environ, GH_TOKEN=self.app_token),
-            )
-        except (OSError, subprocess.SubprocessError):
-            raise Hold("advisory write response unavailable") from None
+        self.github.command(
+            [
+                "api",
+                "--hostname",
+                "github.com",
+                "--method",
+                "PATCH",
+                f"repos/{REPO}/issues/{self.binding['issue_number']}",
+                "--raw-field",
+                f"body={body}",
+            ],
+            65536,
+        )
 
 
 def verify_target(github):
@@ -456,30 +420,9 @@ def read_attempt(github, run):
     return route, attempt
 
 
-def select_record(github, runs, previous, activation_floor):
-    old = previous["run"] if previous else None
-    if old:
-        same = runs.get(old["run_number"])
-        require(
-            all(
-                run.number == old["run_number"]
-                for run in runs.values()
-                if run.run_id == old["run_id"]
-            ),
-            "saved run ID recurs at a different number",
-        )
-        if same:
-            _, attempt = read_attempt(github, same)
-            require(
-                same.run_id == old["run_id"]
-                and same.source == old["head_sha"]
-                and attempt
-                and attempt["conclusion"] == old["conclusion"],
-                "scheduled history conflicts with the persisted watermark",
-            )
-    minimum = old["run_number"] + 1 if old else activation_floor
+def select_record(github, runs, activation_floor):
     for number in sorted(runs, reverse=True):
-        if number < minimum:
+        if number < activation_floor:
             break
         run = runs[number]
         route, attempt = read_attempt(github, run)
@@ -507,17 +450,14 @@ def select_record(github, runs, previous, activation_floor):
     return None
 
 
-def reconcile(github, previous, *, activation_floor=FLOOR):
+def reconcile(github, *, activation_floor=FLOOR):
     verify_target(github)
     for _ in range(2):
         cutoff = datetime.now(timezone.utc).replace(microsecond=0)
         runs = history(github, cutoff)
-        replacement = select_record(github, runs, previous, activation_floor)
+        replacement = select_record(github, runs, activation_floor)
         if runs == history(github, cutoff):
-            require(
-                previous is not None or replacement is not None,
-                "no verified initial sweep result",
-            )
+            require(replacement is not None, "no verified sweep result")
             return replacement
     raise Hold("scheduled history membership did not stabilize")
 
@@ -525,10 +465,15 @@ def reconcile(github, previous, *, activation_floor=FLOOR):
 def publish(github, store, *, activation_floor=FLOOR):
     initial = store.read()
     for _ in range(2):
-        desired = reconcile(github, initial.record, activation_floor=activation_floor)
-        if desired is None:
-            return "unchanged"
+        desired = reconcile(github, activation_floor=activation_floor)
+        if initial.record and initial.editor_id == SHARED_ACTIONS_BOT:
+            require(
+                desired["run"]["run_number"] >= initial.record["run"]["run_number"],
+                "visible history is older than the cached Actions result",
+            )
         body = render_body(desired)
+        if initial.body == body:
+            return "unchanged"
         require(store.read() == initial, "advisory changed before publication")
         try:
             store.write(body)
@@ -544,24 +489,18 @@ def publish(github, store, *, activation_floor=FLOOR):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("bootstrap-body", "binding", "publish"))
+    parser.add_argument("operation", choices=("bootstrap-body", "publish"))
     args = parser.parse_args(argv)
     try:
         if args.operation == "bootstrap-body":
             print(render_body(None), end="")
-        elif args.operation == "binding":
-            for key, value in sorted(load_binding().items()):
-                print(f"{key}={value}")
         else:
             github = GitHub(REPO)
             require(
-                os.environ.get("GH_TOKEN"),
-                "authenticated Actions read token unavailable",
+                os.environ.get("GH_TOKEN"), "authenticated Actions token unavailable"
             )
-            app_token = os.environ.pop("SWEEP_FLAG_APP_TOKEN", None)
-            require(app_token, "dedicated App installation token unavailable")
             binding = load_binding()
-            store = IssueStore(github, binding, app_token)
+            store = IssueStore(github, binding)
             result = publish(
                 github, store, activation_floor=binding["activation_floor"]
             )

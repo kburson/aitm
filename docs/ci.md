@@ -236,18 +236,20 @@ gh workflow run scheduled-sweep-flag.yml --ref trunk
 gh run list --workflow scheduled-sweep-flag.yml --branch trunk --limit 5
 ```
 
-Provision the dedicated App with Issues write and implicit Metadata read on
-this repository only. Store the private key in the trunk-only
-`scheduled-sweep-advisory` environment as `SWEEP_FLAG_APP_PRIVATE_KEY`.
-Keep the App, installation, editor and issue identities in the reviewed
-`tools/ci/scheduled_sweep_flag.json` binding. Verify App-authored body readback
-on an isolated issue before enabling production publication. The publisher
-uses the separate workflow token for read-only evidence and issue identity
-queries. It makes a body-only update with the installation token.
+The publisher uses its built-in Actions token and updates only the body of
+the issue pinned in `tools/ci/scheduled_sweep_flag.json`. The issue is an
+editable advisory cache. Open its linked sweep attempt and verify the
+source and conclusion in GitHub Actions before acting on the flag.
+Reconciliation derives the result from authenticated Actions history. An
+unverified newer result or unavailable history leaves the body as it was.
 
-A malformed body, unexpected editor, inaccessible issue, or unverified
-newer run causes the publisher to report unavailable reconciliation. The
-last verified decision remains visible while the stored record is valid. For a closed
+Use the issue's edit history to inspect changes to #418. A valid manual
+edit cannot set the run ordering used by reconciliation. If the body is
+malformed, use its edit history to recover the last generated advisory and
+verify the linked result before reconciling again. For backlog item changes
+and timing, see the `planning` branch history.
+
+For a closed
 issue, verify its identity and body before restoring access. For a corrupt or
 missing record, stop the publisher and retain the issue edit history. Recover
 through a reviewed replacement binding. Set its `activation_floor` at or

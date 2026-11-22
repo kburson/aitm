@@ -2348,12 +2348,13 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clear
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[missing-attempt]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_success_never_clears[wrong-check]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unstable_listing_stops_before_writing	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_equal_run_with_conflicting_outcome_holds_even_with_later_failure	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_edit_cannot_supply_a_result_or_block_the_authentic_decision	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_authentic_attempt_repairs_a_contradictory_cached_result	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_ambiguous_write_readback_and_retry	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_changed_store_before_patch_never_overwrites	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_body_strict_json_round_trip_and_canonical_link	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_actor_and_issue_identity_bound_to_validated_body	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_patch_only_sends_body_with_separate_token	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_issue_identity_bound_and_editor_retained_as_metadata	fast-unit	yes	yes
+tools/ci/tests/test_scheduled_sweep_flag.py::test_patch_only_sends_body_through_the_existing_github_client	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_capped_history_subdivides_and_deduplicates_boundary	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_same_count_paging_rejects_duplicate_run_identity	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_missing_history_preserves_existing_but_cannot_initialize	fast-unit	yes	yes
