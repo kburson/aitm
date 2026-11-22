@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 363
 title: "[Spike] Identify the run a failure flag should watch"
 kind: "spike"
-state: "develop"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/363"
 parent: 362
 children: []
 blocking: [365]
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:24:25Z"
+updated: "2026-11-22T00:26:32Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
@@ -37,3 +37,5 @@ Confirm that the flag watches the production scheduled Category full sweep from 
 [Delivery plan](plan/2026-11-21-363-delivery-plan.md).
 
 [Research receipt](plan/2026-11-21-363-scheduled-run-contract.md) and [evidence](attachments/2026-11-21-363-actions-evidence.json).
+
+[Delivery sign-off](retro/2026-11-21-363-sign-off.md).
