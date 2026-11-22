@@ -15,7 +15,7 @@ last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-365-delivery-plan.md", "plan/2026-11-21-365-jit-and-test.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-365-delivery-plan.md", "plan/2026-11-21-365-jit-and-test.md"], "attachments": ["attachments/2026-11-21-365-trusted-draft-pr-419.json"]}
 expansions: []
 trips: []
 ---
