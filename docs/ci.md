@@ -227,7 +227,6 @@ clears it. A rerun, cancelled run, manual sweep or missing slot does not alter
 the decision. The timestamp is GitHub's last update time for the accepted
 original attempt. It is not a heartbeat.
 
-
 From the repository checkout, use the GitHub CLI's authenticated session
 with read access to the issue, runs, checks and repository contents.
 
