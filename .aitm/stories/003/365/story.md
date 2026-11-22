@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 365
 title: "Record the scheduled-failure flag"
 kind: "story"
-state: "backlog"
+state: "develop"
 issue: "https://github.com/kburson/aitm/issues/365"
 parent: 362
 children: []
 blocking: [366]
 blocked-by: [363, 364]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:16:14Z"
+updated: "2026-11-22T04:14:13Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-365-delivery-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-365-delivery-plan.md", "plan/2026-11-21-365-jit-and-test.md"], "attachments": []}
 expansions: []
 trips: []
 ---
@@ -36,3 +36,5 @@ Publish one durable advisory from the authenticated scheduled sweep into the sto
 - Deliver the PR to `trunk` with canonical CI, trusted verification and an independent Grok PR review on the current candidate before merging. #366 begins after verified delivery.
 
 [Delivery plan](plan/2026-11-21-365-delivery-plan.md).
+
+[Pickup and candidate verification](plan/2026-11-21-365-jit-and-test.md).
