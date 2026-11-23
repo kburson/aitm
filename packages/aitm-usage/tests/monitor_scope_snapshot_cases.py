@@ -41,7 +41,7 @@ def reference(label):
 
 
 def snapshot_reader(monkeypatch):
-    hold_id = UUID(int=0x501)
+    hold_id, terminal_id = UUID(int=0x501), UUID(int=0x503)
     seen = datetime(2026, 1, 1, tzinfo=UTC)
     target = SourceBoundary(
         Provider.CODEX,
@@ -50,14 +50,14 @@ def snapshot_reader(monkeypatch):
         10,
         BoundaryKind.REQUEST,
         reference("target"),
-        receipt_ref=reference("hold-receipt"),
+        receipt_ref=_EVIDENCE.pseudonymize("scope-receipt", str(hold_id)),
     )
     terminal = replace(
         target,
         ordinal=20,
         kind=BoundaryKind.TURN,
         boundary_ref=reference("terminal"),
-        receipt_ref=reference("terminal-receipt"),
+        receipt_ref=_EVIDENCE.pseudonymize("scope-receipt", str(terminal_id)),
     )
     prefix = SourceCursor(
         target.stream_ref,
@@ -88,7 +88,7 @@ def snapshot_reader(monkeypatch):
         (_HeldRouteTarget(hold_id, target, prefix),),
         (
             _RouteDispositionRecord(
-                UUID(int=0x503),
+                terminal_id,
                 "b" * 64,
                 "c" * 64,
                 hold_id,
@@ -110,6 +110,35 @@ def snapshot_reader(monkeypatch):
     state = ScopeState(SimpleNamespace(root=Path("unused"), _writer=None))
     assert state.view().holds == (hold,)
     return json.loads(raw), reader, state
+
+
+def custody_writer(monkeypatch, payload):
+    source_id = UUID(payload["holds"][0]["position"]["source_id"])
+    approval = SimpleNamespace(
+        surface=NativeSurface.CODEX_DESKTOP_MACOS, provider=Provider.CODEX
+    )
+    source = SimpleNamespace(source_id=source_id, approval=approval)
+    registry_view = SimpleNamespace(source_key_id=_EVIDENCE.key_id, sources=(source,))
+    registry = SimpleNamespace(
+        root=Path("/fixture/scope"),
+        _writer=object(),
+        lease=object(),
+        view=lambda: registry_view,
+        source_evidence=lambda: _EVIDENCE,
+    )
+    directory = Mock(fd=42)
+    monkeypatch.setattr(
+        monitor_scope, "_pin_directory", lambda path: nullcontext(directory)
+    )
+    monkeypatch.setattr(monitor_scope, "os", SimpleNamespace(fsync=Mock()))
+    state = ScopeState(registry, clock=lambda: datetime(2026, 1, 3, tzinfo=UTC))
+    save = Mock()
+    monkeypatch.setattr(state, "_save", save)
+    foreign = _ServiceEvidence(b"different-project-key").pseudonymize(
+        "fixture", "foreign"
+    )
+    wrong = _EVIDENCE.pseudonymize("scope-receipt", str(UUID(int=0x505)))
+    return state, save, foreign, wrong
 
 
 MALFORMED_SNAPSHOT_CASES = (

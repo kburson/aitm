@@ -12,8 +12,10 @@ import pytest
 from monitor_scope_snapshot_cases import (
     MALFORMED_SNAPSHOT_CASES,
     assert_rejects_snapshot,
+    custody_writer,
     snapshot_reader,
 )
+from scope_state_cases import MemoryScope
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -360,37 +362,39 @@ def test_handoff_A_to_B_to_C_with_retained_A(native):
         assert secret not in snapshot
 
 
-def test_late_earlier_transition_reprojects_a_later_effective_handoff(native):
-    from aitm_usage.monitor_scope import ScopeState
+def test_late_earlier_transition_reprojects_a_later_effective_handoff(monkeypatch):
+    from aitm_usage.monitor_scope import Handoff, HandoffStatus, _timeline
 
-    first_id, second_id = UUID(int=0x301), UUID(int=0x302)
-    early_scope, late_scope = _issue(B, 117), _issue(C, 118)
-    with native.registry.writer() as writer:
-        state = ScopeState(writer)
-        earlier, owner_a = _authorize_handoff(
-            state, native, first_id, A, early_scope, 0
-        )
-        later, owner_b = _authorize_handoff(state, native, second_id, A, late_scope, 0)
-        _, first_ordinal = native.append(first_id)
-        _, second_ordinal = native.append(second_id)
-        batch = state.read_source(SOURCE, native.locator())
-        earlier_proof = _verify(state, native, earlier, owner_a, batch, first_ordinal)
-        later_proof = _verify(state, native, later, owner_b, batch, second_ordinal)
+    scope = MemoryScope(monkeypatch, clock=lambda: AFTER)
+    state = scope.state
+    checkout = scope.reference("checkout")
+    earlier = Handoff(
+        UUID(int=0x301), A, _issue(B, 117), 0, checkout, scope.reference("earlier")
+    )
+    later = Handoff(
+        UUID(int=0x302), A, _issue(C, 118), 0, checkout, scope.reference("later")
+    )
+    earlier_proof = scope.boundary(earlier, 10, owner=A, anchor=A, checkout=checkout)
+    later_proof = scope.boundary(later, 20, owner=A, anchor=A, checkout=checkout)
 
-        assert state.apply_handoff(later, later_proof).status == "applied"
-        assert native.routed(state, batch, second_ordinal).scope == late_scope
-        earlier_result = state.apply_handoff(earlier, earlier_proof)
-        assert earlier_result.status == "applied"
-        assert earlier_result.affected.start == first_ordinal
-        assert earlier_result.affected.end > second_ordinal
-        assert (
-            native.observation(batch, second_ordinal).key
-            in earlier_result.affected.observation_keys
-        )
-        assert native.routed(state, batch, first_ordinal).scope == early_scope
-        affected = native.routed(state, batch, second_ordinal)
-        assert affected.project_id is None
-        assert affected.status == "held"
+    assert state.apply_handoff(later, later_proof).status is HandoffStatus.APPLIED
+    assert (
+        _timeline(state.view().events, later_proof.position)[0].scope
+        == later.destination
+    )
+
+    result = state.apply_handoff(earlier, earlier_proof)
+    assert result.status is HandoffStatus.APPLIED
+    assert (result.affected.start, result.affected.end) == (10, 21)
+    assert later_proof.affected.observation_keys[0] in result.affected.observation_keys
+    events = state.view().events
+    at_earlier, _ = _timeline(events, earlier_proof.position, through=10)
+    at_later, outcomes = _timeline(events, later_proof.position)
+    assert at_earlier.scope == earlier.destination
+    assert not at_earlier.held
+    assert at_later.held and outcomes[later.command_id].status is HandoffStatus.HELD
+    assert scope.require_boundary.call_args_list[0].args == (later_proof, later)
+    assert scope.require_boundary.call_args_list[1].args == (earlier_proof, earlier)
 
 
 def _competing(native, *, different_receipt_ordinals=False):
@@ -1230,32 +1234,32 @@ def test_resolved_hold_rejects_original_handoff_after_restart(native):
         assert native.routed(state, batch, held_at).scope == original
 
 
-def test_hold_overflow_becomes_a_gap_without_displacing_existing_hold(
-    native, monkeypatch
-):
+def test_hold_overflow_becomes_a_gap_without_displacing_existing_hold(monkeypatch):
     from aitm_usage import monitor_scope
 
     monkeypatch.setattr(monitor_scope, "_MAX_HOLDS", 1)
-    first_id, second_id = UUID(int=0x301), UUID(int=0x302)
-    with native.registry.writer() as writer:
-        state = monitor_scope.ScopeState(writer, clock=lambda: AFTER)
-        first, owner = _authorize_handoff(state, native, first_id, A, _issue(B, 117), 1)
-        _, first_at = native.append(first_id)
-        batch = state.read_source(SOURCE, native.locator())
-        pending = state.hold(_verify(state, native, first, owner, batch, first_at))
+    scope = MemoryScope(monkeypatch, clock=lambda: AFTER)
+    checkout = scope.reference("checkout")
+    first = monitor_scope.Handoff(
+        UUID(int=0x301), A, _issue(B, 117), 1, checkout, scope.reference("first")
+    )
+    second = monitor_scope.Handoff(
+        UUID(int=0x302), A, _issue(C, 118), 1, checkout, scope.reference("second")
+    )
+    first_proof = scope.boundary(first, 10, owner=A, anchor=A, checkout=checkout)
+    second_proof = scope.boundary(second, 20, owner=A, anchor=A, checkout=checkout)
 
-    with native.registry.writer() as writer:
-        state = monitor_scope.ScopeState(writer, clock=lambda: AFTER)
-        second, owner = _authorize_handoff(
-            state, native, second_id, A, _issue(C, 118), 1
-        )
-        _, second_at = native.append(second_id)
-        batch = state.read_source(SOURCE, native.locator())
-        overflow = state.hold(_verify(state, native, second, owner, batch, second_at))
-        assert pending.state == "held"
-        assert overflow.state == "gap"
-        assert state.view().holds == (pending, overflow)
-        assert native.routed(state, batch, second_at).project_id is None
+    pending = scope.state.hold(first_proof)
+    overflow = scope.state.hold(second_proof)
+
+    assert pending.state is monitor_scope.HoldState.HELD
+    assert overflow.state is monitor_scope.HoldState.GAP
+    assert scope.state.view().holds == (pending, overflow)
+    assert scope.snapshot.events == ()
+    assert [call.args for call in scope.require_boundary.call_args_list] == [
+        (first_proof,),
+        (second_proof,),
+    ]
 
 
 def test_exact_handoff_retry_after_restart_and_source_growth_keeps_one_event(native):
@@ -1703,24 +1707,27 @@ def test_default_hold_keeps_v1_and_cannot_be_retroactively_retained(native):
 
 
 @pytest.mark.parametrize("checkout", [B, UNKNOWN])
-def test_route_target_requires_the_receipts_anchored_owner(native, checkout):
-    from aitm_usage.monitor_scope import ScopeState
+def test_route_target_requires_the_receipts_anchored_owner(monkeypatch, checkout):
+    from aitm_usage.monitor_scope import Handoff
 
-    command_id = UUID(int=0x501)
-    with native.registry.writer() as writer:
-        state = ScopeState(writer)
-        command, owner = _authorize_handoff(
-            state, native, command_id, A, _issue(B, 117), 1
+    scope = MemoryScope(monkeypatch, clock=lambda: AFTER)
+    retained = scope.reference("retained-checkout")
+    command = Handoff(
+        UUID(int=0x501), A, _issue(B, 117), 1, retained, scope.reference("handoff")
+    )
+    if checkout == B:
+        proof = scope.boundary(
+            command, 10, owner=A, anchor=B, checkout=scope.reference("other-checkout")
         )
-        cwd = native.anchors[checkout] if checkout == B else native.transcripts
-        _, ordinal = native.append(command_id, checkout=cwd)
-        batch = state.read_source(SOURCE, native.locator())
-        receipt = _verify(state, native, command, owner, batch, ordinal)
-        assert receipt.eligible and receipt.anchor_project != A
-        with pytest.raises(LedgerError, match="owned native route target"):
-            state.hold(receipt, retain_route_target=True)
-        assert not _scope_file(native).exists()
-        assert state.hold(receipt).project_id == A
+    else:
+        proof = scope.boundary(command, 10, owner=A, anchor=None, checkout=None)
+
+    with pytest.raises(LedgerError, match="owned native route target"):
+        scope.state.hold(proof, retain_route_target=True)
+    assert scope.snapshot.holds == ()
+
+    assert scope.state.hold(proof).project_id == A
+    assert len(scope.snapshot.holds) == 1
 
 
 def test_retained_hold_refuses_capacity_gap_before_publication(native, monkeypatch):
@@ -1888,39 +1895,53 @@ def test_v2_invalid_snapshot_cannot_be_published(native):
         "source-id",
     ],
 )
-def test_v2_writer_requires_service_custody_before_mutation(native, changed):
+def test_v2_writer_requires_service_custody_before_mutation(monkeypatch, changed):
+    payload, reader, read_only = snapshot_reader(monkeypatch)
+    state, save, foreign, wrong = custody_writer(monkeypatch, payload)
+    assert len(state.view().holds) == 1
+    target = payload["held_route_targets"][0]
+    record = payload["route_dispositions"][0]
+    if changed == "checkout":
+        record["checkout"] = foreign.value
+    elif changed == "source-id":
+        payload["holds"][0]["position"]["source_id"] = str(UNKNOWN)
+    else:
+        collection, field = changed.split("-")
+        row = target if collection == "target" else record
+        if field == "prefix":
+            row["prefix"]["anchor_ref"] = foreign.value
+        else:
+            row["boundary"][f"{field}_ref"] = (
+                wrong if field == "receipt" else foreign
+            ).value
+
+    reader.return_value = _scope_bytes(payload)
+    read_only_view = read_only.view()
+    assert read_only_view.events == ()
+    assert len(read_only_view.holds) == 1
+    with pytest.raises(LedgerError):
+        state.expire()
+    save.assert_not_called()
+
+
+def test_v2_writer_leaves_foreign_receipt_on_disk_unchanged(native):
     from aitm_usage.monitor_scope import ScopeState
 
     with native.registry.writer() as writer:
         now = AFTER
         state = ScopeState(writer, clock=lambda: now)
         hold, *_, payload = _stored_disposition_fixture(state, native)
-        target = payload["held_route_targets"][0]
-        record = payload["route_dispositions"][0]
-        foreign = native.ledgers[A].pseudonymize("foreign", "ref").value
         wrong = native.receipt_ref(UUID(int=0x505)).value
-        if changed == "checkout":
-            record["checkout"] = foreign
-        elif changed == "source-id":
-            payload["holds"][0]["position"]["source_id"] = str(UNKNOWN)
-        else:
-            collection, field = changed.split("-")
-            row = target if collection == "target" else record
-            if field == "prefix":
-                row["prefix"]["anchor_ref"] = foreign
-            else:
-                row["boundary"][f"{field}_ref"] = (
-                    wrong if field == "receipt" else foreign
-                )
+        payload["route_dispositions"][0]["boundary"]["receipt_ref"] = wrong
         path = _scope_file(native)
         data = _scope_bytes(payload)
         path.write_bytes(data)
-        reader_view = ScopeState(native.registry).view()
-        assert reader_view.events == ()
-        assert len(reader_view.holds) == 1
+        assert len(ScopeState(native.registry).view().holds) == 1
+
         now = hold.expires_at
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="receipt is bound to another command"):
             state.expire()
+
         assert path.read_bytes() == data
 
 

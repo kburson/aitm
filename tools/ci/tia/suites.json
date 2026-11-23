@@ -335,6 +335,26 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_requires_service_custody_before_mutation",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_hold_overflow_becomes_a_gap_without_displacing_existing_hold",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_late_earlier_transition_reprojects_a_later_effective_handoff",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_route_target_requires_the_receipts_anchored_owner",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_rejects_unverified_origin",
       "suite": "unit",
       "isolation_group": "native-admission-policy"
