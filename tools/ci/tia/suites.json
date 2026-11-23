@@ -335,6 +335,16 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_requires_leaf_names",
+      "suite": "unit",
+      "isolation_group": "host-publication-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_unavailable_native_binding_fails_closed",
+      "suite": "unit",
+      "isolation_group": "host-publication-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_scopes.py::test_binding_checks_anchor_session_and_monotonic_generation",
       "suite": "unit",
       "isolation_group": "scope-command-policy"
