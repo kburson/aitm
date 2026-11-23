@@ -8,7 +8,8 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from test_codex import AFTER, SESSION, begin, counter, end, response, usage
+from qualification_policy_cases import CaptureInbox, CapturePolicy
+from test_codex import AFTER, CUTOFF, SESSION, begin, counter, end, response, usage
 from test_monitor_adapters import _adapter, _restart_rows
 from test_monitor_adapters import source as source
 
@@ -255,34 +256,27 @@ def test_revoked_root_is_not_reread_for_prior_revision(tmp_path, monkeypatch, so
         writer.capture_frontier(enable, locator)
 
 
-def test_shared_installation_keeps_project_permissions_independent(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+def test_shared_installation_keeps_project_permissions_independent(monkeypatch):
+    module = _module()
+    capture = CapturePolicy(monkeypatch, SOURCE, CUTOFF, (PROJECT_A, PROJECT_B))
+    writer, locator = capture.writer, capture.first
     enable_a = module.CaptureChange(PROJECT_A, SOURCE, True)
     enable_b = replace(enable_a, project_id=PROJECT_B)
     disable_a = replace(enable_a, enabled=False)
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        writer.register_project(_request(module, tmp_path, PROJECT_B))
-        _approve(writer, module, root)
-        locator = _locate(reader, root)
-        front_a = writer.capture_frontier(enable_a, locator)
-        front_b = writer.capture_frontier(enable_b, locator)
-        log.append()
-        locator = _locate(reader, root)
-        start_a = writer.verify_boundary(enable_a, locator, front_a)
-        start_b = writer.verify_boundary(enable_b, locator, front_b)
-        assert start_a.boundary_ref == start_b.boundary_ref
-        writer.set_permission(enable_a, start_a)
-        writer.set_permission(enable_b, start_b)
-        stop = _advance(writer, disable_a, log, reader, root)
-        with pytest.raises(LedgerError):
-            writer.set_permission(replace(disable_a, project_id=PROJECT_B), stop)
-        writer.set_permission(disable_a, stop)
-    assert not registry.source_read_allowed(PROJECT_A, SOURCE)
-    assert registry.source_read_allowed(PROJECT_B, SOURCE)
+    front_a = writer.capture_frontier(enable_a, locator)
+    front_b = writer.capture_frontier(enable_b, locator)
+    capture.append(locator)
+    start_a = writer.verify_boundary(enable_a, locator, front_a)
+    start_b = writer.verify_boundary(enable_b, locator, front_b)
+    assert start_a.boundary_ref == start_b.boundary_ref
+    writer.set_permission(enable_a, start_a)
+    writer.set_permission(enable_b, start_b)
+    stop = capture.advance(disable_a, locator)
+    with pytest.raises(LedgerError, match="verified boundary"):
+        writer.set_permission(replace(disable_a, project_id=PROJECT_B), stop)
+    writer.set_permission(disable_a, stop)
+    assert not writer.source_read_allowed(PROJECT_A, SOURCE)
+    assert writer.source_read_allowed(PROJECT_B, SOURCE)
 
 
 def test_destination_key_cannot_issue_a_native_capture_boundary(
@@ -543,65 +537,56 @@ def test_returning_original_stream_needs_prospective_enrollment(
     )
 
 
+def _queued_capture_policy(monkeypatch):
+    module = _module()
+    capture = CapturePolicy(monkeypatch, SOURCE, CUTOFF, (PROJECT_A,))
+    capture.stub_native_reads(monkeypatch)
+    writer = capture.writer
+    change = module.CaptureChange(PROJECT_A, SOURCE, True)
+    writer.set_permission(change, capture.advance(change, capture.first))
+    inbox = CaptureInbox(writer)
+    disable = module.ControlCommand(UUID(int=300), replace(change, enabled=False))
+    inbox.pending.append(disable)
+    return capture, inbox, change, disable
+
+
 @pytest.mark.parametrize("locators", ["omitted", "duplicate"])
-def test_ambiguous_current_locator_keeps_existing_stream_queued(
-    queued_disable, locators
-):
-    scenario = queued_disable
-    second_log, _ = scenario.enroll_second()
-    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
-    assert scenario.poll() == ()
-    admitted = scenario.registry.view().epochs
-
-    def incomplete(change, known):
-        candidates = scenario.locate(change, known)
-        return candidates[:1] if locators == "omitted" else (*candidates, candidates[0])
-
-    assert second_log.path.is_file()
-    assert scenario.poll(incomplete) == ()
-    assert scenario.status() is scenario.module.ControlStatus.QUEUED
-    assert scenario.registry.view().epochs == admitted
-    (receipt,) = scenario.poll()
-    assert receipt.status is scenario.module.ControlStatus.APPLIED
+def test_ambiguous_current_locator_keeps_existing_stream_queued(monkeypatch, locators):
+    capture, inbox, enable, command = _queued_capture_policy(monkeypatch)
+    writer, first = capture.writer, capture.first
+    second = capture.new_stream()
+    writer.enroll_stream(PROJECT_A, SOURCE, capture.advance(enable, second))
+    assert writer.apply_pending(inbox, writer.lease, lambda *_: (first, second)) == ()
+    admitted = capture.view.epochs
+    ends = (first,) if locators == "omitted" else (first, second, first)
+    assert writer.apply_pending(inbox, writer.lease, lambda *_: ends) == ()
+    assert inbox.pending == [command]
+    assert capture.view.epochs == admitted
+    (receipt,) = writer.apply_pending(inbox, writer.lease, lambda *_: (first, second))
+    assert receipt.status is _module().ControlStatus.APPLIED
+    assert inbox.pending == []
 
 
 def test_pending_disable_prevents_new_enrollment_and_ignores_unrelated_locator(
-    queued_disable,
+    monkeypatch,
 ):
-    scenario = queued_disable
-    assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
-    assert scenario.poll() == ()
-    new_log, second = _second_log(
-        scenario.log,
-        scenario.reader,
-        scenario.root,
-        _locate(scenario.reader, scenario.root, scenario.stream),
-    )
+    capture, inbox, enable, command = _queued_capture_policy(monkeypatch)
+    writer, first = capture.writer, capture.first
+    assert writer.apply_pending(inbox, writer.lease, lambda *_: (first,)) == ()
+    second = capture.new_stream()
+    assert writer.capture_read_limit(PROJECT_A, SOURCE, second.stream_ref).ordinal == 0
+    proof = capture.advance(enable, second)
+    with pytest.raises(ConflictError, match="ordered capture command"):
+        writer.enroll_stream(PROJECT_A, SOURCE, proof)
+    (receipt,) = writer.apply_pending(inbox, writer.lease, lambda *_: (first, second))
+    assert receipt.command_id == command.command_id
+    assert receipt.status is _module().ControlStatus.APPLIED
+    assert {epoch.stream_ref for epoch in capture.view.epochs} == {first.stream_ref}
     assert (
-        scenario.registry.capture_read_limit(
-            PROJECT_A, SOURCE, second.stream_ref
-        ).ordinal
-        == 0
-    )
-    with scenario.registry.writer() as writer:
-        proof = _advance(
-            writer,
-            scenario.enable,
-            new_log,
-            scenario.reader,
-            scenario.root,
-            second.stream_ref,
+        writer.span_disposition(
+            PROJECT_A, SOURCE, second.stream_ref, proof.ordinal, proof.ordinal + 1
         )
-        with pytest.raises(ConflictError):
-            writer.enroll_stream(PROJECT_A, SOURCE, proof)
-
-    (receipt,) = scenario.poll()
-    assert receipt.status is scenario.module.ControlStatus.APPLIED
-    assert {epoch.stream_ref for epoch in scenario.registry.view().epochs} == {
-        scenario.stream
-    }
-    assert scenario.decide(second.stream_ref, proof.ordinal, proof.ordinal + 1) is (
-        Eligibility.EXCLUDED
+        is Eligibility.EXCLUDED
     )
 
 
@@ -689,81 +674,62 @@ def test_replay_syncs_existing_registry_receipt_before_retiring_queue(
     assert len(registry.view().projects) == 1
 
 
-def test_new_stream_enrolls_only_while_source_permission_is_enabled(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, first_log = _native_fixture(tmp_path, monkeypatch, source)
-    first = _locate(reader, root)
-    second_log, second = _second_log(first_log, reader, root, first)
-    registry = module.Registry(tmp_path / "monitor")
+def test_new_stream_enrolls_only_while_source_permission_is_enabled(monkeypatch):
+    module = _module()
+    capture = CapturePolicy(monkeypatch, SOURCE, CUTOFF, (PROJECT_A,))
+    writer, first = capture.writer, capture.first
+    second = capture.new_stream()
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
     disable = replace(enable, enabled=False)
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        _approve(writer, module, root)
-        another = _advance(writer, enable, second_log, reader, root, second.stream_ref)
-        with pytest.raises(ConflictError, match="disabled"):
-            writer.enroll_stream(PROJECT_A, SOURCE, another)
-        with pytest.raises(ConflictError, match="unadmitted"):
-            wrong_stream = _advance(
-                writer, disable, second_log, reader, root, second.stream_ref
-            )
-            writer.set_permission(disable, wrong_stream)
-        start = _advance(writer, enable, first_log, reader, root, first.stream_ref)
-        writer.set_permission(enable, start)
-        assert (
-            registry.span_disposition(
-                PROJECT_A,
-                SOURCE,
-                second.stream_ref,
-                another.ordinal,
-                another.ordinal + 1,
-            )
-            is Eligibility.EXCLUDED
-        )
-        fresh = _advance(writer, enable, second_log, reader, root, second.stream_ref)
-        epoch = writer.enroll_stream(PROJECT_A, SOURCE, fresh)
-        assert writer.enroll_stream(PROJECT_A, SOURCE, fresh) == epoch
+    another = capture.advance(enable, second)
+    with pytest.raises(ConflictError, match="disabled"):
+        writer.enroll_stream(PROJECT_A, SOURCE, another)
+    wrong_stream = capture.advance(disable, second)
+    with pytest.raises(ConflictError, match="unadmitted"):
+        writer.set_permission(disable, wrong_stream)
+    start = capture.advance(enable, first)
+    writer.set_permission(enable, start)
     assert (
-        registry.span_disposition(
+        writer.span_disposition(
+            PROJECT_A, SOURCE, second.stream_ref, another.ordinal, another.ordinal + 1
+        )
+        is Eligibility.EXCLUDED
+    )
+    fresh = capture.advance(enable, second)
+    epoch = writer.enroll_stream(PROJECT_A, SOURCE, fresh)
+    assert writer.enroll_stream(PROJECT_A, SOURCE, fresh) == epoch
+    assert (
+        writer.span_disposition(
             PROJECT_A, SOURCE, second.stream_ref, fresh.ordinal, fresh.ordinal + 1
         )
         is Eligibility.ELIGIBLE
     )
 
 
-def test_historical_boundary_cannot_disable_previously_admitted_usage(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+def test_historical_boundary_cannot_disable_previously_admitted_usage(monkeypatch):
+    module = _module()
+    capture = CapturePolicy(monkeypatch, SOURCE, CUTOFF, (PROJECT_A,))
+    writer, locator = capture.writer, capture.first
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
     disable = replace(enable, enabled=False)
-    stream = _locate(reader, root).stream_ref
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        _approve(writer, module, root)
-        early_frontier = writer.capture_frontier(enable, _locate(reader, root))
-        log.append()
-        start = writer.verify_boundary(enable, _locate(reader, root), early_frontier)
-        writer.set_permission(enable, start)
+    early = writer.capture_frontier(enable, locator)
+    capture.append(locator)
+    start = writer.verify_boundary(enable, locator, early)
+    writer.set_permission(enable, start)
 
-        log.append(2)
-        admitted, newest = _boundaries(reader, _locate(reader, root))[-2:]
-        current_frontier = writer.capture_frontier(disable, _locate(reader, root))
-        with pytest.raises(LedgerError):
-            writer.verify_boundary(disable, _locate(reader, root), early_frontier)
-        with pytest.raises(module.BoundaryUnavailable):
-            writer.verify_boundary(disable, _locate(reader, root), current_frontier)
-
-        log.append()
-        stop = writer.verify_boundary(disable, _locate(reader, root), current_frontier)
-        assert newest.ordinal < stop.ordinal
-        writer.set_permission(disable, stop)
-
+    admitted, newest = capture.append(locator, 2)
+    frontier = writer.capture_frontier(disable, locator)
+    with pytest.raises(LedgerError, match="current armed frontier"):
+        writer.verify_boundary(disable, locator, early)
+    with pytest.raises(module.BoundaryUnavailable):
+        writer.verify_boundary(disable, locator, frontier)
+    capture.append(locator)
+    stop = writer.verify_boundary(disable, locator, frontier)
+    assert newest.ordinal < stop.ordinal
+    writer.set_permission(disable, stop)
     assert (
-        registry.span_disposition(
-            PROJECT_A, SOURCE, stream, admitted.ordinal, stop.ordinal
+        writer.span_disposition(
+            PROJECT_A, SOURCE, locator.stream_ref, admitted.ordinal, stop.ordinal
         )
         is Eligibility.ELIGIBLE
     )
@@ -771,30 +737,24 @@ def test_historical_boundary_cannot_disable_previously_admitted_usage(
 
 @pytest.mark.parametrize("failure", ["io", "proof"])
 def test_transient_native_read_failure_leaves_capture_command_queued(
-    tmp_path, monkeypatch, source, failure
+    monkeypatch, failure
 ):
-    from aitm_usage.monitor_control import ControlInbox
+    capture, inbox, _, command = _queued_capture_policy(monkeypatch)
+    writer = capture.writer
+    module = _module()
 
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
-    inbox = ControlInbox(registry.root)
-    enable = module.CaptureChange(PROJECT_A, SOURCE, True)
-    disable = replace(enable, enabled=False)
-    command = module.ControlCommand(UUID(int=303), disable)
-
-    def unavailable(_change, _known):
+    def unavailable(change, known):
+        assert change == command.payload and known == {capture.first.stream_ref}
         if failure == "io":
             raise OSError("native file is temporarily unavailable")
         raise module.BoundaryUnavailable("native boundary is temporarily unavailable")
 
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        _approve(writer, module, root)
-        writer.set_permission(enable, _advance(writer, enable, log, reader, root))
-        inbox.enqueue(command)
-        assert writer.apply_pending(inbox, writer.lease, unavailable) == ()
-    assert inbox.status(command.command_id).status is module.ControlStatus.QUEUED
-    assert registry.source_read_allowed(PROJECT_A, SOURCE)
+    before = capture.view
+    assert writer.apply_pending(inbox, writer.lease, unavailable) == ()
+    assert inbox.pending == [command]
+    assert capture.view.receipts == before.receipts
+    assert capture.view.epochs == before.epochs
+    assert writer.source_read_allowed(PROJECT_A, SOURCE)
 
 
 def test_capture_frontier_waits_for_complete_native_tail(tmp_path, monkeypatch, source):
@@ -815,29 +775,24 @@ def test_capture_frontier_waits_for_complete_native_tail(tmp_path, monkeypatch, 
         assert writer.set_permission(enable, proof).enabled
 
 
-def test_rearming_a_capture_change_invalidates_earlier_native_proof(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+def test_rearming_a_capture_change_invalidates_earlier_native_proof(monkeypatch):
+    module = _module()
+    capture = CapturePolicy(monkeypatch, SOURCE, CUTOFF, (PROJECT_A,))
+    writer, locator = capture.writer, capture.first
     change = module.CaptureChange(PROJECT_A, SOURCE, True)
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
-        _approve(writer, module, root)
-        old_proof = _advance(writer, change, log, reader, root)
-        log.append()
-        current = writer.capture_frontier(change, _locate(reader, root))
-        with pytest.raises(LedgerError):
-            writer.set_permission(change, old_proof)
-        with pytest.raises(LedgerError):
-            writer.verify_boundary(change, _locate(reader, root), replace(current))
-        with pytest.raises(module.BoundaryUnavailable):
-            writer.verify_boundary(change, _locate(reader, root), current)
-
-        log.append()
-        fresh = writer.verify_boundary(change, _locate(reader, root), current)
-        assert fresh.ordinal > old_proof.ordinal
-        assert writer.set_permission(change, fresh).enabled
+    old_proof = capture.advance(change, locator)
+    capture.append(locator)
+    current = writer.capture_frontier(change, locator)
+    with pytest.raises(LedgerError, match="verified boundary"):
+        writer.set_permission(change, old_proof)
+    with pytest.raises(LedgerError, match="current armed frontier"):
+        writer.verify_boundary(change, locator, replace(current))
+    with pytest.raises(module.BoundaryUnavailable):
+        writer.verify_boundary(change, locator, current)
+    capture.append(locator)
+    fresh = writer.verify_boundary(change, locator, current)
+    assert fresh.ordinal > old_proof.ordinal
+    assert writer.set_permission(change, fresh).enabled
 
 
 @pytest.mark.parametrize(
@@ -1159,42 +1114,48 @@ def test_native_parser_valueerror_keeps_disable_queued_with_prior_read_bound(
     )
 
 
-def test_later_enable_obeys_durable_submission_order(queued_disable):
-    scenario = queued_disable
-    disable_fence = _physical_ordinal(scenario.log)
-    reenable = scenario.module.ControlCommand(UUID(int=200), scenario.enable)
-    status = scenario.module.ControlStatus
-    assert scenario.submit().status is status.QUEUED
-    assert scenario.inbox.enqueue(reenable).status is status.QUEUED
+def test_later_enable_obeys_durable_submission_order(monkeypatch):
+    capture, inbox, enable, disable = _queued_capture_policy(monkeypatch)
+    module = _module()
+    writer, first = capture.writer, capture.first
+    reenable = module.ControlCommand(UUID(int=200), enable)
+    inbox.pending.append(reenable)
 
     def locate(change, known):
-        assert change in (scenario.disable, scenario.enable)
-        assert known == frozenset({scenario.stream})
-        return tuple(scenario.reader.discover(scenario.root))
+        assert change in (disable.payload, enable)
+        assert known == {first.stream_ref}
+        return (first,)
 
-    assert scenario.poll(locate) == ()
-    scenario.log.append()
-    enable_fence = _physical_ordinal(scenario.log)
-    (first,) = scenario.poll(locate)
-    assert (first.command_id, first.status) == (
-        scenario.command.command_id,
-        status.APPLIED,
+    assert writer.apply_pending(inbox, writer.lease, locate) == ()
+    (arm,) = capture.view.pending_capture[0].arms
+    capture.append(first)
+    (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+    assert (receipt.command_id, receipt.status) == (
+        disable.command_id,
+        module.ControlStatus.APPLIED,
     )
-    assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
-    assert scenario.inbox.status(reenable.command_id).status is status.QUEUED
+    assert not writer.source_read_allowed(PROJECT_A, SOURCE)
+    assert inbox.pending == [reenable]
 
-    applied = scenario.poll(locate)
-    if not applied:
-        applied = scenario.poll(locate)
-    (second,) = applied
-    assert (second.command_id, second.status) == (reenable.command_id, status.APPLIED)
-    assert scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+    (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+    assert (receipt.command_id, receipt.status) == (
+        reenable.command_id,
+        module.ControlStatus.APPLIED,
+    )
+    assert inbox.pending == []
+    assert writer.source_read_allowed(PROJECT_A, SOURCE)
+    enabled = capture.view.epochs[-1].ordinal
+    assert enabled > arm.ordinal
     assert (
-        scenario.decide(scenario.stream, disable_fence, enable_fence)
+        writer.span_disposition(
+            PROJECT_A, SOURCE, first.stream_ref, arm.ordinal, enabled
+        )
         is Eligibility.EXCLUDED
     )
     assert (
-        scenario.decide(scenario.stream, enable_fence, enable_fence + 1)
+        writer.span_disposition(
+            PROJECT_A, SOURCE, first.stream_ref, enabled, enabled + 1
+        )
         is Eligibility.ELIGIBLE
     )
 

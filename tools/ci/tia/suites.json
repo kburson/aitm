@@ -335,6 +335,46 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_ambiguous_current_locator_keeps_existing_stream_queued",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_historical_boundary_cannot_disable_previously_admitted_usage",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_later_enable_obeys_durable_submission_order",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_new_stream_enrolls_only_while_source_permission_is_enabled",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_pending_disable_prevents_new_enrollment_and_ignores_unrelated_locator",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_rearming_a_capture_change_invalidates_earlier_native_proof",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_shared_installation_keeps_project_permissions_independent",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_transient_native_read_failure_leaves_capture_command_queued",
+      "suite": "unit",
+      "isolation_group": "capture-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_due_turns_rotate_by_stream_inside_one_project",
       "suite": "unit",
       "isolation_group": "scheduler-policy"
