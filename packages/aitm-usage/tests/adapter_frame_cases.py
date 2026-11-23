@@ -40,7 +40,7 @@ class AdapterFrames:
     ledger = _AdapterEvidence(b"adapter-frame-policy-fixture")
     checkout = Path("/fixture/checkout")
 
-    def read_monitor(self, rows, monkeypatch):
+    def read_monitor(self, rows, monkeypatch, *, revision_witnesses=None):
         frames = self.batch(rows)
         first = frames.frames[0]
         path = Path("/fixture/transcripts/native.jsonl")
@@ -70,7 +70,11 @@ class AdapterFrames:
         monkeypatch.setattr(adapter, "scan", read)
         monkeypatch.setattr(adapter.platform, "system", lambda: "Darwin")
         monkeypatch.setattr(adapter.platform, "machine", lambda: "arm64")
-        return adapter.ProviderAdapter().read_delta(adapter.SourceLocator(source), None)
+        return adapter.ProviderAdapter().read_delta(
+            adapter.SourceLocator(source),
+            None,
+            _revision_witnesses=revision_witnesses,
+        )
 
     def batch(self, rows, *, anchored=True):
         evidence = self.ledger

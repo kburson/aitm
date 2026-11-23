@@ -335,6 +335,21 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_processing_invalidation_requires_accepted_counts",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_requires_the_exact_queued_body",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_unverified_mode_cannot_advance_cursor",
       "suite": "unit",
       "isolation_group": "native-admission-policy"

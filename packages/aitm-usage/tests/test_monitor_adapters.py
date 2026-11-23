@@ -14,6 +14,7 @@ from uuid import UUID
 import pytest
 from adapter_frame_cases import AdapterFrames
 from test_claude import MODEL, _native_tool_turn, cost, model_counts, request, user
+from test_claude import SESSION as CLAUDE_SESSION
 from test_claude import row as claude_row
 from test_claude import usage as claude_usage
 from test_codex import (
@@ -536,9 +537,8 @@ def test_linux_codex_scope_command_can_bind_the_project(monkeypatch, source):
 
 
 @pytest.mark.parametrize("replacement", ["no-lf", "extra-lf", "failed", "extra-field"])
-def test_linux_codex_requires_the_exact_queued_body(monkeypatch, source, replacement):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_requires_the_exact_queued_body(monkeypatch, replacement):
+    checkout = AdapterFrames.checkout
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     block = rows[15]["payload"]["output"][1]
     if replacement == "no-lf":
@@ -552,9 +552,7 @@ def test_linux_codex_requires_the_exact_queued_body(monkeypatch, source, replace
         else:
             receipt["extra"] = True
         block["text"] = json.dumps(receipt) + "\n"
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert result.cursor is not None
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
 
@@ -1046,25 +1044,27 @@ def test_claude_revision_witnesses_bind_each_committing_row(
     )
 
 
-def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
-    monkeypatch, source
-):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
-    _write(
-        directory / "terminal.jsonl",
-        [
-            user(checkout),
-            request(checkout, stop=None),
-            request(checkout, req="req-second", msg="msg-second"),
-            request(checkout),
-            user(checkout),
-            cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
-        ],
+def _claude_frames():
+    return AdapterFrames(
+        Provider.CLAUDE, ClientVersion.CLAUDE_2_1_318, CLAUDE_SESSION, CUTOFF
     )
-    (locator,) = adapter.discover(root)
+
+
+def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
+    monkeypatch,
+):
+    frames = _claude_frames()
+    checkout = frames.checkout
+    rows = [
+        user(checkout),
+        request(checkout, stop=None),
+        request(checkout, req="req-second", msg="msg-second"),
+        request(checkout),
+        user(checkout),
+        cost(**{MODEL: model_counts(8, 4, 10, 6, 8)}),
+    ]
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
     assert [item.revision for item in batch.observations] == [1, 1, 2, 2]
     (_, first), (_, second) = witnesses
     assert first.predecessor_ordinal == 1
@@ -1077,6 +1077,13 @@ def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
             (2, 3),
         )
     )
+
+
+@pytest.fixture
+def terminal_native_source(request):
+    if request.node.callspec.params["linkage"] == "linked":
+        return request.getfixturevalue("source")
+    return None
 
 
 @pytest.mark.parametrize(
@@ -1094,10 +1101,12 @@ def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
     ],
 )
 def test_claude_terminal_witness_requires_verified_nested_contributor(
-    monkeypatch, source, linkage
+    monkeypatch, terminal_native_source, linkage
 ):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    frames = _claude_frames()
+    checkout = (
+        frames.checkout if terminal_native_source is None else terminal_native_source[2]
+    )
     tool_id = "toolu-terminal-agent"
 
     def child(parent, output=8):
@@ -1160,9 +1169,18 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
             modelUsage={MODEL: model_counts(4 + child_output, 4, 10, 6, 8)},
         )
     )
-    _write(directory / "terminal-agent.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    legacy = adapter.read_delta(locator, None)
+    if terminal_native_source is not None:
+        _, adapter, root = _adapter(monkeypatch, terminal_native_source)
+        _, directory, _ = terminal_native_source
+        _write(directory / "terminal-agent.jsonl", rows)
+        (locator,) = adapter.discover(root)
+
+    def read(witnesses=None):
+        if terminal_native_source is None:
+            return frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
+        return adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+
+    legacy = read()
     assert legacy.cursor is not None
     completed = [
         item
@@ -1175,7 +1193,7 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
     ) is (linkage in {"foreign", "missing", "late-repaired", "foreign-after-link"})
 
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = read(witnesses)
     assert batch == legacy
     if linkage in {"linked", "same-after-reset"}:
         ((successor, witness),) = witnesses
@@ -1247,10 +1265,10 @@ def test_claude_terminal_witness_holds_contributor_from_prior_read(monkeypatch, 
 
 @pytest.mark.parametrize("regression", [False, True])
 def test_claude_processing_invalidation_requires_accepted_counts(
-    monkeypatch, source, regression
+    monkeypatch, regression
 ):
-    _, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    frames = _claude_frames()
+    checkout = frames.checkout
     rows = [
         user(checkout),
         request(checkout, counts=claude_usage(3), stop=None),
@@ -1259,9 +1277,7 @@ def test_claude_processing_invalidation_requires_accepted_counts(
         ),
         request(checkout, counts=claude_usage(4)),
     ]
-    _write(directory / "tier.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    legacy = adapter.read_delta(locator, None)
+    legacy = frames.read_monitor(rows, monkeypatch)
     assert legacy.observations[0].usage.processing_tier is ProcessingTier.STANDARD
     assert legacy.observations[1].usage.processing_tier is None
     assert (
@@ -1269,7 +1285,7 @@ def test_claude_processing_invalidation_requires_accepted_counts(
     ) is regression
 
     witnesses = []
-    batch = adapter.read_delta(locator, None, _revision_witnesses=witnesses)
+    batch = frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
     assert batch == legacy
     if regression:
         assert witnesses == []
