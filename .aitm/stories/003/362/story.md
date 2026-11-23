@@ -3,14 +3,14 @@ schema: "aitm.story/v0"
 id: 362
 title: "Flag a scheduled build failure"
 kind: "epic"
-state: "review"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/362"
 parent: null
 children: [363, 364, 365, 366]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-23T00:17:56Z"
+updated: "2026-11-23T00:18:22Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
