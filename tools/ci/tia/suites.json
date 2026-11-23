@@ -335,6 +335,61 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state",
+      "suite": "unit",
+      "isolation_group": "legacy-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_preserves_legacy_conflict_for_changed_bytes",
+      "suite": "unit",
+      "isolation_group": "legacy-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_export_allowlists_refs_and_gap_only_coverage",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_receiver_refuses_duplicate_source_and_authenticated_tag",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_receiver_rejects_non_string_datetime_and_draft_uuid",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_control_location_cannot_be_inside_project_state",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_control_location_rejects_case_alias_of_project_state",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_private_path_rejects_mismatched_owner",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_final_relationship_replay_checks_effect_identity_without_revalidating_graph",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_rollup_prices_only_current_observations_in_its_view",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_cloned_scope_proof_and_changed_authorized_bytes_are_refused",
       "suite": "unit",
       "isolation_group": "native-scope-policy"

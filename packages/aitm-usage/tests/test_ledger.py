@@ -1,3 +1,4 @@
+import errno
 import importlib
 import json
 import os
@@ -13,6 +14,7 @@ from datetime import UTC, datetime, timedelta, timezone
 from hashlib import sha256
 from importlib.util import find_spec
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -24,10 +26,22 @@ NOW = datetime(2026, 11, 9, 14, 0, tzinfo=UTC)
 CANARY = "/private/transcripts/raw-provider-handle-canary"
 ROOT_PREFIX = "Library/Application Support/aitm-usage"
 
+METADATA_MODE_CASES = {"database", "wal", "shm"}
+PHYSICAL_ALIAS_CASES = {"equal-missing", "control-inside-state-existing"}
+
+
+def _uses_path_metadata(request):
+    name = request.node.originalname
+    if name == "test_private_paths_have_exact_modes_and_reject_looser_modes":
+        return request.node.callspec.id in METADATA_MODE_CASES
+    if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
+        return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
+    return "ledger_path_metadata" in request.fixturenames
+
 
 @pytest.fixture(autouse=True)
 def isolated_control_home(request, monkeypatch):
-    if "memory_state" in request.fixturenames:
+    if "memory_state" in request.fixturenames or _uses_path_metadata(request):
         return
     tmp_path = request.getfixturevalue("tmp_path")
     home = tmp_path / "home"
@@ -76,6 +90,107 @@ def memory_state(modules, monkeypatch):
     writer = Mock(side_effect=AssertionError("invalid input reached the ledger writer"))
     monkeypatch.setattr(ledger_module.Ledger, "writer", writer)
     return ledger, types, writer
+
+
+@pytest.fixture
+def ledger_path_metadata(modules, monkeypatch):
+    """Supply private-file observations without creating or opening disk state."""
+    ledger_module, _ = modules
+    uid = 501
+    entries = {}
+
+    class ObservedPath(type(Path())):
+        def stat(self, *, follow_symlinks=True):
+            try:
+                return entries[str(self)]
+            except KeyError:
+                raise FileNotFoundError(
+                    errno.ENOENT, "Test path is absent", self
+                ) from None
+
+        def lstat(self):
+            return self.stat(follow_symlinks=False)
+
+        def mkdir(self, *args, **kwargs):
+            pytest.fail(f"Ledger attempted to create {self} after invalid admission")
+
+    def add_path(path, mode, *, owner=uid):
+        entries[str(path)] = os.stat_result(
+            (mode, len(entries) + 1, 1, 1, owner, 0, 0, 0, 0, 0)
+        )
+
+    def add_directory(path):
+        for directory in (*reversed(path.parents), path):
+            if not directory.exists():
+                add_path(directory, stat.S_IFDIR | 0o700)
+
+    def alias_directory(alias, target):
+        entries[str(alias)] = target.stat()
+
+    def lower_permissions(path, mode):
+        info = path.stat()
+        entries[str(path)] = os.stat_result(
+            (stat.S_IFMT(info.st_mode) | mode, *info[1:])
+        )
+
+    def open_descriptor(path, flags, *_):
+        assert not flags & os.O_CREAT, f"Ledger attempted to create {path}"
+        return path
+
+    def unexpected_connection(*args, **kwargs):
+        pytest.fail("Unsafe ledger path reached SQLite")
+
+    monkeypatch.setattr(
+        ledger_module,
+        "os",
+        SimpleNamespace(
+            path=os.path,
+            geteuid=lambda: uid,
+            open=open_descriptor,
+            fstat=lambda descriptor: descriptor.stat(),
+            close=lambda _: None,
+            O_RDONLY=os.O_RDONLY,
+            O_RDWR=os.O_RDWR,
+            O_DIRECTORY=os.O_DIRECTORY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            O_CREAT=os.O_CREAT,
+            O_EXCL=os.O_EXCL,
+        ),
+    )
+    monkeypatch.setattr(
+        ledger_module,
+        "fcntl",
+        SimpleNamespace(LOCK_EX=1, LOCK_NB=2, flock=lambda *_: None),
+    )
+    monkeypatch.setattr(
+        ledger_module, "check_private_acl", lambda *args, **kwargs: None
+    )
+    monkeypatch.setattr(ledger_module, "_connection", unexpected_connection)
+
+    base = ObservedPath("/fixture")
+    home = base / "home"
+    control = home / "Library" / "Application Support" / "aitm-usage-control"
+    add_directory(home)
+    monkeypatch.setattr(ledger_module, "_control_root", lambda: control)
+    return SimpleNamespace(
+        base=base,
+        home=home,
+        control=control,
+        add_path=add_path,
+        add_directory=add_directory,
+        alias_directory=alias_directory,
+        lower_permissions=lower_permissions,
+        entries=entries,
+        uid=uid,
+    )
+
+
+@pytest.fixture
+def path_metadata(request):
+    if _uses_path_metadata(request):
+        return request.getfixturevalue("ledger_path_metadata")
+    return None
 
 
 def sample_batch(ledger, types):
@@ -346,25 +461,50 @@ def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
 @pytest.mark.parametrize(
     "relative_path", ["project", "store", "database", "lock", "key", "wal", "shm"]
 )
-def test_private_paths_have_exact_modes_and_reject_looser_modes(state, relative_path):
+def test_private_paths_have_exact_modes_and_reject_looser_modes(
+    request, modules, relative_path, path_metadata
+):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    ledger_module, types = modules
+    metadata = path_metadata
+    if metadata is None:
+        ledger, _ = request.getfixturevalue("state")
+    else:
+        key = b"a" * 32
+        ledger = ledger_module.Ledger(
+            metadata.base / "project", ledger_module._identity(PROJECT, key), key
+        )
     paths = {
         "project": ledger.root,
         "store": ledger.database_path.parent,
         "database": ledger.database_path,
         "lock": ledger.lock_path,
         "key": ledger.key_path,
-        "wal": Path(str(ledger.database_path) + "-wal"),
-        "shm": Path(str(ledger.database_path) + "-shm"),
+        "wal": ledger.database_path.with_name(ledger.database_path.name + "-wal"),
+        "shm": ledger.database_path.with_name(ledger.database_path.name + "-shm"),
     }
+    if metadata is None:
+        # Independently check the modes of the files actually created by SQLite.
+        for sqlite_path in ("database", "wal", "shm"):
+            assert stat.S_IMODE(paths[sqlite_path].stat().st_mode) == 0o600
+    else:
+        metadata.add_directory(paths["store"])
+        metadata.add_directory(metadata.control)
+        metadata.add_path(metadata.control / f"{PROJECT}.lock", stat.S_IFREG | 0o600)
+        for kind in ("database", "lock", "key", "wal", "shm"):
+            metadata.add_path(paths[kind], stat.S_IFREG | 0o600)
     path = paths[relative_path]
-    assert stat.S_IMODE(path.stat().st_mode) == (0o700 if path.is_dir() else 0o600)
-    path.chmod(0o755 if path.is_dir() else 0o644)
-    with pytest.raises(LedgerError):
+    is_directory = relative_path in ("project", "store")
+    assert stat.S_IMODE(path.stat().st_mode) == (0o700 if is_directory else 0o600)
+    loose_mode = 0o755 if is_directory else 0o644
+    if metadata is None:
+        path.chmod(loose_mode)
+    else:
+        metadata.lower_permissions(path, loose_mode)
+    with pytest.raises(LedgerError, match="Unsafe private ledger path"):
         type(ledger).open(ledger.root, PROJECT)
-    with pytest.raises(LedgerError):
+    with pytest.raises(LedgerError, match="Unsafe private ledger path"):
         ledger.apply(types.LedgerBatch())
 
 
@@ -668,14 +808,18 @@ def test_real_mac_default_ancestry_allows_standard_deny_delete(
         validate_private_path(base, directory=True)
 
 
-def test_private_path_rejects_mismatched_owner(state, monkeypatch):
+def test_private_path_rejects_mismatched_owner(ledger_path_metadata):
     from aitm_usage.ledger import LedgerError, validate_private_path
 
-    ledger, _ = state
-    actual = ledger.key_path.stat().st_uid
-    monkeypatch.setattr(os, "geteuid", lambda: actual + 1)
-    with pytest.raises(LedgerError):
-        validate_private_path(ledger.key_path)
+    metadata = ledger_path_metadata
+    path = metadata.base / "pseudonym.key"
+    metadata.add_path(path, stat.S_IFREG | 0o600, owner=metadata.uid + 1)
+    with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+        validate_private_path(path)
+    metadata.add_path(path, stat.S_IFREG | 0o600)
+    metadata.add_path(metadata.base, stat.S_IFDIR | 0o700, owner=metadata.uid + 1)
+    with pytest.raises(LedgerError, match="Unsafe private ledger ancestry"):
+        validate_private_path(path)
 
 
 @pytest.mark.parametrize("label", ["model", "client_version", "checkpoint_version"])
@@ -836,10 +980,12 @@ def test_extended_grant_on_private_key_refused_before_read(state, grant_extra_ac
     assert durable_data(ledger) == before
 
 
-def test_control_location_cannot_be_inside_project_state(tmp_path, modules):
+def test_control_location_cannot_be_inside_project_state(modules, ledger_path_metadata):
     ledger_module, _ = modules
-    root = control_directory().parent
-    with pytest.raises(ledger_module.LedgerError):
+    root = ledger_path_metadata.control.parent
+    with pytest.raises(
+        ledger_module.LedgerError, match="Writer guard must be outside project state"
+    ):
         ledger_module.Ledger.initialize(root, PROJECT)
     assert not root.exists()
 
@@ -851,10 +997,14 @@ def test_distinct_project_can_write_while_first_uuid_guard_held(state, tmp_path)
         assert other.apply(sample_batch(other, types)) == 1
 
 
-def test_control_location_rejects_case_alias_of_project_state(modules):
+def test_control_location_rejects_case_alias_of_project_state(
+    modules, ledger_path_metadata
+):
     ledger_module, _ = modules
-    root = control_directory().with_name("AITM-USAGE-CONTROL")
-    with pytest.raises(ledger_module.LedgerError):
+    root = ledger_path_metadata.control.with_name("AITM-USAGE-CONTROL")
+    with pytest.raises(
+        ledger_module.LedgerError, match="Writer guard must be outside project state"
+    ):
         ledger_module.Ledger.initialize(root, PROJECT)
     assert not root.exists()
 
@@ -876,13 +1026,21 @@ def test_source_proof_also_requires_exact_wire_shape(memory_state):
     "relation", ["equal", "control-inside-state", "state-inside-control"]
 )
 def test_apfs_firmlink_overlap_refused_before_private_creation(
-    modules, existing, relation, tmp_path, alias_directory_identity
+    modules, existing, relation, request, path_metadata
 ):
     ledger_module, _ = modules
-    home = Path.home()
-    control = control_directory()
-    alias = tmp_path / "alias"
-    alias_directory_identity(alias, home)
+    metadata = path_metadata
+    if metadata is None:
+        tmp_path = request.getfixturevalue("tmp_path")
+        home = Path.home()
+        control = control_directory()
+        alias = tmp_path / "alias"
+        request.getfixturevalue("alias_directory_identity")(alias, home)
+    else:
+        home = metadata.home
+        control = metadata.control
+        alias = metadata.base / "alias"
+        metadata.alias_directory(alias, home)
     project = {
         "equal": alias / control.relative_to(home),
         "control-inside-state": alias / control.parent.relative_to(home),
@@ -890,7 +1048,12 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
     }[relation]
     if existing:
         for path in (control, project):
-            path.mkdir(mode=0o700, parents=True, exist_ok=True)
+            if metadata is None:
+                path.mkdir(mode=0o700, parents=True, exist_ok=True)
+            else:
+                metadata.add_directory(path)
+    if metadata is not None:
+        before = dict(metadata.entries)
 
     with pytest.raises(
         ledger_module.LedgerError, match="Writer guard must be outside project state"
@@ -898,9 +1061,12 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
         ledger_module.Ledger.initialize(project, PROJECT)
 
     assert project.exists() == control.exists() == existing
-    assert not list(tmp_path.rglob("*.lock"))
-    assert not list(tmp_path.rglob("pseudonym.key"))
-    assert not list(tmp_path.rglob("usage.sqlite3"))
+    if metadata is None:
+        assert not list(tmp_path.rglob("*.lock"))
+        assert not list(tmp_path.rglob("pseudonym.key"))
+        assert not list(tmp_path.rglob("usage.sqlite3"))
+    else:
+        assert metadata.entries == before
 
 
 def test_distinct_apfs_alias_cannot_admit_a_second_writer(tmp_path, modules):

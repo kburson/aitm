@@ -15,7 +15,7 @@ from uuid import UUID
 import pytest
 from test_ledger import _memory_ledger
 
-from aitm_usage import cli, monitor_control, monitor_registry, scopes
+from aitm_usage import cli, monitor_control, monitor_registry, scopes, service
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
 from aitm_usage.scope_admission import adopted_request, legacy_grant_id
@@ -79,6 +79,18 @@ def commit_adoption(ledger, adoption_id, **binding_changes):
         assert scopes._publish(project, ADOPTION_FILE, record)
 
 
+def _cli_runner(root, monkeypatch, capsys):
+    def run(args, *, as_json=True):
+        flags = ["--json"] if as_json else []
+        monkeypatch.setattr(
+            sys, "argv", ["aitm-usage", "--project", str(root), *args, *flags]
+        )
+        code = cli.main()
+        return code, capsys.readouterr()
+
+    return run
+
+
 @pytest.fixture
 def legacy(tmp_path, monkeypatch, capsys):
     monitor_root = tmp_path / "monitor"
@@ -104,15 +116,106 @@ def legacy(tmp_path, monkeypatch, capsys):
     )
     register_project(root, config)
 
-    def run(args, *, as_json=True):
-        flags = ["--json"] if as_json else []
-        monkeypatch.setattr(
-            sys, "argv", ["aitm-usage", "--project", str(root), *args, *flags]
-        )
-        code = cli.main()
-        return code, capsys.readouterr()
+    return (
+        Ledger.open(root, PROJECT),
+        monitor_root,
+        _cli_runner(root, monkeypatch, capsys),
+    )
 
-    return Ledger.open(root, PROJECT), monitor_root, run
+
+@pytest.fixture
+def memory_legacy(monkeypatch, capsys):
+    ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
+    project = SimpleNamespace(path=ledger.root, identities=((1, 2),), check=Mock())
+    inbox = SimpleNamespace(fd=10)
+    state_files = {}
+    inbox_files = {}
+    inputs = {}
+    receipt_rows = {}
+
+    def open_ledger(path, project_id):
+        assert (path, project_id) == (ledger.root, PROJECT)
+        return ledger
+
+    def pin_project(path):
+        assert path == ledger.root
+        return nullcontext(project)
+
+    def inbox_publication(actual_ledger, *, project):
+        assert actual_ledger is ledger
+        assert ADOPTION_FILE not in state_files, (
+            "adoption must fence legacy publication"
+        )
+        return nullcontext((project, inbox))
+
+    def read_private(directory, name):
+        if directory is project:
+            assert name == ADOPTION_FILE
+            return state_files.get(name)
+        assert directory is inbox
+        return inbox_files.get(name)
+
+    def publish(directory, name, data):
+        assert directory is inbox
+        assert name not in inbox_files, "legacy command publication is exclusive"
+        inbox_files[name] = data
+        return True
+
+    def list_inbox(descriptor):
+        assert descriptor == inbox.fd
+        return list(inbox_files)
+
+    def open_input(path, mode):
+        assert mode == "rb"
+        return BytesIO(inputs[path])
+
+    def query_receipt(_query, params):
+        (key,) = params
+        return SimpleNamespace(fetchone=lambda: receipt_rows.get(key))
+
+    def store_receipt(receipt):
+        key = ledger.pseudonymize("inbox-command", str(receipt.command.command_id))
+        receipt_rows[key.value] = (1, _encode(Revision(key, 1, receipt), Revision))
+
+    def publish_adoption():
+        state_files[ADOPTION_FILE] = _adoption_bytes(ledger, project, ADOPTION)
+
+    def unexpected_registry(*args, **kwargs):
+        pytest.fail("Legacy receipt or publication reached the monitor registry")
+
+    def unexpected_enqueue(*args, **kwargs):
+        pytest.fail("Legacy receipt or publication forwarded to the monitor")
+
+    def unexpected_memo(*args, **kwargs):
+        pytest.fail("Legacy path wrote a Claude session memo")
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(
+        Ledger,
+        "reader",
+        lambda self: nullcontext(SimpleNamespace(execute=query_receipt)),
+    )
+    monkeypatch.setattr(cli, "open_project", lambda path: open_ledger(path, PROJECT))
+    monkeypatch.setattr(cli, "version", lambda _: "0.0.0")
+    monkeypatch.setattr(scopes, "_pin_directory", pin_project)
+    monkeypatch.setattr(scopes, "_inbox_publication", inbox_publication)
+    monkeypatch.setattr(scopes, "_read_private", read_private)
+    monkeypatch.setattr(scopes, "_publish", publish)
+    monkeypatch.setattr(scopes, "os", SimpleNamespace(listdir=list_inbox))
+    monkeypatch.setattr(service, "remember_claude_session", unexpected_memo)
+    monkeypatch.setattr(monitor_registry.Registry, "view", unexpected_registry)
+    monkeypatch.setattr(monitor_control, "enqueue_adopted_scope", unexpected_enqueue)
+    monkeypatch.setattr(Path, "open", open_input)
+    monkeypatch.setenv("CODEX_THREAD_ID", str(CODEX))
+
+    return SimpleNamespace(
+        ledger=ledger,
+        inputs=inputs,
+        inbox=inbox_files,
+        run=_cli_runner(ledger.root, monkeypatch, capsys),
+        publish_adoption=publish_adoption,
+        store_receipt=store_receipt,
+    )
 
 
 def invocation(
@@ -182,19 +285,20 @@ def invocation(
     return ("scope", "correct", "--correction", str(input_file)), correction, None
 
 
-def install_adopted_capture(monkeypatch, ledger):
+def install_adopted_capture(monkeypatch, ledger, *, physical_lock=True):
     captured = []
 
     def enqueue_adopted(actual_ledger, adoption_id, command, claude_session):
         assert actual_ledger.identity == ledger.identity
         assert adoption_id == ADOPTION
-        # A separate open file description can acquire this lock only once the
-        # legacy producer has released it.
-        fd = os.open(ledger.root / "inbox", os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        finally:
-            os.close(fd)
+        if physical_lock:
+            # A separate open file description can acquire this lock only once the
+            # legacy producer has released it.
+            fd = os.open(ledger.root / "inbox", os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            finally:
+                os.close(fd)
         captured.append((encode_command(command), claude_session))
         return True
 
@@ -215,15 +319,30 @@ def install_adopted_capture(monkeypatch, ledger):
     ],
 )
 def test_adopted_legacy_invocations_preserve_command_and_receipt(
-    legacy, monkeypatch, action, provider
+    request, monkeypatch, action, provider
 ):
-    ledger, _, run = legacy
-    args, payload, session = invocation(ledger, action, provider=provider)
-    commit_adoption(ledger, ADOPTION)
-    captured = install_adopted_capture(monkeypatch, ledger)
     # Unclassifiable legacy bytes would halt relationship enqueue. Adoption
     # leaves those bytes in place and uses the monitor queue instead.
-    (ledger.root / "inbox" / "old.json").write_bytes(b"legacy input")
+    memory = (
+        request.getfixturevalue("memory_legacy")
+        if action in {"bind", "correct", "parent"}
+        else None
+    )
+    if memory is None:
+        ledger, _, run = request.getfixturevalue("legacy")
+        args, payload, session = invocation(ledger, action, provider=provider)
+        commit_adoption(ledger, ADOPTION)
+        (ledger.root / "inbox" / "old.json").write_bytes(b"legacy input")
+    else:
+        ledger, run = memory.ledger, memory.run
+        args, payload, session = invocation(
+            ledger, action, provider=provider, write_input=memory.inputs.__setitem__
+        )
+        memory.publish_adoption()
+        memory.inbox["old.json"] = b"legacy input"
+    captured = install_adopted_capture(
+        monkeypatch, ledger, physical_lock=memory is None
+    )
 
     code, output = run(args)
 
@@ -238,8 +357,11 @@ def test_adopted_legacy_invocations_preserve_command_and_receipt(
     assert captured == [
         (encode_command(InboxCommand(reported_id, PROJECT, payload)), session)
     ]
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert [path.name for path in (ledger.root / "inbox").iterdir()] == ["old.json"]
+    if memory is None:
+        assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+        assert [path.name for path in (ledger.root / "inbox").iterdir()] == ["old.json"]
+    else:
+        assert memory.inbox == {"old.json": b"legacy input"}
 
     repeated_code, repeated_output = run(args, as_json=False)
     assert repeated_code == 0
@@ -534,38 +656,53 @@ def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
     assert ledger.as_of().sequence == before
 
 
-def test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state(legacy):
-    ledger, monitor_root, run = legacy
-    args, payload, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
+def test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state(
+    memory_legacy,
+):
+    ledger = memory_legacy.ledger
+    args, payload, _ = invocation(
+        ledger,
+        "mark",
+        provider=Provider.CLAUDE,
+        write_input=memory_legacy.inputs.__setitem__,
+    )
     command = InboxCommand(COMMAND, PROJECT, payload)
-    establish_legacy_outcome(ledger, command, MarkerDisposition.PENDING)
-    commit_adoption(ledger, ADOPTION)
+    memory_legacy.store_receipt(
+        _evaluate_replayed_receipt(ledger, command, MarkerDisposition.PENDING)
+    )
+    memory_legacy.publish_adoption()
 
-    code, output = run(args)
+    code, output = memory_legacy.run(args)
 
     assert code == 0, output
     assert output.out == f'{{"command_id": "{COMMAND}", "status": "pending"}}\n'
     assert output.err == ""
-    assert not monitor_root.exists()
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+    assert memory_legacy.inbox == {}
 
 
-def test_adopted_replay_preserves_legacy_conflict_for_changed_bytes(legacy):
-    ledger, monitor_root, run = legacy
-    args, payload, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
+def test_adopted_replay_preserves_legacy_conflict_for_changed_bytes(memory_legacy):
+    ledger = memory_legacy.ledger
+    args, payload, _ = invocation(
+        ledger,
+        "mark",
+        provider=Provider.CLAUDE,
+        write_input=memory_legacy.inputs.__setitem__,
+    )
     command = InboxCommand(COMMAND, PROJECT, payload)
-    establish_legacy_outcome(ledger, command, MarkerDisposition.ACCEPTED)
+    memory_legacy.store_receipt(
+        _evaluate_replayed_receipt(ledger, command, MarkerDisposition.ACCEPTED)
+    )
     changed = replace(payload, item=ItemKey(ItemKind.ISSUE, 3))
-    (ledger.root.parent / "scope-input.json").write_bytes(encode_marker(changed))
+    memory_legacy.inputs[ledger.root.parent / "scope-input.json"] = encode_marker(
+        changed
+    )
+    memory_legacy.publish_adoption()
 
-    with adopted_with_witness(ledger, monitor_root) as inbox:
-        code, output = run(args)
-        assert code == 1
-        assert output.out == ""
-        assert output.err == "aitm-usage: inbox command conflict\n"
-        with inbox.publication() as locked:
-            assert list(inbox.iter_pending(locked)) == []
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+    code, output = memory_legacy.run(args)
+    assert code == 1
+    assert output.out == ""
+    assert output.err == "aitm-usage: inbox command conflict\n"
+    assert memory_legacy.inbox == {}
 
 
 @pytest.mark.parametrize("provider", [Provider.CLAUDE, Provider.CODEX])
@@ -786,30 +923,42 @@ def test_pre_adoption_claude_records_memo_and_replays_receipt_despite_monitor_st
 
 
 @pytest.mark.parametrize("action", ["bind", "correct", "alias", "parent"])
-def test_other_pre_adoption_commands_use_legacy_inbox(legacy, monkeypatch, action):
-    ledger, _, run = legacy
+def test_other_pre_adoption_commands_use_legacy_inbox(request, monkeypatch, action):
+    if action == "alias":
+        ledger, _, run = request.getfixturevalue("legacy")
+        args, payload, _ = invocation(ledger, action)
 
-    def read_registry(*args, **kwargs):
-        pytest.fail("pre-adoption command reached the unrelated monitor registry")
+        def read_registry(*args, **kwargs):
+            pytest.fail("pre-adoption command reached the unrelated monitor registry")
 
-    monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
-    args, payload, _ = invocation(ledger, action)
+        def publication_bytes(command_id):
+            return (ledger.root / "inbox" / f"{command_id}.json").read_bytes()
+
+        monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
+    else:
+        memory = request.getfixturevalue("memory_legacy")
+        ledger, run = memory.ledger, memory.run
+        args, payload, _ = invocation(
+            ledger, action, write_input=memory.inputs.__setitem__
+        )
+
+        def publication_bytes(command_id):
+            return memory.inbox[f"{command_id}.json"]
+
     code, output = run(args)
     assert code == 0, output
     reported_id = UUID(json.loads(output.out)["command_id"])
     assert output.out == f'{{"command_id": "{reported_id}", "status": "queued"}}\n'
-    publication = ledger.root / "inbox" / f"{reported_id}.json"
     if isinstance(payload, (DraftAlias, ItemParent)):
         payload = replace(payload, command_id=reported_id)
-        assert json.loads(publication.read_bytes())["order"] == 1
+        assert json.loads(publication_bytes(reported_id))["order"] == 1
         repeated_code, repeated_output = run(args)
         assert repeated_code == 0, repeated_output
         repeated_id = UUID(json.loads(repeated_output.out)["command_id"])
         assert repeated_id != reported_id
-        repeated_publication = ledger.root / "inbox" / f"{repeated_id}.json"
-        assert json.loads(repeated_publication.read_bytes())["order"] == 2
+        assert json.loads(publication_bytes(repeated_id))["order"] == 2
     else:
         assert reported_id == COMMAND
-        assert publication.read_bytes() == encode_command(
+        assert publication_bytes(reported_id) == encode_command(
             InboxCommand(COMMAND, PROJECT, payload)
         )

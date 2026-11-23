@@ -441,7 +441,7 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
         _PRODUCT
         + "test_scope_admission.py::test_scope_cli_refuses_uninitialized_admission_without_creating_state",
         _PRODUCT
-        + "test_scope_legacy.py::test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state",
+        + "test_scope_legacy.py::test_adopted_replay_returns_the_exact_durable_legacy_outcome[accepted-mark-claude]",
     ],
 )
 def test_refreshed_scope_modules_share_native_process_isolation(nodeid):

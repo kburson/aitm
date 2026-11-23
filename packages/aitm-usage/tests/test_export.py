@@ -12,6 +12,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_accounting import reference_rates as reference_rates
 from test_ledger import _memory_ledger
 
 from aitm_usage import ledger as store
@@ -54,6 +55,7 @@ PROJECT = UUID(int=91)
 NOW = datetime(2026, 11, 9, 18, tzinfo=UTC)
 CANARY = "private-export-canary"
 SCHEMA = "aitm.usage.export/v1"
+FIXTURE_KEY = b"export-policy-tests".ljust(32, b"e")
 
 
 @pytest.fixture
@@ -133,6 +135,33 @@ def _seed(project):
         MarkerDisposition.ACCEPTED,
     ]
     return first, second, first_marker
+
+
+@pytest.fixture
+def export_evidence():
+    return _memory_ledger(store, PROJECT, FIXTURE_KEY)
+
+
+def _projected_view(project, card):
+    first, first_marker = _observation(project, "first")
+    second, second_marker = _observation(project, "second", partial=True)
+    accounting = account_observations(
+        AdapterResult((second, first)), card, ledger=project
+    )
+    enrollments = tuple(
+        Revision(
+            _ref(project, str(marker.marker_id)),
+            1,
+            ScopeEnrollment(marker, revision.record.boundary, None),
+        )
+        for revision, marker in ((first, first_marker), (second, second_marker))
+    )
+    return (
+        LedgerView(PROJECT, 1, (*accounting.revisions, *enrollments), ()),
+        first,
+        second,
+        first_marker,
+    )
 
 
 def _correct(project, marker):
@@ -367,9 +396,16 @@ def test_replay_cutoff_and_pending_finalization(project, tmp_path):
     assert export_as_of(before, card, original) == receipt
 
 
-def test_export_allowlists_refs_and_gap_only_coverage(project, tmp_path):
+def test_export_allowlists_refs_and_gap_only_coverage(
+    export_evidence, reference_rates, monkeypatch
+):
     export_as_of = _export()
-    assert project.as_of().sequence == 0
+    from aitm_usage import export
+
+    card = reference_rates
+    project = export_evidence
+    publish = Mock()
+    monkeypatch.setattr(export, "_publish", publish)
     diagnostic = Diagnostic(
         DiagnosticCode.UNSUPPORTED_FORMAT,
         NOW,
@@ -377,11 +413,14 @@ def test_export_allowlists_refs_and_gap_only_coverage(project, tmp_path):
         _ref(project, "unparsed provider payload"),
         22,
     )
-    project.apply(LedgerBatch((Revision(_ref(project, "diagnostic"), 1, diagnostic),)))
-    gap = tmp_path / "gap-only"
-    card = load_rate_card()
-    export_as_of(project.as_of(), card, gap)
-    manifest, data = _snapshot(gap)
+    gap_view = LedgerView(
+        PROJECT, 1, (Revision(_ref(project, "diagnostic"), 1, diagnostic),), ()
+    )
+    gap = Path("/fixture/gap-only")
+    export_as_of(gap_view, card, gap)
+    published_path, files = publish.call_args.args
+    assert published_path == gap
+    manifest, data = files[export.MANIFEST_NAME], files[export.USAGE_NAME]
     assert data == b""
     assert json.loads(manifest)["coverage"] == {
         "complete": 0,
@@ -393,21 +432,27 @@ def test_export_allowlists_refs_and_gap_only_coverage(project, tmp_path):
     ]
     assert diagnostic.source_ref.value.split(":")[-1].encode() not in manifest
 
-    first, second, marker = _seed(project)
+    view, first, second, marker = _projected_view(project, card)
     unknown, _ = _observation(project, "unbound")
     unknown = replace(
         unknown, record=replace(unknown.record, model=f"{CANARY}:unknown-model")
     )
-    project.apply(LedgerBatch((unknown,)))
     malformed = replace(
         first, record=replace(first.record, availability=f"{CANARY}:payload")
     )
+    writer = Mock(side_effect=AssertionError("malformed usage reached the writer"))
+    monkeypatch.setattr(Ledger, "writer", writer)
     with pytest.raises(ValueError):
         project.apply(LedgerBatch((malformed,)))
-    destination = tmp_path / f"{CANARY}-export"
-    view = project.as_of()
+    writer.assert_not_called()
+    destination = Path("/fixture") / f"{CANARY}-export"
+    view = replace(
+        view, sequence=2, revisions=(*gap_view.revisions, *view.revisions, unknown)
+    )
     export_as_of(view, card, destination)
-    manifest, data = _snapshot(destination)
+    published_path, files = publish.call_args.args
+    assert published_path == destination
+    manifest, data = files[export.MANIFEST_NAME], files[export.USAGE_NAME]
     rows = {row["source"]: row for row in map(json.loads, data.splitlines())}
     assert rows[_public(first.key)]["scope"]["participant_ref"] == _public(
         marker.participant_ref
@@ -427,22 +472,15 @@ def test_export_allowlists_refs_and_gap_only_coverage(project, tmp_path):
     for ref in refs:
         assert ref.value.split(":")[-1].encode() not in manifest + data
     assert CANARY.encode() not in manifest + data
-    key_bytes = project.key_path.read_bytes()
-    assert key_bytes not in manifest + data
-    assert key_bytes.hex().encode() not in manifest + data
+    assert FIXTURE_KEY not in manifest + data
+    assert FIXTURE_KEY.hex().encode() not in manifest + data
 
-    from fixtures.receiver import Receiver
-
-    invalid = _changed_snapshot(
-        destination,
-        tmp_path / "invalid",
+    _assert_receiver_refuses_snapshot(
+        monkeypatch,
+        files,
+        match="Invalid usage export fields",
         mutate_row=lambda rows: rows[0].update(prompt=CANARY),
     )
-    with Receiver(tmp_path / "privacy.sqlite", PROJECT) as receiver:
-        with pytest.raises(ValueError):
-            receiver.import_snapshot(invalid)
-        assert receiver.watermark is None
-        assert receiver.accepted == {}
 
 
 def test_export_cli_reads_existing_project_without_writer_lease(project, tmp_path):
@@ -503,10 +541,29 @@ def test_export_cli_reads_existing_project_without_writer_lease(project, tmp_pat
 @pytest.mark.parametrize(
     "kind", ["symlink", "parent-symlink", "traversal", "conflict", "hardlink"]
 )
-def test_refuses_unsafe_or_different_destination(project, tmp_path, kind):
+def test_refuses_unsafe_or_different_destination(
+    request, monkeypatch, reference_rates, kind
+):
     export_as_of = _export()
+    from aitm_usage import export
     from aitm_usage.export import ExportError
 
+    if kind == "traversal":
+        inspect_destination = Mock(
+            side_effect=AssertionError("unsafe filesystem access")
+        )
+        monkeypatch.setattr(export, "_validated_path", inspect_destination)
+        with pytest.raises(ExportError, match="Invalid export snapshot or destination"):
+            export_as_of(
+                LedgerView(PROJECT, 0, (), ()),
+                reference_rates,
+                Path("/fixture/target/../destination"),
+            )
+        inspect_destination.assert_not_called()
+        return
+
+    project = request.getfixturevalue("project")
+    tmp_path = request.getfixturevalue("tmp_path")
     card = load_rate_card()
     target = tmp_path / "target"
     target.mkdir(mode=0o700)
@@ -516,8 +573,6 @@ def test_refuses_unsafe_or_different_destination(project, tmp_path, kind):
     elif kind == "parent-symlink":
         destination.symlink_to(target, target_is_directory=True)
         destination = destination / "child"
-    elif kind == "traversal":
-        destination = target / ".." / "destination"
     elif kind == "hardlink":
         export_as_of(project.as_of(), card, destination)
         os.link(destination / "usage.jsonl", tmp_path / "hardlinked")
@@ -635,46 +690,41 @@ def test_replacing_outer_stage_during_rename_cannot_publish_substitute(
     assert (replacement / "competitor").read_text() == CANARY
 
 
-def _assert_receiver_refuses_snapshot(monkeypatch, **corruption):
+@pytest.fixture
+def rendered_snapshot(export_evidence, reference_rates):
+    from aitm_usage import export
+
+    view, _, _, _ = _projected_view(export_evidence, reference_rates)
+    _, files = export._render(view, reference_rates)
+    return files
+
+
+def _assert_receiver_refuses_snapshot(
+    monkeypatch, files, *, error=ValueError, match=None, **corruption
+):
     from fixtures import receiver
 
     from aitm_usage import export
 
-    ledger = _memory_ledger(store, PROJECT, b"e" * 32)
-    first, first_marker = _observation(ledger, "first")
-    second, second_marker = _observation(ledger, "second", partial=True)
-    card = load_rate_card()
-    accounting = account_observations(
-        AdapterResult((second, first)), card, ledger=ledger
-    )
-    enrollments = tuple(
-        Revision(
-            _ref(ledger, str(marker.marker_id)),
-            1,
-            ScopeEnrollment(marker, revision.record.boundary, None),
-        )
-        for revision, marker in ((first, first_marker), (second, second_marker))
-    )
-    _, files = export._render(
-        LedgerView(PROJECT, 1, (*accounting.revisions, *enrollments), ()), card
-    )
     directory = Path("/fixture/export")
-
-    def read(path):
-        assert path.parent == directory
-        return files[path.name]
-
-    monkeypatch.setattr(Path, "read_bytes", read)
+    fixture_files = {directory / name: data for name, data in files.items()}
+    monkeypatch.setattr(Path, "read_bytes", lambda path: fixture_files[path])
     manifest, rows = receiver._load_snapshot(directory, PROJECT)
-    assert manifest["row_count"] == len(rows) == 2
-    assert all(row["scope"] is not None for row, _ in rows)
-    files[export.MANIFEST_NAME], files[export.USAGE_NAME] = _changed_snapshot_bytes(
-        files[export.MANIFEST_NAME], files[export.USAGE_NAME], **corruption
+    assert rows
+    assert manifest["row_count"] == len(rows)
+    manifest_path, data_path = (
+        directory / export.MANIFEST_NAME,
+        directory / export.USAGE_NAME,
+    )
+    fixture_files[manifest_path], fixture_files[data_path] = _changed_snapshot_bytes(
+        fixture_files[manifest_path], fixture_files[data_path], **corruption
     )
     consumer = object.__new__(receiver.Receiver)
     consumer._project_id = PROJECT
-    consumer._transaction = Mock()
-    with pytest.raises(ValueError):
+    consumer._transaction = Mock(
+        side_effect=AssertionError("invalid export reached storage")
+    )
+    with pytest.raises(error, match=match):
         consumer.import_snapshot(directory)
     consumer._transaction.assert_not_called()
 
@@ -691,13 +741,15 @@ def _assert_receiver_refuses_snapshot(monkeypatch, **corruption):
     ],
 )
 def test_receiver_refuses_invalid_manifest_before_writing(
-    request, monkeypatch, field, value
+    request, monkeypatch, rendered_snapshot, field, value
 ):
     def corrupt(manifest):
         manifest[field] = value
 
     if field != "sha256":
-        _assert_receiver_refuses_snapshot(monkeypatch, mutate_manifest=corrupt)
+        _assert_receiver_refuses_snapshot(
+            monkeypatch, rendered_snapshot, mutate_manifest=corrupt
+        )
         return
 
     project = request.getfixturevalue("project")
@@ -721,35 +773,30 @@ def test_receiver_refuses_invalid_manifest_before_writing(
         assert receiver.pending == set()
 
 
-def test_receiver_refuses_duplicate_source_and_authenticated_tag(project, tmp_path):
-    export_as_of = _export()
-    from fixtures.receiver import Receiver, ReceiverConflict
+def test_receiver_refuses_duplicate_source_and_authenticated_tag(
+    monkeypatch, rendered_snapshot, export_evidence
+):
+    from fixtures.receiver import ReceiverConflict
 
-    first, _, _ = _seed(project)
-    original = tmp_path / "original"
-    export_as_of(project.as_of(), load_rate_card(), original)
-    duplicate = _changed_snapshot(
-        original,
-        tmp_path / "duplicate",
+    first, _ = _observation(export_evidence, "first")
+    _assert_receiver_refuses_snapshot(
+        monkeypatch,
+        rendered_snapshot,
+        error=ReceiverConflict,
+        match="Unordered or duplicate export source",
         mutate_row=lambda rows: rows.insert(0, rows[0]),
     )
-    authenticated = _changed_snapshot(
-        original,
-        tmp_path / "authenticated",
+    _assert_receiver_refuses_snapshot(
+        monkeypatch,
+        rendered_snapshot,
+        match="Invalid usage export reference or decimal",
         mutate_row=lambda rows: rows[0].update(source=first.key.value),
     )
-    with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
-        with pytest.raises(ReceiverConflict):
-            receiver.import_snapshot(duplicate)
-        with pytest.raises(ValueError):
-            receiver.import_snapshot(authenticated)
-        assert receiver.watermark is None
-        assert receiver.accepted == {}
 
 
 @pytest.mark.parametrize("field", ["observed_at", "draft_id"])
 def test_receiver_rejects_non_string_datetime_and_draft_uuid(
-    request, monkeypatch, field
+    monkeypatch, rendered_snapshot, field
 ):
     def corrupt(rows):
         if field == "observed_at":
@@ -757,24 +804,15 @@ def test_receiver_rejects_non_string_datetime_and_draft_uuid(
         else:
             rows[0]["scope"]["item"] = {"kind": "draft", "id": 123}
 
-    if field == "draft_id":
-        _assert_receiver_refuses_snapshot(monkeypatch, mutate_row=corrupt)
-        return
-
-    export_as_of = _export()
-    from fixtures.receiver import Receiver
-
-    project = request.getfixturevalue("project")
-    tmp_path = request.getfixturevalue("tmp_path")
-    _seed(project)
-    original = tmp_path / "original"
-    export_as_of(project.as_of(), load_rate_card(), original)
-    invalid = _changed_snapshot(original, tmp_path / "invalid", mutate_row=corrupt)
-    with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
-        with pytest.raises(ValueError):
-            receiver.import_snapshot(invalid)
-        assert receiver.watermark is None
-        assert receiver.accepted == {}
+    _assert_receiver_refuses_snapshot(
+        monkeypatch,
+        rendered_snapshot,
+        match={
+            "observed_at": "Invalid observation time",
+            "draft_id": "Invalid draft UUID",
+        }[field],
+        mutate_row=corrupt,
+    )
 
 
 def test_exact_replay_resyncs_parent_after_interrupted_publication(
@@ -815,47 +853,110 @@ def test_exact_replay_resyncs_parent_after_interrupted_publication(
     "kind", ["accepted-observation", "pending-observation", "scope", "price"]
 )
 def test_receiver_rejects_component_conflict_under_changed_provenance(
-    project, tmp_path, kind
+    request, export_evidence, reference_rates, kind
 ):
+    if kind != "pending-observation":
+        _assert_component_conflict(export_evidence, reference_rates, kind)
+        return
+
+    project = request.getfixturevalue("project")
+    tmp_path = request.getfixturevalue("tmp_path")
     export_as_of = _export()
     from fixtures.receiver import Receiver, ReceiverConflict
 
-    first, second, marker = _seed(project)
+    _, second, marker = _seed(project)
     before = project.as_of()
     card = load_rate_card()
     original = tmp_path / "original"
     export_as_of(before, card, original)
     _correct(project, marker)
     after = project.as_of()
-    # New scope provenance accompanies the price contradiction. New rate
-    # provenance accompanies the unchanged observation and scope revisions.
-    selected = card if kind == "price" else replace(card, version="2026-11-10")
+    selected = replace(card, version="2026-11-10")
     candidate = tmp_path / "candidate"
     export_as_of(after, selected, candidate)
 
     def contradict(rows):
-        key = _public(
-            second.key if kind in {"pending-observation", "scope"} else first.key
-        )
-        row = next(item for item in rows if item["source"] == key)
-        if kind == "scope":
-            row["scope"]["item"]["id"] = 123
-        elif kind == "price":
-            row["price"]["usd"] = "0.5"
-        else:
-            row["tokens"]["input_tokens"] = 501
+        row = next(item for item in rows if item["source"] == _public(second.key))
+        row["tokens"]["input_tokens"] = 501
 
     altered = _changed_snapshot(candidate, tmp_path / "altered", mutate_row=contradict)
     with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
         assert receiver.import_snapshot(original) == "imported"
         accepted = receiver.accepted
-        with pytest.raises(ReceiverConflict):
+        with pytest.raises(
+            ReceiverConflict, match=r"source provenance \(observation\)"
+        ):
             receiver.import_snapshot(altered)
         assert receiver.watermark == before.sequence
         assert receiver.accepted == accepted
         assert receiver.pending == {_public(second.key)}
         assert receiver.reconciliation == {}
         assert receiver.import_snapshot(candidate) == "imported"
+
+
+def _assert_component_conflict(project, card, kind):
+    from fixtures.receiver import Receiver, ReceiverConflict
+
+    from aitm_usage import export
+
+    before, first, second, marker = _projected_view(project, card)
+    enrollment = next(
+        rev
+        for rev in before.current
+        if isinstance(rev.record, ScopeEnrollment) and rev.record.marker == marker
+    )
+    corrected = replace(
+        enrollment,
+        revision=2,
+        record=replace(
+            enrollment.record, marker=replace(marker, item=ItemKey(ItemKind.ISSUE, 86))
+        ),
+    )
+    after = replace(before, sequence=2, revisions=(*before.revisions, corrected))
+    selected = card if kind == "price" else replace(card, version="2026-11-10")
+    source = _public(second.key if kind == "scope" else first.key)
+
+    def render_row(view, rates):
+        _, files = export._render(view, rates)
+        rows = map(json.loads, files[export.USAGE_NAME].splitlines())
+        return next(row for row in rows if row["source"] == source)
+
+    original = render_row(before, card)
+    candidate = render_row(after, selected)
+    altered = json.loads(_canonical(candidate))
+    component = kind
+    if kind == "scope":
+        assert candidate["price"]["rate_basis"] != original["price"]["rate_basis"]
+        altered["scope"]["item"]["id"] = 123
+    elif kind == "price":
+        assert candidate["scope"]["revision"]["number"] == 2
+        altered["price"]["usd"] = "0.5"
+    else:
+        assert candidate["price"]["rate_basis"] != original["price"]["rate_basis"]
+        altered["tokens"]["input_tokens"] = 501
+        component = "observation"
+
+    components = {}
+
+    def execute(statement, values):
+        if statement.startswith("SELECT payload FROM component"):
+            payload = components.get(values)
+            return Mock(fetchone=lambda: (payload,) if payload is not None else None)
+        assert statement.startswith("INSERT INTO component")
+        key = values[:2]
+        assert key not in components
+        components[key] = values[2]
+
+    # The receiver owns provenance keys and comparisons. This double stores
+    # only the component rows that those methods read and insert.
+    receiver = object.__new__(Receiver)
+    receiver._db = Mock(execute=execute)
+    receiver._remember_components(original)
+    baseline = components.copy()
+    with pytest.raises(ReceiverConflict, match=rf"source provenance \({component}\)"):
+        receiver._remember_components(altered)
+    components = baseline
+    receiver._remember_components(candidate)
 
 
 def test_receiver_checks_reconciled_observation_after_reopen(project, tmp_path):

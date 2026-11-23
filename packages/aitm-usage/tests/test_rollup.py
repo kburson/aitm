@@ -35,6 +35,7 @@ from aitm_usage.types import (
     BoundaryKind,
     ClientVersion,
     CommandReceipt,
+    Currency,
     DraftAlias,
     InboxCommand,
     ItemKey,
@@ -48,12 +49,15 @@ from aitm_usage.types import (
     Provider,
     ReviewRole,
     Revision,
+    ScopeEnrollment,
     ScopeMarker,
     SourceBoundary,
     SourceRef,
     TokenCounts,
     UsageObservation,
     WorkPhase,
+    _decode,
+    _encode,
     decode_command,
     encode_command,
 )
@@ -227,6 +231,33 @@ def _record_usage(writer, item, output_tokens, *, review=False):
     return revision
 
 
+def _projected_usage(ledger, item, output_tokens):
+    marker, proof, observation = _usage_fixture(ledger, item, output_tokens)
+    if marker is None:
+        return (), observation
+    enrollment = Revision(
+        ledger.pseudonymize("scope-enrollment", str(marker.marker_id)),
+        1,
+        ScopeEnrollment(marker, proof.boundary),
+    )
+    return (enrollment,), observation
+
+
+def _graduated_relationships(ledger):
+    return (
+        Revision(
+            ledger.pseudonymize("item-parent", f"draft:{DRAFT.identifier}"),
+            1,
+            ItemParent(UUID(int=101), PROJECT, DRAFT, EPIC),
+        ),
+        Revision(
+            ledger.pseudonymize("item-alias", str(DRAFT.identifier)),
+            1,
+            DraftAlias(UUID(int=102), PROJECT, DRAFT, CHILD),
+        ),
+    )
+
+
 def test_graduation_and_inclusive_rollup(project, item_cli):
     with project.writer() as writer:
         with pytest.raises(WriterActive), project.writer():
@@ -263,6 +294,24 @@ def test_graduation_and_inclusive_rollup(project, item_cli):
 
     reopened = Ledger.open(project.root, PROJECT)
     with reopened.writer() as writer:
+        payload = ItemParent(UUID(int=100), PROJECT, DRAFT, OTHER_EPIC)
+        command = _command(payload)
+        receipt = CommandReceipt(
+            command, writer.validate_command(command), MarkerDisposition.ACCEPTED
+        )
+        lone_effect = Revision(
+            writer.pseudonymize("item-parent", f"draft:{DRAFT.identifier}"), 2, payload
+        )
+        prior_bytes = _durable_bytes(reopened)
+        with pytest.raises(ConflictError, match="effects do not match ledger history"):
+            writer.commit_command(
+                receipt, (lone_effect,), expected_sequence=graduated.sequence
+            )
+        assert writer.command_receipt(command) is None
+        assert _durable_bytes(reopened) == prior_bytes
+        assert writer.as_of() == graduated
+        assert rollup(EPIC, writer.as_of()) == total
+
         reparented = _consume(writer, item_cli, "parent", DRAFT, OTHER_EPIC)
         current = writer.as_of()
         assert enqueue_command(writer.root, reparented.command) == reparented
@@ -470,25 +519,33 @@ def _priced_view(project, view, *prices):
     )
 
 
-def test_rollup_prices_only_current_observations_in_its_view(project, item_cli):
-    with project.writer() as writer:
-        _consume(writer, item_cli, "parent", DRAFT, EPIC)
-        _consume(writer, item_cli, "alias", DRAFT, CHILD)
-        request = _record_usage(writer, DRAFT, 17)
-        unavailable = _record_usage(writer, CHILD, 19)
-        older = writer.as_of()
-        current = replace(
+def test_rollup_prices_only_current_observations_in_its_view(monkeypatch):
+    project = _memory_ledger(store, PROJECT, b"r" * 32)
+    first_scope, request = _projected_usage(project, DRAFT, 17)
+    second_scope, unavailable = _projected_usage(project, CHILD, 19)
+    older = LedgerView(
+        PROJECT,
+        6,
+        (
+            *_graduated_relationships(project),
+            *first_scope,
             request,
-            revision=2,
-            record=replace(
-                request.record,
-                tokens=TokenCounts(
-                    input_tokens=0, output_tokens=23, reasoning_output_tokens=3
-                ),
+            *second_scope,
+            unavailable,
+        ),
+        (),
+    )
+    current = replace(
+        request,
+        revision=2,
+        record=replace(
+            request.record,
+            tokens=TokenCounts(
+                input_tokens=0, output_tokens=23, reasoning_output_tokens=3
             ),
-        )
-        writer.apply(LedgerBatch((current,)))
-        revised = writer.as_of()
+        ),
+    )
+    revised = replace(older, sequence=7, revisions=(*older.revisions, current))
 
     stale = _Price(request.key, 1, "v1", Decimal("0.006"))
     price = _Price(request.key, 2, "v1", Decimal("0.024"))
@@ -497,9 +554,11 @@ def test_rollup_prices_only_current_observations_in_its_view(project, item_cli):
     )
     no_price = _Price(unavailable.key, 1, "v1", None)
     priced = _priced_view(project, revised, stale, price, wrong_key, no_price)
+    open_writer = Mock()
+    monkeypatch.setattr(Ledger, "writer", open_writer)
     with pytest.raises(ValueError):
         project.apply(LedgerBatch(priced.revisions[len(revised.revisions) :]))
-    assert project.as_of() == revised
+    open_writer.assert_not_called()
     totals = rollup(CHILD, priced).direct
     assert totals == rollup(EPIC, priced).inclusive
     assert totals.known_usd == Decimal("0.024")
@@ -527,6 +586,92 @@ def test_rollup_prices_only_current_observations_in_its_view(project, item_cli):
     assert free.unknown_price_count == 1
 
 
+def _rate_accounting_rows(ledger, observation, rates, long_request):
+    counts = (
+        TokenCounts(2**63 - 1, 0, 0, 0, 0)
+        if long_request
+        else TokenCounts(500, 400, 0, 0, 200)
+    )
+    observed = replace(
+        observation.record,
+        tokens=counts,
+        context_tokens=counts.input_tokens,
+        model=ModelLabel.GPT_6_ASTRA,
+        processing_tier=ProcessingTier.STANDARD,
+    )
+    batch = AdapterResult((replace(observation, record=observed),))
+    return accounting.account_observations(batch, rates, ledger=ledger)
+
+
+def _wide_price_rollup_view():
+    # Freeze the inputs used by the arithmetic test without reading a rate resource.
+    astra = pricing._ModelRate(
+        ModelLabel.GPT_6_ASTRA,
+        Provider.CODEX,
+        pricing._RateSource.ASTRA,
+        uncached_input=Decimal("10"),
+        cache_read=Decimal("1"),
+        cache_write=Decimal("12.5"),
+        cache_write_5m=None,
+        cache_write_1h=None,
+        output=Decimal("50"),
+    )
+    standard = pricing.RateCard(
+        "2026-11-09",
+        Currency.USD,
+        ProcessingTier.STANDARD,
+        pricing._LongContextRate(272000, Decimal("2"), Decimal("1.5")),
+        (astra,),
+    )
+    custom = replace(
+        standard,
+        codex_long_context=replace(
+            standard.codex_long_context, input_multiplier=Decimal("9.9")
+        ),
+        entries=(replace(astra, uncached_input=Decimal("999999.123456")),),
+    )
+    ledger = _memory_ledger(store, PROJECT, b"r" * 32)
+    revisions = list(_graduated_relationships(ledger))
+    for index, (item, rates) in enumerate(
+        (
+            (EPIC, custom),
+            (EPIC, standard),
+            (DRAFT, standard),
+            (None, custom),
+            (None, standard),
+        ),
+        start=1,
+    ):
+        enrollments, observation = _projected_usage(ledger, item, index)
+        revisions.extend(enrollments)
+        accounted = _rate_accounting_rows(ledger, observation, rates, rates is custom)
+        # Project typed rows through the same wire format used for ledger revisions.
+        for revision in accounted.revisions:
+            payload = _encode(
+                revision, Revision, validate_ref=ledger.validate_source_ref
+            )
+            revisions.append(
+                _decode(payload, Revision, validate_ref=ledger.validate_source_ref)
+            )
+    return LedgerView(PROJECT, len(revisions), tuple(revisions), ())
+
+
+def _durable_price_rollup_view(project, item_cli):
+    rates = pricing.load_rate_card()
+    with project.writer() as writer:
+        _consume(writer, item_cli, "parent", DRAFT, EPIC)
+        _consume(writer, item_cli, "alias", DRAFT, CHILD)
+        boundaries = []
+        for index, item in enumerate((EPIC, EPIC, DRAFT, None, None), start=1):
+            marker, evidence, observation = _usage_fixture(writer, item, index)
+            if marker is not None:
+                enqueue_marker(writer.root, marker)
+                boundaries.append(evidence)
+            writer.apply(_rate_accounting_rows(writer, observation, rates, False))
+        assert len(drain_inbox(writer, boundaries).receipts) == 3
+    return Ledger.open(project.root, PROJECT).as_of()
+
+
 @pytest.mark.parametrize(
     ("context", "wide", "direct", "inclusive"),
     [
@@ -546,51 +691,14 @@ def test_rollup_prices_only_current_observations_in_its_view(project, item_cli):
     ],
     ids=("ordinary-low-precision", "wide-default-precision", "wide-restricted-context"),
 )
-def test_rollup_sums_durable_prices_exactly(
-    project, item_cli, context, wide, direct, inclusive
-):
-    standard = pricing.load_rate_card()
-    astra = next(row for row in standard.entries if row.model is ModelLabel.GPT_6_ASTRA)
-    custom = replace(
-        standard,
-        codex_long_context=replace(
-            standard.codex_long_context, input_multiplier=Decimal("9.9")
-        ),
-        entries=(replace(astra, uncached_input=Decimal("999999.123456")),),
+def test_rollup_sums_durable_prices_exactly(request, context, wide, direct, inclusive):
+    view = (
+        _wide_price_rollup_view()
+        if wide
+        else _durable_price_rollup_view(
+            request.getfixturevalue("project"), request.getfixturevalue("item_cli")
+        )
     )
-    with project.writer() as writer:
-        _consume(writer, item_cli, "parent", DRAFT, EPIC)
-        _consume(writer, item_cli, "alias", DRAFT, CHILD)
-        boundaries = []
-        for index, (item, long_request) in enumerate(
-            ((EPIC, wide), (EPIC, False), (DRAFT, False), (None, wide), (None, False)),
-            start=1,
-        ):
-            marker, evidence, observation = _usage_fixture(writer, item, index)
-            if marker is not None:
-                enqueue_marker(writer.root, marker)
-                boundaries.append(evidence)
-            counts = (
-                TokenCounts(2**63 - 1, 0, 0, 0, 0)
-                if long_request
-                else TokenCounts(500, 400, 0, 0, 200)
-            )
-            observed = replace(
-                observation.record,
-                tokens=counts,
-                context_tokens=counts.input_tokens,
-                model=ModelLabel.GPT_6_ASTRA,
-                processing_tier=ProcessingTier.STANDARD,
-            )
-            batch = AdapterResult((replace(observation, record=observed),))
-            writer.apply(
-                accounting.account_observations(
-                    batch, custom if long_request else standard, ledger=writer
-                )
-            )
-        assert len(drain_inbox(writer, boundaries).receipts) == 3
-
-    view = Ledger.open(project.root, PROJECT).as_of()
     reordered = replace(view, revisions=view.revisions[::-1])
     with localcontext(context):
         totals = rollup(EPIC, view)
@@ -668,6 +776,15 @@ def _relationship_policy_writer(monkeypatch, defect):
                 DraftAlias(UUID(int=101), PROJECT, DRAFT, CHILD),
             )
         )
+    elif defect == "incomplete-effect-tuple":
+        revisions.extend(_graduated_relationships(writer))
+        revisions.append(
+            Revision(
+                writer.pseudonymize("item-parent", "issue:85"),
+                1,
+                ItemParent(UUID(int=103), PROJECT, CHILD, EPIC),
+            )
+        )
     view = LedgerView(PROJECT, len(revisions), tuple(revisions), ())
     connection = Mock(spec=sqlite3.Connection)
     monkeypatch.setattr(Ledger, "require_writer", Mock())
@@ -701,19 +818,8 @@ def _relationship_policy_writer(monkeypatch, defect):
         "unexpected-boundary",
     ],
 )
-def test_guarded_commit_requires_exact_relationship_decision(
-    request, monkeypatch, defect
-):
-    project = None
-    if defect in {"project", "incomplete-effect-tuple"}:
-        project = request.getfixturevalue("project")
-        writer_context = project.writer()
-    else:
-        writer_context = _relationship_policy_writer(monkeypatch, defect)
-
-    with writer_context as writer:
-        if project is not None:
-            _record_usage(writer, DRAFT, 7)
+def test_guarded_commit_requires_exact_relationship_decision(monkeypatch, defect):
+    with _relationship_policy_writer(monkeypatch, defect) as writer:
         alias = DraftAlias(UUID(int=100), PROJECT, DRAFT, CHILD)
         payload = alias
         alias_key = writer.pseudonymize("item-alias", str(DRAFT.identifier))
@@ -743,10 +849,6 @@ def test_guarded_commit_requires_exact_relationship_decision(
             key = writer.pseudonymize("item-parent", "issue:85")
             effect = Revision(key, 1, payload)
         elif defect == "incomplete-effect-tuple":
-            item_cli = request.getfixturevalue("item_cli")
-            _consume(writer, item_cli, "parent", DRAFT, EPIC)
-            _consume(writer, item_cli, "parent", CHILD, EPIC)
-            _consume(writer, item_cli, "alias", DRAFT, CHILD)
             payload = ItemParent(alias.command_id, PROJECT, DRAFT, OTHER_EPIC)
             key = writer.pseudonymize("item-parent", f"draft:{DRAFT.identifier}")
             effect = Revision(key, 2, payload)
@@ -767,9 +869,6 @@ def test_guarded_commit_requires_exact_relationship_decision(
             marker, _, _ = _usage_fixture(writer, CHILD, 19)
             command = InboxCommand(marker.marker_id, PROJECT, marker)
         before = writer.as_of()
-        if project is not None:
-            prior_bytes = _durable_bytes(project)
-            prior_rollup = rollup(EPIC, before)
         effects = (effect,) if status is MarkerDisposition.ACCEPTED else ()
         if defect == "command-project":
             with pytest.raises(LedgerError, match="Inbox command project identity"):
@@ -793,33 +892,41 @@ def test_guarded_commit_requires_exact_relationship_decision(
                 writer.commit_command(
                     receipt, effects, expected_sequence=before.sequence
                 )
-        if project is not None:
-            assert writer.command_receipt(command) is None
-            assert _durable_bytes(project) == prior_bytes
-            assert writer.as_of() == before
-            assert rollup(EPIC, writer.as_of()) == prior_rollup
 
 
 def test_final_relationship_replay_checks_effect_identity_without_revalidating_graph(
-    project, item_cli
+    monkeypatch,
 ):
-    with project.writer() as writer:
-        accepted = _consume(writer, item_cli, "parent", CHILD, EPIC)
-        _consume(writer, item_cli, "parent", CHILD, OTHER_EPIC)
-        original = Revision(
-            writer.pseudonymize("item-parent", "issue:85"), 1, accepted.command.payload
-        )
-        before = writer.as_of()
-        assert (
-            writer.commit_command(accepted, (original,), expected_sequence=0)
-            == accepted
-        )
-        forged = replace(
-            original, record=replace(original.record, command_id=UUID(int=999))
-        )
-        with pytest.raises((LedgerError, ValueError)):
-            writer.commit_command(accepted, (forged,), expected_sequence=0)
-        assert writer.as_of() == before
+    writer = _memory_ledger(store, PROJECT, b"r" * 32)
+    command = _command(ItemParent(UUID(int=100), PROJECT, CHILD, EPIC))
+    accepted = CommandReceipt(
+        command, writer.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    original = Revision(
+        writer.pseudonymize("item-parent", "issue:85"), 1, command.payload
+    )
+    connection = Mock(spec=sqlite3.Connection)
+    monkeypatch.setattr(Ledger, "require_writer", Mock())
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda self: nullcontext(connection)
+    )
+    monkeypatch.setattr(store, "_current_command", Mock(return_value=(1, accepted)))
+    head = Mock(return_value=2)
+    read_view = Mock(side_effect=AssertionError("final replay consulted graph history"))
+    monkeypatch.setattr(store, "_head", head)
+    monkeypatch.setattr(Ledger, "as_of", read_view)
+
+    assert writer.commit_command(accepted, (original,), expected_sequence=0) == accepted
+    forged = replace(
+        original, record=replace(original.record, command_id=UUID(int=999))
+    )
+    with pytest.raises(
+        ValueError, match="Relationship effect does not match its command"
+    ):
+        writer.commit_command(accepted, (forged,), expected_sequence=0)
+    head.assert_not_called()
+    read_view.assert_not_called()
+    connection.execute.assert_not_called()
 
 
 def _conflicting_links(writer, item_cli):
@@ -1063,25 +1170,13 @@ def test_relationship_snapshot_releases_mutex_and_preserves_order_after_restart(
         assert drain_inbox(writer, ()).receipts[0].command == fifth
 
 
-@pytest.mark.parametrize(
-    "defect", ["duplicate", "malformed", "missing", "unclassifiable"]
-)
-def test_invalid_relationship_order_halts_only_relationships(project, item_cli, defect):
+def _drain_duplicate_relationship_order(project, item_cli):
     with project.writer() as writer:
         first = _queue_cli(writer, item_cli, "parent", CHILD, EPIC)
         second = _queue_cli(writer, item_cli, "parent", CHILD, OTHER_EPIC)
         third = _queue_cli(writer, item_cli, "alias", DRAFT, CHILD)
         path = _publication_path(writer, second.command_id)
-        transport = {"command": json.loads(encode_command(second)), "order": 2}
-        if defect == "duplicate":
-            damaged = _canonical_json({**transport, "order": 1})
-        elif defect == "malformed":
-            damaged = _canonical_json({**transport, "order": True})
-        elif defect == "missing":
-            damaged = encode_command(second)
-        else:
-            damaged = b"unclassifiable-private-canary"
-        path.write_bytes(damaged)
+        path.write_bytes(scopes._publication_bytes(second, 1))
         marker, proof, _ = _usage_fixture(writer, EPIC, 7)
         enqueue_marker(writer.root, marker)
         marker_path = _publication_path(writer, marker.marker_id)
@@ -1090,15 +1185,86 @@ def test_invalid_relationship_order_halts_only_relationships(project, item_cli, 
         )
 
         report = drain_inbox(writer, (proof,))
-        assert report.relationship_halted
-        assert report.invalid_publications >= 1
-        assert "unclassifiable-private-canary" not in repr(report)
-        assert [(r.command.command_id, r.disposition) for r in report.receipts] == [
-            (marker.marker_id, MarkerDisposition.ACCEPTED),
-        ]
         for command in (first, second, third):
             assert writer.command_receipt(command) is None
             assert _publication_path(writer, command.command_id).exists()
+    return report, marker
+
+
+def _drain_invalid_relationship_transport(monkeypatch, defect):
+    writer = _memory_ledger(store, PROJECT, b"r" * 32)
+    first = _command(ItemParent(UUID(int=101), PROJECT, CHILD, EPIC))
+    second = _command(ItemParent(UUID(int=102), PROJECT, CHILD, OTHER_EPIC))
+    third = _command(DraftAlias(UUID(int=103), PROJECT, DRAFT, CHILD))
+    marker, proof, _ = _usage_fixture(writer, EPIC, 7)
+    marker_bytes = encode_command(InboxCommand(marker.marker_id, PROJECT, marker))
+    second_bytes = encode_command(second)
+    damaged = {
+        "malformed": _canonical_json(
+            {"command": json.loads(second_bytes), "order": True}
+        ),
+        "missing": second_bytes,
+        "unclassifiable": b"unclassifiable-private-canary",
+    }
+    publications = {
+        f"{first.command_id}.json": scopes._publication_bytes(first, 1),
+        f"{second.command_id}.json": damaged[defect],
+        f"{third.command_id}.json": scopes._publication_bytes(third, 3),
+        f"{marker.marker_id}.json": marker_bytes,
+    }
+    inbox = SimpleNamespace(fd=17, check=Mock())
+    acks = object()
+    monkeypatch.setattr(scopes, "_pin_directory", lambda root: nullcontext(object()))
+    monkeypatch.setattr(
+        scopes,
+        "_private_child",
+        lambda parent, name, *, create: nullcontext(
+            {"inbox": inbox, "acks": acks}[name]
+        ),
+    )
+    monkeypatch.setattr(scopes, "_publication", lambda directory: nullcontext())
+    listing = Mock(return_value=tuple(publications))
+    monkeypatch.setattr(scopes, "os", SimpleNamespace(listdir=listing))
+    monkeypatch.setattr(
+        scopes, "_read_private", lambda directory, name: publications[name]
+    )
+    acknowledge = Mock()
+    monkeypatch.setattr(scopes, "_acknowledge", acknowledge)
+    monkeypatch.setattr(Ledger, "require_writer", Mock())
+    monkeypatch.setattr(
+        Ledger, "as_of", Mock(return_value=LedgerView(PROJECT, 0, (), ()))
+    )
+    commit = Mock(side_effect=lambda receipt, effects, *, expected_sequence: receipt)
+    monkeypatch.setattr(Ledger, "commit_command", commit)
+
+    report = drain_inbox(writer, (proof,))
+    listing.assert_called_once_with(inbox.fd)
+    commit.assert_called_once()
+    receipt, effects = commit.call_args.args
+    assert receipt.boundary == proof.boundary
+    assert [effect.record.marker for effect in effects] == [marker]
+    acknowledge.assert_called_once_with(inbox, acks, receipt, marker_bytes)
+    return report, marker
+
+
+@pytest.mark.parametrize(
+    "defect", ["duplicate", "malformed", "missing", "unclassifiable"]
+)
+def test_invalid_relationship_order_halts_only_relationships(
+    request, monkeypatch, defect
+):
+    if defect == "duplicate":
+        report, marker = _drain_duplicate_relationship_order(
+            request.getfixturevalue("project"), request.getfixturevalue("item_cli")
+        )
+    else:
+        report, marker = _drain_invalid_relationship_transport(monkeypatch, defect)
+    assert report.relationship_halted
+    assert report.invalid_publications >= 1
+    assert "unclassifiable-private-canary" not in repr(report)
+    assert [(r.command.command_id, r.disposition) for r in report.receipts] == [
+        (marker.marker_id, MarkerDisposition.ACCEPTED),
+    ]
 
 
 def test_retirement_compares_the_complete_captured_transport(
