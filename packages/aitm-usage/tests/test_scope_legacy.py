@@ -8,6 +8,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -54,23 +55,27 @@ NOW = datetime(2026, 11, 9, 16, tzinfo=UTC)
 ADOPTION_FILE = "monitor-adoption-v1.json"
 
 
+def _adoption_bytes(ledger, project, adoption_id, **binding_changes):
+    binding = {
+        "project_id": str(ledger.identity.project_id),
+        "ledger_key_id": ledger.identity.key_id,
+        "state_path": str(project.path),
+        "state_identity": list(project.identities[-1]),
+        "adoption_id": str(adoption_id),
+    } | binding_changes
+    encoded = json.dumps(binding, sort_keys=True, separators=(",", ":")).encode()
+    tag = hmac.digest(
+        ledger._key, b"aitm-usage/monitor-adoption/v1\0" + encoded, "sha256"
+    ).hex()
+    return json.dumps(
+        {"binding": binding, "tag": tag}, sort_keys=True, separators=(",", ":")
+    ).encode()
+
+
 def commit_adoption(ledger, adoption_id, **binding_changes):
     """Model the future writer's one-way commit under the actual legacy lock."""
     with scopes._inbox_publication(ledger) as (project, _):
-        binding = {
-            "project_id": str(ledger.identity.project_id),
-            "ledger_key_id": ledger.identity.key_id,
-            "state_path": str(project.path),
-            "state_identity": list(project.identities[-1]),
-            "adoption_id": str(adoption_id),
-        } | binding_changes
-        encoded = json.dumps(binding, sort_keys=True, separators=(",", ":")).encode()
-        tag = hmac.digest(
-            ledger._key, b"aitm-usage/monitor-adoption/v1\0" + encoded, "sha256"
-        ).hex()
-        record = json.dumps(
-            {"binding": binding, "tag": tag}, sort_keys=True, separators=(",", ":")
-        ).encode()
+        record = _adoption_bytes(ledger, project, adoption_id, **binding_changes)
         assert scopes._publish(project, ADOPTION_FILE, record)
 
 
@@ -642,36 +647,80 @@ def test_committed_adoption_without_monitor_registration_fails_closed(legacy):
     assert list((ledger.root / "inbox").iterdir()) == []
 
 
-@pytest.mark.parametrize(
-    "invalid", ["malformed", "tag", "project", "key", "path", "identity", "symlink"]
-)
-def test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write(
-    legacy, monkeypatch, invalid
-):
-    ledger, monitor_root, run = legacy
-    args, _, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
-    record = ledger.root / ADOPTION_FILE
+def _assert_invalid_adoption_policy(monkeypatch, capsys, invalid):
+    ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
+    inputs = {}
+    args, _, _ = invocation(
+        ledger, "mark", provider=Provider.CLAUDE, write_input=inputs.__setitem__
+    )
+    project = SimpleNamespace(path=ledger.root, identities=((1, 2),), check=Mock())
     if invalid == "malformed":
-        record.write_bytes(b"private malformed canary")
-        record.chmod(0o600)
-    elif invalid == "symlink":
-        target = ledger.root.parent / "substituted"
-        target.write_text("private substituted canary")
-        record.symlink_to(target)
+        contents = b"private malformed canary"
     elif invalid == "tag":
-        commit_adoption(ledger, ADOPTION)
-        data = json.loads(record.read_bytes())
+        data = json.loads(_adoption_bytes(ledger, project, ADOPTION))
         data["tag"] = "0" * 64
-        record.write_text(json.dumps(data, sort_keys=True, separators=(",", ":")))
+        contents = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
     else:
-        change = {
+        key, value = {
             "project": ("project_id", str(DRAFT)),
             "key": ("ledger_key_id", "f" * 64),
             "path": ("state_path", str(ledger.root.parent / "other")),
             "identity": ("state_identity", [0, 0]),
-        }
-        key, value = change[invalid]
-        commit_adoption(ledger, ADOPTION, **{key: value})
+        }[invalid]
+        contents = _adoption_bytes(ledger, project, ADOPTION, **{key: value})
+
+    def open_ledger(path, project_id):
+        assert (path, project_id) == (ledger.root, PROJECT)
+        return ledger
+
+    def open_input(path, mode):
+        assert mode == "rb"
+        return BytesIO(inputs[path])
+
+    def read_adoption(directory, name):
+        assert directory is project and name == ADOPTION_FILE
+        return contents
+
+    legacy_write = Mock(
+        side_effect=AssertionError("invalid adoption opened the legacy inbox")
+    )
+    monitor_write = Mock(
+        side_effect=AssertionError("invalid adoption reached monitor publication")
+    )
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(Path, "open", open_input)
+    monkeypatch.setattr(scopes, "_pin_directory", lambda path: nullcontext(project))
+    monkeypatch.setattr(scopes, "_read_private", read_adoption)
+    monkeypatch.setattr(scopes, "_inbox_publication", legacy_write)
+    monkeypatch.setattr(monitor_control, "enqueue_adopted_scope", monitor_write)
+    monkeypatch.setattr(cli, "version", lambda _: "0.0.0")
+    monkeypatch.setattr(
+        sys, "argv", ["aitm-usage", "--project", str(ledger.root), *args, "--json"]
+    )
+    assert cli.main() == 1
+    output = capsys.readouterr()
+    assert output.out == '{"status": "unavailable"}\n'
+    assert output.err == ""
+    legacy_write.assert_not_called()
+    monitor_write.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "invalid", ["malformed", "tag", "project", "key", "path", "identity", "symlink"]
+)
+def test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write(
+    request, monkeypatch, capsys, invalid
+):
+    if invalid != "symlink":
+        _assert_invalid_adoption_policy(monkeypatch, capsys, invalid)
+        return
+
+    ledger, monitor_root, run = request.getfixturevalue("legacy")
+    args, _, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
+    record = ledger.root / ADOPTION_FILE
+    target = ledger.root.parent / "substituted"
+    target.write_text("private substituted canary")
+    record.symlink_to(target)
     inbox = ledger.root / "inbox"
     before = tuple(ledger.root.iterdir())
 

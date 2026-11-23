@@ -9,11 +9,16 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from monitor_inbox_cases import MonitorInboxFiles
 
 from aitm_usage import cli, ledger, monitor_control, monitor_registry
-from aitm_usage.monitor_registry import CaptureChange, ControlCommand, Registry
-
-pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
+from aitm_usage.monitor_registry import (
+    CaptureChange,
+    ControlCommand,
+    ControlReceipt,
+    ControlStatus,
+    Registry,
+)
 
 PROJECT = UUID("1a65f88f-3825-4a7b-9689-c7fbd9eaf36d")
 SOURCE = UUID("bc6bb0a1-f29d-4ca6-9cf1-65b4b645d318")
@@ -34,7 +39,7 @@ def _status(monkeypatch):
 
 
 def test_monitor_cli_queues_capture_exactly_once_and_status_reads_it(
-    monitor, monkeypatch, capsys
+    inbox_policy, monkeypatch, capsys
 ):
     args = (*_capture("enable"), "--request-id", str(REQUEST))
     assert _run(monkeypatch, *args) == 0
@@ -44,7 +49,7 @@ def test_monitor_cli_queues_capture_exactly_once_and_status_reads_it(
     assert json.loads(capsys.readouterr().out) == queued
     assert _status(monkeypatch) == 0
     assert json.loads(capsys.readouterr().out) == queued
-    assert len(list(monitor.root.glob("inbox/*.json"))) == 1
+    assert len(inbox_policy.inbox_files) == 1
     assert _run(monkeypatch, *_capture("disable"), "--request-id", str(REQUEST)) == 1
     assert json.loads(capsys.readouterr().out) == {
         "command_id": str(REQUEST),
@@ -57,6 +62,13 @@ def monitor(tmp_path, monkeypatch):
     root = tmp_path / "monitor"
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
     return monitor_control.ControlInbox(root)
+
+
+@pytest.fixture
+def inbox_policy(monkeypatch):
+    state = MonitorInboxFiles(monkeypatch, PROJECT)
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: state.root)
+    return state
 
 
 def test_command_status_missing_root_is_unavailable_and_does_not_create_it(
@@ -182,7 +194,10 @@ def test_legacy_global_state_and_monitor_project_flags_cannot_mix(
     assert not monitor.root.exists()
 
 
-def test_pending_commands_keep_enqueue_order_when_request_ids_sort_backwards(monitor):
+def test_pending_commands_keep_enqueue_order_when_request_ids_sort_backwards(
+    inbox_policy,
+):
+    monitor = inbox_policy.inbox
     enable = ControlCommand(
         UUID("ffffffff-ffff-4fff-8fff-ffffffffffff"),
         CaptureChange(PROJECT, SOURCE, True),
@@ -249,29 +264,18 @@ def test_normal_cli_reports_durable_application_and_retries_after_cleanup(
 
 
 def test_status_rereads_durable_receipt_when_queue_is_retired_mid_lookup(
-    monitor, tmp_path, monkeypatch, capsys
+    inbox_policy, monkeypatch, capsys
 ):
-    config = _registration(tmp_path, monkeypatch)
-    assert (
-        _run(
-            monkeypatch,
-            "project",
-            "register",
-            "--config",
-            str(config),
-            "--request-id",
-            str(REQUEST),
-        )
-        == 0
-    )
-    capsys.readouterr()
-    registry = Registry(monitor.root)
-    read_private = monitor_control._read_private
+    command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
+    inbox_policy.inbox.enqueue(command)
+    receipt = ControlReceipt(REQUEST, ControlStatus.APPLIED, command.payload_digest)
+    command_status = Mock(return_value=None)
+    monkeypatch.setattr(Registry, "command_status", command_status)
 
     def read_after_retirement(directory, name):
-        monkeypatch.setattr(monitor_control, "_read_private", read_private)
-        with registry.writer() as writer:
-            writer.apply_pending(monitor, writer.lease, None)
+        assert directory.path == inbox_policy.root / "inbox"
+        del inbox_policy.inbox_files[name]
+        command_status.return_value = receipt
         # Model the reader's open descriptor surviving an unlink between
         # open() and stat() on the queued name.
         raise FileNotFoundError
@@ -282,30 +286,33 @@ def test_status_rereads_durable_receipt_when_queue_is_retired_mid_lookup(
         "command_id": str(REQUEST),
         "status": "applied",
     }
+    assert command_status.call_count == 2
 
 
 def test_capture_without_request_id_returns_a_stable_retry_key(
-    monitor, monkeypatch, capsys
+    inbox_policy, monkeypatch, capsys
 ):
+    monkeypatch.setattr(monitor_control, "uuid4", lambda: REQUEST)
     assert _run(monkeypatch, *_capture("disable")) == 0
     original = json.loads(capsys.readouterr().out)
     chosen = UUID(original["command_id"])
-    assert chosen.version == 4
+    assert chosen == REQUEST and chosen.version == 4
     assert _run(monkeypatch, *_capture("disable"), "--request-id", str(chosen)) == 0
     assert json.loads(capsys.readouterr().out) == original
-    assert len(list(monitor.root.glob("inbox/*.json"))) == 1
+    assert len(inbox_policy.inbox_files) == 1
 
 
 def test_source_and_anchor_cli_queue_typed_owner_declarations(
-    monitor, tmp_path, monkeypatch, capsys
+    inbox_policy, monkeypatch, capsys
 ):
     from aitm_usage.monitor_registry import AnchorRequest, SourceApprovalRequest
 
-    source_root = str(tmp_path / "private-source-root")
-    anchor_path = str(tmp_path / "private-anchor")
-    approval = _private_config(
-        tmp_path / "source.json",
-        {
+    monitor = inbox_policy.inbox
+    source_root = "/fixture/private-source-root"
+    anchor_path = "/fixture/private-anchor"
+    approval, anchor = Path("/fixture/source.json"), Path("/fixture/anchor.json")
+    documents = {
+        approval: {
             "source_id": str(SOURCE),
             "provider": "codex",
             "surface": "codex-desktop-macos",
@@ -315,8 +322,11 @@ def test_source_and_anchor_cli_queue_typed_owner_declarations(
             "format_version": 1,
             "root": source_root,
         },
-    )
-    anchor = _private_config(tmp_path / "anchor.json", {"anchor": anchor_path})
+        anchor: {"anchor": anchor_path},
+    }
+    monkeypatch.setattr(monitor_control, "_owner_document", documents.__getitem__)
+    ids = iter((REQUEST, SOURCE))
+    monkeypatch.setattr(monitor_control, "uuid4", lambda: next(ids))
     assert _run(monkeypatch, "source", "approve", "--config", str(approval)) == 0
     approval_output = capsys.readouterr().out
     assert (
@@ -368,39 +378,45 @@ def test_enqueues_and_reads_while_coordinator_is_held(monitor):
         assert worker.submit(monitor.status, REQUEST).result(timeout=3) == queued
 
 
-def test_duplicate_order_prevents_drain(monitor):
+def test_duplicate_order_prevents_drain(inbox_policy):
     from aitm_usage.ledger import LedgerError
 
+    monitor = inbox_policy.inbox
     enable = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
     disable = ControlCommand(SOURCE, CaptureChange(PROJECT, SOURCE, False))
     monitor.enqueue(enable)
     monitor.enqueue(disable)
-    path = monitor.root / "inbox" / f"{SOURCE}.json"
-    pending = json.loads(path.read_text())
+    entry = f"{SOURCE}.json"
+    pending = json.loads(inbox_policy.inbox_files[entry])
     pending["order"] = 1
-    path.write_text(json.dumps(pending, sort_keys=True, separators=(",", ":")))
+    inbox_policy.inbox_files[entry] = json.dumps(
+        pending, sort_keys=True, separators=(",", ":")
+    ).encode()
 
     with monitor.publication() as locked:
         with pytest.raises(LedgerError, match="Duplicate monitor publication order"):
             next(monitor.iter_pending(locked))
-    assert len(list(monitor.root.glob("inbox/*.json"))) == 2
+    assert len(inbox_policy.inbox_files) == 2
 
 
-def test_retirement_refuses_changed_publication_bytes(monitor):
+def test_retirement_refuses_changed_publication_bytes(inbox_policy):
     from aitm_usage.ledger import ConflictError
 
+    monitor = inbox_policy.inbox
     command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
     monitor.enqueue(command)
-    path = monitor.root / "inbox" / f"{REQUEST}.json"
+    entry = f"{REQUEST}.json"
     with monitor.publication() as locked:
         (pending,) = monitor.iter_pending(locked)
-        replacement = json.loads(path.read_text())
+        replacement = json.loads(inbox_policy.inbox_files[entry])
         replacement["order"] = 2
-        changed = json.dumps(replacement, sort_keys=True, separators=(",", ":"))
-        path.write_text(changed)
+        changed = json.dumps(
+            replacement, sort_keys=True, separators=(",", ":")
+        ).encode()
+        inbox_policy.inbox_files[entry] = changed
         with pytest.raises(ConflictError):
             monitor.discard(locked, pending)
-    assert path.read_text() == changed
+    assert inbox_policy.inbox_files[entry] == changed
 
 
 def test_status_fails_closed_when_queued_file_is_substituted(monitor):

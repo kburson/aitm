@@ -5,9 +5,12 @@ import shutil
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from monitor_inbox_cases import MonitorInboxFiles
 
 from aitm_usage import cli, monitor_control, monitor_registry
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
@@ -26,8 +29,12 @@ NOW = datetime(2026, 11, 10, tzinfo=UTC)
 
 
 @pytest.fixture(autouse=True)
-def isolated_writer_guard(tmp_path, monkeypatch):
-    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+def isolated_writer_guard(request, monkeypatch):
+    if "tmp_path" in request.fixturenames:
+        tmp_path = request.getfixturevalue("tmp_path")
+        monkeypatch.setattr(
+            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
+        )
 
 
 def _request_file(tmp_path):
@@ -150,31 +157,44 @@ def ready(tmp_path, monkeypatch):
         yield writer, inbox, reader, request
 
 
-def test_witness_issuance_requires_exact_capability_from_same_reader(ready):
-    writer, inbox, reader, request = ready
+@pytest.fixture
+def admission_policy(monkeypatch):
+    state = MonitorInboxFiles(monkeypatch, PROJECT)
+    monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
+    reader = ScopeInboxReader(state.writer, state.inbox)
+    reader.register(GRANT, PROJECT, ("mark",))
+    request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
+    reader.advertise(reader.probe(request))
+    return state, reader, request
+
+
+def test_witness_issuance_requires_exact_capability_from_same_reader(admission_policy):
+    state, reader, request = admission_policy
     proof = reader.probe(request)
     with pytest.raises(LedgerError):
         reader.advertise(replace(proof))
     with pytest.raises(LedgerError):
-        ScopeInboxReader(writer, inbox).advertise(proof)
+        ScopeInboxReader(state.writer, state.inbox).advertise(proof)
     reader.advertise(proof)
     with pytest.raises(LedgerError):
         reader.advertise(proof)
 
 
 @pytest.mark.parametrize("offset", [60, 61, -6])
-def test_stale_or_future_witness_cannot_publish(ready, offset, monkeypatch):
-    _, inbox, _, request = ready
+def test_stale_or_future_witness_cannot_publish(admission_policy, offset, monkeypatch):
+    state, _, request = admission_policy
     monkeypatch.setattr(
         monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=offset)
     )
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_revocation_winning_between_lookup_and_publish_refuses(ready, monkeypatch):
-    _, inbox, reader, request = ready
+def test_revocation_winning_between_lookup_and_publish_refuses(
+    admission_policy, monkeypatch
+):
+    state, reader, request = admission_policy
     preliminary = monitor_control.preliminary_grant
 
     def revoke_after_lookup(*args):
@@ -184,8 +204,8 @@ def test_revocation_winning_between_lookup_and_publish_refuses(ready, monkeypatc
 
     monkeypatch.setattr(monitor_control, "preliminary_grant", revoke_after_lookup)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
     with pytest.raises(ConflictError):
         reader.register(GRANT, PROJECT, ("mark",))
     reader.register(GRANT, PROJECT, ("mark",), generation=2)
@@ -246,10 +266,15 @@ def test_invalid_scope_seal_cannot_block_unrelated_control(ready, tmp_path, bad_
     assert proposal.exists()
 
 
-def test_explicit_cli_no_abbreviations_or_separate_request_id(tmp_path, monkeypatch):
+def test_explicit_cli_no_abbreviations_or_separate_request_id(monkeypatch):
+    path = "/fixture/scope.json"
+    owner_document = Mock(
+        side_effect=AssertionError("invalid arguments read the request")
+    )
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
     for args in (
-        ("--req", str(_request_file(tmp_path))),
-        ("--request", str(_request_file(tmp_path)), "--request-id", str(COMMAND)),
+        ("--req", path),
+        ("--request", path, "--request-id", str(COMMAND)),
     ):
         monkeypatch.setattr(
             sys, "argv", ["aitm-usage", "monitor", "scope", "mark", *args]
@@ -257,6 +282,7 @@ def test_explicit_cli_no_abbreviations_or_separate_request_id(tmp_path, monkeypa
         with pytest.raises(SystemExit) as stopped:
             cli.main()
         assert stopped.value.code == 2
+    owner_document.assert_not_called()
 
 
 def test_replaced_project_ledger_key_does_not_preserve_grant(ready, tmp_path):
@@ -340,8 +366,10 @@ def test_replayed_active_grant_file_cannot_reverse_revocation(ready):
     assert not tuple(inbox.root.glob("inbox/*.json"))
 
 
-def test_witness_expiring_during_queue_preparation_cannot_publish(ready, monkeypatch):
-    _, inbox, _, request = ready
+def test_witness_expiring_during_queue_preparation_cannot_publish(
+    admission_policy, monkeypatch
+):
+    state, _, request = admission_policy
     pending = monitor_control._pending
 
     def elapsed(directory):
@@ -353,28 +381,32 @@ def test_witness_expiring_during_queue_preparation_cannot_publish(ready, monkeyp
 
     monkeypatch.setattr(monitor_control, "_pending", elapsed)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_withdrawn_witness_refuses_retry_then_renews_same_exact_proposal(ready):
-    _, inbox, reader, request = ready
+def test_withdrawn_witness_refuses_retry_then_renews_same_exact_proposal(
+    admission_policy,
+):
+    state, reader, request = admission_policy
+    inbox = state.inbox
     assert inbox.enqueue_scope(request)
-    publication = inbox.root / "inbox" / f"{COMMAND}.json"
-    original = publication.read_bytes()
+    publication = f"{COMMAND}.json"
+    original = state.inbox_files[publication]
     reader.withdraw(GRANT)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
     reader.advertise(reader.probe(request))
     assert inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
 
 
-def test_scope_credential_cannot_authenticate_reader_witness(ready):
+def test_scope_credential_cannot_authenticate_reader_witness(admission_policy):
     from aitm_usage.scope_admission import _witness_tag, _write_grant, stored_grant
 
-    writer, inbox, _, request = ready
+    state, _, request = admission_policy
+    writer, inbox = state.writer, state.inbox
     record = stored_grant(inbox.root, GRANT)
     assert record is not None and record.witness is not None
     witness = record.witness
@@ -392,32 +424,41 @@ def test_scope_credential_cannot_authenticate_reader_witness(ready):
         _write_grant(writer, replace(record, witness=forged), record)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    assert not state.inbox_files
 
 
-def test_modified_committed_grant_cannot_mint_producer_authority(ready):
-    _, inbox, _, request = ready
-    active = _active_grant_file(inbox)
-    data = json.loads(active.read_bytes())
+def test_modified_committed_grant_cannot_mint_producer_authority(admission_policy):
+    state, _, request = admission_policy
+    grants = state.grant_files(GRANT)
+    active = max(grants)
+    data = json.loads(grants[active])
     data["record"]["grant"]["actions"] = ["dispose", "mark"]
     data["record"]["credential"] = "a" * 64
-    active.write_bytes(json.dumps(data, sort_keys=True, separators=(",", ":")).encode())
+    grants[active] = json.dumps(data, sort_keys=True, separators=(",", ":")).encode()
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
-def test_scope_request_refuses_noncanonical_selectors(tmp_path, monkeypatch, capsys):
-    path = _request_file(tmp_path)
-    root = tmp_path / "monitor"
-    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    data = json.loads(path.read_bytes())
+def test_scope_request_refuses_noncanonical_selectors(monkeypatch, capsys):
+    path = Path("/fixture/scope.json")
+    default_root = Mock(
+        side_effect=AssertionError("invalid request opened monitor state")
+    )
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", default_root)
+    owner_document = Mock()
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
+    data = {
+        "command_id": str(COMMAND),
+        "grant_id": str(GRANT),
+        "scope": {"project_id": str(PROJECT)},
+    }
     for field, value in (("command_id", COMMAND), ("grant_id", GRANT)):
         for noncanonical in (value.hex, value.urn, "{" + str(value) + "}"):
-            path.write_text(json.dumps({**data, field: noncanonical}))
+            owner_document.return_value = {**data, field: noncanonical}
             assert _cli(monkeypatch, path) == 1
             assert json.loads(capsys.readouterr().out) == {"status": "unavailable"}
-    assert not root.exists()
+    default_root.assert_not_called()
 
 
 def test_project_substitution_during_preparation_cannot_publish(
@@ -440,9 +481,10 @@ def test_project_substitution_during_preparation_cannot_publish(
 
 
 def test_expiry_after_publication_withholds_ack_and_retry_reuses_exact_bytes(
-    ready, monkeypatch
+    admission_policy, monkeypatch
 ):
-    _, inbox, reader, request = ready
+    state, reader, request = admission_policy
+    inbox = state.inbox
     publish = monitor_control._publish
 
     def elapsed(*args, **kwargs):
@@ -455,17 +497,18 @@ def test_expiry_after_publication_withholds_ack_and_retry_reuses_exact_bytes(
     monkeypatch.setattr(monitor_control, "_publish", elapsed)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(request)
-    publication = inbox.root / "inbox" / f"{COMMAND}.json"
-    original = publication.read_bytes()
+    publication = f"{COMMAND}.json"
+    original = state.inbox_files[publication]
     monkeypatch.setattr(monitor_control, "_publish", publish)
     reader.advertise(reader.probe(request))
     assert inbox.enqueue_scope(request)
-    assert publication.read_bytes() == original
+    assert state.inbox_files[publication] == original
 
 
-def test_reader_capability_cannot_restore_withdrawn_admission(ready):
-    writer, inbox, reader, request = ready
-    other = ScopeInboxReader(writer, inbox)
+def test_reader_capability_cannot_restore_withdrawn_admission(admission_policy):
+    state, reader, request = admission_policy
+    inbox = state.inbox
+    other = ScopeInboxReader(state.writer, inbox)
     old = reader.probe(request)
     other.withdraw(GRANT)
     with pytest.raises(LedgerError, match="proof is unavailable"):
@@ -476,19 +519,20 @@ def test_reader_capability_cannot_restore_withdrawn_admission(ready):
     assert inbox.enqueue_scope(request)
 
 
-def test_adopted_scope_shape_refuses_separate_source_anchor_command(tmp_path):
+def test_adopted_scope_shape_refuses_separate_source_anchor_command():
+    from aitm_usage.monitor_registry import _ServiceEvidence
     from aitm_usage.scope_admission import adopted_request
     from aitm_usage.types import InboxCommand, SourceAnchorCommand
 
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
+    evidence = _ServiceEvidence(b"scope-admission-test")
     command = InboxCommand(
         COMMAND,
         PROJECT,
         SourceAnchorCommand(
             COMMAND,
             PROJECT,
-            ledger.pseudonymize("test", "configuration"),
-            ledger.pseudonymize("test", "anchor"),
+            evidence.pseudonymize("test", "configuration"),
+            evidence.pseudonymize("test", "anchor"),
         ),
     )
     with pytest.raises(ValueError, match="legacy command"):

@@ -335,6 +335,101 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_capture_without_request_id_returns_a_stable_retry_key",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_duplicate_order_prevents_drain",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_monitor_cli_queues_capture_exactly_once_and_status_reads_it",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_pending_commands_keep_enqueue_order_when_request_ids_sort_backwards",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_retirement_refuses_changed_publication_bytes",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_source_and_anchor_cli_queue_typed_owner_declarations",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_status_rereads_durable_receipt_when_queue_is_retired_mid_lookup",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_adopted_scope_shape_refuses_separate_source_anchor_command",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_expiry_after_publication_withholds_ack_and_retry_reuses_exact_bytes",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_explicit_cli_no_abbreviations_or_separate_request_id",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_modified_committed_grant_cannot_mint_producer_authority",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_reader_capability_cannot_restore_withdrawn_admission",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_revocation_winning_between_lookup_and_publish_refuses",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_scope_credential_cannot_authenticate_reader_witness",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_scope_request_refuses_noncanonical_selectors",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_stale_or_future_witness_cannot_publish",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_withdrawn_witness_refuses_retry_then_renews_same_exact_proposal",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_witness_expiring_during_queue_preparation_cannot_publish",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_witness_issuance_requires_exact_capability_from_same_reader",
+      "suite": "unit",
+      "isolation_group": "scope-admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_account_owner_sideband_cannot_change_the_verified_quota_account",
       "suite": "unit",
       "isolation_group": "transcript-policy"
