@@ -98,20 +98,69 @@ jobs:
           uv sync --project packages/aitm-usage --locked --python "$PYTHON_VERSION"
           export PYTHONPATH="$out/observer" AITM_CI_PYTEST_EVIDENCE="$out/outcomes.json"
           if (( workers > 0 )); then
-            uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
-              --basetemp "$fixtures/pytest" -q -n "$workers" --dist worksteal -p no:cacheprovider \
-              packages/aitm-usage/tests
-            uv run --project packages/aitm-usage --locked python - "$AITM_CI_PYTEST_EVIDENCE" "$workers" <<'PY'
+            product=packages/aitm-usage/tests
+            export PYTHONPATH="$out/observer:$root"
+            if [[ -f tools/ci/product_shards.py ]]; then
+              uv run --project packages/aitm-usage --locked python -m tools.ci.product_shards \
+                --root "$root" --output "$out/shards" --fixtures "$fixtures/pytest" \
+                --workers "$workers" --label trusted-base "$product"
+              cp "$out/shards/evidence/pytest.json" "$out/outcomes.json"
+            else
+              # Compatibility for a literal base that has the catalog and observer
+              # but predates the product shard runner.
+              AITM_CI_PYTEST_EVIDENCE="$out/collection.json" \
+                uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+                --collect-only -q -p no:cacheprovider "$product" >/dev/null
+              uv run --project packages/aitm-usage --locked python - "$out" "$product" <<'PY'
           import json
           import sys
           from pathlib import Path
-          from pytest_evidence import reconcile_workers
+          from tools.ci import category_sweep as sweep
 
-          destination = Path(sys.argv[1])
-          evidence = reconcile_workers(destination, int(sys.argv[2]))
-          destination.write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+          out, product = Path(sys.argv[1]), sys.argv[2]
+          receipt = sweep.read(out / "collection.json")
+          assert receipt["exit_code"] == 0 and not receipt["deselected"]
+          catalog = {node: lane for node, lane in sweep.read_catalog(Path(sweep.CATALOG), "linux").items()
+                     if node.startswith(product + "/")}
+          lanes = sweep.assign({"product": receipt["collected"]}, catalog)
+          for lane, profiles in lanes.items():
+              if profiles:
+                  (out / f"{lane}.ids").write_text("\n".join(profiles["product"]) + "\n", encoding="utf-8")
           PY
+              for lane in fast-unit slow-unit local-integration systems-integration; do
+                [[ -f "$out/$lane.ids" ]] || continue
+                printf 'Running trusted base shard %s\n' "$lane"
+                mkdir "$out/$lane"
+                AITM_CI_PYTEST_EVIDENCE="$out/$lane/pytest.json" \
+                  uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
+                  --basetemp "$fixtures/$lane" -q -n "$workers" --dist worksteal -p no:cacheprovider \
+                  "@$out/$lane.ids"
+              done
+              uv run --project packages/aitm-usage --locked python - "$out" "$workers" <<'PY'
+          import sys
+          from pathlib import Path
+          from pytest_evidence import reconcile_workers
+          from tools.ci import category_sweep as sweep
+
+          out, workers = Path(sys.argv[1]), int(sys.argv[2])
+          result = sweep.read(out / "collection.json")
+          nodes = []
+          for lane in sweep.CATEGORIES:
+              assignment = out / f"{lane}.ids"
+              if assignment.is_file():
+                  expected = set(assignment.read_text(encoding="utf-8").splitlines())
+                  evidence = reconcile_workers(out / lane / "pytest.json", workers)
+                  sweep.validate(evidence, expected, "linux")
+                  nodes.extend(evidence["collected"])
+                  result["reports"].extend(evidence["reports"])
+                  result["children"].extend(evidence["children"])
+          assert sorted(nodes) == sorted(result["collected"])
+          (out / "outcomes.json").write_bytes(sweep.encoded(result))
+          PY
+            fi
           else
+            # The historical bootstrap lacks a catalog. Its single unclassified
+            # baseline is kept outside the category-specific unit runs.
             uv run --project packages/aitm-usage --locked pytest -p pytest_evidence --rootdir "$root" \
               --basetemp "$fixtures/pytest" -q packages/aitm-usage/tests
           fi
@@ -295,8 +344,7 @@ jobs:
             '{$os,$runtime,$runner,$image}' > "$out/evidence/capability.json"
           ready=$(date +%s)
           workers=3
-          mkdir -p "$out/observer"
-          export PYTHONPATH="$root/tools/ci" AITM_CI_PYTEST_EVIDENCE="$out/observer/pytest.json"
+          export PYTHONPATH="$root:$root/tools/ci"
           export AITM_CI_CHILD_EVIDENCE=1 COVERAGE_FILE="$out/.product"
           mode=$(jq -er .mode "$out/evidence/selection.json")
           if [[ "$mode" == checks ]]; then
@@ -311,20 +359,16 @@ jobs:
                 product_args+=("$root/$path")
               done < <(jq -er '.tests[]' "$out/evidence/selection.json")
             fi
-            uv run --locked coverage run -m pytest -p pytest_evidence --rootdir "$root" -q \
-              -n "$workers" --dist worksteal -p no:cacheprovider \
-              --basetemp "$fixtures/pytest" --junitxml="$out/evidence/product-junit.xml" \
-              --durations=15 "${product_args[@]}"
-            uv run --locked python - "$out" "$workers" <<'PY'
+            uv run --locked python -m tools.ci.product_shards --root "$root" --output "$out" \
+              --fixtures "$fixtures/pytest" --workers "$workers" --coverage --label "$mode" "${product_args[@]}"
+            uv run --locked python - "$out" <<'PY'
           import json
           import sys
           from pathlib import Path
           from python_gate import collect_child_coverage
-          from pytest_evidence import reconcile_workers
 
           root = Path(sys.argv[1])
-          evidence = reconcile_workers(root / "observer/pytest.json", int(sys.argv[2]))
-          (root / "evidence/pytest.json").write_text(json.dumps(evidence) + "\n", encoding="utf-8")
+          evidence = json.loads((root / "evidence/pytest.json").read_text(encoding="utf-8"))
           result = collect_child_coverage(evidence, root / ".product")
           (root / "evidence/children.json").write_text(json.dumps(result))
           PY
@@ -339,12 +383,15 @@ jobs:
           (cd "$out" && printf '%s  %s\n' a2c9b8497e1f85b1ad0dfcb78b5a622e098801b8e461e459e88e1ee12f018112 "$gh_asset" | sha256sum -c -)
           tar -xzf "$out/$gh_asset" -C "$out"
           export PATH="$out/gh_2.97.0_linux_amd64/bin:$PATH"
-          printf '%s\n' '[run]' 'branch = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
-          COVERAGE_FILE="$out/.helpers" packages/aitm-usage/.venv/bin/python -m pytest -q \
-            --basetemp "$fixtures/helpers" --cov=tools/ci --cov-config="$out/helper.coveragerc" --cov-report=json:"$out/evidence/helper-coverage.json" \
+          printf '%s\n' '[run]' 'branch = True' 'parallel = True' 'relative_files = True' 'source = tools/ci' 'omit = tools/ci/tests/*' 'patch = subprocess' > "$out/helper.coveragerc"
+          export COVERAGE_FILE="$out/.helpers" COVERAGE_RCFILE="$out/helper.coveragerc"
+          packages/aitm-usage/.venv/bin/python -m tools.ci.product_shards --root "$root" \
+            --output "$out/helpers" --fixtures "$fixtures/helpers" --workers 1 --coverage --label helpers \
             tools/ci/tests/test_python_gate.py tools/ci/tests/test_pytest_evidence.py \
             tools/ci/tests/test_verify_pr.py tools/ci/tests/test_file_checks.py \
-            tools/ci/tests/test_path_map.py tools/ci/tests/test_tia_local.py
+            tools/ci/tests/test_path_map.py tools/ci/tests/test_tia_local.py tools/ci/tests/test_category_sweep.py
+          packages/aitm-usage/.venv/bin/python -m coverage combine
+          packages/aitm-usage/.venv/bin/python -m coverage json -o "$out/evidence/helper-coverage.json"
           cache=cold
           if [[ "$UV_CACHE_HIT" == true ]]; then cache=warm; fi
           jq -n --argjson setup "$((ready - start))" --argjson test "$(($(date +%s) - ready))" \
@@ -377,8 +424,10 @@ jobs:
           root=$(pwd -P)
           cd packages/aitm-usage
           fixtures=$(mktemp -d /var/tmp/aitm-full-once-fixtures.XXXXXXXX)
-          uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
-            --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
+          export PYTHONPATH="$root:$root/tools/ci"
+          uv run --locked python -m tools.ci.product_shards --root "$root" \
+            --output "$RUNNER_TEMP/aitm-python/full-once" --fixtures "$fixtures/pytest" \
+            --label full-once tests "$root/tools/ci/tests/test_cli_evidence.py"
       - name: Report test migration evidence
         if: github.event_name == 'pull_request' && github.event.pull_request.number == 424
         continue-on-error: true
@@ -437,7 +486,7 @@ jobs:
           path: |
             ${{ runner.temp }}/aitm-python/evidence/selection.json
             ${{ runner.temp }}/aitm-python/evidence/product-junit.xml
-            ${{ runner.temp }}/aitm-python/observer/pytest*.json
+            ${{ runner.temp }}/aitm-python/observer/
           if-no-files-found: error
           overwrite: false
 
