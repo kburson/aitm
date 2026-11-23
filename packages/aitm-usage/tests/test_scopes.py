@@ -54,6 +54,7 @@ from aitm_usage.types import (
     ReviewRole,
     Revision,
     ScopeCorrection,
+    ScopeEnrollment,
     ScopeMarker,
     SourceBoundary,
     SourceRef,
@@ -235,9 +236,14 @@ def scope_policy(monkeypatch):
     return ledger, queue
 
 
-def test_planning_scope_and_development_owner(project):
+def _queue_marker(queue, marker):
+    queue(InboxCommand(marker.marker_id, marker.project_id, marker))
 
-    f = Fixture(project)
+
+def test_planning_scope_and_development_owner(scope_policy):
+
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     epic = f.marker(1, 1, EPIC, "epic")
     child = f.marker(2, 2, CHILD, "first-child-request")
     second = f.marker(3, 3, OTHER_CHILD, "next-child-turn", kind=BoundaryKind.TURN)
@@ -249,13 +255,13 @@ def test_planning_scope_and_development_owner(project):
         f.boundary(back, 21),
     )
 
-    with project.writer() as writer:
+    with ledger.writer() as writer:
         # Marker first. Neither an exact request ID nor an observation's time
         # authorizes a scope before source-ordered proof.
-        assert enqueue_marker(project.root, epic) == epic.marker_id
-        assert (
-            drain_inbox(writer, ()).receipts[0].disposition is MarkerDisposition.PENDING
-        )
+        _queue_marker(queue, epic)
+        (pending,) = drain_inbox(writer, ()).receipts
+        assert pending.command.command_id == epic.marker_id
+        assert pending.disposition is MarkerDisposition.PENDING
         epic_usage = f.observe(writer, first)
         pending_view = writer.as_of()
         assert resolve_scope(epic_usage, pending_view).scope is None
@@ -268,13 +274,13 @@ def test_planning_scope_and_development_owner(project):
         # request is honored even when its observation arrived earlier.
         child_usage = f.observe(writer, serial)
         assert resolve_scope(child_usage, writer.as_of()).scope.marker.item == EPIC
-        enqueue_marker(project.root, child)
+        _queue_marker(queue, child)
         assert (
             drain_inbox(writer, (serial,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
 
-        enqueue_marker(project.root, second)
+        _queue_marker(queue, second)
         turn_usage = f.observe(writer, turn)
         assert (
             drain_inbox(writer, (f.boundary(second, 20, proven=False),))
@@ -288,7 +294,7 @@ def test_planning_scope_and_development_owner(project):
         drain_inbox(writer, (turn,))
 
         back_usage = f.observe(writer, returned)
-        enqueue_marker(project.root, back)
+        _queue_marker(queue, back)
         drain_inbox(writer, (returned,))
         assert [
             resolve_scope(obs, writer.as_of()).scope.marker.item
@@ -321,8 +327,7 @@ def test_planning_scope_and_development_owner(project):
         )
         stranger = f.marker(10, 1, CHILD, "stranger", session=UUID(int=301))
         stranger_usage = f.observe(writer, f.boundary(stranger, 30, anchor=anchor))
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),
@@ -370,7 +375,7 @@ def test_planning_scope_and_development_owner(project):
         ]
         for marker, checkout in zip(reviews, (None, anchor), strict=True):
             evidence = f.boundary(marker, 4, anchor=checkout)
-            enqueue_marker(project.root, marker)
+            _queue_marker(queue, marker)
             drain_inbox(writer, (evidence,))
             review = resolve_scope(f.observe(writer, evidence), writer.as_of()).scope
             assert review.marker.role == marker.role
@@ -385,7 +390,7 @@ def test_planning_scope_and_development_owner(project):
             phase=WorkPhase.HOUSEKEEPING,
         )
         clean = f.boundary(housekeeping, 30)
-        enqueue_marker(project.root, housekeeping)
+        _queue_marker(queue, housekeeping)
         drain_inbox(writer, (clean,))
         scope = resolve_scope(f.observe(writer, clean), writer.as_of()).scope
         assert scope.marker.item == ItemKey(ItemKind.PROJECT)
@@ -402,7 +407,7 @@ def test_planning_scope_and_development_owner(project):
             attempt_ref=attempt,
         )
         conflict = f.boundary(contradiction, 8, anchor=anchor)
-        enqueue_marker(project.root, contradiction)
+        _queue_marker(queue, contradiction)
         assert (
             drain_inbox(writer, (conflict,)).receipts[0].disposition
             is MarkerDisposition.CONFLICT
@@ -426,7 +431,7 @@ def test_planning_scope_and_development_owner(project):
 def test_only_matching_source_proof_attests_pre_turn(request, changes):
     exercise_inbox = changes == {"receipt_ref": None}
     if exercise_inbox:
-        ledger = request.getfixturevalue("project")
+        ledger, queue = request.getfixturevalue("scope_policy")
     else:
         ledger = _memory_ledger(store, PROJECT, b"s" * 32)
     f = Fixture(ledger)
@@ -462,16 +467,24 @@ def test_only_matching_source_proof_attests_pre_turn(request, changes):
         assert effect.record.boundary == proven.boundary
         return
 
-    enqueue_marker(ledger.root, marker)
+    _queue_marker(queue, marker)
     with ledger.writer() as writer:
-        assert (
-            drain_inbox(writer, (proof,)).receipts[0].disposition
-            is MarkerDisposition.PENDING
+        (pending,) = drain_inbox(writer, (proof,)).receipts
+        assert pending.disposition is MarkerDisposition.PENDING
+        assert pending.boundary == proof.boundary
+        assert not any(
+            isinstance(revision.record, ScopeEnrollment)
+            for revision in writer.as_of().current
         )
-        assert (
-            drain_inbox(writer, (proven,)).receipts[0].disposition
-            is MarkerDisposition.ACCEPTED
+        (accepted,) = drain_inbox(writer, (proven,)).receipts
+        assert accepted.disposition is MarkerDisposition.ACCEPTED
+        assert accepted.boundary == proven.boundary
+        (enrollment,) = (
+            rev.record
+            for rev in writer.as_of().current
+            if isinstance(rev.record, ScopeEnrollment)
         )
+        assert enrollment.marker == marker and enrollment.boundary == proven.boundary
 
 
 def test_scope_correction_preserves_prior_view_and_final_receipts(project):
@@ -856,26 +869,25 @@ def test_local_commit_rolls_back_effect_and_replays_before_ack(project, monkeypa
         assert scopes.drain_inbox(writer, ()).receipts == ()
 
 
-def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
+def test_correction_can_recover_quarantined_scope_with_recorded_proof(scope_policy):
 
-    f = Fixture(project)
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
         1, 1, CHILD, "bind", phase=WorkPhase.DEVELOPMENT, attempt_ref=attempt
     )
     claim = f.marker(2, 2, OTHER_CHILD, "wrong-item", attempt_ref=attempt)
     proof = f.boundary(claim, 2, anchor=anchor)
-    enqueue_command(
-        project.root,
-        InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
-    )
-    enqueue_marker(project.root, claim)
-    with project.writer() as writer:
+    queue(InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)))
+    _queue_marker(queue, claim)
+    with ledger.writer() as writer:
         report = drain_inbox(writer, (f.boundary(owner, 1, anchor=anchor), proof))
         assert [receipt.disposition for receipt in report.receipts] == [
             MarkerDisposition.ACCEPTED,
             MarkerDisposition.CONFLICT,
         ]
+        assert report.receipts[1].boundary == proof.boundary
         usage = f.observe(writer, proof)
         before = writer.as_of()
         assert resolve_scope(usage, before).reason is MarkerDisposition.CONFLICT
@@ -883,10 +895,8 @@ def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
     correction = ScopeCorrection(
         UUID(int=90), PROJECT, replace(claim, item=CHILD), f.ref("conflict-decision")
     )
-    enqueue_command(
-        project.root, InboxCommand(correction.correction_id, PROJECT, correction)
-    )
-    with Ledger.open(project.root, PROJECT).writer() as writer:
+    queue(InboxCommand(correction.correction_id, PROJECT, correction))
+    with ledger.writer() as writer:
         assert (
             drain_inbox(writer, ()).receipts[-1].disposition
             is MarkerDisposition.ACCEPTED
@@ -1167,7 +1177,7 @@ def test_same_stream_binding_generations_follow_proven_order(
     request, generation, ordinal, expected
 ):
     if expected is MarkerDisposition.ACCEPTED:
-        ledger = request.getfixturevalue("project")
+        ledger, queue = request.getfixturevalue("scope_policy")
     else:
         ledger = _memory_ledger(store, PROJECT, b"s" * 32)
     f = Fixture(ledger)
@@ -1213,12 +1223,12 @@ def test_same_stream_binding_generations_follow_proven_order(
         return
 
     with ledger.writer() as writer:
-        enqueue_command(ledger.root, known_command)
+        queue(known_command)
         assert (
             drain_inbox(writer, (known_proof,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
-        enqueue_command(ledger.root, proposed_command)
+        queue(proposed_command)
         assert drain_inbox(writer, (proof,)).receipts[0].disposition is expected
         old = f.observe(writer, proof)
         new = f.observe(writer, known_proof)
@@ -1229,8 +1239,16 @@ def test_same_stream_binding_generations_follow_proven_order(
 @pytest.mark.parametrize(
     "enrich_identity", [False, True], ids=["tokens", "request-message"]
 )
-def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_identity):
-    f = Fixture(project)
+def test_cross_stream_rebind_preserves_recorded_prefix_only(request, enrich_identity):
+    if enrich_identity:
+        ledger = request.getfixturevalue("project")
+
+        def queue(command):
+            enqueue_command(ledger.root, command)
+
+    else:
+        ledger, queue = request.getfixturevalue("scope_policy")
+    f = Fixture(ledger)
     anchor = f.ref("anchor")
     previous = f.marker(
         1,
@@ -1249,9 +1267,8 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_iden
         attempt_ref=f.ref("new-attempt"),
         session=UUID(int=300),
     )
-    with project.writer() as writer:
-        enqueue_command(
-            project.root,
+    with ledger.writer() as writer:
+        queue(
             InboxCommand(
                 previous.marker_id, PROJECT, DevelopmentBinding(previous, anchor, 1)
             ),
@@ -1262,8 +1279,7 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(project, enrich_iden
         before = writer.as_of()
         assert resolve_scope(old, before).scope.generation == 1
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(new.marker_id, PROJECT, DevelopmentBinding(new, anchor, 2)),
         )
         new_proof = f.boundary(new, 1, anchor=anchor)
@@ -1363,8 +1379,11 @@ def test_pending_receipt_refines_location_without_authorizing_attribution(projec
         assert writer.as_of() == committed
 
 
-def test_common_drain_applies_typed_effect_tuple_in_one_commit(project, monkeypatch):
-    f = Fixture(project)
+def test_common_drain_applies_typed_effect_tuple_in_one_commit(
+    scope_policy, monkeypatch
+):
+    ledger, queue = scope_policy
+    f = Fixture(ledger)
     marker = f.marker(1, 1, CHILD, "diagnostic-and-scope")
     diagnostic = Revision(
         f.ref("diagnostic"), 1, Diagnostic(DiagnosticCode.COVERAGE_GAP, NOW)
@@ -1376,10 +1395,17 @@ def test_common_drain_applies_typed_effect_tuple_in_one_commit(project, monkeypa
         return status, evidence, (*effects, diagnostic)
 
     monkeypatch.setattr(scopes, "_evaluate", with_diagnostic)
-    enqueue_marker(project.root, marker)
-    with project.writer() as writer:
+    _queue_marker(queue, marker)
+    with ledger.writer() as writer:
         receipt = drain_inbox(writer, (f.boundary(marker, 8),)).receipts[0]
         assert receipt.disposition is MarkerDisposition.ACCEPTED
-        assert writer.as_of().sequence == 1
-        assert len(writer.as_of().revisions) == 3
-        assert diagnostic in writer.as_of().current
+        latest = writer.as_of()
+        assert latest.sequence == 1 and not writer.as_of(0).revisions
+        assert len(latest.current) == 3
+        assert diagnostic in latest.current
+        assert any(revision.record == receipt for revision in latest.current)
+        assert any(
+            isinstance(revision.record, ScopeEnrollment)
+            and revision.record.marker == marker
+            for revision in latest.current
+        )

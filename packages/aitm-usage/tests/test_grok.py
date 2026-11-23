@@ -219,26 +219,26 @@ def test_grok_observation_round_trips_in_the_versioned_payload(grok_policy):
     assert json.loads(encoded)["observation"]["provider"] == "grok"
 
 
-def test_resume_and_snapshot_replay_count_two_distinct_turns(grok_source):
-    s = grok_source
-    single = _batch(s, s.rows, s.snapshot)
+def test_resume_and_snapshot_replay_count_two_distinct_turns(grok_policy):
+    s = grok_policy
+    single = _unit_batch(s, s.rows, s.snapshot)
     assert single.diagnostics == ()
     assert len(single.observations) == len(single.boundaries) == 2
     assert len({item.key for item in single.observations}) == 2
     assert single.observations[0].usage.observed_at == datetime.fromtimestamp(
         1793491200.010, UTC
     )
-    first = _batch(
+    first = _unit_batch(
         s, s.rows[:5], {"sessionId": SESSION, "turns": s.snapshot["turns"][:1]}
     )
     assert len(first.observations) == 1
     restored = _decode(
         _encode(first.cursor, adapter.StreamCursor), adapter.StreamCursor
     )
-    second = _batch(s, s.rows, s.snapshot, restored)
+    second = _unit_batch(s, s.rows, s.snapshot, restored)
     assert (*first.observations, *second.observations) == single.observations
     assert second.observations[0].project_context == s.checkout
-    repeat = _batch(s, s.rows, s.snapshot, second.cursor)
+    repeat = _unit_batch(s, s.rows, s.snapshot, second.cursor)
     assert repeat.observations == repeat.diagnostics == ()
     assert repeat.cursor == second.cursor
 
@@ -472,12 +472,12 @@ def test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff(grok_policy):
     assert dispute.observation_key == before.observations[0].key
 
 
-def test_bounded_snapshot_records_all_keyed_disputes(grok_source):
-    s = grok_source
-    before = _batch(s, s.rows, s.snapshot)
+def test_bounded_snapshot_records_all_keyed_disputes(grok_policy):
+    s = grok_policy
+    before = _unit_batch(s, s.rows, s.snapshot)
     for row in s.snapshot["turns"]:
         row["costUsdTicks"] += 1
-    replay = _batch(s, s.rows, s.snapshot, before.cursor)
+    replay = _unit_batch(s, s.rows, s.snapshot, before.cursor)
     assert not replay.observations
     assert replay.cursor.checkpoint.offset == before.cursor.checkpoint.offset
     assert replay.cursor != before.cursor
@@ -485,7 +485,7 @@ def test_bounded_snapshot_records_all_keyed_disputes(grok_source):
         item.key for item in before.observations
     }
     assert _codes(replay) == {DiagnosticCode.IDENTITY_CONFLICT}
-    held = _batch(
+    held = _unit_batch(
         s, s.rows, {**s.snapshot, "padding": "x" * (2 * 1024 * 1024)}, before.cursor
     )
     assert not held.observations and held.cursor == before.cursor

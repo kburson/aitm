@@ -335,6 +335,106 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_bounded_snapshot_records_all_keyed_disputes",
+      "suite": "unit",
+      "isolation_group": "grok-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_resume_and_snapshot_replay_count_two_distinct_turns",
+      "suite": "unit",
+      "isolation_group": "grok-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_cursor_replay_never_rewinds_current_provider_state",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_open_refuses_missing_state_without_creating_it",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_schema_tag_alone_does_not_allow_a_missing_table",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_stale_expected_checkpoint_cannot_append_new_revision",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_held_startup_replays_after_checkout_proof",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_terminal_witness_requires_verified_nested_contributor",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_malformed_frame_holds_later_verified_turn",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_recheck_native_origin_after_discovery",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_command_without_callback_holds_only_its_edge",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_duplicate_receipt_cannot_pass_as_a_later_completion",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_open_disable_waits_then_cuts_before_next_turn",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_replaced_incarnation_has_no_previous_capture_authority",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_enrollment-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_common_drain_applies_typed_effect_tuple_in_one_commit",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_correction_can_recover_quarantined_scope_with_recorded_proof",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_only_matching_source_proof_attests_pre_turn",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_planning_scope_and_development_owner",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_same_stream_binding_generations_follow_proven_order",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_current_catalog_matches_legacy_locator_fields_and_skips_parked_open",
       "suite": "unit",
       "isolation_group": "monitor_inventory-policy"

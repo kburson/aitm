@@ -8,11 +8,12 @@ import sqlite3
 import stat
 import subprocess
 import sys
-from contextlib import closing, contextmanager
+from contextlib import closing, contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
 from hashlib import sha256
 from importlib.util import find_spec
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -36,6 +37,10 @@ def _uses_path_metadata(request):
         return request.node.callspec.id in METADATA_MODE_CASES
     if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
         return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
+    if name == "test_invalid_identity_refuses_before_durable_writes":
+        return request.node.callspec.id != "key"
+    if name == "test_raw_credential_shaped_metadata_is_normalized_before_durable_write":
+        return request.node.callspec.id != "model"
     return "ledger_path_metadata" in request.fixturenames
 
 
@@ -112,6 +117,8 @@ def ledger_path_metadata(modules, monkeypatch):
             return self.stat(follow_symlinks=False)
 
         def mkdir(self, *args, **kwargs):
+            if str(self) in entries:
+                raise FileExistsError(errno.EEXIST, "Test path already exists", self)
             pytest.fail(f"Ledger attempted to create {self} after invalid admission")
 
     def add_path(path, mode, *, owner=uid):
@@ -191,6 +198,165 @@ def path_metadata(request):
     if _uses_path_metadata(request):
         return request.getfixturevalue("ledger_path_metadata")
     return None
+
+
+def _observe_storage(metadata, ledger):
+    database = ledger.database_path
+    metadata.add_directory(database.parent)
+    metadata.add_directory(metadata.control)
+    for path in (
+        metadata.control / f"{ledger.identity.project_id}.lock",
+        ledger.lock_path,
+        ledger.key_path,
+        database,
+        database.with_name(database.name + "-wal"),
+        database.with_name(database.name + "-shm"),
+    ):
+        metadata.add_path(path, stat.S_IFREG | 0o600)
+
+
+class _QueryRows(list):
+    def fetchone(self):
+        return self[0] if self else None
+
+
+class _LedgerRows:
+    """Adapt the ledger's SQL requests to observations of stored rows."""
+
+    def __init__(self, identity, application_id, schema):
+        self.version = identity.schema_version
+        self.application_id = application_id
+        self.schema = schema
+        self.identity_row = (str(identity.project_id), identity.key_id)
+        self.history = ([], [], [])
+        self.writes = []
+
+    def connect(self, *, write):
+        return _LedgerConnection(self, write=write)
+
+
+class _LedgerConnection:
+    def __init__(self, store, *, write):
+        self.store = store
+        self.write = write
+
+    def __enter__(self):
+        self.history = tuple(rows.copy() for rows in self.store.history)
+        return self
+
+    def __exit__(self, error, *_):
+        if error is None and self.write:
+            self.store.history = self.history
+
+    def rollback(self):
+        self.history = tuple(rows.copy() for rows in self.store.history)
+
+    def execute(self, statement, params=()):
+        commits, revisions, checkpoints = self.history
+        sql = " ".join(statement.split())
+        headers = {
+            "PRAGMA user_version": [(self.store.version,)],
+            "PRAGMA application_id": [(self.store.application_id,)],
+            "PRAGMA journal_mode": [("wal",)],
+            "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name": self.store.schema,
+            "SELECT project_id, key_id FROM identity WHERE singleton = 1": [
+                self.store.identity_row
+            ],
+        }
+        if sql in headers:
+            return _QueryRows(headers[sql])
+        if sql == ("BEGIN IMMEDIATE" if self.write else "BEGIN"):
+            return None
+        if sql == "SELECT COALESCE(MAX(sequence), 0) FROM commits":
+            return _QueryRows([(max((row[0] for row in commits), default=0),)])
+        if sql == "SELECT payload FROM revisions WHERE key = ? AND revision = ?":
+            return _QueryRows(
+                (value,)
+                for key, revision, _, value in revisions
+                if (key, revision) == params
+            )
+        if (
+            sql
+            == "SELECT revision, payload FROM revisions WHERE key = ? ORDER BY revision DESC LIMIT 1"
+        ):
+            matching = [
+                (revision, value)
+                for key, revision, _, value in revisions
+                if (key,) == params
+            ]
+            return _QueryRows([max(matching)] if matching else [])
+        if (
+            sql
+            == "SELECT payload FROM checkpoints WHERE source_ref = ? ORDER BY sequence DESC LIMIT 1"
+        ):
+            matching = [
+                (sequence, value)
+                for source, sequence, value in checkpoints
+                if (source,) == params
+            ]
+            return _QueryRows([(max(matching)[1],)] if matching else [])
+        if (
+            sql
+            == "SELECT payload FROM revisions WHERE sequence <= ? ORDER BY sequence, key, revision"
+        ):
+            ordered = sorted(revisions, key=lambda row: (row[2], row[0], row[1]))
+            return _QueryRows(
+                (value,) for _, _, sequence, value in ordered if sequence <= params[0]
+            )
+        if sql == (
+            "SELECT c.payload FROM checkpoints c JOIN ( SELECT source_ref, "
+            "MAX(sequence) AS latest FROM checkpoints WHERE sequence <= ? "
+            "GROUP BY source_ref ) h ON h.source_ref = c.source_ref "
+            "AND h.latest = c.sequence ORDER BY c.source_ref"
+        ):
+            latest = {}
+            for source, sequence, value in sorted(checkpoints):
+                if sequence <= params[0]:
+                    latest[source] = value
+            return _QueryRows((latest[source],) for source in sorted(latest))
+        destinations = {
+            "INSERT INTO commits VALUES (?)": commits,
+            "INSERT INTO revisions VALUES (?, ?, ?, ?)": revisions,
+            "INSERT INTO checkpoints VALUES (?, ?, ?)": checkpoints,
+        }
+        assert self.write and sql in destinations, sql
+        self.store.writes.append((sql, params))
+        destinations[sql].append(params)
+        return None
+
+
+@pytest.fixture
+def ledger_rows(ledger_path_metadata, modules, monkeypatch):
+    ledger_module, types = modules
+    metadata = ledger_path_metadata
+    key = b"a" * 32
+    identity = ledger_module._identity(PROJECT, key)
+    ledger = ledger_module.Ledger(metadata.base / "project", identity, key)
+    _observe_storage(metadata, ledger)
+    metadata.add_path(metadata.control / f"{OTHER_PROJECT}.lock", stat.S_IFREG | 0o600)
+
+    class KeyBytes(BytesIO):
+        def fileno(self):
+            return ledger.key_path
+
+    def open_key(descriptor, mode):
+        assert (descriptor, mode) == (ledger.key_path, "rb")
+        return KeyBytes(PROJECT.bytes + key)
+
+    schema = (
+        ("table", "checkpoints", "checkpoints", "CREATE TABLE checkpoints (...)"),
+        ("table", "revisions", "revisions", "CREATE TABLE revisions (...)"),
+    )
+    rows = _LedgerRows(identity, ledger_module.APPLICATION_ID, schema)
+
+    def connection(path, *, write):
+        assert path == ledger.database_path
+        return nullcontext(rows.connect(write=write))
+
+    monkeypatch.setattr(ledger_module.os, "fdopen", open_key, raising=False)
+    monkeypatch.setattr(ledger_module, "_supported_schema", lambda version: schema)
+    monkeypatch.setattr(ledger_module, "_connection", connection)
+    return ledger_module.Ledger.open(ledger.root, PROJECT), types, rows
 
 
 def sample_batch(ledger, types):
@@ -290,16 +456,21 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
     assert reopened.as_of().checkpoints == (batch.checkpoint,)
 
     next_revision = replace(revision, revision=2, record=final)
+    before = durable_data(reopened)
+    with pytest.raises(ConflictError, match="Source checkpoint has changed"):
+        reopened.apply(replace(batch, revisions=(next_revision,)))
+    assert reopened.as_of().revisions == (revision,)
+    assert durable_data(reopened) == before
     assert reopened.apply(types.LedgerBatch((next_revision,))) == 2
     assert reopened.as_of(1).current == (revision,)
     assert reopened.as_of(2).current == (next_revision,)
     assert reopened.as_of(2).revisions == (revision, next_revision)
 
 
-def test_cursor_replay_never_rewinds_current_provider_state(state):
+def test_cursor_replay_never_rewinds_current_provider_state(ledger_rows):
     from aitm_usage.ledger import ConflictError
 
-    ledger, types = state
+    ledger, types, rows = ledger_rows
     first = sample_batch(ledger, types)
     assert ledger.apply(first) == 1
     second = types.SourceCheckpoint(
@@ -312,8 +483,10 @@ def test_cursor_replay_never_rewinds_current_provider_state(state):
         )
         == 2
     )
-    with pytest.raises(ConflictError):
+    before = rows.history
+    with pytest.raises(ConflictError, match="Source checkpoint has changed"):
         ledger.apply(first)
+    assert rows.history == before
     assert ledger.as_of().checkpoints == (second,)
     assert ledger.as_of(1).checkpoints == (first.checkpoint,)
 
@@ -376,12 +549,24 @@ with ledger.writer():
     assert ledger.lock_path.stat().st_ino == lock_before.st_ino
 
 
-def test_open_refuses_missing_state_without_creating_it(tmp_path, modules):
+def test_open_refuses_missing_state_without_creating_it(ledger_path_metadata, modules):
     ledger_module, _ = modules
-    root = tmp_path / "missing"
-    with pytest.raises(ledger_module.LedgerError):
+    metadata = ledger_path_metadata
+    metadata.add_directory(metadata.control)
+    metadata.add_path(metadata.control / f"{PROJECT}.lock", stat.S_IFREG | 0o600)
+    root = metadata.base / "missing"
+    before = dict(metadata.entries)
+    with pytest.raises(
+        ledger_module.LedgerError, match="Private ledger path is unavailable"
+    ):
         ledger_module.Ledger.open(root, PROJECT)
     assert not root.exists()
+    with pytest.raises(
+        ledger_module.LedgerError, match="Private ledger ancestry is unavailable"
+    ):
+        ledger_module.Ledger.open(root / "nested", PROJECT)
+    assert not (root / "nested").exists()
+    assert metadata.entries == before
 
 
 def test_key_is_project_bound_and_pseudonyms_survive_restart(state, tmp_path):
@@ -405,23 +590,43 @@ def durable_data(ledger):
 
 
 @pytest.mark.parametrize("damage", ["schema", "project", "key"])
-def test_invalid_identity_refuses_before_durable_writes(state, tmp_path, damage):
+def test_invalid_identity_refuses_before_durable_writes(request, damage):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    if damage != "key":
+        ledger, types, rows = request.getfixturevalue("ledger_rows")
+        batch = sample_batch(ledger, types)
+        assert ledger.apply(batch) == 1
+        if damage == "schema":
+            rows.version = 99
+            message = "Unsupported ledger schema"
+        else:
+            with pytest.raises(
+                LedgerError, match="Pseudonym key project identity mismatch"
+            ):
+                type(ledger).open(ledger.root, OTHER_PROJECT)
+            rows.identity_row = (str(OTHER_PROJECT), rows.identity_row[1])
+            message = "Ledger project or key identity mismatch"
+
+        before = rows.history
+        rows.writes.clear()
+        for operation in (
+            lambda: type(ledger).open(ledger.root, PROJECT),
+            lambda: type(ledger).initialize(ledger.root, PROJECT),
+            lambda: ledger.apply(batch),
+        ):
+            with pytest.raises(LedgerError, match=message):
+                operation()
+        assert rows.history == before
+        assert rows.writes == []
+        return
+
+    ledger, types = request.getfixturevalue("state")
+    tmp_path = request.getfixturevalue("tmp_path")
     batch = sample_batch(ledger, types)
     assert ledger.apply(batch) == 1
-    if damage == "schema":
-        with tamper(ledger.database_path) as conn:
-            conn.execute("PRAGMA user_version = 99")
-    elif damage == "project":
-        with pytest.raises(LedgerError):
-            type(ledger).open(ledger.root, OTHER_PROJECT)
-        with tamper(ledger.database_path) as conn:
-            conn.execute("UPDATE identity SET project_id = ?", (str(OTHER_PROJECT),))
-    else:
-        replacement = type(ledger).initialize(tmp_path / "replacement", PROJECT)
-        ledger.key_path.write_bytes(replacement.key_path.read_bytes())
+    replacement = type(ledger).initialize(tmp_path / "replacement", PROJECT)
+    ledger.key_path.write_bytes(replacement.key_path.read_bytes())
 
     before = durable_data(ledger)
     with pytest.raises(LedgerError):
@@ -433,16 +638,16 @@ def test_invalid_identity_refuses_before_durable_writes(state, tmp_path, damage)
     assert durable_data(ledger) == before
 
 
-def test_schema_tag_alone_does_not_allow_a_missing_table(state):
+def test_schema_tag_alone_does_not_allow_a_missing_table(ledger_rows):
     from aitm_usage.ledger import LedgerError
 
-    ledger, _ = state
-    with tamper(ledger.database_path) as conn:
-        conn.execute("ALTER TABLE checkpoints RENAME TO invalid_checkpoints")
-    before = durable_data(ledger)
-    with pytest.raises(LedgerError):
+    ledger, _, rows = ledger_rows
+    rows.schema = tuple(row for row in rows.schema if row[1] != "checkpoints")
+    before = rows.history
+    with pytest.raises(LedgerError, match="Invalid ledger table schema"):
         type(ledger).open(ledger.root, PROJECT)
-    assert durable_data(ledger) == before
+    assert rows.history == before
+    assert rows.writes == []
 
 
 def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
@@ -489,11 +694,7 @@ def test_private_paths_have_exact_modes_and_reject_looser_modes(
         for sqlite_path in ("database", "wal", "shm"):
             assert stat.S_IMODE(paths[sqlite_path].stat().st_mode) == 0o600
     else:
-        metadata.add_directory(paths["store"])
-        metadata.add_directory(metadata.control)
-        metadata.add_path(metadata.control / f"{PROJECT}.lock", stat.S_IFREG | 0o600)
-        for kind in ("database", "lock", "key", "wal", "shm"):
-            metadata.add_path(paths[kind], stat.S_IFREG | 0o600)
+        _observe_storage(metadata, ledger)
     path = paths[relative_path]
     is_directory = relative_path in ("project", "store")
     assert stat.S_IMODE(path.stat().st_mode) == (0o700 if is_directory else 0o600)
@@ -647,18 +848,23 @@ def test_installed_console_entry_uses_package_and_project_prefix(tmp_path):
     assert cli.default_project_root(PROJECT) == Path.home() / ROOT_PREFIX / str(PROJECT)
 
 
-def test_stale_expected_checkpoint_cannot_append_new_revision(state):
+def test_stale_expected_checkpoint_cannot_append_new_revision(ledger_rows):
     from aitm_usage.ledger import ConflictError
 
-    ledger, types = state
+    ledger, types, rows = ledger_rows
     batch = sample_batch(ledger, types)
     assert ledger.apply(batch) == 1
     novel = replace(batch.revisions[0], revision=2)
-    before = durable_data(ledger)
-    with pytest.raises(ConflictError):
+    before = rows.history
+    rows.writes.clear()
+    with pytest.raises(ConflictError, match="Source checkpoint has changed"):
         ledger.apply(replace(batch, revisions=(novel,)))
     assert ledger.as_of().revisions == batch.revisions
-    assert durable_data(ledger) == before
+    assert rows.history == before
+    assert [statement for statement, _ in rows.writes] == [
+        "INSERT INTO commits VALUES (?)",
+        "INSERT INTO revisions VALUES (?, ?, ?, ?)",
+    ]
     assert ledger.apply(batch) == 1
     assert (
         ledger.apply(
@@ -824,9 +1030,13 @@ def test_private_path_rejects_mismatched_owner(ledger_path_metadata):
 
 @pytest.mark.parametrize("label", ["model", "client_version", "checkpoint_version"])
 def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
-    state, label
+    request, label
 ):
-    ledger, types = state
+    rows = None
+    if label == "model":
+        ledger, types = request.getfixturevalue("state")
+    else:
+        ledger, types, rows = request.getfixturevalue("ledger_rows")
     batch = sample_batch(ledger, types)
     canary = "sk-PRIVATE-CANARY" if label == "model" else "0.99.0-sk-PRIVATE-CANARY"
     if label == "checkpoint_version":
@@ -845,6 +1055,24 @@ def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
                 replace(revision, record=replace(revision.record, **{label: canary})),
             ),
         )
+        if label == "model":
+            version_canary = f"0.99.0-{canary}"
+            revision = batch.revisions[0]
+            batch = replace(
+                batch,
+                revisions=(
+                    replace(
+                        revision,
+                        record=replace(revision.record, client_version=version_canary),
+                    ),
+                ),
+                checkpoint=replace(
+                    batch.checkpoint,
+                    provider=replace(
+                        batch.checkpoint.provider, client_version=version_canary
+                    ),
+                ),
+            )
     assert ledger.apply(batch) == 1
     view = type(ledger).open(ledger.root, PROJECT).as_of()
     result = (
@@ -853,9 +1081,16 @@ def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
         else getattr(view.revisions[0].record, label)
     )
     assert result == "unknown"
-    assert all(
-        canary.encode() not in payload for payload in durable_data(ledger).values()
-    )
+    if rows is None:
+        assert view.revisions[0].record.client_version == "unknown"
+        assert view.checkpoints[0].provider.client_version == "unknown"
+        assert all(
+            canary.encode() not in payload for payload in durable_data(ledger).values()
+        )
+    else:
+        payloads = [entry[-1] for table in rows.history[1:] for entry in table]
+        assert len(payloads) == 2
+        assert all(canary not in payload for payload in payloads)
 
 
 @pytest.mark.parametrize("kind", ["foreign-project", "foreign-key", "fabricated"])

@@ -1,5 +1,6 @@
 """Prospective Grok enrollment from an exact applied owner command."""
 
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 
 import pytest
@@ -16,6 +17,7 @@ from aitm_usage.monitor_registry import (
     _GrokPending,
 )
 from aitm_usage.monitor_scope import RouteStatus, ScopeState, resolve_route
+from aitm_usage.sources import grok
 from aitm_usage.sources.grok import GrokAdapter
 from aitm_usage.types import DiagnosticCode, _decode
 
@@ -37,22 +39,41 @@ def _hookless(f):
     return f.rows[1:5]
 
 
-def test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader(
-    isolated_grok_capture,
-):
-    f = isolated_grok_capture
+@contextmanager
+def _hide_original_stream(f, monkeypatch, *, physical=False):
     original = f.locator()._source.path
-    original.unlink()
-    enable = f.submit(33101, True)
-    (receipt,) = f.evaluate()
-    assert receipt.command_id == enable.command_id
-    assert receipt.status is ControlStatus.APPLIED
-    state = f.writer.view()
-    wire = _encode_registry(state)
-    with pytest.raises(ValueError):
-        _decode(wire, _OldRegistryWithGrok)
-    assert f.state.grok_enrollment_gaps() == ()
-    original.touch()
+    if physical:
+        original.unlink()
+        try:
+            yield
+        finally:
+            original.touch()
+        return
+
+    raw_transcripts = grok._transcripts
+
+    def visible_transcripts(fd, root):
+        return (path for path in raw_transcripts(fd, root) if path != original)
+
+    with monkeypatch.context() as discovery:
+        discovery.setattr(grok, "_transcripts", visible_transcripts)
+        yield
+
+
+def test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader(
+    grok_capture_policy, monkeypatch
+):
+    f = grok_capture_policy
+    with _hide_original_stream(f, monkeypatch):
+        enable = f.submit(33101, True)
+        (receipt,) = f.evaluate()
+        assert receipt.command_id == enable.command_id
+        assert receipt.status is ControlStatus.APPLIED
+        state = f.writer.view()
+        wire = _encode_registry(state)
+        with pytest.raises(ValueError):
+            _decode(wire, _OldRegistryWithGrok)
+        assert f.state.grok_enrollment_gaps() == ()
     assert _enroll(f, f.locator) is None
 
 
@@ -345,13 +366,14 @@ def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
 
 @pytest.mark.parametrize("open_turn", [False, True], ids=["quiet", "in-flight"])
 def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
-    isolated_grok_capture,
+    request,
+    monkeypatch,
     open_turn,
 ):
-    f = isolated_grok_capture
-    original = f.locator()._source.path
-    original.unlink()
-    try:
+    f = request.getfixturevalue(
+        "isolated_grok_capture" if open_turn else "grok_capture_policy"
+    )
+    with _hide_original_stream(f, monkeypatch, physical=open_turn):
         enable = f.submit(33117, True)
         assert f.evaluate()[0].command_id == enable.command_id
         other, write = f.add_stream()
@@ -375,8 +397,6 @@ def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
         assert _enroll(f, other) is None
         assert f.writer.view() == enrolled
         assert f.state.read_source(f.source_id, other()).observations == ()
-    finally:
-        original.touch()
 
 
 def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(

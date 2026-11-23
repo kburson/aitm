@@ -251,15 +251,17 @@ def test_discovery_refuses_unqualified_version_on_disk(monkeypatch, source):
     assert diagnostic.code is DiagnosticCode.UNSUPPORTED_FORMAT
 
 
-def test_recheck_native_origin_after_discovery(monkeypatch, source):
+def test_recheck_native_origin_after_discovery(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     rows = _desktop(checkout)
     path = directory / "changed.jsonl"
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
+    assert adapter.read_delta(locator, None).observations
     rows[0]["payload"]["source"] = "cli"
-    _write(path, rows)
+    native_files.write(path, rows)
     result = adapter.read_delta(locator, None)
     assert not result.observations and not result.boundaries and result.cursor is None
     assert [item.code for item in result.diagnostics] == [
@@ -600,30 +602,25 @@ def test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn(
 
 @pytest.mark.parametrize("resume", [False, True], ids=["cold", "restart"])
 def test_linux_codex_malformed_frame_holds_later_verified_turn(
-    monkeypatch, request, resume
+    monkeypatch, native_files, resume
 ):
-    if resume:
-        source = request.getfixturevalue("source")
-        write_rows = _write
-    else:
-        files = request.getfixturevalue("native_files")
-        source, write_rows = files.source, files.write
+    source = native_files.source
     module, adapter, root = _adapter(
         monkeypatch, source, system="Linux", arch="aarch64"
     )
     _, directory, checkout = source
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     path = directory / "cli.jsonl"
-    write_rows(path, rows[:22])
+    native_files.write(path, rows[:22])
     prior = None
     if resume:
         (locator,) = adapter.discover(root)
         prior = adapter.read_delta(locator, None).cursor
         assert prior is not None
+        prior = _decode(_encode(prior, module.StreamCursor), module.StreamCursor)
 
+    native_files.contents[path] += b"{malformed\n"
     if resume:
-        with path.open("ab") as stream:
-            stream.write(b"{malformed\n")
         (locator,) = adapter.discover(root)
         tail = adapter.read_delta(locator, prior)
         assert tail.cursor == prior
@@ -631,12 +628,7 @@ def test_linux_codex_malformed_frame_holds_later_verified_turn(
         assert any(
             item.code is DiagnosticCode.MALFORMED_USAGE for item in tail.diagnostics
         )
-    tail = b"".join(json.dumps(row).encode() + b"\n" for row in rows[22:])
-    if resume:
-        with path.open("ab") as stream:
-            stream.write(tail)
-    else:
-        files.contents[path] += b"{malformed\n" + tail
+    native_files.write(path, rows[22:], append=True)
 
     (locator,) = adapter.discover(root)
     result = module.ProviderAdapter().read_delta(locator, prior)
@@ -646,7 +638,7 @@ def test_linux_codex_malformed_frame_holds_later_verified_turn(
         item.code is DiagnosticCode.MALFORMED_USAGE for item in result.diagnostics
     )
 
-    write_rows(path, rows)
+    native_files.write(path, rows)
     (repaired,) = adapter.discover(root)
     confirmed = module.ProviderAdapter().read_delta(repaired, prior)
     assert confirmed.cursor is not None and confirmed.cursor != prior
@@ -984,10 +976,19 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, native_files):
     ]
 
 
+@pytest.fixture
+def revision_witness_storage(request):
+    if request.node.callspec.params["terminal_kind"] == "cost-state":
+        files = request.getfixturevalue("native_files")
+        return files.source, files
+    return request.getfixturevalue("source"), None
+
+
 @pytest.mark.parametrize("terminal_kind", ["result", "cost-state"])
 def test_claude_revision_witnesses_bind_each_committing_row(
-    monkeypatch, source, terminal_kind
+    monkeypatch, revision_witness_storage, terminal_kind
 ):
+    source, files = revision_witness_storage
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "revisions.jsonl"
@@ -1007,7 +1008,8 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         request(checkout),
         terminal,
     ]
-    _write(path, rows)
+    write_rows = _write if files is None else files.write
+    write_rows(path, rows)
     (locator,) = adapter.discover(root)
     legacy = adapter.read_delta(locator, None)
     assert [
@@ -1031,7 +1033,8 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         (1, 4, 5, terminal_kind),
         (2, 2, 5, terminal_kind),
     ]
-    native_lines = path.read_bytes().splitlines(keepends=True)
+    native_bytes = path.read_bytes() if files is None else files.contents[path]
+    native_lines = native_bytes.splitlines(keepends=True)
     for (observation, witness), (prior_index, current_index) in zip(
         witnesses, [(0, 2), (2, 3), (3, 4), (1, 5)], strict=True
     ):
@@ -1066,8 +1069,12 @@ def test_claude_revision_witnesses_bind_each_committing_row(
     assert "req-first" not in repr(witnesses)
 
     archive = directory.parent / "archive-private"
-    archive.mkdir()
-    (archive / path.name).write_bytes(path.read_bytes())
+    archived_path = archive / path.name
+    if files is None:
+        archive.mkdir()
+        archived_path.write_bytes(native_bytes)
+    else:
+        files.contents[archived_path] = native_bytes
     (archived,) = adapter.discover(replace(root, path=archive))
     copied_witnesses = []
     copied = adapter.read_delta(archived, None, _revision_witnesses=copied_witnesses)
@@ -1114,9 +1121,9 @@ def test_claude_terminal_contributor_span_tracks_stop_with_unchanged_counts(
 
 
 @pytest.fixture
-def terminal_native_source(request):
+def terminal_native_files(request):
     if request.node.callspec.params["linkage"] == "linked":
-        return request.getfixturevalue("source")
+        return request.getfixturevalue("native_files")
     return None
 
 
@@ -1135,12 +1142,11 @@ def terminal_native_source(request):
     ],
 )
 def test_claude_terminal_witness_requires_verified_nested_contributor(
-    monkeypatch, terminal_native_source, linkage
+    monkeypatch, terminal_native_files, linkage
 ):
     frames = _claude_frames()
-    checkout = (
-        frames.checkout if terminal_native_source is None else terminal_native_source[2]
-    )
+    files = terminal_native_files
+    checkout = frames.checkout if files is None else files.checkout
     tool_id = "toolu-terminal-agent"
 
     def child(parent, output=8):
@@ -1203,14 +1209,13 @@ def test_claude_terminal_witness_requires_verified_nested_contributor(
             modelUsage={MODEL: model_counts(4 + child_output, 4, 10, 6, 8)},
         )
     )
-    if terminal_native_source is not None:
-        _, adapter, root = _adapter(monkeypatch, terminal_native_source)
-        _, directory, _ = terminal_native_source
-        _write(directory / "terminal-agent.jsonl", rows)
+    if files is not None:
+        _, adapter, root = _adapter(monkeypatch, files.source)
+        files.write(files.root / "terminal-agent.jsonl", rows)
         (locator,) = adapter.discover(root)
 
     def read(witnesses=None):
-        if terminal_native_source is None:
+        if files is None:
             return frames.read_monitor(rows, monkeypatch, revision_witnesses=witnesses)
         return adapter.read_delta(locator, None, _revision_witnesses=witnesses)
 
@@ -1454,7 +1459,8 @@ def test_claude_revision_witnesses_withheld_after_failed_rescan(
     assert DiagnosticCode.BOUNDARY_UNVERIFIED in {d.code for d in failed.diagnostics}
 
 
-def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
+def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     path = directory / "startup.jsonl"
@@ -1479,11 +1485,11 @@ def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
     for row in following:
         row["sessionId"] = rows[-1]["sessionId"]
     rows.extend(following)
-    _write(path, rows)
+    source_size = native_files.write(path, rows)
     (locator,) = adapter.discover(replace(root, checkout_anchors=()))
     held = adapter.read_delta(locator, None)
     assert held.observations == ()
-    assert held.cursor.checkpoint.cursor.offset < path.stat().st_size
+    assert held.cursor.checkpoint.cursor.offset < source_size
     (linked,) = [
         item for item in held.boundaries if item.boundary.receipt_ref is not None
     ]
@@ -1493,7 +1499,7 @@ def test_claude_held_startup_replays_after_checkout_proof(monkeypatch, source):
     admitted = adapter.read_delta(verified, held.cursor)
     assert len(admitted.observations) == 2
     assert all(item.project_context is not None for item in admitted.observations)
-    assert admitted.cursor.checkpoint.cursor.offset == path.stat().st_size
+    assert admitted.cursor.checkpoint.cursor.offset == source_size
 
 
 def test_desktop_retains_unfinished_native_turn_before_restart(
@@ -1738,7 +1744,7 @@ def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, native_f
 
 @pytest.mark.parametrize("case", ["desktop", "streamed", "nested", "receipt"])
 def test_every_native_split_matches_one_read_after_restart(monkeypatch, request, case):
-    if case in {"desktop", "receipt"}:
+    if case == "receipt":
         source = request.getfixturevalue("source")
         write_rows = _write
     else:
