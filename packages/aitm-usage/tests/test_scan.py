@@ -3,10 +3,11 @@ import json
 import shlex
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import UUID
 
 import pytest
-from scanner_policy_cases import ScannerPolicy
+from scanner_policy_cases import NativeTranscriptFiles, ScannerPolicy
 
 from aitm_usage.ledger import Ledger
 from aitm_usage.scopes import (
@@ -68,6 +69,21 @@ def project(tmp_path, monkeypatch):
     roots.mkdir()
     checkout.mkdir()
     return Registration(PROJECT, store.root, (roots,), (checkout,), CUTOFF), store
+
+
+@pytest.fixture
+def native_scanner(monkeypatch):
+    files = NativeTranscriptFiles(monkeypatch)
+    registration = Registration(
+        PROJECT, Path("/fixture/project"), (files.root,), (files.checkout,), CUTOFF
+    )
+
+    def open_evidence(path, project_id):
+        assert (path, project_id) == (registration.state_root, registration.project_id)
+        return files.evidence
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_evidence))
+    return files, registration
 
 
 def _row(kind, payload, time=AFTER):
@@ -647,22 +663,21 @@ def test_in_place_origin_change_cannot_hide_behind_append(project, monkeypatch):
     assert _codes(batch) == {DiagnosticCode.SOURCE_REPLACED}
 
 
-def test_zero_cursor_cannot_verify_copy_of_unknown_prefix(project):
+def test_zero_cursor_cannot_verify_copy_of_unknown_prefix(native_scanner):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (cwd,) = registration.checkout_anchors
     unanchored = root.parent / "unanchored"
-    unanchored.mkdir()
     original = root / "original.jsonl"
-    original.write_bytes(_header(unanchored) + _usage(10))
+    files.contents[original] = _header(unanchored) + _usage(10)
     (candidate,) = scanner.discover(registration)
     held = scanner.scan(candidate, None, CUTOFF)
     assert held.cursor.offset == 0
     assert held.commit_frames == ()
 
     copied = root / "different.jsonl"
-    copied.write_bytes(_header(cwd) + _usage(21))
+    files.contents[copied] = _header(cwd) + _usage(21)
     other = next(item for item in scanner.discover(registration) if item != candidate)
     rejected = scanner.scan(other, _checkpoint(held), CUTOFF)
     assert rejected.cursor is None
@@ -715,14 +730,14 @@ def test_checkout_anchor_is_rechecked_after_read(project, monkeypatch):
     assert _codes(batch) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
 
 
-def test_missing_turn_checkout_does_not_inherit_admission(project):
+def test_missing_turn_checkout_does_not_inherit_admission(native_scanner):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "rollout.jsonl"
     header = _header(checkout)
-    path.write_bytes(
+    files.contents[path] = (
         header + _row("turn_context", {"turn_id": str(UUID(int=113))}) + _usage(27)
     )
     (candidate,) = scanner.discover(registration)
@@ -1125,9 +1140,12 @@ def _claude_cost(**extra):
     return _claude_line("cost-state", **(fields | extra))
 
 
-def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(project):
+def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(
+    native_scanner,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration = native_scanner
+    store = files.evidence
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "native.jsonl"
@@ -1139,7 +1157,7 @@ def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(pro
         arbitrary="owner-private",
     )
     later = AFTER + timedelta(seconds=1)
-    path.write_bytes(
+    files.contents[path] = (
         owner
         + _claude_cost()
         + _claude_timed("user", checkout)
@@ -1215,7 +1233,7 @@ def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(pro
         )
         == ()
     )
-    assert batch.cursor.offset == path.stat().st_size
+    assert batch.cursor.offset == len(files.contents[path])
     assert "-private" not in repr(batch)
     assert str(owner_id) not in repr(batch)
 
@@ -1832,17 +1850,17 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
 
 
 def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
-    project, monkeypatch
+    native_scanner, monkeypatch
 ):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "live.jsonl"
     complete = _header(checkout, originator="Codex Desktop", source="vscode") + _usage(
         11
     )
-    path.write_bytes(complete)
+    files.contents[path] = complete
     (source,) = scanner.discover(registration)
     checkpoint = _checkpoint(scanner.scan(source, None, CUTOFF))
     assert checkpoint.cursor.offset == len(complete)
@@ -1850,7 +1868,7 @@ def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
     monkeypatch.setattr(scanner, "_MAX_ROW_BYTES", 1024)
     complete += b"malformed\n" + b"x" * 1600 + b"\n"
     torn = b'{"unfinished":'
-    path.write_bytes(complete + torn)
+    files.contents[path] = complete + torn
     armed = scanner._capture_position(source, checkpoint.cursor)
 
     assert armed.cursor.offset == len(complete + torn)
@@ -1861,8 +1879,7 @@ def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
     assert armed.client_version is ClientVersion.CODEX_0_167_0_ALPHA_3_2
     assert armed.format_version == 1
 
-    with path.open("ab") as stream:
-        stream.write(b" true}\n" + _usage(17))
+    files.contents[path] += b" true}\n" + _usage(17)
     assert (
         scanner._capture_position(source, checkpoint.cursor, fixed=armed.cursor)
         == armed

@@ -335,6 +335,121 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_position_counts_absolute_rows_and_pins_torn_prefix",
+      "suite": "unit",
+      "isolation_group": "native-scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_missing_turn_checkout_does_not_inherit_admission",
+      "suite": "unit",
+      "isolation_group": "native-scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband",
+      "suite": "unit",
+      "isolation_group": "native-scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_zero_cursor_cannot_verify_copy_of_unknown_prefix",
+      "suite": "unit",
+      "isolation_group": "native-scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_aggregate_retraction_has_no_revision_witness",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_holds_linked_receipt_until_adjoining_request",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_revision_witness_refuses_a_foreign_message",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_revision_witness_requires_predecessor_in_fixed_read",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_revision_witnesses_follow_the_fixed_capture_frontier",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_revision_witnesses_withheld_after_failed_rescan",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_streamed_revision_and_nested_overlap",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_terminal_witness_holds_contributor_from_prior_read",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_terminal_witness_holds_nonzero_excluded_baseline",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_codex_receipt_usage_span_includes_the_later_native_counter",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_codex_wrapper_does_not_cross_native_surfaces",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_desktop_retains_unfinished_native_turn_before_restart",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_a_later_valid_turn_does_not_skip_an_unverified_active_turn",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_cold_cursor_waits_for_verified_turn",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_fixed_capture_fence_has_only_visible_receipt",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_fixed_capture_reports_pending_turn_only_on_linux",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_pins_raw_client_surface_and_implicit_format",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_neutral_desktop_receipt_is_evidence_without_authority",
+      "suite": "unit",
+      "isolation_group": "native-adapter-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_claude_and_mismatched_build_refuse_under_an_active_profile",
       "suite": "unit",
       "isolation_group": "live-qualification-policy"

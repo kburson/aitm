@@ -1,8 +1,9 @@
 """Run scanner policy on in-memory transcript bytes and explicit custody."""
 
 import json
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
+from hashlib import sha256
 from importlib import import_module
 from io import BytesIO
 from pathlib import Path
@@ -21,6 +22,104 @@ from aitm_usage.types import (
 )
 
 scanner = import_module("aitm_usage.sources.scan")
+
+
+class _SnapshotBytes(BytesIO):
+    def __init__(self, contents, descriptor):
+        super().__init__(contents)
+        self._descriptor = descriptor
+
+    def fileno(self):
+        return self._descriptor
+
+
+class NativeTranscriptFiles:
+    """Expose in-memory snapshots to native discovery and prefix verification."""
+
+    root = Path("/fixture/transcripts")
+    checkout = Path("/fixture/checkout")
+
+    def __init__(self, monkeypatch):
+        self.evidence = _ServiceEvidence(b"native-transcript-policy")
+        self.contents = {}
+        self.identities = {}
+        self.descriptors = {}
+        self._checkout_lookup = scanner._checkout_anchor
+        monkeypatch.setattr(
+            scanner,
+            "os",
+            SimpleNamespace(**(vars(scanner.os) | {"pread": self._pread})),
+        )
+        monkeypatch.setattr(scanner, "_directory", self._directory)
+        monkeypatch.setattr(scanner, "_transcripts", self._transcripts)
+        monkeypatch.setattr(scanner, "_open_snapshot", self._open_snapshot)
+        monkeypatch.setattr(scanner, "_probe", self._snapshot)
+        monkeypatch.setattr(scanner, "_reprobe", self._snapshot)
+        monkeypatch.setattr(scanner, "_within_source_roots", self._within_root)
+        monkeypatch.setattr(scanner, "_checkout_anchor", self._checkout_anchor)
+        monkeypatch.setattr(scanner, "_verify_snapshot", self._verify_snapshot)
+
+    @property
+    def source(self):
+        return self.evidence, self.root, self.checkout
+
+    def write(self, path, rows):
+        data = b"".join(json.dumps(row).encode() + b"\n" for row in rows)
+        self.contents[path] = data
+        return len(data)
+
+    def _identity(self, path):
+        return self.identities.setdefault(path, (1, len(self.identities) + 1))
+
+    def _directory(self, path):
+        return nullcontext((self._identity(path), (self._identity(path),), ()))
+
+    def _transcripts(self, descriptor, root):
+        assert descriptor == self._identity(root)
+        return sorted(path for path in self.contents if path.parent == root)
+
+    def _snapshot(self, path):
+        identity = (self._identity(path.parent), self._identity(path))
+        return SimpleNamespace(
+            identity=identity,
+            stat=SimpleNamespace(st_size=len(self.contents[path])),
+            same_path=lambda other: other.identity == identity,
+        )
+
+    @contextmanager
+    def _open_snapshot(self, path, *, identity_prefix):
+        snapshot = self._snapshot(path)
+        assert snapshot.identity[: len(identity_prefix)] == identity_prefix
+        contents = self.contents[path]
+        descriptor = max(self.descriptors, default=0) + 1
+        self.descriptors[descriptor] = contents
+        try:
+            with _SnapshotBytes(contents, descriptor) as stream:
+                yield stream, snapshot
+        finally:
+            del self.descriptors[descriptor]
+
+    def _pread(self, descriptor, count, offset):
+        return self.descriptors[descriptor][offset : offset + count]
+
+    def _within_root(self, source):
+        return (
+            source._path in self.contents
+            and source._path.parent in source._registration.source_roots
+        )
+
+    def _checkout_anchor(self, path, source):
+        if path is None:
+            return self._checkout_lookup(path, source)
+        if path == self.checkout and path in source._registration.checkout_anchors:
+            return scanner.checkout_anchor_reference(
+                source._ledger, path
+            ), self._identity(path)
+        return None
+
+    def _verify_snapshot(self, stream, path, snapshot, offset, digest):
+        assert snapshot.same_path(self._snapshot(path))
+        assert sha256(self.contents[path][:offset]).hexdigest() == digest
 
 
 class ScannerPolicy:
