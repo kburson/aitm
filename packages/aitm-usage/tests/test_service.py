@@ -4,6 +4,7 @@ import sys
 from contextlib import nullcontext
 from dataclasses import replace
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -12,16 +13,18 @@ from uuid import UUID
 import pytest
 from scanner_policy_cases import NativeTranscriptFiles
 from test_accounting import reference_rates as reference_rates
-from test_ledger import _memory_ledger
+from test_ledger import _LedgerRows, _memory_ledger
 
 from aitm_usage import cli, service
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
 from aitm_usage.scopes import InboxDrain
 from aitm_usage.types import (
+    LedgerBatch,
     LedgerView,
     Provider,
     ProviderCheckpoint,
+    Revision,
     SourceCheckpoint,
     SourceCursor,
     UsageObservation,
@@ -81,6 +84,8 @@ def collector_policy(monkeypatch, reference_rates):
     private_files = {}
     view = LedgerView(PROJECT, 0, (), ())
     directory = object()
+    read_view, write_batch = Ledger.as_of, Ledger._apply
+    directory_available = service._directory_available
 
     def configure(**changes):
         nonlocal view
@@ -160,6 +165,17 @@ def collector_policy(monkeypatch, reference_rates):
     def status():
         return service.status_report(ledger.root, ledger)
 
+    def use_ledger_rows():
+        rows = _LedgerRows(ledger.identity, ledger_module.APPLICATION_ID, ())
+        monkeypatch.setattr(Ledger, "as_of", read_view)
+        monkeypatch.setattr(Ledger, "_apply", write_batch)
+        monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+        monkeypatch.setattr(
+            Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+        )
+        ledger.apply(LedgerBatch(view.revisions))
+        return rows, private_files
+
     return SimpleNamespace(
         native=native,
         ledger=ledger,
@@ -168,6 +184,162 @@ def collector_policy(monkeypatch, reference_rates):
         status=status,
         clock=clock,
         commit_revisions=commit_revisions,
+        use_ledger_rows=use_ledger_rows,
+        directory_available=directory_available,
+    )
+
+
+@pytest.fixture
+def anchor_policy(collector_policy, monkeypatch, capsys):
+    from aitm_usage import scopes
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    added = native.checkout.with_name("added-private-anchor")
+    native.checkout_paths.add(added)
+    native.write(native.root / "codex.jsonl", _codex_transcript(added))
+    case.configure()
+    rows, project_files = case.use_ledger_rows()
+    anchors = ledger.root / service.ANCHORS_NAME
+    inbox = ledger.root / scopes.INBOX_NAME
+    acks = inbox / scopes.ACKS_NAME
+    files = {ledger.root: project_files}
+
+    def pin(path):
+        assert path in files
+        return nullcontext(SimpleNamespace(path=path, fd=path, check=Mock()))
+
+    def child(parent, name, *, create):
+        path = parent.path / name
+        if create:
+            files.setdefault(path, {})
+        return pin(path) if path in files else nullcontext(None)
+
+    def publish(directory, name, data, *, replace_pending=False):
+        entries = files[directory.path]
+        if name in entries and not replace_pending:
+            return False
+        entries[name] = data
+        return True
+
+    def unlink(name, *, dir_fd):
+        del files[dir_fd][name]
+
+    class ObservedDirectory:
+        def __init__(self, path):
+            self.path = path
+
+        def resolve(self, *, strict):
+            assert strict
+            if self.path != native.root and self.path not in native.checkout_paths:
+                raise FileNotFoundError(self.path)
+            return self
+
+        def is_dir(self):
+            return True
+
+    for module in (scopes, service):
+        monkeypatch.setattr(module, "_pin_directory", pin)
+        monkeypatch.setattr(module, "_private_child", child)
+        monkeypatch.setattr(module, "_publish", publish)
+        monkeypatch.setattr(
+            module,
+            "_read_private",
+            lambda directory, name: files[directory.path].get(name),
+        )
+    monkeypatch.setattr(scopes, "_publication", lambda _: nullcontext())
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            listdir=lambda fd: tuple(files[fd]), unlink=unlink, fsync=Mock()
+        ),
+    )
+    monkeypatch.setattr(service, "drain_inbox", scopes.drain_inbox)
+    monkeypatch.setattr(
+        service,
+        "_directory_available",
+        lambda path: case.directory_available(ObservedDirectory(path)),
+    )
+    monkeypatch.setattr(
+        service,
+        "os",
+        SimpleNamespace(
+            getpid=service.os.getpid,
+            R_OK=os.R_OK,
+            X_OK=os.X_OK,
+            access=lambda directory, mode: mode == os.R_OK | os.X_OK,
+        ),
+    )
+    monkeypatch.setattr(
+        service.monitor_registry, "check_legacy_mutation", lambda _: None
+    )
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+
+    def anchor_commit_sequence(writer, receipt, effect, cutoff):
+        # The physical layout matrix covers this exact SQLite join. These
+        # scenarios consume its successful observation to test proof and retry.
+        assert writer is ledger
+        _, revisions, _ = rows.history
+        saved = {
+            (key, number, payload): sequence
+            for key, number, sequence, payload in revisions
+        }
+        sequence = saved[
+            receipt.key.value, receipt.revision, _encode(receipt, Revision)
+        ]
+        assert sequence <= cutoff
+        assert (
+            sequence
+            == saved[effect.key.value, effect.revision, _encode(effect, Revision)]
+        )
+        return sequence
+
+    monkeypatch.setattr(service, "_anchor_commit_sequence", anchor_commit_sequence)
+
+    def command(*args, expected=0):
+        monkeypatch.setattr(
+            sys, "argv", ["aitm-usage", "--project", str(ledger.root), *args]
+        )
+        result = cli.main()
+        output = capsys.readouterr()
+        assert result == expected, output.err
+        return json.loads(output.out) if output.out else output.err
+
+    def proposal(anchor_id):
+        path = ledger.root / "input.json"
+        raw = json.dumps(
+            {
+                "command_id": str(anchor_id),
+                "project_id": str(PROJECT),
+                "checkout": str(added),
+            }
+        ).encode()
+
+        def open_input(mode):
+            assert mode == "rb"
+            return BytesIO(raw)
+
+        read_input = service._input
+
+        def read_proposal(actual, model):
+            assert actual == path and model is service._AnchorProposal
+            return read_input(SimpleNamespace(open=open_input), model)
+
+        monkeypatch.setattr(service, "_input", read_proposal)
+        return "source", "add-anchor", "--anchor", str(path), "--json"
+
+    return SimpleNamespace(
+        ledger=ledger,
+        native=native,
+        added=added,
+        files=files,
+        anchors=anchors,
+        inbox=inbox,
+        acks=acks,
+        command=command,
+        proposal=proposal,
     )
 
 
@@ -1008,34 +1180,24 @@ def test_unstaged_typed_anchor_command_cannot_enroll(collector_policy, monkeypat
     )
 
 
-def test_exact_queued_anchor_retries_when_checkout_returns(project):
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("temporarily-unavailable")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    anchor = _json_file(
-        root.parent,
-        "queued-anchor.json",
-        {
-            "command_id": str(UUID(int=930)),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+def test_exact_queued_anchor_retries_when_checkout_returns(anchor_policy):
+    case = anchor_policy
+    anchor_id = UUID(int=930)
+    name = f"{anchor_id}.json"
+    command, args = case.command, case.proposal(anchor_id)
     assert command(*args)["status"] == "queued"
-    elsewhere = added.with_suffix(".away")
-    added.rename(elsewhere)
+    queued = case.files[case.inbox][name]
+    case.native.checkout_paths.remove(case.added)
     command("collect-once", "--json")
     assert command(*args)["status"] == "pending"
-    checkpoints = Ledger.open(root, PROJECT).as_of().checkpoints
+    assert case.files[case.inbox][name] == queued
+    checkpoints = case.ledger.as_of().checkpoints
     assert checkpoints and all(entry.cursor.offset == 0 for entry in checkpoints)
-    elsewhere.rename(added)
+    case.native.checkout_paths.add(case.added)
     command("collect-once", "--json")
     assert command(*args)["status"] == "accepted"
     command("collect-once", "--json")
-    assert Ledger.open(root, PROJECT).as_of().checkpoints
+    assert case.ledger.as_of().checkpoints
 
 
 def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(
@@ -1269,10 +1431,16 @@ def test_zero_held_frontier_pins_identity_before_source_replacement(project):
 
 @pytest.mark.parametrize("loss", ["after-interrupted-ack", "before-first-ack"])
 def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
-    project, monkeypatch, loss
+    request, monkeypatch, loss
 ):
     from aitm_usage import scopes
 
+    if loss == "before-first-ack":
+        case = request.getfixturevalue("anchor_policy")
+        _assert_anchor_requires_restored_proof(case, monkeypatch)
+        return
+
+    project = request.getfixturevalue("project")
     root, sources, checkout, config, command = project
     added = checkout.with_name("private-proof-lost")
     added.mkdir()
@@ -1294,36 +1462,20 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     queued = root / "inbox" / f"{anchor_id}.json"
     ack = root / "inbox" / "acks" / f"{anchor_id}.json"
     proof_dir = root / "source-anchors"
-    saved = None
-
-    def remove_proof():
-        nonlocal saved
-        (proof,) = proof_dir.glob(f"{anchor_id}.*.attested")
-        saved = (proof, proof.read_bytes())
-        proof.unlink()
-
-    original_commit = Ledger.commit_command
-
-    def commit_without_proof(*args, **kwargs):
-        receipt = original_commit(*args, **kwargs)
-        remove_proof()
-        return receipt
 
     def interrupt_ack(*args, **kwargs):
         raise OSError("synthetic interruption before acknowledgment")
 
     with monkeypatch.context() as patch:
-        if loss == "before-first-ack":
-            patch.setattr(Ledger, "commit_command", commit_without_proof)
-        else:
-            patch.setattr(scopes, "_acknowledge", interrupt_ack)
+        patch.setattr(scopes, "_acknowledge", interrupt_ack)
         assert command("collect-once", "--json", expected=1) == {
             "status": "collection-failed"
         }
     assert queued.exists()
     assert not ack.exists()
-    if loss == "after-interrupted-ack":
-        remove_proof()
+    (proof,) = proof_dir.glob(f"{anchor_id}.*.attested")
+    data = proof.read_bytes()
+    proof.unlink()
     sequence = ledger.as_of().sequence
     assert command("collect-once", "--json", expected=1) == {
         "status": "collection-failed"
@@ -1339,13 +1491,58 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     assert ledger.as_of().sequence == sequence
     assert not ledger.as_of().checkpoints
 
-    proof, data = saved
     proof.write_bytes(data)
     proof.chmod(0o600)
     command("collect-once", "--json")
     assert command(*args)["status"] == "accepted"
     assert ack.exists()
     assert not queued.exists()
+    assert command("status", "--json")["registration_gap"] is False
+    assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
+
+
+def _assert_anchor_requires_restored_proof(case, monkeypatch):
+    anchor_id = UUID(int=935)
+    name = f"{anchor_id}.json"
+    ledger, command = case.ledger, case.command
+    args = case.proposal(anchor_id)
+    assert command(*args)["status"] == "queued"
+    attestations = case.files[case.anchors]
+    queued = case.files[case.inbox]
+    original_commit = Ledger.commit_command
+
+    def commit_without_proof(*args, **kwargs):
+        receipt = original_commit(*args, **kwargs)
+        (proof,) = [key for key in attestations if key.endswith(".attested")]
+        saved.update({proof: attestations.pop(proof)})
+        return receipt
+
+    saved = {}
+    with monkeypatch.context() as patch:
+        patch.setattr(Ledger, "commit_command", commit_without_proof)
+        assert command("collect-once", "--json", expected=1) == {
+            "status": "collection-failed"
+        }
+    acks = case.files[case.acks]
+    assert name in queued and name not in acks
+    sequence = ledger.as_of().sequence
+    assert command("collect-once", "--json", expected=1) == {
+        "status": "collection-failed"
+    }
+    retry = command(*args, expected=1)
+    assert retry.strip() == "aitm-usage: invalid private inbox command or project"
+    status = command("status", "--json")
+    assert status["registration_gap"] is True
+    assert status["read_gap"] is False
+    assert str(case.added) not in json.dumps(status)
+    assert name in queued and name not in acks
+    assert ledger.as_of().sequence == sequence
+    assert not ledger.as_of().checkpoints
+
+    attestations.update(saved)
+    command("collect-once", "--json")
+    assert command(*args)["status"] == "accepted"
+    assert name in acks and name not in queued
     assert command("status", "--json")["registration_gap"] is False
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 

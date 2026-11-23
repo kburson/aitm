@@ -774,18 +774,25 @@ class _ClaimJournalRows(DispositionRows):
         super().__init__(evidence)
         self.claims = {}
         self.progress = {}
+        self.disputes = {}
 
     @contextmanager
     def transaction(self, *, write=False):
-        claims, progress = self.claims.copy(), self.progress.copy()
+        claims = self.claims.copy()
+        progress = self.progress.copy()
+        disputes = self.disputes.copy()
         try:
             with super().transaction(write=write):
                 yield self
         except Exception:
-            self.claims, self.progress = claims, progress
+            self.claims, self.progress, self.disputes = claims, progress, disputes
             raise
         if not write:
-            assert (self.claims, self.progress) == (claims, progress)
+            assert (self.claims, self.progress, self.disputes) == (
+                claims,
+                progress,
+                disputes,
+            )
 
     def execute(self, sql, parameters=()):
         if sql == "PRAGMA user_version":
@@ -824,8 +831,33 @@ class _ClaimJournalRows(DispositionRows):
                     key=lambda row: (row[-1], row[0]),
                 )
             )
+        if (
+            sql
+            == "SELECT sequence FROM disputes WHERE (key,contender,digest,evidence) = (?,?,?,?)"
+        ):
+            sequence = self.disputes.get(parameters)
+            return _Rows() if sequence is None else _Rows([(sequence,)])
+        if sql.startswith("INSERT INTO disputes("):
+            *identity, sequence = parameters
+            assert tuple(identity) not in self.disputes and sequence in self.commits
+            self.disputes[tuple(identity)] = sequence
+            return _Rows()
         if sql == "SELECT min(sequence) FROM disputes WHERE key = ?":
-            return _Rows([(None,)])
+            (key,) = parameters
+            sequence = min(
+                (sequence for row, sequence in self.disputes.items() if row[0] == key),
+                default=None,
+            )
+            return _Rows([(sequence,)])
+        if sql.startswith("SELECT key, contender, evidence, sequence FROM disputes "):
+            (limit,) = parameters
+            return _Rows(
+                (key, contender, raw, sequence)
+                for (key, contender, _, raw), sequence in sorted(
+                    self.disputes.items(), key=lambda entry: (entry[1], entry[0])
+                )
+                if sequence <= limit
+            )
         if sql.startswith(
             (
                 "SELECT sequence,payload FROM content_disputes WHERE key = ?",
@@ -892,11 +924,14 @@ class _ClaudeJournalRows(_ClaimJournalRows):
 
 
 class _MemoryJournalTranscripts(_JournalTranscriptInputs):
-    def __init__(self, monkeypatch):
+    def __init__(self, monkeypatch, *, competing=False):
         from aitm_usage import monitor_journal
 
         self.files = NativeTranscriptFiles(monkeypatch)
         self.anchors = {A: self.files.checkout}
+        if competing:
+            self.anchors[B] = self.files.checkout.with_name("other-checkout")
+            self.files.checkout_paths.add(self.anchors[B])
         self.adapter = ProviderAdapter()
         self.evidence = monitor_registry._ServiceEvidence(b"j" * 32)
         self.roots = {
@@ -923,13 +958,16 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
         monkeypatch.setattr(
             "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
         )
-        project = monitor_registry.RegisteredProject(
-            A,
-            physical(Path("/fixture/project")),
-            "A",
-            None,
-            (physical(self.anchors[A]),),
-            None,
+        projects = tuple(
+            monitor_registry.RegisteredProject(
+                project,
+                physical(Path("/fixture") / f"project-{project.int}"),
+                f"Project {project.int}",
+                None,
+                (physical(anchor),),
+                None,
+            )
+            for project, anchor in self.anchors.items()
         )
         installations = tuple(
             _InstallationProof(
@@ -950,7 +988,7 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
             monkeypatch,
             self.files,
             control=physical(Path("/fixture/monitor")),
-            projects=(project,),
+            projects=projects,
             installations=installations,
             evidence=self.evidence,
         )
@@ -978,11 +1016,17 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
                         str(root.path),
                     )
                 )
-                change = CaptureChange(A, source, True)
-                frontier = writer.capture_frontier(change, self.locator(source))
+                armed = [
+                    (change, writer.capture_frontier(change, self.locator(source)))
+                    for project in self.anchors
+                    for change in (CaptureChange(project, source, True),)
+                ]
                 self.append(source, self.turn(2))
-                proof = writer.verify_boundary(change, self.locator(source), frontier)
-                writer.set_permission(change, proof)
+                for change, frontier in armed:
+                    proof = writer.verify_boundary(
+                        change, self.locator(source), frontier
+                    )
+                    writer.set_permission(change, proof)
 
     def append(self, source, rows):
         path = self.paths[source]
@@ -1100,10 +1144,12 @@ def test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts(
         }
 
 
-def test_competing_project_claims_cannot_double_charge(native):
+def test_competing_project_claims_cannot_double_charge(monkeypatch):
     from aitm_usage.monitor_journal import RoutingJournal
 
-    copy_prefix = native.paths[COPY].read_bytes()
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    copy_path = native.paths[COPY]
+    copy_prefix = native.files.contents[copy_path]
     native.append(COPY, native.turn(3, checkout=B))
     native.append(LIVE, native.turn(3))
     with native.registry.writer() as writer:
@@ -1147,7 +1193,7 @@ def test_competing_project_claims_cannot_double_charge(native):
         assert journal.reserve(original, owner_replay.progress).status == "disputed"
         assert journal.as_of() == after
 
-        native.paths[COPY].write_bytes(copy_prefix)
+        native.files.contents[copy_path] = copy_prefix
         native.append(COPY, native.turn(3, checkout=A, increment=5))
         changed = journal.prepare(COPY, native.locator(COPY))
         (unrecorded,) = (
@@ -2113,7 +2159,7 @@ def _common_claude_revision(native, writer):
     prepared = journal.prepare(native.source_id, native.locator())
     _, common = _claude_candidates(prepared, ordinal)
     assert journal.reserve(common, prepared.progress).status == "pending"
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     return journal, ordinal, rows
 
 
@@ -2314,13 +2360,16 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
             assert journal.as_of(saved.sequence) == saved
 
 
-def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_claude):
+def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with registry.writer() as writer:
         native.approve(writer)
         padding = native.append(claude_user(native.anchor))
@@ -2333,7 +2382,7 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
         current = journal.prepare(native.source_id, native.locator())
         _, common = _claude_candidates(current, ordinal)
         assert journal.reserve(common, current.progress).status == "pending"
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         archive_path, locate = _claude_archive(native, writer, prefix, source_id)
         native.append(native.request(3, counts=claude_usage(output=7)))
         live = journal.prepare(native.source_id, native.locator())
@@ -2341,12 +2390,15 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
             journal.reserve(_claude_candidates(live, ordinal)[-1], live.progress).status
             == "pending"
         )
-        changed = [json.loads(line) for line in archive_path.read_bytes().splitlines()]
+        changed = [
+            json.loads(line)
+            for line in native.files.contents[archive_path].splitlines()
+        ]
         changed[padding]["message"]["content"] = (
             "changed raw prefix, equal normalized counters"
         )
-        write(archive_path, changed)
-        write(
+        native.files.write(archive_path, changed)
+        native.files.write(
             archive_path,
             [native.request(3, counts=claude_usage(output=8))],
             append=True,
@@ -2373,12 +2425,16 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(journal_
 
 @pytest.mark.parametrize("ownership_first", [True, False], ids=["before", "after"])
 def test_claude_content_and_ownership_disputes_remain_separate(
-    journal_claude, ownership_first
+    request, monkeypatch, ownership_first
 ):
     from test_claude import usage as claude_usage
 
-    native = journal_claude
+    fixture = "journal_claude_policy" if ownership_first else "journal_claude"
+    native = request.getfixturevalue(fixture)
     source_id, other_source = UUID(int=7), UUID(int=8)
+    if ownership_first:
+        _expose_claude_archive_directory(native, source_id, monkeypatch)
+        _expose_claude_archive_directory(native, other_source, monkeypatch)
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         _, locate = _claude_archive(
@@ -2467,13 +2523,16 @@ def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(
         assert journal.as_of() == saved
 
 
-def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_claude):
+def test_claude_common_usage_repeat_cannot_create_a_content_dispute(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import _distinct_accepted_child
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         _, locate = _claude_archive(
@@ -2508,13 +2567,17 @@ def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_clau
 
 @pytest.mark.parametrize("control", ["equal-child", "disabled", "relocated"])
 def test_claude_conflict_requires_distinct_usage_and_current_independent_custody(
-    journal_claude, control
+    request, monkeypatch, control
 ):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
-    native = journal_claude
+    fixture = "journal_claude" if control == "relocated" else "journal_claude_policy"
+    native = request.getfixturevalue(fixture)
     source_id = UUID(int=7)
+    if native.files is not None:
+        _expose_claude_archive_directory(native, source_id, monkeypatch)
+    write_rows = write if native.files is None else native.files.write
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         native.append(native.request(3, counts=claude_usage(output=7)))
@@ -2529,16 +2592,16 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
             native, writer, prefix, source_id, relocate=control == "relocated"
         )
         if control == "equal-child":
-            write(archive_path, [claude_user(native.anchor)], append=True)
+            write_rows(archive_path, [claude_user(native.anchor)], append=True)
         if control == "disabled":
             disable = CaptureChange(A, source_id, False)
             frontier = writer.capture_frontier(disable, locate())
-            write(archive_path, [native.request(4)], append=True)
+            write_rows(archive_path, [native.request(4)], append=True)
             writer.set_permission(
                 disable, writer.verify_boundary(disable, locate(), frontier)
             )
         output = 7 if control == "equal-child" else 8
-        write(
+        write_rows(
             archive_path,
             [native.request(3, counts=claude_usage(output=output))],
             append=True,
@@ -2546,7 +2609,7 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
         if control == "disabled":
             enable = CaptureChange(A, source_id, True)
             frontier = writer.capture_frontier(enable, locate())
-            write(archive_path, [native.request(5)], append=True)
+            write_rows(archive_path, [native.request(5)], append=True)
             writer.set_permission(
                 enable, writer.verify_boundary(enable, locate(), frontier)
             )

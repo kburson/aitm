@@ -398,7 +398,7 @@ def relationship_transport_policy(monkeypatch, capsys):
     monkeypatch.setattr(cli, "open_project", lambda path: open_ledger(path, PROJECT))
     monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
 
-    def consume(writer, verb, first, second, expected=MarkerDisposition.ACCEPTED):
+    def queue(writer, verb, first, second, *, command_id=None):
         left, right = (
             ("--draft", "--issue") if verb == "alias" else ("--child", "--epic")
         )
@@ -418,33 +418,44 @@ def relationship_transport_policy(monkeypatch, capsys):
                 "--json",
             ],
         )
-        assert cli.main() == 0
+        with monkeypatch.context() as patch:
+            if command_id is not None:
+                patch.setattr(cli, "uuid4", lambda: command_id)
+            assert cli.main() == 0
         queued = json.loads(capsys.readouterr().out)
         assert queued["status"] == "queued"
-        command_id = UUID(queued["command_id"])
-        name = f"{command_id}.json"
+        actual_id = UUID(queued["command_id"])
+        if command_id is not None:
+            assert actual_id == command_id
+        name = f"{actual_id}.json"
         command = decode_command(
             _canonical_json(json.loads(directories["inbox"][name])["command"])
         )
-        assert command.command_id == command_id
+        assert command.command_id == actual_id
         assert command.project_id == PROJECT
+        return command
+
+    def consume(writer, verb, first, second, expected=MarkerDisposition.ACCEPTED):
+        command = queue(writer, verb, first, second)
+        name = f"{command.command_id}.json"
         (receipt,) = drain_inbox(writer, ()).receipts
         assert receipt.command == command and receipt.disposition is expected
         assert name not in directories["inbox"]
         assert json.loads(directories["acks"][name]) == {
-            "command_id": str(command_id),
+            "command_id": str(command.command_id),
             "digest": {"value": receipt.digest.value},
             "disposition": expected.value,
         }
         return receipt
 
-    return project, consume
+    return SimpleNamespace(project=project, consume=consume, queue=queue)
 
 
 def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(
     relationship_transport_policy,
 ):
-    project, consume = relationship_transport_policy
+    project = relationship_transport_policy.project
+    consume = relationship_transport_policy.consume
     with project.writer() as writer:
         consume(writer, "parent", DRAFT, EPIC)
         consume(writer, "parent", SECOND, OTHER_EPIC)
@@ -1186,15 +1197,17 @@ def test_failed_relationship_commit_leaves_later_commands_uncommitted(
         ]
 
 
-def test_relationship_conflict_is_final_and_does_not_block_next(project, item_cli):
+def test_relationship_conflict_is_final_and_does_not_block_next(
+    relationship_transport_policy,
+):
+    project = relationship_transport_policy.project
+    consume = relationship_transport_policy.consume
+    queue = relationship_transport_policy.queue
     with project.writer() as writer:
-        _conflicting_links(writer, item_cli)
-        alias = _queue_cli(
-            writer, item_cli, "alias", DRAFT, CHILD, command_id=UUID(int=300)
-        )
-        repair = _queue_cli(
-            writer, item_cli, "parent", CHILD, EPIC, command_id=UUID(int=100)
-        )
+        consume(writer, "parent", DRAFT, EPIC)
+        consume(writer, "parent", CHILD, OTHER_EPIC)
+        alias = queue(writer, "alias", DRAFT, CHILD, command_id=UUID(int=300))
+        repair = queue(writer, "parent", CHILD, EPIC, command_id=UUID(int=100))
         prior = writer.as_of()
         rejected, accepted = drain_inbox(writer, ()).receipts
         assert (

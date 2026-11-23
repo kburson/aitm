@@ -335,6 +335,46 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_common_usage_repeat_cannot_create_a_content_dispute",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_rewritten_common_prefix_cannot_create_a_content_dispute",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_competing_project_claims_cannot_double_charge",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_relationship_conflict_is_final_and_does_not_block_next",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_position_rejects_rewritten_saved_bytes",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_scan_rejects_candidate_from_another_approved_root_set",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_verified_enrollment_holds_candidate_then_replays_first_eligible_after_restart",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_exact_queued_anchor_retries_when_checkout_returns",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement",
       "suite": "unit",
       "isolation_group": "host_fs_publication-policy"

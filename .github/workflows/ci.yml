@@ -379,6 +379,45 @@ jobs:
           fixtures=$(mktemp -d /var/tmp/aitm-full-once-fixtures.XXXXXXXX)
           uv run --locked pytest --rootdir "$root" -q -n 3 --dist worksteal -p no:cacheprovider \
             --basetemp "$fixtures/pytest" tests "$root/tools/ci/tests/test_cli_evidence.py"
+      - name: Report test migration evidence
+        if: github.event_name == 'pull_request' && github.event.pull_request.number == 424
+        continue-on-error: true
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/aitm-python/evidence" <<'PY'
+          import csv
+          import hashlib
+          import json
+          import sys
+          from collections import Counter
+          from pathlib import Path
+
+          evidence = Path(sys.argv[1])
+          pytest = json.loads((evidence / "pytest.json").read_text(encoding="utf-8"))
+          coverage = json.loads((evidence / "product-coverage.json").read_text(encoding="utf-8"))
+          selection = json.loads((evidence / "selection.json").read_text(encoding="utf-8"))
+          with Path("tools/ci/category_sweep_catalog.tsv").open(encoding="utf-8") as stream:
+              categories = {row["nodeid"]: row["category"] for row in csv.DictReader(stream, delimiter="\t")}
+          nodes = sorted(pytest["collected"])
+          covered = {
+              path: [sorted(record["executed_lines"]), sorted(record["executed_branches"])]
+              for path, record in coverage["files"].items()
+          }
+
+          def digest(value):
+              data = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
+              return hashlib.sha256(data).hexdigest()
+
+          print("product-test-evidence", json.dumps({
+              "selection_mode": selection["mode"],
+              "categories": Counter(categories[node] for node in nodes),
+              "outcomes": Counter(report["outcome"] for report in pytest["reports"] if report["when"] == "call"),
+              "nodeids_sha256": digest(nodes),
+              "coverage_sha256": digest(covered),
+              "covered_lines": coverage["totals"]["covered_lines"],
+              "covered_branches": coverage["totals"]["covered_branches"],
+          }, sort_keys=True))
+          PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: upload
         with:
