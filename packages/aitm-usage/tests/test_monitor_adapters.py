@@ -5,8 +5,10 @@ import shlex
 from dataclasses import replace
 from datetime import timedelta
 from hashlib import sha256
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -34,7 +36,9 @@ from test_codex import (
 from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
-from aitm_usage.sources.scan import _capture_position, scan
+from aitm_usage.monitor_registry import _ServiceEvidence
+from aitm_usage.sources import adapter as provider_adapter
+from aitm_usage.sources.scan import CandidateSource, _capture_position, _origin, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
@@ -161,6 +165,41 @@ def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
     }
 
 
+def _assert_unqualified_origin(monkeypatch, rows, system, arch):
+    evidence = _ServiceEvidence(b"native-admission-policy-fixture")
+    serialized = b"".join(json.dumps(row).encode() + b"\n" for row in rows)
+    origin = _origin(BytesIO(serialized), len(serialized), evidence)
+    assert origin is not None and origin.session_ref is not None
+    root = provider_adapter.SourceRoot(Path("/fixture/logs"), CUTOFF, (), evidence)
+    source = CandidateSource(
+        origin.provider,
+        origin.session_ref,
+        evidence.pseudonymize("fixture", "stream"),
+        evidence.pseudonymize("fixture", "locator"),
+        evidence.pseudonymize("fixture", "incarnation"),
+        root.path / "source.jsonl",
+        (),
+        root,
+        evidence,
+        _native_surface=origin.native_surface,
+        _monitor=True,
+    )
+    scan_source = Mock(side_effect=AssertionError("unqualified source reached scanner"))
+    monkeypatch.setattr(provider_adapter, "scan", scan_source)
+    monkeypatch.setattr(provider_adapter.platform, "system", lambda: system)
+    monkeypatch.setattr(provider_adapter.platform, "machine", lambda: arch)
+
+    locator = provider_adapter.SourceLocator(source)
+    result = provider_adapter.ProviderAdapter().read_delta(locator, None)
+
+    assert result.observations == result.boundaries == ()
+    assert result.cursor is None
+    (diagnostic,) = result.diagnostics
+    assert diagnostic.code is DiagnosticCode.UNSUPPORTED_FORMAT
+    assert diagnostic.source_ref == source.stream_ref
+    scan_source.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "client,system,arch,change",
     [
@@ -177,20 +216,28 @@ def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
     ],
 )
 def test_unqualified_native_tuple_withholds_evidence(
-    monkeypatch, source, client, system, arch, change
+    monkeypatch, client, system, arch, change
 ):
-    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
-    _, directory, checkout = source
+    checkout = Path("/fixture/checkout")
     rows = _desktop(checkout) if client == "codex" else _rows(CLAUDE_FIXTURE, checkout)
     rows[0].get("payload", rows[0]).update(change)
+    _assert_unqualified_origin(monkeypatch, rows, system, arch)
+
+
+def test_discovery_refuses_unqualified_version_on_disk(monkeypatch, source):
+    _, adapter, root = _adapter(monkeypatch, source)
+    _, directory, checkout = source
+    rows = _desktop(checkout)
+    rows[0]["payload"]["cli_version"] = "0.167.0-alpha.3.3"
     _write(directory / "unqualified.jsonl", rows)
+
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
+
     assert result.observations == result.boundaries == ()
     assert result.cursor is None
-    assert [item.code for item in result.diagnostics] == [
-        DiagnosticCode.UNSUPPORTED_FORMAT
-    ]
+    (diagnostic,) = result.diagnostics
+    assert diagnostic.code is DiagnosticCode.UNSUPPORTED_FORMAT
 
 
 def test_recheck_native_origin_after_discovery(monkeypatch, source):
@@ -608,22 +655,10 @@ def test_linux_codex_cold_cursor_waits_for_verified_turn(monkeypatch, source):
         ),
     ],
 )
-def test_linux_codex_rejects_unverified_origin(
-    monkeypatch, source, system, arch, metadata
-):
-    _, adapter, root = _adapter(monkeypatch, source, system=system, arch=arch)
-    _, directory, checkout = source
-    rows = _rows(LINUX_CODEX_FIXTURE, checkout)
+def test_linux_codex_rejects_unverified_origin(monkeypatch, system, arch, metadata):
+    rows = _rows(LINUX_CODEX_FIXTURE, Path("/fixture/checkout"))
     rows[0]["payload"].update(metadata)
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
-    assert result.cursor is None
-    assert not result.boundaries
-    assert not result.observations
-    assert [item.code for item in result.diagnostics] == [
-        DiagnosticCode.UNSUPPORTED_FORMAT
-    ]
+    _assert_unqualified_origin(monkeypatch, rows, system, arch)
 
 
 @pytest.mark.parametrize(

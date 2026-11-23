@@ -335,6 +335,16 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_rejects_unverified_origin",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_unqualified_native_tuple_withholds_evidence",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_cost_state_requires_exact_model_categories_and_stop_reason",
       "suite": "unit",
       "isolation_group": "adapter-policy"
