@@ -38,7 +38,8 @@ from aitm_usage.types import (
 EVIDENCE = _ServiceEvidence(b"monitor-policy-unit-test-key")
 
 
-def test_earlier_handoff_holds_later_handoff_with_stale_generation():
+@pytest.fixture
+def handoff_events():
     origin, early_owner, late_owner = (UUID(int=value) for value in (1, 2, 3))
     checkout = EVIDENCE.pseudonymize("fixture", "checkout")
     position = ScopePosition(
@@ -71,28 +72,56 @@ def test_earlier_handoff_holds_later_handoff_with_stale_generation():
         affected=AffectedScope(20, 21),
     )
 
+    return earlier, later
+
+
+def test_earlier_handoff_holds_later_handoff_with_stale_generation(handoff_events):
+    earlier, later = handoff_events
     route, outcomes = _timeline((later,), later.position)
-    assert route.scope == Scope(late_owner)
+    assert route.scope == later.scope
     assert outcomes[later.command_id].status is HandoffStatus.APPLIED
 
     route, outcomes = _timeline((later, earlier), later.position)
-    assert route.scope == Scope(early_owner)
+    assert route.scope == earlier.scope
     assert route.generation == 1
-    assert late_owner in route.held
+    assert later.scope.project_id in route.held
     assert outcomes[earlier.command_id].status is HandoffStatus.APPLIED
     assert outcomes[later.command_id].status is HandoffStatus.HELD
 
 
+@pytest.mark.parametrize("reverse", [False, True], ids=["B-first", "C-first"])
+def test_same_target_handoff_conflicts_in_both_delivery_orders(handoff_events, reverse):
+    first, second = handoff_events
+    second = replace(second, position=first.position, affected=first.affected)
+    events = (second, first) if reverse else (first, second)
+
+    route, outcomes = _timeline(events, first.position)
+
+    assert route.scope == Scope(first.anchor_project)
+    assert route.generation == 0
+    assert set(route.held) == {
+        first.anchor_project,
+        first.scope.project_id,
+        second.scope.project_id,
+    }
+    assert set(outcomes) == {first.command_id, second.command_id}
+    assert all(
+        result.status is HandoffStatus.CONFLICT and result.affected == first.affected
+        for result in outcomes.values()
+    )
+
+
 @pytest.mark.parametrize(
-    ("stored_outputs", "accepted_output"),
+    ("common_output", "stored_outputs", "contender_output", "accepted_output"),
     [
-        pytest.param((7,), 7, id="one-child"),
-        pytest.param((9,), None, id="equal-usage"),
-        pytest.param((7, 8), None, id="ambiguous-children"),
+        pytest.param(None, (7,), 9, 7, id="one-child"),
+        pytest.param(None, (9,), 9, None, id="equal-usage"),
+        pytest.param(None, (7, 8), 9, None, id="ambiguous-children"),
+        pytest.param(6, (7,), 6, None, id="repeated-common"),
     ],
 )
 def test_content_dispute_requires_one_distinct_accepted_child(
-    stored_outputs, accepted_output
+    common_output, stored_outputs, contender_output, accepted_output
 ):
     common = EVIDENCE.pseudonymize("fixture", "common")
     key = EVIDENCE.pseudonymize("fixture", "observation")
@@ -109,12 +138,15 @@ def test_content_dispute_requires_one_distinct_accepted_child(
         datetime(2026, 1, 1, tzinfo=UTC),
         ClientVersion.UNKNOWN,
         1,
-        TokenCounts(output_tokens=9),
+        TokenCounts(output_tokens=contender_output),
         Availability.COMPLETE,
     )
     rows = []
     revisions = {}
-    for sequence, output in enumerate(stored_outputs, start=1):
+    outputs = (
+        stored_outputs if common_output is None else (common_output, *stored_outputs)
+    )
+    for sequence, output in enumerate(outputs, start=1):
         usage = replace(contender, tokens=TokenCounts(output_tokens=output))
         native = NativeObservation(
             key,
@@ -140,6 +172,8 @@ def test_content_dispute_requires_one_distinct_accepted_child(
             payload, _RevisionPayload, validate_ref=EVIDENCE.validate_source_ref
         ).encode()
         rows.append((sequence, ordinal, material.value, common.value, encoded))
+        if output == common_output:
+            common = material
 
     connection = Mock(spec=sqlite3.Connection)
     connection.execute.return_value = rows

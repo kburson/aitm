@@ -387,7 +387,7 @@ def test_late_earlier_transition_reprojects_a_later_effective_handoff(native):
         assert affected.status == "held"
 
 
-def _competing(native, *, reverse=False, different_receipt_ordinals=False):
+def _competing(native, *, different_receipt_ordinals=False):
     from aitm_usage.monitor_scope import ScopeState
 
     first_id, second_id = UUID(int=0x301), UUID(int=0x302)
@@ -399,16 +399,14 @@ def _competing(native, *, reverse=False, different_receipt_ordinals=False):
             _authorize_handoff(state, native, first_id, A, _issue(B, 117), 0),
             _authorize_handoff(state, native, second_id, A, _issue(C, 118), 0),
         ]
-        order = (1, 0) if reverse else (0, 1)
         receipt_ordinals = set()
         target_ordinals = set()
         boundary_refs = set()
-        for index, choice in enumerate(order):
+        for choice, (command, owner) in enumerate(commands):
             # Substitute only the unaccepted future tail at the enrolled inode.
             # Both receipts are independently emitted by the actual adapter.
             native.path.write_bytes(accepted)
             native.turn, native.total = baseline
-            command, owner = commands[choice]
             receipt_ordinal, target_ordinal = native.append(
                 command.command_id,
                 pad_before=different_receipt_ordinals and choice == 0,
@@ -421,7 +419,7 @@ def _competing(native, *, reverse=False, different_receipt_ordinals=False):
             boundary_refs.add(target.boundary.boundary_ref)
             proof = state.verify_boundary(command, owner, batch, target)
             disposition = state.apply_handoff(command, proof)
-            if index == 0:
+            if choice == 0:
                 assert disposition.status == "applied"
                 assert (
                     native.routed(state, batch, target_ordinal).scope
@@ -445,9 +443,8 @@ def _competing(native, *, reverse=False, different_receipt_ordinals=False):
         assert set(conflicted.affected_projects) == {A, B, C}
 
 
-@pytest.mark.parametrize("reverse", [False, True], ids=["B-first", "C-first"])
-def test_competing_receipts_conflict_in_both_native_delivery_orders(native, reverse):
-    _competing(native, reverse=reverse)
+def test_competing_native_receipts_conflict_at_same_target(native):
+    _competing(native)
 
 
 def test_receipts_at_different_ordinals_conflict_at_the_same_native_target(native):
@@ -1841,115 +1838,15 @@ def test_legacy_writers_preserve_both_v2_collections(native, operation):
         assert ScopeState(native.registry).view() == state.view()
 
 
-@pytest.mark.parametrize(
-    "changed",
-    [
-        "unknown",
-        "mixed",
-        "missing",
-        "extra",
-        "nested",
-        "hold-digest",
-        "command-digest",
-        "request-digest",
-        "held-state",
-        "outcome",
-        "resolved-from-gap",
-        "duplicate-target",
-        "duplicate-disposition",
-        "second-disposition",
-        "unowned-target",
-        "unowned-disposition",
-        "terminal-too-early",
-        "terminal-reused-receipt",
-        "terminal-reused-boundary",
-        "empty-span",
-        "empty-prefix",
-        "same-prefix",
-        "changed-stream",
-        "changed-locator",
-        "changed-incarnation",
-        "changed-session",
-        "wrong-provider",
-        "wrong-target-position",
-        "wrong-hold-surface",
-    ],
-)
-def test_v2_decoder_rejects_malformed_or_unowned_shape(native, changed):
+def test_v2_decoder_rejects_malformed_or_unowned_shape(native):
     from aitm_usage.monitor_scope import ScopeState
 
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         *_, payload = _stored_disposition_fixture(state, native)
-        target = payload["held_route_targets"][0]
-        record = payload["route_dispositions"][0]
-        hold = payload["holds"][0]
-        boundary, prefix = record["boundary"], record["prefix"]
-        other = native.receipt_ref(UUID(int=0x505)).value
-        if changed == "unknown":
-            payload["format"] = "aitm.usage.monitor-scope/v3"
-        elif changed == "mixed":
-            payload["format"] = "aitm.usage.monitor-scope/v1"
-        elif changed == "missing":
-            del payload["held_route_targets"]
-        elif changed == "extra":
-            payload["extra"] = None
-        elif changed == "nested":
-            record["extra"] = None
-        elif changed == "hold-digest":
-            hold["command_digest"] = "X" * 64
-        elif changed == "command-digest":
-            record["command_digest"] = "A" * 64
-        elif changed == "request-digest":
-            record["request_digest"] = "a" * 63
-        elif changed == "held-state":
-            record["hold_state"] = "resolved"
-        elif changed == "outcome":
-            record["outcome"] = "held"
-        elif changed == "resolved-from-gap":
-            record["hold_state"], record["outcome"] = "gap", "resolved"
-        elif changed == "duplicate-target":
-            payload["held_route_targets"].append(target)
-        elif changed == "duplicate-disposition":
-            payload["route_dispositions"].append(record)
-        elif changed == "second-disposition":
-            payload["route_dispositions"].append(
-                record
-                | {
-                    "command_id": str(UUID(int=0x505)),
-                    "boundary": boundary | {"receipt_ref": other},
-                }
-            )
-        elif changed == "unowned-target":
-            target["hold_id"] = str(UUID(int=0x505))
-        elif changed == "unowned-disposition":
-            record["hold_id"] = str(UUID(int=0x505))
-        elif changed == "terminal-too-early":
-            boundary["ordinal"] = hold["affected"]["end"] - 1
-        elif changed == "terminal-reused-receipt":
-            boundary["receipt_ref"] = target["boundary"]["receipt_ref"]
-        elif changed == "terminal-reused-boundary":
-            boundary["boundary_ref"] = target["boundary"]["boundary_ref"]
-        elif changed == "empty-span":
-            hold["affected"]["end"] = hold["affected"]["start"]
-        elif changed == "empty-prefix":
-            target["prefix"]["offset"] = 0
-        elif changed == "same-prefix":
-            prefix["offset"] = target["prefix"]["offset"]
-        elif changed == "changed-stream":
-            prefix["source_ref"] = boundary["stream_ref"] = other
-        elif changed == "changed-locator":
-            prefix["locator_ref"] = other
-        elif changed == "changed-incarnation":
-            prefix["incarnation_ref"] = other
-        elif changed == "changed-session":
-            boundary["session_ref"] = other
-        elif changed == "wrong-provider":
-            boundary["provider"] = "claude"
-        elif changed == "wrong-target-position":
-            target["boundary"]["ordinal"] += 1
-        else:
-            hold["position"]["surface"] = "codex-cli-linux"
+        payload["route_dispositions"][0]["prefix"]["offset"] = payload[
+            "held_route_targets"
+        ][0]["prefix"]["offset"]
         path = _scope_file(native)
         data = _scope_bytes(payload)
         path.write_bytes(data)

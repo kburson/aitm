@@ -232,6 +232,11 @@
       "suite": "integration",
       "isolation_group": "native-process-state"
     },
+    "packages/aitm-usage/tests/test_monitor_policy_unit.py": {
+      "owner": "aitm-usage",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
     "packages/aitm-usage/tests/test_monitor_qualification.py": {
       "owner": "aitm-usage",
       "suite": "integration",
@@ -256,6 +261,11 @@
       "owner": "aitm-usage",
       "suite": "integration",
       "isolation_group": "native-process-state"
+    },
+    "packages/aitm-usage/tests/test_monitor_scope_snapshot_unit.py": {
+      "owner": "aitm-usage",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
     },
     "packages/aitm-usage/tests/test_rollup.py": {
       "owner": "aitm-usage",
