@@ -605,6 +605,11 @@
       "isolation_group": "adapter-policy"
     },
     {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_lookahead_cannot_use_unverified_tool_receipt",
+      "suite": "unit",
+      "isolation_group": "codex-adapter-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_codex.py::test_truncation_decline_conflicting_response_and_retry_are_gaps",
       "suite": "unit",
       "isolation_group": "adapter-policy"

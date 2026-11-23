@@ -957,9 +957,10 @@ def test_restarted_repeat_response_is_not_a_second_observation(project):
         "wrong-root-turn",
     ],
 )
-def test_lookahead_cannot_use_unverified_tool_receipt(project, disproof):
+def test_lookahead_cannot_use_unverified_tool_receipt(adapter_frames, disproof):
     codex = adapter()
-    ledger, registration, path, _, outside = project
+    ledger = adapter_frames.ledger
+    outside = Path("/fixture/outside")
     amount = usage(8, 2)
     total = usage(16, 4)
     call = tool_call(ledger)
@@ -967,6 +968,27 @@ def test_lookahead_cannot_use_unverified_tool_receipt(project, disproof):
     after = response("after-response", total, amount)
     output = tool_output()
     intervening = []
+
+    def read_receipt(call, before, output, after, intervening=()):
+        batch = adapter_frames.batch(
+            [
+                startup(outside),
+                *begin(outside),
+                call,
+                *intervening,
+                before,
+                output,
+                counter(amount, amount),
+                after,
+                counter(total, amount),
+                end(),
+            ],
+            anchored=False,
+        )
+        return codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
+
+    valid = read_receipt(call, before, output, after)
+    assert any(boundary.receipt_ref is not None for boundary in valid.boundaries)
     suffixes = {
         "unrecognized": " text('another action');",
         "two-lf": "\n\n",
@@ -1010,22 +1032,7 @@ def test_lookahead_cannot_use_unverified_tool_receipt(project, disproof):
         after["payload"]["thread_id"] = str(CHILD)
     elif disproof == "wrong-root-turn":
         after["payload"]["root_turn_id"] = str(CHILD)
-    write(
-        path,
-        [
-            startup(outside),
-            *begin(outside),
-            call,
-            *intervening,
-            before,
-            output,
-            counter(amount, amount),
-            after,
-            counter(total, amount),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    result = read_receipt(call, before, output, after, intervening)
     assert result.revisions == ()
     assert not any(boundary.receipt_ref is not None for boundary in result.boundaries)
 

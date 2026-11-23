@@ -741,6 +741,20 @@ def test_monitor_scope_receipt_at_first_claude_request(
         assert not ledger.as_of().current
 
 
+@pytest.fixture
+def controlled_bash_project(request):
+    if request.node.callspec.params["case"] in {
+        "valid",
+        "outside",
+        "observation-first",
+        "split",
+        "wrong-session",
+        "missing-api-session",
+    }:
+        return request.getfixturevalue("project")
+    return None
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -762,14 +776,55 @@ def test_monitor_scope_receipt_at_first_claude_request(
     ],
 )
 def test_controlled_native_bash_receipt_sets_exact_next_request(
-    project, monkeypatch, capsys, case
+    controlled_bash_project, adapter_frames, monkeypatch, capsys, case
 ):
     claude = adapter()
-    ledger, registration, path, checkout, outside = project
-    if case == "outside":
-        checkout = outside
-    session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
+    project = controlled_bash_project
+    if project is None:
+        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    else:
+        ledger, registration, path, checkout, outside = project
+        if case == "outside":
+            checkout = outside
     marker_path = ledger.root / "marker.json"
+    arguments = [
+        "aitm-usage",
+        "--project",
+        str(ledger.root),
+        "scope",
+        "mark",
+        "--marker",
+        str(marker_path),
+        "--session-id",
+        str(SESSION),
+        "--json",
+    ]
+    command = shlex.join(arguments)
+    state = claude.ClaudeState(
+        ledger, reserved_session_id=None if case == "unreserved" else SESSION
+    )
+    if project is None:
+        output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
+
+        def read_receipt(command, disproof, state):
+            rows = [
+                user(checkout),
+                *_native_tool_turn(checkout, command, output, case=disproof),
+            ]
+            return claude.read_claude(
+                adapter_frames.batch(rows), state, Eligibility.ELIGIBLE
+            )
+
+        valid_state = claude.ClaudeState(ledger, reserved_session_id=SESSION)
+        valid = read_receipt(command, "valid", valid_state)
+        assert [b.ordinal for b in valid.boundaries if b.receipt_ref is not None] == [5]
+        if case == "shell":
+            command += "; printf forged"
+        result = read_receipt(command, case, state)
+        assert not any(b.receipt_ref is not None for b in result.boundaries)
+        return
+
+    session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
     marker = ScopeMarker(
         COMMAND,
         Provider.CLAUDE,
@@ -786,29 +841,13 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     )
     marker_path.write_bytes(encode_marker(marker))
     marker_path.chmod(0o600)
-    arguments = [
-        "aitm-usage",
-        "--project",
-        str(ledger.root),
-        "scope",
-        "mark",
-        "--marker",
-        str(marker_path),
-        "--session-id",
-        str(SESSION),
-        "--json",
-    ]
     monkeypatch.setattr(sys, "argv", arguments)
     assert main() == 0
     output = capsys.readouterr().out.strip()
     assert json.loads(output) == {"command_id": str(COMMAND), "status": "queued"}
-    command = shlex.join(arguments) + ("; printf forged" if case == "shell" else "")
     rows = [user(checkout), *_native_tool_turn(checkout, command, output, case=case)]
     write(path, rows[:-1] if case == "split" else rows)
     candidate = source(registration)
-    state = claude.ClaudeState(
-        ledger, reserved_session_id=None if case == "unreserved" else SESSION
-    )
     prior = None
     if case == "split":
         prefix, partial = read(claude, candidate, state)

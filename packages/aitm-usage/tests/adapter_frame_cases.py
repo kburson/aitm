@@ -72,12 +72,12 @@ class AdapterFrames:
         monkeypatch.setattr(adapter.platform, "machine", lambda: "arm64")
         return adapter.ProviderAdapter().read_delta(adapter.SourceLocator(source), None)
 
-    def batch(self, rows):
+    def batch(self, rows, *, anchored=True):
         evidence = self.ledger
         session = session_reference(evidence, self.provider, str(self.session_id))
         stream = evidence.pseudonymize("fixture", "stream")
         segment = evidence.pseudonymize("fixture", "segment")
-        anchor = evidence.pseudonymize("fixture", "checkout")
+        anchor = evidence.pseudonymize("fixture", "checkout") if anchored else None
         frames = []
         sideband = []
         prefix = hashlib.sha256()
@@ -128,8 +128,11 @@ class AdapterFrames:
                     anchor,
                     observed_at < self.cutoff,
                     row,
-                    eligibility=Eligibility.ELIGIBLE,
+                    eligibility=Eligibility.ELIGIBLE
+                    if anchored
+                    else Eligibility.UNKNOWN,
                     _prefix=prefix.hexdigest(),
+                    boundary_only=not anchored,
                 )
             )
 
@@ -137,17 +140,20 @@ class AdapterFrames:
             stream,
             evidence.pseudonymize("fixture", "locator"),
             evidence.pseudonymize("fixture", "incarnation"),
-            offset,
-            evidence.pseudonymize("fixture", prefix.hexdigest()),
+            offset if anchored else 0,
+            evidence.pseudonymize(
+                "fixture",
+                prefix.hexdigest() if anchored else hashlib.sha256().hexdigest(),
+            ),
         )
         return FrameBatch(
             frames=tuple(frames),
-            commit_frames=tuple(frames),
+            commit_frames=tuple(frames) if anchored else (),
             cursor=cursor,
             provider_checkpoint=ProviderCheckpoint(
                 self.provider, client_version=self.client, format_version=1
             ),
             sideband=tuple(sideband),
-            commit_sideband=tuple(sideband),
+            commit_sideband=tuple(sideband) if anchored else (),
             observed_through=max(frame.observed_at for frame in frames),
         )
