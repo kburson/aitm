@@ -8,7 +8,7 @@ from contextlib import closing, contextmanager, nullcontext
 from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import MagicMock, Mock
+from unittest.mock import ANY, MagicMock, Mock, call
 
 import pytest
 
@@ -202,7 +202,7 @@ def _durable_bytes(registry):
     }
 
 
-def _assert_exact_legacy_upgrade(tmp_path, version):
+def _assert_exact_legacy_upgrade(tmp_path, monkeypatch, version):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         evidence = _create_legacy_store(writer, version)
@@ -211,7 +211,20 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             original_schema = _schema_objects(conn)
             original_rows = _legacy_rows(conn, version)
             old_tip = conn.execute("SELECT max(sequence) FROM commits").fetchone()
-        store = journal.JournalStore(writer)
+        statements = []
+        open_database = journal._open
+
+        @contextmanager
+        def trace_migration(database, *, write):
+            with open_database(database, write=write) as conn:
+                if write:
+                    conn.set_trace_callback(statements.append)
+                yield conn
+
+        with monkeypatch.context() as patch:
+            patch.setattr(journal, "_open", trace_migration)
+            store = journal.JournalStore(writer)
+        _assert_upgrade_trace(statements, version)
         assert store.evidence == evidence
         with store.transaction() as conn:
             assert conn.execute("PRAGMA user_version").fetchone() == (4,)
@@ -255,17 +268,17 @@ def _assert_exact_legacy_upgrade(tmp_path, version):
             assert _schema_objects(conn) == new_schema
 
 
-def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path):
+def test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2(tmp_path, monkeypatch):
     # Retain the baseline node ID after later schema upgrades.
-    _assert_exact_legacy_upgrade(tmp_path, 1)
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 1)
 
 
-def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path):
-    _assert_exact_legacy_upgrade(tmp_path, 2)
+def test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3(tmp_path, monkeypatch):
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 2)
 
 
-def test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4(tmp_path):
-    _assert_exact_legacy_upgrade(tmp_path, 3)
+def test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4(tmp_path, monkeypatch):
+    _assert_exact_legacy_upgrade(tmp_path, monkeypatch, 3)
 
 
 def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
@@ -344,23 +357,13 @@ def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
-    if failure == "replace-directory":
-        _observe_upgrade_requests(monkeypatch, 2, replace_directory=True)
-    else:
-        _assert_legacy_upgrade_rolls_back(
-            request.getfixturevalue("tmp_path"), monkeypatch, failure, 2
-        )
+def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(monkeypatch, failure):
+    _observe_upgrade_requests(monkeypatch, 2, failure=failure)
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
-    if failure == "replace-directory":
-        _observe_upgrade_requests(monkeypatch, 3, replace_directory=True)
-    else:
-        _assert_legacy_upgrade_rolls_back(
-            request.getfixturevalue("tmp_path"), monkeypatch, failure, 3
-        )
+def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(monkeypatch, failure):
+    _observe_upgrade_requests(monkeypatch, 3, failure=failure)
 
 
 def _journal_metadata(monkeypatch, version, damage=None):
@@ -515,6 +518,17 @@ def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
                 journal.JournalStore(writer)
         finally:
             database.chmod(0o600)
+        assert _sequences(reopened) == [(1,)]
+        saved = tmp_path / "displaced-database"
+        database.rename(saved)
+        try:
+            with pytest.raises(LedgerError, match="unavailable"):
+                _sequences(reopened)
+            with pytest.raises(LedgerError, match="unavailable"):
+                journal.JournalStore(writer)
+            assert not database.exists()
+        finally:
+            saved.rename(database)
         assert _sequences(reopened) == [(1,)]
 
 
@@ -706,7 +720,6 @@ def test_damaged_current_store_is_left_byte_for_byte_unchanged(tmp_path):
 _PHYSICAL_STORE_CASES = {
     ("hardlink", "-wal"),
     ("symlink", "-shm"),
-    ("missing", ""),
 }
 
 
@@ -822,14 +835,11 @@ def test_unsafe_database_and_sidecars_refuse_before_open(
             os.link(path, saved)
         else:
             path.rename(saved)
-            if damage == "symlink":
-                path.symlink_to(saved)
+            path.symlink_to(saved)
         with pytest.raises(LedgerError):
             _sequences(store)
         with pytest.raises(LedgerError):
             journal.JournalStore(writer)
-        if damage == "missing":
-            assert not path.exists()
         if damage == "symlink":
             assert path.is_symlink()
 
@@ -876,18 +886,37 @@ def test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence(tmp_path)
         shutil.rmtree(directory)
         saved.rename(directory)
         assert _sequences(store) == []
-
-
-def test_body_failure_rolls_back_private_transaction(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
         with pytest.raises(RuntimeError, match="injected body failure"):
             with store.transaction(write=True) as conn:
                 conn.execute("INSERT INTO commits VALUES (1)")
                 raise RuntimeError("injected body failure")
         assert _sequences(store) == []
+
+
+def test_body_failure_rolls_back_private_transaction(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    store = journal.JournalStore(memory.writer)
+    connection = MagicMock(spec=sqlite3.Connection)
+    memory.open_database.reset_mock()
+    memory.open_database.return_value = nullcontext(connection)
+    failure = RuntimeError("injected body failure")
+
+    with pytest.raises(RuntimeError, match="injected body failure") as error:
+        with store.transaction(write=True) as conn:
+            assert conn is connection
+            conn.execute("INSERT INTO commits VALUES (1)")
+            raise failure
+
+    assert error.value is failure
+    memory.open_database.assert_called_once_with(
+        memory.store / journal._DATABASE, write=True
+    )
+    assert connection.execute.call_args_list == [
+        call("BEGIN IMMEDIATE"),
+        call("INSERT INTO commits VALUES (1)"),
+    ]
+    connection.__exit__.assert_called_once_with(RuntimeError, failure, ANY)
+    connection.commit.assert_not_called()
 
 
 def test_retired_writer_cannot_reopen_or_use_saved_store(monkeypatch):
@@ -924,29 +953,9 @@ def test_retired_writer_cannot_reopen_or_use_saved_store(monkeypatch):
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
-    request, monkeypatch, version
+    monkeypatch, version
 ):
-    if version != 1:
-        _observe_upgrade_requests(monkeypatch, version)
-        return
-
-    tmp_path = request.getfixturevalue("tmp_path")
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        _create_legacy_store(writer, version)
-        statements = []
-        open_database = journal._open
-
-        @contextmanager
-        def trace_migration(database, *, write):
-            with open_database(database, write=write) as conn:
-                if write:
-                    conn.set_trace_callback(statements.append)
-                yield conn
-
-        monkeypatch.setattr(journal, "_open", trace_migration)
-        journal.JournalStore(writer)
-        _assert_upgrade_trace(statements, version)
+    _observe_upgrade_requests(monkeypatch, version)
 
 
 def _assert_upgrade_trace(statements, version):
@@ -961,7 +970,7 @@ def _assert_upgrade_trace(statements, version):
     assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
 
 
-def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
+def _observe_upgrade_requests(monkeypatch, version, *, failure=None):
     def normalize(sql):
         return " ".join(sql.rstrip().removesuffix(";").split())
 
@@ -989,6 +998,13 @@ def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
     monkeypatch.setattr(journal, "_validate_identity", validate)
     monkeypatch.setattr(journal, "_supported_schema", supported)
 
+    def check_directory():
+        if failure == "interrupt" and reported == 4:
+            assert tuple(sorted(catalog)) == supported(4)
+            raise RuntimeError("injected interruption after migration DDL")
+
+    memory.directory.check.side_effect = check_directory
+
     def connect(path, *, write):
         assert path == memory.store / journal._DATABASE
         before = reported, catalog.copy()
@@ -1011,7 +1027,7 @@ def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
             }
             if sql in metadata:
                 if (
-                    replace_directory
+                    failure == "replace-directory"
                     and write
                     and reported == 4
                     and sql == "PRAGMA foreign_key_check"
@@ -1049,8 +1065,15 @@ def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
         return nullcontext(connection)
 
     memory.open_database.side_effect = connect
-    if replace_directory:
-        with pytest.raises(LedgerError, match="Pinned routing journal storage changed"):
+    if failure is not None:
+        error, message = {
+            "replace-directory": (
+                LedgerError,
+                "Pinned routing journal storage changed",
+            ),
+            "interrupt": (RuntimeError, "injected interruption after migration DDL"),
+        }[failure]
+        with pytest.raises(error, match=message):
             journal.JournalStore(memory.writer)
         assert [
             entry.kwargs["write"] for entry in memory.open_database.call_args_list
@@ -1058,14 +1081,15 @@ def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
             False,
             True,
         ]
-        assert memory.directory.identities != original_ids
+        if failure == "replace-directory":
+            assert memory.directory.identities != original_ids
         assert statements[-2:] == ["PRAGMA foreign_key_check", "ROLLBACK"]
         assert "COMMIT" not in statements
         assert reported == version
         assert tuple(sorted(catalog)) == supported(version)
 
         memory.directory.identities = original_ids
-        replace_directory = False
+        failure = None
         memory.open_database.reset_mock()
         statements.clear()
     journal.JournalStore(memory.writer)

@@ -243,16 +243,16 @@ def test_resume_and_snapshot_replay_count_two_distinct_turns(grok_policy):
     assert repeat.cursor == second.cursor
 
 
-def test_cold_restart_at_every_native_row_and_with_partial_tail(grok_source):
-    s = grok_source
-    complete = _batch(s, s.rows, s.snapshot)
+def test_cold_restart_at_every_native_row_and_with_partial_tail(grok_policy):
+    s = grok_policy
+    complete = _unit_batch(s, s.rows, s.snapshot)
     for cut in range(len(s.rows) + 1):
-        prior = _batch(s, s.rows[:cut], s.snapshot)
+        prior = _unit_batch(s, s.rows[:cut], s.snapshot)
         wire = adapter.StreamCursor | None
         restored = _decode(_encode(prior.cursor, wire), wire)
-        later = _batch(s, s.rows, s.snapshot, restored)
+        later = _unit_batch(s, s.rows, s.snapshot, restored)
         assert (*prior.observations, *later.observations) == complete.observations
-    partial = _batch(s, [*s.rows[:4], s.rows[4][:20]], s.snapshot)
+    partial = _unit_batch(s, [*s.rows[:4], s.rows[4][:20]], s.snapshot)
     assert not partial.observations and not partial.cursor
 
 
@@ -603,6 +603,11 @@ def test_rewind_and_copy_cannot_add_a_second_identity(grok_source):
     s = grok_source
     first = _batch(s, s.rows[:5])
     assert len(first.observations) == 1
+    wire = adapter.StreamCursor
+    restored = _decode(_encode(first.cursor, wire), wire)
+    resumed = _batch(s, s.rows, s.snapshot, restored)
+    assert len(resumed.observations) == 1
+    assert resumed.observations[0].key != first.observations[0].key
     rewind = _batch(s, s.rows[1:5], cursor=first.cursor)
     assert not rewind.observations and rewind.cursor == first.cursor
     assert DiagnosticCode.SOURCE_REPLACED in _codes(rewind)

@@ -833,7 +833,7 @@ def _rate_accounting_rows(ledger, observation, rates, long_request):
     return accounting.account_observations(batch, rates, ledger=ledger)
 
 
-def _wide_price_rollup_view():
+def _price_rollup_view(*, wide):
     # Freeze the inputs used by the arithmetic test without reading a rate resource.
     astra = pricing._ModelRate(
         ModelLabel.GPT_6_ASTRA,
@@ -860,14 +860,15 @@ def _wide_price_rollup_view():
         ),
         entries=(replace(astra, uncached_input=Decimal("999999.123456")),),
     )
+    alternate = custom if wide else standard
     ledger = _memory_ledger(store, PROJECT, b"r" * 32)
     revisions = list(_graduated_relationships(ledger))
     for index, (item, rates) in enumerate(
         (
-            (EPIC, custom),
+            (EPIC, alternate),
             (EPIC, standard),
             (DRAFT, standard),
-            (None, custom),
+            (None, alternate),
             (None, standard),
         ),
         start=1,
@@ -884,22 +885,6 @@ def _wide_price_rollup_view():
                 _decode(payload, Revision, validate_ref=ledger.validate_source_ref)
             )
     return LedgerView(PROJECT, len(revisions), tuple(revisions), ())
-
-
-def _durable_price_rollup_view(project, item_cli):
-    rates = pricing.load_rate_card()
-    with project.writer() as writer:
-        _consume(writer, item_cli, "parent", DRAFT, EPIC)
-        _consume(writer, item_cli, "alias", DRAFT, CHILD)
-        boundaries = []
-        for index, item in enumerate((EPIC, EPIC, DRAFT, None, None), start=1):
-            marker, evidence, observation = _usage_fixture(writer, item, index)
-            if marker is not None:
-                enqueue_marker(writer.root, marker)
-                boundaries.append(evidence)
-            writer.apply(_rate_accounting_rows(writer, observation, rates, False))
-        assert len(drain_inbox(writer, boundaries).receipts) == 3
-    return Ledger.open(project.root, PROJECT).as_of()
 
 
 @pytest.mark.parametrize(
@@ -921,14 +906,8 @@ def _durable_price_rollup_view(project, item_cli):
     ],
     ids=("ordinary-low-precision", "wide-default-precision", "wide-restricted-context"),
 )
-def test_rollup_sums_durable_prices_exactly(request, context, wide, direct, inclusive):
-    view = (
-        _wide_price_rollup_view()
-        if wide
-        else _durable_price_rollup_view(
-            request.getfixturevalue("project"), request.getfixturevalue("item_cli")
-        )
-    )
+def test_rollup_sums_durable_prices_exactly(context, wide, direct, inclusive):
+    view = _price_rollup_view(wide=wide)
     reordered = replace(view, revisions=view.revisions[::-1])
     with localcontext(context):
         totals = rollup(EPIC, view)
@@ -1402,27 +1381,6 @@ def test_relationship_snapshot_releases_mutex_and_preserves_order_after_restart(
         assert drain_inbox(writer, ()).receipts[0].command == fifth
 
 
-def _drain_duplicate_relationship_order(project, item_cli):
-    with project.writer() as writer:
-        first = _queue_cli(writer, item_cli, "parent", CHILD, EPIC)
-        second = _queue_cli(writer, item_cli, "parent", CHILD, OTHER_EPIC)
-        third = _queue_cli(writer, item_cli, "alias", DRAFT, CHILD)
-        path = _publication_path(writer, second.command_id)
-        path.write_bytes(scopes._publication_bytes(second, 1))
-        marker, proof, _ = _usage_fixture(writer, EPIC, 7)
-        enqueue_marker(writer.root, marker)
-        marker_path = _publication_path(writer, marker.marker_id)
-        assert marker_path.read_bytes() == encode_command(
-            InboxCommand(marker.marker_id, PROJECT, marker)
-        )
-
-        report = drain_inbox(writer, (proof,))
-        for command in (first, second, third):
-            assert writer.command_receipt(command) is None
-            assert _publication_path(writer, command.command_id).exists()
-    return report, marker
-
-
 def _drain_invalid_relationship_transport(monkeypatch, defect):
     writer = _memory_ledger(store, PROJECT, b"r" * 32)
     first = _command(ItemParent(UUID(int=101), PROJECT, CHILD, EPIC))
@@ -1432,6 +1390,7 @@ def _drain_invalid_relationship_transport(monkeypatch, defect):
     marker_bytes = encode_command(InboxCommand(marker.marker_id, PROJECT, marker))
     second_bytes = encode_command(second)
     damaged = {
+        "duplicate": scopes._publication_bytes(second, 1),
         "malformed": _canonical_json(
             {"command": json.loads(second_bytes), "order": True}
         ),
@@ -1482,15 +1441,8 @@ def _drain_invalid_relationship_transport(monkeypatch, defect):
 @pytest.mark.parametrize(
     "defect", ["duplicate", "malformed", "missing", "unclassifiable"]
 )
-def test_invalid_relationship_order_halts_only_relationships(
-    request, monkeypatch, defect
-):
-    if defect == "duplicate":
-        report, marker = _drain_duplicate_relationship_order(
-            request.getfixturevalue("project"), request.getfixturevalue("item_cli")
-        )
-    else:
-        report, marker = _drain_invalid_relationship_transport(monkeypatch, defect)
+def test_invalid_relationship_order_halts_only_relationships(monkeypatch, defect):
+    report, marker = _drain_invalid_relationship_transport(monkeypatch, defect)
     assert report.relationship_halted
     assert report.invalid_publications >= 1
     assert "unclassifiable-private-canary" not in repr(report)

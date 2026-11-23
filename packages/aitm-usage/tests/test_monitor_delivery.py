@@ -9,7 +9,11 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from delivery_policy_cases import delivery_destination, delivery_journal_rows
+from delivery_policy_cases import (
+    DestinationRows,
+    delivery_destination,
+    delivery_journal_rows,
+)
 from test_monitor_journal import (
     COPY,
     LIVE,
@@ -40,11 +44,6 @@ pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
 @pytest.fixture
 def native(tmp_path, monkeypatch):
     return NativeJournalFixture(tmp_path, monkeypatch)
-
-
-@pytest.fixture
-def independent(tmp_path, monkeypatch):
-    return NativeJournalFixture(tmp_path, monkeypatch, independent_copy=True)
 
 
 def _enable(native, journal):
@@ -124,36 +123,62 @@ def test_restart_at_reserve_commit_and_ack_yields_one_row(native):
             assert writer.as_of().sequence == result.sequence
 
 
-def test_stale_ack_never_rewinds_publication(native):
+def test_stale_ack_never_rewinds_publication(journal_transcript_policy, monkeypatch):
+    native = journal_transcript_policy
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as registry:
         journal = _journal(registry)
         (early,) = _reserve(native, journal)
         native.append(LIVE, native.turn(3))
         late = _reserve(native, journal)[-1]
-        _enable(native, journal)
-        with Ledger.open(native.ledgers[A].root, A).writer() as writer:
-            delivery = ProjectDelivery.attach(journal, writer)
-            first, second = (journal.reserve_delivery(d.key, 1) for d in (early, late))
-            journal.ack(delivery, second, delivery.commit(second))
-            assert journal.delivery_tail(A, writer.identity.key_id) == late.sequence
-            journal.ack(delivery, first, delivery.commit(first))
-            assert journal.delivery_tail(A, writer.identity.key_id) == late.sequence
+        store.delivery_enabled = True
+        project = _project(registry.view(), A)
+        ledger = Ledger.open(Path(project.state.path), A)
+        writer, _ = delivery_destination(monkeypatch, journal, ledger)
+        delivery = ProjectDelivery.attach(journal, writer)
+        first, second = (journal.reserve_delivery(d.key, 1) for d in (early, late))
+        journal.ack(delivery, second, delivery.commit(second))
+        assert journal.delivery_tail(A, writer.identity.key_id) == late.sequence
+        journal.ack(delivery, first, delivery.commit(first))
+        assert journal.delivery_tail(A, writer.identity.key_id) == late.sequence
 
 
-def test_full_destination_queue_preserves_independent_progress(independent):
-    native = independent
+def test_full_destination_queue_preserves_independent_progress(monkeypatch):
+    from test_ledger import _memory_ledger
+
+    from aitm_usage import ledger as ledger_module
+
+    native = _MemoryJournalTranscripts(
+        monkeypatch, competing=True, independent_copy=True
+    )
+    store = delivery_journal_rows(monkeypatch, native.registry)
     assert native.locator(LIVE).stream_ref != native.locator(COPY).stream_ref
     with native.registry.writer() as registry:
         journal = _journal(registry, cap=1)
+        destinations = {project: DestinationRows() for project in (A, B)}
+
+        @contextmanager
+        def destination(project):
+            registered = _project(registry.view(), project)
+            ledger = replace(
+                _memory_ledger(ledger_module, project, project.bytes),
+                root=Path(registered.state.path),
+            )
+            with monkeypatch.context() as patch:
+                writer, _ = delivery_destination(
+                    patch, journal, ledger, rows=destinations[project]
+                )
+                yield writer
+
         (original,) = _reserve(native, journal)
-        _enable(native, journal)
+        store.delivery_enabled = True
         prior = journal.cursor_for(LIVE, native.locator(LIVE))
         native.append(LIVE, native.turn(3))
         native.append(LIVE, native.turn(4, checkout=B))
         full, other = _reserve(native, journal)[-2:]
         assert (full.status, other.status) == ("held", "pending")
         assert journal.cursor_for(LIVE, native.locator(LIVE)) == prior
-        with Ledger.open(native.ledgers[B].root, B).writer() as writer:
+        with destination(B) as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             ticket = journal.reserve_delivery(other.key, 1)
             journal.ack(delivery, ticket, delivery.commit(ticket))
@@ -162,7 +187,7 @@ def test_full_destination_queue_preserves_independent_progress(independent):
         assert separate.status == "pending"
         assert separate.project_id == B
         assert journal.cursor_for(COPY, native.locator(COPY)) is not None
-        with Ledger.open(native.ledgers[A].root, A).writer() as writer:
+        with destination(A) as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             ticket = journal.reserve_delivery(original.key, 1)
             journal.ack(delivery, ticket, delivery.commit(ticket))
@@ -177,7 +202,7 @@ def test_full_destination_queue_preserves_independent_progress(independent):
                 original_row,
                 settled_row,
             }
-        with Ledger.open(native.ledgers[B].root, B).writer() as writer:
+        with destination(B) as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             ticket = journal.reserve_delivery(separate.key, 1)
             journal.ack(delivery, ticket, delivery.commit(ticket))
@@ -387,18 +412,21 @@ def test_ack_refuses_changed_destination_row_payload(
         assert not store.acks
 
 
-def test_content_dispute_blocks_new_destination_ack(journal_claude):
+def test_content_dispute_blocks_new_destination_ack(journal_claude_policy, monkeypatch):
     from test_claude import usage as claude_usage
     from test_monitor_journal import (
         _claude_archive,
         _claude_candidates,
         _common_claude_revision,
+        _expose_claude_archive_directory,
     )
 
-    native = journal_claude
+    native = journal_claude_policy
+    store = delivery_journal_rows(monkeypatch, native.native.registry)
     with native.native.registry.writer() as registry:
         journal, ordinal, prefix = _common_claude_revision(native, registry)
         source = UUID(int=7)
+        _expose_claude_archive_directory(native, source, monkeypatch)
         _, locate = _claude_archive(
             native,
             registry,
@@ -410,27 +438,27 @@ def test_content_dispute_blocks_new_destination_ack(journal_claude):
         *_, accepted = _claude_candidates(live, ordinal)
         result = journal.reserve(accepted, live.progress)
         assert result.status == "pending"
-        _enable(native.native, journal)
+        store.delivery_enabled = True
         ticket = journal.reserve_delivery(result.key, accepted.observation.revision)
-        with Ledger.open(native.native.ledgers[A].root, A).writer() as writer:
-            delivery = ProjectDelivery.attach(journal, writer)
-            receipt = delivery.commit(ticket)
-            rival = journal.prepare(source, locate())
-            *_, contender = _claude_candidates(rival, ordinal)
-            dispute = journal.reserve(contender, rival.progress)
-            assert dispute.status == "disputed"
-            assert journal.as_of().content_disputes[0].key == result.key
-            with pytest.raises(_DeliveryRefused):
-                journal.reserve_delivery(result.key, ticket.claim.revision)
-            with pytest.raises(_DeliveryRefused):
-                delivery.commit(ticket)
-            with pytest.raises(_DeliveryRefused):
-                journal.ack(delivery, ticket, receipt)
-            assert (
-                writer._monitor_delivery_receipt(receipt.key, receipt.revision)
-                == receipt
-            )
-            assert journal.as_of().sequence == dispute.sequence
+        ledger = Ledger.open(native.native.ledgers[A].root, A)
+        writer, _ = delivery_destination(monkeypatch, journal, ledger)
+        delivery = ProjectDelivery.attach(journal, writer)
+        receipt = delivery.commit(ticket)
+        rival = journal.prepare(source, locate())
+        *_, contender = _claude_candidates(rival, ordinal)
+        dispute = journal.reserve(contender, rival.progress)
+        assert dispute.status == "disputed"
+        assert journal.as_of().content_disputes[0].key == result.key
+        with pytest.raises(_DeliveryRefused):
+            journal.reserve_delivery(result.key, ticket.claim.revision)
+        with pytest.raises(_DeliveryRefused):
+            delivery.commit(ticket)
+        with pytest.raises(_DeliveryRefused):
+            journal.ack(delivery, ticket, receipt)
+        assert (
+            writer._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
+        )
+        assert journal.as_of().sequence == dispute.sequence
 
 
 def test_delivery_upgrades_are_explicit_and_keep_existing_histories(native):

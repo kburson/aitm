@@ -19,6 +19,7 @@ from native_registry_cases import native_registry_policy
 from paired_settlement_cases import (
     _assert_pair_refuses_before_write,
     _issued_pair,
+    assert_committed_release_conflict_is_local,
     assert_pair_refuses_changed_authority,
     assert_pair_refuses_changed_completion,
 )
@@ -667,6 +668,22 @@ class _JournalTranscriptInputs:
         (locator,) = self.adapter.discover(self.roots[source])
         return locator
 
+    def _source_rows(self, source, rows):
+        if source != COPY or not self.independent_copy:
+            return rows
+        replacement = str(UUID(int=0x1190))
+        prepared = []
+        for row in rows:
+            payload = dict(row["payload"])
+            fields = (
+                ("id", "session_id")
+                if row["type"] == "session_meta"
+                else ("session_id", "thread_id")
+            )
+            payload.update({name: replacement for name in fields if name in payload})
+            prepared.append({**row, "payload": payload})
+        return prepared
+
 
 class NativeJournalFixture(_JournalTranscriptInputs):
     def __init__(self, base, monkeypatch, *, independent_copy=False):
@@ -741,22 +758,6 @@ class NativeJournalFixture(_JournalTranscriptInputs):
                         change, self.locator(source_id), frontier
                     )
                     writer.set_permission(change, proof)
-
-    def _source_rows(self, source, rows):
-        if source != COPY or not self.independent_copy:
-            return rows
-        replacement = str(UUID(int=0x1190))
-        prepared = []
-        for row in rows:
-            payload = dict(row["payload"])
-            fields = (
-                ("id", "session_id")
-                if row["type"] == "session_meta"
-                else ("session_id", "thread_id")
-            )
-            payload.update({name: replacement for name in fields if name in payload})
-            prepared.append({**row, "payload": payload})
-        return prepared
 
     def append(self, source, rows):
         write(self.paths[source], self._source_rows(source, rows), append=True)
@@ -972,9 +973,12 @@ class _ClaudeJournalRows(_ClaimJournalRows):
 
 
 class _MemoryJournalTranscripts(_JournalTranscriptInputs):
-    def __init__(self, monkeypatch, *, competing=False):
+    def __init__(self, monkeypatch, *, competing=False, independent_copy=False):
         from aitm_usage import monitor_journal
 
+        if independent_copy:
+            assert competing
+        self.independent_copy = independent_copy
         self.files = NativeTranscriptFiles(monkeypatch)
         self.anchors = {A: self.files.checkout}
         if competing:
@@ -1045,12 +1049,16 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
         monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
         with self.registry.writer() as writer:
             for source, root in self.roots.items():
+                checkout = B if source == COPY and independent_copy else A
                 self.files.write(
                     self.paths[source],
-                    [
-                        startup(self.anchors[A], originator="Codex Desktop"),
-                        *self.turn(1),
-                    ],
+                    self._source_rows(
+                        source,
+                        [
+                            startup(self.anchors[checkout], originator="Codex Desktop"),
+                            *self.turn(1, checkout=checkout),
+                        ],
+                    ),
                 )
                 writer.approve_source(
                     SourceApprovalRequest(
@@ -1069,7 +1077,7 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
                     for project in self.anchors
                     for change in (CaptureChange(project, source, True),)
                 ]
-                self.append(source, self.turn(2))
+                self.append(source, self.turn(2, checkout=checkout))
                 for change, frontier in armed:
                     proof = writer.verify_boundary(
                         change, self.locator(source), frontier
@@ -1079,7 +1087,7 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
     def append(self, source, rows):
         path = self.paths[source]
         previous = self.files.contents[path]
-        self.files.write(path, rows)
+        self.files.write(path, self._source_rows(source, rows))
         self.files.contents[path] = previous + self.files.contents[path]
 
 
@@ -3447,87 +3455,65 @@ def test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage(
     "conflict", ["legacy-resolution", "changed-hold", "changed-route", "v4-proposal"]
 )
 def test_committed_pair_conflict_stalls_affected_source_without_regressing_history(
-    journal_pair, conflict, tmp_path, monkeypatch, capsys
+    request, conflict, monkeypatch, capsys
 ):
+    if conflict != "v4-proposal":
+        assert_committed_release_conflict_is_local(monkeypatch, conflict)
+        return
+
     from test_monitor_scope import _sealed_disposition
 
     from aitm_usage.monitor_journal import RoutingJournal
-    from aitm_usage.monitor_scope import Disposition, _Resolution
+    from aitm_usage.monitor_scope import Disposition
 
-    case = journal_pair
+    case = request.getfixturevalue("journal_pair")
+    tmp_path = request.getfixturevalue("tmp_path")
     journal, carrier = case.journal, case.owner
     owner, rival = carrier.prove(), case.rival.prove()
     change = journal.settle_disposition(case.key, owner, rival)
     history = journal.as_of(change.sequence)
     state = carrier.state._snapshot()
-    if conflict == "v4-proposal":
-        command_id = UUID(int=0xA20)
-        command = Disposition(
-            command_id,
-            A,
-            carrier.hold.command_id,
-            carrier.receipt_ref(command_id),
-            True,
-        )
-        _, _, _, _, target, batch, followup, when = _sealed_disposition(
-            carrier,
-            case.writer,
-            carrier.state,
-            command,
-            tmp_path,
-            monkeypatch,
-            capsys,
-            source_id=carrier.source_id,
-            grant_id=UUID(int=0xA21),
-        )
-        terminal = carrier.state.verify_boundary(command, carrier.auth, batch, target)
-        proposal = carrier.state.verify_route_disposition(command, terminal)
-        RoutingJournal(case.writer, carrier.state).record_disposition(proposal)
-        # Separate the v4 journal conflict from the scope proposal in this control.
-        carrier.state._save(state)
-        carrier.total += 4
-        delta, total = usage(4, 4), usage(carrier.total, carrier.total)
-        write(
-            carrier.path,
-            [
-                response(
-                    "complete-competing-next-turn",
-                    total,
-                    delta,
-                    time=when,
-                    turn=followup,
-                ),
-                counter(total, delta, time=when),
-                end(followup, time=when),
-            ],
-            append=True,
-        )
-    elif conflict == "changed-route":
-        event = next(
-            row for row in state.events if row.position.source_id == carrier.source_id
-        )
-        amended = replace(
-            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
-        )
-        carrier.state._save(
-            replace(
-                state,
-                events=tuple(amended if row is event else row for row in state.events),
-            )
-        )
-        carrier.append()
-    else:
-        if conflict == "changed-hold":
-            changed = replace(
-                carrier.hold, expires_at=carrier.hold.expires_at + timedelta(seconds=1)
-            )
-            resolutions = state.resolutions
-        else:
-            changed = replace(carrier.hold, state=type(carrier.hold.state).RESOLVED)
-            resolutions = (_Resolution(UUID(int=0xA22), "a" * 64, changed),)
-        holds = tuple(changed if row == carrier.hold else row for row in state.holds)
-        carrier.state._save(replace(state, holds=holds, resolutions=resolutions))
-        carrier.append()
+    command_id = UUID(int=0xA20)
+    command = Disposition(
+        command_id,
+        A,
+        carrier.hold.command_id,
+        carrier.receipt_ref(command_id),
+        True,
+    )
+    _, _, _, _, target, batch, followup, when = _sealed_disposition(
+        carrier,
+        case.writer,
+        carrier.state,
+        command,
+        tmp_path,
+        monkeypatch,
+        capsys,
+        source_id=carrier.source_id,
+        grant_id=UUID(int=0xA21),
+    )
+    terminal = carrier.state.verify_boundary(command, carrier.auth, batch, target)
+    proposal = carrier.state.verify_route_disposition(command, terminal)
+    RoutingJournal(case.writer, carrier.state).record_disposition(proposal)
+    # Separate the v4 journal conflict from the scope proposal in this control.
+    carrier.state._save(state)
+    carrier.total += 4
+    delta, total = usage(4, 4), usage(carrier.total, carrier.total)
+    write(
+        carrier.path,
+        [
+            response(
+                "complete-competing-next-turn",
+                total,
+                delta,
+                time=when,
+                turn=followup,
+            ),
+            counter(total, delta, time=when),
+            end(followup, time=when),
+        ],
+        append=True,
+    )
     with pytest.raises(LedgerError, match="Committed settlement conflicts"):
         journal.prepare(carrier.source_id, carrier.locator())
     assert (

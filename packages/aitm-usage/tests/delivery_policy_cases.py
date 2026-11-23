@@ -44,11 +44,13 @@ class DeliveryJournalRows(_ClaudeJournalRows):
             "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements s"
         ):
             return _Rows()
-        if sql.startswith(
+        if sql == (
             "SELECT c.project,c.payload,c.digest,c.sequence FROM claims c"
+            " JOIN commits t ON t.sequence=c.sequence WHERE c.key=?"
+            " AND NOT EXISTS (SELECT 1 FROM content_disputes d WHERE d.key=c.key)"
         ):
             (key,) = parameters
-            if key not in self.claims:
+            if key not in self.claims or key in self.content_disputes:
                 return _Rows()
             project, digest, payload, sequence = self.claims[key]
             return _Rows(
@@ -59,10 +61,13 @@ class DeliveryJournalRows(_ClaudeJournalRows):
         if sql == "SELECT 1 FROM commits WHERE sequence=?":
             (sequence,) = parameters
             return _Rows([(1,)] if sequence in self.commits else [])
-        if sql.startswith("SELECT c.key,c.sequence,d.sequence,d.payload FROM claims c"):
+        if sql == (
+            "SELECT c.key,c.sequence,d.sequence,d.payload FROM claims c"
+            " LEFT JOIN content_disputes d ON d.key=c.key WHERE c.project=?"
+        ):
             (project,) = parameters
             return _Rows(
-                (key, sequence, None, None)
+                (key, sequence, *self.content_disputes.get(key, (None, None)))
                 for key, (owner, _, _, sequence) in self.claims.items()
                 if owner == project
             )
@@ -79,6 +84,16 @@ class DeliveryJournalRows(_ClaudeJournalRows):
             return SimpleNamespace(
                 fetchall=lambda: [saved] if saved is not None else []
             )
+        if sql == (
+            _DELIVERY_ACK_ROWS + " WHERE a.project=? AND a.destination_key=?"
+            " ORDER BY a.claim_sequence DESC LIMIT 1"
+        ):
+            latest = max(
+                (row for row in self.acks.values() if row[:2] == parameters),
+                key=lambda row: row[4],
+                default=None,
+            )
+            return _Rows([latest] if latest is not None else [])
         if sql.startswith("INSERT INTO delivery_acks ("):
             project, _, key, revision, claim, ack, _, _ = parameters
             assert {claim, ack} <= self.commits
@@ -161,8 +176,9 @@ class DestinationRows:
         return _Rows()
 
 
-def delivery_destination(monkeypatch, journal, ledger):
-    rows = DestinationRows()
+def delivery_destination(monkeypatch, journal, ledger, *, rows=None):
+    if rows is None:
+        rows = DestinationRows()
     registered = _project(journal._writer.view(), ledger.identity.project_id)
     writer = replace(
         ledger,

@@ -871,12 +871,11 @@ def test_source_approval_profile_and_command_witness_do_not_transfer(
 
 @pytest.mark.parametrize("operation", ["replace", "revoke"])
 def test_profile_revision_before_first_bind_preserves_unbound_attempt(
-    request, monkeypatch, operation
+    staged_scope_policy, monkeypatch, operation
 ):
-    staged_scope = request.getfixturevalue(
-        "staged_scope" if operation == "replace" else "staged_scope_policy"
+    f, _, _, checkout, selector, lookup, bind = _ready_scope(
+        staged_scope_policy, monkeypatch
     )
-    f, _, _, checkout, selector, lookup, bind = _ready_scope(staged_scope, monkeypatch)
     f.revise(operation, 2)
     with pytest.raises(LedgerError, match="qualification revision changed"):
         bind(f.writer.root, selector, SESSION, PROMPT_A, checkout)
@@ -961,13 +960,10 @@ def test_expired_first_bind_keeps_exact_original_scope_unpublished(
     [("revoke", "producer grant is unavailable"), ("rotate", "seal changed")],
 )
 def test_grant_change_after_native_read_refuses_first_application(
-    request, monkeypatch, operation, refusal
+    staged_scope_policy, monkeypatch, operation, refusal
 ):
-    staged_scope = request.getfixturevalue(
-        "staged_scope" if operation == "revoke" else "staged_scope_policy"
-    )
     f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
-        staged_scope, monkeypatch
+        staged_scope_policy, monkeypatch
     )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
     f.write(f.rows[:5], 1)

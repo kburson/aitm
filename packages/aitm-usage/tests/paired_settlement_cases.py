@@ -360,6 +360,86 @@ def assert_pair_refuses_changed_authority(monkeypatch, side, failure):
     assert case.snapshot is snapshot
 
 
+def assert_committed_release_conflict_is_local(monkeypatch, conflict):
+    case = _issued_pair(monkeypatch)
+    owner, rival = case.proofs
+
+    def committed_release(proof):
+        terminal = proof._terminal
+        assert terminal.project_context is not None
+        checkpoint = proof.progress.cursor.checkpoint
+        assert type(checkpoint) is SourceCheckpoint
+        return monitor_scope._JournalScopeRelease(
+            proof.hold,
+            proof._original,
+            proof.command.command_id,
+            terminal.project_context,
+            proof._prior_route,
+            terminal.boundary,
+            checkpoint.provider.ordinal,
+            checkpoint.cursor,
+            monitor_scope.HoldState.RESOLVED,
+        )
+
+    releases = tuple(committed_release(proof) for proof in case.proofs)
+
+    def project(snapshot, proof):
+        source = proof._batch._locator._source
+        verify = Mock(
+            wraps=lambda prefix: scanner._capture_position(source, prefix, fixed=prefix)
+        )
+        return verify, lambda: monitor_scope._project_journal_releases(
+            snapshot, proof._batch, releases, frozenset(), verify
+        )
+
+    verify, read = project(case.snapshot, owner)
+    holds, terminals = read()
+    assert holds == (
+        replace(owner.hold, state=monitor_scope.HoldState.RESOLVED),
+        rival.hold,
+    )
+    assert terminals == ((releases[0].terminal, releases[0].completion_ordinal),)
+    verify.assert_called_once_with(releases[0].terminal_prefix)
+
+    state = case.snapshot
+    if conflict == "changed-route":
+        owner_event, rival_event = state.events
+        changed = replace(
+            owner_event,
+            scope=replace(owner_event.scope, item=ItemKey(ItemKind.ISSUE, 999)),
+        )
+        state = replace(state, events=(changed, rival_event))
+    elif conflict == "changed-hold":
+        changed = replace(
+            owner.hold, expires_at=owner.hold.expires_at + timedelta(seconds=1)
+        )
+        state = replace(state, holds=(changed, rival.hold))
+    else:
+        changed = replace(owner.hold, state=monitor_scope.HoldState.RESOLVED)
+        resolution = monitor_scope._Resolution(UUID(int=0xA22), "a" * 64, changed)
+        state = replace(state, holds=(changed, rival.hold), resolutions=(resolution,))
+
+    verify, read = project(state, owner)
+    with pytest.raises(
+        LedgerError, match="Committed settlement conflicts with scope history"
+    ):
+        read()
+    verify.assert_not_called()
+    verify, read = project(state, rival)
+    holds, terminals = read()
+    assert holds == (
+        state.holds[0],
+        replace(rival.hold, state=monitor_scope.HoldState.RESOLVED),
+    )
+    assert terminals == ((releases[1].terminal, releases[1].completion_ordinal),)
+    verify.assert_called_once_with(releases[1].terminal_prefix)
+    _, read = project(case.snapshot, owner)
+    assert read() == (
+        (replace(owner.hold, state=monitor_scope.HoldState.RESOLVED), rival.hold),
+        ((releases[0].terminal, releases[0].completion_ordinal),),
+    )
+
+
 def _assert_pair_refuses_before_write(monkeypatch, case, proofs, message):
     registry = case.registry
     case.confirm_requests.reset_mock()

@@ -335,6 +335,106 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_a_later_verified_child_removes_overlapping_report_quantities",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_quota_requires_owner_in_current_committed_prefix",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_structured_result_requires_a_successful_exact_request_prefix",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_activation_frontier_requires_exact_first_eligible_delta",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_verified_child_epoch_authenticates_response_after_restart",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_cold_restart_at_every_native_row_and_with_partial_tail",
+      "suite": "unit",
+      "isolation_group": "grok-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_grant_change_after_native_read_refuses_first_application",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_profile_revision_before_first_bind_preserves_unbound_attempt",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_content_dispute_blocks_new_destination_ack",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_full_destination_queue_preserves_independent_progress",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_stale_ack_never_rewinds_publication",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_original_claim_remains_after_revoke_and_refuses_other_destination",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_first_enrollment_reuses_exact_applied_enable_and_keeps_future_turns",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_enrollment-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_retired_gap_survives_restored_approval_set_and_a_new_root_grant",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_enrollment-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_body_failure_rolls_back_private_transaction",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_legacy_upgrade_uses_one_transaction_and_only_final_version",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_v2_upgrade_rolls_back_after_ddl_and_can_retry",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_v3_upgrade_rolls_back_after_ddl_and_can_retry",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_rollup_sums_durable_prices_exactly",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_install.py::test_one_shot_from_other_pid_cannot_certify_install",
       "suite": "unit",
       "isolation_group": "install-policy"

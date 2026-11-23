@@ -15,8 +15,14 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from test_monitor_delivery import _enable, _journal, _reserve
-from test_monitor_delivery import independent as independent
-from test_monitor_journal import COPY, LIVE, A, B, _MemoryJournalTranscripts
+from test_monitor_journal import (
+    COPY,
+    LIVE,
+    A,
+    B,
+    NativeJournalFixture,
+    _MemoryJournalTranscripts,
+)
 
 from aitm_usage import cli, monitor_control, monitor_registry, monitor_scheduler
 from aitm_usage.ledger import Ledger, LedgerError
@@ -60,6 +66,11 @@ def wake():
     with TemporaryDirectory(prefix="aitm-wake-") as temporary:
         with Registry(Path(temporary).resolve() / "m").writer() as writer:
             yield _wake_context(writer)
+
+
+@pytest.fixture
+def independent(tmp_path, monkeypatch):
+    return NativeJournalFixture(tmp_path, monkeypatch, independent_copy=True)
 
 
 def _wake_context(writer):

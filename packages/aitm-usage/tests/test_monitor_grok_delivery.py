@@ -12,9 +12,11 @@ from uuid import UUID
 import pytest
 from delivery_policy_cases import DeliveryJournalRows, delivery_destination
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
+from test_ledger import _memory_ledger
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
 from aitm_usage import backup, install, monitor_journal, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage._monitor_journal_store import _DATABASE, _STORE
 from aitm_usage.ledger import Ledger, LedgerError, _connection
 from aitm_usage.monitor_control import ControlInbox
@@ -34,8 +36,9 @@ from aitm_usage.monitor_registry import (
     CaptureChange,
     ControlCommand,
     ControlStatus,
-    ProjectRegistrationRequest,
+    RegisteredProject,
     Registry,
+    _PhysicalDirectory,
     _project,
 )
 from aitm_usage.monitor_scope import HandoffStatus, Mark, Scope, ScopeState
@@ -341,30 +344,34 @@ def test_unverified_grok_mark_does_not_advance_another_streams_cursor(
 
 
 def test_grok_original_claim_remains_after_revoke_and_refuses_other_destination(
-    isolated_grok_capture,
-    tmp_path,
+    grok_delivery_policy,
+    monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     scope = _load_turns(f, second=False)
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     (reserved,) = journal.reserve_batch(prepared)
     assert reserved.status is ClaimStatus.PENDING
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(reserved.key, 1)
     rival = UUID(int=19)
-    root = tmp_path / "rival"
-    Ledger.initialize(root, rival)
-    f.writer.register_project(ProjectRegistrationRequest(rival, str(root), "Rival"))
-    for upgrade in (Ledger.upgrade_monitor_schema, Ledger.upgrade_delivery_schema):
-        ledger = Ledger.open(root, rival)
-        upgrade(ledger, ledger.as_of().sequence)
-    with Ledger.open(root, rival).writer() as writer:
-        delivery = ProjectDelivery.attach(journal, writer)
-        with pytest.raises(LedgerError):
-            delivery.commit(ticket)
-        assert writer.as_of().sequence == 0
-    f.revise("revoke", 2)
+    root = f.writer.root.with_name("rival")
+    observed = _PhysicalDirectory(str(root), (1, 19))
+    registered = RegisteredProject(rival, observed, "Rival", None, (), None)
+    state = f.writer.view()
+    f.writer._save(replace(state, projects=(*state.projects, registered)))
+    ledger = replace(_memory_ledger(ledger_module, rival, b"r" * 32), root=root)
+    writer, destination = delivery_destination(monkeypatch, journal, ledger)
+    delivery = ProjectDelivery.attach(journal, writer)
+    with pytest.raises(_DeliveryRefused, match="belongs to another project"):
+        delivery.commit(ticket)
+    assert writer.as_of().sequence == 0
+    assert not destination.revisions and not destination.receipts
+
+    f.writer._live_profile = replace(f.writer._live_profile, current=lambda _: False)
     reopened = RoutingJournal(
         f.writer,
         ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier)),

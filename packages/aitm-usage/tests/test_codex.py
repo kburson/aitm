@@ -915,12 +915,12 @@ def test_decline_inside_excluded_segment_cannot_rebase_eligible_usage(memory_rep
     assert result.provider_checkpoint.baseline == TokenCounts(12, 0, 0, 0, 4, 0)
 
 
-def test_verified_child_epoch_authenticates_response_after_restart(project):
+def test_verified_child_epoch_authenticates_response_after_restart(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(
                 checkout,
@@ -940,13 +940,12 @@ def test_verified_child_epoch_authenticates_response_after_restart(project):
             end(),
         ],
     )
-    candidate = source(registration)
-    batch, result = read(codex, candidate, codex.CodexState(ledger))
-    prior = commit(ledger, batch, result)
+    candidate = replay.candidate()
+    batch, result = replay.read(codex.read_codex, candidate, codex.CodexState(ledger))
+    prior = replay.commit(batch, result)
     later = UUID(int=0x153)
     total = usage(16, 4)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             response("child-after", total, amount, turn=later, thread=CHILD),
@@ -955,8 +954,12 @@ def test_verified_child_epoch_authenticates_response_after_restart(project):
         ],
         append=True,
     )
-    reopened = Ledger.open(ledger.root, PROJECT)
-    _, resumed = read(codex, candidate, codex.CodexState(reopened), prior)
+    reopened = replay.reopen()
+    (stored,) = reopened.as_of().checkpoints
+    assert stored == prior
+    _, resumed = replay.read(
+        codex.read_codex, candidate, codex.CodexState(reopened), stored
+    )
     (record,) = observations(resumed)
     assert record.tokens.total_tokens == 10
     assert record.boundary.epoch_ref == prior.provider.epoch_ref
@@ -1940,12 +1943,10 @@ def test_inconsistent_positive_counter_cannot_separate_excluded_activity(memory_
 @pytest.mark.parametrize("aligned", [True, False])
 @pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
 def test_activation_frontier_requires_exact_first_eligible_delta(
-    request, monkeypatch, aligned, split
+    memory_replay, aligned, split
 ):
     codex = adapter()
-    replay = TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart" and aligned
-    )
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     first = usage(8, 2)
     replay.write(

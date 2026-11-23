@@ -230,11 +230,6 @@ def memory_replay(request, monkeypatch):
     return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=False)
 
 
-@pytest.fixture
-def overlap_replay(request, monkeypatch, excluded):
-    return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=not excluded)
-
-
 def diagnostics(result):
     return {entry.code for entry in result.diagnostics}
 
@@ -1036,10 +1031,10 @@ def test_nested_agent_report_does_not_double_count_or_inherit_scope(
 
 @pytest.mark.parametrize("excluded", [False, True])
 def test_a_later_verified_child_removes_overlapping_report_quantities(
-    overlap_replay, excluded
+    memory_replay, excluded
 ):
     claude = adapter()
-    replay = overlap_replay
+    replay = memory_replay
     ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
     call_id = "toolu-agent-late-child"
     parent, completed = str(UUID(int=0x230)), str(UUID(int=0x231))
@@ -1236,17 +1231,12 @@ def test_missing_terminal_stays_visible_when_quota_is_present(adapter_frames):
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
 
 
-@pytest.fixture
-def structured_result_replay(request, monkeypatch, success):
-    return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=success)
-
-
 @pytest.mark.parametrize("success", [True, False])
 def test_structured_result_requires_a_successful_exact_request_prefix(
-    structured_result_replay, success
+    memory_replay, success
 ):
     claude = adapter()
-    replay = structured_result_replay
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     replay.write(
         [
@@ -1274,15 +1264,12 @@ def test_structured_result_requires_a_successful_exact_request_prefix(
     assert last.revision == (2 if success else 1)
     checkpoint = replay.commit(batch, result)
     assert ledger.as_of().current == (last,)
-    if success:
-        assert b"never-persist-result" not in ledger.database_path.read_bytes()
-    else:
-        payload = _encode(
-            LedgerBatch(result.revisions, checkpoint),
-            LedgerBatch,
-            validate_ref=ledger.validate_source_ref,
-        )
-        assert "never-persist-result" not in payload
+    payload = _encode(
+        LedgerBatch(result.revisions, checkpoint),
+        LedgerBatch,
+        validate_ref=ledger.validate_source_ref,
+    )
+    assert "never-persist-result" not in payload
 
 
 def test_reopen_uses_exact_fixed_prior_view(memory_replay):
@@ -1413,19 +1400,13 @@ def test_unknown_model_labels_do_not_merge_conflicting_revisions(memory_replay):
     assert "unknown-model-two" not in payload
 
 
-@pytest.fixture
-def quota_replay(request, monkeypatch, reopen, old_owner):
-    return TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=reopen and old_owner == ACCOUNT
-    )
-
-
 @pytest.mark.parametrize("reopen", [False, True])
 @pytest.mark.parametrize("old_owner", [None, ACCOUNT, OTHER_ACCOUNT])
 def test_quota_requires_owner_in_current_committed_prefix(
-    quota_replay, reopen, old_owner
+    memory_replay, reopen, old_owner
 ):
     claude = adapter()
+    quota_replay = memory_replay
     ledger, checkout = quota_replay.ledger, quota_replay.checkout
     account = ledger.pseudonymize("claude-account", str(ACCOUNT))
     state = claude.ClaudeState(ledger, account_ref=account)

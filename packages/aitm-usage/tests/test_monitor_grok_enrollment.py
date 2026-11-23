@@ -70,9 +70,9 @@ def test_eligible_empty_root_grant_cannot_be_parsed_by_old_reader(
 
 
 def test_first_enrollment_reuses_exact_applied_enable_and_keeps_future_turns(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     enable = f.submit(33102, True)
     (receipt,) = f.evaluate()
     assert receipt.command_id == enable.command_id
@@ -390,21 +390,24 @@ def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
 
 
 def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
-    isolated_grok_capture,
-    tmp_path,
+    grok_capture_policy,
+    monkeypatch,
 ):
     from uuid import UUID
 
+    from aitm_usage import monitor_control, monitor_registry
     from aitm_usage.ledger import ConflictError, LedgerError
     from aitm_usage.monitor_registry import (
         CaptureChange,
         ControlCommand,
-        _directory,
+        Registry,
         _grok_records,
         _GrokGrant,
+        _PhysicalDirectory,
     )
+    from aitm_usage.monitor_scope import _GrokCaptureHeld
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33119, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -416,11 +419,18 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     retired = f.writer.view()
     (old_source,) = retired.sources
 
-    replacement = tmp_path / "replacement-capture"
-    replacement.mkdir(mode=0o700)
+    replacement = _PhysicalDirectory(
+        str(f.root.path.with_name("replacement-capture")), (1, 99)
+    )
+    directory = monitor_registry._directory
+
+    def observe_directory(path, **options):
+        return replacement if path == replacement.path else directory(path, **options)
+
+    monkeypatch.setattr(monitor_registry, "_directory", observe_directory)
     previous = f.writer._live_profile
     (installation,) = previous.installations
-    new_installation = replace(installation, directory=_directory(str(replacement)))
+    new_installation = replace(installation, directory=replacement)
     f.writer._live_profile = replace(
         previous,
         generation=f.writer.source_evidence().pseudonymize(
@@ -431,10 +441,10 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     )
     # The established approval contract does not allow reusing an old source ID.
     with pytest.raises(ConflictError, match="identity changed"):
-        f.writer.approve_source(replace(old_source.approval, root=str(replacement)))
+        f.writer.approve_source(replace(old_source.approval, root=replacement.path))
     new_source = UUID(int=33121)
     f.writer.approve_source(
-        replace(old_source.approval, source_id=new_source, root=str(replacement))
+        replace(old_source.approval, source_id=new_source, root=replacement.path)
     )
     both = f.writer.view()
     # Exercise a retained approval snapshot with the retired source omitted.
@@ -471,9 +481,14 @@ def test_retired_gap_survives_restored_approval_set_and_a_new_root_grant(
     assert _gaps_after_reopen(f) == (old_gap,)
     current = f.writer.view()
     f.writer._save(replace(current, sources=()))
-    try:
-        with pytest.raises(LedgerError, match="grant installation changed"):
-            _gaps_after_reopen(f)
-    finally:
-        # Keep the original fixture's teardown able to probe its retired source.
-        f.writer._save(replace(current, sources=both.sources))
+    with pytest.raises(LedgerError, match="grant installation changed"):
+        _gaps_after_reopen(f)
+
+    f.writer._save(replace(current, sources=both.sources))
+    monkeypatch.setattr(
+        monitor_registry, "_read_private", monitor_control._read_private
+    )
+    reopened = Registry(f.writer.root, f.writer.lease)
+    state = ScopeState(reopened, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+    with pytest.raises(_GrokCaptureHeld, match="authority"):
+        state.read_source(f.source_id, f.locator())
