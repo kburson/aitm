@@ -5,10 +5,12 @@ import shlex
 from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
+from adapter_frame_cases import AdapterFrames
 from monitor_scope_snapshot_cases import (
     MALFORMED_SNAPSHOT_CASES,
     assert_rejects_snapshot,
@@ -2588,8 +2590,7 @@ _COMPLETION_NATIVE_DISPROOFS = [
 ]
 
 
-def _damage_completed_disposition(native, disproof, when, turn, *, other_project=B):
-    entries = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+def _damage_completion_rows(entries, disproof, when, turn, *, other_checkout, total):
     _, context, call, _, prior_counter, output, _, final_counter, close = entries[-9:]
     match disproof:
         case "output-only":
@@ -2609,7 +2610,7 @@ def _damage_completed_disposition(native, disproof, when, turn, *, other_project
         case "wrong-turn":
             close["payload"]["turn_id"] = str(UUID(int=1))
         case "different-checkout":
-            context["payload"]["cwd"] = str(native.anchors[other_project])
+            context["payload"]["cwd"] = str(other_checkout)
         case "pre-cutoff":
             for entry in entries[-9:]:
                 entry["timestamp"] = (CUTOFF - timedelta(seconds=1)).isoformat()
@@ -2634,7 +2635,7 @@ def _damage_completed_disposition(native, disproof, when, turn, *, other_project
                 "scope dispose", "scope mark"
             )
         case "second-tool":
-            total, delta = usage(native.total + 4, native.total + 4), usage(4, 4)
+            total, delta = usage(total + 4, total + 4), usage(4, 4)
             entries[-1:-1] = [
                 call,
                 response("second-tool-usage", total, delta, time=when, turn=turn),
@@ -2662,17 +2663,75 @@ def _damage_completed_disposition(native, disproof, when, turn, *, other_project
             )
             compact["timestamp"] = when.isoformat()
             entries.insert(-3, compact)
+
+
+def _damage_completed_disposition(native, disproof, when, turn, *, other_project=B):
+    entries = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    _damage_completion_rows(
+        entries,
+        disproof,
+        when,
+        turn,
+        other_checkout=native.anchors[other_project],
+        total=native.total,
+    )
     write(native.path, entries)
     if disproof == "physical-tail":
         with native.path.open("ab") as transcript:
             transcript.write(b'{"type":')
 
 
+_COMPLETION_FILE_CASES = {"missing-baseline", "physical-tail", "different-checkout"}
+_COMPLETION_POLICY_FIXTURE = (
+    Path(__file__).parent / "fixtures/codex/completion-policy.jsonl"
+)
+
+
+def _assert_completion_policy_rejects(disproof):
+    from aitm_usage.sources import codex
+    from aitm_usage.types import ClientVersion, Eligibility, Provider
+
+    metadata, *rows = [
+        json.loads(line) for line in _COMPLETION_POLICY_FIXTURE.read_text().splitlines()
+    ]
+    frames = AdapterFrames(
+        Provider.CODEX, ClientVersion.CODEX_0_167_0_ALPHA_3_2, SESSION, CUTOFF
+    )
+
+    def read(rows, witnesses):
+        return codex._read_codex(
+            frames.batch(rows),
+            codex.CodexState(frames.ledger, neutral_markers=True),
+            Eligibility.ELIGIBLE,
+            _completion_witnesses=witnesses,
+        )[0]
+
+    valid = []
+    read(rows, valid)
+    assert len(valid) == 1
+    _damage_completion_rows(
+        rows,
+        disproof,
+        datetime.fromisoformat(metadata["time"]),
+        UUID(metadata["turn"]),
+        other_checkout=Path("/fixture/worktree-2"),
+        total=metadata["total"],
+    )
+    witnesses = []
+    assert read(rows, witnesses) == read(rows, None)
+    assert witnesses == []
+
+
 @pytest.mark.parametrize("disproof", _COMPLETION_NATIVE_DISPROOFS)
 def test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows(
-    native, completed_disposition, disproof
+    request, disproof
 ):
-    case = completed_disposition
+    if disproof not in _COMPLETION_FILE_CASES:
+        _assert_completion_policy_rejects(disproof)
+        return
+
+    native = request.getfixturevalue("native")
+    case = request.getfixturevalue("completed_disposition")
     _damage_completed_disposition(native, disproof, case.when, case.turn)
     scope_before = case.scope_file.read_bytes()
     if disproof == "missing-baseline":
