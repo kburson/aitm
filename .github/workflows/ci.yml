@@ -385,10 +385,12 @@ jobs:
         shell: bash
         run: |
           python3 - "$RUNNER_TEMP/aitm-python/evidence" <<'PY'
+          import base64
           import csv
           import hashlib
           import json
           import sys
+          import zlib
           from collections import Counter
           from pathlib import Path
 
@@ -404,19 +406,22 @@ jobs:
               for path, record in coverage["files"].items()
           }
 
-          def digest(value):
-              data = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
-              return hashlib.sha256(data).hexdigest()
+          def canonical(value):
+              return json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
+          coverage_bytes = canonical(covered)
           print("product-test-evidence", json.dumps({
               "selection_mode": selection["mode"],
               "categories": Counter(categories[node] for node in nodes),
               "outcomes": Counter(report["outcome"] for report in pytest["reports"] if report["when"] == "call"),
-              "nodeids_sha256": digest(nodes),
-              "coverage_sha256": digest(covered),
+              "nodeids_sha256": hashlib.sha256(canonical(nodes)).hexdigest(),
+              "coverage_sha256": hashlib.sha256(coverage_bytes).hexdigest(),
               "covered_lines": coverage["totals"]["covered_lines"],
               "covered_branches": coverage["totals"]["covered_branches"],
           }, sort_keys=True))
+          encoded = base64.b64encode(zlib.compress(coverage_bytes)).decode("ascii")
+          for offset in range(0, len(encoded), 6000):
+              print("product-covered-locations", offset, encoded[offset : offset + 6000])
           PY
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: upload

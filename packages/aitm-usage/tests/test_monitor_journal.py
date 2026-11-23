@@ -893,6 +893,9 @@ class _ClaudeJournalRows(_ClaimJournalRows):
             assert self.revisions == revisions
 
     def execute(self, sql, parameters=()):
+        if sql == "SELECT count(*) FROM claim_revisions":
+            assert not parameters
+            return _Rows([(len(self.revisions),)])
         if sql.startswith("INSERT INTO claim_revisions("):
             key, sequence, ordinal, material, predecessor, payload = parameters
             identity = key, material
@@ -1710,8 +1713,12 @@ def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
         assert journal.cursor_for(native.source_id, native.locator()) is None
 
 
-def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_claude):
-    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=False)
+def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(
+    journal_claude_policy,
+):
+    _assert_claude_cold_read_preserves_cursor(
+        journal_claude_policy, explicit_quota=False
+    )
 
 
 def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(
@@ -1842,14 +1849,14 @@ def test_v2_claude_replay_requires_the_whole_durable_edge(
 
 
 def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
-    journal_claude,
+    journal_claude_policy,
 ):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1865,9 +1872,9 @@ def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
                 "SELECT count(*) FROM claim_revisions"
             ).fetchone() == (0,)
 
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     rows[padding]["message"]["content"] = "rewritten after the original capture witness"
-    write(native.path, rows)
+    native._write_rows(rows)
     native.append(native.request(3, counts=claude_usage(output=6)))
     with registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -1878,12 +1885,14 @@ def test_v1_layout_genesis_reauthenticates_normalized_material_after_capture(
         assert journal.as_of(saved.sequence) == saved
 
 
-def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_claude):
+def test_claude_revision_archive_can_replay_but_cannot_advance_owner(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal, _original_capture
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1901,33 +1910,11 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
             current._read.batch, A, original_evidence, writer.view()
         )
 
-        root_path = native.root.path.with_name("claude-archive")
-        root_path.mkdir()
-        path = root_path / "claude.jsonl"
-        root = replace(native.root, path=root_path)
         archive_source = UUID(int=7)
-        rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
-        write(path, rows[:1])
-        writer.approve_source(
-            SourceApprovalRequest(
-                archive_source,
-                "claude",
-                "claude-code-macos",
-                "Darwin",
-                "arm64",
-                "2.1.318",
-                1,
-                str(root_path),
-            )
-        )
-        (locator,) = native.native.adapter.discover(root)
-        capture = CaptureChange(A, archive_source, True)
-        frontier = writer.capture_frontier(capture, locator)
-        write(path, rows[1:], append=True)
-        (locator,) = native.native.adapter.discover(root)
-        writer.set_permission(
-            capture, writer.verify_boundary(capture, locator, frontier)
-        )
+        _expose_claude_archive_directory(native, archive_source, monkeypatch)
+        rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
+        path, locate = _claude_archive(native, writer, rows, archive_source)
+        locator = locate()
 
         archive = journal.prepare(archive_source, locator)
         assert not _original_capture(
@@ -1938,8 +1925,10 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
         assert journal.reserve(original, archive.progress).status == "replay"
         assert journal.reserve(known, archive.progress).status == "replay"
 
-        write(path, [native.request(3, counts=claude_usage(output=7))], append=True)
-        (locator,) = native.native.adapter.discover(root)
+        native.files.write(
+            path, [native.request(3, counts=claude_usage(output=7))], append=True
+        )
+        locator = locate()
         extended = journal.prepare(archive_source, locator)
         _, _, new = _claude_candidates(extended, ordinal)
         assert journal._scopes.verified_revision(extended._read.batch, new.observation)
@@ -2019,12 +2008,14 @@ def test_claude_revision_rolls_back_when_the_final_read_check_fails(
         assert journal.as_of().sequence == saved.sequence + 1
 
 
-def test_verified_claude_revision_does_not_change_saved_original_scope(journal_claude):
+def test_verified_claude_revision_does_not_change_saved_original_scope(
+    journal_claude_policy,
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -2724,13 +2715,13 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
 
 
 def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
-    journal_claude, monkeypatch
+    journal_claude_policy, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal, _claim_span
 
-    native = journal_claude
+    native = journal_claude_policy
     with native.native.registry.writer() as writer:
         native.approve(writer)
         scopes = ScopeState(writer)
@@ -2755,7 +2746,8 @@ def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
         saved = journal.as_of()
         live_cursor = journal.cursor_for(native.source_id, native.locator())
         copy_source = UUID(int=7)
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        _expose_claude_archive_directory(native, copy_source, monkeypatch)
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         _, locate = _claude_archive(native, writer, prefix, copy_source)
         copy = journal.prepare(copy_source, locate())
         _, reproduced = _claude_candidates(copy, ordinal)

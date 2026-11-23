@@ -344,13 +344,23 @@ def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 2)
+def test_v2_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
+    if failure == "replace-directory":
+        _observe_upgrade_requests(monkeypatch, 2, replace_directory=True)
+    else:
+        _assert_legacy_upgrade_rolls_back(
+            request.getfixturevalue("tmp_path"), monkeypatch, failure, 2
+        )
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 3)
+def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
+    if failure == "replace-directory":
+        _observe_upgrade_requests(monkeypatch, 3, replace_directory=True)
+    else:
+        _assert_legacy_upgrade_rolls_back(
+            request.getfixturevalue("tmp_path"), monkeypatch, failure, 3
+        )
 
 
 def _journal_metadata(monkeypatch, version, damage=None):
@@ -759,6 +769,7 @@ def _journal_observations(monkeypatch):
     return SimpleNamespace(
         writer=writer,
         store=store_path,
+        directory=folder,
         files=files,
         pin=pin,
         open_database=open_database,
@@ -916,8 +927,7 @@ def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
     request, monkeypatch, version
 ):
     if version != 1:
-        trace = _observe_upgrade_requests(monkeypatch, version)
-        _assert_upgrade_trace(trace, version)
+        _observe_upgrade_requests(monkeypatch, version)
         return
 
     tmp_path = request.getfixturevalue("tmp_path")
@@ -951,7 +961,7 @@ def _assert_upgrade_trace(statements, version):
     assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
 
 
-def _observe_upgrade_requests(monkeypatch, version):
+def _observe_upgrade_requests(monkeypatch, version, *, replace_directory=False):
     def normalize(sql):
         return " ".join(sql.rstrip().removesuffix(";").split())
 
@@ -975,11 +985,13 @@ def _observe_upgrade_requests(monkeypatch, version):
     statements = []
     validate = journal._validate_identity
     memory = _journal_observations(monkeypatch)
+    original_ids = memory.directory.identities
     monkeypatch.setattr(journal, "_validate_identity", validate)
     monkeypatch.setattr(journal, "_supported_schema", supported)
 
     def connect(path, *, write):
         assert path == memory.store / journal._DATABASE
+        before = reported, catalog.copy()
 
         def execute(statement):
             nonlocal reported
@@ -998,6 +1010,13 @@ def _observe_upgrade_requests(monkeypatch, version):
                 "PRAGMA foreign_key_check": None,
             }
             if sql in metadata:
+                if (
+                    replace_directory
+                    and write
+                    and reported == 4
+                    and sql == "PRAGMA foreign_key_check"
+                ):
+                    memory.directory.identities = (*original_ids[:-1], (1, 99))
                 value = metadata[sql]
                 return SimpleNamespace(fetchone=lambda: value, fetchall=lambda: value)
             if (
@@ -1015,8 +1034,14 @@ def _observe_upgrade_requests(monkeypatch, version):
             return None
 
         def close_transaction(error, *_):
-            if write and error is None:
+            nonlocal reported, catalog
+            if not write:
+                return
+            if error is None:
                 statements.append("COMMIT")
+            else:
+                statements.append("ROLLBACK")
+                reported, catalog = before
 
         connection = MagicMock(spec=sqlite3.Connection)
         connection.execute.side_effect = execute
@@ -1024,6 +1049,25 @@ def _observe_upgrade_requests(monkeypatch, version):
         return nullcontext(connection)
 
     memory.open_database.side_effect = connect
+    if replace_directory:
+        with pytest.raises(LedgerError, match="Pinned routing journal storage changed"):
+            journal.JournalStore(memory.writer)
+        assert [
+            entry.kwargs["write"] for entry in memory.open_database.call_args_list
+        ] == [
+            False,
+            True,
+        ]
+        assert memory.directory.identities != original_ids
+        assert statements[-2:] == ["PRAGMA foreign_key_check", "ROLLBACK"]
+        assert "COMMIT" not in statements
+        assert reported == version
+        assert tuple(sorted(catalog)) == supported(version)
+
+        memory.directory.identities = original_ids
+        replace_directory = False
+        memory.open_database.reset_mock()
+        statements.clear()
     journal.JournalStore(memory.writer)
     assert [entry.kwargs["write"] for entry in memory.open_database.call_args_list] == [
         False,
@@ -1031,7 +1075,7 @@ def _observe_upgrade_requests(monkeypatch, version):
     ]
     assert reported == 4
     assert tuple(sorted(catalog)) == supported(4)
-    return statements
+    _assert_upgrade_trace(statements, version)
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])

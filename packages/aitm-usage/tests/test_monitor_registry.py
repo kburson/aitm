@@ -304,19 +304,31 @@ def test_disable_reenable_excludes_late_disabled_interval(registry_policy):
     assert decide(restart.ordinal, restart.ordinal + 1) is Eligibility.ELIGIBLE
 
 
-def test_revoked_root_is_not_reread_for_prior_revision(tmp_path, monkeypatch, source):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+def test_revoked_root_is_not_reread_for_prior_revision(registry_policy, monkeypatch):
+    policy = registry_policy
+    module, reader, root, registry = (
+        policy.module,
+        policy.reader,
+        policy.root,
+        policy.registry,
+    )
+    log = _MemoryDesktopLog(policy.native, root.path / "live.jsonl")
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
     with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
         _approve(writer, module, root)
         start = _advance(writer, enable, log, reader, root)
         writer.set_permission(enable, start)
     locator = _locate(reader, root)
     assert registry.source_read_allowed(PROJECT_A, SOURCE)
-    root.path.rename(root.path.with_name("moved-root"))
-    root.path.mkdir()
+    directory = module._directory
+
+    def replaced_source(path, **options):
+        observed = directory(path, **options)
+        if path == str(root.path):
+            return replace(observed, identity=(1, 999))
+        return observed
+
+    monkeypatch.setattr(module, "_directory", replaced_source)
     assert not registry.source_read_allowed(PROJECT_A, SOURCE)
     assert (
         registry.span_disposition(
@@ -509,8 +521,17 @@ def queued_disable(tmp_path, monkeypatch, source):
 
 @pytest.fixture
 def queued_disable_policy(registry_policy):
-    policy = registry_policy
+    return _queue_on_registry_policy(registry_policy)
 
+
+@pytest.fixture
+def queued_disable_metadata(registry_policy, monkeypatch):
+    policy = registry_policy
+    NativeDirectoryMetadata(policy.native, policy.root.path).install(monkeypatch)
+    return _queue_on_registry_policy(policy), policy.native
+
+
+def _queue_on_registry_policy(policy):
     def log_factory(path, *, session):
         return _MemoryDesktopLog(policy.native, path, session=session)
 
@@ -1016,11 +1037,11 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
     assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
 
 
-def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable):
-    scenario = queued_disable
+def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable_metadata):
+    scenario, _ = queued_disable_metadata
     prefix = _physical_ordinal(scenario.log)
     scenario.log.append(2)
-    before = scenario.log.path.read_bytes()
+    before = scenario.log.read_bytes()
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     assert scenario.poll() == ()
 
@@ -1028,7 +1049,7 @@ def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable):
     # covered by the persisted physical arm.
     after = before.replace(b"response-4", b"modified-4", 1)
     assert after != before and len(after) == len(before)
-    scenario.log.path.write_bytes(after)
+    scenario.log.write_bytes(after)
     (receipt,) = scenario.poll()
 
     assert receipt.status is scenario.module.ControlStatus.APPLIED
@@ -1229,18 +1250,17 @@ def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfi
         )
 
 
-def test_reappearing_stream_invalidates_an_earlier_absence(queued_disable, tmp_path):
-    scenario = queued_disable
+def test_reappearing_stream_invalidates_an_earlier_absence(queued_disable_metadata):
+    scenario, native = queued_disable_metadata
     log, start = scenario.enroll_second()
     prefix = _physical_ordinal(log)
     log.append()
     returned_fence = _physical_ordinal(log)
-    stored = tmp_path / "briefly-offline.jsonl"
-    log.path.rename(stored)
+    stored = native.contents.pop(log.path)
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     assert scenario.poll() == ()
 
-    stored.rename(log.path)
+    native.contents[log.path] = stored
     assert scenario.poll() == ()
     assert scenario.status() is scenario.module.ControlStatus.QUEUED
     assert (

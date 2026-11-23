@@ -28,6 +28,8 @@ from aitm_usage.export import export_as_of
 from aitm_usage.ledger import KEY_NAME, Ledger, LedgerIdentity
 from aitm_usage.pricing import load_rate_card
 from aitm_usage.types import (
+    CommandAcknowledgment,
+    CommandReceipt,
     Diagnostic,
     DiagnosticCode,
     InboxCommand,
@@ -35,8 +37,11 @@ from aitm_usage.types import (
     ItemKind,
     ItemParent,
     LedgerBatch,
+    LedgerView,
+    MarkerDisposition,
     Provider,
     Revision,
+    _encode,
 )
 
 PROJECT = UUID(int=940)
@@ -132,15 +137,6 @@ def _bundle_bytes(path):
         entry.relative_to(path): entry.read_bytes()
         for entry in path.rglob("*")
         if entry.is_file()
-    }
-
-
-def _durable_bytes(path):
-    # SQLite read-only transactions can update reader marks in its shared index.
-    return {
-        name: data
-        for name, data in _bundle_bytes(path).items()
-        if name.suffix != ".sqlite3-shm"
     }
 
 
@@ -248,18 +244,97 @@ def test_backup_copies_only_authority_in_its_pinned_snapshot(
     assert not any(str(late.command_id) in str(path) for path in _bundle_bytes(target))
 
 
-def test_restore_refuses_ahead_ack_and_preserves_files(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+def test_restore_refuses_ahead_ack_and_preserves_files(
+    lifecycle_policy, recovery_paths, monkeypatch
+):
+    from aitm_usage import backup as recovery
+    from aitm_usage.ledger import STORE_NAME
 
-    registration, ledger, _ = project
-    bundle = tmp_path / "backup"
-    backup(ledger, bundle)
-    assert scopes.enqueue_command(ledger.root, _parent(943)) is None
-    service.collect_once(registration, ledger)
-    before = _durable_bytes(ledger.root)
-    with pytest.raises(BackupError, match="acknowledgment"):
-        restore(bundle, ledger.root, ledger.identity)
-    assert _durable_bytes(ledger.root) == before
+    ledger, supervisor = lifecycle_policy
+    observe, _ = recovery_paths
+    source = Path("/fixture/backup")
+    staging = ledger.root / "staged"
+    for path, inodes in (
+        (ledger.root, (1, 2)),
+        (ledger.root / STORE_NAME, (1, 2, 3)),
+        (source, (1, 4)),
+        (staging, (1, 2, 5)),
+        (staging / STORE_NAME, (1, 2, 5, 6)),
+    ):
+        observe(path, *inodes)
+
+    candidate = replace(ledger, root=staging)
+    view = LedgerView(PROJECT, 1, (), ())
+    saved = recovery.BackupReceipt(
+        PROJECT, ledger.identity.key_id, ledger.identity.schema_version, 1, "a" * 64
+    )
+    command = _parent(943)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    inbox, acknowledgments = (SimpleNamespace(fd=fd) for fd in (10, 11))
+    authority = {recovery.REGISTRATION_NAME: b"verified registration bytes"}
+    files = {
+        ledger.root: dict(authority),
+        inbox.fd: {},
+        acknowledgments.fd: {
+            f"{command.command_id}.json": _encode(
+                receipt.acknowledgment, CommandAcknowledgment
+            ).encode()
+        },
+    }
+    before = {fd: dict(contents) for fd, contents in files.items()}
+
+    def child(parent, name, *, create):
+        if name == scopes.INBOX_NAME:
+            assert parent.path == ledger.root and create
+            return nullcontext(inbox)
+        if name == recovery.ANCHORS_NAME:
+            assert parent.path == ledger.root and not create
+            return nullcontext(None)
+        assert parent is inbox and name == scopes.ACKS_NAME and not create
+        return nullcontext(acknowledgments)
+
+    def store_files(directory):
+        assert directory in (ledger.root, staging)
+        return directory
+
+    def open_ledger(path, project_id):
+        assert path == ledger.root and project_id == PROJECT
+        return ledger
+
+    def verify_bundle(bundle, directory, expected):
+        assert (bundle, directory, expected) == (source, staging, ledger.identity)
+        return candidate, view, authority, saved
+
+    def read_private(pin, name):
+        location = getattr(pin, "fd", None)
+        if location is None:
+            location = pin.path
+        return files[location][name]
+
+    swap = Mock(side_effect=AssertionError("unmatched acknowledgment reached swap"))
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=supervisor))
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(recovery, "project_guard", lambda *_: nullcontext(Mock()))
+    monkeypatch.setattr(recovery, "_lease", lambda _: nullcontext(Mock()))
+    monkeypatch.setattr(
+        recovery, "TemporaryDirectory", lambda **_: nullcontext(staging)
+    )
+    monkeypatch.setattr(recovery, "_verify_bundle", verify_bundle)
+    monkeypatch.setattr(recovery, "_state_files", store_files)
+    monkeypatch.setattr(recovery, "_private_child", child)
+    monkeypatch.setattr(recovery, "_publication", lambda _: nullcontext())
+    monkeypatch.setattr(recovery, "_swap_store", swap)
+    host = SimpleNamespace(listdir=lambda fd: list(files[fd]))
+    for module in (recovery, scopes):
+        monkeypatch.setattr(module, "os", host)
+        monkeypatch.setattr(module, "_read_private", read_private)
+
+    with pytest.raises(recovery.BackupError, match="no exact backup receipt"):
+        recovery.restore(source, ledger.root, ledger.identity)
+    assert files == before
+    swap.assert_not_called()
 
 
 @pytest.fixture

@@ -27,14 +27,15 @@ NOW = datetime(2026, 11, 9, 14, 0, tzinfo=UTC)
 CANARY = "/private/transcripts/raw-provider-handle-canary"
 ROOT_PREFIX = "Library/Application Support/aitm-usage"
 
-METADATA_MODE_CASES = {"database", "wal", "shm"}
 PHYSICAL_ALIAS_CASES = {"equal-missing", "control-inside-state-existing"}
 
 
 def _uses_path_metadata(request):
     name = request.node.originalname
     if name == "test_private_paths_have_exact_modes_and_reject_looser_modes":
-        return request.node.callspec.id in METADATA_MODE_CASES
+        return request.node.callspec.id != "project"
+    if name == "test_symlink_state_files_are_refused_without_touching_target":
+        return request.node.callspec.id != "database"
     if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
         return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
     if name == "test_raw_credential_shaped_metadata_is_normalized_before_durable_write":
@@ -101,11 +102,13 @@ def ledger_path_metadata(modules, monkeypatch):
     ledger_module, _ = modules
     uid = 501
     entries = {}
+    links = {}
 
     class ObservedPath(type(Path())):
         def stat(self, *, follow_symlinks=True):
+            name = str(self)
             try:
-                return entries[str(self)]
+                return entries[links.get(name, name) if follow_symlinks else name]
             except KeyError:
                 raise FileNotFoundError(
                     errno.ENOENT, "Test path is absent", self
@@ -132,6 +135,11 @@ def ledger_path_metadata(modules, monkeypatch):
     def alias_directory(alias, target):
         entries[str(alias)] = target.stat()
 
+    def replace_with_link(path, target):
+        entries[str(target)] = path.lstat()
+        add_path(path, stat.S_IFLNK | 0o777)
+        links[str(path)] = str(target)
+
     def lower_permissions(path, mode):
         info = path.stat()
         entries[str(path)] = os.stat_result(
@@ -140,6 +148,8 @@ def ledger_path_metadata(modules, monkeypatch):
 
     def open_descriptor(path, flags, *_):
         assert not flags & os.O_CREAT, f"Ledger attempted to create {path}"
+        if str(path) in links and flags & os.O_NOFOLLOW:
+            raise OSError(errno.ELOOP, "Test path was opened without following links")
         return path
 
     def unexpected_connection(*args, **kwargs):
@@ -185,6 +195,7 @@ def ledger_path_metadata(modules, monkeypatch):
         add_path=add_path,
         add_directory=add_directory,
         alias_directory=alias_directory,
+        replace_with_link=replace_with_link,
         lower_permissions=lower_permissions,
         entries=entries,
         uid=uid,
@@ -211,6 +222,28 @@ def _observe_storage(metadata, ledger):
         database.with_name(database.name + "-shm"),
     ):
         metadata.add_path(path, stat.S_IFREG | 0o600)
+
+
+def _observed_ledger(metadata, ledger_module):
+    ledger = replace(
+        _memory_ledger(ledger_module, PROJECT, b"a" * 32),
+        root=metadata.base / "project",
+    )
+    _observe_storage(metadata, ledger)
+    return ledger
+
+
+def _storage_slots(ledger):
+    database = ledger.database_path
+    return {
+        "project": ledger.root,
+        "store": database.parent,
+        "database": database,
+        "lock": ledger.lock_path,
+        "key": ledger.key_path,
+        "wal": database.with_name(database.name + "-wal"),
+        "shm": database.with_name(database.name + "-shm"),
+    }
 
 
 class _QueryRows(list):
@@ -693,25 +726,12 @@ def test_private_paths_have_exact_modes_and_reject_looser_modes(
     if metadata is None:
         ledger, _ = request.getfixturevalue("state")
     else:
-        key = b"a" * 32
-        ledger = ledger_module.Ledger(
-            metadata.base / "project", ledger_module._identity(PROJECT, key), key
-        )
-    paths = {
-        "project": ledger.root,
-        "store": ledger.database_path.parent,
-        "database": ledger.database_path,
-        "lock": ledger.lock_path,
-        "key": ledger.key_path,
-        "wal": ledger.database_path.with_name(ledger.database_path.name + "-wal"),
-        "shm": ledger.database_path.with_name(ledger.database_path.name + "-shm"),
-    }
+        ledger = _observed_ledger(metadata, ledger_module)
+    paths = _storage_slots(ledger)
     if metadata is None:
-        # Independently check the modes of the files actually created by SQLite.
-        for sqlite_path in ("database", "wal", "shm"):
-            assert stat.S_IMODE(paths[sqlite_path].stat().st_mode) == 0o600
-    else:
-        _observe_storage(metadata, ledger)
+        for name, created in paths.items():
+            expected = 0o700 if name in {"project", "store"} else 0o600
+            assert stat.S_IMODE(created.stat().st_mode) == expected
     path = paths[relative_path]
     is_directory = relative_path in ("project", "store")
     assert stat.S_IMODE(path.stat().st_mode) == (0o700 if is_directory else 0o600)
@@ -727,19 +747,29 @@ def test_private_paths_have_exact_modes_and_reject_looser_modes(
 
 
 @pytest.mark.parametrize("file", ["lock", "key", "database", "wal", "shm"])
-def test_symlink_state_files_are_refused_without_touching_target(state, tmp_path, file):
+def test_symlink_state_files_are_refused_without_touching_target(
+    request, modules, file, path_metadata
+):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
-    paths = {
-        "lock": ledger.lock_path,
-        "key": ledger.key_path,
-        "database": ledger.database_path,
-        "wal": Path(str(ledger.database_path) + "-wal"),
-        "shm": Path(str(ledger.database_path) + "-shm"),
-    }
-    original = paths[file]
-    target = tmp_path / "outside"
+    ledger_module, types = modules
+    if path_metadata is not None:
+        ledger = _observed_ledger(path_metadata, ledger_module)
+        original = _storage_slots(ledger)[file]
+        target = path_metadata.base / "outside"
+        path_metadata.replace_with_link(original, target)
+        assert original.stat() == target.lstat()
+        before = dict(path_metadata.entries)
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+            type(ledger).open(ledger.root, PROJECT)
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+            ledger.apply(types.LedgerBatch())
+        assert path_metadata.entries == before
+        return
+
+    ledger, _ = request.getfixturevalue("state")
+    original = _storage_slots(ledger)[file]
+    target = request.getfixturevalue("tmp_path") / "outside"
     original.rename(target)
     before = target.read_bytes()
     original.symlink_to(target)

@@ -298,12 +298,109 @@ if platform.system() == "Linux":
                 == root.key
             )
 
-    def test_linux_registration_bound_falls_back_for_one_root(tmp_path):
-        crowded, quiet = (tmp_path / name for name in ("crowded", "quiet"))
-        crowded.mkdir()
-        quiet.mkdir()
-        (crowded / "nested").mkdir()
-        first, second = _root(crowded, "first"), _root(quiet, "second")
+    @pytest.fixture
+    def linux_watch_descriptors(monkeypatch):
+        crowded, quiet = Path("/fixture/crowded"), Path("/fixture/quiet")
+        nested = crowded / "nested"
+        directories = {
+            crowded: (20, ((1, 1, 0), (1, 20, 0))),
+            nested: (21, ((1, 1, 0), (1, 20, 0), (1, 21, 0))),
+            quiet: (22, ((1, 1, 0), (1, 22, 0))),
+        }
+        roots = tuple(
+            WatchRoot(
+                SourceRef(
+                    f"hmac-sha256:{'a' * 64}:{sha256(path.name.encode()).hexdigest()}"
+                ),
+                path,
+                directories[path][1][-1][:2],
+            )
+            for path in (crowded, quiet)
+        )
+        clock = Mock(return_value=0.0)
+        pending = []
+        api = SimpleNamespace(refuse_nested=False, roots=roots, clock=clock, removed=[])
+        event_fd, wake_read, wake_write = 30, 31, 32
+
+        def directory(path):
+            fd, chain = directories[path]
+            return nullcontext((fd, chain, ()))
+
+        def scandir(fd):
+            children = (
+                (SimpleNamespace(name=nested.name, is_dir=Mock(return_value=True)),)
+                if fd == directories[crowded][0]
+                else ()
+            )
+            return nullcontext(children)
+
+        def add(fd, path, mask):
+            assert fd == event_fd and mask == host_watch._LINUX_MASK
+            descriptor = int(path.removeprefix(b"/proc/self/fd/"))
+            assert descriptor in {value[0] for value in directories.values()}
+            if descriptor == directories[nested][0] and api.refuse_nested:
+                return -1
+            return descriptor
+
+        def remove(fd, watch):
+            assert fd == event_fd
+            api.removed.append(watch)
+            return 0
+
+        def read(fd, count):
+            assert fd == event_fd and count >= host_watch._LINUX_STRUCT.size
+            return pending.pop(0)
+
+        def poll():
+            reader = Mock()
+            reader.poll.return_value = ((event_fd, 1),) if pending else ()
+            return reader
+
+        def change_quiet():
+            pending.append(
+                host_watch._LINUX_STRUCT.pack(directories[quiet][0], 0x02, 0, 0)
+            )
+
+        api.change_quiet = change_quiet
+        native = {
+            "inotify_init1": Mock(return_value=event_fd),
+            "inotify_add_watch": add,
+            "inotify_rm_watch": remove,
+        }
+        monkeypatch.setattr(host_watch, "_bind", lambda _, name, *__: native[name])
+        monkeypatch.setattr(host_watch, "_directory", directory)
+        monkeypatch.setattr(host_watch, "monotonic", clock)
+        monkeypatch.setattr(host_watch, "select", SimpleNamespace(poll=poll, POLLIN=1))
+        monkeypatch.setattr(
+            host_watch,
+            "ct",
+            SimpleNamespace(
+                CDLL=Mock(),
+                c_int=host_watch.ct.c_int,
+                c_char_p=host_watch.ct.c_char_p,
+                c_uint32=host_watch.ct.c_uint32,
+                get_errno=lambda: errno.ENOSPC,
+            ),
+        )
+        monkeypatch.setattr(
+            host_watch,
+            "os",
+            SimpleNamespace(
+                O_NONBLOCK=os.O_NONBLOCK,
+                O_CLOEXEC=os.O_CLOEXEC,
+                pipe2=Mock(return_value=(wake_read, wake_write)),
+                fsencode=os.fsencode,
+                scandir=scandir,
+                read=read,
+                write=Mock(),
+                close=Mock(),
+            ),
+        )
+        return api
+
+    def test_linux_registration_bound_falls_back_for_one_root(linux_watch_descriptors):
+        native = linux_watch_descriptors
+        first, second = native.roots
         with WatchSet(
             (first, second), max_directories_per_root=1, fallback_interval=0.05
         ) as watches:
@@ -312,13 +409,14 @@ if platform.system() == "Linux":
                 first.key,
                 second.key,
             }
-            assert (
-                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            assert watches.events(0) == ()
+            native.clock.return_value = 0.05
+            assert watches.events(0) == (
+                host_watch.WatchEvent(first.key, WatchKind.RECONCILE, "fallback"),
             )
-            (quiet / "file.jsonl").touch()
-            assert (
-                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-                == second.key
+            native.change_quiet()
+            assert watches.events(0) == (
+                host_watch.WatchEvent(second.key, WatchKind.CHANGED),
             )
 
     def test_linux_overlapping_roots_share_descriptor_without_weakening_mask(
@@ -365,41 +463,22 @@ if platform.system() == "Linux":
                 os.fstat(fd)
             assert retired.value.errno == errno.EBADF
 
-    def test_linux_kernel_capacity_retires_partial_root_only(tmp_path, monkeypatch):
-        limited, healthy = (tmp_path / name for name in ("limited", "healthy"))
-        limited.mkdir()
-        healthy.mkdir()
-        refused = limited / "nested"
-        refused.mkdir()
-        first, second = _root(limited, "first"), _root(healthy, "second")
-        denied = refused.stat()
-        bind = host_watch._bind
-
-        def inject_limit(library, name, result, *arguments):
-            native = bind(library, name, result, *arguments)
-            if name != "inotify_add_watch":
-                return native
-
-            def add(fd, path, mask):
-                if os.path.samestat(denied, os.stat(path)):
-                    host_watch.ct.set_errno(errno.ENOSPC)
-                    return -1
-                return native(fd, path, mask)
-
-            return add
-
-        monkeypatch.setattr(host_watch, "_bind", inject_limit)
+    def test_linux_kernel_capacity_retires_partial_root_only(linux_watch_descriptors):
+        native = linux_watch_descriptors
+        native.refuse_nested = True
+        first, second = native.roots
         with WatchSet((first, second), fallback_interval=0.02) as watches:
             initial = watches.events(0)
             assert {item.key for item in initial} == {first.key, second.key}
             backend = watches._linux
             assert backend is not None
             assert all(first.key not in members for members in backend.watches.values())
-            assert (
-                _next(watches, lambda item: item.reason == "fallback").key == first.key
+            assert native.removed == [first.identity[1]]
+            native.clock.return_value = 0.02
+            assert watches.events(0) == (
+                host_watch.WatchEvent(first.key, WatchKind.RECONCILE, "fallback"),
             )
-            (healthy / "available.jsonl").touch()
-            assert (
-                _next(watches, lambda item: item.kind is WatchKind.CHANGED).key
-                == second.key
+            native.change_quiet()
+            assert watches.events(0) == (
+                host_watch.WatchEvent(second.key, WatchKind.CHANGED),
             )

@@ -2602,10 +2602,26 @@ def _held_completion_command(state, native, owner, *, release=False):
     return hold, command
 
 
+def _mark_completion_owner(state, native, owner):
+    from aitm_usage.monitor_scope import Mark
+
+    mark_id = UUID(int=0x900)
+    mark = Mark(mark_id, _issue(A, 210), native.receipt_ref(mark_id))
+    state.authorize(mark, owner)
+    _, marked_at = native.append(mark_id)
+    marked = state.read_source(SOURCE, native.locator())
+    assert (
+        state.apply_mark(
+            mark, _verify(state, native, mark, owner, marked, marked_at)
+        ).status
+        == "applied"
+    )
+
+
 @contextmanager
 def _completed_disposition(native, tmp_path, monkeypatch, capsys, *, release=False):
     from aitm_usage.monitor_journal import RoutingJournal
-    from aitm_usage.monitor_scope import Mark, ScopeState
+    from aitm_usage.monitor_scope import ScopeState
 
     with native.registry.writer() as writer:
         clock = [datetime(2026, 11, 10, tzinfo=UTC)]
@@ -2615,17 +2631,7 @@ def _completed_disposition(native, tmp_path, monkeypatch, capsys, *, release=Fal
         journal.reserve_batch(initial)
         owner = state.operator(A)
         if release:
-            mark_id = UUID(int=0x900)
-            mark = Mark(mark_id, _issue(A, 210), native.receipt_ref(mark_id))
-            state.authorize(mark, owner)
-            _, marked_at = native.append(mark_id)
-            marked = state.read_source(SOURCE, native.locator())
-            assert (
-                state.apply_mark(
-                    mark, _verify(state, native, mark, owner, marked, marked_at)
-                ).status
-                == "applied"
-            )
+            _mark_completion_owner(state, native, owner)
         hold, command = _held_completion_command(state, native, owner, release=release)
         monkeypatch.setitem(
             globals(), "_append_ordered_disposition", _append_completed_disposition
@@ -2657,7 +2663,9 @@ def completed_disposition(native, tmp_path, monkeypatch, capsys):
 
 
 @contextmanager
-def _completion_policy(monkeypatch, *, creator_account=None, with_journal=False):
+def _completion_policy(
+    monkeypatch, *, creator_account=None, with_journal=False, release=False
+):
     from aitm_usage.monitor_scope import ScopeState
 
     native = MemoryNativeScopeFixture(monkeypatch, creator_account=creator_account)
@@ -2672,7 +2680,9 @@ def _completion_policy(monkeypatch, *, creator_account=None, with_journal=False)
             cursor = journal.cursor_for(SOURCE, native.locator())
             assert cursor == initial.progress
         owner = state.operator(A)
-        hold, command = _held_completion_command(state, native, owner)
+        if release:
+            _mark_completion_owner(state, native, owner)
+        hold, command = _held_completion_command(state, native, owner, release=release)
         _, _, _, _, target, ordinary, turn, when = _queue_policy_disposition(
             native, writer, state, command, append=_append_completed_disposition
         )
@@ -2727,16 +2737,6 @@ def completion_journal_policy(monkeypatch):
         yield case
 
 
-@pytest.fixture
-def quota_disposition(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
-    native = NativeScopeFixture(
-        tmp_path, monkeypatch, creator_account="fixture-account"
-    )
-    with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
-        yield native, case
-
-
 def _bind_quota_disposition(native, case, account="fixture-account"):
     case.state._bind_codex_quota_account(
         SOURCE,
@@ -2747,8 +2747,10 @@ def _bind_quota_disposition(native, case, account="fixture-account"):
     )
 
 
-def test_completion_quota_binding_supplies_existing_quota_validation(quota_disposition):
-    native, case = quota_disposition
+def test_completion_quota_binding_supplies_existing_quota_validation(
+    quota_scope_policy,
+):
+    native, case = quota_scope_policy
     state = case.state
     assert DiagnosticCode.COVERAGE_GAP in {d.code for d in case.ordinary.diagnostics}
     _bind_quota_disposition(native, case)
@@ -2764,13 +2766,13 @@ def test_completion_quota_binding_supplies_existing_quota_validation(quota_dispo
     assert [d.code for d in opted.diagnostics] == [DiagnosticCode.BOUNDARY_UNVERIFIED]
     target = native.target(opted, case.command.command_id)
     assert state.completion_witness(case.command, case.owner, opted, target) is not None
-    scope_before = case.scope_file.read_bytes()
+    scope_before = native._scope_bytes()
     native.append()
     later = state.read_source(SOURCE, native.locator(), qualify_completion=True)
     assert state.completion_witness(case.command, case.owner, opted, target) is None
     assert not later._completion_witnesses
     assert later.cursor is not None and not later.diagnostics
-    assert case.scope_file.read_bytes() == scope_before
+    assert native._scope_bytes() == scope_before
 
 
 def test_completion_quota_binding_requires_the_native_creator(quota_scope_policy):
@@ -2860,23 +2862,27 @@ def test_completion_qualification_retains_private_settlement_progress(
 
 
 def test_settlement_side_requires_live_typed_release_and_keeps_scope_held(
-    native, tmp_path, monkeypatch, capsys
+    monkeypatch,
 ):
-    with _completed_disposition(
-        native, tmp_path, monkeypatch, capsys, release=True
-    ) as case:
+    from aitm_usage import scopes
+
+    with _completion_policy(monkeypatch, with_journal=True, release=True) as (
+        native,
+        case,
+    ):
+        monkeypatch.setattr(scopes, "_read_private", native.state_files.read)
         state = case.state
         locator = native.locator()
         batch = state.read_source(SOURCE, locator, qualify_completion=True)
         target = native.target(batch, case.command.command_id)
-        before = case.scope_file.read_bytes()
+        before = native._scope_bytes()
         proof = state.verify_settlement_side(case.command, case.owner, batch, target)
         assert proof.hold == case.hold
         assert (
             proof.progress.cursor.checkpoint.provider.ordinal > target.boundary.ordinal
         )
         assert state.view().holds == (case.hold,)
-        assert case.scope_file.read_bytes() == before
+        assert native._scope_bytes() == before
         assert case.journal.cursor_for(SOURCE, locator) == case.journal_cursor
         case.clock[0] = case.hold.expires_at
         with pytest.raises(LedgerError, match="completion proof"):
@@ -3349,15 +3355,31 @@ def _scope_journal_bytes(root):
 
 @pytest.mark.parametrize("case", ["gap", "resolved", "expired-gap"])
 def test_ordered_native_disposition_records_only_proof_and_replays_after_restart(
-    native, tmp_path, monkeypatch, capsys, case
+    request, monkeypatch, capsys, case
 ):
     from aitm_usage.monitor_scope import HoldState, ScopeState
 
     release = case == "resolved"
+    native = request.getfixturevalue("native" if release else "native_scope_policy")
+    tmp_path = request.getfixturevalue("tmp_path") if release else None
+
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
             native, writer, tmp_path, monkeypatch, capsys, release=release
         )
+
+        def journal_storage():
+            if release:
+                return _scope_journal_bytes(writer.root)
+            rows = current.journal._store
+            return (
+                rows.commits.copy(),
+                rows.rows.copy(),
+                rows.claims.copy(),
+                rows.progress.copy(),
+                tuple(rows.writes),
+            )
+
         state = current.state
         expected_hold = HoldState.HELD
         if case == "expired-gap":
@@ -3367,7 +3389,7 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
         before = state.view()
         journal_view = current.journal.as_of()
         assert current.journal.cursor_for(SOURCE, native.locator()) == current.cursor
-        old_journal_bytes = _scope_journal_bytes(writer.root)
+        before_storage = journal_storage()
         proof = state.verify_route_disposition(current.command, current.terminal)
         record = state.require_route_disposition(proof)
         assert record.command_id == current.command.command_id
@@ -3375,14 +3397,14 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
         assert record.request_digest == current.digest
         assert record.hold_state is expected_hold
         assert record.outcome is (HoldState.RESOLVED if release else HoldState.GAP)
-        scope_bytes = _scope_file(native).read_bytes()
+        scope_bytes = native._scope_bytes()
         replay = state.verify_route_disposition(current.command, current.terminal)
         assert state.require_route_disposition(replay) == record
-        assert _scope_file(native).read_bytes() == scope_bytes
+        assert native._scope_bytes() == scope_bytes
         assert state.view() == before
         assert current.journal.as_of() == journal_view
         assert current.journal.cursor_for(SOURCE, native.locator()) == current.cursor
-        assert _scope_journal_bytes(writer.root) == old_journal_bytes
+        assert journal_storage() == before_storage
         with pytest.raises(LedgerError, match="current writer-verified"):
             state.require_route_disposition(replace(proof))
 
@@ -3403,8 +3425,8 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
         issued = reopened.verify_route_disposition(current.command, terminal)
         assert reopened.require_route_disposition(issued) == record
         assert reopened.view() == before
-        assert _scope_file(native).read_bytes() == scope_bytes
-        assert _scope_journal_bytes(writer.root) == old_journal_bytes
+        assert native._scope_bytes() == scope_bytes
+        assert journal_storage() == before_storage
 
 
 @pytest.mark.parametrize(
@@ -3479,7 +3501,7 @@ def test_issued_route_disposition_requires_current_evidence(
         case.publish.assert_not_called()
         return
 
-    if change == "legacy-dispose":
+    if change in {"later-usage", "legacy-dispose"}:
         native = request.getfixturevalue("native_scope_policy")
         tmp_path = None
     else:
