@@ -29,7 +29,7 @@ _HELPERS = [
 _CLI = "tools/ci/tests/test_cli_evidence.py::test_usage_console_help"
 _ACL = _PRODUCT + "test_install.py::test_backup_and_restore_reject_inherited_acl"
 _OPTIONAL = (
-    _PRODUCT + "test_install.py::test_backup_refuses_store_through_physical_path_alias"
+    _PRODUCT + "test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer"
 )
 _SKIP_REASON = "The host does not expose the matching APFS firmlink path"
 _ONE_SHOT = (
@@ -55,7 +55,10 @@ _UNIT = {
     _PRICING + "test_grok_card_rejects_unproven_rate_classes_and_models",
     _PRICING + "test_legacy_v1_revision_refuses_grok_provider",
 }
-_FIXED_EXPORT = _PRICING + "test_grok_preserves_legacy_rate_digest_and_fixed_export"
+_FIXED_EXPORT = (
+    _PRODUCT
+    + "test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication"
+)
 _PRODUCT_IDS = sorted(_REQUIRED | _UNIT | {_FIXED_EXPORT, _OPTIONAL})
 _LOCAL = {
     "kind": "local_advisory",

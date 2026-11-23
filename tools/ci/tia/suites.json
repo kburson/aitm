@@ -335,6 +335,131 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_standard_rates_and_account_only_evidence",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_claude_revisions_terminal_and_nested_usage",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_codex_deltas_exclusion_and_epochs",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_rewind_and_copy_cannot_add_a_second_identity",
+      "suite": "unit",
+      "isolation_group": "grok-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_preserves_legacy_rate_digest_and_fixed_export",
+      "suite": "unit",
+      "isolation_group": "grok_pricing-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_backup_refuses_store_through_physical_path_alias",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_restore_refuses_incompatible_store_and_interrupted_staging",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_held_writer_checks_key_identity_before_each_batch",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_schema_with_same_columns_without_constraints_is_refused",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_unqualified_source_gap_publishes_without_project_write_or_ack",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_queued_grok_enable_routes_exact_marker_and_project_only_hookless_then_reloads",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_verified_grok_cut_refuses_a_rewritten_original_prefix",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_replacement_stream_or_profile_requires_exact_new_owner_authority",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_enrollment-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_preserves_old_projection_when_late_claim_arrives",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_reconfirms_visible_scope_replacement_before_durable_progress",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_queued_claude_disable_uses_the_physical_tail",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_replay_syncs_existing_registry_receipt_before_retiring_queue",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_locator_presence_rechecks_earlier_directory_after_rename",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_copied_account_and_wrong_project_do_not_grant_authority",
+      "suite": "unit",
+      "isolation_group": "scope_admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_replaced_project_ledger_key_does_not_preserve_grant",
+      "suite": "unit",
+      "isolation_group": "scope_admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease",
       "suite": "unit",
       "isolation_group": "export-policy"

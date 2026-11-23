@@ -5,7 +5,6 @@ from dataclasses import dataclass, replace
 
 import pytest
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
-from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
 from aitm_usage.monitor_control import ControlInbox
 from aitm_usage.monitor_registry import (
@@ -235,9 +234,9 @@ def test_disable_retains_unresolved_gap_and_never_applies_a_later_enrollment(
 
 
 def test_replacement_stream_or_profile_requires_exact_new_owner_authority(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33111, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()

@@ -563,6 +563,7 @@ def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
         finally:
             saved.rename(database)
         assert _sequences(reopened) == [(1,)]
+        _assert_native_store_swap_aborts_transaction(registry, reopened)
         _assert_physical_damage_refuses_attachment(
             registry,
             writer,
@@ -821,12 +822,6 @@ def _assert_observed_damage_refuses_attachment(monkeypatch, version, damage, mes
     journal.os.fsync.assert_not_called()
 
 
-_PHYSICAL_STORE_CASES = {
-    ("hardlink", "-wal"),
-    ("symlink", "-shm"),
-}
-
-
 def _journal_observations(monkeypatch):
     key = b"j" * 32
     evidence = _ServiceEvidence(key)
@@ -925,7 +920,7 @@ def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
 def test_unsafe_database_and_sidecars_refuse_before_open(
     request, monkeypatch, suffix, damage
 ):
-    if (damage, suffix) not in _PHYSICAL_STORE_CASES:
+    if (damage, suffix) != ("symlink", "-shm"):
         _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage)
         return
 
@@ -934,19 +929,28 @@ def test_unsafe_database_and_sidecars_refuse_before_open(
     with registry.writer() as writer:
         writer.source_evidence()
         store = journal.JournalStore(writer)
-        path = _database(registry).with_name(_database(registry).name + suffix)
-        saved = tmp_path / "original"
-        if damage == "hardlink":
-            os.link(path, saved)
-        else:
-            path.rename(saved)
-            path.symlink_to(saved)
-        with pytest.raises(LedgerError):
+        database = _database(registry)
+        wal = database.with_name(database.name + "-wal")
+        hardlink = tmp_path / "wal-alias"
+        os.link(wal, hardlink)
+        try:
+            assert os.path.samestat(wal.stat(), hardlink.stat())
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                _sequences(store)
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                journal.JournalStore(writer)
+        finally:
+            hardlink.unlink()
+        assert _sequences(store) == []
+
+        shm = database.with_name(database.name + suffix)
+        saved = shm.rename(tmp_path / "original")
+        shm.symlink_to(saved)
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
             _sequences(store)
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="Unsafe private ledger path"):
             journal.JournalStore(writer)
-        if damage == "symlink":
-            assert path.is_symlink()
+        assert shm.is_symlink()
 
 
 def test_live_handle_refuses_replacement_key_with_identical_bytes(tmp_path):
@@ -986,26 +990,46 @@ def test_live_handle_refuses_replacement_key_with_identical_bytes(tmp_path):
         assert writer.source_evidence() == evidence
 
 
-def test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
-        directory = _directory(registry)
-        saved = registry.root / "saved"
-        with pytest.raises(LedgerError):
-            with store.transaction(write=True) as conn:
-                conn.execute("INSERT INTO commits VALUES (1)")
-                directory.rename(saved)
-                shutil.copytree(saved, directory)
+def test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    store = journal.JournalStore(memory.writer)
+    connection = MagicMock(spec=sqlite3.Connection)
+    memory.open_database.reset_mock()
+    memory.open_database.return_value = nullcontext(connection)
+    identities = memory.directory.identities
+    with pytest.raises(
+        LedgerError, match="Pinned routing journal storage changed"
+    ) as error:
+        with store.transaction(write=True) as conn:
+            assert conn is connection
+            conn.execute("INSERT INTO commits VALUES (1)")
+            memory.directory.identities = (*identities[:-1], (1, 999))
+    assert connection.execute.call_args_list == [
+        call("BEGIN IMMEDIATE"),
+        call("INSERT INTO commits VALUES (1)"),
+    ]
+    connection.__exit__.assert_called_once_with(LedgerError, error.value, ANY)
+    connection.commit.assert_not_called()
+
+
+def _assert_native_store_swap_aborts_transaction(registry, store):
+    directory = _directory(registry)
+    saved = registry.root / "saved"
+    with pytest.raises(LedgerError):
+        with store.transaction(write=True) as conn:
+            conn.execute("INSERT INTO commits VALUES (2)")
+            directory.rename(saved)
+            shutil.copytree(saved, directory)
+    try:
         shutil.rmtree(directory)
+    finally:
         saved.rename(directory)
-        assert _sequences(store) == []
-        with pytest.raises(RuntimeError, match="injected body failure"):
-            with store.transaction(write=True) as conn:
-                conn.execute("INSERT INTO commits VALUES (1)")
-                raise RuntimeError("injected body failure")
-        assert _sequences(store) == []
+    assert _sequences(store) == [(1,)]
+    with pytest.raises(RuntimeError, match="injected body failure"):
+        with store.transaction(write=True) as conn:
+            conn.execute("INSERT INTO commits VALUES (2)")
+            raise RuntimeError("injected body failure")
+    assert _sequences(store) == [(1,)]
 
 
 def test_body_failure_rolls_back_private_transaction(monkeypatch):

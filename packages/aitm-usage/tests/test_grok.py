@@ -158,6 +158,13 @@ def _policy_locator(source, rows, snapshot, origin=None):
             path, origin, source.root, SimpleNamespace(identity=identity), source_ref
         )
     )
+    with _policy_input_files(source, rows, snapshot, identity):
+        yield locator
+
+
+@contextmanager
+def _policy_input_files(source, rows, snapshot, identity):
+    path = source.directory / "updates.jsonl"
     contents = {path: b"".join(rows)}
     if snapshot is not None:
         contents[path.with_name("usage.json")] = json.dumps(snapshot).encode()
@@ -174,7 +181,7 @@ def _policy_locator(source, rows, snapshot, origin=None):
     with source.monkeypatch.context() as patch:
         patch.setattr(source.module, "_open_snapshot", open_snapshot)
         patch.setattr(source.module, "_verify_snapshot", lambda *args: None)
-        yield locator
+        yield
 
 
 def _set_usage(row, **values):
@@ -599,23 +606,42 @@ def test_cancellation_concurrent_turns_and_invalid_clock_fail_closed(grok_policy
         assert not result.observations and not result.cursor
 
 
-def test_rewind_and_copy_cannot_add_a_second_identity(grok_source):
-    s = grok_source
-    first = _batch(s, s.rows[:5])
+def test_rewind_and_copy_cannot_add_a_second_identity(grok_policy, monkeypatch):
+    s = grok_policy
+    directory = object()
+    root_identity = ((1, 2),)
+    file_identity = (*root_identity, (1, 3))
+    monkeypatch.setattr(
+        s.module, "_directory", lambda root: nullcontext((directory, root_identity, ()))
+    )
+
+    def locate(descriptor, root):
+        assert (descriptor, root) == (directory, s.root.path)
+        return iter((s.directory / "updates.jsonl",))
+
+    monkeypatch.setattr(s.module, "_transcripts", locate)
+    monkeypatch.setattr(
+        s.module, "_probe", lambda path: SimpleNamespace(identity=file_identity)
+    )
+
+    def read(rows, snapshot=None, cursor=None, *, origin=None):
+        reader = _reader(s, origin, None, None)
+        with _policy_input_files(s, rows, snapshot, file_identity):
+            (locator,) = reader.discover(s.root)
+            return reader.read_delta(locator, cursor)
+
+    first = read(s.rows[:5])
     assert len(first.observations) == 1
     wire = adapter.StreamCursor
     restored = _decode(_encode(first.cursor, wire), wire)
-    resumed = _batch(s, s.rows, s.snapshot, restored)
+    resumed = read(s.rows, s.snapshot, restored)
     assert len(resumed.observations) == 1
     assert resumed.observations[0].key != first.observations[0].key
-    rewind = _batch(s, s.rows[1:5], cursor=first.cursor)
+    rewind = read(s.rows[1:5], cursor=first.cursor)
     assert not rewind.observations and rewind.cursor == first.cursor
     assert DiagnosticCode.SOURCE_REPLACED in _codes(rewind)
-    copy = s.root.path / "archive" / SESSION
-    copy.mkdir(parents=True)
-    (s.directory / "updates.jsonl").unlink()
-    s.directory = copy
-    fresh = _batch(s, s.rows[:5])
+    s.directory = s.root.path / "archive" / SESSION
+    fresh = read(s.rows[:5])
     assert fresh.observations[0].key == first.observations[0].key
-    unproven = _batch(s, s.rows[:5], origin=replace(s.origin, lineage_id=None))
+    unproven = read(s.rows[:5], origin=replace(s.origin, lineage_id=None))
     assert not unproven.observations and not unproven.cursor

@@ -14,6 +14,8 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
+import pytest
+
 from aitm_usage.ledger import Ledger, LedgerIdentity
 from aitm_usage.monitor_registry import _ServiceEvidence
 from aitm_usage.types import (
@@ -288,6 +290,23 @@ class NativeDirectoryMetadata:
         if fd in self._open_files:
             return self._open_files[fd]
         return self.info(self.descriptors[fd])
+
+
+@pytest.fixture
+def transcript_ledger(monkeypatch, ledger_path_metadata, observe_ledger_rows):
+    def attach(project_id, cutoff):
+        files = NativeTranscriptFiles(monkeypatch)
+        root = ledger_path_metadata.base / "parent" / "project"
+        rows = observe_ledger_rows(
+            root, project_id, b"native-transcript-replay-key-123"
+        )
+        ledger = Ledger.open(root, project_id)
+        registration = Registration(
+            project_id, ledger.root, (files.root,), (files.checkout,), cutoff
+        )
+        return files, registration, ledger, rows
+
+    return attach
 
 
 class ScannerPolicy:

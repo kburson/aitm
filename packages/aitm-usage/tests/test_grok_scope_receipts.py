@@ -244,29 +244,17 @@ def _ready_scope(staged_scope, monkeypatch):
 
 
 def test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked_scope(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
     f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
-        staged_scope, monkeypatch
+        staged_scope_policy, monkeypatch
     )
     original = bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
-
-    def tree_metadata():
-        return {
-            path.relative_to(f.writer.root): (
-                entry.st_ino,
-                entry.st_mtime_ns,
-                entry.st_size,
-            )
-            for path in f.writer.root.rglob("*")
-            if (entry := path.stat())
-        }
-
-    snapshot = tree_metadata()
+    snapshot = {path: contents.copy() for path, contents in f.scope_files.files.items()}
     with ControlInbox(f.writer.root).publication():
         assert lookup(SESSION, PROMPT_A, "native-event") == original
-    assert tree_metadata() == snapshot
+    assert f.scope_files.files == snapshot
     reader.advertise(reader.probe(request))
     assert lookup(SESSION, PROMPT_A, "native-event") == original
     reader.revoke(request.grant_id)
@@ -1002,10 +990,27 @@ def test_first_application_holds_the_revocation_publication_lock(
 
     from aitm_usage.monitor_control import INBOX_NAME
 
-    f, reader, request, checkout, attempt, _, bind = _ready_scope(
+    f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
         staged_scope, monkeypatch
     )
-    assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    sealed = bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    assert sealed
+
+    def observed_tree():
+        return {
+            path.relative_to(f.writer.root): (
+                entry.st_ino,
+                entry.st_mtime_ns,
+                entry.st_size,
+            )
+            for path in f.writer.root.rglob("*")
+            if (entry := path.stat())
+        }
+
+    original = observed_tree()
+    with ControlInbox(f.writer.root).publication():
+        assert lookup(SESSION, PROMPT_A, "native-event") == sealed
+    assert observed_tree() == original
     f.write(f.rows[:5], 1)
     batch = f.state.read_source(f.source_id, f.locator())
     (boundary,) = batch.boundaries

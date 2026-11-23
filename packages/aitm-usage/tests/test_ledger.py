@@ -374,9 +374,14 @@ def observe_ledger_rows(ledger_path_metadata, modules, monkeypatch):
         assert mode == "rb"
         return KeyBytes(descriptor, keys[descriptor.path].key_bytes)
 
-    schema = (
-        ("table", "checkpoints", "checkpoints", "CREATE TABLE checkpoints (...)"),
-        ("table", "revisions", "revisions", "CREATE TABLE revisions (...)"),
+    definitions = {
+        statement.strip().split()[2]: statement.strip()
+        for statement in ledger_module._SCHEMA.split(";")
+        if statement.strip().startswith("CREATE TABLE ")
+    }
+    schema = tuple(
+        ("table", name, name, statement)
+        for name, statement in sorted(definitions.items())
     )
 
     def observe(root, project_id, key):
@@ -538,6 +543,8 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
     assert reopened.as_of(1).current == (revision,)
     assert reopened.as_of(2).current == (next_revision,)
     assert reopened.as_of(2).revisions == (revision, next_revision)
+    _assert_native_key_change_refuses_writer(reopened, types, batch)
+    _assert_native_missing_constraints_refuses_store(reopened, types)
 
 
 def test_cursor_replay_never_rewinds_current_provider_state(ledger_rows):
@@ -722,19 +729,19 @@ def test_schema_tag_alone_does_not_allow_a_missing_table(ledger_rows):
     assert rows.writes == []
 
 
-def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
+def test_held_writer_checks_key_identity_before_each_batch(ledger_rows):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    ledger, types, rows = ledger_rows
     batch = sample_batch(ledger, types)
     assert ledger.apply(batch) == 1
-    replacement = type(ledger).initialize(tmp_path / "replacement", PROJECT)
+    before = rows.history
+    rows.writes.clear()
     with ledger.writer() as writer:
-        ledger.key_path.write_bytes(replacement.key_path.read_bytes())
-        before = durable_data(ledger)
+        rows.key_bytes = PROJECT.bytes + b"b" * 32
         with pytest.raises(LedgerError, match="Ledger identity changed"):
             writer.apply(types.LedgerBatch())
-        assert durable_data(ledger) == before
+        assert rows.history == before
     for operation in (
         lambda: type(ledger).open(ledger.root, PROJECT),
         lambda: type(ledger).initialize(ledger.root, PROJECT),
@@ -744,7 +751,37 @@ def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
             LedgerError, match="Ledger project or key identity mismatch"
         ):
             operation()
-    assert durable_data(ledger) == before
+    assert rows.history == before
+    assert rows.writes == []
+
+
+def _assert_native_key_change_refuses_writer(ledger, types, batch):
+    from aitm_usage.ledger import LedgerError
+
+    key = ledger.key_path
+    original = key.read_bytes()
+    identity = key.stat()
+    changed = bytes([original[-1] ^ 1])
+    try:
+        with ledger.writer() as writer:
+            key.write_bytes(original[:-1] + changed)
+            assert os.path.samestat(identity, key.stat())
+            before = durable_data(ledger)
+            with pytest.raises(LedgerError, match="Ledger identity changed"):
+                writer.apply(types.LedgerBatch())
+            assert durable_data(ledger) == before
+        for operation in (
+            lambda: type(ledger).open(ledger.root, PROJECT),
+            lambda: type(ledger).initialize(ledger.root, PROJECT),
+            lambda: ledger.apply(batch),
+        ):
+            with pytest.raises(
+                LedgerError, match="Ledger project or key identity mismatch"
+            ):
+                operation()
+        assert durable_data(ledger) == before
+    finally:
+        key.write_bytes(original)
 
 
 @pytest.mark.parametrize(
@@ -963,10 +1000,31 @@ def test_stale_expected_checkpoint_cannot_append_new_revision(ledger_rows):
     )
 
 
-def test_schema_with_same_columns_without_constraints_is_refused(state):
+def test_schema_with_same_columns_without_constraints_is_refused(ledger_rows):
     from aitm_usage.ledger import Ledger, LedgerError
 
-    ledger, types = state
+    ledger, types, rows = ledger_rows
+    rows.schema = tuple(
+        (
+            *row[:3],
+            "CREATE TABLE revisions(key TEXT,revision INT,sequence INT,payload TEXT)",
+        )
+        if row[1] == "revisions"
+        else row
+        for row in rows.schema
+    )
+    before = rows.history
+    with pytest.raises(LedgerError, match="Invalid ledger table schema"):
+        Ledger.open(ledger.root, PROJECT)
+    with pytest.raises(LedgerError, match="Invalid ledger table schema"):
+        ledger.apply(types.LedgerBatch())
+    assert rows.history == before
+    assert rows.writes == []
+
+
+def _assert_native_missing_constraints_refuses_store(ledger, types):
+    from aitm_usage.ledger import Ledger, LedgerError
+
     with tamper(ledger.database_path) as conn:
         conn.execute("ALTER TABLE revisions RENAME TO revisions_original")
         conn.execute("CREATE TABLE revisions AS SELECT * FROM revisions_original")

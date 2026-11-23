@@ -84,6 +84,12 @@ class _CoveragePolicyStore:
                 return SimpleNamespace(fetchone=lambda: (view.sequence,))
             if sql == monitor_journal._COVERAGE_ROWS + " WHERE s.identity=?":
                 return SimpleNamespace(fetchone=lambda: view.events.get(params[0]))
+            if sql == monitor_journal._COVERAGE_ROWS + " WHERE s.sequence=?":
+                return SimpleNamespace(
+                    fetchall=lambda: [
+                        row for row in view.events.values() if row[1] == params[0]
+                    ]
+                )
             if (
                 sql
                 == monitor_journal._COVERAGE_ROWS
@@ -681,7 +687,14 @@ def test_coverage_readback_rejects_deleted_commit_on_disk(admitted_sources):
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(claude.source_id, claude.locator())
         (event,) = journal.coverage_changes(0)
+        candidate = journal.publication_candidate(event)
+    with native.registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        assert journal.publication_candidate(event) == candidate
         path = writer.root / _STORE / _DATABASE
+        _assert_native_coverage_publication_recovers_after_corruption(
+            journal, event, candidate, writer.source_evidence(), path
+        )
         with _sqlite(path) as connection:
             connection.execute(
                 "DELETE FROM commits WHERE sequence=?", (event.sequence,)
@@ -835,114 +848,118 @@ def test_coverage_readback_requires_the_original_live_writer(monkeypatch):
         )
 
 
-def test_unqualified_source_gap_publishes_without_project_write_or_ack(
-    admitted_sources, monkeypatch
-):
-    from datetime import UTC, datetime
-
-    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
+def test_unqualified_source_gap_publishes_without_project_write_or_ack(monkeypatch):
     from aitm_usage.ledger import Ledger
-    from aitm_usage.monitor_journal import (
-        JournalChange,
-        JournalCoverage,
-        _coverage_key,
-        _CoverageExtent,
-        _CoverageReason,
+    from aitm_usage.monitor_journal import JournalChange, JournalCoverage
+
+    authority, state, journal, store = _coverage_policy(monkeypatch, SOURCE)
+    writer, source = authority.writer, authority.locator
+    writer._live_profile = None
+    seed = store.evidence.pseudonymize("partial-test", "coverage")
+    forged = JournalCoverage(
+        monitor_journal._CoverageReason.UNQUALIFIED_SOURCE,
+        seed,
+        seed,
+        monitor_journal._CoverageExtent.UNKNOWN,
+        datetime.now(UTC),
     )
-    from aitm_usage.types import _decode, _encode
+    store.committed.sequence = 1
+    assert store_version(journal) == 4
+    with pytest.raises(LedgerError, match="Verified journal-only publication"):
+        journal.publication_candidate(JournalChange(1, coverage=forged))
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, source)
+    (change,) = journal.coverage_changes(0)
+    assert change.sequence == 2 and store_version(journal) == 6
+    before = journal.as_of()
+    writes = store.writes.copy()
+    prior = journal.cursor_for(SOURCE, source)
 
     def project_access(*_, **__):
         pytest.fail("A journal-only candidate touched a destination")
 
-    native, claude = admitted_sources
-    source = claude.locator()
-    with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
-        qualify(writer)
-        prepared = journal.prepare(SOURCE, native.locator())
-        journal.reserve_batch(prepared)
-        assert store_version(journal) == 4
-        sequence = journal.as_of().sequence
-        seed = writer.source_evidence().pseudonymize("partial-test", "coverage")
-        forged = JournalCoverage(
-            _CoverageReason.UNQUALIFIED_SOURCE,
-            seed,
-            seed,
-            _CoverageExtent.UNKNOWN,
-            datetime.now(UTC),
-        )
-        with pytest.raises(LedgerError):
-            journal.publication_candidate(JournalChange(sequence, coverage=forged))
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(claude.source_id, source)
-        (change,) = journal.coverage_changes(0)
-        before = journal.as_of()
-        prior = journal.cursor_for(claude.source_id, source)
-
-        with monkeypatch.context() as patch:
-            patch.setattr(Ledger, "open", project_access)
-            patch.setattr(Ledger, "writer", project_access)
-            candidate = journal.publication_candidate(change)
-            assert (
-                candidate.basis == "coverage" and candidate.sequence == change.sequence
-            )
-            writer.source_evidence().validate_source_ref(candidate.identity)
-            assert journal.publication_candidate(change) == candidate
-            assert journal.as_of() == before
-            assert journal.cursor_for(claude.source_id, source) is prior is None
-            assert journal.coverage_changes(0) == (change,)
-        with pytest.raises(LedgerError):
-            journal.publication_candidate(replace(change, sequence=change.sequence + 1))
-        with pytest.raises(LedgerError):
-            journal.publication_candidate(JournalChange(change.sequence))
-        with pytest.raises(LedgerError):
-            journal.publication_candidate(
-                replace(
-                    change,
-                    coverage=replace(change.coverage, reason="UNQUALIFIED_SOURCE"),
-                )
-            )
-    with monkeypatch.context() as patch, native.registry.writer() as writer:
-        patch.setattr(Ledger, "open", project_access)
-        patch.setattr(Ledger, "writer", project_access)
-        reopened = RoutingJournal(writer, ScopeState(writer))
-        assert reopened.publication_candidate(change) == candidate
-        assert reopened.as_of() == before
-        (stored,) = reopened.coverage_changes(0)
-        evidence = writer.source_evidence()
-        alternate = replace(stored.coverage, installation=seed)
-        replacement = _encode(
-            alternate, JournalCoverage, validate_ref=evidence.validate_source_ref
-        ).encode()
-        assert _decode(replacement, JournalCoverage) == alternate
-        alternate_key = _coverage_key(alternate, evidence).value
-        with reopened._store.transaction(write=True) as connection:
-            key, raw = connection.execute(
-                "SELECT identity,payload FROM source_coverage"
-            ).fetchone()
-            # A complete, canonical substitute preserves the old seal.
-            connection.execute(
-                "UPDATE source_coverage SET identity=?,payload=?",
-                (alternate_key, replacement),
-            )
+    monkeypatch.setattr(Ledger, "open", project_access)
+    monkeypatch.setattr(Ledger, "writer", project_access)
+    candidate = journal.publication_candidate(change)
+    assert candidate.basis == "coverage" and candidate.sequence == change.sequence
+    store.evidence.validate_source_ref(candidate.identity)
+    assert journal.publication_candidate(change) == candidate
+    assert journal.as_of() == before
+    assert journal.cursor_for(SOURCE, source) is prior is None
+    assert journal.coverage_changes(0) == (change,)
+    for invalid in (
+        replace(change, sequence=change.sequence + 1),
+        JournalChange(change.sequence),
+        replace(change, coverage=replace(change.coverage, reason="UNQUALIFIED_SOURCE")),
+    ):
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
-            reopened.publication_candidate(stored)
-        with pytest.raises(LedgerError, match="Invalid private journal coverage"):
-            reopened.coverage_changes(0)
-        with reopened._store.transaction(write=True) as connection:
-            connection.execute(
-                "UPDATE source_coverage SET identity=?,payload=?", (key, raw)
-            )
-        assert reopened.publication_candidate(stored) == candidate
-        reopened.enable_delivery(reopened.as_of().sequence)
-        assert reopened.coverage_changes(0) == (stored,)
-        assert reopened.publication_candidate(stored) == candidate
-        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
-        with _open(database, write=True) as connection:
-            connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
-        with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
-            reopened.publication_candidate(stored)
-        with _open(database, write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (
-                _DELIVERY_SCHEMA_VERSION + 1,
-            )
+            journal.publication_candidate(invalid)
+
+    reopened = RoutingJournal(writer, state)
+    assert reopened.publication_candidate(change) == candidate
+    assert reopened.as_of() == before
+    assert store.writes == writes
+
+    (recorded,) = store.committed.events.values()
+    key, sequence, commit, _, seal = recorded
+    alternate = replace(change.coverage, installation=seed)
+    alternate_key = monitor_journal._coverage_key(alternate, store.evidence).value
+    alternate_payload = _encode(alternate, JournalCoverage).encode()
+    store.committed.events = {
+        alternate_key: (alternate_key, sequence, commit, alternate_payload, seal)
+    }
+    with pytest.raises(LedgerError, match="Verified journal-only publication"):
+        reopened.publication_candidate(change)
+    with pytest.raises(LedgerError, match="Invalid private journal coverage"):
+        reopened.coverage_changes(0)
+    store.committed.events = {key: recorded}
+    assert reopened.publication_candidate(change) == candidate
+    assert store.writes == writes
+
+
+def _assert_native_coverage_publication_recovers_after_corruption(
+    journal, change, candidate, evidence, database
+):
+    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
+    from aitm_usage.monitor_journal import JournalCoverage, _coverage_key
+    from aitm_usage.types import _decode
+
+    seed = evidence.pseudonymize("partial-test", "coverage")
+    alternate = replace(change.coverage, installation=seed)
+    replacement = _encode(
+        alternate, JournalCoverage, validate_ref=evidence.validate_source_ref
+    ).encode()
+    assert _decode(replacement, JournalCoverage) == alternate
+    alternate_key = _coverage_key(alternate, evidence).value
+    with journal._store.transaction(write=True) as connection:
+        key, raw = connection.execute(
+            "SELECT identity,payload FROM source_coverage"
+        ).fetchone()
+        # A complete, canonical substitute preserves the old seal.
+        connection.execute(
+            "UPDATE source_coverage SET identity=?,payload=?",
+            (alternate_key, replacement),
+        )
+    with pytest.raises(LedgerError, match="Verified journal-only publication"):
+        journal.publication_candidate(change)
+    with pytest.raises(LedgerError, match="Invalid private journal coverage"):
+        journal.coverage_changes(0)
+    with journal._store.transaction(write=True) as connection:
+        connection.execute(
+            "UPDATE source_coverage SET identity=?,payload=?", (key, raw)
+        )
+    assert journal.publication_candidate(change) == candidate
+
+    journal.enable_delivery(journal.as_of().sequence)
+    assert journal.coverage_changes(0) == (change,)
+    assert journal.publication_candidate(change) == candidate
+
+    with _open(database, write=True) as connection:
+        connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
+    with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
+        journal.publication_candidate(change)
+    with _open(database, write=True) as connection:
+        assert connection.execute("PRAGMA user_version").fetchone() == (
+            _DELIVERY_SCHEMA_VERSION + 1,
+        )
+        connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION}")

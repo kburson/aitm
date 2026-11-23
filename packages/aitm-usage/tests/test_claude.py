@@ -11,7 +11,17 @@ from uuid import UUID
 import pytest
 from adapter_frame_cases import AdapterFrames
 from scanner_policy_cases import NativeTranscriptFiles, TranscriptReplay
+from scanner_policy_cases import transcript_ledger as transcript_ledger
 from test_accounting import reference_rates  # noqa: F401, F811
+from test_ledger import (
+    ledger_path_metadata as ledger_path_metadata,
+)
+from test_ledger import (
+    modules as modules,
+)
+from test_ledger import (
+    observe_ledger_rows as observe_ledger_rows,
+)
 
 from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
@@ -233,14 +243,16 @@ def diagnostics(result):
     return {entry.code for entry in result.diagnostics}
 
 
-def test_claude_revisions_terminal_and_nested_usage(project):
+def test_claude_revisions_terminal_and_nested_usage(transcript_ledger):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    files, registration, ledger, persisted_rows = transcript_ledger(PROJECT, CUTOFF)
+    checkout = files.checkout
+    path = files.root / "usage.jsonl"
     rows = [
         json.loads(line)
         for line in FIXTURE.read_text().replace("CHECKOUT", str(checkout)).splitlines()
     ]
-    write(path, rows[:2])
+    files.write(path, rows[:2])
     candidate = source(registration)
     first_batch, first = read(claude, candidate, claude.ClaudeState(ledger))
     (r1,) = first.revisions
@@ -254,7 +266,7 @@ def test_claude_revisions_terminal_and_nested_usage(project):
     assert DiagnosticCode.COVERAGE_GAP in diagnostics(first)
     prior = commit(ledger, first_batch, first)
 
-    write(path, [rows[2], rows[2]], append=True)
+    files.write(path, [rows[2], rows[2]], append=True)
     ledger = Ledger.open(ledger.root, PROJECT)
     second_batch, second = read(claude, candidate, claude.ClaudeState(ledger), prior)
     (r2,) = second.revisions
@@ -265,7 +277,7 @@ def test_claude_revisions_terminal_and_nested_usage(project):
     assert r2.record.availability is Availability.PARTIAL
     prior2 = commit(ledger, second_batch, second, prior)
 
-    write(path, [cost(**{MODEL: model_counts()})], append=True)
+    files.write(path, [cost(**{MODEL: model_counts()})], append=True)
     ledger = Ledger.open(ledger.root, PROJECT)
     third_batch, third = read(claude, candidate, claude.ClaudeState(ledger), prior2)
     assert third_batch.frames == ()
@@ -280,8 +292,7 @@ def test_claude_revisions_terminal_and_nested_usage(project):
     prior3 = commit(ledger, third_batch, third, prior2)
 
     archive = path.with_name("verified-copy.jsonl")
-    archive.write_bytes(path.read_bytes())
-    path.unlink()
+    files.contents[archive] = files.contents.pop(path)
     _, replay = read(claude, source(registration), claude.ClaudeState(ledger), prior3)
     assert not replay.revisions
     assert replay.provider_checkpoint == prior3.provider
@@ -294,7 +305,7 @@ def test_claude_revisions_terminal_and_nested_usage(project):
         b"totalCostUSD",
         str(checkout).encode(),
     ):
-        assert marker not in ledger.database_path.read_bytes()
+        assert all(marker not in row[-1].encode() for row in persisted_rows.history[1])
 
 
 @pytest.mark.parametrize(

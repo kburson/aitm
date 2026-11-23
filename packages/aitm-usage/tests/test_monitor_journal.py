@@ -1,7 +1,6 @@
 """Exercise routing journal authority with real native capture and scope evidence."""
 
 import json
-import os
 import shlex
 from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import replace
@@ -76,11 +75,32 @@ A, B, LIVE, COPY = (UUID(int=number) for number in range(1, 5))
 
 @pytest.fixture
 def journal_disposition(tmp_path, monkeypatch, capsys):
+    from test_monitor_scope import NativeScopeFixture
+
+    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
+    native = NativeScopeFixture(tmp_path, monkeypatch)
+    return _journal_disposition_scenario(native, monkeypatch, tmp_path, capsys)
+
+
+@pytest.fixture
+def late_projection_policy(monkeypatch):
+    from test_monitor_scope import MemoryNativeScopeFixture
+
+    from aitm_usage import monitor_journal, scopes
+
+    native = MemoryNativeScopeFixture(monkeypatch)
+    store = _ClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
+    monkeypatch.setattr(scopes, "_read_private", native.state_files.read)
+    return _journal_disposition_scenario(native, monkeypatch)
+
+
+def _journal_disposition_scenario(native, monkeypatch, tmp_path=None, capsys=None):
     from test_monitor_scope import (
         SOURCE,
-        NativeScopeFixture,
         _authorize_handoff,
         _issue,
+        _queue_policy_disposition,
         _sealed_disposition,
         _verify,
     )
@@ -90,10 +110,6 @@ def journal_disposition(tmp_path, monkeypatch, capsys):
 
     @contextmanager
     def prepare(release_previous=False):
-        monkeypatch.setattr(
-            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
-        )
-        native = NativeScopeFixture(tmp_path, monkeypatch)
         with native.registry.writer() as writer:
             scopes = ScopeState(writer)
             journal = RoutingJournal(writer, scopes)
@@ -147,16 +163,18 @@ def journal_disposition(tmp_path, monkeypatch, capsys):
             assert journal.reserve(first, prepared.progress).status == "pending"
             assert journal.cursor_for(SOURCE, native.locator()) == prior_cursor
             hold = scopes.hold(receipt, retain_route_target=True)
-            prefix = native.path.read_bytes()
+            prefix = native._transcript_bytes()
 
             command = Disposition(
                 command_id, A, hold_id, native.receipt_ref(command_id), release_previous
             )
-            inbox, reader, request, _, target, batch, followup, when = (
-                _sealed_disposition(
+            if tmp_path is None:
+                publication = _queue_policy_disposition(native, writer, scopes, command)
+            else:
+                publication = _sealed_disposition(
                     native, writer, scopes, command, tmp_path, monkeypatch, capsys
                 )
-            )
+            inbox, reader, request, _, target, batch, followup, when = publication
             terminal = scopes.verify_boundary(command, owner, batch, target)
             proof = scopes.verify_route_disposition(command, terminal)
             assert batch.cursor is None
@@ -260,26 +278,26 @@ def test_journal_records_native_disposition_without_settlement(
 
 
 def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
-    journal_disposition,
+    late_projection_policy,
 ):
     from test_monitor_scope import _finish_disposition_turn, _verify
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    with journal_disposition() as case:
+    with late_projection_policy() as case:
         journal, scopes, native = case.journal, case.scopes, case.native
         before = journal.as_of()
-        scope_bytes = case.scope_file.read_bytes()
+        scope_bytes = native._scope_bytes()
         scope_view = scopes.view()
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         change = journal.record_disposition(case.proof)
         recorded = journal.as_of()
         assert recorded.dispositions[0].affected == (case.first,)
-        assert case.scope_file.read_bytes() == scope_bytes
+        assert native._scope_bytes() == scope_bytes
         assert scopes.view() == scope_view
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         _finish_disposition_turn(native, case.followup, case.when)
-        assert native.path.read_bytes().startswith(case.prefix)
+        assert native._transcript_bytes().startswith(case.prefix)
         with pytest.raises(LedgerError):
             journal.record_disposition(case.proof)
         assert journal.as_of() == recorded
@@ -287,12 +305,12 @@ def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
         legacy = _verify(scopes, native, case.legacy, case.owner, batch, case.legacy_at)
         assert scopes.dispose(case.legacy, legacy).state == "resolved"
         resolved_view = scopes.view()
-        resolved_bytes = case.scope_file.read_bytes()
+        resolved_bytes = native._scope_bytes()
         with pytest.raises(LedgerError, match="Current scope hold cannot authorize"):
             journal.record_disposition(case.proof)
         assert journal.as_of() == recorded
         assert scopes.view() == resolved_view
-        assert case.scope_file.read_bytes() == resolved_bytes
+        assert native._scope_bytes() == resolved_bytes
         assert journal.cursor_for(case.source_id, native.locator()) == case.prior_cursor
         prepared = journal.prepare(case.source_id, native.locator())
         (late,) = (
@@ -1562,10 +1580,12 @@ def test_terminal_receipt_without_following_usage_requires_exact_scope_event(
 
 
 def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
-    native, monkeypatch
+    journal_transcript_policy, monkeypatch
 ):
+    from aitm_usage import monitor_scope
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     command_id = UUID(int=0x305)
     scope = Scope(A, ItemKey(ItemKind.ISSUE, 118), WorkPhase.PLANNING)
     receipt = native.evidence.pseudonymize("scope-receipt", str(command_id))
@@ -1576,7 +1596,9 @@ def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
         initial = journal.prepare(LIVE, native.locator())
         journal.reserve_batch(initial)
         original = journal.as_of()
-        _append_terminal_receipt(native, command_id)
+        project = writer.view().projects[0]
+        ledger = Ledger.open(Path(project.state.path), A)
+        _append_terminal_receipt(native, command_id, project=ledger)
         locator = native.locator()
         batch = state.read_source(LIVE, locator)
         (target,) = [
@@ -1585,19 +1607,21 @@ def test_journal_reconfirms_visible_scope_replacement_before_durable_progress(
         authority = state.operator(A)
         state.authorize(mark, authority)
         proof = state.verify_boundary(mark, authority, batch, target)
-        root = native.registry.root
-        actual_sync = os.fsync
+        files = native.state_files
+        publish = monitor_scope._publish
+
+        def publish_then_sync(directory, name, data, *, replace_pending):
+            publish(directory, name, data, replace_pending=replace_pending)
+            monitor_scope.os.fsync(directory.fd)
 
         def interrupted_scope_sync(fd):
-            if (
-                os.path.samestat(os.fstat(fd), root.stat())
-                and (root / "scope-v1.json").exists()
-            ):
+            root = files.descriptors[fd]
+            if root == writer.root and "scope-v1.json" in files.files[root]:
                 raise OSError("scope directory sync interrupted")
-            actual_sync(fd)
 
         with monkeypatch.context() as interrupted:
-            interrupted.setattr(os, "fsync", interrupted_scope_sync)
+            interrupted.setattr(monitor_scope, "_publish", publish_then_sync)
+            interrupted.setattr(monitor_scope.os, "fsync", interrupted_scope_sync)
             with pytest.raises(OSError, match="scope directory sync"):
                 state.apply_mark(mark, proof)
             assert state.view().events
@@ -2129,7 +2153,9 @@ def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=
             native.path.rename(path)
         write_rows = write
     else:
-        assert not relocate
+        if relocate:
+            native.files.contents[path] = native.files.contents.pop(native.path)
+            native.files.identities[path] = native.files.identities.pop(native.path)
         write_rows = native.files.write
     write_rows(path, rows[:1])
     writer.approve_source(
@@ -2608,17 +2634,15 @@ def test_claude_common_usage_repeat_cannot_create_a_content_dispute(
 
 @pytest.mark.parametrize("control", ["equal-child", "disabled", "relocated"])
 def test_claude_conflict_requires_distinct_usage_and_current_independent_custody(
-    request, monkeypatch, control
+    journal_claude_policy, monkeypatch, control
 ):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
-    fixture = "journal_claude" if control == "relocated" else "journal_claude_policy"
-    native = request.getfixturevalue(fixture)
+    native = journal_claude_policy
     source_id = UUID(int=7)
-    if native.files is not None:
-        _expose_claude_archive_directory(native, source_id, monkeypatch)
-    write_rows = write if native.files is None else native.files.write
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
+    write_rows = native.files.write
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         native.append(native.request(3, counts=claude_usage(output=7)))

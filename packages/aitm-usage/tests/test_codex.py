@@ -11,6 +11,16 @@ from uuid import UUID
 import pytest
 from adapter_frame_cases import AdapterFrames
 from scanner_policy_cases import NativeTranscriptFiles, TranscriptReplay
+from scanner_policy_cases import transcript_ledger as transcript_ledger
+from test_ledger import (
+    ledger_path_metadata as ledger_path_metadata,
+)
+from test_ledger import (
+    modules as modules,
+)
+from test_ledger import (
+    observe_ledger_rows as observe_ledger_rows,
+)
 
 from aitm_usage import scopes
 from aitm_usage.cli import main
@@ -223,10 +233,14 @@ def memory_replay(request, monkeypatch):
     return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=False)
 
 
-def test_codex_deltas_exclusion_and_epochs(project):
+def test_codex_deltas_exclusion_and_epochs(transcript_ledger):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
-    path.write_text(FIXTURE.read_text().replace("CHECKOUT", str(checkout)))
+    files, registration, ledger, persisted_rows = transcript_ledger(PROJECT, CUTOFF)
+    checkout = files.checkout
+    path = files.root / "usage.jsonl"
+    files.contents[path] = FIXTURE.read_bytes().replace(
+        b"CHECKOUT", str(checkout).encode()
+    )
     account = ledger.pseudonymize("codex-account", "private-account-secret")
     state = codex.CodexState(ledger, account_ref=account)
     candidate = source(registration)
@@ -256,8 +270,7 @@ def test_codex_deltas_exclusion_and_epochs(project):
     prior = commit(ledger, batch, first)
 
     archive = path.with_name("archive-secret.jsonl")
-    archive.write_bytes(path.read_bytes())
-    path.unlink()
+    files.contents[archive] = files.contents.pop(path)
     reopened = Ledger.open(ledger.root, PROJECT)
     (stored,) = reopened.as_of().checkpoints
     assert stored == prior
@@ -272,7 +285,7 @@ def test_codex_deltas_exclusion_and_epochs(project):
     # session ID and a parent relationship in the metadata.
     path = archive.with_name("child-secret.jsonl")
     amount = usage(12, 4, 8, 2)
-    write(
+    files.write(
         path,
         [
             startup(
@@ -310,9 +323,9 @@ def test_codex_deltas_exclusion_and_epochs(project):
         b"account-secret",
         b"branch-secret",
         b"credits-secret",
-        b"checkout-secret",
+        str(checkout).encode(),
     ):
-        assert canary not in reopened.database_path.read_bytes()
+        assert all(canary not in row[-1].encode() for row in persisted_rows.history[1])
 
 
 @pytest.mark.parametrize("excluded_counter", [True, False])

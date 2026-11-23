@@ -204,6 +204,26 @@ def grok_capture_policy(monkeypatch):
         inbox.enqueue(command)
         return command
 
+    def reset_stream():
+        contents[updates] = b""
+        del contents[updates.with_name("usage.json")]
+
+    def replace_incarnation():
+        origins[updates] = replace(
+            origins[updates],
+            incarnation=evidence.pseudonymize("grok-incarnation", "replaced"),
+        )
+
+    def revise(operation, generation):
+        if operation == "revoke":
+            writer._live_profile = None
+        else:
+            assert operation == "replace" and writer._live_profile is not None
+            writer._live_profile = replace(
+                writer._live_profile,
+                generation=evidence.pseudonymize("generation", str(generation)),
+            )
+
     return SimpleNamespace(
         writer=writer,
         state=scopes,
@@ -218,6 +238,10 @@ def grok_capture_policy(monkeypatch):
         verifier=verify_receipt,
         root=root,
         refs=refs,
+        receipt=refs[SESSION, PROMPT_A, "synthetic-event-1"],
         find_origin=find_origin,
         add_stream=add_stream,
+        reset_stream=reset_stream,
+        replace_incarnation=replace_incarnation,
+        revise=revise,
     )

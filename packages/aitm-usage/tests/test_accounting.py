@@ -175,7 +175,8 @@ def quota(project, *, provider=Provider.CODEX):
     )
 
 
-def test_standard_rates_and_account_only_evidence(project):
+def test_standard_rates_and_account_only_evidence(accounting_rows):
+    project, persisted_rows = accounting_rows
     card = pricing.load_rate_card()
     observation = usage(project)
     reading = quota(project)
@@ -193,10 +194,8 @@ def test_standard_rates_and_account_only_evidence(project):
         ),
         ProviderCheckpoint(Provider.CODEX),
     )
-    with project.writer() as writer:
-        before = writer.apply(replace(projected, checkpoint=checkpoint))
-    reopened = Ledger.open(project.root, PROJECT)
-    view = reopened.as_of(before)
+    before = project.apply(replace(projected, checkpoint=checkpoint))
+    view = project.as_of(before)
     prices = [
         rev.record for rev in view.current if isinstance(rev.record, PriceProjection)
     ]
@@ -228,10 +227,12 @@ def test_standard_rates_and_account_only_evidence(project):
         Availability.UNKNOWN
     }
     assert projected.checkpoint is None and projected.prior_checkpoint is None
-    assert accounting.account_observations(batch, card, ledger=reopened) == projected
-    assert reopened.apply(replace(projected, checkpoint=checkpoint)) == before
+    committed = persisted_rows.history
+    assert accounting.account_observations(batch, card, ledger=project) == projected
+    assert project.apply(replace(projected, checkpoint=checkpoint)) == before
+    assert persisted_rows.history == committed
     assert view.checkpoints == (checkpoint,)
-    assert reopened.as_of() == view
+    assert project.as_of() == view
     totals = rollup(ITEM, view).unattributed
     assert totals.known_usd == Decimal("0.0114")
     assert totals.observation_count == 1

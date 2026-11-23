@@ -455,6 +455,18 @@ def test_lease_free_snapshot_read_survives_atomic_replacement(tmp_path, monkeypa
             patch.setattr(os, "open", replace_after_open)
             assert registry.view().projects == (old,)
         assert registry.view() == next_view
+        root_info = registry.root.stat()
+        original_sync = os.fsync
+        synced = []
+
+        def sync_directory(fd):
+            original_sync(fd)
+            synced.append(os.fstat(fd))
+
+        with monkeypatch.context() as patch:
+            patch.setattr(os, "fsync", sync_directory)
+            assert registry.view(_confirm_publication=True) == next_view
+        assert len(synced) == 1 and os.path.samestat(synced[0], root_info)
 
 
 def _physical_ordinal(log):
@@ -834,44 +846,44 @@ def test_unfinished_codex_tail_fences_without_new_native_completion(request, tai
 
 
 def test_replay_syncs_existing_registry_receipt_before_retiring_queue(
-    tmp_path, monkeypatch
+    registry_policy, monkeypatch
 ):
-    from aitm_usage.monitor_control import ControlInbox
-
-    module = _module()
-    registry = module.Registry(tmp_path / "monitor")
-    inbox = ControlInbox(registry.root)
-    command = module.ControlCommand(UUID(int=301), _request(module, tmp_path))
+    module = registry_policy.module
+    registry, inbox = registry_policy.registry, registry_policy.inbox
+    (project,) = registry.view().projects
+    command = module.ControlCommand(
+        UUID(int=301),
+        module.ProjectRegistrationRequest(PROJECT_A, project.state.path, "Renamed"),
+    )
     with registry.writer() as writer:
         inbox.enqueue(command)
-        registry_identity = registry.root.stat()
-        original_sync = os.fsync
+        publish = module._publish
         original_discard = inbox.discard
         synced = False
 
-        def fail_after_replace(fd):
-            if os.path.samestat(os.fstat(fd), registry_identity):
-                raise OSError("injected registry directory sync failure")
-            original_sync(fd)
+        def fail_after_replace(directory, name, data, *, replace_pending):
+            assert directory.path == registry.root and name == module._STATE_FILE
+            publish(directory, name, data, replace_pending=replace_pending)
+            raise LedgerError("Private monitor publication failed")
 
         with monkeypatch.context() as patch:
-            patch.setattr(os, "fsync", fail_after_replace)
+            patch.setattr(module, "_publish", fail_after_replace)
             with pytest.raises(LedgerError, match="Private monitor publication failed"):
                 writer.apply_pending(inbox, writer.lease, None)
         assert registry.view().receipts[0].status is module.ControlStatus.APPLIED
 
         def record_sync(fd):
             nonlocal synced
-            original_sync(fd)
-            if os.path.samestat(os.fstat(fd), registry_identity):
-                synced = True
+            with module._pin_directory(registry.root) as root:
+                assert root.fd == fd
+            synced = True
 
         def discard_after_sync(*args):
             assert synced
             return original_discard(*args)
 
         with monkeypatch.context() as patch:
-            patch.setattr(os, "fsync", record_sync)
+            patch.setattr(module, "os", SimpleNamespace(fsync=record_sync))
             patch.setattr(inbox, "discard", discard_after_sync)
             assert writer.apply_pending(inbox, writer.lease, None) == ()
     assert inbox.status(command.command_id).status is module.ControlStatus.APPLIED
@@ -1095,42 +1107,24 @@ def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable_meta
 
 
 @pytest.mark.parametrize("unfinished", ["quiet", "streamed", "tool", "abandoned"])
-def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfinished):
+def test_queued_claude_disable_uses_the_physical_tail(monkeypatch, unfinished):
     from test_claude import request as claude_request
     from test_claude import user as claude_user
-    from test_claude import write as write_claude
-
-    from aitm_usage.monitor_control import ControlInbox
 
     module = _module()
-    if unfinished == "tool":
-        source = request.getfixturevalue("source")
-        tmp_path = request.getfixturevalue("tmp_path")
-        _, reader, root = _adapter(monkeypatch, source)
-        _, directory, checkout = source
-        registry = module.Registry(tmp_path / "monitor")
-        inbox = ControlInbox(registry.root)
-        path = directory / "claude.jsonl"
+    policy = _registry_policy(monkeypatch, with_claude=True)
+    registry, inbox = policy.registry, policy.inbox
+    reader, root = policy.reader, policy.root
+    checkout = policy.native.checkout
+    path = root.path / "claude.jsonl"
+    if unfinished in {"abandoned", "tool"}:
+        NativeDirectoryMetadata(policy.native, root.path).install(monkeypatch)
 
-        def store(rows, *, append=False):
-            write_claude(path, rows, append=append)
+    def store(rows, *, append=False):
+        policy.native.write(path, rows, append=append)
 
-        def ordinal():
-            return path.read_bytes().count(b"\n")
-    else:
-        policy = _registry_policy(monkeypatch, with_claude=True)
-        registry, inbox = policy.registry, policy.inbox
-        reader, root = policy.reader, policy.root
-        checkout = policy.native.checkout
-        path = root.path / "claude.jsonl"
-        if unfinished == "abandoned":
-            NativeDirectoryMetadata(policy.native, root.path).install(monkeypatch)
-
-        def store(rows, *, append=False):
-            policy.native.write(path, rows, append=append)
-
-        def ordinal():
-            return policy.native.contents[path].count(b"\n")
+    def ordinal():
+        return policy.native.contents[path].count(b"\n")
 
     rows, _ = _restart_rows("streamed", checkout)
     store(rows[:1])
@@ -1167,8 +1161,6 @@ def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfi
 
     with registry.writer() as writer:
         root = replace(root, evidence=writer.source_evidence())
-        if unfinished == "tool":
-            writer.register_project(_request(module, tmp_path))
         writer.approve_source(
             module.SourceApprovalRequest(
                 SOURCE,

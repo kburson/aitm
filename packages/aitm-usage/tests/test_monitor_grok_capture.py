@@ -550,17 +550,20 @@ def _routes(state, batch):
 
 
 def test_queued_grok_enable_routes_exact_marker_and_project_only_hookless_then_reloads(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
+    from test_monitor_journal import _ClaimJournalRows
+
+    from aitm_usage import monitor_journal
     from aitm_usage.monitor_types import GrokCheckpoint
     from aitm_usage.sources.grok import GrokAdapter
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
+    rows = _ClaimJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     _assert_original_journal_read_only(f)
-    transcript = f.locator()._source.path
-    transcript.write_bytes(b"")
-    transcript.with_name("usage.json").unlink()
+    f.reset_stream()
     # Both commands and marker proof go through persisted owner and writer authority.
     enable = f.submit(21, True)
     (applied,) = f.evaluate()
@@ -770,10 +773,10 @@ def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(grok_capture_polic
     assert _routes(f.state, in_flight)[0].status is scope.RouteStatus.ROUTED
 
 
-def test_verified_grok_cut_refuses_a_rewritten_original_prefix(isolated_grok_capture):
+def test_verified_grok_cut_refuses_a_rewritten_original_prefix(grok_capture_policy):
     from aitm_usage.ledger import LedgerError
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.write(f.rows[:5], 1)
     f.submit(91, True)
     assert f.evaluate()

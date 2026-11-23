@@ -262,16 +262,26 @@ def test_revocation_winning_between_lookup_and_publish_refuses(
     reader.register(GRANT, PROJECT, ("mark",), generation=2)
 
 
-def test_copied_account_and_wrong_project_do_not_grant_authority(ready, tmp_path):
-    _, inbox, _, request = ready
-    other = tmp_path / "copied-monitor"
-    shutil.copytree(inbox.root, other)
-    with pytest.raises(LedgerError):
+def test_copied_account_and_wrong_project_do_not_grant_authority(
+    admission_control_policy,
+):
+    state, _, request, _ = admission_control_policy
+    inbox = state.inbox
+    other = inbox.root.with_name("copied-monitor")
+    original = {
+        path.relative_to(inbox.root): contents.copy()
+        for path, contents in state.files.items()
+        if path.is_relative_to(inbox.root)
+    }
+    for path, contents in original.items():
+        state.files[other / path] = contents.copy()
+    assert state.identity(str(inbox.root)) != state.identity(str(other))
+    with pytest.raises(LedgerError, match="grant identity changed"):
         ControlInbox(other).enqueue_scope(request)
-    with pytest.raises(LedgerError):
+    with pytest.raises(LedgerError, match="grant is unavailable"):
         inbox.enqueue_scope(replace(request, scope=Scope(CONTROL)))
-    assert not tuple(other.glob("inbox/*.json"))
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    assert state.files[other / monitor_control.INBOX_NAME] == {}
+    assert state.inbox_files == {}
 
 
 def test_scope_capacity_and_cross_format_conflicts_leave_controls_available(
@@ -339,18 +349,22 @@ def test_explicit_cli_no_abbreviations_or_separate_request_id(monkeypatch):
     owner_document.assert_not_called()
 
 
-def test_replaced_project_ledger_key_does_not_preserve_grant(ready, tmp_path):
-    from aitm_usage.ledger import STORE_NAME
+def test_replaced_project_ledger_key_does_not_preserve_grant(
+    admission_policy, monkeypatch
+):
+    from test_ledger import _memory_ledger
 
-    _, inbox, _, request = ready
-    replacement = Ledger.initialize(tmp_path / "replacement", PROJECT)
-    state = tmp_path / "project"
-    (state / STORE_NAME).rename(tmp_path / "old-store")
-    (replacement.root / STORE_NAME).rename(state / STORE_NAME)
-    assert Ledger.open(state, PROJECT).identity == replacement.identity
-    with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+    state, _, request = admission_policy
+    original = state.ledger
+    replacement = _memory_ledger(ledger_module, PROJECT, b"r" * 32)
+    assert original.root == replacement.root
+    assert original.identity.key_id != replacement.identity.key_id
+    open_ledger = Mock(return_value=replacement)
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    with pytest.raises(LedgerError, match="project identity changed"):
+        state.inbox.enqueue_scope(request)
+    open_ledger.assert_called_once_with(original.root, PROJECT)
+    assert not state.inbox_files
 
 
 def test_scope_cli_handoff_and_disposition_with_distinct_pinned_requests(
@@ -567,6 +581,8 @@ def test_scope_request_refuses_noncanonical_selectors(monkeypatch, capsys):
 def test_project_substitution_during_preparation_cannot_publish(
     request, tmp_path, monkeypatch, capsys
 ):
+    from aitm_usage.ledger import STORE_NAME
+
     root = tmp_path / "monitor"
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
     assert _cli(monkeypatch, _request_file(tmp_path)) == 1
@@ -577,8 +593,25 @@ def test_project_substitution_during_preparation_cannot_publish(
     assert not root.exists()
 
     _, inbox, _, mark = request.getfixturevalue("ready")
-    pending = monitor_control._pending
+    copied = tmp_path / "copied-monitor"
+    shutil.copytree(inbox.root, copied)
+    with pytest.raises(LedgerError, match="grant identity changed"):
+        ControlInbox(copied).enqueue_scope(mark)
+    assert not tuple(copied.glob("inbox/*.json"))
+
     state = tmp_path / "project"
+    replacement = Ledger.initialize(tmp_path / "replacement", PROJECT)
+    saved_store = tmp_path / "original-store"
+    (state / STORE_NAME).rename(saved_store)
+    (replacement.root / STORE_NAME).rename(state / STORE_NAME)
+    assert Ledger.open(state, PROJECT).identity == replacement.identity
+    with pytest.raises(LedgerError, match="project identity changed"):
+        inbox.enqueue_scope(mark)
+    assert not tuple(inbox.root.glob("inbox/*.json"))
+    (state / STORE_NAME).rename(replacement.root / STORE_NAME)
+    saved_store.rename(state / STORE_NAME)
+
+    pending = monitor_control._pending
 
     def substituted(directory):
         result = pending(directory)

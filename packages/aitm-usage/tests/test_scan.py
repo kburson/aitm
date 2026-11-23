@@ -2,7 +2,7 @@ import importlib
 import json
 import os
 import shlex
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -335,11 +335,19 @@ def _observe_mutable_snapshot(monkeypatch, files, path, verify):
 )
 def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
     scanner = _scanner()
-    if mutation in {"overwrite", "rewrite-and-grow", "append"}:
+    if mutation != "rename":
         verify = scanner._verify_snapshot
         files, registration = request.getfixturevalue("native_scanner")
         path = registration.source_roots[0] / "replacement-secret.jsonl"
-        write_bytes = _observe_mutable_snapshot(monkeypatch, files, path, verify)
+        if mutation == "delete":
+            NativeDirectoryMetadata(files, path.parent).install(
+                monkeypatch, native_file_reads=True
+            )
+
+            def write_bytes(data):
+                files.contents[path] = data
+        else:
+            write_bytes = _observe_mutable_snapshot(monkeypatch, files, path, verify)
     else:
         registration, _ = request.getfixturevalue("project")
         path = registration.source_roots[0] / "replacement-secret.jsonl"
@@ -362,7 +370,7 @@ def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
                 path.rename(path.with_suffix(".old"))
                 path.write_bytes(contents)
             elif mutation == "delete":
-                path.unlink()
+                del files.contents[path]
             elif mutation == "overwrite":
                 write_bytes(header + _usage(99))
             elif mutation == "rewrite-and-grow":
@@ -1161,30 +1169,31 @@ def test_directory_moved_outside_root_and_restored_during_read_is_quarantined(
 
 @pytest.mark.parametrize("initially_anchored", [False, True])
 def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
-    request, initially_anchored
+    scanner_replay_ledger, monkeypatch, initially_anchored
 ):
     scanner = _scanner()
-    if initially_anchored:
-        files = None
-        registration, store = request.getfixturevalue("project")
-    else:
-        files, registration, store, _ = request.getfixturevalue("scanner_replay_ledger")
+    files, registration, store, _ = scanner_replay_ledger
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     reviewer_area = root.parent / "review-area"
     review = reviewer_area / "review"
     if initially_anchored:
-        review.mkdir(parents=True)
         registration = replace(registration, checkout_anchors=(checkout, reviewer_area))
+        files.checkout_paths.update((reviewer_area, review))
+
+        def confined_identity(cwd, anchor):
+            if cwd in files.checkout_paths and anchor in files.checkout_paths:
+                return files._identity(anchor)
+            return None
+
+        monkeypatch.setattr(scanner, "_confined_checkout_identity", confined_identity)
+        monkeypatch.setattr(scanner, "_checkout_anchor", files._checkout_lookup)
 
     path = root / "review.jsonl"
     baseline = _header(checkout) + _usage(5, BEFORE)
-    if files is None:
-        write_bytes = path.write_bytes
-    else:
 
-        def write_bytes(contents):
-            files.contents[path] = contents
+    def write_bytes(contents):
+        files.contents[path] = contents
 
     write_bytes(baseline)
     (candidate,) = scanner.discover(registration)
@@ -1216,8 +1225,7 @@ def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
         for revision in view.current
         if isinstance(revision.record, ScopeEnrollment)
     )
-    if files is not None:
-        files.checkout_paths.add(review)
+    files.checkout_paths.add(review)
     expanded = replace(
         registration, checkout_anchors=(*registration.checkout_anchors, review)
     )
@@ -2199,43 +2207,36 @@ def test_capture_locator_presence_finds_moved_inode_and_replacement_type(
 
 
 def test_capture_locator_presence_rechecks_earlier_directory_after_rename(
-    project, monkeypatch
+    native_scanner, monkeypatch
 ):
-    from contextlib import contextmanager
-
     scanner = _scanner()
-    registration, evidence = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "live.jsonl"
-    path.write_bytes(_header(checkout))
-    (source,) = scanner.discover(registration)
-    path.unlink()
     earlier = root / "first"
     later = root / "second"
-    earlier.mkdir()
-    later.mkdir()
     original = earlier / "nested"
-    original.mkdir()
-    displaced = earlier / "displaced"
-    scandir = scanner.os.scandir
-    later_inode = later.stat().st_ino
+    host = NativeDirectoryMetadata(files, root, earlier, original, later)
+    host.install(monkeypatch)
+    files.contents[path] = _header(checkout)
+    (source,) = scanner.discover(registration)
+    del files.contents[path]
     raced = False
 
     @contextmanager
     def move_earlier_after_walk(fd):
         nonlocal raced
-        with scandir(fd) as entries:
+        with host.scandir(fd) as entries:
             yield entries
-        if scanner.os.fstat(fd).st_ino == later_inode:
-            original.rename(displaced)
-            displaced.rename(original)
+        if host.descriptors[fd] == later:
+            host.versions[earlier] += 1
             raced = True
 
     monkeypatch.setattr(scanner.os, "scandir", move_earlier_after_walk)
     with pytest.raises(OSError):
         scanner._capture_locator_presence(
-            root, evidence, source.locator_ref, source.incarnation_ref
+            root, files.evidence, source.locator_ref, source.incarnation_ref
         )
     assert raced
 

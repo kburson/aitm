@@ -144,7 +144,8 @@ def _bundle_bytes(path):
 
 
 def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_path):
-    from aitm_usage.backup import backup, restore
+    from aitm_usage.backup import BackupError, backup, restore
+    from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
 
     registration, ledger, command = project
     _add_anchor(registration, ledger, tmp_path, 941)
@@ -222,6 +223,12 @@ def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_pat
         command("backup", "--output", tmp_path / "cli-backup")["sequence"]
         == saved.sequence
     )
+    before_refusal = _bundle_bytes(ledger.root)
+    with closing(sqlite3.connect(destination / STORE_NAME / DATABASE_NAME)) as database:
+        database.execute("PRAGMA user_version=94")
+    with pytest.raises(BackupError, match="Invalid private restore bundle or target"):
+        restore(destination, ledger.root, ledger.identity)
+    assert _bundle_bytes(ledger.root) == before_refusal
 
 
 def test_backup_copies_only_authority_in_its_pinned_snapshot(
@@ -269,7 +276,9 @@ def restore_policy(lifecycle_policy, recovery_paths, monkeypatch):
     saved = recovery.BackupReceipt(
         PROJECT, ledger.identity.key_id, ledger.identity.schema_version, 1, "a" * 64
     )
-    inbox, acknowledgments, anchors = (SimpleNamespace(fd=fd) for fd in (10, 11, 12))
+    inbox, acknowledgments, anchors = (
+        SimpleNamespace(fd=fd, check=Mock()) for fd in (10, 11, 12)
+    )
     registration, configuration = _installation_registration(ledger)
     authority = {recovery.REGISTRATION_NAME: configuration}
     files = {
@@ -547,29 +556,49 @@ def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeyp
 
 
 def test_restore_refuses_incompatible_store_and_interrupted_staging(
-    project, tmp_path, monkeypatch
+    restore_policy, monkeypatch
 ):
     from aitm_usage import backup as recovery
-    from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
 
-    _, ledger, _ = project
-    target = tmp_path / "backup"
-    recovery.backup(ledger, target)
-    before = _bundle_bytes(ledger.root)
-
-    def interrupt(*args):
-        raise OSError("injected staging failure")
-
+    state = restore_policy
+    ledger = state.ledger
+    before = {path: files.copy() for path, files in state.files.items()}
+    interrupted = Mock(side_effect=OSError("injected staging failure"))
     with monkeypatch.context() as patch:
-        patch.setattr(recovery, "_swap_store", interrupt)
-        with pytest.raises(recovery.BackupError):
-            recovery.restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
-    with closing(sqlite3.connect(target / STORE_NAME / DATABASE_NAME)) as database:
-        database.execute("PRAGMA user_version=94")
-    with pytest.raises(recovery.BackupError):
-        recovery.restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
+        patch.setattr(recovery, "_swap_store", interrupted)
+        with pytest.raises(
+            recovery.BackupError, match="Invalid private restore bundle or target"
+        ):
+            recovery.restore(state.source, ledger.root, ledger.identity)
+    interrupted.assert_called_once()
+    assert state.files == before
+
+    connection = Mock()
+    connection.execute.return_value.fetchone.return_value = (94,)
+    observed_database = Mock(return_value=nullcontext(connection))
+
+    def verify_candidate(source, staged, expected):
+        assert source == state.source and expected == ledger.identity
+        recovery._candidate(staged, expected)
+
+    monkeypatch.setattr(recovery, "_verify_bundle", verify_candidate)
+    create_lock = Mock(return_value=nullcontext())
+    check_path = Mock()
+    monkeypatch.setattr(recovery, "_create_file", create_lock)
+    monkeypatch.setattr(recovery, "_check_path", check_path)
+    monkeypatch.setattr(recovery, "_connection", observed_database)
+    with pytest.raises(
+        recovery.BackupError, match="Invalid private restore bundle or target"
+    ):
+        recovery.restore(state.source, ledger.root, ledger.identity)
+    staged = ledger.root / "staged"
+    create_lock.assert_called_once_with(staged / recovery.LOCK_NAME)
+    database = staged / recovery._DATABASE
+    check_path.assert_called_once_with(database)
+    observed_database.assert_called_once_with(database, write=True)
+    connection.execute.assert_called_once_with("PRAGMA user_version")
+    assert state.files == before
+    state.swap.assert_not_called()
 
 
 def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch):
@@ -1360,18 +1389,40 @@ def test_backup_refuses_output_inside_replaceable_store(
 
 
 def test_backup_refuses_store_through_physical_path_alias(
-    project, tmp_path, alias_directory_identity
+    install_policy_ledger, monkeypatch
 ):
     from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
+    ledger = install_policy_ledger
     store = ledger.database_path.parent
-    alias = tmp_path / "alias"
-    alias_directory_identity(alias, store)
+    alias = ledger.root.parent / "alias"
     destination = alias / "nested-backup"
+    inodes = {
+        ancestor: inode for inode, ancestor in enumerate(reversed(store.parents), 1)
+    }
+    inodes[store] = inodes[alias] = len(inodes) + 1
+
+    def lstat(path):
+        if path not in inodes:
+            raise FileNotFoundError(path)
+        return os.stat_result(
+            (stat.S_IFDIR | 0o700, inodes[path], 1, 1, os.geteuid(), 0, 0, 0, 0, 0)
+        )
+
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(ledger_module, "_check_acl", Mock())
+    pin = SimpleNamespace(
+        path=store,
+        identities=ledger_module._validated_path(store, directory=True),
+        check=Mock(),
+    )
+    stage = Mock(side_effect=AssertionError("aliased store reached backup staging"))
+    monkeypatch.setattr(recovery, "_pin_directory", Mock(return_value=nullcontext(pin)))
+    monkeypatch.setattr(recovery, "TemporaryDirectory", stage)
     with pytest.raises(recovery.BackupError, match="overlaps"):
         recovery.backup(ledger, destination)
     assert not destination.exists()
+    stage.assert_not_called()
 
 
 @pytest.fixture

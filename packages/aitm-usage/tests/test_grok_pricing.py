@@ -4,11 +4,12 @@ from datetime import UTC, datetime
 from decimal import Decimal, localcontext
 from hashlib import sha256
 from importlib.resources import files
+from pathlib import Path
 from uuid import UUID
 
 import pytest
 
-from aitm_usage import monitor_types, pricing
+from aitm_usage import export, monitor_types, pricing
 from aitm_usage.export import export_as_of
 from aitm_usage.types import (
     Availability,
@@ -186,7 +187,7 @@ def _legacy_view():
     return LedgerView(UUID(int=115), 2, (codex, claude), ())
 
 
-def test_grok_preserves_legacy_rate_digest_and_fixed_export(tmp_path):
+def test_grok_preserves_legacy_rate_digest_and_fixed_export(monkeypatch):
     raw = files("aitm_usage").joinpath("rates", "2026-11-09.json").read_bytes()
     assert sha256(raw).hexdigest() == (
         "c65f2cb5ea797331862746a30fe71c88a4d906f35ca0cc27f7fa327fb583623e"
@@ -196,15 +197,23 @@ def test_grok_preserves_legacy_rate_digest_and_fixed_export(tmp_path):
     assert card.basis.sha256 == (
         "cc98b8b92c0ecafb7d6c563e26752ea43ccc0f16b11a8db6199a6a8d70ac3e42"
     )
-    destination = tmp_path / "legacy"
+    destination = Path("/fixture/legacy")
+    records = {}
+
+    def publish(path, payloads):
+        assert path == destination
+        records.update(payloads)
+
+    monkeypatch.setattr(export, "_publish", publish)
     export_as_of(_legacy_view(), card, destination)
-    # Freeze both files against a deterministic two-provider export at #114's head.
+    # Freeze both payloads against a deterministic two-provider export at #114's head.
+    assert set(records) == {"usage.jsonl", "manifest.json"}
     assert (
-        sha256((destination / "usage.jsonl").read_bytes()).hexdigest()
+        sha256(records["usage.jsonl"]).hexdigest()
         == "7b17b824c000e9e74e805cb00d562067ec9da8c66e745be55b474d5eb1c72e9a"
     )
     assert (
-        sha256((destination / "manifest.json").read_bytes()).hexdigest()
+        sha256(records["manifest.json"]).hexdigest()
         == "e8d98a3e15772c17886f93a410b91a3615bcee2876456f30a6e6fdb07d76d575"
     )
 

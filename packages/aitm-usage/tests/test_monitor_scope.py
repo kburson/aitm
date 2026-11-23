@@ -3245,11 +3245,7 @@ def test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows(
         _assert_completion_policy_rejects(disproof)
         return
 
-    if disproof in {"different-checkout", "physical-tail"}:
-        native, case = request.getfixturevalue("completion_scope_policy")
-    else:
-        native = request.getfixturevalue("native")
-        case = request.getfixturevalue("completed_disposition")
+    native, case = request.getfixturevalue("completion_scope_policy")
     _damage_completed_disposition(native, disproof, case.when, case.turn)
     scope_before = native._scope_bytes()
     if disproof == "missing-baseline":
