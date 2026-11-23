@@ -1,8 +1,9 @@
 import json
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -166,6 +167,22 @@ def test_legacy_register_rechecks_after_entering_writer(legacy, adopt, monkeypat
 
 def test_legacy_register_rereads_adoption_on_writer_refusal(legacy_policy, monkeypatch):
     ledger = legacy_policy.ledger
+    config = _existing_registration_input(legacy_policy, monkeypatch)
+
+    def writer_after_cutover(actual):
+        assert actual is ledger
+        legacy_policy.adopt_current()
+        raise WriterActive("fixture collector holds the writer")
+
+    monkeypatch.setattr(Ledger, "writer", writer_after_cutover)
+    status, output = legacy_policy.run(("register", "--config", str(config)))
+
+    assert status == 1
+    assert json.loads(output.out) == {"status": "project-adopted-use-monitor"}
+
+
+def _existing_registration_input(legacy_policy, monkeypatch):
+    ledger = legacy_policy.ledger
     config = Path("/fixture/project.json")
     sources, checkout = Path("/fixture/sources"), Path("/fixture/checkout")
     legacy_policy.inputs[config] = json.dumps(
@@ -182,27 +199,60 @@ def test_legacy_register_rereads_adoption_on_writer_refusal(legacy_policy, monke
     monkeypatch.setattr(
         service, "_path_exists", lambda path: path == ledger.root / service.STORE_NAME
     )
-
-    def writer_after_cutover(actual):
-        assert actual is ledger
-        legacy_policy.adopt_current()
-        raise WriterActive("fixture collector holds the writer")
-
-    monkeypatch.setattr(Ledger, "writer", writer_after_cutover)
-    status, output = legacy_policy.run(("register", "--config", str(config)))
-
-    assert status == 1
-    assert json.loads(output.out) == {"status": "project-adopted-use-monitor"}
+    return config
 
 
-def test_legacy_register_uses_read_only_opener_for_existing_store(legacy, monkeypatch):
-    _, config, _, run = legacy
+def test_legacy_register_uses_read_only_opener_for_existing_store(
+    legacy_policy, monkeypatch
+):
+    from test_ledger import _LedgerRows
 
-    def initialize(*args):
-        pytest.fail("registration of an existing store reached the initializer")
+    from aitm_usage.ledger import APPLICATION_ID
 
+    ledger = legacy_policy.ledger
+    config = _existing_registration_input(legacy_policy, monkeypatch)
+    open_existing = Mock(wraps=Ledger.open)
+    initialize = Mock(
+        side_effect=AssertionError("Registration of an existing store initializes it")
+    )
+    pin = SimpleNamespace(path=ledger.root)
+    writer = replace(ledger, _writer=Mock(), _write_paths=Mock())
+    acquire_writer = Mock(return_value=nullcontext(writer))
+    rows = _LedgerRows(ledger.identity, APPLICATION_ID, ())
+    files = {}
+
+    def publish(directory, name, data):
+        assert directory is pin and name == service.REGISTRATION_NAME
+        assert name not in files
+        files[name] = data
+        return True
+
+    monkeypatch.setattr(Ledger, "open", open_existing)
     monkeypatch.setattr(Ledger, "initialize", initialize)
-    assert run("register", "--config", str(config), "--json")[0] == 0
+    monkeypatch.setattr(Ledger, "writer", acquire_writer)
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+    )
+    monkeypatch.setattr(service, "_pin_directory", lambda _: nullcontext(pin))
+    monkeypatch.setattr(service, "_read_private", lambda parent, name: files.get(name))
+    monkeypatch.setattr(service, "_publish", publish)
+
+    args = ("register", "--config", str(config))
+    assert legacy_policy.run(args)[0] == 0
+    snapshot = writer.as_of()
+    assert snapshot.sequence == len(snapshot.revisions) == 1
+    published = files.copy()
+    open_existing.reset_mock()
+    acquire_writer.reset_mock()
+    status, output = legacy_policy.run(args)
+    assert status == 0
+    assert json.loads(output.out)["project_id"] == str(ledger.identity.project_id)
+    open_existing.assert_called_once_with(ledger.root, ledger.identity.project_id)
+    initialize.assert_not_called()
+    acquire_writer.assert_called_once_with()
+    assert writer.as_of() == snapshot
+    assert files == published
 
 
 def test_legacy_anchor_rechecks_under_publication_lock_before_staging(

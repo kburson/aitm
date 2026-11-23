@@ -797,8 +797,10 @@ def test_pending_disable_prevents_new_enrollment_and_ignores_unrelated_locator(
 
 @pytest.mark.parametrize("tail", ["open-turn", "partial", "completed-after-arm"])
 def test_unfinished_codex_tail_fences_without_new_native_completion(request, tail):
-    fixture = "queued_disable" if tail == "partial" else "queued_disable_policy"
-    scenario = request.getfixturevalue(fixture)
+    if tail == "partial":
+        scenario, _ = request.getfixturevalue("queued_disable_metadata")
+    else:
+        scenario = request.getfixturevalue("queued_disable_policy")
     first_held = _physical_ordinal(scenario.log)
     if tail == "open-turn":
         scenario.log.append(complete=False)
@@ -1386,17 +1388,19 @@ def test_later_enable_obeys_durable_submission_order(monkeypatch):
     )
 
 
-def test_persisted_collection_progress_survives_a_later_truncation(queued_disable):
-    scenario = queued_disable
+def test_persisted_collection_progress_survives_a_later_truncation(
+    queued_disable_metadata,
+):
+    scenario, _ = queued_disable_metadata
     scenario.log.append()
-    retained = scenario.log.path.read_bytes()
+    retained = scenario.log.read_bytes()
     scenario.log.append(2)
     locator = _locate(scenario.reader, scenario.root, scenario.stream)
     checkpoint = scenario.reader.read_delta(locator, None).cursor.checkpoint
     with scenario.registry.writer() as writer:
         progress = writer.capture_progress(scenario.enable, locator, checkpoint)
     assert progress.ordinal == _physical_ordinal(scenario.log)
-    scenario.log.path.write_bytes(retained)
+    scenario.log.write_bytes(retained)
 
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     forged = replace(progress, ordinal=progress.ordinal + 1)
@@ -1485,10 +1489,7 @@ def test_disable_future_enrollment_while_approved_root_is_unavailable(monkeypatc
 def test_moved_enrolled_stream_does_not_stall_disable(
     request, monkeypatch, callback, timing, reuse_name
 ):
-    durable = (reuse_name, timing, callback) in {
-        (True, "after-arm", "omitted"),
-        (False, "before-arm", "supplied"),
-    }
+    durable = (reuse_name, timing, callback) == (True, "after-arm", "omitted")
     fixture = "queued_disable" if durable else "queued_disable_policy"
     scenario = request.getfixturevalue(fixture)
     native = None if durable else request.getfixturevalue("registry_policy").native

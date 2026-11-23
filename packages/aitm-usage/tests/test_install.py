@@ -41,6 +41,7 @@ from aitm_usage.types import (
     MarkerDisposition,
     Provider,
     Revision,
+    SourceAnchorCommand,
     _encode,
 )
 
@@ -244,9 +245,8 @@ def test_backup_copies_only_authority_in_its_pinned_snapshot(
     assert not any(str(late.command_id) in str(path) for path in _bundle_bytes(target))
 
 
-def test_restore_refuses_ahead_ack_and_preserves_files(
-    lifecycle_policy, recovery_paths, monkeypatch
-):
+@pytest.fixture
+def restore_policy(lifecycle_policy, recovery_paths, monkeypatch):
     from aitm_usage import backup as recovery
     from aitm_usage.ledger import STORE_NAME
 
@@ -264,26 +264,18 @@ def test_restore_refuses_ahead_ack_and_preserves_files(
         observe(path, *inodes)
 
     candidate = replace(ledger, root=staging)
-    view = LedgerView(PROJECT, 1, (), ())
     saved = recovery.BackupReceipt(
         PROJECT, ledger.identity.key_id, ledger.identity.schema_version, 1, "a" * 64
     )
-    command = _parent(943)
-    receipt = CommandReceipt(
-        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
-    )
-    inbox, acknowledgments = (SimpleNamespace(fd=fd) for fd in (10, 11))
-    authority = {recovery.REGISTRATION_NAME: b"verified registration bytes"}
+    inbox, acknowledgments, anchors = (SimpleNamespace(fd=fd) for fd in (10, 11, 12))
+    registration, configuration = _installation_registration(ledger)
+    authority = {recovery.REGISTRATION_NAME: configuration}
     files = {
         ledger.root: dict(authority),
         inbox.fd: {},
-        acknowledgments.fd: {
-            f"{command.command_id}.json": _encode(
-                receipt.acknowledgment, CommandAcknowledgment
-            ).encode()
-        },
+        acknowledgments.fd: {},
+        anchors.fd: {},
     }
-    before = {fd: dict(contents) for fd, contents in files.items()}
 
     def child(parent, name, *, create):
         if name == scopes.INBOX_NAME:
@@ -291,7 +283,7 @@ def test_restore_refuses_ahead_ack_and_preserves_files(
             return nullcontext(inbox)
         if name == recovery.ANCHORS_NAME:
             assert parent.path == ledger.root and not create
-            return nullcontext(None)
+            return nullcontext(anchors if files[anchors.fd] else None)
         assert parent is inbox and name == scopes.ACKS_NAME and not create
         return nullcontext(acknowledgments)
 
@@ -305,7 +297,12 @@ def test_restore_refuses_ahead_ack_and_preserves_files(
 
     def verify_bundle(bundle, directory, expected):
         assert (bundle, directory, expected) == (source, staging, ledger.identity)
-        return candidate, view, authority, saved
+        return (
+            candidate,
+            state.view,
+            authority,
+            replace(saved, sequence=state.view.sequence),
+        )
 
     def read_private(pin, name):
         location = getattr(pin, "fd", None)
@@ -313,7 +310,7 @@ def test_restore_refuses_ahead_ack_and_preserves_files(
             location = pin.path
         return files[location][name]
 
-    swap = Mock(side_effect=AssertionError("unmatched acknowledgment reached swap"))
+    swap = Mock(side_effect=AssertionError("invalid restore reached swap"))
     monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=supervisor))
     monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
     monkeypatch.setattr(recovery, "project_guard", lambda *_: nullcontext(Mock()))
@@ -331,10 +328,51 @@ def test_restore_refuses_ahead_ack_and_preserves_files(
         monkeypatch.setattr(module, "os", host)
         monkeypatch.setattr(module, "_read_private", read_private)
 
+    state = SimpleNamespace(
+        ledger=ledger,
+        source=source,
+        files=files,
+        acknowledgments=files[acknowledgments.fd],
+        anchors=files[anchors.fd],
+        authority=authority,
+        registration=registration,
+        view=LedgerView(PROJECT, 1, (registration,), ()),
+        swap=swap,
+    )
+    return state
+
+
+def _installation_registration(ledger):
+    config = service._Config(
+        PROJECT,
+        ("/fixture/source",),
+        ("/fixture/checkout",),
+        datetime.fromisoformat(CUTOFF),
+        (),
+        (),
+        (),
+    )
+    registration = service._registration_revision(ledger, config)
+    return registration, _encode(config, service._Config).encode()
+
+
+def test_restore_refuses_ahead_ack_and_preserves_files(restore_policy):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    ledger = state.ledger
+    command = _parent(943)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    state.acknowledgments[f"{command.command_id}.json"] = _encode(
+        receipt.acknowledgment, CommandAcknowledgment
+    ).encode()
+    before = {fd: dict(contents) for fd, contents in state.files.items()}
     with pytest.raises(recovery.BackupError, match="no exact backup receipt"):
-        recovery.restore(source, ledger.root, ledger.identity)
-    assert files == before
-    swap.assert_not_called()
+        recovery.restore(state.source, ledger.root, ledger.identity)
+    assert state.files == before
+    state.swap.assert_not_called()
 
 
 @pytest.fixture
@@ -411,25 +449,58 @@ def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
     assert ledger.as_of().sequence == saved.sequence
 
 
-def test_restore_refuses_mismatched_private_proof_or_identity(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+def test_restore_refuses_mismatched_private_proof_or_identity(
+    restore_policy, monkeypatch
+):
+    from aitm_usage.backup import BackupError, restore
 
-    registration, ledger, _ = project
-    _add_anchor(registration, ledger, tmp_path, 941)
-    target = tmp_path / "backup"
-    backup(ledger, target)
+    state = restore_policy
+    ledger = state.ledger
+    open_ledger = Ledger.open
+
+    def inspect_identity(path, project):
+        if project == UUID(int=941):
+            assert path == ledger.root
+            return ledger
+        return open_ledger(path, project)
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(inspect_identity))
     for expected in (
         LedgerIdentity(UUID(int=941), ledger.identity.key_id),
         LedgerIdentity(PROJECT, "sha256:" + "1" * 64),
     ):
-        with pytest.raises(BackupError):
-            restore(target, ledger.root, expected)
-    proof = next((ledger.root / "source-anchors").glob("*.attested"))
-    proof.write_bytes(b"mismatched")
-    before = _bundle_bytes(ledger.root)
+        with pytest.raises(BackupError, match="target identity mismatch"):
+            restore(state.source, ledger.root, expected)
+
+    command_id = UUID(int=941)
+    anchor = "/fixture/anchor-941"
+    proposal = service._AnchorProposal(command_id, PROJECT, anchor)
+    payload = SourceAnchorCommand(
+        command_id,
+        PROJECT,
+        state.registration.record.configuration_ref,
+        service.checkout_anchor_reference(ledger, Path(anchor)),
+    )
+    command = InboxCommand(command_id, PROJECT, payload)
+    effect = service._anchor_revision(ledger, payload)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    receipt_key = ledger.pseudonymize("inbox-command", str(command_id))
+    state.view = LedgerView(
+        PROJECT, 2, (state.registration, effect, Revision(receipt_key, 1, receipt)), ()
+    )
+    proof, expected_bytes = service._anchor_attestation(ledger, command, effect, 2)
+    proposal_name = f"{command_id}.json"
+    proposal_bytes = _encode(proposal, service._AnchorProposal).encode()
+    state.authority[f"{service.ANCHORS_NAME}/{proposal_name}"] = proposal_bytes
+    state.authority[f"{service.ANCHORS_NAME}/{proof}"] = expected_bytes
+    state.anchors.update({proposal_name: proposal_bytes, proof: b"mismatched"})
+    before = {fd: dict(contents) for fd, contents in state.files.items()}
     with pytest.raises(BackupError, match="authority"):
-        restore(target, ledger.root, ledger.identity)
-    assert _bundle_bytes(ledger.root) == before
+        restore(state.source, ledger.root, ledger.identity)
+    assert state.files == before
+    state.swap.assert_not_called()
 
 
 def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeypatch):
@@ -693,18 +764,7 @@ class _FakeLaunchControl:
         self.loaded = install.ServiceJob(
             label, path, Path(program), tuple(value["ProgramArguments"]), self.child.pid
         )
-        if mode == "one-shot":
-            result = subprocess.run(
-                [program, "--project", str(self.ledger.root), "collect-once", "--json"],
-                env=install._ENVIRONMENT,
-                capture_output=True,
-                timeout=10,
-            )
-            assert result.returncode == 0, result.stderr
-            witness = service.status_report(self.ledger.root, self.ledger)
-            assert witness["producer_mode"] == "one-shot"
-            assert witness["producer_pid"] != self.child.pid
-        elif mode == "fresh":
+        if mode == "fresh":
             deadline = time.monotonic() + 10
             while time.monotonic() < deadline:
                 witness = service.status_report(self.ledger.root, self.ledger)
@@ -900,26 +960,154 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
 
 
 def test_one_shot_from_other_pid_cannot_certify_install(
-    project, tmp_path, launch_control
+    install_policy_ledger, runtime_receipt, monkeypatch, capsys
 ):
-    _, _, command = project
-    wheel, digest = _wheel(tmp_path, "one-shot")
-    launch_control.startup = "one-shot"
-    launch_control.fail_digest = digest
+    case = runtime_receipt
+    ledger = replace(install_policy_ledger, root=case.ledger.root)
+    runtime = case.runtime
+    case.set_console(install._launcher(case.python, case.site))
+    registration, configuration = _installation_registration(ledger)
+    view = LedgerView(PROJECT, 1, (registration,), ())
+    files = {service.REGISTRATION_NAME: configuration}
+    service_files = {}
+    recovery_records = {}
+    pin = Mock(fd=73)
+    control = SimpleNamespace(
+        plist_directory=Path("/fixture/services"),
+        activation_timeout=0,
+        loaded=None,
+        disabled=False,
+    )
+    after = datetime(2026, 11, 20, tzinfo=UTC)
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = after
+    process = install.ManagedProcess(5301, after, runtime.interpreter)
+    status = service._Status(
+        PROJECT,
+        registration.record.configuration_ref,
+        after + timedelta(seconds=1),
+        runtime.version,
+        runtime.interpreter_version,
+        service.CollectionReport(view.sequence, 0, 0, 0, 0, 0, False),
+        (),
+        service._ProducerMode.ONE_SHOT,
+        process.pid + 1,
+    )
+    owned = install._Agent(ledger, control)
+
+    def bootstrap(path, interpreter):
+        assert (path, interpreter) == (owned.plist, runtime.interpreter)
+        assert not control.disabled and control.loaded is None
+        executable = owned.program(service_files[path])
+        arguments = tuple(owned.payload(executable)["ProgramArguments"])
+        control.loaded = install.ServiceJob(
+            owned.label, path, executable, arguments, process.pid
+        )
+        files[service.STATUS_NAME] = _encode(status, service._Status).encode()
+        clock.now.return_value = after + timedelta(seconds=2)
+
+    def bootout(label):
+        assert label == owned.label and control.disabled
+        control.loaded = None
+
+    control.job = lambda label: control.loaded if label == owned.label else None
+    control.process = lambda pid: process if pid == process.pid else None
+    control.is_disabled = lambda _: control.disabled
+    control.disable = lambda _: setattr(control, "disabled", True)
+    control.enable = lambda _: setattr(control, "disabled", False)
+    control.bootstrap = bootstrap
+    control.bootout = bootout
+
+    def write_plist(agent, data, expected):
+        assert agent.read() == expected
+        if data:
+            assert agent.program(data) == runtime.executable
+            service_files[agent.plist] = data
+        else:
+            del service_files[agent.plist]
+
+    def publish_record(directory, name, data):
+        assert directory is pin and name not in recovery_records
+        recovery_records[name] = data
+        return True
+
+    def remove_record(name, *, dir_fd):
+        assert dir_fd == pin.fd
+        del recovery_records[name]
+
+    read_owned = install._read_owned
+    read_private = install._read_private
+    pin_directory = install._pin_directory
+    monkeypatch.setattr(install, "datetime", clock)
+    monkeypatch.setattr(install, "_validated_path", Mock())
+    monkeypatch.setattr(
+        install, "_path_exists", lambda path: path == owned.plist.parent
+    )
+    monkeypatch.setattr(
+        install,
+        "_read_owned",
+        lambda path, **kwargs: (
+            service_files.get(path)
+            if path == owned.plist
+            else read_owned(path, **kwargs)
+        ),
+    )
+    monkeypatch.setattr(
+        install,
+        "_read_private",
+        lambda directory, name: (
+            recovery_records.get(name)
+            if directory is pin
+            else read_private(directory, name)
+        ),
+    )
+    monkeypatch.setattr(
+        install,
+        "_pin_directory",
+        lambda path: nullcontext(pin) if path == ledger.root else pin_directory(path),
+    )
+    monkeypatch.setattr(install, "_lifecycle", lambda _: nullcontext((pin, pin)))
+    monkeypatch.setattr(install, "project_guard", lambda *_: nullcontext(pin))
+    monkeypatch.setattr(install, "_lease", lambda *_: nullcontext(pin))
+    monkeypatch.setattr(install, "_publish", publish_record)
+    monkeypatch.setattr(
+        install, "os", SimpleNamespace(unlink=remove_record, fsync=Mock())
+    )
+    monkeypatch.setattr(install._Agent, "write", write_plist)
+    monkeypatch.setattr(
+        install,
+        "_prepare",
+        lambda actual, wheel, interpreter: install._read_runtime(
+            actual, case.directory, interpreter=interpreter
+        ),
+    )
+    monkeypatch.setattr(service, "_pin_directory", lambda _: nullcontext(pin))
+    monkeypatch.setattr(service, "_read_private", lambda _, name: files.get(name))
+    monkeypatch.setattr(service, "version", lambda _: runtime.version)
+    monkeypatch.setattr(Ledger, "open", lambda *_: ledger)
+    monkeypatch.setattr(Ledger, "as_of", lambda _: view)
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "ServiceSupervisor", lambda _: control)
+
+    command = _lifecycle_cli(ledger.root, monkeypatch, capsys)
     result = command(
         "service",
         "install",
         "--wheel",
-        wheel,
+        Path("/fixture/candidate.whl"),
         "--wheel-sha256",
-        digest,
+        case.wheel.digest,
         "--interpreter",
-        Path(sys._base_executable).resolve(strict=True),
+        runtime.interpreter,
         expected=1,
     )
     assert result["status"] == "activation-rolled-back"
-    assert launch_control.loaded is None
-    assert not list(launch_control.plist_directory.iterdir())
+    observed = service.status_report(ledger.root, ledger)
+    assert observed["producer_mode"] == "one-shot"
+    assert observed["producer_pid"] == status.producer_pid != process.pid
+    assert observed["status_sequence"] == view.sequence
+    assert control.loaded is None and not control.disabled
+    assert not service_files and not recovery_records
 
 
 def test_unapproved_runtime_hook_never_executes(project, tmp_path, launch_control):

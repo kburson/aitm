@@ -265,7 +265,9 @@ class NativeScopeFixture:
 class MemoryNativeScopeFixture(NativeScopeFixture):
     """Run scope and capture against verified transcripts and in-memory projects."""
 
-    def __init__(self, monkeypatch, *, creator_account=None, with_claude=False):
+    def __init__(
+        self, monkeypatch, *, creator_account=None, with_claude=False, with_grok=False
+    ):
         self.creator_account = creator_account
         self.files = NativeTranscriptFiles(monkeypatch)
         self.transcripts = self.files.root
@@ -329,6 +331,16 @@ class MemoryNativeScopeFixture(NativeScopeFixture):
                         "claude", "claude-code-macos", "Darwin", "arm64", "2.1.318", 1
                     ),
                     self.evidence.pseudonymize("executable", "claude-fixture"),
+                ),
+            )
+        if with_grok:
+            installations += (
+                _InstallationProof(
+                    physical(self.transcripts.with_name("grok-transcripts")),
+                    _LiveSourceTuple(
+                        "grok", "grok-build-macos", "Darwin", "arm64", "1.0.77", 1
+                    ),
+                    self.evidence.pseudonymize("executable", "grok-fixture"),
                 ),
             )
         registry = native_registry_policy(

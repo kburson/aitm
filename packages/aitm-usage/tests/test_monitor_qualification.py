@@ -480,7 +480,7 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
 
-    if mismatch not in {"replaced-profile-root", "replaced-approved-directory"}:
+    if mismatch != "replaced-approved-directory":
         _assert_profile_mismatch_refuses_approval_and_read(monkeypatch, LIVE, mismatch)
         return
 
@@ -488,10 +488,9 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
     tmp_path = request.getfixturevalue("tmp_path")
     registry = previously_admitted.registry
     expired_root = _directory(str(registry.root), private=True)
-    if mismatch == "replaced-profile-root":
-        prior_location = tmp_path / "previous-monitor"
-        registry.root.rename(prior_location)
-        copytree(prior_location, registry.root)
+    prior_location = tmp_path / "previous-monitor"
+    registry.root.rename(prior_location)
+    copytree(prior_location, registry.root)
 
     with registry.writer() as writer:
         qualify(writer)
@@ -502,20 +501,24 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
         journal = RoutingJournal(writer, state)
         before = writer.view()
         progress = journal.cursor_for(LIVE, locator)
-        if mismatch == "replaced-profile-root":
-            writer._live_profile = replace(profile, root=expired_root)
-        elif mismatch == "replaced-approved-directory":
-            retained = Path(approved.directory.path)
-            prior_location = retained.with_name("previous-installation")
-            retained.rename(prior_location)
-            copytree(prior_location, retained)
 
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.approve_source(approved.approval)
-        with pytest.raises(LedgerError):
-            state.read_source(LIVE, locator)
-        assert writer.view() == before
-        assert journal.cursor_for(LIVE, locator) == progress
+        def assert_refusal_preserves_state():
+            with pytest.raises(LedgerError, match="qualification"):
+                writer.approve_source(approved.approval)
+            with pytest.raises(LedgerError):
+                state.read_source(LIVE, locator)
+            assert writer.view() == before
+            assert journal.cursor_for(LIVE, locator) == progress
+
+        writer._live_profile = replace(profile, root=expired_root)
+        assert_refusal_preserves_state()
+
+        writer._live_profile = profile
+        retained = Path(approved.directory.path)
+        prior_location = retained.with_name("previous-installation")
+        retained.rename(prior_location)
+        copytree(prior_location, retained)
+        assert_refusal_preserves_state()
 
 
 def _assert_profile_mismatch_refuses_approval_and_read(
@@ -540,11 +543,24 @@ def _assert_profile_mismatch_refuses_approval_and_read(
     monkeypatch.setattr(ProviderAdapter, "read_delta", payload_read)
     expected = writer._require_live_source(approved)
     assert expected.installation == installation
-    writer._live_profile = replace(profile, **changes[mismatch])
+    initial = writer.view()
+    if mismatch == "replaced-profile-root":
+        directory = monitor_registry._directory
+
+        def observe_replacement(path, **kwargs):
+            observed = directory(path, **kwargs)
+            if path == profile.root.path:
+                return replace(observed, identity=(1, 99))
+            return observed
+
+        monkeypatch.setattr(monitor_registry, "_directory", observe_replacement)
+    else:
+        writer._live_profile = replace(profile, **changes[mismatch])
     with pytest.raises(LedgerError, match="qualification"):
         writer.approve_source(approved.approval)
     with pytest.raises(LedgerError, match="qualification"):
         monitor_scope.ScopeState(writer).read_source(source_id, case.locator)
+    assert writer.view() == initial
     writer._save.assert_not_called()
     payload_read.assert_not_called()
 

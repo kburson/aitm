@@ -335,6 +335,46 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_one_shot_from_other_pid_cannot_certify_install",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_restore_refuses_mismatched_private_proof_or_identity",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_status_fails_closed_when_queued_file_is_substituted",
+      "suite": "unit",
+      "isolation_group": "monitor_control-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_keyed_grok_contradiction_without_touching_codex",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_register_uses_read_only_opener_for_existing_store",
+      "suite": "unit",
+      "isolation_group": "monitor_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_persisted_collection_progress_survives_a_later_truncation",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_unfinished_codex_tail_fences_without_new_native_completion",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_invalid_scope_seal_cannot_block_unrelated_control",
+      "suite": "unit",
+      "isolation_group": "scope_admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_late_processing_contradiction_revokes_price_with_original_scope",
       "suite": "unit",
       "isolation_group": "claude-policy"

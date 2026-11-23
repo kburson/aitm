@@ -2683,26 +2683,37 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
         assert journal.as_of() == saved
 
 
-def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
-    tmp_path, monkeypatch
-):
+def test_journal_holds_keyed_grok_contradiction_without_touching_codex(monkeypatch):
     from test_grok import FIXTURES, GROK_BINARY, SESSION
-    from test_monitor_scope import SOURCE, NativeScopeFixture
+    from test_monitor_scope import SOURCE, MemoryNativeScopeFixture
 
+    from aitm_usage import monitor_journal
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import resolve_route
+    from aitm_usage.sources import grok
     from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
-    monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
-    native = NativeScopeFixture(tmp_path, monkeypatch)
+    native = MemoryNativeScopeFixture(monkeypatch, with_grok=True)
+    store = _ClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     source_id = UUID(int=6)
-    approved_root = tmp_path / "grok-transcripts"
+    approved_root = native.transcripts.with_name("grok-transcripts")
     session = approved_root / SESSION
-    session.mkdir(parents=True)
     updates = session / "updates.jsonl"
-    updates.write_bytes((FIXTURES / "updates.jsonl").read_bytes())
     usage_path = session / "usage.json"
-    usage_path.write_bytes((FIXTURES / "usage.json").read_bytes())
+    for path in (updates, usage_path):
+        native.files.contents[path] = (FIXTURES / path.name).read_bytes()
+    monkeypatch.setattr(grok, "_directory", native.files._directory)
+    monkeypatch.setattr(grok, "_probe", native.files._snapshot)
+    monkeypatch.setattr(grok, "_open_snapshot", native.files._open_snapshot)
+    monkeypatch.setattr(grok, "_verify_snapshot", native.files._verify_snapshot)
+
+    def grok_transcripts(directory, path):
+        assert directory == native.files._identity(approved_root)
+        assert path == approved_root
+        return iter((updates,))
+
+    monkeypatch.setattr(grok, "_transcripts", grok_transcripts)
     root = replace(
         native.root, path=approved_root, cutoff=datetime(2026, 1, 1, tzinfo=UTC)
     )
@@ -2747,9 +2758,9 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(
         clean = state.read_source(source_id, locator)
         assert len(clean.observations) == 2
         first = clean.observations[0]
-        body = json.loads(usage_path.read_bytes())
+        body = json.loads(native.files.contents[usage_path])
         body["turns"][0]["modelUsage"]["grok-4.7-build"]["costUsdTicks"] += 1
-        usage_path.write_text(json.dumps(body))
+        native.files.contents[usage_path] = json.dumps(body).encode()
         conflict = state.read_source(source_id, locator)
         (diagnostic,) = conflict.diagnostics
         assert diagnostic.code is DiagnosticCode.IDENTITY_CONFLICT

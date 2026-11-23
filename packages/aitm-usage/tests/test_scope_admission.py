@@ -282,42 +282,28 @@ def test_scope_capacity_and_cross_format_conflicts_leave_controls_available(
 
 @pytest.mark.parametrize("bad_seal", ["f" * 64, "not-a-mac"])
 def test_invalid_scope_seal_cannot_block_unrelated_control(
-    request, monkeypatch, bad_seal
+    admission_control_policy, bad_seal
 ):
+    state, reader, mark, anchor = admission_control_policy
+    writer, inbox = state.writer, state.inbox
     name = f"{COMMAND}.json"
-    malformed = bad_seal == "not-a-mac"
-    if malformed:
-        state, reader, mark, anchor = request.getfixturevalue(
-            "admission_control_policy"
-        )
-        writer, inbox = state.writer, state.inbox
-        assert inbox.enqueue_scope(mark)
-        raw = state.inbox_files[name]
-    else:
-        tmp_path = request.getfixturevalue("tmp_path")
-        monkeypatch.setattr(
-            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
-        )
-        writer, inbox, reader, mark = request.getfixturevalue("ready")
-        assert inbox.enqueue_scope(mark)
-        proposal = inbox.root / "inbox" / name
-        raw = proposal.read_bytes()
-        directory = tmp_path / "checkout"
-        directory.mkdir()
-        anchor = str(directory)
-    tampered = json.loads(raw)
+    assert inbox.enqueue_scope(mark)
+    with inbox.publication() as locked:
+        (original,) = reader.iter_verified(locked)
+    assert original.body.request == mark and original.seal != bad_seal
+    tampered = json.loads(state.inbox_files[name])
     tampered["command"]["seal"] = bad_seal
     data = json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
-    if malformed:
-        state.inbox_files[name] = data
-    else:
-        proposal.write_bytes(data)
+    state.inbox_files[name] = data
     inbox.enqueue(ControlCommand(CONTROL, AnchorRequest(PROJECT, anchor)))
-    with inbox.publication() as locked, pytest.raises(LedgerError):
+    with (
+        inbox.publication() as locked,
+        pytest.raises(LedgerError, match="Scope envelope seal does not match"),
+    ):
         tuple(reader.iter_verified(locked))
     (receipt,) = writer.apply_pending(inbox, writer.lease, None)
     assert (receipt.command_id, receipt.status) == (CONTROL, ControlStatus.APPLIED)
-    assert (state.inbox_files[name] if malformed else proposal.read_bytes()) == data
+    assert state.inbox_files == {name: data}
 
 
 def test_explicit_cli_no_abbreviations_or_separate_request_id(monkeypatch):

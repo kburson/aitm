@@ -1,3 +1,4 @@
+import errno
 import json
 import os
 import stat
@@ -506,19 +507,49 @@ def test_retirement_refuses_changed_publication_bytes(inbox_policy):
     assert inbox_policy.inbox_files[entry] == changed
 
 
-def test_status_fails_closed_when_queued_file_is_substituted(monitor):
+def test_status_fails_closed_when_queued_file_is_substituted(inbox_policy, monkeypatch):
+    from aitm_usage import scopes
     from aitm_usage.ledger import LedgerError
 
+    monitor = inbox_policy.inbox
     command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
-    monitor.enqueue(command)
-    path = monitor.root / "inbox" / f"{REQUEST}.json"
-    displaced = path.with_suffix(".old")
-    path.rename(displaced)
-    path.symlink_to(displaced)
+    queued = monitor.enqueue(command)
+    name = f"{REQUEST}.json"
+    original = inbox_policy.inbox_files[name]
+    directory = monitor.root / monitor_control.INBOX_NAME
+    descriptor = inbox_policy.identity(str(directory)).identity[-1]
+    info = os.stat_result((stat.S_IFREG | 0o600, 2, 1, 1, os.geteuid(), 0, 0, 0, 0, 0))
+    open_file = Mock(return_value=7)
+    open_stream = Mock(return_value=BytesIO(original))
+    read_name = Mock(return_value=info)
+    monkeypatch.setattr(scopes, "_check_acl", Mock())
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=os.O_RDONLY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            path=os.path,
+            open=open_file,
+            fdopen=open_stream,
+            fstat=Mock(return_value=info),
+            stat=read_name,
+        ),
+    )
+    monkeypatch.setattr(monitor_control, "_read_private", scopes._read_private)
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+    assert monitor.status(REQUEST) == queued
+    open_file.assert_called_once_with(name, flags, dir_fd=descriptor)
+    read_name.assert_called_once_with(name, dir_fd=descriptor, follow_symlinks=False)
 
-    with pytest.raises(LedgerError):
+    open_file.reset_mock()
+    open_file.side_effect = OSError(errno.ELOOP, "observed substituted link")
+    with pytest.raises(LedgerError, match="Private monitor publication is unavailable"):
         monitor.status(REQUEST)
-    assert path.is_symlink()
+    open_file.assert_called_once_with(name, flags, dir_fd=descriptor)
+    open_stream.assert_called_once_with(7, "rb")
+    assert inbox_policy.inbox_files == {name: original}
 
 
 def test_rejected_command_status_contains_no_owner_paths(
