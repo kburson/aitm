@@ -11,7 +11,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
 from types import SimpleNamespace
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 from test_monitor_delivery import _enable, _journal, _reserve
@@ -582,32 +582,50 @@ def test_replaced_endpoint_is_refused_and_preserved(wake, replace_root):
         assert scheduler.take_due(now[0], 1) == ()
 
 
-def test_saturated_listener_is_preserved_and_sender_returns(wake, monkeypatch):
-    scheduler, resolver, _, _ = wake
+def test_saturated_listener_is_preserved_and_sender_returns(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, _, listener, _, _ = listener_policy
     root = resolver.writer.root
     endpoint = root / "wake.sock"
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/backlog")
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as occupied:
-        occupied.bind(str(endpoint))
-        endpoint.chmod(0o600)
-        occupied.listen(1)
-        inode = endpoint.lstat()
+    directory = listener.directory
+    sender, server, probe = (Mock(spec=socket.socket) for _ in range(3))
+    for connection in (sender, probe):
+        connection.connect_ex.return_value = errno.EAGAIN
+    pin = Mock(side_effect=lambda path: nullcontext(directory))
+    opened = Mock(side_effect=map(nullcontext, (sender, server, probe)))
+    for module in (hooks, monitor_control):
+        monkeypatch.setattr(module, "_pin_directory", pin)
+        monkeypatch.setattr(
+            module,
+            "socket",
+            SimpleNamespace(
+                socket=opened, AF_UNIX=socket.AF_UNIX, SOCK_STREAM=socket.SOCK_STREAM
+            ),
+        )
+    unlink, fsync = Mock(), Mock()
+    monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+    monkeypatch.setattr(monitor_control.os, "fsync", fsync, raising=False)
+    writable = Mock(return_value=([], [], []))
+    monkeypatch.setattr(hooks.select, "select", writable)
+    monkeypatch.setattr(hooks, "monotonic", lambda: 0.0)
 
-        # Backlog limits vary by kernel. Preserve the real bound inode and
-        # make the saturated-connect branch deterministic on every host.
-        def saturated(connection, address):
-            assert connection.getblocking() is False
-            assert address == str(endpoint)
-            return errno.EAGAIN
-
-        monkeypatch.setattr(socket.socket, "connect_ex", saturated)
-        began = monotonic()
-        assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
-        assert monotonic() - began < 0.3
-        with pytest.raises(LedgerError, match="active or unavailable"):
-            with WakeIngress(scheduler, resolver).listen():
-                pytest.fail("active endpoint was reclaimed")
-        assert os.path.samestat(inode, endpoint.lstat())
+    assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
+    writable.assert_called_once_with([], [sender], [], 0.03)
+    sender.send.assert_not_called()
+    with pytest.raises(LedgerError, match="active or unavailable"):
+        with WakeIngress(scheduler, resolver).listen():
+            pytest.fail("active endpoint was reclaimed")
+    for connection in (sender, probe):
+        assert connection.method_calls == [
+            call.setblocking(False),
+            call.connect_ex(str(endpoint)),
+        ]
+    assert pin.call_args_list == [call(root), call(root)]
+    server.bind.assert_not_called()
+    unlink.assert_not_called()
+    fsync.assert_not_called()
 
 
 def test_wake_socket_refuses_a_path_past_the_native_byte_limit(

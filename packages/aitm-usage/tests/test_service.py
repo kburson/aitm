@@ -277,26 +277,24 @@ def anchor_policy(collector_policy, monkeypatch, capsys):
     monkeypatch.setattr(cli, "open_project", lambda _: ledger)
     monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
 
-    def anchor_commit_sequence(writer, receipt, effect, cutoff):
-        # The physical layout matrix covers this exact SQLite join. These
-        # scenarios consume its successful observation to test proof and retry.
-        assert writer is ledger
-        _, revisions, _ = rows.history
-        saved = {
-            (key, number, payload): sequence
-            for key, number, sequence, payload in revisions
-        }
-        sequence = saved[
-            receipt.key.value, receipt.revision, _encode(receipt, Revision)
-        ]
-        assert sequence <= cutoff
-        assert (
-            sequence
-            == saved[effect.key.value, effect.revision, _encode(effect, Revision)]
+    def committed_revision_sequence(connection, revision, cutoff):
+        assert connection.store is rows and not connection.write
+        commits, revisions, _ = connection.history
+        key = (revision.key.value, revision.revision, _encode(revision, Revision))
+        return next(
+            (
+                sequence
+                for ref, number, sequence, data in revisions
+                if (ref, number, data) == key
+                and sequence <= cutoff
+                and (sequence,) in commits
+            ),
+            None,
         )
-        return sequence
 
-    monkeypatch.setattr(service, "_anchor_commit_sequence", anchor_commit_sequence)
+    monkeypatch.setattr(
+        service, "_committed_revision_sequence", committed_revision_sequence
+    )
 
     def command(*args, expected=0):
         monkeypatch.setattr(
@@ -338,6 +336,7 @@ def anchor_policy(collector_policy, monkeypatch, capsys):
         anchors=anchors,
         inbox=inbox,
         acks=acks,
+        rows=rows,
         command=command,
         proposal=proposal,
     )
@@ -469,7 +468,7 @@ def _json_file(directory, name, payload):
 
 
 def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
-    project, monkeypatch
+    anchor_policy, monkeypatch
 ):
     from aitm_usage import scopes
     from aitm_usage.sources.scan import checkout_anchor_reference
@@ -480,22 +479,11 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
         SourceAnchorCommand,
     )
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("add-secret")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = anchor_policy
+    ledger, command, added = case.ledger, case.command, case.added
     anchor_id = UUID(int=921)
-    anchor = _json_file(
-        root.parent,
-        "add.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
+    name = f"{anchor_id}.json"
+    args = case.proposal(anchor_id)
 
     def interrupted(*args):
         raise OSError("interrupted after private publication")
@@ -503,14 +491,14 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
     publish = scopes._publish
 
     def interrupted_inbox(directory, *args, **kwargs):
-        if directory.path == root / "inbox":
+        if directory.path == case.inbox:
             interrupted()
         return publish(directory, *args, **kwargs)
 
     with monkeypatch.context() as patch:
         patch.setattr(scopes, "_publish", interrupted_inbox)
-        command("source", "add-anchor", "--anchor", str(anchor), "--json", expected=1)
-    assert (root / "source-anchors" / f"{anchor_id}.json").is_file()
+        command(*args, expected=1)
+    assert name in case.files[case.anchors]
     command("collect-once", "--json")
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
@@ -548,26 +536,20 @@ def test_anchor_staging_retry_requires_a_matching_receipt_and_effect(
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
-    assert (
-        command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-        == "queued"
-    )
-    assert (
-        str(added).encode() not in (root / "inbox" / f"{anchor_id}.json").read_bytes()
-    )
+    assert command(*args)["status"] == "queued"
+    assert str(added).encode() not in case.files[case.inbox][name]
     with monkeypatch.context() as patch:
         patch.setattr(scopes, "_acknowledge", interrupted)
         command("collect-once", "--json", expected=1)
     # A fresh poll reconstructs authority from the exact accepted pair and
     # retires the already committed queue item.
     command("collect-once", "--json")
-    assert (
-        command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-        == "accepted"
-    )
-    assert not (root / "inbox" / f"{anchor_id}.json").exists()
+    assert command(*args)["status"] == "accepted"
+    assert name not in case.files[case.inbox]
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
-    assert str(added).encode() not in ledger.database_path.read_bytes()
+    assert all(
+        str(added) not in row[-1] for table in case.rows.history[1:] for row in table
+    )
     config_cutoff = command("status", "--json")["cutoff"]
     assert config_cutoff == CUTOFF
 
@@ -1236,7 +1218,7 @@ def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(
 
 @pytest.mark.parametrize("layout", ["effect-first", "receipt-first", "same-commit"])
 def test_generic_anchor_writes_cannot_replace_inbox_admission(
-    project, monkeypatch, layout
+    request, monkeypatch, layout
 ):
     from aitm_usage import service
     from aitm_usage.ledger import LedgerError
@@ -1250,23 +1232,44 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
         SourceAnchor,
     )
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("new-private-anchor")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
     anchor_id = UUID(int=933)
-    anchor = _json_file(
-        root.parent,
-        "new-anchor.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    staged = service.stage_source_anchor(ledger, anchor)
+    name = f"{anchor_id}.json"
+    if layout == "effect-first":
+        root, sources, checkout, config, command = request.getfixturevalue("project")
+        added = checkout.with_name("new-private-anchor")
+        added.mkdir()
+        _fixtures(sources, added)
+        command("register", "--config", str(config), "--json")
+        ledger = Ledger.open(root, PROJECT)
+        anchor = _json_file(
+            root.parent,
+            "new-anchor.json",
+            {
+                "command_id": str(anchor_id),
+                "project_id": str(PROJECT),
+                "checkout": str(added),
+            },
+        )
+        args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+
+        def anchor_files():
+            return (path.name for path in (root / "source-anchors").iterdir())
+
+        def queue_contains(target):
+            return (root / "inbox" / target).exists()
+
+    else:
+        case = request.getfixturevalue("anchor_policy")
+        ledger, command = case.ledger, case.command
+        args = case.proposal(anchor_id)
+
+        def anchor_files():
+            return case.files[case.anchors]
+
+        def queue_contains(target):
+            return target.name in case.files.get(case.inbox / target.parent, {})
+
+    staged = service.stage_source_anchor(ledger, Path(args[3]))
     payload = staged.payload
     effect = Revision(
         ledger.pseudonymize("collector-source-anchor", str(anchor_id)),
@@ -1284,14 +1287,18 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     if layout != "same-commit":
         # A genuine dispatcher decision is interrupted before commit. A
         # private route proof must not turn split writes into an atomic pair.
-        assert (
-            command("source", "add-anchor", "--anchor", str(anchor), "--json")["status"]
-            == "queued"
-        )
+        assert command(*args)["status"] == "queued"
 
         def interrupted(*args, **kwargs):
             assert (
-                len(list((root / "source-anchors").glob(f"{anchor_id}.*.attested")))
+                len(
+                    [
+                        name
+                        for name in anchor_files()
+                        if name.startswith(f"{anchor_id}.")
+                        and name.endswith(".attested")
+                    ]
+                )
                 == 1
             )
             raise OSError("synthetic interruption before inbox commit")
@@ -1325,13 +1332,11 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     assert command("collect-once", "--json", expected=1) == {
         "status": "collection-failed"
     }
-    retry = command(
-        "source", "add-anchor", "--anchor", str(anchor), "--json", expected=1
-    )
+    retry = command(*args, expected=1)
     assert retry.strip() == "aitm-usage: invalid private inbox command or project"
     if layout != "same-commit":
-        assert (root / "inbox" / f"{anchor_id}.json").exists()
-    assert not (root / "inbox" / "acks" / f"{anchor_id}.json").exists()
+        assert queue_contains(Path(name))
+    assert not queue_contains(Path("acks") / name)
     assert not any(
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )

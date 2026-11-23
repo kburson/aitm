@@ -586,12 +586,6 @@ def adopted_with_witness(ledger, monitor_root):
         yield inbox
 
 
-_DURABLE_REPLAY_CASES = {
-    (MarkerDisposition.ACCEPTED, "mark", Provider.CLAUDE),
-    (MarkerDisposition.CONFLICT, "bind", Provider.CODEX),
-}
-
-
 def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status):
     memory = _memory_legacy(monkeypatch, capsys)
     ledger = memory.ledger
@@ -635,7 +629,11 @@ def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status
 def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
     request, monkeypatch, capsys, action, provider, status
 ):
-    if (status, action, provider) not in _DURABLE_REPLAY_CASES:
+    if (status, action, provider) != (
+        MarkerDisposition.ACCEPTED,
+        "mark",
+        Provider.CLAUDE,
+    ):
         _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status)
         return
 
@@ -1039,36 +1037,28 @@ def _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys):
 
 
 @pytest.mark.parametrize("action", ["bind", "correct", "alias", "parent"])
-def test_other_pre_adoption_commands_use_legacy_inbox(request, monkeypatch, action):
-    if action == "alias":
-        ledger, _, run = request.getfixturevalue("legacy")
-        args, payload, _ = invocation(ledger, action)
+def test_other_pre_adoption_commands_use_legacy_inbox(
+    memory_legacy, monkeypatch, action
+):
+    args, payload, _ = invocation(
+        memory_legacy.ledger, action, write_input=memory_legacy.inputs.__setitem__
+    )
 
-        def read_registry(*args, **kwargs):
-            pytest.fail("pre-adoption command reached the unrelated monitor registry")
+    def read_registry(*args, **kwargs):
+        pytest.fail("pre-adoption command reached the unrelated monitor registry")
 
-        def publication_bytes(command_id):
-            return (ledger.root / "inbox" / f"{command_id}.json").read_bytes()
+    def publication_bytes(command_id):
+        return memory_legacy.inbox[f"{command_id}.json"]
 
-        monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
-    else:
-        memory = request.getfixturevalue("memory_legacy")
-        ledger, run = memory.ledger, memory.run
-        args, payload, _ = invocation(
-            ledger, action, write_input=memory.inputs.__setitem__
-        )
-
-        def publication_bytes(command_id):
-            return memory.inbox[f"{command_id}.json"]
-
-    code, output = run(args)
+    monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
+    code, output = memory_legacy.run(args)
     assert code == 0, output
     reported_id = UUID(json.loads(output.out)["command_id"])
     assert output.out == f'{{"command_id": "{reported_id}", "status": "queued"}}\n'
     if isinstance(payload, (DraftAlias, ItemParent)):
         payload = replace(payload, command_id=reported_id)
         assert json.loads(publication_bytes(reported_id))["order"] == 1
-        repeated_code, repeated_output = run(args)
+        repeated_code, repeated_output = memory_legacy.run(args)
         assert repeated_code == 0, repeated_output
         repeated_id = UUID(json.loads(repeated_output.out)["command_id"])
         assert repeated_id != reported_id

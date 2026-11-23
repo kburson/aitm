@@ -156,35 +156,19 @@ def _coverage_policy(monkeypatch, source, *, provider=Provider.CLAUDE):
 
 
 @pytest.mark.parametrize("version", (4, 5))
-def test_reading_coverage_cannot_upgrade_an_empty_older_store(
-    request, monkeypatch, version
-):
-    if version == 5:
-        authority, _, journal, store = _coverage_policy(monkeypatch, SOURCE)
-        authority.writer._live_profile = None
-        store.committed.version = version
-        assert journal.coverage_changes(0) == ()
-        assert store.attempt is None
-        assert store.writes == []
-        assert store_version(journal) == version
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(SOURCE, authority.locator)
-        assert store_version(journal) == 6
-        (event,) = journal.coverage_changes(0)
-        assert event.sequence == 1
-        return
-
-    admitted_sources = request.getfixturevalue("admitted_sources")
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
-        assert store_version(journal) == version
-        assert journal.coverage_changes(0) == ()
-        assert store_version(journal) == version
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(claude.source_id, claude.locator())
-        assert store_version(journal) == 6
-        assert len(journal.coverage_changes(0)) == 1
+def test_reading_coverage_cannot_upgrade_an_empty_older_store(monkeypatch, version):
+    authority, _, journal, store = _coverage_policy(monkeypatch, SOURCE)
+    authority.writer._live_profile = None
+    store.committed.version = version
+    assert journal.coverage_changes(0) == ()
+    assert store.attempt is None
+    assert store.writes == []
+    assert store_version(journal) == version
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, authority.locator)
+    assert store_version(journal) == 6
+    (event,) = journal.coverage_changes(0)
+    assert event.sequence == 1
 
 
 def test_stable_exclusion_is_durable_and_independent_of_healthy_progress(
@@ -491,10 +475,11 @@ def test_coverage_rejects_only_reserved_variants_with_matching_key_and_seal(over
         ) == monitor_journal.JournalChange(1, coverage=event)
 
 
-def _sample_coverage():
+def _sample_coverage(evidence=None):
     from aitm_usage import monitor_journal
 
-    evidence = _ServiceEvidence(b"journal-coverage-policy-fixture")
+    if evidence is None:
+        evidence = _ServiceEvidence(b"journal-coverage-policy-fixture")
     value = monitor_journal.JournalCoverage(
         monitor_journal._CoverageReason.UNQUALIFIED_SOURCE,
         evidence.pseudonymize("fixture", "installation"),
@@ -757,19 +742,61 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
     payload.assert_not_called()
 
 
-def test_coverage_readback_requires_the_original_live_writer(admitted_sources):
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(claude.source_id, claude.locator())
-        (event,) = journal.coverage_changes(0)
+def test_coverage_readback_requires_the_original_live_writer(monkeypatch):
+    from test_monitor_journal_store import _journal_observations
 
+    from aitm_usage import _monitor_journal_store as journal_store
+
+    observed = _journal_observations(monkeypatch)
+    root = observed.writer.root
+    evidence, coverage = _sample_coverage(observed.writer.source_evidence())
+    raw = _encode(coverage, monitor_journal.JournalCoverage).encode()
+    key = monitor_journal._coverage_key(coverage, evidence).value
+    seal = monitor_journal._coverage_seal(1, raw, evidence).value
+    row = (key, 1, 1, raw, seal)
+
+    def execute(sql, parameters=()):
+        if sql == "BEGIN":
+            return None
+        if sql == "SELECT coalesce(max(sequence), 0) FROM commits":
+            return SimpleNamespace(fetchone=lambda: (1,))
+        assert (
+            sql
+            == monitor_journal._COVERAGE_ROWS
+            + " WHERE s.sequence>? ORDER BY s.sequence"
+        )
+        assert parameters == (0,)
+        return (row,)
+
+    def lease(path, *, create):
+        assert path.parent == root and create
+        return nullcontext(
+            SimpleNamespace(identities=observed.writer.lease.identities, check=Mock())
+        )
+
+    prepared = observed.writer.view()
+    monkeypatch.setattr(Registry, "view", lambda self: prepared)
+    monkeypatch.setattr(Registry, "source_evidence", lambda self: evidence)
+    monkeypatch.setattr(monitor_registry, "_ensure_private_directory", Mock())
+    monkeypatch.setattr(monitor_registry, "_lease", lease)
+    monkeypatch.setattr(journal_store, "_validate_identity", Mock(return_value=6))
+    connection = MagicMock()
+    connection.execute.side_effect = execute
+    observed.open_database.return_value = nullcontext(connection)
+
+    registry = Registry(root)
+    with registry.writer() as writer:
+        journal = RoutingJournal(writer, ScopeState(writer))
+        (event,) = journal.coverage_changes(0)
+        assert event == monitor_journal.JournalChange(1, coverage=coverage)
+
+    calls = observed.open_database.call_count
     with pytest.raises(LedgerError, match="coordinator lease is required"):
         journal.coverage_changes(0)
-    with native.registry.writer() as reopened:
+    with registry.writer() as reopened:
         with pytest.raises(LedgerError, match="coordinator lease is required"):
             journal.coverage_changes(0)
+        assert observed.open_database.call_count == calls
         assert RoutingJournal(reopened, ScopeState(reopened)).coverage_changes(0) == (
             event,
         )

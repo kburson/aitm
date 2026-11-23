@@ -28,13 +28,9 @@ NOW = datetime(2026, 11, 9, 14, 0, tzinfo=UTC)
 CANARY = "/private/transcripts/raw-provider-handle-canary"
 ROOT_PREFIX = "Library/Application Support/aitm-usage"
 
-PHYSICAL_ALIAS_CASES = {"equal-missing", "control-inside-state-existing"}
-
 
 def _uses_path_metadata(request):
     name = request.node.originalname
-    if name == "test_private_paths_have_exact_modes_and_reject_looser_modes":
-        return request.node.callspec.id != "project"
     if name == "test_symlink_state_files_are_refused_without_touching_target":
         return request.node.callspec.id != "database"
     if name == "test_held_writer_refuses_changed_state_paths_before_write":
@@ -44,9 +40,7 @@ def _uses_path_metadata(request):
     if name == "test_inherited_macos_grant_refused_before_private_creation":
         return request.node.callspec.id == "guard"
     if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
-        return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
-    if name == "test_raw_credential_shaped_metadata_is_normalized_before_durable_write":
-        return request.node.callspec.id != "model"
+        return request.node.callspec.id != "control-inside-state-existing"
     return "ledger_path_metadata" in request.fixturenames
 
 
@@ -465,7 +459,11 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
     from aitm_usage.ledger import ConflictError, Ledger
 
     ledger = Ledger.initialize(tmp_path / "project", PROJECT)
-    batch = sample_batch(ledger, types)
+    _assert_real_private_creation_and_mode(ledger, types)
+    secret_model = "sk-PRIVATE-CANARY"
+    batch = _with_credential_shaped_metadata(
+        sample_batch(ledger, types), "model", secret_model
+    )
     with pytest.raises((ValueError, TypeError)):
         ledger.apply(_invalid_batch_variants(batch)[0])
     assert ledger.as_of().sequence == 0
@@ -483,18 +481,31 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
         with pytest.raises(sqlite3.IntegrityError, match="checkpoint fault"):
             ledger.apply(batch)
     reopened = type(ledger).open(ledger.root, PROJECT)
+    assert reopened.identity == ledger.identity
+    session = reopened.pseudonymize("session", CANARY)
+    assert session == ledger.pseudonymize("session", CANARY)
+    assert session != reopened.pseudonymize("request", CANARY)
+    assert reopened.as_of(0).project_id == PROJECT
     assert reopened.as_of().sequence == 0
     assert reopened.as_of().revisions == ()
     assert reopened.as_of().checkpoints == ()
 
     assert reopened.apply(batch) == 1
     assert reopened.apply(batch) == 1
-    assert reopened.as_of(1).revisions == batch.revisions
-    assert reopened.as_of(1).checkpoints == (batch.checkpoint,)
-    assert reopened.as_of(1).checkpoints[0].provider.request_prefix
+    view = reopened.as_of(1)
+    assert view.project_id == PROJECT
+    assert view.revisions == batch.revisions
+    assert view.checkpoints == (batch.checkpoint,)
+    assert view.checkpoints[0].provider.request_prefix
+    assert view.revisions[0].record.model == "unknown"
+    assert view.revisions[0].record.client_version == "unknown"
+    assert view.checkpoints[0].provider.client_version == "unknown"
+    reopened.validate_source_ref(batch.checkpoint.cursor.anchor_ref)
     for path in reopened.root.rglob("*"):
-        if path.is_file() and path != reopened.key_path:
-            assert CANARY.encode() not in path.read_bytes(), path.name
+        if path.is_file():
+            payload = path.read_bytes()
+            assert CANARY.encode() not in payload, path.name
+            assert secret_model.encode() not in payload, path.name
     assert reopened.as_of(0).revisions == ()
     assert reopened.as_of(0).checkpoints == ()
 
@@ -729,36 +740,40 @@ def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
     "relative_path", ["project", "store", "database", "lock", "key", "wal", "shm"]
 )
 def test_private_paths_have_exact_modes_and_reject_looser_modes(
-    request, modules, relative_path, path_metadata
+    ledger_path_metadata, modules, relative_path
 ):
-    from aitm_usage.ledger import LedgerError
-
     ledger_module, types = modules
-    metadata = path_metadata
-    if metadata is None:
-        ledger, _ = request.getfixturevalue("state")
-    else:
-        ledger = _observed_ledger(metadata, ledger_module)
+    ledger = _observed_ledger(ledger_path_metadata, ledger_module)
     paths = _storage_slots(ledger)
-    if metadata is None:
-        for name, created in paths.items():
-            expected = 0o700 if name in {"project", "store"} else 0o600
-            assert stat.S_IMODE(created.stat().st_mode) == expected
-        guard = control_directory() / f"{PROJECT}.lock"
-        assert stat.S_IMODE(guard.stat().st_mode) == 0o600
-        assert guard.stat().st_uid == os.geteuid()
     path = paths[relative_path]
     is_directory = relative_path in ("project", "store")
     assert stat.S_IMODE(path.stat().st_mode) == (0o700 if is_directory else 0o600)
     loose_mode = 0o755 if is_directory else 0o644
-    if metadata is None:
-        path.chmod(loose_mode)
-    else:
-        metadata.lower_permissions(path, loose_mode)
+    ledger_path_metadata.lower_permissions(path, loose_mode)
+    _assert_refuses_unsafe_storage_mode(ledger, types)
+
+
+def _assert_refuses_unsafe_storage_mode(ledger, types):
+    from aitm_usage.ledger import LedgerError
+
     with pytest.raises(LedgerError, match="Unsafe private ledger path"):
         type(ledger).open(ledger.root, PROJECT)
     with pytest.raises(LedgerError, match="Unsafe private ledger path"):
         ledger.apply(types.LedgerBatch())
+
+
+def _assert_real_private_creation_and_mode(ledger, types):
+    for name, created in _storage_slots(ledger).items():
+        expected = 0o700 if name in {"project", "store"} else 0o600
+        assert stat.S_IMODE(created.stat().st_mode) == expected
+    guard = control_directory() / f"{PROJECT}.lock"
+    assert stat.S_IMODE(guard.stat().st_mode) == 0o600
+    assert guard.stat().st_uid == os.geteuid()
+    ledger.root.chmod(0o755)
+    try:
+        _assert_refuses_unsafe_storage_mode(ledger, types)
+    finally:
+        ledger.root.chmod(0o700)
 
 
 @pytest.mark.parametrize("file", ["lock", "key", "database", "wal", "shm"])
@@ -1160,12 +1175,15 @@ def test_inherited_macos_grant_refused_before_private_creation(
 
 
 def test_real_mac_default_ancestry_allows_standard_deny_delete(
-    tmp_path, monkeypatch, mac_acl_text
+    ledger_path_metadata, modules, monkeypatch, mac_acl_text
 ):
+    from aitm_usage import host_fs
     from aitm_usage.ledger import LedgerError, validate_private_path
 
-    base = tmp_path / "private"
-    base.mkdir(mode=0o700)
+    ledger_module, _ = modules
+    base = ledger_path_metadata.base / "private"
+    ledger_path_metadata.add_directory(base)
+    monkeypatch.setattr(ledger_module, "check_private_acl", host_fs.check_private_acl)
     mac_acl_text(
         base,
         b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:deny:delete\n",
@@ -1190,51 +1208,38 @@ def test_private_path_rejects_mismatched_owner(ledger_path_metadata):
         validate_private_path(path)
 
 
-@pytest.mark.parametrize("label", ["model", "client_version", "checkpoint_version"])
-def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
-    request, label
-):
-    rows = None
-    if label == "model":
-        ledger, types = request.getfixturevalue("state")
-    else:
-        ledger, types, rows = request.getfixturevalue("ledger_rows")
-    batch = sample_batch(ledger, types)
-    canary = "sk-PRIVATE-CANARY" if label == "model" else "0.99.0-sk-PRIVATE-CANARY"
+def _with_credential_shaped_metadata(batch, label, canary):
+    checkpoint = batch.checkpoint
     if label == "checkpoint_version":
-        checkpoint = batch.checkpoint
-        batch = replace(
+        return replace(
             batch,
             checkpoint=replace(
                 checkpoint, provider=replace(checkpoint.provider, client_version=canary)
             ),
         )
-    else:
-        revision = batch.revisions[0]
-        batch = replace(
-            batch,
-            revisions=(
-                replace(revision, record=replace(revision.record, **{label: canary})),
-            ),
+    fields = {label: canary}
+    if label == "model":
+        version_canary = f"0.99.0-{canary}"
+        fields["client_version"] = version_canary
+        checkpoint = replace(
+            checkpoint,
+            provider=replace(checkpoint.provider, client_version=version_canary),
         )
-        if label == "model":
-            version_canary = f"0.99.0-{canary}"
-            revision = batch.revisions[0]
-            batch = replace(
-                batch,
-                revisions=(
-                    replace(
-                        revision,
-                        record=replace(revision.record, client_version=version_canary),
-                    ),
-                ),
-                checkpoint=replace(
-                    batch.checkpoint,
-                    provider=replace(
-                        batch.checkpoint.provider, client_version=version_canary
-                    ),
-                ),
-            )
+    (revision,) = batch.revisions
+    return replace(
+        batch,
+        revisions=(replace(revision, record=replace(revision.record, **fields)),),
+        checkpoint=checkpoint,
+    )
+
+
+@pytest.mark.parametrize("label", ["model", "client_version", "checkpoint_version"])
+def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
+    ledger_rows, label
+):
+    ledger, types, rows = ledger_rows
+    canary = "sk-PRIVATE-CANARY" if label == "model" else "0.99.0-sk-PRIVATE-CANARY"
+    batch = _with_credential_shaped_metadata(sample_batch(ledger, types), label, canary)
     assert ledger.apply(batch) == 1
     view = type(ledger).open(ledger.root, PROJECT).as_of()
     result = (
@@ -1243,16 +1248,12 @@ def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
         else getattr(view.revisions[0].record, label)
     )
     assert result == "unknown"
-    if rows is None:
+    if label == "model":
         assert view.revisions[0].record.client_version == "unknown"
         assert view.checkpoints[0].provider.client_version == "unknown"
-        assert all(
-            canary.encode() not in payload for payload in durable_data(ledger).values()
-        )
-    else:
-        payloads = [entry[-1] for table in rows.history[1:] for entry in table]
-        assert len(payloads) == 2
-        assert all(canary not in payload for payload in payloads)
+    payloads = [entry[-1] for table in rows.history[1:] for entry in table]
+    assert len(payloads) == 2
+    assert all(canary not in payload for payload in payloads)
 
 
 @pytest.mark.parametrize("kind", ["foreign-project", "foreign-key", "fabricated"])
@@ -1283,8 +1284,9 @@ def test_authenticated_refusal_for_nested_pseudonyms(memory_state, modules, kind
     writer.assert_not_called()
 
 
-def test_genuine_pseudonyms_and_project_identity_survive_reopen(state, tmp_path):
-    ledger, types = state
+def test_genuine_pseudonyms_and_project_identity_survive_reopen(ledger_rows, modules):
+    ledger_module, _ = modules
+    ledger, types, rows = ledger_rows
     assert ledger.as_of(0).project_id == PROJECT
     batch = sample_batch(ledger, types)
     assert ledger.apply(batch) == 1
@@ -1292,13 +1294,14 @@ def test_genuine_pseudonyms_and_project_identity_survive_reopen(state, tmp_path)
     assert reopened.as_of(1).project_id == PROJECT
     assert reopened.as_of(1).checkpoints == (batch.checkpoint,)
     reopened.validate_source_ref(batch.checkpoint.cursor.anchor_ref)
-    other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+    other = _memory_ledger(ledger_module, OTHER_PROJECT, b"b" * 32)
     session = ledger.pseudonymize("session", CANARY)
     assert reopened.pseudonymize("session", CANARY) == session
     assert reopened.pseudonymize("request", CANARY) != session
     assert other.pseudonymize("session", CANARY) != session
     assert ledger.identity.key_id == reopened.identity.key_id
     assert ledger.identity.key_id != other.identity.key_id
+    assert rows.key_bytes == PROJECT.bytes + ledger._key
 
 
 def quota_sample(ledger, types):
@@ -1399,6 +1402,10 @@ def test_distinct_project_can_write_while_first_uuid_guard_held(state, tmp_path)
     with ledger.writer():
         other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
         assert other.apply(sample_batch(other, types)) == 1
+        assert other.identity.key_id != ledger.identity.key_id
+        assert other.pseudonymize("session", CANARY) != ledger.pseudonymize(
+            "session", CANARY
+        )
 
 
 def test_control_location_rejects_case_alias_of_project_state(

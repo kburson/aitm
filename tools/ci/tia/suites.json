@@ -335,6 +335,56 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_genuine_pseudonyms_and_project_identity_survive_reopen",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_private_paths_have_exact_modes_and_reject_looser_modes",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_raw_credential_shaped_metadata_is_normalized_before_durable_write",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_real_mac_default_ancestry_allows_standard_deny_delete",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_coverage_readback_requires_the_original_live_writer",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_reading_coverage_cannot_upgrade_an_empty_older_store",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_saturated_listener_is_preserved_and_sender_returns",
+      "suite": "unit",
+      "isolation_group": "monitor_scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_other_pre_adoption_commands_use_legacy_inbox",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_anchor_staging_retry_requires_a_matching_receipt_and_effect",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_a_later_verified_child_removes_overlapping_report_quantities",
       "suite": "unit",
       "isolation_group": "claude-policy"

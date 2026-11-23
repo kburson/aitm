@@ -212,38 +212,51 @@ def _prior_journal_rows(journal):
 
 @pytest.mark.parametrize("release_previous", [False, True], ids=["gap", "resolved"])
 def test_journal_records_native_disposition_without_settlement(
-    request, monkeypatch, release_previous
+    monkeypatch, release_previous
 ):
-    if release_previous:
-        _assert_journal_records_resolved_proposal(monkeypatch)
-        return
+    from aitm_usage.monitor_journal import _stream
+    from aitm_usage.sources.adapter import StreamCursor
+    from aitm_usage.types import ProviderCheckpoint, SourceCheckpoint, _encode
 
-    with request.getfixturevalue("journal_disposition")(release_previous) as case:
-        journal = case.journal
-        before = journal.as_of()
-        rows = _prior_journal_rows(journal)
-        scope_bytes = case.scope_file.read_bytes()
-        scope_view = case.scopes.view()
-        change = journal.record_disposition(case.proof)
-        assert change.sequence == before.sequence + 1
-        assert change.disposition.record == case.proof.record
-        assert change.disposition.record.outcome == (
-            "resolved" if release_previous else "gap"
-        )
-        assert change.disposition.hold_digest == case.proof.hold.command_digest
-        assert journal.record_disposition(case.proof) == change
-        after = journal.as_of()
-        assert replace(after, sequence=before.sequence, dispositions=()) == before
-        assert journal.as_of(before.sequence) == before
-        assert _prior_journal_rows(journal) == rows
-        (projection,) = after.dispositions
-        assert projection.change == change and projection.affected == (case.first,)
-        assert case.scopes.view() == scope_view
-        assert case.scope_file.read_bytes() == scope_bytes
-        assert (
-            journal.cursor_for(case.source_id, case.native.locator())
-            == case.prior_cursor
-        )
+    case, journal, store, proof, key = _disposition_with_first_claim(
+        monkeypatch, release=release_previous
+    )
+    batch = case.terminal._batch
+    source_id, locator = batch.source_id, batch._locator
+    saved_prefix = case.snapshot.held_route_targets[0].prefix
+    cursor = StreamCursor(
+        SourceCheckpoint(saved_prefix, ProviderCheckpoint(Provider.CODEX))
+    )
+    stream = _stream(source_id, locator)
+    store.progress[stream] = _encode(
+        cursor, StreamCursor, validate_ref=store.evidence.validate_source_ref
+    ).encode()
+    assert journal.cursor_for(source_id, locator) == cursor
+    before = journal.as_of()
+    scope = case.state.view()
+    snapshot = case.snapshot
+    claims = store.claims.copy()
+    case.publish.reset_mock()
+
+    change = journal.record_disposition(proof)
+    assert change.sequence == before.sequence + 1
+    assert change.disposition.record == proof.record
+    assert change.disposition.record.outcome == (
+        "resolved" if release_previous else "gap"
+    )
+    assert change.disposition.hold_digest == proof.hold.command_digest
+    assert journal.record_disposition(proof) == change
+
+    after = journal.as_of()
+    assert replace(after, sequence=before.sequence, dispositions=()) == before
+    assert journal.as_of(before.sequence) == before
+    (projection,) = after.dispositions
+    assert projection.change == change and projection.affected == (key,)
+    assert case.state.view() == scope
+    assert case.snapshot is snapshot
+    assert store.claims == claims
+    assert journal.cursor_for(source_id, locator) == cursor
+    case.publish.assert_not_called()
 
 
 def test_journal_disposition_preserves_old_projection_when_late_claim_arrives(
@@ -399,33 +412,6 @@ def _disposition_with_first_claim(monkeypatch, *, release=False):
         1,
     )
     return case, journal, store, proof, key
-
-
-def _assert_journal_records_resolved_proposal(monkeypatch):
-    case, journal, store, proof, key = _disposition_with_first_claim(
-        monkeypatch, release=True
-    )
-    before = journal.as_of()
-    lease_scope = case.state.view()
-    persisted = case.snapshot
-    claims = store.claims.copy()
-
-    change = journal.record_disposition(proof)
-    assert change.sequence == before.sequence + 1
-    assert change.disposition.record == proof.record
-    assert change.disposition.record.outcome == "resolved"
-    assert change.disposition.hold_digest == proof.hold.command_digest
-    assert journal.record_disposition(proof) == change
-
-    after = journal.as_of()
-    assert replace(after, sequence=before.sequence, dispositions=()) == before
-    assert journal.as_of(before.sequence) == before
-    (projection,) = after.dispositions
-    assert projection.change == change and projection.affected == (key,)
-    assert case.state.view() == lease_scope
-    assert case.snapshot is persisted
-    assert store.claims == claims
-    assert store.progress == {}
 
 
 def _assert_record_requires_current_proof(journal_case, change):
