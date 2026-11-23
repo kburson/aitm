@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 362
 title: "Flag a scheduled build failure"
 kind: "epic"
-state: "develop"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/362"
 parent: null
 children: [363, 364, 365, 366]
 blocking: []
 blocked-by: []
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T00:14:46Z"
+updated: "2026-11-23T00:17:56Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "Feature"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-362-delivery-plan.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-362-delivery-plan.md"], "attachments": ["attachments/2026-11-22-362-acceptance.json"]}
 expansions: []
 trips: []
 ---
@@ -52,3 +52,5 @@ The publisher runs outside the sweep workflow and writes only to the advisory re
 [Delivery plan](plan/2026-11-21-362-delivery-plan.md).
 
 [Independent Grok planning review](plan/reviews/2026-11-21-362-grok-planning-review.md).
+
+[Aggregate acceptance and signed delivery](retro/2026-11-22-362-sign-off.md).

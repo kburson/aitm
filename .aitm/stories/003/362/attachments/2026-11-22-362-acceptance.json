@@ -1,0 +1,124 @@
+{
+  "children": [
+    {
+      "issue": 363,
+      "closed_at": "2026-11-22T00:26:28Z",
+      "project_status": "Done",
+      "pr": "https://github.com/kburson/aitm/pull/416",
+      "target": "planning",
+      "head": "fda4dac2efbac6adfdeffab9c04dc1a93f970566",
+      "merge": "9201f924c0d1ef1f97502ddbfb958df09523f795",
+      "merged_at": "2026-11-22T00:26:25Z",
+      "grok": "https://github.com/kburson/aitm/pull/416#pullrequestreview-6009167799",
+      "reviewed_at": "2026-11-22T00:26:19Z"
+    },
+    {
+      "issue": 364,
+      "closed_at": "2026-11-22T00:37:00Z",
+      "project_status": "Done",
+      "pr": "https://github.com/kburson/aitm/pull/417",
+      "target": "planning",
+      "head": "52ff8e02c953612b9cf8e6259b809540f6ea39d1",
+      "merge": "81d2193e0beded151e7d8de84fbee03afefa91a5",
+      "merged_at": "2026-11-22T00:36:57Z",
+      "grok": "https://github.com/kburson/aitm/pull/417#pullrequestreview-6009199925",
+      "reviewed_at": "2026-11-22T00:36:52Z"
+    },
+    {
+      "issue": 365,
+      "closed_at": "2026-11-22T21:45:01Z",
+      "project_status": "Done",
+      "pr": "https://github.com/kburson/aitm/pull/419",
+      "target": "trunk",
+      "head": "3e8eba3944b69235d6b7c137117bd3c92972f318",
+      "merge": "3d70251d35b8e7ffba794d32bfdd83502fd62478",
+      "merged_at": "2026-11-22T21:44:00Z",
+      "grok": "https://github.com/kburson/aitm/pull/419#pullrequestreview-6014653589",
+      "reviewed_at": "2026-11-22T21:37:33Z"
+    },
+    {
+      "issue": 366,
+      "closed_at": "2026-11-23T00:07:08Z",
+      "project_status": "Done",
+      "pr": "https://github.com/kburson/aitm/pull/421",
+      "target": "trunk",
+      "head": "adb6203782299a02bdec18ef1e74a73fdbd11f56",
+      "merge": "e753cd2e2c38871d8b59f9af40d7eb40aad0ac58",
+      "merged_at": "2026-11-23T00:06:56Z",
+      "grok": "https://github.com/kburson/aitm/pull/421#pullrequestreview-6015230847",
+      "reviewed_at": "2026-11-22T23:59:37Z"
+    }
+  ],
+  "live": {
+    "reader_commit": "e753cd2e2c38871d8b59f9af40d7eb40aad0ac58",
+    "issue": "https://github.com/kburson/aitm/issues/418",
+    "issue_id": 6538300316,
+    "issue_edit_time": "2026-11-22T21:44:23Z",
+    "read_only": true,
+    "matches_latest_authenticated_decision": true,
+    "record": {
+      "schema": "aitm.scheduled-sweep-flag/v1",
+      "state": "clear",
+      "run": {
+        "repository_id": 1450406435,
+        "workflow_id": 425235652,
+        "run_id": 44979940079,
+        "run_number": 5,
+        "run_attempt": 1,
+        "head_sha": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+        "conclusion": "success",
+        "result_at": "2026-11-22T03:22:17Z"
+      },
+      "run_url": "https://github.com/kburson/aitm/actions/runs/44979940079/attempts/1"
+    }
+  },
+  "isolated_replay": {
+    "simulated": true,
+    "outcomes": [
+      {
+        "evidence": "uninitialized isolated issue",
+        "read": "unavailable"
+      },
+      {
+        "evidence": "authenticated failure fixture",
+        "write": "active",
+        "read": "active"
+      },
+      {
+        "evidence": "cancelled",
+        "write": "unchanged",
+        "read": "active"
+      },
+      {
+        "evidence": "queued",
+        "write": "unchanged",
+        "read": "active"
+      },
+      {
+        "evidence": "duplicate failure delivery",
+        "write": "unchanged",
+        "read": "active"
+      },
+      {
+        "evidence": "unverified later success",
+        "write": "held",
+        "read": "active"
+      },
+      {
+        "evidence": "verified later success",
+        "write": "clear",
+        "read": "clear"
+      },
+      {
+        "evidence": "stale run list, exact later attempt still available",
+        "write": "unchanged",
+        "read": "clear"
+      },
+      {
+        "evidence": "cache linked to a manual success",
+        "read": "unavailable"
+      }
+    ],
+    "isolated_writes": 2
+  }
+}
