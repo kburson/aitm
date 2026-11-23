@@ -4,6 +4,8 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from test_grok import _policy_locator
+from test_grok import grok_policy as grok_policy
 from test_grok import grok_source as grok_source
 
 from aitm_usage import monitor_registry as registry
@@ -271,14 +273,27 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
         "mismatch",
     ],
 )
-def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_case):
+def test_strict_grok_attempt_holds_at_start_and_can_retry(request, receipt_case):
     from aitm_usage.sources import grok
 
-    source = grok_source
+    durable = receipt_case == "missing"
+    source = request.getfixturevalue("grok_source" if durable else "grok_policy")
     rows = source.rows.copy()
 
     def verifier(*parts):
         return source.pending_receipts.get(parts)
+
+    def read(rows, issuer, selected, cursor=None, *, proofs):
+        if durable:
+            reader, locator = _grok_reader(source, rows, issuer)
+            return reader.read_delta(
+                locator, cursor, _proofs=proofs, _receipt_verifier=selected
+            )
+        reader = grok.GrokAdapter(lambda _: source.origin, issuer)
+        with _policy_locator(source, rows, source.snapshot) as locator:
+            return reader.read_delta(
+                locator, cursor, _proofs=proofs, _receipt_verifier=selected
+            )
 
     selected = verifier
     if receipt_case == "missing":
@@ -304,9 +319,8 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_c
         else:
             params["_meta"]["eventId"] = "no-matching-native-receipt"
         rows[0] = json.dumps(hook).encode() + b"\n"
-    reader, locator = _grok_reader(source, rows, verifier)
     proofs = []
-    batch = reader.read_delta(locator, None, _proofs=proofs, _receipt_verifier=selected)
+    batch = read(rows, verifier, selected, proofs=proofs)
     (held,) = proofs
     assert type(held) is grok._GrokAttemptHeld
     assert held.start == 0
@@ -316,10 +330,7 @@ def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_source, receipt_c
     def trusted(*parts):
         return source.pending_receipts.get(parts)
 
-    reader, locator = _grok_reader(source, source.rows, trusted)
-    corrected = reader.read_delta(
-        locator, batch.cursor, _proofs=[], _receipt_verifier=trusted
-    )
+    corrected = read(source.rows, trusted, trusted, batch.cursor, proofs=[])
     assert len(corrected.observations) == 2
 
 

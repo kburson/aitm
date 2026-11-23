@@ -1,7 +1,7 @@
 """Native Grok evidence replay and conservative failure cases."""
 
 import json
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from io import BytesIO
@@ -142,6 +142,13 @@ def _unit_batch(
     verifier=None,
     headless=None,
 ):
+    reader = _reader(source, origin, verifier, headless)
+    with _policy_locator(source, rows, snapshot, origin) as locator:
+        return reader.read_delta(locator, cursor)
+
+
+@contextmanager
+def _policy_locator(source, rows, snapshot, origin=None):
     path = source.directory / "updates.jsonl"
     identity = ((1, 2), (1, 3))
     origin = source.origin if origin is None else origin
@@ -167,7 +174,7 @@ def _unit_batch(
     with source.monkeypatch.context() as patch:
         patch.setattr(source.module, "_open_snapshot", open_snapshot)
         patch.setattr(source.module, "_verify_snapshot", lambda *args: None)
-        return _reader(source, origin, verifier, headless).read_delta(locator, cursor)
+        yield locator
 
 
 def _set_usage(row, **values):
