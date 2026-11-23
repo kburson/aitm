@@ -3,6 +3,7 @@
 from dataclasses import dataclass, replace
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
 from aitm_usage.monitor_control import ControlInbox
@@ -93,8 +94,8 @@ def _gaps_after_reopen(f):
     return state.grok_enrollment_gaps()
 
 
-def test_queued_disable_fences_prospective_enrollment(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_queued_disable_fences_prospective_enrollment(grok_capture_policy):
+    f = grok_capture_policy
     f.submit(33103, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()
@@ -107,10 +108,10 @@ def test_queued_disable_fences_prospective_enrollment(isolated_grok_capture):
 
 
 def test_rejected_enable_receipt_cannot_authorize_prospective_capture(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     enable = f.submit(33105, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     current = f.writer.view()
@@ -133,11 +134,11 @@ def test_rejected_enable_receipt_cannot_authorize_prospective_capture(
 
 
 def test_reissued_enable_preserves_an_armed_stream_and_original_grant(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
     from aitm_usage.monitor_registry import _grok_records, _GrokGrant
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     first = f.submit(33106, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -175,9 +176,9 @@ def test_reissued_enable_preserves_an_armed_stream_and_original_grant(
 
 
 def test_wrong_terminal_and_rewritten_arm_hold_the_original_enrollment(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33108, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -198,9 +199,9 @@ def test_wrong_terminal_and_rewritten_arm_hold_the_original_enrollment(
 
 
 def test_disable_retains_unresolved_gap_and_never_applies_a_later_enrollment(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33109, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -245,10 +246,10 @@ def test_replacement_stream_or_profile_requires_exact_new_owner_authority(
 
 
 def test_unmatched_checkout_cannot_open_payload_or_enroll(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33113, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, _ = f.add_stream()
@@ -273,10 +274,10 @@ def test_unmatched_checkout_cannot_open_payload_or_enroll(
     assert f.writer.view() == before
 
 
-def test_inherited_turn_cannot_complete_a_prospective_arm(isolated_grok_capture):
+def test_inherited_turn_cannot_complete_a_prospective_arm(grok_capture_policy):
     from test_grok import PROMPT_A
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33114, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()
@@ -312,10 +313,10 @@ def test_inherited_turn_cannot_complete_a_prospective_arm(isolated_grok_capture)
 
 
 def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
-    isolated_grok_capture,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(33115, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     other, write = f.add_stream()

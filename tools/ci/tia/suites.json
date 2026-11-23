@@ -335,6 +335,91 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_another_scope_reader_cannot_change_current_grok_receipt_verifier",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_bad_open_terminal_closes_disable_at_verified_start",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_open_enable_excludes_open_turn_at_cut",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_pending_mixed_stream_reads_each_verified_bound",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_quiet_cut_is_frozen_while_other_stream_finishes",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_quiet_enable_skips_preexisting_unverified_marker",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_new_grok_stream_does_not_inherit_present_stream_cut",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_prior_grok_offer_cannot_be_reused_by_another_command",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_unsupported_grok_surface_refuses_before_native_read",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_disable_retains_unresolved_gap_and_never_applies_a_later_enrollment",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_inherited_turn_cannot_complete_a_prospective_arm",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_queued_disable_fences_prospective_enrollment",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_reissue_cannot_replace_the_incarnation_of_an_existing_arm",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_reissued_enable_preserves_an_armed_stream_and_original_grant",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_rejected_enable_receipt_cannot_authorize_prospective_capture",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_unmatched_checkout_cannot_open_payload_or_enroll",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_enrollment.py::test_wrong_terminal_and_rewritten_arm_hold_the_original_enrollment",
+      "suite": "unit",
+      "isolation_group": "grok-capture-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_install.py::test_backup_refuses_output_inside_replaceable_store",
       "suite": "unit",
       "isolation_group": "installation-guards"

@@ -4,6 +4,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_grok import _policy_locator
 from test_grok import grok_policy as grok_policy
 from test_grok import grok_source as grok_source
@@ -709,8 +710,8 @@ def test_grok_duplicate_receipt_cannot_pass_as_a_later_completion(grok_source):
     assert retried.cursor.checkpoint.offset == len(b"".join(source.rows[:5]))
 
 
-def test_grok_quiet_enable_skips_preexisting_unverified_marker(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_quiet_enable_skips_preexisting_unverified_marker(grok_capture_policy):
+    f = grok_capture_policy
     f.refs.clear()
     f.write(f.rows[:5], 1)
     unarmed = f.state.read_source(f.source_id, f.locator())
@@ -725,8 +726,8 @@ def test_grok_quiet_enable_skips_preexisting_unverified_marker(isolated_grok_cap
     assert batch.cursor.checkpoint.completions[0].observation is None
 
 
-def test_grok_open_enable_excludes_open_turn_at_cut(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_open_enable_excludes_open_turn_at_cut(grok_capture_policy):
+    f = grok_capture_policy
     f.write(f.rows[:2], 0)
     enable = f.submit(51, True)
     assert f.evaluate() == ()
@@ -740,9 +741,9 @@ def test_grok_open_enable_excludes_open_turn_at_cut(isolated_grok_capture):
 
 @pytest.mark.parametrize("failure", ["receipt", "cancelled", "malformed"])
 def test_grok_bad_open_terminal_closes_disable_at_verified_start(
-    isolated_grok_capture, failure
+    grok_capture_policy, failure
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(61, True)
     assert f.evaluate()
     f.write(f.rows[:2], 0)
@@ -766,8 +767,8 @@ def test_grok_bad_open_terminal_closes_disable_at_verified_start(
     assert batch.cursor.checkpoint.offset == 0
 
 
-def test_new_grok_stream_does_not_inherit_present_stream_cut(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_new_grok_stream_does_not_inherit_present_stream_cut(grok_capture_policy):
+    f = grok_capture_policy
     f.submit(71, True)
     assert f.evaluate()
     new_locator, write_new = f.add_stream()
@@ -778,8 +779,8 @@ def test_new_grok_stream_does_not_inherit_present_stream_cut(isolated_grok_captu
     assert not batch._grok_strict
 
 
-def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_quiet_cut_is_frozen_while_other_stream_finishes(grok_capture_policy):
+    f = grok_capture_policy
     new_locator, write_new = f.add_stream()
     f.submit(81, True)
     assert f.evaluate()
@@ -818,14 +819,14 @@ def test_verified_grok_cut_refuses_a_rewritten_original_prefix(isolated_grok_cap
 
 
 def test_unsupported_grok_surface_refuses_before_native_read(
-    isolated_grok_capture, monkeypatch
+    grok_capture_policy, monkeypatch
 ):
     from dataclasses import replace
 
     from aitm_usage.sources.grok import GrokAdapter
     from aitm_usage.types import DiagnosticCode
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     view = f.writer.view()
     (original,) = view.sources
     linux = replace(original.approval, surface="grok-build-linux", platform="Linux")
@@ -854,9 +855,9 @@ def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_captur
 
 
 def test_prior_grok_offer_cannot_be_reused_by_another_command(
-    isolated_grok_capture, monkeypatch
+    grok_capture_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_capture_policy
     original = f.state._grok_capture_evidence
     saved = []
 
@@ -878,8 +879,8 @@ def test_prior_grok_offer_cannot_be_reused_by_another_command(
     assert f.evaluate()[0].command_id == disable.command_id
 
 
-def test_grok_pending_mixed_stream_reads_each_verified_bound(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_pending_mixed_stream_reads_each_verified_bound(grok_capture_policy):
+    f = grok_capture_policy
     new_locator, write_new = f.add_stream()
     f.submit(111, True)
     assert f.evaluate()
@@ -911,12 +912,12 @@ def test_grok_replaced_incarnation_has_no_previous_capture_authority(
 
 
 def test_another_scope_reader_cannot_change_current_grok_receipt_verifier(
-    isolated_grok_capture,
+    grok_capture_policy,
 ):
     from aitm_usage.sources.grok import GrokAdapter
     from aitm_usage.types import DiagnosticCode
 
-    f = isolated_grok_capture
+    f = grok_capture_policy
     f.submit(131, True)
     assert f.evaluate()
     f.write(f.rows[:5], 1)
