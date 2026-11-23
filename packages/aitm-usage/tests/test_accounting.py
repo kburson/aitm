@@ -6,6 +6,7 @@ from importlib.resources import files
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
 from aitm_usage import accounting, pricing
 from aitm_usage import ledger as store
@@ -16,6 +17,7 @@ from aitm_usage.types import (
     Availability,
     BoundaryKind,
     ClientVersion,
+    Currency,
     Diagnostic,
     DiagnosticCode,
     ItemKey,
@@ -47,6 +49,57 @@ ITEM = ItemKey(ItemKind.ISSUE, 90)
 def project(tmp_path, monkeypatch):
     monkeypatch.setattr(store, "_control_root", lambda: tmp_path / "control")
     return Ledger.initialize(tmp_path / "project", PROJECT)
+
+
+@pytest.fixture
+def pricing_evidence():
+    return _memory_ledger(store, PROJECT, b"pricing-policy-test")
+
+
+@pytest.fixture(scope="module")
+def reference_rates():
+    """Freeze the v2026-11-09 inputs used by the arithmetic examples."""
+    return pricing.RateCard(
+        "2026-11-09",
+        Currency.USD,
+        ProcessingTier.STANDARD,
+        pricing._LongContextRate(272000, Decimal("2"), Decimal("1.5")),
+        (
+            pricing._ModelRate(
+                ModelLabel.GPT_6_ASTRA,
+                Provider.CODEX,
+                pricing._RateSource.ASTRA,
+                uncached_input=Decimal("10"),
+                cache_read=Decimal("1"),
+                cache_write=Decimal("12.5"),
+                cache_write_5m=None,
+                cache_write_1h=None,
+                output=Decimal("50"),
+            ),
+            pricing._ModelRate(
+                ModelLabel.GPT_6_1_SOL,
+                Provider.CODEX,
+                pricing._RateSource.SOL,
+                uncached_input=Decimal("2"),
+                cache_read=Decimal("0.1"),
+                cache_write=Decimal("2.5"),
+                cache_write_5m=None,
+                cache_write_1h=None,
+                output=Decimal("10"),
+            ),
+            pricing._ModelRate(
+                ModelLabel.CLAUDE_OPUS_5_5,
+                Provider.CLAUDE,
+                pricing._RateSource.OPUS,
+                uncached_input=Decimal("4"),
+                cache_read=Decimal("0.2"),
+                cache_write=None,
+                cache_write_5m=Decimal("5"),
+                cache_write_1h=Decimal("8"),
+                output=Decimal("20"),
+            ),
+        ),
+    )
 
 
 def usage(project, model=ModelLabel.GPT_6_ASTRA, *, revision=1):
@@ -171,24 +224,26 @@ def test_standard_rates_and_account_only_evidence(project):
     ],
 )
 def test_openai_long_context_threshold_prices_full_request(
-    project, model, gross, expected
+    pricing_evidence, reference_rates, model, gross, expected
 ):
     observation = replace(
-        usage(project, model).record,
+        usage(pricing_evidence, model).record,
         tokens=TokenCounts(gross, 200000, 0, 0, 1000, 750, gross + 1000),
         context_tokens=gross,
     )
     with localcontext(prec=2):
-        result = pricing.price(observation, pricing.load_rate_card())
+        result = pricing.price(observation, reference_rates)
     assert result.usd == Decimal(expected)
 
 
-def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(project):
-    obs = usage(project, ModelLabel.CLAUDE_OPUS_5_5).record
+def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(
+    pricing_evidence, reference_rates
+):
+    obs = usage(pricing_evidence, ModelLabel.CLAUDE_OPUS_5_5).record
     obs = replace(
         obs, tokens=replace(obs.tokens, total_tokens=780, reasoning_output_tokens=None)
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd == Decimal("0.004970")
+    assert pricing.price(obs, reference_rates).usd == Decimal("0.004970")
 
 
 @pytest.mark.parametrize(
@@ -212,26 +267,32 @@ def test_opus_counts_cache_ttls_once_and_allows_absent_thinking_subset(project):
         ("tokens", TokenCounts(500, 400, 0, 0, 200, 150, 850)),
     ],
 )
-def test_insufficient_or_inconsistent_usage_has_unknown_price(project, change, value):
-    obs = replace(usage(project).record, **{change: value})
-    result = pricing.price(obs, pricing.load_rate_card())
+def test_insufficient_or_inconsistent_usage_has_unknown_price(
+    pricing_evidence, reference_rates, change, value
+):
+    obs = replace(usage(pricing_evidence).record, **{change: value})
+    result = pricing.price(obs, reference_rates)
     assert result.usd is None
     assert result.availability is Availability.UNKNOWN
     assert result.currency == "USD"
 
 
-def test_codex_never_prices_nonzero_write_ttl_even_with_coherent_context(project):
+def test_codex_never_prices_nonzero_write_ttl_even_with_coherent_context(
+    pricing_evidence, reference_rates
+):
     obs = replace(
-        usage(project).record,
+        usage(pricing_evidence).record,
         tokens=TokenCounts(500, 400, 0, 1, 200, 150, 701),
         context_tokens=501,
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd is None
+    assert pricing.price(obs, reference_rates).usd is None
 
 
-def test_opus_context_includes_cache_writes_and_total_excludes_thinking(project):
-    obs = usage(project, ModelLabel.CLAUDE_OPUS_5_5).record
-    rates = pricing.load_rate_card()
+def test_opus_context_includes_cache_writes_and_total_excludes_thinking(
+    pricing_evidence, reference_rates
+):
+    obs = usage(pricing_evidence, ModelLabel.CLAUDE_OPUS_5_5).record
+    rates = reference_rates
     assert pricing.price(replace(obs, context_tokens=500), rates).usd is None
     assert (
         pricing.price(
@@ -241,13 +302,13 @@ def test_opus_context_includes_cache_writes_and_total_excludes_thinking(project)
     )
 
 
-def test_priced_zero_is_distinct_from_missing_tokens(project):
+def test_priced_zero_is_distinct_from_missing_tokens(pricing_evidence, reference_rates):
     obs = replace(
-        usage(project).record,
+        usage(pricing_evidence).record,
         tokens=TokenCounts(0, 0, 0, 0, 0, total_tokens=0),
         context_tokens=0,
     )
-    assert pricing.price(obs, pricing.load_rate_card()).usd == Decimal(0)
+    assert pricing.price(obs, reference_rates).usd == Decimal(0)
 
 
 def test_exact_usage_revision_controls_price_and_preserves_as_of(project):
@@ -389,8 +450,11 @@ def test_wire_values_are_canonical_closed_and_private(project):
             _decode(malformed, Revision)
 
 
-def test_rate_card_content_is_versioned_validated_and_immutable(project):
-    card = pricing.load_rate_card()
+def test_rate_card_content_is_versioned_validated_and_immutable(
+    project, reference_rates
+):
+    card = pricing.load_rate_card("2026-11-09")
+    assert card == reference_rates
     raw = files("aitm_usage").joinpath("rates", "2026-11-09.json").read_text()
     rates = json.loads(raw)
     assert pricing.RateCard.from_json(json.dumps(rates, sort_keys=True)) == card
@@ -436,10 +500,9 @@ def test_accounting_revision_cannot_overwrite_an_immutable_record(project):
     ],
 )
 def test_sanitized_spike_token_totals_at_standard_rates(
-    project, model, requests, totals, expected
+    pricing_evidence, reference_rates, model, requests, totals, expected
 ):
-    card = pricing.load_rate_card()
-    template = usage(project, model).record
+    template = usage(pricing_evidence, model).record
     priced = Decimal(0)
     # Distribute the recorded aggregate into sanitized request-sized vectors.
     # All four reported sets used Standard rates without a long-context premium.
@@ -453,5 +516,5 @@ def test_sanitized_spike_token_totals_at_standard_rates(
             gross, cached, write_5m, write_1h, output, total_tokens=context + output
         )
         obs = replace(template, tokens=tokens, context_tokens=context)
-        priced += pricing.price(obs, card).usd
+        priced += pricing.price(obs, reference_rates).usd
     assert priced == Decimal(expected)
