@@ -496,6 +496,16 @@ def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
         assert all(
             os.path.samestat(info, path.stat()) for path, info in identities.items()
         )
+        database = _database(registry)
+        database.chmod(0o644)
+        try:
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                _sequences(reopened)
+            with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+                journal.JournalStore(writer)
+        finally:
+            database.chmod(0o600)
+        assert _sequences(reopened) == [(1,)]
 
 
 @pytest.mark.parametrize("arrives_during_publication", [False, True])
@@ -601,22 +611,33 @@ def test_interrupted_parent_sync_is_confirmed_on_reopen(tmp_path, monkeypatch):
 def test_attachment_never_initializes_or_adopts_source_key(
     request, monkeypatch, key_state
 ):
-    if key_state in {"uninitialized", "unrecorded"}:
+    if key_state != "missing":
         memory = _journal_observations(monkeypatch)
-        memory.writer.view = Mock(return_value=RegistryView())
+        if key_state != "changed":
+            memory.writer.view = Mock(return_value=RegistryView())
         for path in tuple(memory.files):
             if path.is_relative_to(memory.store):
                 del memory.files[path]
         key_path = _key(memory.writer)
         if key_state == "uninitialized":
             del memory.files[key_path]
+        message = "requires an initialized source key"
+        if key_state == "changed":
+            journal._read_private.return_value = b"X" * 32
+            message = "Routing journal source key changed"
         before = dict(memory.files)
-        with pytest.raises(LedgerError, match="requires an initialized source key"):
+        expected_key_id = memory.writer.view().source_key_id
+        with pytest.raises(LedgerError, match=message):
             journal.JournalStore(memory.writer)
-        assert memory.writer.view().source_key_id is None
+        assert memory.writer.view().source_key_id == expected_key_id
         assert memory.files == before
         memory.writer.source_evidence.assert_not_called()
-        memory.pin.assert_not_called()
+        if key_state == "changed":
+            memory.pin.assert_called_once_with(memory.writer.root)
+            assert journal._read_private.call_args.args[1] == journal._SOURCE_KEY_FILE
+            assert journal._read_private.return_value == b"X" * 32
+        else:
+            memory.pin.assert_not_called()
         memory.open_database.assert_not_called()
         return
 
@@ -624,20 +645,13 @@ def test_attachment_never_initializes_or_adopts_source_key(
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         writer.source_evidence()
-        if key_state == "missing":
-            _key(registry).unlink()
-        else:
-            _key(registry).write_bytes(b"X" * 32)
-            _key(registry).chmod(0o600)
+        _key(registry).unlink()
         expected_key_id = writer.view().source_key_id
         with pytest.raises(LedgerError):
             journal.JournalStore(writer)
         assert writer.view().source_key_id == expected_key_id
         assert not _directory(registry).exists()
-        if key_state == "changed":
-            assert _key(registry).read_bytes() == b"X" * 32
-        else:
-            assert not _key(registry).exists()
+        assert not _key(registry).exists()
 
 
 @pytest.mark.parametrize(
@@ -680,7 +694,6 @@ def test_damaged_current_store_is_left_byte_for_byte_unchanged(tmp_path):
 
 
 _PHYSICAL_STORE_CASES = {
-    ("permissions", ""),
     ("hardlink", "-wal"),
     ("symlink", "-shm"),
     ("missing", ""),
@@ -794,9 +807,7 @@ def test_unsafe_database_and_sidecars_refuse_before_open(
         store = journal.JournalStore(writer)
         path = _database(registry).with_name(_database(registry).name + suffix)
         saved = tmp_path / "original"
-        if damage == "permissions":
-            path.chmod(0o644)
-        elif damage == "hardlink":
+        if damage == "hardlink":
             os.link(path, saved)
         else:
             path.rename(saved)
@@ -816,8 +827,19 @@ def test_live_handle_refuses_replacement_key_with_identical_bytes(tmp_path):
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         evidence = writer.source_evidence()
-        store = journal.JournalStore(writer)
         key = _key(registry)
+        original = key.read_bytes()
+        key_id = writer.view().source_key_id
+        key.write_bytes(b"X" * 32)
+        try:
+            with pytest.raises(LedgerError, match="Routing journal source key changed"):
+                journal.JournalStore(writer)
+            assert key.read_bytes() == b"X" * 32
+            assert writer.view().source_key_id == key_id
+            assert not _directory(registry).exists()
+        finally:
+            key.write_bytes(original)
+        store = journal.JournalStore(writer)
         replacement = tmp_path / "replacement"
         shutil.copy2(key, replacement)
         replacement.replace(key)
@@ -891,8 +913,14 @@ def test_retired_writer_cannot_reopen_or_use_saved_store(monkeypatch):
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
-    tmp_path, monkeypatch, version
+    request, monkeypatch, version
 ):
+    if version != 1:
+        trace = _observe_upgrade_requests(monkeypatch, version)
+        _assert_upgrade_trace(trace, version)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         _create_legacy_store(writer, version)
@@ -908,15 +936,102 @@ def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
 
         monkeypatch.setattr(journal, "_open", trace_migration)
         journal.JournalStore(writer)
-        normalized = [" ".join(sql.split()).upper() for sql in statements]
-        assert normalized.count("BEGIN IMMEDIATE") == 1
-        assert normalized.count("COMMIT") == 1
-        assert [
-            sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")
-        ] == ["PRAGMA USER_VERSION = 4"]
-        creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
-        assert len(creates) == 4 - version
-        assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
+        _assert_upgrade_trace(statements, version)
+
+
+def _assert_upgrade_trace(statements, version):
+    normalized = [" ".join(sql.split()).upper() for sql in statements]
+    assert normalized.count("BEGIN IMMEDIATE") == 1
+    assert normalized.count("COMMIT") == 1
+    assert [sql for sql in normalized if sql.startswith("PRAGMA USER_VERSION =")] == [
+        "PRAGMA USER_VERSION = 4"
+    ]
+    creates = [sql for sql in normalized if sql.startswith("CREATE TABLE")]
+    assert len(creates) == 4 - version
+    assert creates[-1].startswith("CREATE TABLE ROUTE_DISPOSITIONS")
+
+
+def _observe_upgrade_requests(monkeypatch, version):
+    def normalize(sql):
+        return " ".join(sql.rstrip().removesuffix(";").split())
+
+    def table_row(statement):
+        ddl = normalize(statement)
+        name = ddl.split()[2]
+        return "table", name, name, ddl
+
+    base = tuple(table_row(sql) for sql in _V1_SCHEMA.split(";") if sql.strip())
+    migrations = tuple(
+        table_row(sql)
+        for sql in (_V2_REVISION_SCHEMA, _V3_CONTENT_SCHEMA, _V4_DISPOSITION_SCHEMA)
+    )
+
+    def supported(schema_version):
+        assert schema_version in {1, 2, 3, 4}
+        return tuple(sorted((*base, *migrations[: schema_version - 1])))
+
+    reported = version
+    catalog = list(supported(version))
+    statements = []
+    validate = journal._validate_identity
+    memory = _journal_observations(monkeypatch)
+    monkeypatch.setattr(journal, "_validate_identity", validate)
+    monkeypatch.setattr(journal, "_supported_schema", supported)
+
+    def connect(path, *, write):
+        assert path == memory.store / journal._DATABASE
+
+        def execute(statement):
+            nonlocal reported
+            sql = normalize(statement)
+            if write:
+                statements.append(sql)
+            if sql == ("BEGIN IMMEDIATE" if write else "BEGIN"):
+                return None
+            metadata = {
+                "PRAGMA application_id": (_V1_APPLICATION_ID,),
+                "PRAGMA user_version": (reported,),
+                "PRAGMA journal_mode": ("wal",),
+                "SELECT singleton, key_id FROM identity": [
+                    (1, memory.writer.view().source_key_id)
+                ],
+                "PRAGMA foreign_key_check": None,
+            }
+            if sql in metadata:
+                value = metadata[sql]
+                return SimpleNamespace(fetchone=lambda: value, fetchall=lambda: value)
+            if (
+                sql
+                == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+            ):
+                return sorted(catalog)
+            assert write, f"Read-only journal issued {sql}"
+            if sql.startswith("PRAGMA user_version = "):
+                reported = int(sql.split()[-1])
+            else:
+                row = table_row(sql)
+                assert row in migrations and row not in catalog
+                catalog.append(row)
+            return None
+
+        def close_transaction(error, *_):
+            if write and error is None:
+                statements.append("COMMIT")
+
+        connection = MagicMock(spec=sqlite3.Connection)
+        connection.execute.side_effect = execute
+        connection.__exit__.side_effect = close_transaction
+        return nullcontext(connection)
+
+    memory.open_database.side_effect = connect
+    journal.JournalStore(memory.writer)
+    assert [entry.kwargs["write"] for entry in memory.open_database.call_args_list] == [
+        False,
+        True,
+    ]
+    assert reported == 4
+    assert tuple(sorted(catalog)) == supported(4)
+    return statements
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])

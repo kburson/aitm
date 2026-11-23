@@ -13,7 +13,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from grok_capture_policy_cases import grok_capture_policy  # noqa: F401, F811
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_grok import PROMPT_A, PROMPT_B, SESSION
 from test_monitor_grok_capture import isolated_grok_capture  # noqa: F401, F811
 
@@ -62,6 +62,86 @@ def staged_scope(
     return f, reader, command, checkout, process
 
 
+@pytest.fixture
+def staged_scope_policy(grok_capture_policy, monkeypatch):
+    from hashlib import sha256
+    from io import BytesIO
+
+    from monitor_inbox_cases import MonitorInboxFiles
+
+    f = grok_capture_policy
+    initial = f.writer.view()
+    files = MonitorInboxFiles(
+        monkeypatch, f.project, writer=f.writer, initial_view=initial
+    )
+    f.scope_files = files
+    (project,) = initial.projects
+    (checkout,) = project.anchors
+    files.identities[checkout.path] = checkout
+    files.files[f.writer.root][scope_admission._GROK_QUALIFICATION_RECORD] = (
+        b"fixture qualification revision"
+    )
+
+    def publish(directory, name, data, *, replace_pending=False, before_commit=None):
+        if not replace_pending:
+            return files.publish(directory, name, data, before_commit=before_commit)
+        assert directory.path.name == scope_admission._GROK_RECEIPTS
+        before_commit()
+        files.files[directory.path][name] = data
+        return True
+
+    monkeypatch.setattr(scope_admission, "_publish", publish)
+    monkeypatch.setattr(
+        scope_admission,
+        "_read_state",
+        lambda directory, name, _limit: files.read(directory, name),
+    )
+    image = Path("/fixture/image/candidate")
+    image_bytes = b"bounded executable fixture"
+    image_stat = SimpleNamespace(
+        st_mode=stat.S_IFREG | 0o700,
+        st_dev=3,
+        st_ino=17,
+        st_size=len(image_bytes),
+        st_mtime_ns=71,
+    )
+    profile = f.writer._live_profile
+    (installation,) = profile.installations
+    executable = f.writer.source_evidence().pseudonymize(
+        "isolated-executable-v1", sha256(image_bytes).hexdigest()
+    )
+    f.writer._live_profile = replace(
+        profile, installations=(replace(installation, executable=executable),)
+    )
+    path_stat, path_open = Path.stat, Path.open
+
+    def stat_file(path, **options):
+        if path == image:
+            assert options == {"follow_symlinks": False}
+            return image_stat
+        return path_stat(path, **options)
+
+    def open_file(path, *args, **options):
+        if path == image:
+            assert args == ("rb",) and not options
+            return BytesIO(image_bytes)
+        return path_open(path, *args, **options)
+
+    monkeypatch.setattr(Path, "stat", stat_file)
+    monkeypatch.setattr(Path, "open", open_file)
+    process = process_identity.ProcessIdentity(33503, datetime.now(UTC), image)
+    monkeypatch.setattr(
+        process_identity, "process_reference_domain", lambda: "scope-fixture:"
+    )
+    monkeypatch.setattr(
+        process_identity,
+        "read_process_identity",
+        lambda pid: process if pid == process.pid else None,
+    )
+    reader, command = _scope_proposal(f)
+    return f, reader, command, Path(checkout.path), process
+
+
 def _stage(f, command, checkout, process, session=SESSION):
     return scope_admission.stage_grok_attempt(
         f.writer, f.source_id, command.command_id, session, checkout, process.pid
@@ -108,23 +188,26 @@ def test_one_use_receipt_routes_only_the_original_verified_mark(
     assert hookless.project_id == f.project and hookless.scope is None
 
 
-def test_exact_command_cannot_be_reused_in_another_session(staged_scope):
-    f, _, command, checkout, process = staged_scope
+def test_exact_command_cannot_be_reused_in_another_session(staged_scope_policy):
+    f, _, command, checkout, process = staged_scope_policy
     _stage(f, command, checkout, process)
     with pytest.raises((ConflictError, LedgerError)):
         _stage(f, command, checkout, process, "10000000-0000-4000-8000-000000000335")
 
 
-def test_original_owner_and_live_process_are_required(staged_scope, tmp_path):
-    f, _, command, checkout, process = staged_scope
-    rival = tmp_path / "rival"
-    rival.mkdir()
+def test_original_owner_and_live_process_are_required(staged_scope_policy):
+    from aitm_usage.monitor_registry import _PhysicalDirectory
+
+    f, _, command, checkout, process = staged_scope_policy
+    rival = checkout.with_name("rival")
+    f.scope_files.identities[str(rival)] = _PhysicalDirectory(str(rival), (2, 11))
     with pytest.raises(LedgerError, match="checkout"):
         _stage(f, command, rival, process)
     with pytest.raises(LedgerError):
         _stage(f, replace(command, command_id=UUID(int=33510)), checkout, process)
     with pytest.raises(LedgerError, match="native process is unavailable"):
         _stage(f, command, checkout, replace(process, pid=process.pid + 1))
+    assert _stage(f, command, checkout, process)
 
 
 def _ready_scope(staged_scope, monkeypatch):
@@ -174,12 +257,12 @@ def test_read_only_native_lookup_survives_renewal_and_refuses_rotated_or_revoked
 
 
 def test_a_competing_pending_mark_cannot_replace_the_session_or_publisher(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
     from aitm_usage.sources import grok_scope_hook
 
-    f, reader, request, checkout, process = staged_scope
+    f, reader, request, checkout, process = staged_scope_policy
     attempt = _stage(f, request, checkout, process)
     other = replace(request, command_id=UUID(int=33512))
     reader.advertise(reader.probe(other))
@@ -197,10 +280,12 @@ def test_a_competing_pending_mark_cannot_replace_the_session_or_publisher(
 
 
 def test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
-    f, _, _, checkout, attempt, lookup, bind = _ready_scope(staged_scope, monkeypatch)
+    f, _, _, checkout, attempt, lookup, bind = _ready_scope(
+        staged_scope_policy, monkeypatch
+    )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_B, checkout)
     with pytest.raises(ConflictError, match="another prompt"):
         bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
@@ -212,27 +297,32 @@ def test_preempted_attempt_never_binds_an_unmarked_or_different_native_prompt(
 
 
 def test_original_envelope_and_sealed_prompt_record_cannot_be_substituted(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
     f, _, request, checkout, attempt, lookup, bind = _ready_scope(
-        staged_scope, monkeypatch
+        staged_scope_policy, monkeypatch
     )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
-    queue = ControlInbox(f.writer.root)
+    receipt_ref = scope_admission.scope_receipt_ref(
+        f.writer.source_evidence(), request.command_id
+    )
+    assert lookup(SESSION, PROMPT_A, "synthetic-event-1") == receipt_ref
     name = scope_admission._filename(request.command_id)
-    with queue.publication() as locked:
-        publication = locked.directory.path / name
-    original = publication.read_bytes()
+    publications = f.scope_files.inbox_files
+    original = publications[name]
     envelope = json.loads(original)
     envelope["command"]["body"]["request"]["scope"]["item"]["identifier"] = 121
-    publication.write_text(json.dumps(envelope, separators=(",", ":"), sort_keys=True))
+    publications[name] = json.dumps(
+        envelope, separators=(",", ":"), sort_keys=True
+    ).encode()
     assert lookup(SESSION, PROMPT_A, "synthetic-event-1") is None
-    publication.write_bytes(original)
+    publications[name] = original
+    assert lookup(SESSION, PROMPT_A, "synthetic-event-1") == receipt_ref
 
-    (receipt,) = (f.writer.root / scope_admission._GROK_RECEIPTS).glob("*.json")
-    retained = receipt.read_bytes()
-    process = staged_scope[-1]
+    receipts = f.scope_files.files[f.writer.root / scope_admission._GROK_RECEIPTS]
+    ((receipt, retained),) = receipts.items()
+    process = staged_scope_policy[-1]
     for raw in (SESSION, PROMPT_A, str(checkout), str(process.executable)):
         assert raw.encode() not in retained
     changed = json.loads(retained)
@@ -241,7 +331,9 @@ def test_original_envelope_and_sealed_prompt_record_cannot_be_substituted(
     assert process.pid not in attempt_fields.values()
     assert str(process.pid) not in attempt_fields.values()
     changed["seal"] = "0" * 64
-    receipt.write_text(json.dumps(changed, separators=(",", ":"), sort_keys=True))
+    receipts[receipt] = json.dumps(
+        changed, separators=(",", ":"), sort_keys=True
+    ).encode()
     assert lookup(SESSION, PROMPT_A, "synthetic-event-1") is None
 
 
@@ -817,10 +909,12 @@ def test_ordinary_checkout_mode_can_be_physically_identified(tmp_path):
 
 
 def test_expired_first_bind_keeps_exact_original_scope_unpublished(
-    staged_scope, monkeypatch
+    staged_scope_policy, monkeypatch
 ):
-    f, _, request, checkout, process = staged_scope
+    f, _, request, checkout, process = staged_scope_policy
     attempt = _stage(f, request, checkout, process)
+    receipts = f.scope_files.files[f.writer.root / scope_admission._GROK_RECEIPTS]
+    before = receipts.copy()
     after = datetime.now(UTC) + scope_admission.WITNESS_LIFETIME + timedelta(seconds=1)
 
     class FutureClock(datetime):
@@ -835,6 +929,7 @@ def test_expired_first_bind_keeps_exact_original_scope_unpublished(
         )
     callback = scope_admission.grok_receipt_lookup(f.writer, f.source_id, checkout)
     assert callback(SESSION, PROMPT_A, "native") is None
+    assert receipts == before
 
 
 @pytest.mark.parametrize(
@@ -842,8 +937,11 @@ def test_expired_first_bind_keeps_exact_original_scope_unpublished(
     [("revoke", "producer grant is unavailable"), ("rotate", "seal changed")],
 )
 def test_grant_change_after_native_read_refuses_first_application(
-    staged_scope, monkeypatch, operation, refusal
+    request, monkeypatch, operation, refusal
 ):
+    staged_scope = request.getfixturevalue(
+        "staged_scope" if operation == "revoke" else "staged_scope_policy"
+    )
     f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
         staged_scope, monkeypatch
     )

@@ -211,9 +211,13 @@ def _prior_journal_rows(journal):
 
 @pytest.mark.parametrize("release_previous", [False, True], ids=["gap", "resolved"])
 def test_journal_records_native_disposition_without_settlement(
-    journal_disposition, release_previous
+    request, monkeypatch, release_previous
 ):
-    with journal_disposition(release_previous) as case:
+    if release_previous:
+        _assert_journal_records_resolved_proposal(monkeypatch)
+        return
+
+    with request.getfixturevalue("journal_disposition")(release_previous) as case:
         journal = case.journal
         before = journal.as_of()
         rows = _prior_journal_rows(journal)
@@ -345,6 +349,82 @@ def journal_disposition_policy(monkeypatch):
     journal = monitor_journal.RoutingJournal(writer, case.state)
     proof = case.state.verify_route_disposition(case.command, case.terminal)
     return case, journal, store, proof
+
+
+def _disposition_with_first_claim(monkeypatch, *, release=False):
+    from aitm_usage import monitor_journal as journal_module
+    from aitm_usage.monitor_types import ObservationTimeBasis
+    from aitm_usage.types import ClientVersion, TokenCounts, UsageObservation, _encode
+
+    case = route_admission_case(monkeypatch, CUTOFF, release=release)
+    writer = case.state.registry
+    evidence = writer.source_evidence()
+    store = _ClaimJournalRows(evidence)
+    monkeypatch.setattr(journal_module, "JournalStore", lambda _: store)
+    journal = journal_module.RoutingJournal(writer, case.state)
+    proof = case.state.verify_route_disposition(case.command, case.terminal)
+
+    hold = proof.hold
+    position = hold.position
+    boundary = case.snapshot.held_route_targets[0].boundary
+    observed = UsageObservation(
+        boundary,
+        case.when,
+        ClientVersion.CODEX_0_167_0_ALPHA_3_2,
+        1,
+        TokenCounts(input_tokens=4, total_tokens=4),
+        Availability.COMPLETE,
+    )
+    material = journal_module._UsageMaterial(
+        observed, Scope(hold.project_id), ObservationTimeBasis.NATIVE_USAGE_EVENT
+    )
+    origin = journal_module.ClaimEvidence(
+        position.source_id,
+        position.surface,
+        position.session_ref,
+        position.stream_ref,
+        hold.affected.start,
+        hold.affected.end,
+        1,
+        boundary.boundary_ref,
+    )
+    claim = journal_module._ClaimPayload(material, origin)
+    key = evidence.pseudonymize("fixture-observation", "initial-claim")
+    store.commits.add(1)
+    store.claims[key.value] = (
+        str(hold.project_id),
+        journal_module._claim_digest(material),
+        _encode(claim, journal_module._ClaimPayload).encode(),
+        1,
+    )
+    return case, journal, store, proof, key
+
+
+def _assert_journal_records_resolved_proposal(monkeypatch):
+    case, journal, store, proof, key = _disposition_with_first_claim(
+        monkeypatch, release=True
+    )
+    before = journal.as_of()
+    lease_scope = case.state.view()
+    persisted = case.snapshot
+    claims = store.claims.copy()
+
+    change = journal.record_disposition(proof)
+    assert change.sequence == before.sequence + 1
+    assert change.disposition.record == proof.record
+    assert change.disposition.record.outcome == "resolved"
+    assert change.disposition.hold_digest == proof.hold.command_digest
+    assert journal.record_disposition(proof) == change
+
+    after = journal.as_of()
+    assert replace(after, sequence=before.sequence, dispositions=()) == before
+    assert journal.as_of(before.sequence) == before
+    (projection,) = after.dispositions
+    assert projection.change == change and projection.affected == (key,)
+    assert case.state.view() == lease_scope
+    assert case.snapshot is persisted
+    assert store.claims == claims
+    assert store.progress == {}
 
 
 def _assert_record_requires_current_proof(journal_case, change):
@@ -489,7 +569,7 @@ def _assert_disposition_reader_refuses_row(monkeypatch, damage):
     assert journal.as_of(0).dispositions == ()
 
 
-def test_journal_disposition_projects_each_matching_origin_once(journal_disposition):
+def test_journal_disposition_projects_each_matching_origin_once(monkeypatch):
     from aitm_usage.monitor_journal import (
         ContentDispute,
         OwnershipDispute,
@@ -498,77 +578,75 @@ def test_journal_disposition_projects_each_matching_origin_once(journal_disposit
     )
     from aitm_usage.monitor_types import NativeSurface
 
-    with journal_disposition() as case:
-        journal = case.journal
-        change = journal.record_disposition(case.proof)
-        payload = change.disposition
-        first = next(
-            claim for claim in journal.as_of().claims if claim.key == case.first
-        )
-        origin = first.evidence
-        evidence = journal._store.evidence
+    _, journal, _, proof, first_key = _disposition_with_first_claim(monkeypatch)
+    change = journal.record_disposition(proof)
+    payload = change.disposition
+    (first,) = journal.as_of().claims
+    assert first.key == first_key
+    origin = first.evidence
+    evidence = journal._store.evidence
 
-        def key(label):
-            return evidence.pseudonymize("fixture-observation", label)
+    def key(label):
+        return evidence.pseudonymize("fixture-observation", label)
 
-        other_source = replace(origin, source_id=UUID(int=0x636))
-        contender_key = key("ownership")
-        assert contender_key not in case.proof.hold.affected.observation_keys
-        accepted_key = key("content-accepted")
-        rival_key = key("content-contender")
-        claims = [first, replace(first, key=contender_key, project_id=B)]
-        for label, wrong_origin in (
-            ("source", other_source),
-            ("surface", replace(origin, surface=NativeSurface.CLAUDE_CODE_MACOS)),
-            ("session", replace(origin, session_ref=key("different-session"))),
-            ("stream", replace(origin, stream_ref=key("different-stream"))),
-            ("left", replace(origin, start=payload.start - 1, end=payload.start)),
-            ("right", replace(origin, start=payload.end, end=payload.end + 1)),
-        ):
-            claims.append(replace(first, key=key(label), evidence=wrong_origin))
+    other_source = replace(origin, source_id=UUID(int=0x636))
+    contender_key = key("ownership")
+    assert contender_key not in proof.hold.affected.observation_keys
+    accepted_key = key("content-accepted")
+    rival_key = key("content-contender")
+    claims = [first, replace(first, key=contender_key, project_id=UUID(int=0x635))]
+    for label, wrong_origin in (
+        ("source", other_source),
+        ("surface", replace(origin, surface=NativeSurface.CLAUDE_CODE_MACOS)),
+        ("session", replace(origin, session_ref=key("different-session"))),
+        ("stream", replace(origin, stream_ref=key("different-stream"))),
+        ("left", replace(origin, start=payload.start - 1, end=payload.start)),
+        ("right", replace(origin, start=payload.end, end=payload.end + 1)),
+    ):
+        claims.append(replace(first, key=key(label), evidence=wrong_origin))
 
-        prefix = payload.record.prefix
-        matching_edge = _ContentEdge(
-            key("material"),
-            origin,
-            origin.end,
-            prefix.anchor_ref,
-            prefix.locator_ref,
-            prefix.incarnation_ref,
+    prefix = payload.record.prefix
+    matching_edge = _ContentEdge(
+        key("material"),
+        origin,
+        origin.end,
+        prefix.anchor_ref,
+        prefix.locator_ref,
+        prefix.incarnation_ref,
+    )
+    other_edge = replace(matching_edge, origin=other_source)
+    disputes = [
+        OwnershipDispute(contender_key, payload.project_id, origin, change.sequence),
+        OwnershipDispute(first.key, payload.project_id, origin, change.sequence),
+        OwnershipDispute(
+            key("foreign-project"), UUID(int=0x635), origin, change.sequence
+        ),
+    ]
+    content = [
+        ContentDispute(
+            accepted_key,
+            payload.project_id,
+            key("common-a"),
+            matching_edge,
+            other_edge,
+            change.sequence,
+        ),
+        ContentDispute(
+            rival_key,
+            payload.project_id,
+            key("common-b"),
+            other_edge,
+            matching_edge,
+            change.sequence,
+        ),
+    ]
+    expected = tuple(
+        sorted(
+            (first.key, contender_key, accepted_key, rival_key),
+            key=lambda ref: ref.value,
         )
-        other_edge = replace(matching_edge, origin=other_source)
-        disputes = [
-            OwnershipDispute(contender_key, A, origin, change.sequence),
-            OwnershipDispute(first.key, A, origin, change.sequence),
-            OwnershipDispute(key("foreign-project"), B, origin, change.sequence),
-        ]
-        content = [
-            ContentDispute(
-                accepted_key,
-                A,
-                key("common-a"),
-                matching_edge,
-                other_edge,
-                change.sequence,
-            ),
-            ContentDispute(
-                rival_key,
-                A,
-                key("common-b"),
-                other_edge,
-                matching_edge,
-                change.sequence,
-            ),
-        ]
-        expected = tuple(
-            sorted(
-                (first.key, contender_key, accepted_key, rival_key),
-                key=lambda ref: ref.value,
-            )
-        )
-        assert (
-            _affected_disposition_keys(payload, claims, disputes, content) == expected
-        )
+    )
+    assert _affected_disposition_keys(payload, claims, disputes, content) == expected
 
 
 class _JournalTranscriptInputs:

@@ -40,16 +40,8 @@ def _hookless(f):
 
 
 @contextmanager
-def _hide_original_stream(f, monkeypatch, *, physical=False):
+def _hide_original_stream(f, monkeypatch):
     original = f.locator()._source.path
-    if physical:
-        original.unlink()
-        try:
-            yield
-        finally:
-            original.touch()
-        return
-
     raw_transcripts = grok._transcripts
 
     def visible_transcripts(fd, root):
@@ -366,14 +358,12 @@ def test_reissue_cannot_replace_the_incarnation_of_an_existing_arm(
 
 @pytest.mark.parametrize("open_turn", [False, True], ids=["quiet", "in-flight"])
 def test_reissued_enable_retains_the_new_streams_pre_witness_gap(
-    request,
+    grok_capture_policy,
     monkeypatch,
     open_turn,
 ):
-    f = request.getfixturevalue(
-        "isolated_grok_capture" if open_turn else "grok_capture_policy"
-    )
-    with _hide_original_stream(f, monkeypatch, physical=open_turn):
+    f = grok_capture_policy
+    with _hide_original_stream(f, monkeypatch):
         enable = f.submit(33117, True)
         assert f.evaluate()[0].command_id == enable.command_id
         other, write = f.add_stream()

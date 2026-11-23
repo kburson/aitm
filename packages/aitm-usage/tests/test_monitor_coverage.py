@@ -318,11 +318,19 @@ def test_only_stable_profile_denials_become_coverage(
     if not records and case != "replaced-root":
         _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude)
         return
-    if case == "omitted":
+    if records:
         authority, _, journal, store = _coverage_policy(
-            monkeypatch, SOURCE, provider=Provider.CODEX
+            monkeypatch,
+            SOURCE,
+            provider=Provider.CLAUDE if use_claude else Provider.CODEX,
         )
-        authority.writer._live_profile = replace(authority.profile, installations=())
+        authority.writer._live_profile = _changed_live_profile(
+            authority.profile,
+            case,
+            authority.approved,
+            authority.foreign,
+            authority.root,
+        )
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(SOURCE, authority.locator)
         (change,) = journal.coverage_changes(0)
@@ -366,7 +374,7 @@ def test_only_stable_profile_denials_become_coverage(
 def test_changed_authority_rolls_back_any_migration_and_event(
     request, monkeypatch, failure, confirmation
 ):
-    if confirmation == 1 or failure == "policy":
+    if confirmation == 1 or failure != "location":
         _assert_changed_authority_policy(monkeypatch, failure, confirmation)
         return
 
@@ -384,23 +392,10 @@ def test_changed_authority_rolls_back_any_migration_and_event(
             nonlocal checks
             checks += 1
             if checks == confirmation:
-                if failure == "consent":
-                    before = writer.view()
-                    writer._save(
-                        replace(
-                            before,
-                            permissions=tuple(
-                                p
-                                for p in before.permissions
-                                if p.source_id != claude.source_id
-                            ),
-                        )
-                    )
-                else:
-                    old = Path(claude.root.path)
-                    prior = old.with_name("previous-claude")
-                    old.rename(prior)
-                    copytree(prior, old)
+                old = Path(claude.root.path)
+                prior = old.with_name("previous-claude")
+                old.rename(prior)
+                copytree(prior, old)
             return verify(*args)
 
         monkeypatch.setattr(state, "_confirm_live_exclusion", changed)

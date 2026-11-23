@@ -246,6 +246,16 @@ def test_service_commands_and_coverage(project):
         entry["offset"] for entry in status["sources"]
     ]
 
+    stored = root / "status.json"
+    malformed = {**json.loads(stored.read_text()), "producer_pid": "123"}
+    stored.write_text(json.dumps(malformed, separators=(",", ":"), sort_keys=True))
+    rejected = command("status", "--json")
+    assert rejected["producer_mode"] is None and rejected["producer_pid"] is None
+    assert rejected["heartbeat"] is None
+    assert [entry["offset"] for entry in rejected["sources"]] == [
+        entry["offset"] for entry in status["sources"]
+    ]
+
 
 def test_registration_retry_requires_exact_private_and_typed_authority(
     project, monkeypatch
@@ -1480,25 +1490,8 @@ def _status_with_private_input(monkeypatch, invalid):
         {"producer_mode": "unexpected-private-mode", "producer_pid": 123},
     ],
 )
-def test_status_refuses_malformed_or_half_producer_witness(
-    request, monkeypatch, invalid
-):
-    if invalid.get("producer_pid") == "123":
-        root, sources, checkout, config, command = request.getfixturevalue("project")
-        _fixtures(sources, checkout)
-        command("register", "--config", str(config), "--json")
-        command("collect-once", "--json")
-        before = command("status", "--json")
-        path = root / "status.json"
-        payload = json.loads(path.read_text())
-        payload.pop("producer_mode", None)
-        payload.pop("producer_pid", None)
-        path.write_text(
-            json.dumps({**payload, **invalid}, separators=(",", ":"), sort_keys=True)
-        )
-        status = command("status", "--json")
-    else:
-        before, status = _status_with_private_input(monkeypatch, invalid)
+def test_status_refuses_malformed_or_half_producer_witness(monkeypatch, invalid):
+    before, status = _status_with_private_input(monkeypatch, invalid)
     assert status["producer_mode"] is None
     assert status["producer_pid"] is None
     assert status["heartbeat"] is None

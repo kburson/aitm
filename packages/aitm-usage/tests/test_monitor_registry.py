@@ -179,6 +179,10 @@ def _approve(writer, module, root):
 
 @pytest.fixture
 def registry_policy(monkeypatch):
+    return _registry_policy(monkeypatch)
+
+
+def _registry_policy(monkeypatch, *, with_claude=False):
     module = _module()
     native = NativeTranscriptFiles(monkeypatch)
     evidence = module._ServiceEvidence(b"r" * 32)
@@ -188,12 +192,17 @@ def registry_policy(monkeypatch):
         for path in (control_path, project_path, native.root)
     )
     project = module.RegisteredProject(PROJECT_A, project_dir, "A", None, (), None)
+    if with_claude:
+        from conftest import install_legacy_monitor_qualification
+
+        install_legacy_monitor_qualification(monkeypatch, lambda: control_path)
+        provider, surface, version = "claude", "claude-code-macos", "2.1.318"
+    else:
+        provider, surface, version = "codex", "codex-desktop-macos", "0.167.0-alpha.3.2"
     installation = _InstallationProof(
         transcripts,
-        module._LiveSourceTuple(
-            "codex", "codex-desktop-macos", "Darwin", "arm64", "0.167.0-alpha.3.2", 1
-        ),
-        evidence.pseudonymize("executable", "codex"),
+        module._LiveSourceTuple(provider, surface, "Darwin", "arm64", version, 1),
+        evidence.pseudonymize("executable", provider),
     )
     _, reader, root = _adapter(monkeypatch, (evidence, native.root, native.checkout))
     state = native_registry_policy(
@@ -1032,9 +1041,7 @@ def test_armed_prefix_mutation_gaps_only_the_unverified_tail(queued_disable):
 
 
 @pytest.mark.parametrize("unfinished", ["quiet", "streamed", "tool", "abandoned"])
-def test_queued_claude_disable_uses_the_physical_tail(
-    tmp_path, monkeypatch, source, unfinished
-):
+def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfinished):
     from test_claude import request as claude_request
     from test_claude import user as claude_user
     from test_claude import write as write_claude
@@ -1042,13 +1049,35 @@ def test_queued_claude_disable_uses_the_physical_tail(
     from aitm_usage.monitor_control import ControlInbox
 
     module = _module()
-    _, reader, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
-    registry = module.Registry(tmp_path / "monitor")
-    inbox = ControlInbox(registry.root)
-    path = directory / "claude.jsonl"
+    if unfinished == "tool":
+        source = request.getfixturevalue("source")
+        tmp_path = request.getfixturevalue("tmp_path")
+        _, reader, root = _adapter(monkeypatch, source)
+        _, directory, checkout = source
+        registry = module.Registry(tmp_path / "monitor")
+        inbox = ControlInbox(registry.root)
+        path = directory / "claude.jsonl"
+
+        def store(rows, *, append=False):
+            write_claude(path, rows, append=append)
+
+        def ordinal():
+            return path.read_bytes().count(b"\n")
+    else:
+        policy = _registry_policy(monkeypatch, with_claude=True)
+        registry, inbox = policy.registry, policy.inbox
+        reader, root = policy.reader, policy.root
+        checkout = policy.native.checkout
+        path = root.path / "claude.jsonl"
+
+        def store(rows, *, append=False):
+            policy.native.write(path, rows, append=append)
+
+        def ordinal():
+            return policy.native.contents[path].count(b"\n")
+
     rows, _ = _restart_rows("streamed", checkout)
-    write_claude(path, rows[:1])
+    store(rows[:1])
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
     disable = replace(enable, enabled=False)
     command = module.ControlCommand(UUID(int=330), disable)
@@ -1057,8 +1086,7 @@ def test_queued_claude_disable_uses_the_physical_tail(
         prompt = str(UUID(int=500 + 2 * turn))
         reply = str(UUID(int=501 + 2 * turn))
         time = AFTER + timedelta(seconds=10 + turn)
-        write_claude(
-            path,
+        store(
             [
                 claude_user(checkout, time=time, uuid=prompt, isSidechain=False),
                 claude_request(
@@ -1083,7 +1111,8 @@ def test_queued_claude_disable_uses_the_physical_tail(
 
     with registry.writer() as writer:
         root = replace(root, evidence=writer.source_evidence())
-        writer.register_project(_request(module, tmp_path))
+        if unfinished == "tool":
+            writer.register_project(_request(module, tmp_path))
         writer.approve_source(
             module.SourceApprovalRequest(
                 SOURCE,
@@ -1097,15 +1126,15 @@ def test_queued_claude_disable_uses_the_physical_tail(
             )
         )
         frontier = writer.capture_frontier(enable, _locate(reader, root))
-        write_claude(path, rows[1:], append=True)
+        store(rows[1:], append=True)
         start = writer.verify_boundary(enable, _locate(reader, root), frontier)
         writer.set_permission(enable, start)
         append_request(2, stop="end_turn")
-        admitted_end = path.read_bytes().count(b"\n")
+        admitted_end = ordinal()
         if unfinished in {"streamed", "abandoned"}:
             append_request(3, stop=None)
         if unfinished == "abandoned":
-            completed_start = path.read_bytes().count(b"\n")
+            completed_start = ordinal()
             append_request(4, stop="end_turn")
             append_request(5, stop="end_turn")
         if unfinished == "tool":
@@ -1121,7 +1150,7 @@ def test_queued_claude_disable_uses_the_physical_tail(
                     }
                 ],
             )
-        expected = path.read_bytes().count(b"\n")
+        expected = ordinal()
         assert inbox.enqueue(command).status is module.ControlStatus.QUEUED
         assert writer.apply_pending(inbox, writer.lease, locate) == ()
 
@@ -1149,6 +1178,18 @@ def test_queued_claude_disable_uses_the_physical_tail(
             is Eligibility.UNKNOWN
         )
     if unfinished == "abandoned":
+        from scanner_policy_cases import scanner
+
+        native_source = _locate(reader, root)._source
+        _observe_locator(
+            monkeypatch,
+            SimpleNamespace(root=root, module=module),
+            policy.native,
+            native_source,
+            lambda: scanner._CaptureLocatorPresence(
+                True, True, len(policy.native.contents[path]), True, False
+            ),
+        )
         assert (
             registry.span_disposition(
                 PROJECT_A, SOURCE, start.stream_ref, completed_start, expected
@@ -1157,7 +1198,7 @@ def test_queued_claude_disable_uses_the_physical_tail(
         )
         append_request(6, stop="end_turn")
         append_request(7, stop=None)
-        enabled_at = path.read_bytes().count(b"\n")
+        enabled_at = ordinal()
         resume = module.ControlCommand(UUID(int=331), enable)
         assert inbox.enqueue(resume).status is module.ControlStatus.QUEUED
         with registry.writer() as writer:

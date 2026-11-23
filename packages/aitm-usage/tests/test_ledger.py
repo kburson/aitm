@@ -37,8 +37,6 @@ def _uses_path_metadata(request):
         return request.node.callspec.id in METADATA_MODE_CASES
     if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
         return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
-    if name == "test_invalid_identity_refuses_before_durable_writes":
-        return request.node.callspec.id != "key"
     if name == "test_raw_credential_shaped_metadata_is_normalized_before_durable_write":
         return request.node.callspec.id != "model"
     return "ledger_path_metadata" in request.fixturenames
@@ -341,13 +339,14 @@ def ledger_rows(ledger_path_metadata, modules, monkeypatch):
 
     def open_key(descriptor, mode):
         assert (descriptor, mode) == (ledger.key_path, "rb")
-        return KeyBytes(PROJECT.bytes + key)
+        return KeyBytes(rows.key_bytes)
 
     schema = (
         ("table", "checkpoints", "checkpoints", "CREATE TABLE checkpoints (...)"),
         ("table", "revisions", "revisions", "CREATE TABLE revisions (...)"),
     )
     rows = _LedgerRows(identity, ledger_module.APPLICATION_ID, schema)
+    rows.key_bytes = PROJECT.bytes + key
 
     def connection(path, *, write):
         assert path == ledger.database_path
@@ -422,6 +421,9 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
 
     ledger = Ledger.initialize(tmp_path / "project", PROJECT)
     batch = sample_batch(ledger, types)
+    with pytest.raises((ValueError, TypeError)):
+        ledger.apply(_invalid_batch_variants(batch)[0])
+    assert ledger.as_of().sequence == 0
 
     def fail_checkpoint(conn, sequence, proposed, *args, **kwargs):
         assert conn.execute(
@@ -444,6 +446,10 @@ def test_atomic_cursor_and_revisions(tmp_path, monkeypatch):
     assert reopened.apply(batch) == 1
     assert reopened.as_of(1).revisions == batch.revisions
     assert reopened.as_of(1).checkpoints == (batch.checkpoint,)
+    assert reopened.as_of(1).checkpoints[0].provider.request_prefix
+    for path in reopened.root.rglob("*"):
+        if path.is_file() and path != reopened.key_path:
+            assert CANARY.encode() not in path.read_bytes(), path.name
     assert reopened.as_of(0).revisions == ()
     assert reopened.as_of(0).checkpoints == ()
 
@@ -569,16 +575,31 @@ def test_open_refuses_missing_state_without_creating_it(ledger_path_metadata, mo
     assert metadata.entries == before
 
 
-def test_key_is_project_bound_and_pseudonyms_survive_restart(state, tmp_path):
-    ledger, _ = state
+def test_key_is_project_bound_and_pseudonyms_survive_restart(ledger_rows, modules):
+    ledger, _, rows = ledger_rows
+    ledger_module, _ = modules
     reopened = type(ledger).open(ledger.root, PROJECT)
-    other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+    other_key = b"b" * 32
+    other = type(ledger)(
+        ledger.root.with_name("other"),
+        ledger_module._identity(OTHER_PROJECT, other_key),
+        other_key,
+    )
     ref = ledger.pseudonymize("session", CANARY)
     assert reopened.pseudonymize("session", CANARY) == ref
     assert ledger.pseudonymize("request", CANARY) != ref
     assert other.pseudonymize("session", CANARY) != ref
     assert ledger.identity.key_id == reopened.identity.key_id
     assert ledger.identity.key_id != other.identity.key_id
+    reused_key = replace(
+        reopened, identity=replace(reopened.identity, project_id=OTHER_PROJECT)
+    )
+    assert rows.key_bytes.startswith(PROJECT.bytes)
+    assert reused_key.pseudonymize("session", CANARY) != ref
+    with pytest.raises(
+        ledger_module.LedgerError, match="Source reference authentication failed"
+    ):
+        reused_key.validate_source_ref(ref)
 
 
 def durable_data(ledger):
@@ -590,52 +611,36 @@ def durable_data(ledger):
 
 
 @pytest.mark.parametrize("damage", ["schema", "project", "key"])
-def test_invalid_identity_refuses_before_durable_writes(request, damage):
+def test_invalid_identity_refuses_before_durable_writes(ledger_rows, damage):
     from aitm_usage.ledger import LedgerError
 
-    if damage != "key":
-        ledger, types, rows = request.getfixturevalue("ledger_rows")
-        batch = sample_batch(ledger, types)
-        assert ledger.apply(batch) == 1
-        if damage == "schema":
-            rows.version = 99
-            message = "Unsupported ledger schema"
-        else:
-            with pytest.raises(
-                LedgerError, match="Pseudonym key project identity mismatch"
-            ):
-                type(ledger).open(ledger.root, OTHER_PROJECT)
-            rows.identity_row = (str(OTHER_PROJECT), rows.identity_row[1])
-            message = "Ledger project or key identity mismatch"
-
-        before = rows.history
-        rows.writes.clear()
-        for operation in (
-            lambda: type(ledger).open(ledger.root, PROJECT),
-            lambda: type(ledger).initialize(ledger.root, PROJECT),
-            lambda: ledger.apply(batch),
-        ):
-            with pytest.raises(LedgerError, match=message):
-                operation()
-        assert rows.history == before
-        assert rows.writes == []
-        return
-
-    ledger, types = request.getfixturevalue("state")
-    tmp_path = request.getfixturevalue("tmp_path")
+    ledger, types, rows = ledger_rows
     batch = sample_batch(ledger, types)
     assert ledger.apply(batch) == 1
-    replacement = type(ledger).initialize(tmp_path / "replacement", PROJECT)
-    ledger.key_path.write_bytes(replacement.key_path.read_bytes())
+    message = "Ledger project or key identity mismatch"
+    if damage == "schema":
+        rows.version = 99
+        message = "Unsupported ledger schema"
+    elif damage == "project":
+        with pytest.raises(
+            LedgerError, match="Pseudonym key project identity mismatch"
+        ):
+            type(ledger).open(ledger.root, OTHER_PROJECT)
+        rows.identity_row = (str(OTHER_PROJECT), rows.identity_row[1])
+    else:
+        rows.key_bytes = PROJECT.bytes + b"b" * 32
 
-    before = durable_data(ledger)
-    with pytest.raises(LedgerError):
-        type(ledger).open(ledger.root, PROJECT)
-    with pytest.raises(LedgerError):
-        type(ledger).initialize(ledger.root, PROJECT)
-    with pytest.raises(LedgerError):
-        ledger.apply(batch)
-    assert durable_data(ledger) == before
+    before = rows.history
+    rows.writes.clear()
+    for operation in (
+        lambda: type(ledger).open(ledger.root, PROJECT),
+        lambda: type(ledger).initialize(ledger.root, PROJECT),
+        lambda: ledger.apply(batch),
+    ):
+        with pytest.raises(LedgerError, match=message):
+            operation()
+    assert rows.history == before
+    assert rows.writes == []
 
 
 def test_schema_tag_alone_does_not_allow_a_missing_table(ledger_rows):
@@ -654,13 +659,25 @@ def test_held_writer_checks_key_identity_before_each_batch(state, tmp_path):
     from aitm_usage.ledger import LedgerError
 
     ledger, types = state
+    batch = sample_batch(ledger, types)
+    assert ledger.apply(batch) == 1
     replacement = type(ledger).initialize(tmp_path / "replacement", PROJECT)
     with ledger.writer() as writer:
         ledger.key_path.write_bytes(replacement.key_path.read_bytes())
         before = durable_data(ledger)
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="Ledger identity changed"):
             writer.apply(types.LedgerBatch())
         assert durable_data(ledger) == before
+    for operation in (
+        lambda: type(ledger).open(ledger.root, PROJECT),
+        lambda: type(ledger).initialize(ledger.root, PROJECT),
+        lambda: ledger.apply(batch),
+    ):
+        with pytest.raises(
+            LedgerError, match="Ledger project or key identity mismatch"
+        ):
+            operation()
+    assert durable_data(ledger) == before
 
 
 @pytest.mark.parametrize(
@@ -784,17 +801,18 @@ def test_closed_batch_rejects_raw_fields_before_write(memory_state):
     writer.assert_not_called()
 
 
-def test_ledger_admission_and_real_commit_preserve_private_state(state):
-    ledger, types = state
+def test_ledger_admission_and_real_commit_preserve_private_state(ledger_rows):
+    ledger, types, rows = ledger_rows
     batch = sample_batch(ledger, types)
     with pytest.raises((ValueError, TypeError)):
         ledger.apply(_invalid_batch_variants(batch)[0])
     assert ledger.as_of().sequence == 0
+    assert rows.writes == []
     assert ledger.apply(batch) == 1
     assert ledger.as_of().checkpoints[0].provider.request_prefix
-    for path in ledger.root.rglob("*"):
-        if path.is_file() and path != ledger.key_path:
-            assert CANARY.encode() not in path.read_bytes(), path.name
+    payloads = [entry[-1] for table in rows.history[1:] for entry in table]
+    assert len(payloads) == 2
+    assert all(CANARY not in payload for payload in payloads)
 
 
 def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(memory_state):
@@ -1121,7 +1139,7 @@ def test_authenticated_refusal_for_nested_pseudonyms(memory_state, modules, kind
     writer.assert_not_called()
 
 
-def test_genuine_pseudonyms_and_project_identity_survive_reopen(state):
+def test_genuine_pseudonyms_and_project_identity_survive_reopen(state, tmp_path):
     ledger, types = state
     assert ledger.as_of(0).project_id == PROJECT
     batch = sample_batch(ledger, types)
@@ -1130,6 +1148,13 @@ def test_genuine_pseudonyms_and_project_identity_survive_reopen(state):
     assert reopened.as_of(1).project_id == PROJECT
     assert reopened.as_of(1).checkpoints == (batch.checkpoint,)
     reopened.validate_source_ref(batch.checkpoint.cursor.anchor_ref)
+    other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+    session = ledger.pseudonymize("session", CANARY)
+    assert reopened.pseudonymize("session", CANARY) == session
+    assert reopened.pseudonymize("request", CANARY) != session
+    assert other.pseudonymize("session", CANARY) != session
+    assert ledger.identity.key_id == reopened.identity.key_id
+    assert ledger.identity.key_id != other.identity.key_id
 
 
 def quota_sample(ledger, types):
