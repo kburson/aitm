@@ -2687,13 +2687,23 @@ _COMPLETION_POLICY_FIXTURE = (
 )
 
 
+def _completion_policy_input():
+    metadata, *rows = [
+        json.loads(line) for line in _COMPLETION_POLICY_FIXTURE.read_text().splitlines()
+    ]
+    return (
+        rows,
+        datetime.fromisoformat(metadata["time"]),
+        UUID(metadata["turn"]),
+        metadata["total"],
+    )
+
+
 def _assert_completion_policy_rejects(disproof):
     from aitm_usage.sources import codex
     from aitm_usage.types import ClientVersion, Eligibility, Provider
 
-    metadata, *rows = [
-        json.loads(line) for line in _COMPLETION_POLICY_FIXTURE.read_text().splitlines()
-    ]
+    rows, when, turn, total = _completion_policy_input()
     frames = AdapterFrames(
         Provider.CODEX, ClientVersion.CODEX_0_167_0_ALPHA_3_2, SESSION, CUTOFF
     )
@@ -2712,10 +2722,10 @@ def _assert_completion_policy_rejects(disproof):
     _damage_completion_rows(
         rows,
         disproof,
-        datetime.fromisoformat(metadata["time"]),
-        UUID(metadata["turn"]),
+        when,
+        turn,
         other_checkout=Path("/fixture/worktree-2"),
-        total=metadata["total"],
+        total=total,
     )
     witnesses = []
     assert read(rows, witnesses) == read(rows, None)

@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
+from paired_settlement_cases import assert_pair_refuses_changed_completion
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -25,6 +26,7 @@ from test_codex import (
     write,
 )
 from test_monitor_scope import (
+    _COMPLETION_FILE_CASES,
     _COMPLETION_NATIVE_DISPROOFS,
     _damage_completed_disposition,
 )
@@ -2969,9 +2971,13 @@ def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(journal_p
 @pytest.mark.parametrize("side", [0, 1], ids=["owner", "rival"])
 @pytest.mark.parametrize("disproof", _COMPLETION_NATIVE_DISPROOFS)
 def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
-    journal_pair, side, disproof
+    request, monkeypatch, side, disproof
 ):
-    case = journal_pair
+    if disproof not in _COMPLETION_FILE_CASES:
+        assert_pair_refuses_changed_completion(monkeypatch, side, disproof)
+        return
+
+    case = request.getfixturevalue("journal_pair")
     carriers = (case.owner, case.rival)
     bad, other = carriers[side], carriers[1 - side]
     prior, rows = case.journal.as_of(), _prior_journal_rows(case.journal)
