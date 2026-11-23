@@ -5,8 +5,10 @@ from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
+from test_accounting import reference_rates as reference_rates
 from test_install import launch_control as launch_control
 from test_install import project as project
+from test_service import collector_policy as collector_policy
 
 from aitm_usage import cli, qualification
 
@@ -494,14 +496,14 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
     ],
 )
 def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
-    request, monkeypatch, scope_case
+    monkeypatch, scope_case
 ):
     from dataclasses import replace
     from datetime import timedelta
     from uuid import UUID
 
     from test_export import _observation
-    from test_install import _add_anchor
+    from test_install import PROJECT
     from test_ledger import _memory_ledger
 
     from aitm_usage import ledger as store
@@ -515,7 +517,7 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         _Workflow,
         decode_activation_receipt,
     )
-    from aitm_usage.scopes import BoundaryEvidence, drain_inbox, enqueue_command
+    from aitm_usage.scopes import BoundaryEvidence
     from aitm_usage.sources.scan import checkout_anchor_reference
     from aitm_usage.types import (
         ClientVersion,
@@ -526,7 +528,6 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         ItemKey,
         ItemKind,
         ItemParent,
-        LedgerBatch,
         LedgerView,
         MarkerDisposition,
         Provider,
@@ -536,36 +537,27 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         WorkPhase,
     )
 
-    use_durable_workflow = scope_case == "controlled"
-    if use_durable_workflow:
-        registration, ledger, _ = request.getfixturevalue("project")
-        _add_anchor(registration, ledger, ledger.root.parent, 998)
-        dev_path = ledger.root.parent / "anchor-998"
-        planning_path = registration.checkout_anchors[0]
-    else:
-        from test_install import PROJECT
-
-        ledger = _memory_ledger(store, PROJECT, b"q" * 32)
-        planning_path = Path("/fixture/planning")
-        dev_path = Path("/fixture/development")
-        history = [LedgerView(PROJECT, 0, (), ())]
-        registration = Registration(
-            PROJECT,
-            ledger.root,
-            (Path("/fixture/transcripts"),),
-            (planning_path, dev_path),
-            CHECKED,
-        )
-        monkeypatch.setattr(
-            qualification,
-            "_effective_registration",
-            lambda ledger, view: (registration, ()),
-        )
-        monkeypatch.setattr(
-            store.Ledger,
-            "as_of",
-            lambda self, sequence=None: history[-1 if sequence is None else sequence],
-        )
+    ledger = _memory_ledger(store, PROJECT, b"q" * 32)
+    planning_path = Path("/fixture/planning")
+    dev_path = Path("/fixture/development")
+    history = [LedgerView(PROJECT, 0, (), ())]
+    registration = Registration(
+        PROJECT,
+        ledger.root,
+        (Path("/fixture/transcripts"),),
+        (planning_path, dev_path),
+        CHECKED,
+    )
+    monkeypatch.setattr(
+        qualification,
+        "_effective_registration",
+        lambda ledger, view: (registration, ()),
+    )
+    monkeypatch.setattr(
+        store.Ledger,
+        "as_of",
+        lambda self, sequence=None: history[-1 if sequence is None else sequence],
+    )
 
     def put(*revisions):
         prior = history[-1]
@@ -670,31 +662,14 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         revision = replace(template, key=key, record=observation)
         command = InboxCommand(command_id, project_id, payload)
         evidence = (BoundaryEvidence(boundary, anchor),)
-        if use_durable_workflow:
-            if new_marker:
-                assert enqueue_command(ledger.root, command) is None
-            with ledger.writer() as writer:
-                if new_marker:
-                    drain = drain_inbox(writer, evidence)
-                    assert drain.receipts[0].disposition is MarkerDisposition.ACCEPTED
-                writer.apply(LedgerBatch((revision,)))
-        else:
-            if new_marker:
-                admit(command, evidence)
-            put(revision)
+        if new_marker:
+            admit(command, evidence)
+        put(revision)
         return key.value.split(":")[1]
 
     def relationship(payload):
         command = InboxCommand(payload.command_id, project_id, payload)
-        if use_durable_workflow:
-            assert enqueue_command(ledger.root, command) is None
-            with ledger.writer() as writer:
-                assert (
-                    drain_inbox(writer, ()).receipts[0].disposition
-                    is MarkerDisposition.ACCEPTED
-                )
-        else:
-            admit(command)
+        admit(command)
         return ledger.as_of().sequence
 
     relationship(ItemParent(UUID(int=920), project_id, child_a, epic))
@@ -950,51 +925,85 @@ def test_recovery_proves_exact_retained_bundle_and_fixed_parity(
 
 
 def test_cli_cannot_use_receipt_from_another_registered_project(
-    project,
-    tmp_path,
+    collector_policy,
     monkeypatch,
     capsys,
 ):
-    from aitm_usage import qualification
+    from aitm_usage import service
 
-    _, ledger, _ = project
+    case = collector_policy
+    case.configure()
+    ledger = case.ledger
+    receipt = _receipt()
+    path = Path("/fixture/actual-shaped.json")
+    proof_path = ledger.root / qualification.PROOF_NAME
+    real_exists = Path.exists
+
+    def read_owned(requested, *, private, limit):
+        assert requested == path and not private
+        assert limit == qualification._MAX_EVIDENCE_BYTES
+        return json.dumps(receipt).encode()
+
     monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
-    _write_private(ledger.root / "activation-proof.json", b"{}")
-    path = tmp_path / "actual-shaped.json"
-    path.write_text(json.dumps(_receipt()))
+    monkeypatch.setattr(qualification, "_read_owned", read_owned)
+    monkeypatch.setattr(
+        Path, "exists", lambda path: path == proof_path or real_exists(path)
+    )
+    open_project = Mock(return_value=ledger)
+    supervisor = Mock()
+    monkeypatch.setattr(cli, "open_project", open_project)
+    monkeypatch.setattr(cli, "ServiceSupervisor", supervisor)
+    assert receipt["project_id"] != str(ledger.identity.project_id)
     assert _cli(monkeypatch, capsys, ledger.root, path) == (
         1,
         {"status": "project-mismatch"},
     )
-    receipt = _receipt()
     receipt["project_id"] = str(ledger.identity.project_id)
-    receipt["registration_cutoff"] = "2026-11-09T16:00:00+00:00"
-    path.write_text(json.dumps(receipt))
+    receipt["registration_cutoff"] = service.load_registration(
+        ledger
+    ).cutoff.isoformat()
     assert _cli(monkeypatch, capsys, ledger.root, path) == (
         1,
         {"status": "service-evidence"},
     )
+    open_project.assert_called_once_with(ledger.root)
+    supervisor.assert_called_once_with(ledger)
+
+
+def _collect_activation_transcripts(case):
+    from datetime import timedelta
+
+    from test_claude import request, user
+    from test_service import _codex_transcript
+
+    native = case.native
+    case.configure()
+    native.write(native.root / "codex.jsonl", _codex_transcript(native.checkout))
+    native.write(
+        native.root / "claude.jsonl", [user(native.checkout), request(native.checkout)]
+    )
+    case.clock.now.return_value += timedelta(minutes=1)
+    return case.collect()
 
 
 def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
-    project,
+    collector_policy,
     monkeypatch,
 ):
     from dataclasses import replace
     from datetime import timedelta
 
-    from test_service import _fixtures
+    from test_codex import end
 
     from aitm_usage import qualification, service
-    from aitm_usage.types import Provider, _decode
+    from aitm_usage.types import Provider
 
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    service.collect_once(registration, ledger)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    historical = _collect_activation_transcripts(case)
     view = ledger.as_of()
-    raw = (ledger.root / service.STATUS_NAME).read_bytes()
-    captured = _decode(raw, service._Status, validate_ref=ledger.validate_source_ref)
-    current = service.status_report(ledger.root, ledger)
+    captured = service._read_status(ledger.root)
+    assert isinstance(captured, service._Status)
     receipt = qualification.decode_activation_receipt(FIXTURE.read_bytes())
     expected = {entry.provider: entry for entry in receipt.providers}
     evidence = tuple(
@@ -1005,9 +1014,17 @@ def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
             observed_through=datetime.fromisoformat(source["observed_through"]),
             retention_seconds=None,
         )
-        for source in current["sources"]
+        for source in historical["sources"]
     )
-    check_at = max(entry.observed_through for entry in evidence) + timedelta(seconds=10)
+    case.clock.now.return_value += timedelta(seconds=5)
+    native.write(native.root / "codex.jsonl", [end()], append=True)
+    current = case.collect()
+    assert len(evidence) == len(current["sources"]) == 2
+    assert any(
+        source["offset"] > entry.offset
+        for source, entry in zip(current["sources"], evidence, strict=True)
+    )
+    check_at = case.clock.now.return_value + timedelta(seconds=1)
     monkeypatch.setattr(qualification, "_now", lambda: check_at)
     qualification._verify_watermarks(ledger, view, captured, current, evidence)
 
@@ -1015,23 +1032,36 @@ def test_watermarks_bind_historical_authenticated_offsets_and_current_progress(
     with pytest.raises(qualification.QualificationError, match="source-watermark"):
         qualification._verify_watermarks(ledger, view, captured, current, wrong_capture)
 
+    forged = replace(
+        captured,
+        observed=(
+            replace(
+                captured.observed[0],
+                proof=ledger.pseudonymize("fixture", "wrong-proof"),
+            ),
+            *captured.observed[1:],
+        ),
+    )
+    with pytest.raises(qualification.QualificationError, match="source-watermark"):
+        qualification._verify_watermarks(ledger, view, forged, current, evidence)
+
     current["sources"][0]["observed_through"] = None
     with pytest.raises(qualification.QualificationError, match="source-watermark"):
         qualification._verify_watermarks(ledger, view, captured, current, evidence)
 
 
-def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(project):
+def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(
+    collector_policy,
+):
     from dataclasses import replace
-
-    from test_service import _fixtures
 
     from aitm_usage import qualification, service
 
-    registration, ledger, _ = project
-    _fixtures(registration.source_roots[0], registration.checkout_anchors[0])
-    service.collect_once(registration, ledger)
+    case = collector_policy
+    ledger = case.ledger
+    snapshot = _collect_activation_transcripts(case)
+    registration = service.load_registration(ledger)
     view = ledger.as_of()
-    snapshot = service.status_report(ledger.root, ledger)
     evidence = qualification.decode_activation_receipt(FIXTURE.read_bytes()).providers[
         0
     ]
@@ -1040,6 +1070,10 @@ def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(projec
         evidence,
         stream=source["source_ref"].split(":")[1],
         coverage=replace(evidence.coverage, model_switch=qualification._Metric.GAP),
+    )
+    assert any(
+        usage.boundary.stream_ref.value == source["source_ref"]
+        for usage in qualification._usage(view).values()
     )
     qualification._verify_live_coverage(ledger, view, evidence, registration.cutoff)
     for field in ("retry", "nested"):

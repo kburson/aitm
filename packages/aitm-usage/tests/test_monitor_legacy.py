@@ -2,12 +2,15 @@ import json
 import sys
 from contextlib import contextmanager
 from dataclasses import replace
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_scope_legacy import memory_legacy as memory_legacy
 
-from aitm_usage import cli, monitor_registry, scopes
-from aitm_usage.ledger import Ledger
+from aitm_usage import cli, monitor_registry, scopes, service
+from aitm_usage.ledger import Ledger, WriterActive
 
 PROJECT = UUID(int=116)
 ANCHOR_COMMAND = UUID(int=117)
@@ -77,24 +80,65 @@ def adopt(legacy):
     return commit
 
 
+@pytest.fixture
+def legacy_policy(memory_legacy, monkeypatch):
+    ledger = memory_legacy.ledger
+    monitor = Path("/fixture/monitor")
+    directory = monitor_registry._PhysicalDirectory(str(ledger.root), (1, 2))
+    project = monitor_registry.RegisteredProject(
+        ledger.identity.project_id, directory, "Legacy", None, (), None
+    )
+    current = monitor_registry.RegistryView(projects=(project,))
+
+    def view(registry):
+        assert registry.root == monitor
+        return current
+
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: monitor)
+    monkeypatch.setattr(monitor_registry.Registry, "view", view)
+    monkeypatch.setattr(
+        monitor_registry, "_path_exists", lambda path: path == ledger.root
+    )
+
+    def physical(path, *, private):
+        assert private and path == directory.path
+        return directory
+
+    monkeypatch.setattr(monitor_registry, "_directory", physical)
+
+    def adopt_current():
+        nonlocal current
+        adopted = replace(project, adopted_key_id=ledger.identity.key_id)
+        current = replace(current, projects=(adopted,))
+
+    memory_legacy.adopt_current = adopt_current
+    return memory_legacy
+
+
 @pytest.mark.parametrize("command", ["register", "source add-anchor"])
-def test_legacy_mutation_reports_adoption_before_opening_input(legacy, adopt, command):
-    root, _, _, run = legacy
-    ledger = Ledger.open(root, PROJECT)
-    before = ledger.as_of().sequence
-    adopt()
-    missing = str(root.parent / "missing-private-input")
+def test_legacy_mutation_reports_adoption_before_opening_input(
+    legacy_policy, monkeypatch, command
+):
+    legacy_policy.adopt_current()
+    open_input = Mock(
+        side_effect=AssertionError("adopted legacy command opened its input")
+    )
+    open_writer = Mock(
+        side_effect=AssertionError("adopted legacy command tried to write")
+    )
+    monkeypatch.setattr(Path, "open", open_input)
+    monkeypatch.setattr(Ledger, "writer", open_writer)
+    missing = "/fixture/missing-private-input"
     input_option = "--config" if command == "register" else "--anchor"
 
-    with ledger.writer():
-        status, output = run(*command.split(), input_option, missing, "--json")
+    status, output = legacy_policy.run((*command.split(), input_option, missing))
 
     assert status == 1
     assert json.loads(output.out) == {"status": "project-adopted-use-monitor"}
     assert output.err == ""
-    assert ledger.as_of().sequence == before
-    assert not (root / "source-anchors").exists()
-    assert not (root / "inbox").exists()
+    open_input.assert_not_called()
+    open_writer.assert_not_called()
+    assert legacy_policy.inbox == {}
 
 
 def test_legacy_register_rechecks_after_entering_writer(legacy, adopt, monkeypatch):
@@ -120,18 +164,32 @@ def test_legacy_register_rechecks_after_entering_writer(legacy, adopt, monkeypat
     assert not registration.exists()
 
 
-def test_legacy_register_rereads_adoption_on_writer_refusal(legacy, adopt, monkeypatch):
-    root, config, _, run = legacy
-    ledger = Ledger.open(root, PROJECT)
-    original_writer = Ledger.writer
+def test_legacy_register_rereads_adoption_on_writer_refusal(legacy_policy, monkeypatch):
+    ledger = legacy_policy.ledger
+    config = Path("/fixture/project.json")
+    sources, checkout = Path("/fixture/sources"), Path("/fixture/checkout")
+    legacy_policy.inputs[config] = json.dumps(
+        {
+            "project_id": str(ledger.identity.project_id),
+            "source_roots": [str(sources)],
+            "checkout_anchors": [str(checkout)],
+            "cutoff": "2026-11-09T16:00:00+00:00",
+        }
+    ).encode()
+    monkeypatch.setattr(
+        service, "_directory_available", {sources, checkout}.__contains__
+    )
+    monkeypatch.setattr(
+        service, "_path_exists", lambda path: path == ledger.root / service.STORE_NAME
+    )
 
-    def writer_after_cutover(self):
-        adopt()
-        return original_writer(self)
+    def writer_after_cutover(actual):
+        assert actual is ledger
+        legacy_policy.adopt_current()
+        raise WriterActive("fixture collector holds the writer")
 
-    with ledger.writer():
-        monkeypatch.setattr(Ledger, "writer", writer_after_cutover)
-        status, output = run("register", "--config", str(config), "--json")
+    monkeypatch.setattr(Ledger, "writer", writer_after_cutover)
+    status, output = legacy_policy.run(("register", "--config", str(config)))
 
     assert status == 1
     assert json.loads(output.out) == {"status": "project-adopted-use-monitor"}
@@ -184,12 +242,18 @@ def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(legacy
     assert not monitor_registry.default_monitor_root().exists()
 
 
-def test_invalid_legacy_anchor_input_leaves_inbox_untouched(legacy):
-    root, _, anchor, run = legacy
-    anchor.write_text("{}")
-    status, output = run("source", "add-anchor", "--anchor", str(anchor))
+def test_invalid_legacy_anchor_input_leaves_inbox_untouched(legacy_policy, monkeypatch):
+    anchor = Path("/fixture/anchor.json")
+    legacy_policy.inputs[anchor] = b"{}"
+    publish = Mock(
+        side_effect=AssertionError("invalid anchor reached inbox publication")
+    )
+    monkeypatch.setattr(service, "_inbox_publication", publish)
+    status, output = legacy_policy.run(
+        ("source", "add-anchor", "--anchor", str(anchor)), as_json=False
+    )
 
     assert status == 1
     assert output.err.strip() == "aitm-usage: invalid private inbox command or project"
-    assert not (root / "source-anchors").exists()
-    assert not (root / "inbox").exists()
+    publish.assert_not_called()
+    assert legacy_policy.inbox == {}

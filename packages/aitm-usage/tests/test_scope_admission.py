@@ -18,8 +18,13 @@ from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
 from aitm_usage.monitor_registry import (
     AnchorRequest,
     ControlCommand,
+    ControlStatus,
     ProjectRegistrationRequest,
+    RegisteredProject,
     Registry,
+    RegistryView,
+    _PhysicalDirectory,
+    _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import Scope
 from aitm_usage.scope_admission import MarkRequest
@@ -160,12 +165,40 @@ def ready(tmp_path, monkeypatch):
 @pytest.fixture
 def admission_policy(monkeypatch):
     state = MonitorInboxFiles(monkeypatch, PROJECT)
+    return _admit_mark(state, monkeypatch)
+
+
+def _admit_mark(state, monkeypatch):
     monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
     reader = ScopeInboxReader(state.writer, state.inbox)
     reader.register(GRANT, PROJECT, ("mark",))
     request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
     reader.advertise(reader.probe(request))
     return state, reader, request
+
+
+@pytest.fixture
+def admission_control_policy(monkeypatch):
+    root = Path("/fixture/monitor")
+    state_directory = _PhysicalDirectory("/fixture/project", (1, 10))
+    anchor = _PhysicalDirectory("/fixture/checkout", (1, 11))
+    directories = {directory.path: directory for directory in (state_directory, anchor)}
+    evidence = _ServiceEvidence(b"a" * 32)
+    writer = Registry(root, Mock())
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    monkeypatch.setattr(
+        monitor_registry, "_directory", lambda path, **_: directories[path]
+    )
+    ancestors = {Path("/"): (1, 1), Path("/fixture"): (1, 9)}
+    monkeypatch.setattr(monitor_registry, "_identity", ancestors.__getitem__)
+    initial = RegistryView(
+        projects=(
+            RegisteredProject(PROJECT, state_directory, "Project", None, (), None),
+        ),
+        source_key_id=evidence.key_id,
+    )
+    state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
+    return (*_admit_mark(state, monkeypatch), anchor.path)
 
 
 def test_witness_issuance_requires_exact_capability_from_same_reader(admission_policy):
@@ -224,46 +257,63 @@ def test_copied_account_and_wrong_project_do_not_grant_authority(ready, tmp_path
 
 
 def test_scope_capacity_and_cross_format_conflicts_leave_controls_available(
-    ready, tmp_path, monkeypatch
+    admission_control_policy, monkeypatch
 ):
-    writer, inbox, _, request = ready
+    state, _, request, anchor = admission_control_policy
+    writer, inbox = state.writer, state.inbox
     monkeypatch.setattr(monitor_control, "_MAX_SCOPE_PENDING", 1)
     assert inbox.enqueue_scope(request)
     assert inbox.enqueue_scope(request)
     with pytest.raises(LedgerError):
         inbox.enqueue_scope(replace(request, command_id=UUID(int=17)))
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    control_payload = AnchorRequest(PROJECT, str(anchor))
+    control_payload = AnchorRequest(PROJECT, anchor)
     with pytest.raises(ConflictError):
         inbox.enqueue(ControlCommand(COMMAND, control_payload))
     inbox.enqueue(ControlCommand(CONTROL, control_payload))
     with pytest.raises(ConflictError):
         inbox.enqueue_scope(replace(request, command_id=CONTROL))
-    assert tuple(
-        item.command_id for item in writer.apply_pending(inbox, writer.lease, None)
-    ) == (CONTROL,)
+    (receipt,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (receipt.command_id, receipt.status) == (CONTROL, ControlStatus.APPLIED)
 
 
 @pytest.mark.parametrize("bad_seal", ["f" * 64, "not-a-mac"])
-def test_invalid_scope_seal_cannot_block_unrelated_control(ready, tmp_path, bad_seal):
-    writer, inbox, reader, request = ready
-    assert inbox.enqueue_scope(request)
-    proposal = inbox.root / "inbox" / f"{COMMAND}.json"
-    tampered = json.loads(proposal.read_bytes())
+def test_invalid_scope_seal_cannot_block_unrelated_control(
+    request, monkeypatch, bad_seal
+):
+    name = f"{COMMAND}.json"
+    malformed = bad_seal == "not-a-mac"
+    if malformed:
+        state, reader, mark, anchor = request.getfixturevalue(
+            "admission_control_policy"
+        )
+        writer, inbox = state.writer, state.inbox
+        assert inbox.enqueue_scope(mark)
+        raw = state.inbox_files[name]
+    else:
+        tmp_path = request.getfixturevalue("tmp_path")
+        monkeypatch.setattr(
+            "aitm_usage.ledger._control_root", lambda: tmp_path / "control"
+        )
+        writer, inbox, reader, mark = request.getfixturevalue("ready")
+        assert inbox.enqueue_scope(mark)
+        proposal = inbox.root / "inbox" / name
+        raw = proposal.read_bytes()
+        directory = tmp_path / "checkout"
+        directory.mkdir()
+        anchor = str(directory)
+    tampered = json.loads(raw)
     tampered["command"]["seal"] = bad_seal
-    proposal.write_bytes(
-        json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
-    )
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    inbox.enqueue(ControlCommand(CONTROL, AnchorRequest(PROJECT, str(anchor))))
+    data = json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
+    if malformed:
+        state.inbox_files[name] = data
+    else:
+        proposal.write_bytes(data)
+    inbox.enqueue(ControlCommand(CONTROL, AnchorRequest(PROJECT, anchor)))
     with inbox.publication() as locked, pytest.raises(LedgerError):
         tuple(reader.iter_verified(locked))
-    assert tuple(
-        item.command_id for item in writer.apply_pending(inbox, writer.lease, None)
-    ) == (CONTROL,)
-    assert proposal.exists()
+    (receipt,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (receipt.command_id, receipt.status) == (CONTROL, ControlStatus.APPLIED)
+    assert (state.inbox_files[name] if malformed else proposal.read_bytes()) == data
 
 
 def test_explicit_cli_no_abbreviations_or_separate_request_id(monkeypatch):
@@ -351,19 +401,15 @@ def test_scope_cli_handoff_and_disposition_with_distinct_pinned_requests(
             )
 
 
-def _active_grant_file(inbox):
-    directory = inbox.root / "scope-admission-v1" / str(GRANT)
-    return sorted(directory.glob("*.json"))[-1]
-
-
-def test_replayed_active_grant_file_cannot_reverse_revocation(ready):
-    _, inbox, reader, request = ready
-    before = _active_grant_file(inbox).read_bytes()
+def test_replayed_active_grant_file_cannot_reverse_revocation(admission_policy):
+    state, reader, request = admission_policy
+    commits = state.grant_files(GRANT)
+    before = commits[max(commits)]
     reader.revoke(GRANT)
-    _active_grant_file(inbox).write_bytes(before)
+    commits[max(commits)] = before
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
-    assert not tuple(inbox.root.glob("inbox/*.json"))
+        state.inbox.enqueue_scope(request)
+    assert not state.inbox_files
 
 
 def test_witness_expiring_during_queue_preparation_cannot_publish(
