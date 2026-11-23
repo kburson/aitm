@@ -335,6 +335,76 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_cloned_scope_proof_and_changed_authorized_bytes_are_refused",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_default_hold_keeps_v1_and_cannot_be_retroactively_retained",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_develop_handoff_cannot_reuse_origin_as_destination_worktree",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_develop_mark_requires_accepted_destination_worktree_owner",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_expired_hold_releases_no_usage",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_foreign_ordinary_marker_conflicts_then_prospective_handoff_routes",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_handoff_A_to_B_to_C_with_retained_A",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_handoff_consumes_the_first_verified_receipt_target_once",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_native_boundary_cannot_be_substituted_between_streams",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_ordinary_mark_routes_unanchored_usage_after_native_rescan",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_project_wide_mark_is_distinct_from_anchor_only_scope",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_receipts_at_different_ordinals_conflict_at_the_same_native_target",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_unregistered_operator_cannot_create_a_scope_conflict",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_verified_disposition_only_releases_its_covered_hold",
+      "suite": "unit",
+      "isolation_group": "native-scope-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_changed_same_owner_usage_is_held_without_advancing_prior_cursor",
       "suite": "unit",
       "isolation_group": "journal-capture-policy"

@@ -197,12 +197,20 @@ def registry_policy(monkeypatch):
     )
     _, reader, root = _adapter(monkeypatch, (evidence, native.root, native.checkout))
     state = native_registry_policy(
-        monkeypatch, native, control=control, projects=(project,),
-        installations=(installation,), evidence=evidence,
+        monkeypatch,
+        native,
+        control=control,
+        projects=(project,),
+        installations=(installation,),
+        evidence=evidence,
     )
     return SimpleNamespace(
-        native=native, module=module, registry=state.registry, reader=reader,
-        root=replace(root, evidence=evidence), inbox=state.inbox,
+        native=native,
+        module=module,
+        registry=state.registry,
+        reader=reader,
+        root=replace(root, evidence=evidence),
+        inbox=state.inbox,
     )
 
 

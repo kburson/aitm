@@ -45,6 +45,7 @@ class NativeTranscriptFiles:
         self.identities = {}
         self.descriptors = {}
         self._checkout_lookup = scanner._checkout_anchor
+        self.checkout_paths = {self.checkout}
         monkeypatch.setattr(
             scanner,
             "os",
@@ -63,8 +64,10 @@ class NativeTranscriptFiles:
     def source(self):
         return self.evidence, self.root, self.checkout
 
-    def write(self, path, rows):
+    def write(self, path, rows, *, append=False):
         data = b"".join(json.dumps(row).encode() + b"\n" for row in rows)
+        if append:
+            data = self.contents[path] + data
         self.contents[path] = data
         return len(data)
 
@@ -117,7 +120,10 @@ class NativeTranscriptFiles:
     def _checkout_anchor(self, path, source):
         if path is None:
             return self._checkout_lookup(path, source)
-        if path == self.checkout and path in source._registration.checkout_anchors:
+        if (
+            path in self.checkout_paths
+            and path in source._registration.checkout_anchors
+        ):
             return scanner.checkout_anchor_reference(
                 source._ledger, path
             ), self._identity(path)

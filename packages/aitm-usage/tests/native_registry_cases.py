@@ -71,4 +71,8 @@ def native_registry_policy(
             writer._writer = None
 
     monkeypatch.setattr(monitor_registry.Registry, "writer", open_writer)
-    return SimpleNamespace(registry=monitor_registry.Registry(root), inbox=files.inbox)
+    return SimpleNamespace(
+        registry=monitor_registry.Registry(root),
+        inbox=files.inbox,
+        files=files,
+    )
