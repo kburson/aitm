@@ -4,6 +4,7 @@ import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Barrier, Event
@@ -152,6 +153,86 @@ class Fixture:
             )
         )
         return usage
+
+
+@pytest.fixture
+def scope_policy(monkeypatch):
+    """Run inbox dispatch and scope rules with typed publications and ledger views."""
+    ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    publications = {}
+    history = [LedgerView(PROJECT, 0, (), ())]
+
+    def view(writer, sequence=None):
+        assert writer is ledger
+        return history[-1] if sequence is None else history[sequence]
+
+    def record(sequence, revisions):
+        assert sequence == history[-1].sequence + 1
+        history.append(
+            LedgerView(PROJECT, sequence, (*history[-1].revisions, *revisions), ())
+        )
+        return sequence
+
+    def apply(writer, batch):
+        assert writer is ledger and batch.checkpoint is None
+        return record(history[-1].sequence + 1, batch.revisions)
+
+    def current_command(connection, key, command, digest):
+        assert connection is storage
+        latest = next((r for r in history[-1].current if r.key == key), None)
+        if latest is None:
+            return None
+        assert latest.record.command == command and latest.record.digest == digest
+        return latest.revision, latest.record
+
+    def append_revisions(connection, sequence, revisions):
+        assert connection is storage
+        return record(sequence, revisions)
+
+    class Storage:
+        def execute(self, sql, args):
+            assert sql == "INSERT INTO commits VALUES (?)"
+            assert args == (history[-1].sequence + 1,)
+
+        def check(self):
+            pass
+
+    storage = Storage()
+    monkeypatch.setattr(Ledger, "as_of", view)
+    monkeypatch.setattr(Ledger, "apply", apply)
+    monkeypatch.setattr(Ledger, "require_writer", lambda writer: None)
+    monkeypatch.setattr(Ledger, "writer", lambda writer: nullcontext(writer))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda writer: nullcontext(storage)
+    )
+    monkeypatch.setattr(store, "_head", lambda connection: history[-1].sequence)
+    monkeypatch.setattr(store, "_current_command", current_command)
+    monkeypatch.setattr(store, "_append_revisions", append_revisions)
+    monkeypatch.setattr(scopes, "_pin_directory", lambda path: nullcontext(storage))
+    monkeypatch.setattr(
+        scopes, "_private_child", lambda *args, **kwargs: nullcontext(storage)
+    )
+    monkeypatch.setattr(scopes, "_publication", lambda inbox: nullcontext())
+
+    def queue(command):
+        ledger.validate_command(command)
+        publications[command.command_id] = scopes._Publication(
+            command, encode_command(command)
+        )
+
+    def snapshot(inbox, writer):
+        assert inbox is storage and writer is ledger
+        return scopes._InboxSnapshot(tuple(publications.values()), 0, False, 0)
+
+    def acknowledge(inbox, directory, receipt, data):
+        assert inbox is directory is storage
+        assert publications[receipt.command.command_id].data == data
+        if receipt.disposition is not MarkerDisposition.PENDING:
+            del publications[receipt.command.command_id]
+
+    monkeypatch.setattr(scopes, "_read_publications", snapshot)
+    monkeypatch.setattr(scopes, "_acknowledge", acknowledge)
+    return ledger, queue
 
 
 def test_planning_scope_and_development_owner(project):
@@ -449,17 +530,18 @@ def test_scope_correction_preserves_prior_view_and_final_receipts(project):
 
 @pytest.mark.parametrize("sequence, ordinal", [(1, 9), (2, 7), (2, 8)])
 def test_quarantines_duplicate_sequence_and_retroactive_boundary(
-    project, sequence, ordinal
+    scope_policy, sequence, ordinal
 ):
 
+    project, queue = scope_policy
     f = Fixture(project)
     original = f.marker(1, 1, EPIC, "valid")
     conflicting = f.marker(2, sequence, CHILD, "different")
     known, proposed = f.boundary(original, 8), f.boundary(conflicting, ordinal)
     with project.writer() as writer:
-        enqueue_marker(project.root, original)
+        queue(InboxCommand(original.marker_id, PROJECT, original))
         drain_inbox(writer, (known,))
-        enqueue_marker(project.root, conflicting)
+        queue(InboxCommand(conflicting.marker_id, PROJECT, conflicting))
         assert (
             drain_inbox(writer, (proposed,)).receipts[0].disposition
             is MarkerDisposition.CONFLICT
@@ -468,8 +550,9 @@ def test_quarantines_duplicate_sequence_and_retroactive_boundary(
         assert resolve_scope(usage, writer.as_of()).scope is None
 
 
-def test_binding_checks_anchor_session_and_monotonic_generation(project):
+def test_binding_checks_anchor_session_and_monotonic_generation(scope_policy):
 
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("approved-checkout"), f.ref("attempt")
     owner = f.marker(
@@ -480,7 +563,7 @@ def test_binding_checks_anchor_session_and_monotonic_generation(project):
         owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
     )
     with project.writer() as writer:
-        enqueue_command(project.root, command)
+        queue(command)
         wrong_source = replace(proven, anchor_ref=f.ref("other-checkout"))
         assert (
             drain_inbox(writer, (wrong_source,)).receipts[0].disposition
@@ -501,8 +584,7 @@ def test_binding_checks_anchor_session_and_monotonic_generation(project):
             phase=WorkPhase.DEVELOPMENT,
             attempt_ref=attempt,
         )
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 impostor.marker_id, PROJECT, DevelopmentBinding(impostor, anchor, 1)
             ),
@@ -813,19 +895,19 @@ def test_correction_can_recover_quarantined_scope_with_recorded_proof(project):
         assert resolve_scope(usage, writer.as_of(before.sequence)).scope is None
 
 
-def test_bound_owner_cannot_claim_development_in_an_unproven_stream(project):
+def test_bound_owner_cannot_claim_development_in_an_unproven_stream(scope_policy):
 
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
         1, 1, CHILD, "bind", phase=WorkPhase.DEVELOPMENT, attempt_ref=attempt
     )
     other = f.marker(2, 2, OTHER_CHILD, "contradictory", attempt_ref=attempt)
-    enqueue_command(
-        project.root,
+    queue(
         InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
     )
-    enqueue_marker(project.root, other)
+    queue(InboxCommand(other.marker_id, PROJECT, other))
     unknown_stream = f.boundary(other, 1, stream_ref=f.ref("other-stream"))
     with project.writer() as writer:
         outcomes = drain_inbox(
@@ -914,8 +996,11 @@ def test_inbox_directory_refuses_symlink_destination(project, tmp_path):
     assert project.as_of().sequence == 0
 
 
-def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(project):
+def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(
+    scope_policy,
+):
 
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -925,7 +1010,7 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(pr
     owner_proof = f.boundary(owner, 8, anchor=anchor)
     marker_proof = f.boundary(contrary, 9, anchor=anchor)
 
-    enqueue_marker(project.root, contrary)
+    queue(InboxCommand(contrary.marker_id, PROJECT, contrary))
     with project.writer() as writer:
         assert (
             drain_inbox(writer, (marker_proof,)).receipts[0].disposition
@@ -935,8 +1020,7 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(pr
         before = writer.as_of()
         assert resolve_scope(usage, before).scope.marker.item == OTHER_CHILD
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),
@@ -988,7 +1072,8 @@ except BlockingIOError:
                 pinned.path.mkdir(mode=0o700)
 
 
-def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
+def test_review_outside_checkout_cannot_claim_wrong_attempt(scope_policy):
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -1007,11 +1092,10 @@ def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
         attempt_ref=f.ref("wrong-attempt"),
         review_ref=f.ref("review-id"),
     )
-    enqueue_command(
-        project.root,
+    queue(
         InboxCommand(owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)),
     )
-    enqueue_marker(project.root, reviewer)
+    queue(InboxCommand(reviewer.marker_id, PROJECT, reviewer))
     with project.writer() as writer:
         outcomes = drain_inbox(
             writer, (f.boundary(owner, 1, anchor=anchor), f.boundary(reviewer, 1))
@@ -1022,7 +1106,8 @@ def test_review_outside_checkout_cannot_claim_wrong_attempt(project):
         ]
 
 
-def test_development_marker_waits_for_owner_binding(project):
+def test_development_marker_waits_for_owner_binding(scope_policy):
+    project, queue = scope_policy
     f = Fixture(project)
     anchor, attempt = f.ref("anchor"), f.ref("attempt")
     owner = f.marker(
@@ -1037,7 +1122,7 @@ def test_development_marker_waits_for_owner_binding(project):
         attempt_ref=attempt,
     )
     proof = f.boundary(marker, 20, anchor=anchor)
-    enqueue_marker(project.root, marker)
+    queue(InboxCommand(marker.marker_id, PROJECT, marker))
 
     with project.writer() as writer:
         initial = drain_inbox(writer, ()).receipts[0]
@@ -1050,8 +1135,7 @@ def test_development_marker_waits_for_owner_binding(project):
         before = writer.as_of()
         assert resolve_scope(usage, before).reason is MarkerDisposition.PENDING
 
-        enqueue_command(
-            project.root,
+        queue(
             InboxCommand(
                 owner.marker_id, PROJECT, DevelopmentBinding(owner, anchor, 1)
             ),

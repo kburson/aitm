@@ -335,6 +335,36 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_binding_checks_anchor_session_and_monotonic_generation",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_bound_owner_cannot_claim_development_in_an_unproven_stream",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_development_marker_waits_for_owner_binding",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_quarantines_duplicate_sequence_and_retroactive_boundary",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_review_outside_checkout_cannot_claim_wrong_attempt",
+      "suite": "unit",
+      "isolation_group": "scope-command-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_ambiguous_current_locator_keeps_existing_stream_queued",
       "suite": "unit",
       "isolation_group": "capture-policy"
