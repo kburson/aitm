@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 366
 title: "Show the scheduled-failure flag when it is checked"
 kind: "story"
-state: "test"
+state: "done"
 issue: "https://github.com/kburson/aitm/issues/366"
 parent: 362
 children: []
 blocking: []
 blocked-by: [365]
 created: "2026-11-16T19:41:49Z"
-updated: "2026-11-22T23:57:23Z"
+updated: "2026-11-23T00:07:10Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": "S"}
 priority: "P2"
 origin: ".aitm/stories/001/133/plan/2026-11-16-133-decomposition.md"
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-366-delivery-plan.md", "plan/2026-11-22-366-checkpoint.md"], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": ["plan/2026-11-21-366-delivery-plan.md", "plan/2026-11-22-366-checkpoint.md"], "attachments": ["attachments/2026-11-22-366-trusted-pr-421.json", "attachments/2026-11-22-366-live-check.json"]}
 expansions: []
 trips: []
 ---
@@ -37,3 +37,5 @@ Provide a read-only check of the flag delivered by #365 for both a person and an
 [Delivery plan](plan/2026-11-21-366-delivery-plan.md).
 
 [Pickup and test checkpoint](plan/2026-11-22-366-checkpoint.md).
+
+[Verified delivery and sign-off](retro/2026-11-22-366-sign-off.md).

@@ -1,0 +1,27 @@
+{
+  "delivered_commit": "e753cd2e2c38871d8b59f9af40d7eb40aad0ac58",
+  "issue": "https://github.com/kburson/aitm/issues/418",
+  "issue_id": 6538300316,
+  "issue_edit_time": "2026-11-22T21:44:23Z",
+  "issue_snapshot_unchanged": true,
+  "verified_exit_codes": {
+    "human": 0,
+    "json": 0
+  },
+  "human": "Scheduled category full sweep flag clear as of 2026-11-22T03:22:17Z.\nhttps://github.com/kburson/aitm/actions/runs/44979940079/attempts/1\n",
+  "machine": {
+    "schema": "aitm.scheduled-sweep-flag/v1",
+    "state": "clear",
+    "run": {
+      "repository_id": 1450406435,
+      "workflow_id": 425235652,
+      "run_id": 44979940079,
+      "run_number": 5,
+      "run_attempt": 1,
+      "head_sha": "8ab84ba0590286d4655ea94e4d9de99f25ea1f2e",
+      "conclusion": "success",
+      "result_at": "2026-11-22T03:22:17Z"
+    },
+    "run_url": "https://github.com/kburson/aitm/actions/runs/44979940079/attempts/1"
+  }
+}
