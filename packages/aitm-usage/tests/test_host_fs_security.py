@@ -3,6 +3,7 @@ import os
 import pwd
 import stat
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -18,6 +19,27 @@ NAMED_ACL = bytes.fromhex(
 )
 
 
+@pytest.fixture
+def private_path_metadata(monkeypatch):
+    uid = 501
+
+    class ObservedPath(type(Path())):
+        def lstat(self):
+            if str(self) == "/fixture/private":
+                mode, inode = stat.S_IFREG | 0o600, 4
+            else:
+                directories = {"/": 1, "/fixture": 2, "/fixture/project": 3}
+                if str(self) not in directories:
+                    raise FileNotFoundError(self)
+                mode, inode = stat.S_IFDIR | 0o700, directories[str(self)]
+            return os.stat_result((mode, inode, 1, 1, uid, 0, 0, 0, 0, 0))
+
+    monkeypatch.setattr(
+        ledger, "os", SimpleNamespace(path=os.path, geteuid=lambda: uid)
+    )
+    return ObservedPath("/fixture")
+
+
 @pytest.mark.parametrize(
     ("result", "message"),
     [
@@ -31,10 +53,9 @@ NAMED_ACL = bytes.fromhex(
     ids=["absent", "default-acl", "empty", "unsupported", "unreadable", "vanished"],
 )
 def test_private_acl_rejects_linux_default_acl_and_unknown_enforcement(
-    tmp_path, monkeypatch, result, message
+    private_path_metadata, monkeypatch, result, message
 ):
-    directory = tmp_path / "project"
-    directory.mkdir(mode=0o700)
+    directory = private_path_metadata / "project"
 
     def getxattr(target, name, *, follow_symlinks=True):
         assert not follow_symlinks
@@ -47,7 +68,6 @@ def test_private_acl_rejects_linux_default_acl_and_unknown_enforcement(
 
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.setattr(os, "getxattr", getxattr, raising=False)
-    assert stat.S_IMODE(directory.stat().st_mode) == 0o700
     if message is None:
         ledger.validate_private_path(directory, directory=True)
     else:
@@ -66,9 +86,10 @@ def test_private_acl_rejects_linux_default_acl_and_unknown_enforcement(
     ],
     ids=["empty", "grant"],
 )
-def test_darwin_acl_reader_refuses_a_grant(tmp_path, monkeypatch, mac_acl_text, text):
-    directory = tmp_path / "project"
-    directory.mkdir(mode=0o700)
+def test_darwin_acl_reader_refuses_a_grant(
+    private_path_metadata, monkeypatch, mac_acl_text, text
+):
+    directory = private_path_metadata / "project"
     mac_acl_text(directory, text)
     monkeypatch.setattr(sys, "platform", "darwin")
     if text == b"!#acl 1\n":
@@ -78,9 +99,10 @@ def test_darwin_acl_reader_refuses_a_grant(tmp_path, monkeypatch, mac_acl_text, 
             ledger.validate_private_path(directory / "future", allow_missing=True)
 
 
-def test_linux_without_xattr_api_refuses_state_admission(tmp_path, monkeypatch):
-    directory = tmp_path / "project"
-    directory.mkdir(mode=0o700)
+def test_linux_without_xattr_api_refuses_state_admission(
+    private_path_metadata, monkeypatch
+):
+    directory = private_path_metadata / "project"
     monkeypatch.setattr(sys, "platform", "linux")
     monkeypatch.delattr(os, "getxattr", raising=False)
     with pytest.raises(
@@ -114,9 +136,10 @@ def test_linux_pinned_directory_refuses_acl_on_its_descriptor(
             pytest.fail("admitted a directory with an ACL on its descriptor")
 
 
-def test_linux_private_regular_file_checks_only_access_acl(tmp_path, monkeypatch):
-    path = tmp_path / "private"
-    path.touch(mode=0o600)
+def test_linux_private_regular_file_checks_only_access_acl(
+    private_path_metadata, monkeypatch
+):
+    path = private_path_metadata / "private"
 
     def getxattr(target, name, *, follow_symlinks=True):
         assert not follow_symlinks
@@ -129,9 +152,8 @@ def test_linux_private_regular_file_checks_only_access_acl(tmp_path, monkeypatch
     ledger.validate_private_path(path)
 
 
-def test_unsupported_platform_refuses_acl_admission(tmp_path, monkeypatch):
-    directory = tmp_path / "project"
-    directory.mkdir(mode=0o700)
+def test_unsupported_platform_refuses_acl_admission(private_path_metadata, monkeypatch):
+    directory = private_path_metadata / "project"
     monkeypatch.setattr(sys, "platform", "freebsd")
     with pytest.raises(
         ledger.LedgerError, match="Private ACL validation is unavailable"

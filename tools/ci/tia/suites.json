@@ -335,6 +335,31 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_darwin_acl_reader_refuses_a_grant",
+      "suite": "unit",
+      "isolation_group": "host-acl-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_linux_private_regular_file_checks_only_access_acl",
+      "suite": "unit",
+      "isolation_group": "host-acl-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_linux_without_xattr_api_refuses_state_admission",
+      "suite": "unit",
+      "isolation_group": "host-acl-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_private_acl_rejects_linux_default_acl_and_unknown_enforcement",
+      "suite": "unit",
+      "isolation_group": "host-acl-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_unsupported_platform_refuses_acl_admission",
+      "suite": "unit",
+      "isolation_group": "host-acl-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_requires_leaf_names",
       "suite": "unit",
       "isolation_group": "host-publication-policy"
