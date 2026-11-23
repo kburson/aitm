@@ -275,6 +275,293 @@ def _write_private(path, data):
     return path
 
 
+def _processing_order_transcript(ledger, checkout, provider, mark_args):
+    import shlex
+    from dataclasses import replace
+
+    import test_claude as claude
+    from test_service_process import (
+        CL_CHILD,
+        CX_CHILD,
+        CX_EPIC,
+        _codex_rows,
+        _marker,
+        _queued,
+    )
+
+    from aitm_usage.types import InboxCommand, Provider
+
+    kind = Provider(provider)
+    target = CX_EPIC if kind is Provider.CODEX else CL_CHILD
+    marker = replace(
+        _marker(ledger, kind, target, 1, 83), project_id=ledger.identity.project_id
+    )
+    command = InboxCommand(target, marker.project_id, marker)
+
+    args = mark_args(marker)
+    if kind is Provider.CODEX:
+        rows = _codex_rows(
+            ledger,
+            checkout,
+            args,
+            mark_args(_marker(ledger, kind, CX_CHILD, 2, 95)),
+            _queued(target),
+            _queued(CX_CHILD),
+        )[:-8]
+    else:
+        shell = shlex.join(
+            (
+                "aitm-usage",
+                "--project",
+                str(ledger.root),
+                *args,
+            )
+        )
+        rows = [
+            claude.user(checkout),
+            *claude._native_tool_turn(checkout, shell, _queued(target).decode()),
+        ]
+    return command, rows
+
+
+def _reserve_processing_order_session(monkeypatch, marker):
+    from contextlib import nullcontext
+
+    from aitm_usage import service
+
+    sessions = object()
+    private_child, read_private = service._private_child, service._read_private
+
+    def child(directory, name, *, create):
+        if name == service.CLAUDE_SESSIONS_NAME:
+            assert not create
+            return nullcontext(sessions)
+        return private_child(directory, name, create=create)
+
+    def read(directory, name):
+        if directory is sessions:
+            assert name == service._session_filename(marker.session_ref)
+            return json.dumps(marker.session_ref.value).encode()
+        return read_private(directory, name)
+
+    monkeypatch.setattr(service, "_private_child", child)
+    monkeypatch.setattr(service, "_read_private", read)
+
+
+def _assert_processing_order_in_memory(
+    case, monkeypatch, provider, arrival, withhold_target
+):
+    from dataclasses import replace
+    from datetime import timedelta
+    from hashlib import sha256
+    from types import SimpleNamespace
+
+    from aitm_usage import scopes, service
+    from aitm_usage.ledger import Ledger
+    from aitm_usage.types import (
+        CommandReceipt,
+        MarkerDisposition,
+        Provider,
+        Revision,
+        UsageObservation,
+    )
+
+    ledger, native = case.ledger, case.native
+    case.configure(checkout_anchors=())
+
+    def mark_args(marker):
+        from test_claude import SESSION
+
+        args = ("scope", "mark", "--marker", f"/fixture/marker-{marker.marker_id}.json")
+        if marker.provider is Provider.CLAUDE:
+            args += ("--session-id", str(SESSION))
+        return (*args, "--json")
+
+    command, rows = _processing_order_transcript(
+        ledger, native.checkout, provider, mark_args
+    )
+    marker = command.payload
+    if marker.provider is Provider.CLAUDE:
+        _reserve_processing_order_session(monkeypatch, marker)
+    publication = scopes._publication_bytes(command, None)
+    key = ledger.pseudonymize("inbox-command", str(command.command_id))
+    queued = arrival == "marker-first"
+
+    def receipt_in(view):
+        return next((row for row in view.current if row.key == key), None)
+
+    def drain(writer, boundaries):
+        assert writer is ledger
+        if not queued:
+            return scopes.InboxDrain()
+        view = writer.as_of()
+        previous = receipt_in(view)
+        if (
+            previous is not None
+            and previous.record.disposition is not MarkerDisposition.PENDING
+        ):
+            return scopes.InboxDrain()
+        receipts = {} if previous is None else {command.command_id: previous.record}
+        disposition, proof, effects = scopes._evaluate(
+            writer, command, view, boundaries, receipts
+        )
+        receipt = CommandReceipt(
+            command,
+            writer.validate_command(command),
+            disposition,
+            None if proof is None else proof.boundary,
+            None if proof is None else proof.anchor_ref,
+        )
+        if previous is None or receipt != previous.record:
+            revision = 1 if previous is None else previous.revision + 1
+            case.commit_revisions(*effects, Revision(key, revision, receipt))
+        return scopes.InboxDrain((receipt,))
+
+    def status_bytes():
+        with service._pin_directory(ledger.root) as pinned:
+            return service._read_private(pinned, service.STATUS_NAME)
+
+    monkeypatch.setattr(service, "drain_inbox", drain)
+    source = native.root / f"{provider}.jsonl"
+    if not queued:
+        native.write(source, rows[:-2] if withhold_target else rows)
+    before_prefix = native.contents.get(source, b"")
+    before_captured_at = marker.published_at + timedelta(seconds=30)
+    case.clock.now.return_value = before_captured_at + timedelta(seconds=1)
+    prior_status = case.collect()
+    before, before_status = ledger.as_of(), status_bytes()
+    assert native.contents.get(source, b"") == before_prefix
+    before_confirmed_at = before_captured_at + timedelta(seconds=2)
+    released_at = None
+    if not queued:
+        assert prior_status["held_sources"] == 1
+        released_at = before_confirmed_at + timedelta(seconds=1)
+        queued = True
+    native.write(source, rows)
+    case.clock.now.return_value = before_confirmed_at + timedelta(seconds=2)
+    case.collect()
+    case.collect()
+    after, after_status = ledger.as_of(), status_bytes()
+    accepted = receipt_in(after).record
+    assert (
+        accepted.disposition is MarkerDisposition.ACCEPTED
+        and accepted.boundary is not None
+    )
+    (first,) = (
+        row.key.value.split(":")[1]
+        for row in after.current
+        if isinstance(row.record, UsageObservation)
+        and row.record.boundary == accepted.boundary
+    )
+
+    saved, snapshot, settled, captured, late_capture = (
+        Path("/fixture") / name
+        for name in (
+            "original-publication.json",
+            "prior-status.json",
+            "settled-status.json",
+            "prior-source.jsonl",
+            "late-capture.jsonl",
+        )
+    )
+    artifacts = {
+        saved: publication,
+        snapshot: before_status,
+        settled: after_status,
+        captured: before_prefix,
+        late_capture: before_prefix,
+    }
+
+    def read_owned(path, *, private, limit):
+        assert private
+        raw = native.contents[path] if path == source else artifacts[path]
+        assert len(raw) <= limit
+        return raw
+
+    def stat_for(identity, when):
+        device, inode = identity
+        stamp = when.timestamp()
+        return SimpleNamespace(
+            st_dev=device,
+            st_ino=inode,
+            st_mtime=stamp,
+            st_ctime=stamp,
+            st_birthtime=stamp,
+        )
+
+    stat = Path.stat
+    stats = {
+        source: stat_for(native.identities[source], marker.published_at),
+        captured: stat_for((2, 1), before_captured_at - timedelta(seconds=1)),
+        late_capture: stat_for((2, 2), before_confirmed_at + timedelta(seconds=1)),
+    }
+    fixed_views = {view.sequence: view for view in (before, after)}
+    monkeypatch.setattr(
+        Ledger,
+        "as_of",
+        lambda self, sequence=None: (
+            after if sequence is None else fixed_views[sequence]
+        ),
+    )
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path, **kw: stats[path] if path in stats else stat(path, **kw),
+    )
+    monkeypatch.setattr(qualification, "_read_owned", read_owned)
+    verified_at = case.clock.now.return_value + timedelta(seconds=1)
+    monkeypatch.setattr(qualification, "_now", lambda: verified_at)
+
+    prefix = native.contents[source]
+    entry = qualification._OrderEvidence(
+        marker.project_id,
+        marker.provider,
+        qualification._Order(arrival),
+        key.value.split(":")[1],
+        sha256(publication).hexdigest(),
+        sha256(before_prefix).hexdigest(),
+        sha256(prefix).hexdigest(),
+        first,
+        before.sequence,
+        after.sequence,
+    )
+    proof = qualification._OrderProof(
+        str(ledger.root),
+        str(saved),
+        str(source),
+        len(prefix),
+        str(snapshot),
+        str(settled),
+        str(captured),
+        len(before_prefix),
+        before_captured_at,
+        before_confirmed_at,
+        released_at,
+    )
+    card = service.load_rate_card()
+    if withhold_target:
+        assert accepted.boundary.ordinal >= before_prefix.count(b"\n")
+        with pytest.raises(qualification.QualificationError, match="processing-order"):
+            qualification._verify_order(entry, proof, card)
+        artifacts[captured] = prefix
+        qualification._verify_order(
+            replace(entry, before_prefix_sha256=entry.prefix_sha256),
+            replace(proof, before_prefix_bytes=len(prefix)),
+            card,
+        )
+        return
+    qualification._verify_order(entry, proof, card)
+    for altered in (
+        replace(proof, before_source=str(late_capture)),
+        replace(proof, before_captured_at=before_confirmed_at),
+    ):
+        with pytest.raises(qualification.QualificationError, match="processing-order"):
+            qualification._verify_order(entry, altered, card)
+    artifacts[saved] += b" "
+    with pytest.raises(qualification.QualificationError, match="processing-order"):
+        qualification._verify_order(entry, proof, card)
+
+
 @pytest.mark.parametrize(
     ("provider", "arrival", "withhold_target"),
     [
@@ -286,24 +573,15 @@ def _write_private(path, data):
     ],
 )
 def test_processing_orders_require_native_prefix_and_fixed_ledger(
-    tmp_path, monkeypatch, provider, arrival, withhold_target
+    request, monkeypatch, provider, arrival, withhold_target
 ):
-    import shlex
     from dataclasses import replace
+    from functools import partial
     from hashlib import sha256
 
     import test_claude as claude
     import test_codex as codex
-    from test_service_process import (
-        CL_CHILD,
-        CX_CHILD,
-        CX_EPIC,
-        PROJECT,
-        _codex_rows,
-        _mark_args,
-        _marker,
-        _queued,
-    )
+    from test_service_process import PROJECT, _mark_args
 
     from aitm_usage.ledger import Ledger
     from aitm_usage.pricing import load_rate_card
@@ -321,8 +599,22 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         register_project,
         remember_claude_session,
     )
-    from aitm_usage.types import InboxCommand, Provider, UsageObservation
+    from aitm_usage.types import Provider, UsageObservation
 
+    if (provider, arrival, withhold_target) not in {
+        ("codex", "marker-first", False),
+        ("claude", "boundary-first", False),
+    }:
+        _assert_processing_order_in_memory(
+            request.getfixturevalue("collector_policy"),
+            monkeypatch,
+            provider,
+            arrival,
+            withhold_target,
+        )
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
     root = tmp_path / "private state"
     sources = tmp_path / "sources"
@@ -343,23 +635,14 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     registration = register_project(root, config)
     ledger = Ledger.open(root, PROJECT)
     source = sources / f"{provider}.jsonl"
-    kind = Provider(provider)
-    target = CX_EPIC if kind is Provider.CODEX else CL_CHILD
-    marker = _marker(ledger, kind, target, 1, 83)
-    args = _mark_args(tmp_path, marker)
-    command = InboxCommand(target, PROJECT, marker)
+    command, rows = _processing_order_transcript(
+        ledger, checkout, provider, partial(_mark_args, tmp_path)
+    )
+    marker = command.payload
+    target, kind = command.command_id, marker.provider
     if kind is Provider.CODEX:
-        other = _mark_args(tmp_path, _marker(ledger, kind, CX_CHILD, 2, 95))
-        rows = _codex_rows(
-            ledger, checkout, args, other, _queued(target), _queued(CX_CHILD)
-        )[:-8]
         write = codex.write
     else:
-        shell = shlex.join(("aitm-usage", "--project", str(root), *args))
-        rows = [
-            claude.user(checkout),
-            *claude._native_tool_turn(checkout, shell, _queued(target).decode()),
-        ]
         write = claude.write
         remember_claude_session(ledger, marker.session_ref)
 
@@ -368,7 +651,7 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     saved = _write_private(tmp_path / "original-publication.json", queued.read_bytes())
     if arrival == "boundary-first":
         queued.unlink()
-        write(source, rows[:-2] if withhold_target else rows)
+        write(source, rows)
         source.chmod(0o600)
     before_prefix = source.read_bytes() if source.exists() else b""
     before_source = _write_private(tmp_path / "prior-source.jsonl", before_prefix)
@@ -387,8 +670,6 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         assert before.held_sources == 1
         _write_private(queued, saved.read_bytes())
         released_at = datetime.now(UTC)
-        if withhold_target:
-            write(source, rows)
     collect_once(registration, ledger)
     after = collect_once(registration, ledger)
     settled = _write_private(
@@ -427,10 +708,6 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         before_confirmed_at,
         released_at,
     )
-    if withhold_target:
-        with pytest.raises(QualificationError, match="processing-order"):
-            _verify_order(entry, proof, load_rate_card())
-        return
     _verify_order(entry, proof, load_rate_card())
     late_capture = _write_private(tmp_path / "late-capture.jsonl", before_prefix)
     with pytest.raises(QualificationError, match="processing-order"):

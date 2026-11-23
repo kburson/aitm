@@ -335,6 +335,41 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_accounting_revision_cannot_overwrite_an_immutable_record",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_same_snapshot_identity_does_not_replace_conflicting_payload",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_wire_values_are_canonical_closed_and_private",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_item_inbox_refuses_alias_conflicts_and_canonical_cycles",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_exact_archive_duplicate_does_not_churn_checkpoint",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_later_enrollment_keeps_earlier_pending_segment_replayable",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_malformed_row_diagnostics_are_closed_and_checkpointable",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_normal_cli_reports_durable_application_and_retries_after_cleanup",
       "suite": "unit",
       "isolation_group": "monitor_control-policy"

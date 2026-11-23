@@ -1,14 +1,20 @@
 import importlib
 import json
 import shlex
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
 from scanner_policy_cases import NativeTranscriptFiles, ScannerPolicy, _ReplayEvidence
+from test_ledger import _LedgerRows, _memory_ledger
 
+from aitm_usage import ledger as ledger_module
+from aitm_usage import scopes
 from aitm_usage.ledger import Ledger
 from aitm_usage.scopes import (
     drain_inbox,
@@ -85,6 +91,66 @@ def native_scanner(monkeypatch):
 
     monkeypatch.setattr(Ledger, "open", staticmethod(open_evidence))
     return files, registration
+
+
+@pytest.fixture
+def scanner_replay_ledger(native_scanner, monkeypatch):
+    """Run exact ledger and inbox operations over observed typed rows and bytes."""
+    files, registration = native_scanner
+    ledger = replace(
+        _memory_ledger(ledger_module, PROJECT, b"l" * 32),
+        _writer=object(),
+        _write_paths=SimpleNamespace(check=Mock()),
+    )
+    files.evidence = ledger
+    rows = _LedgerRows(ledger.identity, ledger_module.APPLICATION_ID, ())
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+    )
+    monkeypatch.setattr(Ledger, "writer", lambda writer: nullcontext(writer))
+    project, inbox, acks = (
+        SimpleNamespace(fd=index, check=Mock()) for index in range(3)
+    )
+    project.path = ledger.root
+    states = {directory.fd: {} for directory in (project, inbox, acks)}
+
+    def pin(path):
+        assert path == ledger.root
+        return nullcontext(project)
+
+    def child(parent, name, *, create):
+        if parent is project and name == scopes.INBOX_NAME:
+            return nullcontext(inbox)
+        assert parent is inbox and name == scopes.ACKS_NAME and create
+        return nullcontext(acks)
+
+    def read(directory, name):
+        return states[directory.fd].get(name)
+
+    def publish(directory, name, contents, *, replace_pending=False):
+        entries = states[directory.fd]
+        if name in entries and not replace_pending:
+            return False
+        entries[name] = contents
+        return True
+
+    def unlink(name, *, dir_fd):
+        del states[dir_fd][name]
+
+    monkeypatch.setattr(scopes, "_pin_directory", pin)
+    monkeypatch.setattr(scopes, "_private_child", child)
+    monkeypatch.setattr(scopes, "_publication", lambda _: nullcontext())
+    monkeypatch.setattr(scopes, "_read_private", read)
+    monkeypatch.setattr(scopes, "_publish", publish)
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            listdir=lambda fd: tuple(states[fd]), unlink=unlink, fsync=Mock()
+        ),
+    )
+    return files, registration, ledger, rows
 
 
 def _row(kind, payload, time=AFTER):
@@ -326,12 +392,12 @@ def test_unsupported_file_never_yields_boundary_proof(native_scanner):
     assert _codes(batch) == {DiagnosticCode.UNSUPPORTED_FORMAT}
 
 
-def test_malformed_row_diagnostics_are_closed_and_checkpointable(project):
+def test_malformed_row_diagnostics_are_closed_and_checkpointable(scanner_replay_ledger):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, rows = scanner_replay_ledger
     path = registration.source_roots[0] / "malformed-path-secret.jsonl"
     (cwd,) = registration.checkout_anchors
-    path.write_bytes(
+    files.contents[path] = (
         _header(cwd)
         + b'{"type":"event_msg", "payload": "malformed-payload-secret"\n'
         + _turn(cwd)
@@ -347,8 +413,15 @@ def test_malformed_row_diagnostics_are_closed_and_checkpointable(project):
         for index, diagnostic in enumerate(batch.diagnostics)
     )
     store.apply(LedgerBatch(revisions, _checkpoint(batch)))
-    for state in store.root.glob("usage.sqlite3*"):
-        contents = state.read_bytes()
+    payloads = [
+        value.encode() if isinstance(value, str) else value
+        for sql, params in rows.writes
+        if sql.startswith(("INSERT INTO revisions", "INSERT INTO checkpoints"))
+        for value in params
+        if isinstance(value, (str, bytes))
+    ]
+    assert payloads and store.as_of().checkpoints == (_checkpoint(batch),)
+    for contents in payloads:
         assert b"malformed-payload-secret" not in contents
         assert b"malformed-path-secret" not in contents
         assert b"checkout-secret" not in contents
@@ -789,19 +862,19 @@ def test_zero_cursor_detects_a_rewritten_origin_after_rediscovery(native_scanner
     assert _codes(changed) == {DiagnosticCode.SOURCE_REPLACED}
 
 
-def test_exact_archive_duplicate_does_not_churn_checkpoint(project):
+def test_exact_archive_duplicate_does_not_churn_checkpoint(scanner_replay_ledger):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, _ = scanner_replay_ledger
     (root,) = registration.source_roots
     live = root / "rollout.jsonl"
     contents = _header(registration.checkout_anchors[0]) + _usage(23)
-    live.write_bytes(contents)
+    files.contents[live] = contents
     (candidate,) = scanner.discover(registration)
     first = _checkpoint(scanner.scan(candidate, None, CUTOFF))
     head = store.apply(LedgerBatch(checkpoint=first))
 
     archive = root / "archive.jsonl"
-    archive.write_bytes(contents)
+    files.contents[archive] = contents
     duplicate = next(
         item for item in scanner.discover(registration) if item != candidate
     )
@@ -815,18 +888,18 @@ def test_exact_archive_duplicate_does_not_churn_checkpoint(project):
     )
 
 
-def test_later_enrollment_keeps_earlier_pending_segment_replayable(project):
+def test_later_enrollment_keeps_earlier_pending_segment_replayable(
+    scanner_replay_ledger,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, _ = scanner_replay_ledger
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     first_review = root.parent / "first-review"
     second_review = root.parent / "second-review"
-    first_review.mkdir()
-    second_review.mkdir()
     path = root / "review.jsonl"
     baseline = _header(checkout) + _usage(5, BEFORE)
-    path.write_bytes(
+    files.contents[path] = (
         baseline
         + _turn(first_review)
         + _usage(7)
@@ -905,7 +978,7 @@ def test_later_enrollment_keeps_earlier_pending_segment_replayable(project):
         (4, 11),
         (7, 17),
     ]
-    assert resumed.cursor.offset == path.stat().st_size
+    assert resumed.cursor.offset == len(files.contents[path])
 
 
 def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
@@ -1007,26 +1080,37 @@ def test_directory_moved_outside_root_and_restored_during_read_is_quarantined(
 
 @pytest.mark.parametrize("initially_anchored", [False, True])
 def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
-    project, initially_anchored
+    request, initially_anchored
 ):
     scanner = _scanner()
-    registration, store = project
+    if initially_anchored:
+        files = None
+        registration, store = request.getfixturevalue("project")
+    else:
+        files, registration, store, _ = request.getfixturevalue("scanner_replay_ledger")
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     reviewer_area = root.parent / "review-area"
     review = reviewer_area / "review"
-    review.mkdir(parents=True)
     if initially_anchored:
+        review.mkdir(parents=True)
         registration = replace(registration, checkout_anchors=(checkout, reviewer_area))
 
     path = root / "review.jsonl"
     baseline = _header(checkout) + _usage(5, BEFORE)
-    path.write_bytes(baseline)
+    if files is None:
+        write_bytes = path.write_bytes
+    else:
+
+        def write_bytes(contents):
+            files.contents[path] = contents
+
+    write_bytes(baseline)
     (candidate,) = scanner.discover(registration)
     held = _checkpoint(scanner.scan(candidate, None, CUTOFF))
     store.apply(LedgerBatch(checkpoint=held))
     original = baseline + _turn(review) + _usage(7) + _usage(11) + _usage(14)
-    path.write_bytes(original)
+    write_bytes(original)
     lookahead = scanner.scan(candidate, held, CUTOFF)
     marker, boundary = _marker_and_boundary(store, lookahead.frames[2])
     old_proof = lookahead.scope_evidence(boundary)
@@ -1051,6 +1135,8 @@ def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
         for revision in view.current
         if isinstance(revision.record, ScopeEnrollment)
     )
+    if files is not None:
+        files.checkout_paths.add(review)
     expanded = replace(
         registration, checkout_anchors=(*registration.checkout_anchors, review)
     )
@@ -1075,13 +1161,13 @@ def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
     with pytest.raises(ValueError, match="fresh evidence"):
         updated.with_enrollment(accepted, batch=fresh, evidence=wrong_receipt)
     selected = updated.with_enrollment(accepted, batch=fresh, evidence=proof)
-    path.write_bytes(original.replace(_usage(11), _usage(91)))
+    write_bytes(original.replace(_usage(11), _usage(91)))
     stale = scanner.scan(selected, held, CUTOFF)
     assert stale.cursor == held.cursor
     assert stale.commit_frames == ()
     assert _codes(stale) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
 
-    path.write_bytes(original)
+    write_bytes(original)
     admitted = scanner.scan(selected, held, CUTOFF)
     assert _codes(admitted) == set()
     assert [(frame.ordinal, tokens) for frame, tokens in _fixture_debits(admitted)] == [
@@ -1089,7 +1175,7 @@ def test_fresh_checkout_proof_for_uncommitted_enrollment_after_restart(
         (5, 14),
     ]
     assert admitted.commit_frames[1].eligibility is Eligibility.EXCLUDED
-    assert admitted.cursor.offset == path.stat().st_size
+    assert admitted.cursor.offset == len(original)
     reopened.apply(LedgerBatch(checkpoint=_checkpoint(admitted), prior_checkpoint=held))
 
     final = Ledger.open(store.root, PROJECT)

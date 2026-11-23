@@ -17,7 +17,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from test_ledger import _memory_ledger
+from test_ledger import _LedgerRows, _memory_ledger
 
 from aitm_usage import accounting, cli, pricing, scopes
 from aitm_usage import ledger as store
@@ -326,29 +326,145 @@ def test_graduation_and_inclusive_rollup(project, item_cli):
     }
 
 
-def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(project, item_cli):
-    with project.writer() as writer:
-        _consume(writer, item_cli, "parent", DRAFT, EPIC)
-        _consume(writer, item_cli, "parent", SECOND, OTHER_EPIC)
-        _consume(writer, item_cli, "alias", DRAFT, SECOND, MarkerDisposition.CONFLICT)
-        _consume(writer, item_cli, "parent", SECOND, CHILD)
-        cycle_draft = ItemKey(ItemKind.DRAFT, UUID(int=23))
-        _consume(writer, item_cli, "parent", CHILD, cycle_draft)
-        # Only one alias endpoint has a parent. The alias would close a cycle.
-        rejected = _consume(
-            writer, item_cli, "alias", cycle_draft, SECOND, MarkerDisposition.CONFLICT
+@pytest.fixture
+def relationship_transport_policy(monkeypatch, capsys):
+    project = _memory_ledger(store, PROJECT, b"r" * 32)
+    rows = _LedgerRows(project.identity, store.APPLICATION_ID, ())
+    pins = SimpleNamespace(check=Mock())
+
+    @contextmanager
+    def transaction(ledger, *, write):
+        assert ledger.identity == project.identity
+        with rows.connect(write=write) as connection:
+            yield connection
+
+    def open_ledger(path, project_id):
+        assert (path, project_id) == (project.root, PROJECT)
+        return replace(project)
+
+    def writer(ledger):
+        return nullcontext(replace(ledger, _writer=object(), _write_paths=pins))
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(Ledger, "writer", writer)
+    monkeypatch.setattr(
+        Ledger, "reader", lambda ledger: transaction(ledger, write=False)
+    )
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda ledger: transaction(ledger, write=True)
+    )
+
+    directories = {"project": {}, "inbox": {}, "acks": {}}
+    descriptors = {
+        "project": SimpleNamespace(path=project.root, fd="project", check=Mock()),
+        "inbox": SimpleNamespace(path=project.root / "inbox", fd="inbox", check=Mock()),
+        "acks": SimpleNamespace(
+            path=project.root / "inbox" / "acks", fd="acks", check=Mock()
+        ),
+    }
+
+    def child(parent, name, *, create):
+        if (parent.fd, name) not in {("project", "inbox"), ("inbox", "acks")}:
+            raise AssertionError((parent.fd, name))
+        return nullcontext(descriptors[name])
+
+    def publish(directory, name, data, *, replace_pending=False):
+        files = directories[directory.fd]
+        assert replace_pending == (name in files)
+        files[name] = data
+        return True
+
+    def unlink(name, *, dir_fd):
+        del directories[dir_fd][name]
+
+    monkeypatch.setattr(
+        scopes, "_pin_directory", lambda path: nullcontext(descriptors["project"])
+    )
+    monkeypatch.setattr(scopes, "_private_child", child)
+    monkeypatch.setattr(scopes, "_publication", nullcontext)
+    monkeypatch.setattr(
+        scopes,
+        "_read_private",
+        lambda directory, name: directories[directory.fd].get(name),
+    )
+    monkeypatch.setattr(scopes, "_publish", publish)
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            listdir=lambda fd: tuple(directories[fd]), unlink=unlink, fsync=Mock()
+        ),
+    )
+    monkeypatch.setattr(cli, "open_project", lambda path: open_ledger(path, PROJECT))
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+
+    def consume(writer, verb, first, second, expected=MarkerDisposition.ACCEPTED):
+        left, right = (
+            ("--draft", "--issue") if verb == "alias" else ("--child", "--epic")
         )
-        _consume(writer, item_cli, "parent", CHILD, DRAFT)
-        accepted = _consume(writer, item_cli, "alias", DRAFT, OTHER_EPIC)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "aitm-usage",
+                "--project",
+                str(writer.root),
+                "item",
+                verb,
+                left,
+                str(first.identifier),
+                right,
+                str(second.identifier),
+                "--json",
+            ],
+        )
+        assert cli.main() == 0
+        queued = json.loads(capsys.readouterr().out)
+        assert queued["status"] == "queued"
+        command_id = UUID(queued["command_id"])
+        name = f"{command_id}.json"
+        command = decode_command(
+            _canonical_json(json.loads(directories["inbox"][name])["command"])
+        )
+        assert command.command_id == command_id
+        assert command.project_id == PROJECT
+        (receipt,) = drain_inbox(writer, ()).receipts
+        assert receipt.command == command and receipt.disposition is expected
+        assert name not in directories["inbox"]
+        assert json.loads(directories["acks"][name]) == {
+            "command_id": str(command_id),
+            "digest": {"value": receipt.digest.value},
+            "disposition": expected.value,
+        }
+        return receipt
+
+    return project, consume
+
+
+def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(
+    relationship_transport_policy,
+):
+    project, consume = relationship_transport_policy
+    with project.writer() as writer:
+        consume(writer, "parent", DRAFT, EPIC)
+        consume(writer, "parent", SECOND, OTHER_EPIC)
+        consume(writer, "alias", DRAFT, SECOND, MarkerDisposition.CONFLICT)
+        consume(writer, "parent", SECOND, CHILD)
+        cycle_draft = ItemKey(ItemKind.DRAFT, UUID(int=23))
+        consume(writer, "parent", CHILD, cycle_draft)
+        # Only one alias endpoint has a parent. The alias would close a cycle.
+        rejected = consume(
+            writer, "alias", cycle_draft, SECOND, MarkerDisposition.CONFLICT
+        )
+        consume(writer, "parent", CHILD, DRAFT)
+        accepted = consume(writer, "alias", DRAFT, OTHER_EPIC)
 
     reopened = Ledger.open(project.root, PROJECT)
     with reopened.writer() as writer:
         assert enqueue_command(writer.root, rejected.command) == rejected
-        _consume(writer, item_cli, "alias", DRAFT, CHILD, MarkerDisposition.CONFLICT)
-        _consume(writer, item_cli, "parent", EPIC, SECOND, MarkerDisposition.CONFLICT)
-        _consume(
-            writer, item_cli, "parent", DRAFT, OTHER_EPIC, MarkerDisposition.CONFLICT
-        )
+        consume(writer, "alias", DRAFT, CHILD, MarkerDisposition.CONFLICT)
+        consume(writer, "parent", EPIC, SECOND, MarkerDisposition.CONFLICT)
+        consume(writer, "parent", DRAFT, OTHER_EPIC, MarkerDisposition.CONFLICT)
         # Exact command identity cannot acquire new bytes.
         changed = replace(
             accepted.command, payload=replace(accepted.command.payload, issue=CHILD)
@@ -477,19 +593,16 @@ def test_installed_item_cli_refuses_missing_project(item_cli, tmp_path):
 @pytest.mark.parametrize(
     "defect", [key for key in _ITEM_STATE_FAILURES if key != "missing"]
 )
-def test_item_refuses_untrusted_filesystem_state(project, monkeypatch, capsys, defect):
+def test_item_refuses_untrusted_filesystem_state(request, monkeypatch, capsys, defect):
+    if defect in ("identity", "schema"):
+        _assert_item_refuses_observed_database(monkeypatch, capsys, defect)
+        return
+
+    project = request.getfixturevalue("project")
     root = project.root
-    if defect in ("identity", "other-project", "schema"):
+    if defect == "other-project":
         with store._connection(project.database_path, write=True) as conn, conn:
-            if defect == "schema":
-                conn.execute("PRAGMA user_version = 999")
-            else:
-                stored = (
-                    "private-identity-canary"
-                    if defect == "identity"
-                    else str(UUID(int=80))
-                )
-                conn.execute("UPDATE identity SET project_id = ?", (stored,))
+            conn.execute("UPDATE identity SET project_id = ?", (str(UUID(int=80)),))
     elif defect == "sidecar":
         Path(f"{project.database_path}-wal").chmod(0o644)
     elif defect == "guard":
@@ -499,6 +612,56 @@ def test_item_refuses_untrusted_filesystem_state(project, monkeypatch, capsys, d
     assert _invoke_item_alias(monkeypatch, root) == 1
     _assert_item_refusal(*capsys.readouterr())
     assert not (root / "inbox").exists()
+
+
+def _assert_item_refuses_observed_database(monkeypatch, capsys, defect):
+    key = b"r" * 32
+    root = Path("/fixture/unrelated local name")
+    project = Ledger(root, store._identity(PROJECT, key), key)
+    observed_id = "private-identity-canary" if defect == "identity" else str(PROJECT)
+    queries = []
+
+    def observe_identity(path, *, write):
+        assert (path, write) == (project.database_path, False)
+
+        def execute(sql):
+            assert sql == "SELECT project_id FROM identity WHERE singleton = 1"
+            queries.append(sql)
+            return SimpleNamespace(fetchone=lambda: (observed_id,))
+
+        return nullcontext(SimpleNamespace(execute=execute))
+
+    rows = _LedgerRows(project.identity, store.APPLICATION_ID, ())
+    rows.version = 999
+    read_storage = Mock(return_value=key)
+    enqueue = Mock(side_effect=AssertionError("Unsafe project reached publication"))
+    paths = {root, project.database_path.parent}
+
+    def pin(path):
+        assert path in paths
+        return nullcontext(SimpleNamespace(check=Mock()))
+
+    def observe_ledger(path, *, write):
+        assert (path, write) == (project.database_path, False)
+        return nullcontext(rows.connect(write=write))
+
+    monkeypatch.setattr(cli, "_pin_directory", pin)
+    monkeypatch.setattr(cli, "_state_files", lambda path: ((1, 2),))
+    monkeypatch.setattr(cli, "_connection", observe_identity)
+    monkeypatch.setattr(cli, "enqueue_command", enqueue)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(store, "_validate_storage", read_storage)
+    monkeypatch.setattr(store, "_connection", observe_ledger)
+
+    assert _invoke_item_alias(monkeypatch, root) == 1
+    _assert_item_refusal(*capsys.readouterr())
+    assert queries == ["SELECT project_id FROM identity WHERE singleton = 1"]
+    if defect == "schema":
+        read_storage.assert_called_once_with(root, PROJECT)
+    else:
+        read_storage.assert_not_called()
+    enqueue.assert_not_called()
+    assert rows.writes == []
 
 
 @dataclass(frozen=True, slots=True)

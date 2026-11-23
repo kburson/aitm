@@ -1,12 +1,14 @@
 import json
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, localcontext
 from importlib.resources import files
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
-from test_ledger import _memory_ledger
+from test_ledger import _LedgerRows, _memory_ledger
 
 from aitm_usage import accounting, pricing
 from aitm_usage import ledger as store
@@ -54,6 +56,30 @@ def project(tmp_path, monkeypatch):
 @pytest.fixture
 def pricing_evidence():
     return _memory_ledger(store, PROJECT, b"pricing-policy-test")
+
+
+@pytest.fixture
+def accounting_rows(pricing_evidence, monkeypatch):
+    rows = _LedgerRows(pricing_evidence.identity, store.APPLICATION_ID, ())
+    writer = replace(
+        pricing_evidence,
+        _writer=object(),
+        _write_paths=SimpleNamespace(check=lambda: None),
+    )
+
+    @contextmanager
+    def transaction(ledger, *, write):
+        assert ledger is writer
+        with rows.connect(write=write) as connection:
+            yield connection
+
+    monkeypatch.setattr(
+        Ledger, "reader", lambda ledger: transaction(ledger, write=False)
+    )
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda ledger: transaction(ledger, write=True)
+    )
+    return writer, rows
 
 
 @pytest.fixture(scope="module")
@@ -399,9 +425,12 @@ def test_accounting_rejects_foreign_reference_through_ledger_admission(
     assert project.as_of().sequence == 0
 
 
-def test_same_snapshot_identity_does_not_replace_conflicting_payload(project):
+def test_same_snapshot_identity_does_not_replace_conflicting_payload(
+    accounting_rows, reference_rates
+):
+    project, rows = accounting_rows
     sample = quota(project)
-    card = pricing.load_rate_card()
+    card = reference_rates
     accepted = accounting.account_observations(
         AdapterResult(quota=(sample,)), card, ledger=project
     )
@@ -412,21 +441,23 @@ def test_same_snapshot_identity_does_not_replace_conflicting_payload(project):
         ledger=project,
     )
     assert conflict.revisions[0].key == accepted.revisions[0].key
-    with pytest.raises(ConflictError):
+    before = rows.history
+    with pytest.raises(ConflictError, match="Immutable revision payload conflict"):
         project.apply(conflict)
     assert project.as_of().sequence == seq
     assert project.as_of().current == accepted.revisions
+    assert rows.history == before
 
 
-def test_wire_values_are_canonical_closed_and_private(project):
+def test_wire_values_are_canonical_closed_and_private(accounting_rows, reference_rates):
+    project, committed = accounting_rows
     batch = accounting.account_observations(
         AdapterResult((usage(project),), quota=(quota(project),)),
-        pricing.load_rate_card(),
+        reference_rates,
         ledger=project,
     )
-    project.apply(batch)
-    with project.reader() as conn:
-        rows = [row[0] for row in conn.execute("SELECT payload FROM revisions")]
+    assert project.apply(batch) == 1
+    rows = [payload for _, _, _, payload in committed.history[1]]
     payloads = {json.loads(row)["record"]["kind"]: row for row in rows}
     raw_price = payloads["api-equivalent-price"]
     raw_quota = payloads["account-observation"]
@@ -476,18 +507,23 @@ def test_rate_card_content_is_versioned_validated_and_immutable(
         pricing.RateCard.from_json(json.dumps(rates))
 
 
-def test_accounting_revision_cannot_overwrite_an_immutable_record(project):
+def test_accounting_revision_cannot_overwrite_an_immutable_record(
+    accounting_rows, reference_rates
+):
+    project, rows = accounting_rows
     original = usage(project)
     batch = accounting.account_observations(
         AdapterResult((original,), quota=(quota(project),)),
-        pricing.load_rate_card(),
+        reference_rates,
         ledger=project,
     )
     first = project.apply(batch)
+    rows.writes.clear()
     for entry in batch.revisions[1:]:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Accounting records are immutable"):
             project.apply(LedgerBatch((replace(entry, revision=2),)))
     assert project.as_of().sequence == first
+    assert rows.writes == []
 
 
 @pytest.mark.parametrize(
