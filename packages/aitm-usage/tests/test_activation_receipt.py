@@ -494,7 +494,7 @@ def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
     ],
 )
 def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
-    project, scope_case
+    request, monkeypatch, scope_case
 ):
     from dataclasses import replace
     from datetime import timedelta
@@ -502,7 +502,10 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
 
     from test_export import _observation
     from test_install import _add_anchor
+    from test_ledger import _memory_ledger
 
+    from aitm_usage import ledger as store
+    from aitm_usage import scopes
     from aitm_usage.qualification import (
         QualificationError,
         _usage,
@@ -516,6 +519,7 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
     from aitm_usage.sources.scan import checkout_anchor_reference
     from aitm_usage.types import (
         ClientVersion,
+        CommandReceipt,
         DevelopmentBinding,
         DraftAlias,
         InboxCommand,
@@ -523,13 +527,71 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         ItemKind,
         ItemParent,
         LedgerBatch,
+        LedgerView,
         MarkerDisposition,
         Provider,
+        Registration,
         ReviewRole,
+        Revision,
         WorkPhase,
     )
 
-    registration, ledger, _ = project
+    use_durable_workflow = scope_case == "controlled"
+    if use_durable_workflow:
+        registration, ledger, _ = request.getfixturevalue("project")
+        _add_anchor(registration, ledger, ledger.root.parent, 998)
+        dev_path = ledger.root.parent / "anchor-998"
+        planning_path = registration.checkout_anchors[0]
+    else:
+        from test_install import PROJECT
+
+        ledger = _memory_ledger(store, PROJECT, b"q" * 32)
+        planning_path = Path("/fixture/planning")
+        dev_path = Path("/fixture/development")
+        history = [LedgerView(PROJECT, 0, (), ())]
+        registration = Registration(
+            PROJECT,
+            ledger.root,
+            (Path("/fixture/transcripts"),),
+            (planning_path, dev_path),
+            CHECKED,
+        )
+        monkeypatch.setattr(
+            qualification,
+            "_effective_registration",
+            lambda ledger, view: (registration, ()),
+        )
+        monkeypatch.setattr(
+            store.Ledger,
+            "as_of",
+            lambda self, sequence=None: history[-1 if sequence is None else sequence],
+        )
+
+    def put(*revisions):
+        prior = history[-1]
+        history.append(
+            replace(
+                prior,
+                sequence=prior.sequence + 1,
+                revisions=(*prior.revisions, *revisions),
+            )
+        )
+
+    def admit(command, evidence=()):
+        disposition, matched, effects = scopes._evaluate(
+            ledger, command, history[-1], evidence, {}
+        )
+        assert disposition is MarkerDisposition.ACCEPTED
+        receipt = CommandReceipt(
+            command,
+            ledger.validate_command(command),
+            disposition,
+            None if matched is None else matched.boundary,
+            None if matched is None else matched.anchor_ref,
+        )
+        key = ledger.pseudonymize("inbox-command", str(command.command_id))
+        put(*effects, Revision(key, 1, receipt))
+
     project_id = ledger.identity.project_id
     template, marker = _observation(ledger, "first")
     start = template.record.observed_at
@@ -543,11 +605,8 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
         if scope_case == "core-graduation"
         else ItemKey(ItemKind.ISSUE, 1_000_000_095)
     )
-    _add_anchor(registration, ledger, ledger.root.parent, 998)
-    dev_checkout = checkout_anchor_reference(ledger, ledger.root.parent / "anchor-998")
-    planning_checkout = checkout_anchor_reference(
-        ledger, registration.checkout_anchors[0]
-    )
+    dev_checkout = checkout_anchor_reference(ledger, dev_path)
+    planning_checkout = checkout_anchor_reference(ledger, planning_path)
     author = ledger.pseudonymize("activation-test", "author")
     reviewer = ledger.pseudonymize("activation-test", "reviewer")
     attempt = ledger.pseudonymize("activation-test", "attempt")
@@ -608,32 +667,34 @@ def test_workflow_is_bound_to_shared_session_overlap_and_graduation(
             request_ref=target,
         )
         key = ledger.pseudonymize("activation-test", f"usage-{index}")
-        if new_marker:
-            assert (
-                enqueue_command(
-                    ledger.root, InboxCommand(command_id, project_id, payload)
-                )
-                is None
-            )
-        with ledger.writer() as writer:
+        revision = replace(template, key=key, record=observation)
+        command = InboxCommand(command_id, project_id, payload)
+        evidence = (BoundaryEvidence(boundary, anchor),)
+        if use_durable_workflow:
             if new_marker:
-                drain = drain_inbox(writer, (BoundaryEvidence(boundary, anchor),))
-                assert drain.receipts[0].disposition is MarkerDisposition.ACCEPTED
-            writer.apply(LedgerBatch((replace(template, key=key, record=observation),)))
+                assert enqueue_command(ledger.root, command) is None
+            with ledger.writer() as writer:
+                if new_marker:
+                    drain = drain_inbox(writer, evidence)
+                    assert drain.receipts[0].disposition is MarkerDisposition.ACCEPTED
+                writer.apply(LedgerBatch((revision,)))
+        else:
+            if new_marker:
+                admit(command, evidence)
+            put(revision)
         return key.value.split(":")[1]
 
     def relationship(payload):
-        assert (
-            enqueue_command(
-                ledger.root, InboxCommand(payload.command_id, project_id, payload)
-            )
-            is None
-        )
-        with ledger.writer() as writer:
-            assert (
-                drain_inbox(writer, ()).receipts[0].disposition
-                is MarkerDisposition.ACCEPTED
-            )
+        command = InboxCommand(payload.command_id, project_id, payload)
+        if use_durable_workflow:
+            assert enqueue_command(ledger.root, command) is None
+            with ledger.writer() as writer:
+                assert (
+                    drain_inbox(writer, ()).receipts[0].disposition
+                    is MarkerDisposition.ACCEPTED
+                )
+        else:
+            admit(command)
         return ledger.as_of().sequence
 
     relationship(ItemParent(UUID(int=920), project_id, child_a, epic))
