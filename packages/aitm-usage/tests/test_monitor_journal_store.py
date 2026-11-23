@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 
 from aitm_usage import _monitor_journal_store as journal
-from aitm_usage import host_fs, ledger
+from aitm_usage import host_fs, ledger, monitor_registry
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 
@@ -432,26 +432,22 @@ def test_damaged_legacy_store_is_left_byte_for_byte_unchanged(tmp_path):
         assert _durable_bytes(registry) == expected_bytes
 
 
-def test_exact_v1_validation_refuses_v2_without_modifying_either_store(tmp_path):
-    v1_registry = Registry(tmp_path / "v1")
-    v2_registry = Registry(tmp_path / "v2")
-    with v1_registry.writer() as writer:
-        v1 = _create_v1_store(writer)
-    with v2_registry.writer() as writer:
-        v2 = _create_v2_store(writer)
-        with _sqlite(_database(writer)) as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (2,)
-    expected_bytes = [
-        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
+def test_exact_v1_validation_refuses_v2_without_modifying_either_store(monkeypatch):
+    v1 = _journal_metadata(monkeypatch, 1)
+    v2 = _journal_metadata(monkeypatch, 2)
+    assert journal._validate_identity(v1, "fixture-key", version=1) == 1
+    with pytest.raises(LedgerError, match="schema version"):
+        journal._validate_identity(v2, "fixture-key", version=1)
+
+    header_reads = [("PRAGMA application_id",), ("PRAGMA user_version",)]
+    assert [call.args for call in v1.execute.call_args_list] == [
+        *header_reads,
+        ("PRAGMA journal_mode",),
+        ("SELECT singleton, key_id FROM identity",),
     ]
-    with _sqlite(_database(v1_registry)) as conn:
-        journal._validate_identity(conn, v1.key_id, version=1)
-    with _sqlite(_database(v2_registry)) as conn:
-        with pytest.raises(LedgerError, match="schema version"):
-            journal._validate_identity(conn, v2.key_id, version=1)
-    assert [
-        _durable_bytes(registry) for registry in (v1_registry, v2_registry)
-    ] == expected_bytes
+    assert [call.args for call in v2.execute.call_args_list] == header_reads
+    v1.commit.assert_not_called()
+    v2.commit.assert_not_called()
 
 
 def test_revision_table_enforces_foreign_keys_and_uniqueness_in_writes(tmp_path):
@@ -504,30 +500,37 @@ def test_genesis_is_private_and_retains_exact_identity_on_reopen(tmp_path):
 
 @pytest.mark.parametrize("arrives_during_publication", [False, True])
 def test_preexisting_empty_store_is_never_replaced(
-    tmp_path, monkeypatch, arrives_during_publication
+    request, monkeypatch, arrives_during_publication
 ):
+    if not arrives_during_publication:
+        memory = _journal_observations(monkeypatch)
+        for name in journal._FILES:
+            del memory.files[memory.store / name]
+        before = dict(memory.files)
+        create = Mock(side_effect=AssertionError("attachment tried to replace a store"))
+        monkeypatch.setattr(journal.JournalStore, "_create", create)
+        with pytest.raises(LedgerError, match="unavailable"):
+            journal.JournalStore(memory.writer)
+        assert memory.files == before
+        create.assert_not_called()
+        memory.open_database.assert_not_called()
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = Registry(tmp_path / "monitor")
     directory = _directory(registry)
     identity = None
+    publish = host_fs.publish_noreplace
 
-    def create_empty_store():
+    def publish_with_competing_target(*args):
         nonlocal identity
         directory.mkdir(mode=0o700)
         identity = directory.stat()
-
-    def publish_with_competing_target(*args):
-        create_empty_store()
         return publish(*args)
 
     with registry.writer() as writer:
         writer.source_evidence()
-        if arrives_during_publication:
-            publish = host_fs.publish_noreplace
-            monkeypatch.setattr(
-                host_fs, "publish_noreplace", publish_with_competing_target
-            )
-        else:
-            create_empty_store()
+        monkeypatch.setattr(host_fs, "publish_noreplace", publish_with_competing_target)
         with pytest.raises(LedgerError):
             journal.JournalStore(writer)
         assert identity is not None and os.path.samestat(identity, directory.stat())
@@ -595,14 +598,35 @@ def test_interrupted_parent_sync_is_confirmed_on_reopen(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     "key_state", ["uninitialized", "unrecorded", "missing", "changed"]
 )
-def test_attachment_never_initializes_or_adopts_source_key(tmp_path, key_state):
+def test_attachment_never_initializes_or_adopts_source_key(
+    request, monkeypatch, key_state
+):
+    if key_state in {"uninitialized", "unrecorded"}:
+        memory = _journal_observations(monkeypatch)
+        memory.writer.view = Mock(return_value=RegistryView())
+        for path in tuple(memory.files):
+            if path.is_relative_to(memory.store):
+                del memory.files[path]
+        key_path = _key(memory.writer)
+        if key_state == "uninitialized":
+            del memory.files[key_path]
+        before = dict(memory.files)
+        with pytest.raises(LedgerError, match="requires an initialized source key"):
+            journal.JournalStore(memory.writer)
+        assert memory.writer.view().source_key_id is None
+        assert memory.files == before
+        memory.writer.source_evidence.assert_not_called()
+        memory.pin.assert_not_called()
+        memory.open_database.assert_not_called()
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
-        if key_state in {"missing", "changed"}:
-            writer.source_evidence()
+        writer.source_evidence()
         if key_state == "missing":
             _key(registry).unlink()
-        if key_state in {"unrecorded", "changed"}:
+        else:
             _key(registry).write_bytes(b"X" * 32)
             _key(registry).chmod(0o600)
         expected_key_id = writer.view().source_key_id
@@ -610,7 +634,7 @@ def test_attachment_never_initializes_or_adopts_source_key(tmp_path, key_state):
             journal.JournalStore(writer)
         assert writer.view().source_key_id == expected_key_id
         assert not _directory(registry).exists()
-        if key_state in {"unrecorded", "changed"}:
+        if key_state == "changed":
             assert _key(registry).read_bytes() == b"X" * 32
         else:
             assert not _key(registry).exists()
@@ -663,7 +687,7 @@ _PHYSICAL_STORE_CASES = {
 }
 
 
-def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
+def _journal_observations(monkeypatch):
     key = b"j" * 32
     evidence = _ServiceEvidence(key)
     root_path = Path("/fixture/monitor")
@@ -673,10 +697,13 @@ def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
     folder = SimpleNamespace(
         path=store_path, identities=(*root_ids, (1, 3)), check=Mock()
     )
-    lease = SimpleNamespace(identities=(*root_ids, (1, 4)))
+    lease = SimpleNamespace(identities=(*root_ids, (1, 4)), check=Mock())
     view = RegistryView(source_key_id=sha256(key).hexdigest())
     writer = SimpleNamespace(
-        root=root_path, lease=lease, view=lambda: view, source_evidence=lambda: evidence
+        root=root_path,
+        lease=lease,
+        view=lambda: view,
+        source_evidence=Mock(return_value=evidence),
     )
     files = {
         path: SimpleNamespace(
@@ -703,19 +730,32 @@ def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
             raise FileNotFoundError(path) from None
 
     connection = MagicMock()
+    connection.execute.return_value.fetchall.return_value = []
     open_database = Mock(return_value=nullcontext(connection))
     monkeypatch.setattr(Path, "lstat", lstat)
     monkeypatch.setattr(ledger, "_check_acl", Mock())
     pinned = {root_path: root, store_path: folder}
-    monkeypatch.setattr(
-        journal, "_pin_directory", lambda path: nullcontext(pinned[path])
-    )
+    pin = Mock(side_effect=lambda path: nullcontext(pinned[path]))
+    monkeypatch.setattr(journal, "_pin_directory", pin)
     monkeypatch.setattr(journal, "_read_private", Mock(return_value=key))
     monkeypatch.setattr(journal, "_open", open_database)
     monkeypatch.setattr(
         journal, "_validate_identity", Mock(return_value=journal._SCHEMA_VERSION)
     )
     monkeypatch.setattr(journal, "os", SimpleNamespace(fsync=Mock()))
+    return SimpleNamespace(
+        writer=writer,
+        store=store_path,
+        files=files,
+        pin=pin,
+        open_database=open_database,
+    )
+
+
+def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
+    memory = _journal_observations(monkeypatch)
+    writer, store_path = memory.writer, memory.store
+    open_database, files = memory.open_database, memory.files
     store = journal.JournalStore(writer)
     open_database.assert_called_once_with(store_path / journal._DATABASE, write=False)
     open_database.reset_mock()
@@ -817,19 +857,36 @@ def test_body_failure_rolls_back_private_transaction(tmp_path):
         assert _sequences(store) == []
 
 
-def test_retired_writer_cannot_reopen_or_use_saved_store(tmp_path):
-    registry = Registry(tmp_path / "monitor")
+def test_retired_writer_cannot_reopen_or_use_saved_store(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    registry = Registry(memory.writer.root)
+    monkeypatch.setattr(monitor_registry, "_ensure_private_directory", Mock())
+    monkeypatch.setattr(
+        monitor_registry,
+        "_lease",
+        lambda path, *, create: nullcontext(
+            SimpleNamespace(identities=memory.writer.lease.identities, check=Mock())
+        ),
+    )
+    monkeypatch.setattr(Registry, "view", lambda self: memory.writer.view())
+    monkeypatch.setattr(
+        Registry, "source_evidence", lambda self: memory.writer.source_evidence()
+    )
+
     with registry.writer() as writer:
-        writer.source_evidence()
         store = journal.JournalStore(writer)
     with registry.writer() as replacement:
         assert _sequences(journal.JournalStore(replacement)) == []
-        with pytest.raises(LedgerError):
+        memory.pin.reset_mock()
+        memory.open_database.reset_mock()
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             _ = store.evidence
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             _sequences(store)
-        with pytest.raises(LedgerError):
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
             journal.JournalStore(writer)
+        memory.pin.assert_not_called()
+        memory.open_database.assert_not_called()
 
 
 @pytest.mark.parametrize("version", [1, 2, 3])

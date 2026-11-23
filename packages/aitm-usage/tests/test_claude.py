@@ -10,14 +10,15 @@ from uuid import UUID
 
 import pytest
 from adapter_frame_cases import AdapterFrames
-from scanner_policy_cases import TranscriptReplay
+from scanner_policy_cases import NativeTranscriptFiles, TranscriptReplay
+from test_accounting import reference_rates  # noqa: F401, F811
 
 from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
 from aitm_usage.pricing import load_rate_card
 from aitm_usage.rollup import rollup
-from aitm_usage.scopes import drain_inbox, session_reference
+from aitm_usage.scopes import attest_marker, drain_inbox, session_reference
 from aitm_usage.sources import adapter as native
 from aitm_usage.sources.scan import discover, scan
 from aitm_usage.types import (
@@ -30,17 +31,20 @@ from aitm_usage.types import (
     ItemKey,
     ItemKind,
     LedgerBatch,
+    MarkerDisposition,
     ModelLabel,
     ProcessingTier,
     Provider,
     QuotaBucket,
     QuotaSource,
     Registration,
+    Revision,
     ScopeEnrollment,
     ScopeMarker,
     SourceCheckpoint,
     TokenCounts,
     WorkPhase,
+    _encode,
     encode_marker,
 )
 
@@ -621,9 +625,6 @@ def monitor_receipt_project(request):
     if request.node.callspec.params["case"] in {
         "mark",
         "legacy",
-        "missing-call-session",
-        "missing-result-session",
-        "wrong-result-session",
     }:
         return request.getfixturevalue("project")
     return None
@@ -660,10 +661,20 @@ def test_monitor_scope_receipt_at_first_claude_request(
     monitor_receipt_project, adapter_frames, monkeypatch, case
 ):
     project = monitor_receipt_project
-    if project is None:
-        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
-    else:
+    files = None
+    if case in {
+        "missing-call-session",
+        "missing-result-session",
+        "wrong-result-session",
+    }:
+        files = NativeTranscriptFiles(monkeypatch)
+        ledger, transcript_root, checkout = files.source
+        path = transcript_root / "native.jsonl"
+    elif project is not None:
         ledger, registration, path, checkout, _ = project
+    else:
+        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    if files is not None or project is not None:
         monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
         monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
     action = case if case in {"mark", "handoff", "dispose"} else "mark"
@@ -728,7 +739,9 @@ def test_monitor_scope_receipt_at_first_claude_request(
             msg="msg-second",
         ),
     ]
-    if project is not None:
+    if files is not None:
+        files.write(path, rows)
+    elif project is not None:
         write(path, rows)
     if case == "legacy":
         claude = adapter()
@@ -739,7 +752,7 @@ def test_monitor_scope_receipt_at_first_claude_request(
         assert len(result.revisions) == 3
         return
 
-    if project is None:
+    if project is None and files is None:
         result = adapter_frames.read_monitor(rows, monkeypatch)
     else:
         provider = native.ProviderAdapter()
@@ -770,8 +783,6 @@ def controlled_bash_project(request):
         "outside",
         "observation-first",
         "split",
-        "wrong-session",
-        "missing-api-session",
     }:
         return request.getfixturevalue("project")
     return None
@@ -798,11 +809,15 @@ def controlled_bash_project(request):
     ],
 )
 def test_controlled_native_bash_receipt_sets_exact_next_request(
-    controlled_bash_project, adapter_frames, monkeypatch, capsys, case
+    controlled_bash_project, adapter_frames, request, monkeypatch, capsys, case
 ):
     claude = adapter()
     project = controlled_bash_project
-    if project is None:
+    replay = None
+    if case in {"wrong-session", "missing-api-session"}:
+        replay = request.getfixturevalue("memory_replay")
+        ledger, checkout = replay.ledger, replay.checkout
+    elif project is None:
         ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     else:
         ledger, registration, path, checkout, outside = project
@@ -833,6 +848,10 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
                 user(checkout),
                 *_native_tool_turn(checkout, command, output, case=disproof),
             ]
+            if replay is not None:
+                replay.write(rows)
+                _, result = replay.read(claude.read_claude, replay.candidate(), state)
+                return result
             return claude.read_claude(
                 adapter_frames.batch(rows), state, Eligibility.ELIGIBLE
             )
@@ -1207,12 +1226,19 @@ def test_missing_terminal_stays_visible_when_quota_is_present(adapter_frames):
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
 
 
+@pytest.fixture
+def structured_result_replay(request, monkeypatch, success):
+    return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=success)
+
+
 @pytest.mark.parametrize("success", [True, False])
-def test_structured_result_requires_a_successful_exact_request_prefix(project, success):
+def test_structured_result_requires_a_successful_exact_request_prefix(
+    structured_result_replay, success
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
+    replay = structured_result_replay
+    ledger, checkout = replay.ledger, replay.checkout
+    replay.write(
         [
             user(checkout),
             request(checkout),
@@ -1225,18 +1251,28 @@ def test_structured_result_requires_a_successful_exact_request_prefix(project, s
                 total_cost_usd=100,
                 result="never-persist-result",
             ),
-        ],
+        ]
     )
-    batch, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    batch, result = replay.read(
+        claude.read_claude, replay.candidate(), claude.ClaudeState(ledger)
+    )
     last = result.revisions[-1]
     assert last.record.availability is (
         Availability.COMPLETE if success else Availability.PARTIAL
     )
     assert last.record.boundary.ordinal == 1
     assert last.revision == (2 if success else 1)
-    commit(ledger, batch, result)
+    checkpoint = replay.commit(batch, result)
     assert ledger.as_of().current == (last,)
-    assert b"never-persist-result" not in ledger.database_path.read_bytes()
+    if success:
+        assert b"never-persist-result" not in ledger.database_path.read_bytes()
+    else:
+        payload = _encode(
+            LedgerBatch(result.revisions, checkpoint),
+            LedgerBatch,
+            validate_ref=ledger.validate_source_ref,
+        )
+        assert "never-persist-result" not in payload
 
 
 def test_reopen_uses_exact_fixed_prior_view(memory_replay):
@@ -1340,23 +1376,31 @@ def test_native_api_start_before_cutoff_cannot_enter_after_restart(project):
     assert b"native-api-before-cutoff" not in ledger.database_path.read_bytes()
 
 
-def test_unknown_model_labels_do_not_merge_conflicting_revisions(project):
+def test_unknown_model_labels_do_not_merge_conflicting_revisions(memory_replay):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
+    replay.write(
         [
             user(checkout),
             request(checkout, model="unknown-model-one", counts=usage(3)),
             request(checkout, model="unknown-model-one", counts=usage(4)),
             request(checkout, model="unknown-model-two", counts=usage(5)),
-        ],
+        ]
     )
-    batch, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    batch, result = replay.read(
+        claude.read_claude, replay.candidate(), claude.ClaudeState(ledger)
+    )
     assert [r.record.tokens.output_tokens for r in result.revisions] == [3, 4]
     assert DiagnosticCode.IDENTITY_CONFLICT in diagnostics(result)
-    commit(ledger, batch, result)
-    assert b"unknown-model-one" not in ledger.database_path.read_bytes()
+    checkpoint = replay.commit(batch, result)
+    payload = _encode(
+        LedgerBatch(result.revisions, checkpoint),
+        LedgerBatch,
+        validate_ref=ledger.validate_source_ref,
+    )
+    assert "unknown-model-one" not in payload
+    assert "unknown-model-two" not in payload
 
 
 @pytest.fixture
@@ -1478,6 +1522,29 @@ def _accounted_scan(claude, ledger, candidate, prior=None, *, reserved_session_i
     return result, checkpoint, sequence
 
 
+def _accounted_replay(claude, replay, candidate, rates, prior=None, *, marker=None):
+    ledger = replay.ledger
+    state = claude.ClaudeState(ledger, reserved_session_id=SESSION if marker else None)
+    batch, result = replay.read(claude.read_claude, candidate, state, prior)
+    accounting = account_observations(result, rates, ledger=ledger)
+    revisions = accounting.revisions
+    if marker is not None:
+        (boundary,) = (
+            boundary
+            for boundary in result.boundaries
+            if boundary.receipt_ref == marker.receipt_ref
+        )
+        evidence = batch.scope_evidence(boundary)
+        assert evidence is not None and evidence.anchor_ref is not None
+        assert attest_marker(marker, evidence.boundary) is MarkerDisposition.ACCEPTED
+        # Supply the accepted scope evidence that the coordinator commits separately.
+        enrollment = ScopeEnrollment(marker, evidence.boundary, evidence.anchor_ref)
+        key = ledger.pseudonymize("scope-enrollment", str(marker.marker_id))
+        revisions = (Revision(key, 1, enrollment), *revisions)
+    checkpoint = replay.commit(batch, result, revisions=revisions, prior=prior)
+    return result, checkpoint, ledger.as_of().sequence
+
+
 def _with_processing(counts, metadata):
     counts = counts.copy()
     for key in ("service_tier", "speed", "inference_geo"):
@@ -1488,7 +1555,7 @@ def _with_processing(counts, metadata):
 
 @pytest.fixture
 def pricing_replay(request, monkeypatch, processing):
-    durable = processing in ({}, {"speed": "fast", "inference_geo": "us"})
+    durable = not processing
     return TranscriptReplay(
         request, monkeypatch, PROJECT, CUTOFF, durable=durable
     ), durable
@@ -1514,7 +1581,11 @@ def pricing_replay(request, monkeypatch, processing):
     ],
 )
 def test_streamed_processing_evidence_controls_accounting_across_restart(
-    pricing_replay, processing, expected_tier, expected_price
+    pricing_replay,
+    processing,
+    expected_tier,
+    expected_price,
+    reference_rates,  # noqa: F811
 ):
     claude = adapter()
     transcript, durable = pricing_replay
@@ -1525,14 +1596,7 @@ def test_streamed_processing_evidence_controls_accounting_across_restart(
     def accounted(prior=None):
         if durable:
             return _accounted_scan(claude, ledger, candidate, prior)
-        batch, result = transcript.read(
-            claude.read_claude, candidate, claude.ClaudeState(ledger), prior
-        )
-        accounting = account_observations(result, load_rate_card(), ledger=ledger)
-        checkpoint = transcript.commit(
-            batch, result, revisions=accounting.revisions, prior=prior
-        )
-        return result, checkpoint, ledger.as_of().sequence
+        return _accounted_replay(claude, transcript, candidate, reference_rates, prior)
 
     initial, prior, first_sequence = accounted()
     (r1,) = initial.revisions
@@ -1572,37 +1636,53 @@ def test_streamed_processing_evidence_controls_accounting_across_restart(
     assert current.unknown_price_count == (expected_tier is None)
 
 
-def test_initial_unproven_processing_stays_unknown_after_standard_revision(project):
+def test_initial_unproven_processing_stays_unknown_after_standard_revision(
+    memory_replay,
+    reference_rates,  # noqa: F811
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
+    replay = memory_replay
+    checkout = replay.checkout
+    replay.write(
         [
             user(checkout),
             request(checkout, counts=_with_processing(usage(3), {}), stop=None),
-        ],
+        ]
     )
-    candidate = source(registration)
-    initial, prior, _ = _accounted_scan(claude, ledger, candidate)
+    candidate = replay.candidate()
+    initial, prior, _ = _accounted_replay(claude, replay, candidate, reference_rates)
     assert initial.revisions[0].record.processing_tier is None
 
-    ledger = Ledger.open(ledger.root, PROJECT)
-    write(path, [request(checkout), cost(**{MODEL: model_counts()})], append=True)
-    result, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    ledger = replay.reopen()
+    replay.write([request(checkout), cost(**{MODEL: model_counts()})], append=True)
+    result, _, _ = _accounted_replay(claude, replay, candidate, reference_rates, prior)
     assert result.revisions[-1].record.availability is Availability.COMPLETE
     assert all(revision.record.processing_tier is None for revision in result.revisions)
     item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
     assert rollup(item, ledger.as_of()).unattributed.unknown_price_count == 1
 
 
+@pytest.fixture
+def late_processing_replay(request, monkeypatch, late_output):
+    durable = late_output == 4
+    return TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=durable
+    ), durable
+
+
 @pytest.mark.parametrize(
     "late_output", [4, 5, 3, True], ids=["unchanged", "increase", "decrease", "invalid"]
 )
 def test_late_processing_contradiction_revokes_price_with_original_scope(
-    project, monkeypatch, capsys, late_output
+    late_processing_replay,
+    monkeypatch,
+    capsys,
+    late_output,
+    reference_rates,  # noqa: F811
 ):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay, durable = late_processing_replay
+    ledger, checkout = replay.ledger, replay.checkout
     session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
     item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
     marker_path = ledger.root / "marker.json"
@@ -1620,8 +1700,6 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         PROJECT,
         receipt_ref=claude.claude_receipt_reference(ledger, session, COMMAND),
     )
-    marker_path.write_bytes(encode_marker(marker))
-    marker_path.chmod(0o600)
     arguments = [
         "aitm-usage",
         "--project",
@@ -1634,15 +1712,37 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         str(SESSION),
         "--json",
     ]
-    monkeypatch.setattr(sys, "argv", arguments)
-    assert main() == 0
-    output = capsys.readouterr().out.strip()
+    if durable:
+        marker_path.write_bytes(encode_marker(marker))
+        marker_path.chmod(0o600)
+        monkeypatch.setattr(sys, "argv", arguments)
+        assert main() == 0
+        output = capsys.readouterr().out.strip()
+    else:
+        output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
     rows = _native_tool_turn(checkout, shlex.join(arguments), output)
-    write(path, [user(checkout), *rows, cost(**{MODEL: model_counts(8, 4, 10, 6, 8)})])
-    candidate = source(registration)
-    first, prior, priced_sequence = _accounted_scan(
-        claude, ledger, candidate, reserved_session_id=SESSION
-    )
+    replay.write([user(checkout), *rows, cost(**{MODEL: model_counts(8, 4, 10, 6, 8)})])
+    candidate = replay.candidate()
+
+    def accounted(prior=None):
+        if durable:
+            return _accounted_scan(
+                claude,
+                ledger,
+                candidate,
+                prior,
+                reserved_session_id=SESSION if prior is None else None,
+            )
+        return _accounted_replay(
+            claude,
+            replay,
+            candidate,
+            reference_rates,
+            prior,
+            marker=marker if prior is None else None,
+        )
+
+    first, prior, priced_sequence = accounted()
     priced = first.revisions[-1]
     assert priced.record.boundary.receipt_ref == marker.receipt_ref
     assert priced.record.availability is Availability.COMPLETE
@@ -1650,10 +1750,9 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         "0.000136"
     )
 
-    ledger = Ledger.open(ledger.root, PROJECT)
+    ledger = replay.reopen()
     counts = _with_processing(usage(late_output), {"speed": "fast"})
-    write(
-        path,
+    replay.write(
         [
             request(
                 checkout, req="req-next", msg="msg-next", counts=counts, effort="max"
@@ -1661,7 +1760,7 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         ],
         append=True,
     )
-    result, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    result, prior, _ = accounted(prior)
     (downgraded,) = result.revisions
     assert (downgraded.key, downgraded.revision) == (priced.key, priced.revision + 1)
     assert downgraded.record == replace(priced.record, processing_tier=None)
@@ -1673,8 +1772,8 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         "0.000136"
     )
 
-    ledger = Ledger.open(ledger.root, PROJECT)
-    write(path, [request(checkout, req="req-next", msg="msg-next")], append=True)
-    ordinary, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    ledger = replay.reopen()
+    replay.write([request(checkout, req="req-next", msg="msg-next")], append=True)
+    ordinary, _, _ = accounted(prior)
     assert ordinary.revisions == ()
     assert rollup(item, ledger.as_of()).direct.unknown_price_count == 1

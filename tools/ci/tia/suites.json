@@ -335,6 +335,46 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_initial_unproven_processing_stays_unknown_after_standard_revision",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_unknown_model_labels_do_not_merge_conflicting_revisions",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_caller_exclusion_keeps_post_commit_context_advanceable",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_inline_quota_does_not_leak_from_unadmitted_source",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_turn_receipt_requires_the_next_verified_start_in_the_same_segment",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_warm_scanner_frontier_keeps_provisional_first_request_output",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v1_validation_refuses_v2_without_modifying_either_store",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_retired_writer_cannot_reopen_or_use_saved_store",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
       "suite": "unit",
       "isolation_group": "grok_scope_receipts-policy"
