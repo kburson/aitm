@@ -3,6 +3,7 @@
 import errno
 import os
 import socket
+import stat
 import sys
 from contextlib import nullcontext
 from dataclasses import replace
@@ -10,15 +11,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
-from test_monitor_coverage import admitted_sources as admitted_sources
 from test_monitor_delivery import _enable, _journal, _reserve
 from test_monitor_delivery import independent as independent
-from test_monitor_journal import COPY, LIVE, A, B
-from test_monitor_qualification import qualify
-from test_monitor_scope import SOURCE
+from test_monitor_journal import COPY, LIVE, A, B, _MemoryJournalTranscripts
 
 from aitm_usage import cli, monitor_control, monitor_registry, monitor_scheduler
 from aitm_usage.ledger import Ledger, LedgerError
@@ -94,6 +92,11 @@ def wake_policy(monkeypatch):
         view=lambda: view,
         source_evidence=lambda: evidence,
     )
+    _attach_wake_files(monkeypatch)
+    return _wake_context(writer)
+
+
+def _attach_wake_files(monkeypatch):
     files = {}
     root = SimpleNamespace(check=Mock())
     directory = SimpleNamespace(fd=7, check=Mock())
@@ -122,7 +125,69 @@ def wake_policy(monkeypatch):
     )
     monkeypatch.setattr(monitor_scheduler, "_read_private", read)
     monkeypatch.setattr(monitor_scheduler, "_publish", publish)
-    return _wake_context(writer)
+
+
+@pytest.fixture
+def listener_policy(wake_policy, monkeypatch):
+    scheduler, resolver, _, now = wake_policy
+    directory = SimpleNamespace(path=resolver.writer.root, fd=7, check=Mock())
+    endpoint = directory.path / "wake.sock"
+    uid = 501
+    info = os.stat_result((stat.S_IFSOCK | 0o600, 9, 1, 1, uid, 0, 0, 0, 0, 0))
+    queued = []
+    received = []
+    client = MagicMock(spec=socket.socket)
+    client.fileno.return_value = 27
+
+    def stat_socket(name, *, dir_fd, follow_symlinks):
+        assert (name, dir_fd, follow_symlinks) == (endpoint.name, directory.fd, False)
+        return info
+
+    def lstat_socket(path):
+        assert path == str(endpoint)
+        return info
+
+    def accept():
+        received[:] = [queued.pop(0), b""]
+        return client, None
+
+    def read(fd, size):
+        assert fd == 27
+        data = received.pop(0)
+        assert size >= len(data)
+        return data
+
+    def readable(readers, write, errors, remaining):
+        assert (readers, write, errors) == ([27], [], [])
+        assert remaining > 0
+        return readers, [], []
+
+    monkeypatch.setattr(
+        hooks,
+        "os",
+        SimpleNamespace(
+            fsencode=os.fsencode,
+            path=os.path,
+            geteuid=lambda: uid,
+            stat=stat_socket,
+            lstat=lstat_socket,
+            read=read,
+        ),
+    )
+    monkeypatch.setattr(hooks, "select", SimpleNamespace(select=readable))
+    monkeypatch.setattr(
+        monitor_control, "os", SimpleNamespace(path=os.path, geteuid=lambda: uid)
+    )
+    monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: uid)
+    server = SimpleNamespace(accept=accept)
+    listener = monitor_control._WakeListener(
+        scheduler, resolver, directory, server, info
+    )
+
+    def send(event):
+        queued.append(hooks._frame(event))
+
+    return scheduler, resolver, now, listener, send, uid
 
 
 def _change(scheduler, resolver, kind=WakeKind.CHANGE):
@@ -346,24 +411,22 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         assert scheduler.finish(retry, caught_up=True)
 
 
-def test_wire_cannot_notify_without_approved_resolution(wake, monkeypatch):
-    scheduler, resolver, _, now = wake
-    sender = HookSender(resolver.writer.root)
+def test_wire_cannot_notify_without_approved_resolution(listener_policy, monkeypatch):
+    scheduler, resolver, now, listener, send, uid = listener_policy
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
     resolver.result = WakeResolution(WakeResolutionKind.UNKNOWN_LOCATOR)
-    with WakeIngress(scheduler, resolver).listen() as listener:
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert not listener.serve_once()
-        assert resolver.calls == [event]
-        assert scheduler.take_due(now[0], 1) == ()
-        monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: os.geteuid() + 1)
-        monkeypatch.setattr(
-            monitor_control,
-            "_read_frame",
-            lambda *_: pytest.fail("mismatched peer reached frame parsing"),
-        )
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert not listener.serve_once()
+    send(event)
+    assert not listener.serve_once()
+    assert resolver.calls == [event]
+    assert scheduler.take_due(now[0], 1) == ()
+    monkeypatch.setattr(monitor_control, "_peer_uid", lambda _: uid + 1)
+    monkeypatch.setattr(
+        monitor_control,
+        "_read_frame",
+        lambda *_: pytest.fail("mismatched peer reached frame parsing"),
+    )
+    send(event)
+    assert not listener.serve_once()
     assert resolver.calls == [event]
     with pytest.raises(LedgerError):
         scheduler.notify(WakeHint())
@@ -422,24 +485,24 @@ def test_wake_wire_refuses_noncanonical_or_unbounded_frames(raw):
         _parse_frame(raw)
 
 
-def test_decoder_failure_refuses_wake_and_keeps_listener_live(wake, monkeypatch):
-    scheduler, resolver, _, now = wake
-    sender = HookSender(resolver.writer.root)
+def test_decoder_failure_refuses_wake_and_keeps_listener_live(
+    listener_policy, monkeypatch
+):
+    scheduler, resolver, now, listener, send, _ = listener_policy
     event = HookEvent(WakeKind.CHANGE, MonitorProvider.CODEX, "/raw-path-canary")
 
     def exhausted_decoder(*args, **kwargs):
         raise RecursionError("decoder exhausted")
 
-    with WakeIngress(scheduler, resolver).listen() as listener:
-        with monkeypatch.context() as patch:
-            patch.setattr(hooks.json, "loads", exhausted_decoder)
-            assert sender.notify(event) is WakeDisposition.SENT
-            assert not listener.serve_once()
-        assert resolver.calls == []
-        assert scheduler.take_due(now[0], 1) == ()
-        assert sender.notify(event) is WakeDisposition.SENT
-        assert listener.serve_once()
-        assert len(scheduler.take_due(now[0], 1)) == 1
+    with monkeypatch.context() as patch:
+        patch.setattr(hooks.json, "loads", exhausted_decoder)
+        send(event)
+        assert not listener.serve_once()
+    assert resolver.calls == []
+    assert scheduler.take_due(now[0], 1) == ()
+    send(event)
+    assert listener.serve_once()
+    assert len(scheduler.take_due(now[0], 1)) == 1
 
 
 def test_wake_publication_failure_creates_no_memory_only_due_work(
@@ -536,21 +599,36 @@ def test_saturated_listener_is_preserved_and_sender_returns(wake, monkeypatch):
         assert os.path.samestat(inode, endpoint.lstat())
 
 
-def test_wake_socket_refuses_a_path_past_the_native_byte_limit(tmp_path, wake):
-    _, resolver, _, _ = wake
-    long_root = tmp_path / ("x" * 104)
-    with Registry(long_root).writer() as writer:
-        writer.source_evidence()
-        with pytest.raises(LedgerError, match="address is too long"):
-            with WakeIngress(Scheduler(writer), resolver).listen():
-                pytest.fail("oversized address was opened")
-        assert not (long_root / "wake.sock").exists()
+def test_wake_socket_refuses_a_path_past_the_native_byte_limit(
+    wake_policy, monkeypatch
+):
+    scheduler, resolver, _, _ = wake_policy
+    long_root = Path("/fixture") / ("x" * 104)
+    resolver.writer.root = long_root
+    directory = SimpleNamespace(path=long_root)
+    pin = Mock(return_value=nullcontext(directory))
+    server = Mock()
+    open_socket = Mock(return_value=nullcontext(server))
+    monkeypatch.setattr(monitor_control, "_pin_directory", pin)
+    monkeypatch.setattr(
+        monitor_control,
+        "socket",
+        SimpleNamespace(
+            socket=open_socket, AF_UNIX=socket.AF_UNIX, SOCK_STREAM=socket.SOCK_STREAM
+        ),
+    )
+    with pytest.raises(LedgerError, match="address is too long"):
+        with WakeIngress(scheduler, resolver).listen():
+            pytest.fail("oversized address was opened")
+    pin.assert_called_once_with(long_root)
+    open_socket.assert_called_once_with(socket.AF_UNIX, socket.SOCK_STREAM)
+    server.bind.assert_not_called()
 
 
-def test_approved_real_locator_can_issue_wake(admitted_sources):
-    native, _ = admitted_sources
+def test_approved_real_locator_can_issue_wake(monkeypatch):
+    native = _MemoryJournalTranscripts(monkeypatch)
+    _attach_wake_files(monkeypatch)
     with native.registry.writer() as writer:
-        qualify(writer)
         evidence = writer.source_evidence()
         locator = native.locator()
         path = str(locator._source._path)
@@ -561,9 +639,7 @@ def test_approved_real_locator_can_issue_wake(admitted_sources):
                 assert lease is writer.lease
                 if request.locator != path:
                     return WakeResolution(WakeResolutionKind.UNKNOWN_LOCATOR)
-                _, current, _ = writer._approved_candidate(
-                    writer.view(), SOURCE, locator
-                )
+                _, current, _ = writer._approved_candidate(writer.view(), LIVE, locator)
 
                 def fact(value):
                     return evidence.pseudonymize("wake-native-test", value)

@@ -1,7 +1,9 @@
 import json
 import os
+import stat
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -17,7 +19,11 @@ from aitm_usage.monitor_registry import (
     ControlCommand,
     ControlReceipt,
     ControlStatus,
+    RegisteredProject,
     Registry,
+    RegistryView,
+    _PhysicalDirectory,
+    _ServiceEvidence,
 )
 
 PROJECT = UUID("1a65f88f-3825-4a7b-9689-c7fbd9eaf36d")
@@ -113,7 +119,8 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
     unsafe, request, monkeypatch, capsys
 ):
     check_shape = unsafe in {"duplicate", "extra"}
-    tmp_path = Path("/fixture") if check_shape else request.getfixturevalue("tmp_path")
+    observed = check_shape or unsafe == "mode"
+    tmp_path = Path("/fixture") if observed else request.getfixturevalue("tmp_path")
     config = tmp_path / "private-config.json"
     private_state = str(tmp_path / "secret-state")
     document = {
@@ -126,7 +133,7 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
         raw = raw[:-1] + ', "display_name": "another"}'
     if unsafe == "extra":
         raw = json.dumps({**document, "unexpected": "private"})
-    if check_shape:
+    if observed:
         monitor = Mock()
         pin = Mock()
         flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
@@ -142,17 +149,36 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
                 fdopen=lambda fd, mode: BytesIO(raw.encode()),
             ),
         )
-        monkeypatch.setattr(monitor_control, "_project_path", lambda path: path)
-        monkeypatch.setattr(
-            monitor_control, "_validated_path", lambda path, *, directory: ()
-        )
+        if unsafe == "mode":
+            uid = 501
+            paths = dict.fromkeys(config.parents, stat.S_IFDIR | 0o700)
+            paths[config] = stat.S_IFREG | 0o644
+
+            class ObservedConfig(type(Path())):
+                def lstat(self):
+                    mode = paths[self]
+                    return os.stat_result((mode, 1, 1, 1, uid, 0, 0, 0, 0, 0))
+
+            def observed_path(path):
+                return ObservedConfig(ledger._project_path(path))
+
+            monkeypatch.setattr(monitor_control, "_project_path", observed_path)
+            monkeypatch.setattr(
+                ledger, "os", SimpleNamespace(path=os.path, geteuid=lambda: uid)
+            )
+            monkeypatch.setattr(ledger, "check_private_acl", Mock())
+        else:
+            monkeypatch.setattr(monitor_control, "_project_path", lambda path: path)
+            monkeypatch.setattr(
+                monitor_control, "_validated_path", lambda path, *, directory: ()
+            )
         monkeypatch.setattr(monitor_control, "_PinnedPath", lambda *args: pin)
         monkeypatch.setattr(monitor_control, "ControlInbox", monitor)
         monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
     else:
         monitor = request.getfixturevalue("monitor")
         config.write_text(raw)
-        config.chmod(0o644 if unsafe == "mode" else 0o600)
+        config.chmod(0o600)
         if unsafe in {"symlink", "hardlink"}:
             target = config
             config = tmp_path / "alias.json"
@@ -169,6 +195,9 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
     if check_shape:
         open_file.assert_called_once_with(config, flags)
         assert pin.check.call_count == 2
+        monitor.assert_not_called()
+    elif unsafe == "mode":
+        open_file.assert_not_called()
         monitor.assert_not_called()
     else:
         assert not monitor.root.exists()
@@ -249,10 +278,48 @@ def _registration(tmp_path, monkeypatch):
     )
 
 
+@pytest.fixture
+def registration_policy(monkeypatch):
+    root = Path("/fixture/monitor")
+    project = Path("/fixture/private-project-state")
+    config = Path("/fixture/private-owner-declaration.json")
+    evidence = _ServiceEvidence(b"r" * 32)
+    identity = _PhysicalDirectory(str(project), (1, 50))
+    initial = RegistryView(
+        projects=(
+            RegisteredProject(PROJECT, identity, "Private project", None, (), None),
+        ),
+        source_key_id=evidence.key_id,
+    )
+    writer = Registry(root, Mock())
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
+    writer._save(replace(initial, projects=()))
+    state.ensure(project / ledger.STORE_NAME)
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+    monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+    owner = {
+        "project_id": str(PROJECT),
+        "state_dir": str(project),
+        "display_name": "Private project",
+    }
+    monkeypatch.setattr(monitor_control, "_owner_document", {config: owner}.__getitem__)
+
+    def directory(path, *, private):
+        assert private
+        if path != str(project):
+            raise FileNotFoundError(path)
+        return identity
+
+    monkeypatch.setattr(monitor_registry, "_directory", directory)
+    return state, config, owner
+
+
 def test_normal_cli_reports_durable_application_and_retries_after_cleanup(
-    monitor, tmp_path, monkeypatch, capsys
+    registration_policy, monkeypatch, capsys
 ):
-    config = _registration(tmp_path, monkeypatch)
+    state, config, _ = registration_policy
+    writer, monitor = state.writer, state.inbox
     args = (
         "project",
         "register",
@@ -263,18 +330,15 @@ def test_normal_cli_reports_durable_application_and_retries_after_cleanup(
     )
     assert _run(monkeypatch, *args) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "queued"
-    registry = Registry(monitor.root)
-    with registry.writer() as writer:
-        writer.apply_pending(monitor, writer.lease, None)
-        # Status also works while the coordinator is already held.
-        assert _status(monkeypatch) == 0
+    writer.apply_pending(monitor, writer.lease, None)
+    assert _status(monkeypatch) == 0
 
     applied = {"command_id": str(REQUEST), "status": "applied"}
     assert json.loads(capsys.readouterr().out) == applied
-    assert not list(monitor.root.glob("inbox/*.json"))
+    assert not state.inbox_files
     assert _run(monkeypatch, *args) == 0
     assert json.loads(capsys.readouterr().out) == applied
-    assert not list(monitor.root.glob("inbox/*.json"))
+    assert not state.inbox_files
     assert _run(monkeypatch, *_capture("disable"), "--request-id", str(REQUEST)) == 1
     assert json.loads(capsys.readouterr().out)["status"] == "command-conflict"
 
@@ -451,16 +515,10 @@ def test_status_fails_closed_when_queued_file_is_substituted(monitor):
 
 
 def test_rejected_command_status_contains_no_owner_paths(
-    monitor, tmp_path, monkeypatch, capsys
+    registration_policy, monkeypatch, capsys
 ):
-    config = _private_config(
-        tmp_path / "private-invalid-project.json",
-        {
-            "project_id": str(PROJECT),
-            "state_dir": str(tmp_path / "missing-private-project-state"),
-            "display_name": "Private project",
-        },
-    )
+    state, config, owner = registration_policy
+    owner["state_dir"] = "/fixture/missing-private-project-state"
     args = (
         "project",
         "register",
@@ -471,8 +529,8 @@ def test_rejected_command_status_contains_no_owner_paths(
     )
     assert _run(monkeypatch, *args) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "queued"
-    with Registry(monitor.root).writer() as writer:
-        writer.apply_pending(monitor, writer.lease, None)
+    writer = state.writer
+    writer.apply_pending(state.inbox, writer.lease, None)
 
     assert _status(monkeypatch) == 0
     output = capsys.readouterr()
@@ -480,7 +538,8 @@ def test_rejected_command_status_contains_no_owner_paths(
         "command_id": str(REQUEST),
         "status": "rejected",
     }
-    assert str(tmp_path) not in output.out + output.err
+    assert str(config) not in output.out + output.err
+    assert owner["state_dir"] not in output.out + output.err
 
 
 def test_restart_retires_exact_queue_entry_after_durable_commit(

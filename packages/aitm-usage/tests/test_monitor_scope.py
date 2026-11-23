@@ -264,7 +264,8 @@ class NativeScopeFixture:
 class MemoryNativeScopeFixture(NativeScopeFixture):
     """Run scope and capture against verified transcripts and in-memory projects."""
 
-    def __init__(self, monkeypatch):
+    def __init__(self, monkeypatch, *, creator_account=None, with_claude=False):
+        self.creator_account = creator_account
         self.files = NativeTranscriptFiles(monkeypatch)
         self.transcripts = self.files.root
         self.path = self.transcripts / "desktop.jsonl"
@@ -298,25 +299,43 @@ class MemoryNativeScopeFixture(NativeScopeFixture):
             )
             for key, ledger in self.ledgers.items()
         )
+        control = physical(self.transcripts.parent / "monitor")
+        installations = (
+            _InstallationProof(
+                physical(self.transcripts),
+                _LiveSourceTuple(
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                ),
+                self.evidence.pseudonymize("executable", "fixture"),
+            ),
+        )
+        if with_claude:
+            from conftest import install_legacy_monitor_qualification
+
+            # Match the retained legacy Claude fixture at the same qualification boundary.
+            install_legacy_monitor_qualification(
+                monkeypatch, lambda: Path(control.path)
+            )
+            installations += (
+                _InstallationProof(
+                    physical(self.transcripts.with_name("claude-transcripts")),
+                    _LiveSourceTuple(
+                        "claude", "claude-code-macos", "Darwin", "arm64", "2.1.318", 1
+                    ),
+                    self.evidence.pseudonymize("executable", "claude-fixture"),
+                ),
+            )
         registry = native_registry_policy(
             monkeypatch,
             self.files,
-            control=physical(self.transcripts.parent / "monitor"),
+            control=control,
             projects=projects,
-            installations=(
-                _InstallationProof(
-                    physical(self.transcripts),
-                    _LiveSourceTuple(
-                        "codex",
-                        "codex-desktop-macos",
-                        "Darwin",
-                        "arm64",
-                        "0.167.0-alpha.3.2",
-                        1,
-                    ),
-                    self.evidence.pseudonymize("executable", "fixture"),
-                ),
-            ),
+            installations=installations,
             evidence=self.evidence,
         )
         self.registry = registry.registry
@@ -350,9 +369,10 @@ class MemoryNativeScopeFixture(NativeScopeFixture):
             self.transcripts, CUTOFF, tuple(self.anchors.values()), self.evidence
         )
         self.total, self.turn = 0, 0
-        self.files.write(
-            self.path, [startup(self.anchors[A], originator="Codex Desktop")]
-        )
+        native_start = startup(self.anchors[A], originator="Codex Desktop")
+        if creator_account is not None:
+            native_start["payload"]["creator_account_id"] = creator_account
+        self.files.write(self.path, [native_start])
         self.append()
         with self.registry.writer() as writer:
             self._enable_capture(writer)
@@ -927,10 +947,31 @@ class ClaudeScopeFixture:
         self.native = native
         self.anchor = native.anchors[A]
         root_path = native.transcripts.parent / "claude-transcripts"
-        root_path.mkdir()
         self.path = root_path / "claude.jsonl"
         self.root = replace(native.root, path=root_path)
-        write(self.path, [claude_user(self.anchor)])
+        self.files = (
+            native.files if isinstance(native, MemoryNativeScopeFixture) else None
+        )
+        if self.files is None:
+            root_path.mkdir()
+        self._write_rows([claude_user(self.anchor)])
+
+    def _transcript_bytes(self):
+        if self.files is None:
+            return self.path.read_bytes()
+        return self.files.contents[self.path]
+
+    def _replace_transcript(self, contents):
+        if self.files is None:
+            self.path.write_bytes(contents)
+        else:
+            self.files.contents[self.path] = contents
+
+    def _write_rows(self, rows, *, append=False):
+        if self.files is None:
+            write(self.path, rows, append=append)
+        else:
+            self.files.write(self.path, rows, append=append)
 
     def locator(self):
         (locator,) = self.native.adapter.discover(self.root)
@@ -949,8 +990,8 @@ class ClaudeScopeFixture:
         )
 
     def append(self, *rows):
-        start = len(self.path.read_bytes().splitlines())
-        write(self.path, rows, append=True)
+        start = len(self._transcript_bytes().splitlines())
+        self._write_rows(rows, append=True)
         return start
 
     def apply_capture(self, writer, project, enabled, number):
@@ -1001,12 +1042,19 @@ def claude_scope(native):
     return ClaudeScopeFixture(native)
 
 
+@pytest.fixture
+def claude_scope_policy(monkeypatch):
+    return ClaudeScopeFixture(MemoryNativeScopeFixture(monkeypatch, with_claude=True))
+
+
 def test_late_claude_revision_keeps_its_original_native_scope(claude_scope):
     _assert_late_claude_revision_preserves_scope(claude_scope, same_project=False)
 
 
-def test_late_claude_revision_keeps_original_scope_after_ordinary_mark(claude_scope):
-    _assert_late_claude_revision_preserves_scope(claude_scope, same_project=True)
+def test_late_claude_revision_keeps_original_scope_after_ordinary_mark(
+    claude_scope_policy,
+):
+    _assert_late_claude_revision_preserves_scope(claude_scope_policy, same_project=True)
 
 
 def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
@@ -1019,7 +1067,7 @@ def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
 
     native = claude_scope.native
     command_id = UUID(int=0x301)
-    path, anchor = claude_scope.path, claude_scope.anchor
+    anchor = claude_scope.anchor
 
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -1057,7 +1105,7 @@ def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
             shell_command,
             json.dumps({"command_id": str(command_id), "status": "queued"}),
         )
-        write(path, carrier, append=True)
+        claude_scope.append(*carrier)
         handoff_batch = claude_scope.read(state)
         target = native.target(handoff_batch, command_id)
         boundary = state.verify_boundary(command, owner, handoff_batch, target)
@@ -1090,7 +1138,10 @@ def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
         proof = state.verified_revision(current, revised)
         assert proof is not None and proof.route == decision
         assert proof.original.ordinal == original_ordinal
-        assert proof.later.ordinal == len(path.read_bytes().splitlines()) - 1
+        assert (
+            proof.later.ordinal
+            == len(claude_scope._transcript_bytes().splitlines()) - 1
+        )
         assert proof.observation is revised
         assert revised.usage.observed_at == original.usage.observed_at
         with pytest.raises(LedgerError):
@@ -1123,16 +1174,17 @@ def test_claude_revision_rejects_a_replaced_fixed_prefix(claude_scope):
 
         path = claude_scope.path
         original = path.rename(path.with_suffix(".retained"))
-        path.write_bytes(original.read_bytes())
+        claude_scope._replace_transcript(original.read_bytes())
         with pytest.raises(LedgerError):
             state.verified_revision(batch, revision)
 
 
-def test_claude_cumulative_revision_cannot_cross_disabled_capture(claude_scope):
+def test_claude_cumulative_revision_cannot_cross_disabled_capture(claude_scope_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_scope import ScopeState
 
+    claude_scope = claude_scope_policy
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -1163,13 +1215,14 @@ def test_claude_cumulative_revision_cannot_cross_disabled_capture(claude_scope):
         )
 
 
-def test_claude_terminal_proof_cannot_certify_disabled_counters(claude_scope):
+def test_claude_terminal_proof_cannot_certify_disabled_counters(claude_scope_policy):
     from test_claude import MODEL, cost, model_counts
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_scope import ScopeState
     from aitm_usage.types import Availability
 
+    claude_scope = claude_scope_policy
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -1199,12 +1252,15 @@ def test_claude_terminal_proof_cannot_certify_disabled_counters(claude_scope):
         assert state.verified_revision(current, terminal[0]) is None
 
 
-def test_claude_terminal_proof_cannot_depend_on_other_disabled_counters(claude_scope):
+def test_claude_terminal_proof_cannot_depend_on_other_disabled_counters(
+    claude_scope_policy,
+):
     from test_claude import MODEL, cost, model_counts
 
     from aitm_usage.monitor_scope import ScopeState
     from aitm_usage.types import Availability
 
+    claude_scope = claude_scope_policy
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -1228,13 +1284,16 @@ def test_claude_terminal_proof_cannot_depend_on_other_disabled_counters(claude_s
 
 
 @pytest.mark.parametrize("reenable", [False, True], ids=["disabled", "reenabled"])
-def test_claude_cost_state_checks_its_physical_row(claude_scope, reenable):
+def test_claude_cost_state_checks_its_physical_row(request, reenable):
     from test_claude import MODEL, cost, model_counts
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_scope import ScopeState
     from aitm_usage.types import Availability, Eligibility
 
+    claude_scope = request.getfixturevalue(
+        "claude_scope_policy" if reenable else "claude_scope"
+    )
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -2397,8 +2456,7 @@ def _append_completed_disposition(
                 "used_percent": 25,
             },
         }
-    write(
-        native.path,
+    native._append_rows(
         [
             started,
             context,
@@ -2413,16 +2471,34 @@ def _append_completed_disposition(
             ),
             final_counter,
             completed,
-        ],
-        append=True,
+        ]
     )
     return turn, when
+
+
+def _held_completion_command(state, native, owner, *, release=False):
+    from aitm_usage.monitor_scope import Disposition
+
+    hold_id, command_id = UUID(int=0x901), UUID(int=0x902)
+    handoff, _ = _authorize_handoff(state, native, hold_id, A, _issue(B, 210), 1)
+    _, held_at = native.append(hold_id)
+    held_batch = state.read_source(SOURCE, native.locator())
+    hold = state.hold(
+        state.verify_boundary(
+            handoff, owner, held_batch, native.target(held_batch, hold_id, held_at)
+        ),
+        retain_route_target=True,
+    )
+    command = Disposition(
+        command_id, A, hold_id, native.receipt_ref(command_id), release
+    )
+    return hold, command
 
 
 @contextmanager
 def _completed_disposition(native, tmp_path, monkeypatch, capsys, *, release=False):
     from aitm_usage.monitor_journal import RoutingJournal
-    from aitm_usage.monitor_scope import Disposition, Mark, ScopeState
+    from aitm_usage.monitor_scope import Mark, ScopeState
 
     with native.registry.writer() as writer:
         clock = [datetime(2026, 11, 10, tzinfo=UTC)]
@@ -2443,19 +2519,7 @@ def _completed_disposition(native, tmp_path, monkeypatch, capsys, *, release=Fal
                 ).status
                 == "applied"
             )
-        hold_id, command_id = UUID(int=0x901), UUID(int=0x902)
-        handoff, _ = _authorize_handoff(state, native, hold_id, A, _issue(B, 210), 1)
-        _, held_at = native.append(hold_id)
-        held_batch = state.read_source(SOURCE, native.locator())
-        hold = state.hold(
-            state.verify_boundary(
-                handoff, owner, held_batch, native.target(held_batch, hold_id, held_at)
-            ),
-            retain_route_target=True,
-        )
-        command = Disposition(
-            command_id, A, hold_id, native.receipt_ref(command_id), release
-        )
+        hold, command = _held_completion_command(state, native, owner, release=release)
         monkeypatch.setitem(
             globals(), "_append_ordered_disposition", _append_completed_disposition
         )
@@ -2482,6 +2546,62 @@ def _completed_disposition(native, tmp_path, monkeypatch, capsys, *, release=Fal
 @pytest.fixture
 def completed_disposition(native, tmp_path, monkeypatch, capsys):
     with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
+        yield case
+
+
+@contextmanager
+def _completion_policy(monkeypatch, *, creator_account=None):
+    from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
+    from aitm_usage.monitor_scope import ScopeState
+    from aitm_usage.scope_admission import DispositionRequest
+
+    native = MemoryNativeScopeFixture(monkeypatch, creator_account=creator_account)
+    with native.registry.writer() as writer:
+        clock = [datetime(2026, 11, 10, tzinfo=UTC)]
+        state = ScopeState(writer, clock=lambda: clock[0])
+        owner = state.operator(A)
+        hold, command = _held_completion_command(state, native, owner)
+        grant_id = UUID(int=0x603)
+        request = DispositionRequest(command.command_id, grant_id, A, hold.command_id)
+        inbox = ControlInbox(writer.root)
+        reader = ScopeInboxReader(writer, inbox)
+        reader.register(grant_id, A, ("dispose",))
+        reader.advertise(reader.probe(request))
+        assert inbox.enqueue_scope(request)
+        state.authorize(command, owner)
+        stdout = (
+            json.dumps({"command_id": str(command.command_id), "status": "queued"})
+            + "\n"
+        )
+        turn, when = _append_completed_disposition(
+            native, command.command_id, Path("/fixture/disposition.json"), stdout
+        )
+        ordinary = state.read_source(SOURCE, native.locator())
+        yield (
+            native,
+            SimpleNamespace(
+                state=state,
+                command=command,
+                owner=owner,
+                hold=hold,
+                ordinary=ordinary,
+                target=native.target(ordinary, command.command_id),
+                clock=clock,
+                turn=turn,
+                when=when,
+            ),
+        )
+
+
+@pytest.fixture
+def completion_scope_policy(monkeypatch):
+    with _completion_policy(monkeypatch) as case:
+        yield case
+
+
+@pytest.fixture
+def quota_scope_policy(monkeypatch):
+    with _completion_policy(monkeypatch, creator_account="fixture-account") as case:
         yield case
 
 
@@ -2531,18 +2651,18 @@ def test_completion_quota_binding_supplies_existing_quota_validation(quota_dispo
     assert case.scope_file.read_bytes() == scope_before
 
 
-def test_completion_quota_binding_requires_the_native_creator(quota_disposition):
-    native, case = quota_disposition
+def test_completion_quota_binding_requires_the_native_creator(quota_scope_policy):
+    native, case = quota_scope_policy
     _bind_quota_disposition(native, case, "other-account")
     batch = case.state.read_source(SOURCE, native.locator(), qualify_completion=True)
     assert DiagnosticCode.COVERAGE_GAP in {d.code for d in batch.diagnostics}
     assert not batch._completion_witnesses
 
 
-def test_completion_quota_binding_is_current_and_writer_local(quota_disposition):
+def test_completion_quota_binding_is_current_and_writer_local(quota_scope_policy):
     from aitm_usage.monitor_scope import ScopeState
 
-    native, case = quota_disposition
+    native, case = quota_scope_policy
     state = case.state
     _bind_quota_disposition(native, case)
     locator = native.locator()
@@ -2571,9 +2691,9 @@ def test_completion_quota_binding_is_current_and_writer_local(quota_disposition)
 
 
 def test_completion_quota_binding_change_refuses_entire_read(
-    quota_disposition, monkeypatch
+    quota_scope_policy, monkeypatch
 ):
-    native, case = quota_disposition
+    native, case = quota_scope_policy
     state = case.state
     _bind_quota_disposition(native, case)
     normal_read = ProviderAdapter.read_delta
@@ -2686,11 +2806,11 @@ def test_completion_qualification_preserves_journal_after_restart(
 
 
 def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
-    native, completed_disposition
+    completion_scope_policy,
 ):
-    case = completed_disposition
+    native, case = completion_scope_policy
     state, command, owner = case.state, case.command, case.owner
-    scope_before = case.scope_file.read_bytes()
+    scope_before = native._scope_bytes()
     assert state.completion_witness(command, owner, case.ordinary, case.target) is None
     opted = state.read_source(SOURCE, native.locator(), qualify_completion=True)
     for field in ("observations", "boundaries", "diagnostics", "cursor"):
@@ -2700,7 +2820,9 @@ def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
     witness = state.completion_witness(command, owner, opted, target)
     assert witness is not None
     assert witness.request == target.boundary
-    assert witness.completion_ordinal == len(native.path.read_bytes().splitlines()) - 1
+    assert (
+        witness.completion_ordinal == len(native._transcript_bytes().splitlines()) - 1
+    )
     assert state.view().holds == (case.hold,)
     assert opted.cursor is None
     assert [entry.code for entry in opted.diagnostics] == [
@@ -2717,15 +2839,13 @@ def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
     native.total += 4
     late = usage(native.total, native.total)
     delta = usage(4, 4)
-    write(
-        native.path,
+    native._append_rows(
         [
             response(
                 "late-completion-usage", late, delta, time=case.when, turn=case.turn
             ),
             counter(late, delta, time=case.when),
-        ],
-        append=True,
+        ]
     )
     assert state.completion_witness(command, owner, opted, target) is None
     later = state.read_source(SOURCE, native.locator(), qualify_completion=True)
@@ -2735,7 +2855,7 @@ def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
         native.locator(), None, _completion_witnesses=reused_sink
     )
     assert not reused_sink
-    assert case.scope_file.read_bytes() == scope_before
+    assert native._scope_bytes() == scope_before
 
 
 _COMPLETION_NATIVE_DISPROOFS = [
@@ -2845,7 +2965,7 @@ def _damage_completion_rows(entries, disproof, when, turn, *, other_checkout, to
 
 
 def _damage_completed_disposition(native, disproof, when, turn, *, other_project=B):
-    entries = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    entries = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     _damage_completion_rows(
         entries,
         disproof,
@@ -2854,10 +2974,10 @@ def _damage_completed_disposition(native, disproof, when, turn, *, other_project
         other_checkout=native.anchors[other_project],
         total=native.total,
     )
-    write(native.path, entries)
+    data = b"".join((json.dumps(row) + "\n").encode() for row in entries)
     if disproof == "physical-tail":
-        with native.path.open("ab") as transcript:
-            transcript.write(b'{"type":')
+        data += b'{"type":'
+    native._replace_transcript(data)
 
 
 _COMPLETION_FILE_CASES = {"missing-baseline", "physical-tail", "different-checkout"}
@@ -2919,17 +3039,20 @@ def test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows(
         _assert_completion_policy_rejects(disproof)
         return
 
-    native = request.getfixturevalue("native")
-    case = request.getfixturevalue("completed_disposition")
+    if disproof == "different-checkout":
+        native, case = request.getfixturevalue("completion_scope_policy")
+    else:
+        native = request.getfixturevalue("native")
+        case = request.getfixturevalue("completed_disposition")
     _damage_completed_disposition(native, disproof, case.when, case.turn)
-    scope_before = case.scope_file.read_bytes()
+    scope_before = native._scope_bytes()
     if disproof == "missing-baseline":
         for enabled in (False, True):
             with pytest.raises(LedgerError, match="lost its enrolled physical prefix"):
                 case.state.read_source(
                     SOURCE, native.locator(), qualify_completion=enabled
                 )
-        assert case.scope_file.read_bytes() == scope_before
+        assert native._scope_bytes() == scope_before
         return
     ordinary = case.state.read_source(SOURCE, native.locator())
     opted = case.state.read_source(SOURCE, native.locator(), qualify_completion=True)
@@ -2944,17 +3067,17 @@ def test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows(
         )
     else:
         assert not opted._completion_witnesses
-    assert case.scope_file.read_bytes() == scope_before
+    assert native._scope_bytes() == scope_before
 
 
 def test_completion_qualification_requires_current_hold_and_authority(
-    native, completed_disposition
+    completion_scope_policy,
 ):
-    case = completed_disposition
+    native, case = completion_scope_policy
     state, command, owner = case.state, case.command, case.owner
     batch = state.read_source(SOURCE, native.locator(), qualify_completion=True)
     target = native.target(batch, command.command_id)
-    scope_before = case.scope_file.read_bytes()
+    scope_before = native._scope_bytes()
     assert state.completion_witness(command, owner, batch, target) is not None
     wrong_actor = state.operator(B)
     assert state.completion_witness(command, wrong_actor, batch, target) is None
@@ -2969,13 +3092,13 @@ def test_completion_qualification_requires_current_hold_and_authority(
         case.hold, expires_at=case.hold.expires_at + timedelta(seconds=1)
     )
     state._save(replace(saved, holds=(changed_hold,)))
-    modified_scope = case.scope_file.read_bytes()
+    modified_scope = native._scope_bytes()
     assert state.completion_witness(command, owner, batch, target) is None
-    assert case.scope_file.read_bytes() == modified_scope
+    assert native._scope_bytes() == modified_scope
     state._save(saved)
     case.clock[0] = case.hold.expires_at
     assert state.completion_witness(command, owner, batch, target) is None
-    assert case.scope_file.read_bytes() == scope_before
+    assert native._scope_bytes() == scope_before
 
 
 def _route_disposition_fixture(

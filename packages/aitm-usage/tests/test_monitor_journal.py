@@ -758,6 +758,61 @@ class _ClaimJournalRows(DispositionRows):
         return super().execute(sql, parameters)
 
 
+class _ClaudeJournalRows(_ClaimJournalRows):
+    """Supply immutable committed revision rows to the real journal readers."""
+
+    _READ_REVISIONS = (
+        "SELECT sequence,later_ordinal,material,predecessor,payload"
+        " FROM claim_revisions WHERE key = ?"
+    )
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.revisions = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        revisions = self.revisions.copy()
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.revisions = revisions
+            raise
+        if not write:
+            assert self.revisions == revisions
+
+    def execute(self, sql, parameters=()):
+        if sql.startswith("INSERT INTO claim_revisions("):
+            key, sequence, ordinal, material, predecessor, payload = parameters
+            identity = key, material
+            assert identity not in self.revisions and sequence in self.commits
+            self.revisions[identity] = sequence, ordinal, material, predecessor, payload
+            return _Rows()
+        if sql.startswith(self._READ_REVISIONS):
+            key, *criteria = parameters
+            if sql == self._READ_REVISIONS + " AND material = ?":
+                (material,) = criteria
+                row = self.revisions.get((key, material))
+                return _Rows() if row is None else _Rows([row])
+            rows = [row for (claim, _), row in self.revisions.items() if claim == key]
+            if sql == self._READ_REVISIONS:
+                assert not criteria
+                return _Rows(rows)
+            assert sql == (
+                self._READ_REVISIONS + " AND sequence <= ?"
+                " ORDER BY sequence DESC, later_ordinal DESC LIMIT 1"
+            )
+            (cutoff,) = criteria
+            latest = max(
+                (row for row in rows if row[0] <= cutoff),
+                key=lambda row: row[:2],
+                default=None,
+            )
+            return _Rows() if latest is None else _Rows([latest])
+        return super().execute(sql, parameters)
+
+
 class _MemoryJournalTranscripts(_JournalTranscriptInputs):
     def __init__(self, monkeypatch):
         from aitm_usage import monitor_journal
@@ -1396,6 +1451,24 @@ def journal_claude(tmp_path, monkeypatch):
     return ClaudeScopeFixture(NativeScopeFixture(tmp_path, monkeypatch))
 
 
+@pytest.fixture
+def journal_claude_policy(monkeypatch):
+    from test_monitor_scope import ClaudeScopeFixture, MemoryNativeScopeFixture
+
+    from aitm_usage import monitor_journal
+
+    native = MemoryNativeScopeFixture(monkeypatch, with_claude=True)
+    rows = _ClaudeJournalRows(native.evidence)
+
+    def open_rows(writer):
+        assert writer.root == native.registry.root
+        assert writer.source_evidence() == rows.evidence
+        return rows
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
+    return ClaudeScopeFixture(native)
+
+
 def _claude_candidates(prepared, ordinal):
     return tuple(
         item
@@ -1517,8 +1590,12 @@ def test_claude_revision_cold_reads_behind_an_earlier_persisted_cursor(journal_c
     _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=False)
 
 
-def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(journal_claude):
-    _assert_claude_cold_read_preserves_cursor(journal_claude, explicit_quota=True)
+def test_journal_claude_explicit_quota_gap_preserves_earlier_cursor(
+    journal_claude_policy,
+):
+    _assert_claude_cold_read_preserves_cursor(
+        journal_claude_policy, explicit_quota=True
+    )
 
 
 def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
@@ -1567,7 +1644,7 @@ def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
         assert diagnostic.provider is Provider.CLAUDE
         assert batch.source_id == native.source_id
         assert diagnostic.source_ref == native.locator().stream_ref
-        raw = native.path.read_bytes().splitlines()
+        raw = native._transcript_bytes().splitlines()
         if explicit_quota:
             assert diagnostic.ordinal == quota_at
             assert json.loads(raw[quota_at])["type"] == "rate_limit_event"
@@ -1594,13 +1671,15 @@ def _assert_claude_cold_read_preserves_cursor(native, *, explicit_quota):
 
 
 @pytest.mark.parametrize("rewrite", ["before-original", "between-edges", "predecessor"])
-def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrite):
+def test_v2_claude_replay_requires_the_whole_durable_edge(
+    journal_claude_policy, rewrite
+):
     from test_claude import usage as claude_usage
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1615,13 +1694,13 @@ def test_v2_claude_replay_requires_the_whole_durable_edge(journal_claude, rewrit
         assert journal.reserve(successor, current.progress).status == "pending"
         saved = journal.as_of()
 
-    rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+    rows = [json.loads(line) for line in native._transcript_bytes().splitlines()]
     if rewrite == "predecessor":
         rows[ordinal]["message"]["usage"] = claude_usage(output=5)
     else:
         edited = before if rewrite == "before-original" else between
         rows[edited]["message"]["content"] = "rewritten without changing usage"
-    write(native.path, rows)
+    native._write_rows(rows)
     native.append(native.request(3, counts=claude_usage(output=7)))
 
     with registry.writer() as writer:
@@ -1746,12 +1825,12 @@ def test_claude_revision_archive_can_replay_but_cannot_advance_owner(journal_cla
         assert journal.cursor_for(archive_source, locator) is None
 
 
-def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude):
+def test_claude_journal_never_bypasses_a_disabled_intermediate(journal_claude_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -1884,12 +1963,17 @@ def test_journal_refuses_mismatched_v1_first_claim_payload(journal_transcript_po
 
 def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=False):
     root_path = native.root.path.with_name(f"claude-archive-{source_id.int}")
-    root_path.mkdir()
     path = root_path / "claude.jsonl"
     root = replace(native.root, path=root_path)
-    if relocate:
-        native.path.rename(path)
-    write(path, rows[:1])
+    if native.files is None:
+        root_path.mkdir()
+        if relocate:
+            native.path.rename(path)
+        write_rows = write
+    else:
+        assert not relocate
+        write_rows = native.files.write
+    write_rows(path, rows[:1])
     writer.approve_source(
         SourceApprovalRequest(
             source_id,
@@ -1912,12 +1996,30 @@ def _claude_archive(native, writer, rows, source_id, *, projects=(A,), relocate=
         for project in projects
         for change in (CaptureChange(project, source_id, True),)
     ]
-    write(path, rows[1:3], append=True)
+    write_rows(path, rows[1:3], append=True)
     for change, frontier in armed:
         proof = writer.verify_boundary(change, locate(), frontier)
         writer.set_permission(change, proof)
-    write(path, rows[3:], append=True)
+    write_rows(path, rows[3:], append=True)
     return path, locate
+
+
+def _expose_claude_archive_directory(native, source_id, monkeypatch):
+    root = native.root.path.with_name(f"claude-archive-{source_id.int}")
+    observed = monitor_registry._PhysicalDirectory(
+        str(root), native.files._identity(root)
+    )
+    directory = monitor_registry._directory
+    resolve = Path.resolve
+
+    def directory_at(path, **options):
+        return observed if path == observed.path else directory(path, **options)
+
+    def resolve_path(path, *args, **kwargs):
+        return path if path == root else resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(monitor_registry, "_directory", directory_at)
+    monkeypatch.setattr(Path, "resolve", resolve_path)
 
 
 def _common_claude_revision(native, writer):
@@ -2247,19 +2349,22 @@ def test_claude_content_and_ownership_disputes_remain_separate(
         assert journal.cursor_for(other_source, other_locate()) is None
 
 
-def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claude):
+def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(
+    journal_claude_policy, monkeypatch
+):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     source_id = UUID(int=7)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
     with native.native.registry.writer() as writer:
         native.approve(writer)
         ordinal = native.append(native.request(3, stop=None))
         journal = RoutingJournal(writer, ScopeState(writer))
         journal.reserve_batch(journal.prepare(native.source_id, native.locator()))
-        prefix = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        prefix = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         _, locate = _claude_archive(
             native,
             writer,
@@ -2272,6 +2377,10 @@ def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claud
         assert journal.reserve(accepted, live.progress).status == "pending"
         saved = journal.as_of()
         rival = journal.prepare(source_id, locate())
+        original = live._read.batch._native_cursor
+        archived = rival._read.batch._native_cursor
+        assert original.source_ref == archived.source_ref
+        assert original.incarnation_ref != archived.incarnation_ref
         _, contender = _claude_candidates(rival, ordinal)
         assert journal._scopes.verified_revision(
             rival._read.batch, contender.observation
@@ -2621,14 +2730,14 @@ def test_journal_distinguishes_generic_native_codex_gap_from_quota(
 
 @pytest.mark.parametrize("mixed", [False, True], ids=["aggregate-overlap", "mixed"])
 def test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics(
-    journal_claude, mixed
+    journal_claude_policy, mixed
 ):
     from test_claude import rate_event
     from test_monitor_adapters import _restart_rows
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     with native.native.registry.writer() as writer:
         native.approve(writer)
         native.append(native.request(3))
@@ -2661,7 +2770,7 @@ def test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics(
             if item.code is DiagnosticCode.OVERLAP_UNVERIFIED
         ]
         assert start + 2 in overlap
-        raw = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+        raw = [json.loads(line) for line in native._transcript_bytes().splitlines()]
         assert raw[start + 2]["toolUseResult"]["status"] == "completed"
         assert any(
             item.usage.availability is Availability.UNKNOWN
