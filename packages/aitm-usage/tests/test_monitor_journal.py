@@ -879,20 +879,48 @@ class _ClaudeJournalRows(_ClaimJournalRows):
     def __init__(self, evidence):
         super().__init__(evidence)
         self.revisions = {}
+        self.content_disputes = {}
 
     @contextmanager
     def transaction(self, *, write=False):
         revisions = self.revisions.copy()
+        disputes = self.content_disputes.copy()
         try:
             with super().transaction(write=write):
                 yield self
         except Exception:
             self.revisions = revisions
+            self.content_disputes = disputes
             raise
         if not write:
-            assert self.revisions == revisions
+            assert self.revisions == revisions and self.content_disputes == disputes
 
     def execute(self, sql, parameters=()):
+        from aitm_usage.monitor_journal import (
+            _CONTENT_DISPUTE_ROWS,
+            _OWNERSHIP_DISPUTE_ROWS,
+        )
+
+        if sql.startswith("INSERT INTO content_disputes("):
+            key, sequence, raw = parameters
+            assert key in self.claims and key not in self.content_disputes
+            assert sequence in self.commits
+            self.content_disputes[key] = sequence, raw
+            return _Rows()
+        if sql == "SELECT sequence,payload FROM content_disputes WHERE key = ?":
+            (key,) = parameters
+            row = self.content_disputes.get(key)
+            return _Rows() if row is None else _Rows([row])
+        if sql.startswith(_CONTENT_DISPUTE_ROWS):
+            return self._joined_content(sql, parameters)
+        if sql.startswith(_OWNERSHIP_DISPUTE_ROWS):
+            assert not self.disputes
+            return _Rows()
+        if sql.startswith(
+            "SELECT d.key,c.project,c.payload,c.digest,d.sequence,d.payload"
+            " FROM content_disputes d JOIN claims"
+        ):
+            return self._joined_content(sql, parameters)
         if sql == "SELECT count(*) FROM claim_revisions":
             assert not parameters
             return _Rows([(len(self.revisions),)])
@@ -924,6 +952,23 @@ class _ClaudeJournalRows(_ClaimJournalRows):
             )
             return _Rows() if latest is None else _Rows([latest])
         return super().execute(sql, parameters)
+
+    def _joined_content(self, sql, parameters):
+        for key, (sequence, raw) in sorted(
+            self.content_disputes.items(), key=lambda row: (row[1][0], row[0])
+        ):
+            if "d.sequence <= ?" in sql:
+                (limit,) = parameters
+                includes = sequence <= limit
+            elif "d.sequence > ?" in sql:
+                (limit,) = parameters
+                includes = sequence > limit
+            else:
+                assert "d.sequence=? AND d.key=?" in sql
+                includes = parameters == (sequence, key)
+            if includes:
+                project, digest, first, _ = self.claims[key]
+                yield key, project, first, digest, sequence, raw
 
 
 class _MemoryJournalTranscripts(_JournalTranscriptInputs):
@@ -2156,15 +2201,24 @@ def _common_claude_revision(native, writer):
 
 @pytest.mark.parametrize("descendant", [False, True], ids=["head-child", "later-head"])
 def test_verified_claude_branches_record_one_durable_content_dispute(
-    journal_claude, descendant, monkeypatch
+    request, descendant, monkeypatch
 ):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    fixture = "journal_claude_policy" if descendant else "journal_claude"
+    native = request.getfixturevalue(fixture)
     registry = native.native.registry
     source_id, exact_source = UUID(int=7), UUID(int=8)
+    if descendant:
+        for archive_id in (source_id, exact_source, UUID(int=9), UUID(int=10)):
+            _expose_claude_archive_directory(native, archive_id, monkeypatch)
+    write_rows = native.files.write if descendant else write
+
+    def archive_bytes(path):
+        return native.files.contents[path] if descendant else path.read_bytes()
+
     with registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         archive_path, locate = _claude_archive(native, writer, prefix, source_id)
@@ -2174,7 +2228,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         assert journal.as_of() == before
 
         native.append(native.request(3, counts=claude_usage(output=7)))
-        write(
+        write_rows(
             archive_path,
             [native.request(3, counts=claude_usage(output=8))],
             append=True,
@@ -2203,7 +2257,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
         assert journal.reserve(accepted, live.progress).status == "pending"
 
         exact_rows = [
-            json.loads(line) for line in native.path.read_bytes().splitlines()
+            json.loads(line) for line in native._transcript_bytes().splitlines()
         ]
         _, exact_locate = _claude_archive(native, writer, exact_rows, exact_source)
         exact = journal.prepare(exact_source, exact_locate())
@@ -2273,7 +2327,7 @@ def test_verified_claude_branches_record_one_durable_content_dispute(
 
         foreign_source = UUID(int=10)
         rival_rows = [
-            json.loads(line) for line in archive_path.read_bytes().splitlines()
+            json.loads(line) for line in archive_bytes(archive_path).splitlines()
         ]
         _, foreign_locate = _claude_archive(native, writer, rival_rows, foreign_source)
         foreign = journal.prepare(foreign_source, foreign_locate())
@@ -3509,6 +3563,9 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
     if disproof not in _COMPLETION_FILE_CASES:
         assert_pair_refuses_changed_completion(monkeypatch, side, disproof)
         return
+    if side == 1 and disproof in {"missing-baseline", "physical-tail"}:
+        _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof)
+        return
 
     case = request.getfixturevalue("journal_pair")
     carriers = (case.owner, case.rival)
@@ -3543,6 +3600,47 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
         case.journal.settle_disposition(case.key, *proofs)
     assert case.journal.as_of() == prior
     assert _prior_journal_rows(case.journal) == rows
+
+
+def _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof):
+    from test_monitor_scope import _damage_completion_rows
+
+    from aitm_usage.sources.scan import _capture_position, _CaptureDiscontinuity
+
+    case = _issued_pair(monkeypatch)
+    bad, good = case.carriers[side], case.carriers[1 - side]
+    source = bad.batch._locator._source
+    if disproof == "missing-baseline":
+        _damage_completion_rows(
+            bad.rows,
+            disproof,
+            bad.when,
+            bad.turn,
+            other_checkout=Path("/fixture/unused-checkout"),
+            total=bad.total,
+        )
+        case.contents[bad.path] = _settlement_bytes(bad.rows)
+        with pytest.raises(_CaptureDiscontinuity):
+            fixed = bad.held_target.prefix
+            _capture_position(source, fixed, fixed=fixed)
+    else:
+        case.contents[bad.path] += b'{"type":'
+        current = _capture_position(source, None)
+        assert current.partial_ordinal is not None
+        assert current.cursor != bad.batch._native_cursor
+
+    good_proof = good.issuer.verify_settlement_side(
+        good.command, good.authority, good.batch, good.target
+    )
+    assert good_proof.hold == case.proofs[1 - side].hold
+    assert good_proof.progress.cursor == case.proofs[1 - side].progress.cursor
+    assert (
+        bad.issuer.completion_witness(bad.command, bad.authority, bad.batch, bad.target)
+        is None
+    )
+    _assert_pair_refuses_before_write(
+        monkeypatch, case, case.proofs, "current owned completion proof"
+    )
 
 
 def test_pair_resumes_clean_next_turn_from_committed_prefix_after_restart(journal_pair):

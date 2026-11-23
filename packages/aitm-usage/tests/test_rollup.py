@@ -17,7 +17,9 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from test_ledger import _LedgerRows, _memory_ledger
+from test_ledger import _LedgerRows, _memory_ledger, _observe_storage
+from test_ledger import ledger_path_metadata as ledger_path_metadata
+from test_ledger import modules as modules
 
 from aitm_usage import accounting, cli, pricing, scopes
 from aitm_usage import ledger as store
@@ -448,7 +450,7 @@ def relationship_transport_policy(monkeypatch, capsys):
         }
         return receipt
 
-    return SimpleNamespace(project=project, consume=consume, queue=queue)
+    return SimpleNamespace(project=project, consume=consume, queue=queue, rows=rows)
 
 
 def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(
@@ -509,23 +511,37 @@ def test_item_wire_envelope_is_closed_and_project_bound():
 
 
 def test_alias_storage_rejects_foreign_project_without_leaking_private_data(
-    project, item_cli
+    request, monkeypatch
 ):
+    real_open = Ledger.open
+    case = request.getfixturevalue("relationship_transport_policy")
+    project = case.project
     with project.writer() as writer:
-        command = _consume(writer, item_cli, "alias", DRAFT, CHILD).command
-        before = project.database_path.read_bytes()
-        foreign = UUID(int=999)
-        with pytest.raises(store.LedgerError):
+        command = case.consume(writer, "alias", DRAFT, CHILD).command
+
+    before = tuple(tuple(table) for table in case.rows.history)
+    metadata = request.getfixturevalue("ledger_path_metadata")
+    observed = replace(project, root=type(metadata.base)(project.root))
+    _observe_storage(metadata, observed)
+    paths = metadata.entries.copy()
+    foreign = UUID(int=999)
+    pin = Mock(side_effect=AssertionError("Foreign project reached publication"))
+    with monkeypatch.context() as patch:
+        patch.setattr(Ledger, "open", staticmethod(real_open))
+        patch.setattr(scopes, "_pin_directory", pin)
+        with pytest.raises(LedgerError, match="Private ledger path is unavailable"):
             enqueue_command(
-                writer.root,
+                observed.root,
                 InboxCommand(
                     command.command_id,
                     foreign,
                     replace(command.payload, project_id=foreign),
                 ),
             )
-    assert project.database_path.read_bytes() == before
-    assert b"raw-item-canary" not in before
+    pin.assert_not_called()
+    assert metadata.entries == paths
+    assert tuple(tuple(table) for table in case.rows.history) == before
+    assert all("raw-item-canary" not in payload for *_, payload in before[1])
 
 
 _ITEM_STATE_FAILURES = {
@@ -608,21 +624,61 @@ def test_item_refuses_untrusted_filesystem_state(request, monkeypatch, capsys, d
     if defect in ("identity", "schema"):
         _assert_item_refuses_observed_database(monkeypatch, capsys, defect)
         return
+    if defect == "guard":
+        metadata = request.getfixturevalue("ledger_path_metadata")
+        _assert_item_refuses_missing_observed_guard(metadata, monkeypatch, capsys)
+        return
 
     project = request.getfixturevalue("project")
     root = project.root
     if defect == "other-project":
         with store._connection(project.database_path, write=True) as conn, conn:
             conn.execute("UPDATE identity SET project_id = ?", (str(UUID(int=80)),))
+        prior_bytes = _durable_bytes(project)
     elif defect == "sidecar":
         Path(f"{project.database_path}-wal").chmod(0o644)
-    elif defect == "guard":
-        store._guard_path(root, PROJECT).unlink()
     else:
         project.key_path.write_bytes(PROJECT.bytes + b"x" * 32)
     assert _invoke_item_alias(monkeypatch, root) == 1
     _assert_item_refusal(*capsys.readouterr())
     assert not (root / "inbox").exists()
+    if defect == "other-project":
+        assert _durable_bytes(project) == prior_bytes
+
+
+def _assert_item_refuses_missing_observed_guard(metadata, monkeypatch, capsys):
+    root = metadata.base / "project"
+    key = b"r" * 32
+    ledger = Ledger(root, store._identity(PROJECT, key), key)
+    _observe_storage(metadata, ledger)
+    guard = store._guard_path(root, PROJECT)
+    del metadata.entries[str(guard)]
+    before = metadata.entries.copy()
+
+    def read_identity(path, *, write):
+        assert (path, write) == (ledger.database_path, False)
+
+        def execute(sql):
+            assert sql == "SELECT project_id FROM identity WHERE singleton = 1"
+            return SimpleNamespace(fetchone=lambda: (str(PROJECT),))
+
+        return nullcontext(SimpleNamespace(execute=execute))
+
+    publish = Mock(side_effect=AssertionError("Unguarded project reached publication"))
+    read_key = Mock(side_effect=AssertionError("Unguarded project reached key read"))
+    identify = Mock(side_effect=read_identity)
+    monkeypatch.setattr(cli, "Path", type(root))
+    monkeypatch.setattr(cli, "_connection", identify)
+    monkeypatch.setattr(cli, "enqueue_command", publish)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(store, "_read_key", read_key)
+
+    assert _invoke_item_alias(monkeypatch, root) == 1
+    _assert_item_refusal(*capsys.readouterr())
+    assert metadata.entries == before
+    identify.assert_called_once_with(ledger.database_path, write=False)
+    publish.assert_not_called()
+    read_key.assert_not_called()
 
 
 def _assert_item_refuses_observed_database(monkeypatch, capsys, defect):

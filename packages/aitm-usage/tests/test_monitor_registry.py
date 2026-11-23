@@ -48,16 +48,28 @@ def _request(module, root, project=PROJECT_A, *, anchors=()):
     )
 
 
-def test_monitor_registry_can_be_opened_without_creating_state(tmp_path):
+def test_monitor_registry_can_be_opened_without_creating_state(monkeypatch):
+    from unittest.mock import Mock
+
     module = _module()
-    missing = tmp_path / "monitor"
+    missing = Path("/fixture/monitor")
+    exists = Mock(return_value=False)
+    pin = Mock(side_effect=AssertionError("absent monitor directory was opened"))
+    create = Mock(side_effect=AssertionError("read-only registry created state"))
+    monkeypatch.setattr(module, "_path_exists", exists)
+    monkeypatch.setattr(module, "_pin_directory", pin)
+    monkeypatch.setattr(module, "_ensure_private_directory", create)
     assert module.Registry(missing).view().projects == ()
-    assert not missing.exists()
+    exists.assert_called_once_with(missing)
+    pin.assert_not_called()
+    create.assert_not_called()
 
 
 def test_two_clones_share_identity_but_nested_foreign_anchor_fails(tmp_path):
     module = _module()
     registry = module.Registry(tmp_path / "monitor")
+    assert registry.view().projects == ()
+    assert not registry.root.exists()
     first = _directory(tmp_path, "first")
     clone = _directory(tmp_path, "clone")
     nested = _directory(clone, "nested")
@@ -182,16 +194,28 @@ def registry_policy(monkeypatch):
     return _registry_policy(monkeypatch)
 
 
-def _registry_policy(monkeypatch, *, with_claude=False):
+def _registry_policy(monkeypatch, *, with_claude=False, projects=(PROJECT_A,)):
     module = _module()
     native = NativeTranscriptFiles(monkeypatch)
     evidence = module._ServiceEvidence(b"r" * 32)
-    control_path, project_path = Path("/fixture/monitor"), Path("/fixture/project")
-    control, project_dir, transcripts = (
-        module._PhysicalDirectory(str(path), native._identity(path))
-        for path in (control_path, project_path, native.root)
+    control_path = Path("/fixture/monitor")
+
+    def directory(path):
+        return module._PhysicalDirectory(str(path), native._identity(path))
+
+    control = directory(control_path)
+    transcripts = directory(native.root)
+    registrations = tuple(
+        module.RegisteredProject(
+            project,
+            directory(Path(f"/fixture/project-{project.int}")),
+            f"Project {project.int}",
+            None,
+            (),
+            None,
+        )
+        for project in projects
     )
-    project = module.RegisteredProject(PROJECT_A, project_dir, "A", None, (), None)
     if with_claude:
         from conftest import install_legacy_monitor_qualification
 
@@ -209,7 +233,7 @@ def _registry_policy(monkeypatch, *, with_claude=False):
         monkeypatch,
         native,
         control=control,
-        projects=(project,),
+        projects=registrations,
         installations=(installation,),
         evidence=evidence,
     )
@@ -564,10 +588,11 @@ def _observe_locator(monkeypatch, scenario, native, source, observe):
 def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
     request, monkeypatch, quiet
 ):
-    fixture = (
-        "queued_disable" if quiet == "removed-after-arm" else "queued_disable_policy"
-    )
-    scenario = request.getfixturevalue(fixture)
+    if quiet == "removed-after-arm":
+        scenario, native = request.getfixturevalue("queued_disable_metadata")
+    else:
+        scenario = request.getfixturevalue("queued_disable_policy")
+        native = request.getfixturevalue("registry_policy").native
     second_log, second_start = scenario.enroll_second()
     second_prefix = _physical_ordinal(second_log)
     scenario.log.append(2)
@@ -580,7 +605,6 @@ def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
     if quiet == "removed":
         from scanner_policy_cases import scanner
 
-        native = request.getfixturevalue("registry_policy").native
         source = _locate(
             scenario.reader, scenario.root, second_start.stream_ref
         )._source
@@ -602,7 +626,7 @@ def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
     # The first arm survives writer restart and additional rows on only one stream.
     scenario.log.append(2)
     if quiet == "removed-after-arm":
-        second_log.path.unlink()
+        del native.contents[second_log.path]
     bound = scenario.registry.capture_read_limit(PROJECT_A, SOURCE, scenario.stream)
     assert (bound.ordinal, bound.cursor.offset) == (first_fence, first_bytes)
     second_limit = second_prefix if quiet == "removed" else second_fence
@@ -1428,25 +1452,30 @@ def test_capture_disable_detects_an_in_place_native_session_replacement(
     assert scenario.decide(scenario.stream, prefix, prefix + 1) is Eligibility.UNKNOWN
 
 
-def test_disable_future_enrollment_while_approved_root_is_unavailable(
-    queued_disable, tmp_path
-):
-    scenario = queued_disable
-    other = _request(scenario.module, tmp_path, PROJECT_B)
+def test_disable_future_enrollment_while_approved_root_is_unavailable(monkeypatch):
+    policy = _registry_policy(monkeypatch, projects=(PROJECT_A, PROJECT_B))
+    scenario = _queue_on_registry_policy(policy)
     enable = replace(scenario.enable, project_id=PROJECT_B)
     disable = replace(enable, enabled=False)
-    scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=401), other))
     scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=402), enable))
     with scenario.registry.writer() as writer:
-        assert len(writer.apply_pending(scenario.inbox, writer.lease, None)) == 2
+        (enabled,) = writer.apply_pending(scenario.inbox, writer.lease, None)
+    assert enabled.status is scenario.module.ControlStatus.APPLIED
     assert scenario.registry.source_read_allowed(PROJECT_B, SOURCE)
-    displaced = tmp_path / "temporarily-unavailable"
-    scenario.root.path.rename(displaced)
-    scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=403), disable))
-    with scenario.registry.writer() as writer:
-        (receipt,) = writer.apply_pending(scenario.inbox, writer.lease, None)
-    assert receipt.status is scenario.module.ControlStatus.APPLIED
-    displaced.rename(scenario.root.path)
+
+    directory = scenario.module._directory
+
+    def unavailable(path, **options):
+        if path == str(scenario.root.path):
+            raise FileNotFoundError(path)
+        return directory(path, **options)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(scenario.module, "_directory", unavailable)
+        scenario.inbox.enqueue(scenario.module.ControlCommand(UUID(int=403), disable))
+        with scenario.registry.writer() as writer:
+            (receipt,) = writer.apply_pending(scenario.inbox, writer.lease, None)
+        assert receipt.status is scenario.module.ControlStatus.APPLIED
     assert not scenario.registry.source_read_allowed(PROJECT_B, SOURCE)
 
 

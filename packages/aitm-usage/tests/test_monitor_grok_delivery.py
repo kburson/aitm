@@ -580,11 +580,18 @@ def test_grok_journal_snapshot_restores_private_rows_and_new_writer_holds(
 
 
 def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
-    isolated_grok_capture,
-    tmp_path,
+    grok_capture_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    from test_ledger import _memory_ledger
+
+    from aitm_usage import ledger as ledger_module
+    from aitm_usage import monitor_registry
+    from aitm_usage.monitor_registry import RegisteredProject, _PhysicalDirectory
+
+    f = grok_capture_policy
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     f.submit(204, True)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
     first_turn = f.rows[1:5]
@@ -594,21 +601,40 @@ def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
     assert original.status is ClaimStatus.PENDING
     f.submit(205, False)
     assert f.evaluate()[0].status is ControlStatus.APPLIED
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(original.key, 1)
-    with _ledger(f).writer() as writer:
+    with monkeypatch.context() as patch:
+        writer, _ = delivery_destination(patch, journal, _ledger(f))
         delivered = ProjectDelivery.attach(journal, writer)
         journal.ack(delivered, ticket, delivered.commit(ticket))
 
     rival = UUID(int=39)
     root, checkout = (
-        tmp_path / name for name in ("competing-project", "competing-checkout")
+        Path("/fixture") / name for name in ("competing-project", "competing-checkout")
     )
-    checkout.mkdir(mode=0o700)
-    Ledger.initialize(root, rival)
-    f.writer.register_project(
-        ProjectRegistrationRequest(rival, str(root), "Rival", anchors=(str(checkout),))
+    project = RegisteredProject(
+        rival,
+        _PhysicalDirectory(str(root), (2, 30)),
+        "Rival",
+        None,
+        (_PhysicalDirectory(str(checkout), (2, 31)),),
+        None,
     )
+    directory = monitor_registry._directory
+    rival_directories = {
+        boundary.path: boundary for boundary in (project.state, *project.anchors)
+    }
+
+    def discover_directory(path, **options):
+        if path in rival_directories:
+            return rival_directories[path]
+        return directory(path, **options)
+
+    monkeypatch.setattr(monitor_registry, "_directory", discover_directory)
+    initial = f.writer.view()
+    f.writer._save(replace(initial, projects=(*initial.projects, project)))
+    ledger = replace(_memory_ledger(ledger_module, rival, b"r" * 32), root=root)
+    rival_writer, _ = delivery_destination(monkeypatch, journal, ledger)
     evidence = f.writer.source_evidence()
     original_origin = f.find_origin(f.locator()._source.path)
     rival_origin = replace(
@@ -642,7 +668,7 @@ def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
         (original.key, f.project)
     ]
     assert [row.contender for row in view.disputes] == [rival]
-    assert Ledger.open(root, rival).as_of().sequence == 0
+    assert rival_writer.as_of().sequence == 0
 
 
 def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(

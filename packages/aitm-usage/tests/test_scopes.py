@@ -8,9 +8,12 @@ from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Barrier, Event
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from scope_inbox_policy_cases import attach_scope_inbox_ledger
 from test_ledger import _memory_ledger
 
 from aitm_usage import (
@@ -234,6 +237,17 @@ def scope_policy(monkeypatch):
     monkeypatch.setattr(scopes, "_read_publications", snapshot)
     monkeypatch.setattr(scopes, "_acknowledge", acknowledge)
     return ledger, queue
+
+
+@pytest.fixture
+def scope_receipt_ledger(monkeypatch):
+    ledger = replace(
+        _memory_ledger(store, PROJECT, b"r" * 32),
+        _writer=object(),
+        _write_paths=SimpleNamespace(check=Mock()),
+    )
+    attach_scope_inbox_ledger(monkeypatch, ledger)
+    return ledger
 
 
 def _queue_marker(queue, marker):
@@ -487,8 +501,8 @@ def test_only_matching_source_proof_attests_pre_turn(request, changes):
         assert enrollment.marker == marker and enrollment.boundary == proven.boundary
 
 
-def test_scope_correction_preserves_prior_view_and_final_receipts(project):
-
+def test_scope_correction_preserves_prior_view_and_final_receipts(scope_receipt_ledger):
+    project = scope_receipt_ledger
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "correctable")
     effective = f.boundary(marker, 8)
@@ -1239,15 +1253,14 @@ def test_same_stream_binding_generations_follow_proven_order(
 @pytest.mark.parametrize(
     "enrich_identity", [False, True], ids=["tokens", "request-message"]
 )
-def test_cross_stream_rebind_preserves_recorded_prefix_only(request, enrich_identity):
-    if enrich_identity:
-        ledger = request.getfixturevalue("project")
+def test_cross_stream_rebind_preserves_recorded_prefix_only(
+    scope_receipt_ledger, enrich_identity
+):
+    ledger = scope_receipt_ledger
 
-        def queue(command):
-            enqueue_command(ledger.root, command)
+    def queue(command):
+        enqueue_command(ledger.root, command)
 
-    else:
-        ledger, queue = request.getfixturevalue("scope_policy")
     f = Fixture(ledger)
     anchor = f.ref("anchor")
     previous = f.marker(
@@ -1334,7 +1347,10 @@ def test_cross_stream_rebind_preserves_recorded_prefix_only(request, enrich_iden
         )
 
 
-def test_pending_receipt_refines_location_without_authorizing_attribution(project):
+def test_pending_receipt_refines_location_without_authorizing_attribution(
+    scope_receipt_ledger,
+):
+    project = scope_receipt_ledger
     f = Fixture(project)
     epic = f.marker(1, 1, EPIC, "epic")
     marker = f.marker(2, 2, CHILD, "claimed-child-start")

@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal, localcontext
-from importlib.resources import files
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -337,8 +337,11 @@ def test_priced_zero_is_distinct_from_missing_tokens(pricing_evidence, reference
     assert pricing.price(obs, reference_rates).usd == Decimal(0)
 
 
-def test_exact_usage_revision_controls_price_and_preserves_as_of(project):
-    card = pricing.load_rate_card()
+def test_exact_usage_revision_controls_price_and_preserves_as_of(
+    accounting_rows, reference_rates
+):
+    project, _ = accounting_rows
+    card = reference_rates
     partial = usage(project, ModelLabel.CLAUDE_OPUS_5_5)
     partial = replace(
         partial, record=replace(partial.record, availability=Availability.PARTIAL)
@@ -401,10 +404,13 @@ def test_exact_usage_revision_controls_price_and_preserves_as_of(project):
 
 
 def test_accounting_rejects_foreign_reference_through_ledger_admission(
-    project, tmp_path
+    accounting_rows, reference_rates, monkeypatch
 ):
-    other = Ledger.initialize(tmp_path / "other", UUID(int=91))
-    card = pricing.load_rate_card()
+    project, rows = accounting_rows
+    other = _memory_ledger(store, UUID(int=91), project._key)
+    writer = Mock(side_effect=AssertionError("Foreign data reached the writer"))
+    monkeypatch.setattr(Ledger, "writer", writer)
+    card = reference_rates
     sample = quota(project)
     with pytest.raises(LedgerError):
         accounting.account_observations(
@@ -423,6 +429,8 @@ def test_accounting_rejects_foreign_reference_through_ledger_admission(
             )
         )
     assert project.as_of().sequence == 0
+    assert rows.writes == []
+    writer.assert_not_called()
 
 
 def test_same_snapshot_identity_does_not_replace_conflicting_payload(
@@ -482,18 +490,24 @@ def test_wire_values_are_canonical_closed_and_private(accounting_rows, reference
 
 
 def test_rate_card_content_is_versioned_validated_and_immutable(
-    project, reference_rates
+    pricing_evidence, reference_rates, monkeypatch
 ):
+    raw = _encode(reference_rates, pricing.RateCard).encode()
+    resources = Mock()
+    resources.return_value.joinpath.return_value.read_bytes.return_value = raw
+    monkeypatch.setattr(pricing, "files", resources)
     card = pricing.load_rate_card("2026-11-09")
     assert card == reference_rates
-    raw = files("aitm_usage").joinpath("rates", "2026-11-09.json").read_text()
+    resources.assert_called_once_with("aitm_usage")
+    resources.return_value.joinpath.assert_called_once_with("rates", "2026-11-09.json")
     rates = json.loads(raw)
     assert pricing.RateCard.from_json(json.dumps(rates, sort_keys=True)) == card
     assert card.basis.version == "2026-11-09"
-    obs = usage(project).record
+    obs = usage(pricing_evidence).record
     assert pricing.price(obs, card).usd == Decimal("0.0114")
-    alternate = rates["entries"][0]
-    assert alternate["model"] == "gpt-6-astra"
+    alternate = next(
+        entry for entry in rates["entries"] if entry["model"] == "gpt-6-astra"
+    )
     alternate["uncached_input"] = "12"
     edited = pricing.RateCard.from_json(json.dumps(rates))
     assert edited.basis != card.basis
@@ -502,7 +516,9 @@ def test_rate_card_content_is_versioned_validated_and_immutable(
     alternate["source"] = "https://example.invalid/private-source"
     with pytest.raises(ValueError):
         pricing.RateCard.from_json(json.dumps(rates))
-    alternate["source"] = rates["entries"][1]["source"]
+    alternate["source"] = next(
+        entry["source"] for entry in rates["entries"] if entry["model"] == "gpt-6.1-sol"
+    )
     with pytest.raises(ValueError):
         pricing.RateCard.from_json(json.dumps(rates))
 

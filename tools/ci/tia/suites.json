@@ -335,6 +335,116 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_accounting_rejects_foreign_reference_through_ledger_admission",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_exact_usage_revision_controls_price_and_preserves_as_of",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_accounting.py::test_rate_card_content_is_versioned_validated_and_immutable",
+      "suite": "unit",
+      "isolation_group": "accounting-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_existing_state_refuses_missing_control_guard",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_codex_archive_counter_epoch_replays_once",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_desktop_and_cli_in_shared_root_admit_only_qualified_surface",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_discovery_refuses_unqualified_version_on_disk",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_monitor_scope_rescan_refuses_a_changed_raw_prefix",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_grok_coverage_rechecks_exact_consent_before_payload",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_only_stable_profile_denials_become_coverage",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_unrelated_unavailable_source_key_cannot_mint_coverage",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_existing_owner_survives_an_independently_eligible_rival_claim",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_disable_future_enrollment_while_approved_root_is_unavailable",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_monitor_registry_can_be_opened_without_creating_state",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_source_wide_disable_reaches_a_quiet_stream_after_restart",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_alias_storage_rejects_foreign_project_without_leaking_private_data",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_cross_stream_rebind_preserves_recorded_prefix_only",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_pending_receipt_refines_location_without_authorizing_attribution",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_scope_correction_preserves_prior_view_and_final_receipts",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_host_watch.py::test_linux_kernel_capacity_retires_partial_root_only",
       "suite": "unit",
       "isolation_group": "host_watch-policy"

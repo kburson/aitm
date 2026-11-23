@@ -113,6 +113,25 @@ def staged_scope_policy(grok_capture_policy, monkeypatch):
     f.writer._live_profile = replace(
         profile, installations=(replace(installation, executable=executable),)
     )
+
+    def revise(operation, generation):
+        assert operation in ("replace", "revoke") and generation == 2
+        files.files[f.writer.root][scope_admission._GROK_QUALIFICATION_RECORD] = (
+            f"{operation} qualification revision {generation}".encode()
+        )
+        profile = f.writer._live_profile
+        f.writer._live_profile = (
+            None
+            if operation == "revoke"
+            else replace(
+                profile,
+                generation=f.writer.source_evidence().pseudonymize(
+                    "generation", str(generation)
+                ),
+            )
+        )
+
+    f.revise = revise
     path_stat, path_open = Path.stat, Path.open
 
     def stat_file(path, **options):
@@ -338,12 +357,14 @@ def test_original_envelope_and_sealed_prompt_record_cannot_be_substituted(
 
 
 def test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
     from aitm_usage.monitor_scope import ScopeState
 
-    f, _, request, checkout, attempt, _, bind = _ready_scope(staged_scope, monkeypatch)
+    f, _, request, checkout, attempt, _, bind = _ready_scope(
+        staged_scope_policy, monkeypatch
+    )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
     f.write(f.rows[:5], 1)
     batch = f.state.read_source(f.source_id, f.locator())
@@ -822,11 +843,11 @@ def test_linux_scope_staging_and_hook_recheck_external_process_incarnation(
 
 
 def test_source_approval_profile_and_command_witness_do_not_transfer(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
 ):
     f, reader, request, checkout, attempt, lookup, bind = _ready_scope(
-        staged_scope, monkeypatch
+        staged_scope_policy, monkeypatch
     )
     with pytest.raises(LedgerError):
         bind(
@@ -840,7 +861,7 @@ def test_source_approval_profile_and_command_witness_do_not_transfer(
     f.revise("replace", 2)
     assert lookup(SESSION, PROMPT_A, "synthetic-event-1") is None
     with pytest.raises(ConflictError, match="another attempt"):
-        _stage(f, request, checkout, staged_scope[-1])
+        _stage(f, request, checkout, staged_scope_policy[-1])
     reader.register(request.grant_id, f.project, ("mark",), generation=2)
     reader.advertise(reader.probe(request))
     assert lookup(SESSION, PROMPT_A, "synthetic-event-1") is None
@@ -850,8 +871,11 @@ def test_source_approval_profile_and_command_witness_do_not_transfer(
 
 @pytest.mark.parametrize("operation", ["replace", "revoke"])
 def test_profile_revision_before_first_bind_preserves_unbound_attempt(
-    staged_scope, monkeypatch, operation
+    request, monkeypatch, operation
 ):
+    staged_scope = request.getfixturevalue(
+        "staged_scope" if operation == "replace" else "staged_scope_policy"
+    )
     f, _, _, checkout, selector, lookup, bind = _ready_scope(staged_scope, monkeypatch)
     f.revise(operation, 2)
     with pytest.raises(LedgerError, match="qualification revision changed"):
@@ -998,20 +1022,44 @@ def test_first_application_holds_the_revocation_publication_lock(
 
 
 def test_native_marker_cannot_be_applied_by_a_different_scope_owner(
-    staged_scope,
+    staged_scope_policy,
     monkeypatch,
-    tmp_path,
 ):
-    from aitm_usage.ledger import Ledger
-    from aitm_usage.monitor_registry import ProjectRegistrationRequest
+    from test_ledger import _memory_ledger
 
-    f, _, request, checkout, attempt, _, bind = _ready_scope(staged_scope, monkeypatch)
+    from aitm_usage import ledger as ledger_module
+    from aitm_usage import monitor_registry
+    from aitm_usage.ledger import STORE_NAME, Ledger
+
+    f, _, request, checkout, attempt, _, bind = _ready_scope(
+        staged_scope_policy, monkeypatch
+    )
     assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
     rival = UUID(int=33543)
-    rival_state = tmp_path / "rival-state"
-    Ledger.initialize(rival_state, rival)
+    rival_state = Path("/fixture/rival-state")
+    destination = monitor_registry._PhysicalDirectory(str(rival_state), (2, 11))
+    rival_ledger = replace(
+        _memory_ledger(ledger_module, rival, b"r" * 32), root=rival_state
+    )
+    open_ledger = Ledger.open
+    directory = monitor_registry._directory
+
+    def open_project(path, project):
+        if path == rival_state:
+            assert project == rival
+            return rival_ledger
+        return open_ledger(path, project)
+
+    def identify_project(path, **options):
+        if path == destination.path:
+            return destination
+        return directory(path, **options)
+
+    monkeypatch.setattr(Ledger, "open", open_project)
+    monkeypatch.setattr(monitor_registry, "_directory", identify_project)
+    f.scope_files.ensure(rival_state / STORE_NAME)
     f.writer.register_project(
-        ProjectRegistrationRequest(rival, str(rival_state), "Rival")
+        monitor_registry.ProjectRegistrationRequest(rival, str(rival_state), "Rival")
     )
     f.write(f.rows[:5], 1)
     batch = f.state.read_source(f.source_id, f.locator())

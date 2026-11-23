@@ -10,13 +10,21 @@ from uuid import UUID
 
 import pytest
 from delivery_policy_cases import delivery_destination, delivery_journal_rows
-from test_monitor_journal import COPY, LIVE, A, B, NativeJournalFixture
+from test_monitor_journal import (
+    COPY,
+    LIVE,
+    A,
+    B,
+    NativeJournalFixture,
+    _MemoryJournalTranscripts,
+)
 from test_monitor_journal import journal_claude as journal_claude
 from test_monitor_journal import journal_claude_policy as journal_claude_policy
 from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_journal import (
+    _OWNERSHIP_DISPUTE_ROWS,
     PublicationCandidate,
     RoutingJournal,
     _CandidateBasis,
@@ -57,6 +65,25 @@ def _journal(registry, *, cap=64):
 
 def _reserve(native, journal, source=LIVE):
     return journal.reserve_batch(journal.prepare(source, native.locator(source)))
+
+
+def _read_single_dispute(monkeypatch, store):
+    execute = store.execute
+    ordered = " ORDER BY d.sequence,d.key,d.contender,d.digest,d.evidence"
+    after = _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence > ?" + ordered
+    exact = _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence=? AND d.key=?" + ordered
+
+    def read(query, parameters=()):
+        if query not in {after, exact}:
+            return execute(query, parameters)
+        (((key, contender, digest, evidence), sequence),) = store.disputes.items()
+        assert (query, parameters) in {(after, (0,)), (exact, (sequence, key))}
+        project, claim_digest, payload, _ = store.claims[key]
+        return [
+            (key, contender, project, digest, evidence, sequence, payload, claim_digest)
+        ]
+
+    monkeypatch.setattr(store, "execute", read)
 
 
 def test_restart_at_reserve_commit_and_ack_yields_one_row(native):
@@ -163,14 +190,31 @@ def test_full_destination_queue_preserves_independent_progress(independent):
 
 @pytest.mark.parametrize("ack_before_dispute", [True, False])
 def test_late_conflict_after_ack_produces_dispute_without_new_write(
-    native, ack_before_dispute
+    request, monkeypatch, ack_before_dispute
 ):
+    store = None
+    if ack_before_dispute:
+        native = request.getfixturevalue("native")
+    else:
+        native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+        store = delivery_journal_rows(monkeypatch, native.registry)
+        _read_single_dispute(monkeypatch, store)
+
     native.append(LIVE, native.turn(3))
     with native.registry.writer() as registry:
         journal = _journal(registry)
         _, original = _reserve(native, journal)
-        _enable(native, journal)
-        with Ledger.open(native.ledgers[A].root, A).writer() as writer:
+        project = _project(registry.view(), A)
+        ledger = Ledger.open(Path(project.state.path), A)
+        if store is None:
+            _enable(native, journal)
+            destination_writer = Ledger.open(ledger.root, A).writer()
+        else:
+            store.delivery_enabled = True
+            writer, destination = delivery_destination(monkeypatch, journal, ledger)
+            destination_writer = nullcontext(writer)
+
+        with destination_writer as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             ticket = journal.reserve_delivery(original.key, 1)
             receipt = delivery.commit(ticket)
@@ -189,8 +233,13 @@ def test_late_conflict_after_ack_produces_dispute_without_new_write(
             forged = writer.pseudonymize("test-destination", "not-a-service-claim")
             with pytest.raises(LedgerError):
                 journal.reserve_delivery(forged, 1)
-            with writer._write_transaction() as conn:
-                conn.execute("UPDATE monitor_delivery_receipts SET seal='forged'")
+            if store is None:
+                with writer._write_transaction() as conn:
+                    conn.execute("UPDATE monitor_delivery_receipts SET seal='forged'")
+            else:
+                key = receipt.key.value, receipt.revision
+                sequence, payload, _ = destination.receipts[key]
+                destination.receipts[key] = sequence, payload, "forged"
             with pytest.raises(_DeliveryRefused):
                 journal.ack(delivery, ticket, receipt)
             assert writer.as_of().sequence == receipt.sequence

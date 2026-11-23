@@ -18,18 +18,15 @@ from aitm_usage import monitor_journal, monitor_registry
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
 from aitm_usage.monitor_registry import (
-    ApprovedSource,
     CaptureChange,
     CaptureEpoch,
     CaptureFrontier,
     Registry,
-    SourceApprovalRequest,
-    _directory,
     _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import ScopeState
 from aitm_usage.monitor_types import NativeSurface
-from aitm_usage.sources.adapter import SourceLocator, SourceRoot
+from aitm_usage.sources.adapter import SourceLocator
 from aitm_usage.types import (
     Provider,
     ProviderCheckpoint,
@@ -64,6 +61,7 @@ class _CoveragePolicyStore:
         self.evidence = evidence
         self.committed = SimpleNamespace(version=4, sequence=0, events={})
         self.attempt = None
+        self.writes = []
 
     @contextmanager
     def transaction(self, *, write=False):
@@ -88,6 +86,7 @@ class _CoveragePolicyStore:
             ):
                 return tuple(row for row in view.events.values() if row[1] > params[0])
             assert write, f"Read-only coverage issued {sql}"
+            self.writes.append((sql, params))
             if sql == "INSERT OR IGNORE INTO commits VALUES (?)":
                 (view.sequence,) = params
                 return None
@@ -158,14 +157,27 @@ def _coverage_policy(monkeypatch, source, *, provider=Provider.CLAUDE):
 
 @pytest.mark.parametrize("version", (4, 5))
 def test_reading_coverage_cannot_upgrade_an_empty_older_store(
-    admitted_sources, version
+    request, monkeypatch, version
 ):
+    if version == 5:
+        authority, _, journal, store = _coverage_policy(monkeypatch, SOURCE)
+        authority.writer._live_profile = None
+        store.committed.version = version
+        assert journal.coverage_changes(0) == ()
+        assert store.attempt is None
+        assert store.writes == []
+        assert store_version(journal) == version
+        with pytest.raises(LedgerError, match="qualification"):
+            journal.prepare(SOURCE, authority.locator)
+        assert store_version(journal) == 6
+        (event,) = journal.coverage_changes(0)
+        assert event.sequence == 1
+        return
+
+    admitted_sources = request.getfixturevalue("admitted_sources")
     native, claude = admitted_sources
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
-        if version == 5:
-            with journal._store.transaction(write=True) as connection:
-                journal._store._enable_paired(connection)
         assert store_version(journal) == version
         assert journal.coverage_changes(0) == ()
         assert store_version(journal) == version
@@ -186,6 +198,9 @@ def test_stable_exclusion_is_durable_and_independent_of_healthy_progress(
         native.append()
         prepared = journal.prepare(SOURCE, locator)
         journal.reserve_batch(prepared)
+        with journal._store.transaction(write=True) as connection:
+            journal._store._enable_paired(connection)
+        assert store_version(journal) == 5
         before = journal.as_of()
         before_cursor = journal.cursor_for(SOURCE, locator)
         assert before.claims and before_cursor is not None
@@ -279,6 +294,17 @@ def _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_clau
     writer._live_profile = _changed_live_profile(
         authority.profile, case, authority.approved, authority.foreign, authority.root
     )
+    if case == "replaced-root":
+        observed_directory = monitor_registry._directory
+
+        def replacement(path, **kwargs):
+            directory = observed_directory(path, **kwargs)
+            if path == authority.root.path:
+                return replace(directory, identity=(1, 99))
+            return directory
+
+        monkeypatch.setattr(monitor_registry, "_directory", replacement)
+
     reader, connection = Mock(), Mock()
     reader.execute.return_value.fetchone.return_value = None
 
@@ -314,60 +340,31 @@ def _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_clau
     ),
 )
 def test_only_stable_profile_denials_become_coverage(
-    request, monkeypatch, case, use_claude, records
+    monkeypatch, case, use_claude, records
 ):
-    if not records and case != "replaced-root":
+    if not records:
         _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude)
         return
-    if records:
-        authority, _, journal, store = _coverage_policy(
-            monkeypatch,
-            SOURCE,
-            provider=Provider.CLAUDE if use_claude else Provider.CODEX,
-        )
-        authority.writer._live_profile = _changed_live_profile(
-            authority.profile,
-            case,
-            authority.approved,
-            authority.foreign,
-            authority.root,
-        )
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(SOURCE, authority.locator)
-        (change,) = journal.coverage_changes(0)
-        assert change.coverage.generation == authority.profile.generation
-        assert change.coverage.reason == "UNQUALIFIED_SOURCE"
-        assert store.committed.sequence == change.sequence == 1
-        assert store_version(journal) == 6
-        assert journal.cursor_for(SOURCE, authority.locator) is None
-        return
-
-    admitted_sources = request.getfixturevalue("admitted_sources")
-    tmp_path = request.getfixturevalue("tmp_path")
-    native, claude = admitted_sources
-    source = claude.source_id if use_claude else SOURCE
-
-    old_root = _directory(str(native.registry.root), private=True)
-    if case == "replaced-root":
-        previous = tmp_path / "previous-monitor"
-        native.registry.root.rename(previous)
-        copytree(previous, native.registry.root)
-
-    other = Registry(tmp_path / "other-monitor")
-    with native.registry.writer() as writer, other.writer() as foreign:
-        qualify(writer)
-        approved = next(s for s in writer.view().sources if s.source_id == source)
-        writer._live_profile = _changed_live_profile(
-            writer._live_profile, case, approved, foreign, old_root
-        )
-        locator = claude.locator() if use_claude else native.locator()
-        journal = RoutingJournal(writer, ScopeState(writer))
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(source, locator)
-        changes = journal.coverage_changes(0)
-        assert len(changes) == int(records)
-        assert store_version(journal) == (6 if records else 4)
-        assert journal.cursor_for(source, locator) is None
+    authority, _, journal, store = _coverage_policy(
+        monkeypatch,
+        SOURCE,
+        provider=Provider.CLAUDE if use_claude else Provider.CODEX,
+    )
+    authority.writer._live_profile = _changed_live_profile(
+        authority.profile,
+        case,
+        authority.approved,
+        authority.foreign,
+        authority.root,
+    )
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, authority.locator)
+    (change,) = journal.coverage_changes(0)
+    assert change.coverage.generation == authority.profile.generation
+    assert change.coverage.reason == "UNQUALIFIED_SOURCE"
+    assert store.committed.sequence == change.sequence == 1
+    assert store_version(journal) == 6
+    assert journal.cursor_for(SOURCE, authority.locator) is None
 
 
 @pytest.mark.parametrize("failure", ("policy", "consent", "location"))
@@ -576,22 +573,41 @@ def test_copied_scope_and_missing_consent_cannot_publish_coverage(
     assert store_version(journal) == 4
 
 
-def test_unrelated_unavailable_source_key_cannot_mint_coverage(admitted_sources):
-    native, _ = admitted_sources
-    with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
-        initial = writer.view()
-        writer._save(replace(initial, source_key_id=None))
-        try:
-            with pytest.raises(
-                LedgerError,
-                match="Routing journal registry source key identity changed",
-            ):
-                journal.prepare(SOURCE, native.locator())
-        finally:
-            writer._save(initial)
-        assert journal.coverage_changes(0) == ()
-        assert store_version(journal) == 4
+def test_unrelated_unavailable_source_key_cannot_mint_coverage(monkeypatch):
+    from test_codex import CUTOFF
+    from test_monitor_journal_store import _journal_observations
+
+    memory = _journal_observations(monkeypatch)
+    evidence = memory.writer.source_evidence()
+    authority = qualification_policy(
+        monkeypatch, SOURCE, CUTOFF, evidence_key=evidence.key
+    )
+    writer = authority.writer
+    writer._writer = memory.writer.lease
+    connection = MagicMock()
+
+    def execute(sql):
+        if sql == "BEGIN":
+            return None
+        assert sql == "SELECT coalesce(max(sequence), 0) FROM commits"
+        return SimpleNamespace(fetchone=lambda: (0,))
+
+    connection.execute.side_effect = execute
+    memory.open_database.return_value = nullcontext(connection)
+    journal = RoutingJournal(writer, ScopeState(writer))
+    memory.open_database.reset_mock()
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            writer, "view", lambda: replace(authority.view, source_key_id=None)
+        )
+        with pytest.raises(
+            LedgerError,
+            match="Routing journal registry source key identity changed",
+        ):
+            journal.prepare(SOURCE, authority.locator)
+    memory.open_database.assert_not_called()
+    assert journal.coverage_changes(0) == ()
+    assert store_version(journal) == 4
 
 
 def test_lease_loss_is_not_reported_as_a_policy_refusal(monkeypatch):
@@ -696,93 +712,16 @@ def test_open_refuses_unknown_schema_version(monkeypatch):
 
 @pytest.mark.parametrize("consent", (False, True))
 def test_grok_coverage_rechecks_exact_consent_before_payload(
-    request, monkeypatch, consent
+    grok_capture_policy, monkeypatch, consent
 ):
-    if not consent:
-        _assert_grok_coverage_requires_observed_consent(
-            request.getfixturevalue("grok_capture_policy"), monkeypatch
-        )
-        return
-
-    from datetime import UTC, datetime
-
-    from test_grok import FIXTURES, GROK_BINARY, SESSION
-    from test_monitor_scope import A
-
-    from aitm_usage.monitor_registry import (
-        CaptureChange,
-    )
-    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
-
-    native, _ = request.getfixturevalue("admitted_sources")
-    root = request.getfixturevalue("tmp_path") / "grok"
-    session = root / SESSION
-    session.mkdir(parents=True)
-    for filename in ("updates.jsonl", "usage.json"):
-        (session / filename).write_bytes((FIXTURES / filename).read_bytes())
-
-    with native.registry.writer() as writer:
-        source = UUID(int=99)
-        req = SourceApprovalRequest(
-            source,
-            "grok",
-            "grok-build-macos",
-            "Darwin",
-            "arm64",
-            "1.0.77",
-            1,
-            str(root),
-        )
-        retained = ApprovedSource(req, _directory(str(root)))
-        initial = writer.view()
-        permissions = (*initial.permissions, CaptureChange(A, source, True))
-        writer._save(
-            replace(
-                initial, sources=(*initial.sources, retained), permissions=permissions
-            )
-        )
-        evidence = writer.source_evidence()
-        origin = GrokOrigin(
-            session_id=SESSION,
-            system="Darwin",
-            architecture="arm64",
-            version="1.0.77",
-            build="50ca579fa996",
-            executable_digest=GROK_BINARY,
-            format_version=1,
-            lineage_id=SESSION,
-            incarnation=evidence.pseudonymize("grok-incarnation", "fixture"),
-            checkout=None,
-        )
-        reader = GrokAdapter(
-            lambda p: origin if p.parent == session else None, lambda *_: None
-        )
-        root_proof = SourceRoot(root, datetime(2026, 1, 1, tzinfo=UTC), (), evidence)
-        (locator,) = reader.discover(root_proof)
-        monkeypatch.setattr(
-            GrokAdapter,
-            "read_delta",
-            lambda *a, **k: pytest.fail("unqualified payload"),
-        )
-        journal = RoutingJournal(writer, ScopeState(writer, grok_reader=reader))
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(source, locator)
-        assert len(journal.coverage_changes(0)) == 1
-        assert journal.as_of().claims == ()
-        with journal._store.transaction() as connection:
-            assert connection.execute("SELECT count(*) FROM progress").fetchone() == (
-                0,
-            )
-        qualify(writer)
-        with pytest.raises(LedgerError, match="no verified native session"):
-            journal.prepare(source, locator)
-        assert len(journal.coverage_changes(0)) == 1
-
-
-def _assert_grok_coverage_requires_observed_consent(case, monkeypatch):
+    case = grok_capture_policy
     case.write(case.rows, 2)
     locator = case.locator()
     writer = case.writer
+    if consent:
+        initial = writer.view()
+        permission = CaptureChange(case.project, case.source_id, True)
+        writer._save(replace(initial, permissions=(*initial.permissions, permission)))
     store = _CoveragePolicyStore(writer.source_evidence())
     monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     payload = Mock(side_effect=AssertionError("unqualified payload was read"))
@@ -793,16 +732,28 @@ def _assert_grok_coverage_requires_observed_consent(case, monkeypatch):
 
     with pytest.raises(LedgerError, match="qualification"):
         journal.prepare(case.source_id, locator)
-    assert journal.coverage_changes(0) == ()
-    assert store.committed.sequence == 0
-    assert store_version(journal) == 4
-    assert store.attempt is None
+    if consent:
+        (event,) = journal.coverage_changes(0)
+        assert event.sequence == store.committed.sequence == 1
+        assert event.coverage.reason == "UNQUALIFIED_SOURCE"
+        assert store_version(journal) == 6
+        assert [sql for sql, _ in store.writes] == [
+            "INSERT OR IGNORE INTO commits VALUES (?)",
+            "INSERT INTO source_coverage VALUES (?,?,?,?)",
+        ]
+    else:
+        assert journal.coverage_changes(0) == ()
+        assert store.committed.sequence == 0
+        assert store_version(journal) == 4
+        assert store.attempt is None
+        assert store.writes == []
 
+    before = journal.coverage_changes(0)
     writer._live_profile = installed
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.prepare(case.source_id, locator)
-    assert journal.coverage_changes(0) == ()
-    assert store.committed.sequence == 0
+    assert journal.coverage_changes(0) == before
+    assert store.committed.sequence == len(before)
     payload.assert_not_called()
 
 

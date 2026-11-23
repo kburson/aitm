@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta, timezone
 from hashlib import sha256
 from importlib.util import find_spec
 from io import BytesIO
+from itertools import count
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -36,6 +37,12 @@ def _uses_path_metadata(request):
         return request.node.callspec.id != "project"
     if name == "test_symlink_state_files_are_refused_without_touching_target":
         return request.node.callspec.id != "database"
+    if name == "test_held_writer_refuses_changed_state_paths_before_write":
+        return request.node.callspec.id != "ancestor"
+    if name == "test_uuid_guard_refuses_second_process_after_state_path_drift":
+        return request.node.callspec.id != "lock"
+    if name == "test_inherited_macos_grant_refused_before_private_creation":
+        return request.node.callspec.id == "guard"
     if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
         return request.node.callspec.id not in PHYSICAL_ALIAS_CASES
     if name == "test_raw_credential_shaped_metadata_is_normalized_before_durable_write":
@@ -103,6 +110,7 @@ def ledger_path_metadata(modules, monkeypatch):
     uid = 501
     entries = {}
     links = {}
+    inodes = count(1)
 
     class ObservedPath(type(Path())):
         def stat(self, *, follow_symlinks=True):
@@ -124,7 +132,7 @@ def ledger_path_metadata(modules, monkeypatch):
 
     def add_path(path, mode, *, owner=uid):
         entries[str(path)] = os.stat_result(
-            (mode, len(entries) + 1, 1, 1, owner, 0, 0, 0, 0, 0)
+            (mode, next(inodes), 1, 1, owner, 0, 0, 0, 0, 0)
         )
 
     def add_directory(path):
@@ -150,7 +158,7 @@ def ledger_path_metadata(modules, monkeypatch):
         assert not flags & os.O_CREAT, f"Ledger attempted to create {path}"
         if str(path) in links and flags & os.O_NOFOLLOW:
             raise OSError(errno.ELOOP, "Test path was opened without following links")
-        return path
+        return SimpleNamespace(path=path, status=path.stat())
 
     def unexpected_connection(*args, **kwargs):
         pytest.fail("Unsafe ledger path reached SQLite")
@@ -162,7 +170,7 @@ def ledger_path_metadata(modules, monkeypatch):
             path=os.path,
             geteuid=lambda: uid,
             open=open_descriptor,
-            fstat=lambda descriptor: descriptor.stat(),
+            fstat=lambda descriptor: descriptor.status,
             close=lambda _: None,
             O_RDONLY=os.O_RDONLY,
             O_RDWR=os.O_RDWR,
@@ -362,17 +370,21 @@ def ledger_rows(ledger_path_metadata, modules, monkeypatch):
     metadata = ledger_path_metadata
     key = b"a" * 32
     identity = ledger_module._identity(PROJECT, key)
-    ledger = ledger_module.Ledger(metadata.base / "project", identity, key)
+    ledger = ledger_module.Ledger(metadata.base / "parent" / "project", identity, key)
     _observe_storage(metadata, ledger)
     metadata.add_path(metadata.control / f"{OTHER_PROJECT}.lock", stat.S_IFREG | 0o600)
 
     class KeyBytes(BytesIO):
+        def __init__(self, descriptor, payload):
+            super().__init__(payload)
+            self.descriptor = descriptor
+
         def fileno(self):
-            return ledger.key_path
+            return self.descriptor
 
     def open_key(descriptor, mode):
-        assert (descriptor, mode) == (ledger.key_path, "rb")
-        return KeyBytes(rows.key_bytes)
+        assert (descriptor.path, mode) == (ledger.key_path, "rb")
+        return KeyBytes(descriptor, rows.key_bytes)
 
     schema = (
         ("table", "checkpoints", "checkpoints", "CREATE TABLE checkpoints (...)"),
@@ -732,6 +744,9 @@ def test_private_paths_have_exact_modes_and_reject_looser_modes(
         for name, created in paths.items():
             expected = 0o700 if name in {"project", "store"} else 0o600
             assert stat.S_IMODE(created.stat().st_mode) == expected
+        guard = control_directory() / f"{PROJECT}.lock"
+        assert stat.S_IMODE(guard.stat().st_mode) == 0o600
+        assert guard.stat().st_uid == os.geteuid()
     path = paths[relative_path]
     is_directory = relative_path in ("project", "store")
     assert stat.S_IMODE(path.stat().st_mode) == (0o700 if is_directory else 0o600)
@@ -958,6 +973,21 @@ def drift_path(ledger, kind, *, clone_ancestor=False):
             original.rename(ledger.root)
 
 
+def _observe_path_replacement(metadata, ledger, kind, *, clone_ancestor=False):
+    path = {
+        "lock": ledger.lock_path,
+        "root": ledger.root,
+        "ancestor": ledger.root.parent,
+    }[kind]
+    if kind == "root" or clone_ancestor:
+        for entry, info in metadata.entries.copy().items():
+            if Path(entry).is_relative_to(path):
+                metadata.add_path(entry, info.st_mode, owner=info.st_uid)
+    else:
+        metadata.add_path(path, path.lstat().st_mode)
+    return path
+
+
 def try_writer_in_other_process(root):
     result = subprocess.run(
         [
@@ -991,9 +1021,38 @@ except WriterActive:
 
 @pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
 def test_uuid_guard_refuses_second_process_after_state_path_drift(
-    tmp_path, modules, kind
+    request, modules, monkeypatch, kind, path_metadata
 ):
     ledger_module, _ = modules
+    if path_metadata is not None:
+        ledger, _, rows = request.getfixturevalue("ledger_rows")
+        guard = path_metadata.control / f"{PROJECT}.lock"
+        acquisitions = []
+        held = set()
+
+        def flock(descriptor, operation):
+            assert (
+                operation == ledger_module.fcntl.LOCK_EX | ledger_module.fcntl.LOCK_NB
+            )
+            identity = ledger_module._path_id(descriptor.status)
+            acquisitions.append((descriptor.path, identity))
+            if identity in held:
+                raise BlockingIOError(errno.EAGAIN, "Writer lease already held")
+            held.add(identity)
+
+        monkeypatch.setattr(ledger_module.fcntl, "flock", flock)
+        with ledger.writer():
+            _observe_path_replacement(path_metadata, ledger, kind, clone_ancestor=True)
+            contender = type(ledger).open(ledger.root, PROJECT)
+            with pytest.raises(ledger_module.WriterActive, match="writer-active"):
+                with contender.writer():
+                    pytest.fail("Contender acquired a writer under a held UUID guard")
+        assert [path for path, _ in acquisitions] == [guard, ledger.lock_path, guard]
+        assert acquisitions[0] == acquisitions[-1]
+        assert rows.writes == []
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
     with ledger.writer():
         drift_path(ledger, kind, clone_ancestor=True)
@@ -1001,8 +1060,27 @@ def test_uuid_guard_refuses_second_process_after_state_path_drift(
 
 
 @pytest.mark.parametrize("kind", ["lock", "root", "ancestor"])
-def test_held_writer_refuses_changed_state_paths_before_write(tmp_path, modules, kind):
+def test_held_writer_refuses_changed_state_paths_before_write(
+    request, modules, kind, path_metadata
+):
     ledger_module, types = modules
+    if path_metadata is not None:
+        ledger, types, rows = request.getfixturevalue("ledger_rows")
+        batch = sample_batch(ledger, types)
+        with ledger.writer() as writer:
+            path = _observe_path_replacement(path_metadata, ledger, kind)
+            (pin,) = (pin for pin in writer._write_paths.pinned if pin.path == path)
+            assert not os.path.samestat(ledger_module.os.fstat(pin.fd), path.lstat())
+            snapshot = rows.history
+            with pytest.raises(
+                ledger_module.LedgerError, match="Pinned private ledger path changed"
+            ):
+                writer.apply(batch)
+        assert rows.history == snapshot
+        assert rows.writes == []
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     ledger = ledger_module.Ledger.initialize(tmp_path / "parent" / "project", PROJECT)
     batch = sample_batch(ledger, types)
     with ledger.writer() as writer:
@@ -1013,32 +1091,68 @@ def test_held_writer_refuses_changed_state_paths_before_write(tmp_path, modules,
         assert durable_data(ledger) == before
 
 
-def test_existing_state_refuses_missing_control_guard(state):
+def test_existing_state_refuses_missing_control_guard(ledger_path_metadata, modules):
     from aitm_usage.ledger import LedgerError, project_guard
 
-    ledger, _ = state
+    ledger_module, _ = modules
+    metadata = ledger_path_metadata
+    ledger = _observed_ledger(metadata, ledger_module)
     with project_guard(ledger.root, PROJECT) as guard:
         path = guard.path
         assert not path.is_relative_to(ledger.root)
         assert stat.S_IMODE(path.stat().st_mode) == 0o600
-        assert path.stat().st_uid == os.geteuid()
-    path.unlink()
-    with pytest.raises(LedgerError):
-        type(ledger).open(ledger.root, PROJECT)
-    with pytest.raises(LedgerError):
-        type(ledger).initialize(ledger.root, PROJECT)
+        assert path.stat().st_uid == metadata.uid
+    del metadata.entries[str(path)]
+    before = dict(metadata.entries)
+    for operation in (type(ledger).open, type(ledger).initialize):
+        with pytest.raises(LedgerError, match="Private ledger path is unavailable"):
+            operation(ledger.root, PROJECT)
     assert not path.exists()
+    assert metadata.entries == before
 
 
 @pytest.mark.parametrize("destination", ["project", "guard"])
 def test_inherited_macos_grant_refused_before_private_creation(
-    tmp_path, modules, destination, grant_extra_acl
+    request, modules, destination, monkeypatch, path_metadata
 ):
     ledger_module, _ = modules
-    parent = tmp_path / "grant" if destination == "project" else Path.home() / "Library"
+    if path_metadata is not None:
+        from aitm_usage import host_fs
+
+        parent = path_metadata.control.parent.parent
+        path_metadata.add_directory(parent)
+        root = path_metadata.base / "project"
+        monkeypatch.setattr(
+            ledger_module, "check_private_acl", host_fs.check_private_acl
+        )
+        if sys.platform == "linux":
+
+            def getxattr(path, name, *, follow_symlinks):
+                assert not follow_symlinks
+                if path == parent and name == "system.posix_acl_default":
+                    return b"test inherited ACL"
+                raise OSError(errno.ENODATA, "No test ACL")
+
+            monkeypatch.setattr(host_fs, "os", SimpleNamespace(getxattr=getxattr))
+        else:
+            mac_acl_text = request.getfixturevalue("mac_acl_text")
+            mac_acl_text(
+                parent,
+                b"!#acl 1\ngroup:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12:allow:read\n",
+            )
+        before = dict(path_metadata.entries)
+        with pytest.raises(ledger_module.LedgerError, match="Unsafe private ACL"):
+            ledger_module.Ledger.initialize(root, PROJECT)
+        assert not root.exists()
+        assert path_metadata.entries == before
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
+    grant_extra_acl = request.getfixturevalue("grant_extra_acl")
+    parent = tmp_path / "grant"
     parent.mkdir(mode=0o700)
     grant_extra_acl(parent, "system.posix_acl_default")
-    root = (parent if destination == "project" else tmp_path) / "project"
+    root = parent / "project"
     with pytest.raises(ledger_module.LedgerError, match="ACL"):
         ledger_module.Ledger.initialize(root, PROJECT)
     assert not root.exists()

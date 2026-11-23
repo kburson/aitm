@@ -142,14 +142,18 @@ def _committed_view(result):
 
 
 def test_desktop_and_cli_in_shared_root_admit_only_qualified_surface(
-    monkeypatch, source
+    monkeypatch, native_files
 ):
-    module, adapter, root = _adapter(monkeypatch, source)
-    _, directory, checkout = source
+    directory = native_files.root.with_name("root-private")
+    checkout = native_files.checkout.with_name("checkout-private")
+    native_files.checkout_paths = {checkout}
+    module, adapter, root = _adapter(
+        monkeypatch, (native_files.evidence, directory, checkout)
+    )
     rows = _desktop(checkout)
-    _write(directory / "desktop.jsonl", rows)
+    native_files.write(directory / "desktop.jsonl", rows)
     rows[0]["payload"].update(originator="codex_cli_rs", source="cli")
-    _write(directory / "cli.jsonl", rows)
+    native_files.write(directory / "cli.jsonl", rows)
     results = [adapter.read_delta(locator, None) for locator in adapter.discover(root)]
     assert len(results) == 2
     (allowed,) = (result for result in results if result.observations)
@@ -235,12 +239,13 @@ def test_unqualified_native_tuple_withholds_evidence(
     _assert_unqualified_origin(monkeypatch, rows, system, arch)
 
 
-def test_discovery_refuses_unqualified_version_on_disk(monkeypatch, source):
+def test_discovery_refuses_unqualified_version_on_disk(monkeypatch, native_files):
+    source = native_files.source
     _, adapter, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
     rows = _desktop(checkout)
     rows[0]["payload"]["cli_version"] = "0.167.0-alpha.3.3"
-    _write(directory / "unqualified.jsonl", rows)
+    native_files.write(directory / "unqualified.jsonl", rows)
 
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
@@ -269,23 +274,22 @@ def test_recheck_native_origin_after_discovery(monkeypatch, native_files):
     ]
 
 
-def test_codex_archive_counter_epoch_replays_once(monkeypatch, source, tmp_path):
+def test_codex_archive_counter_epoch_replays_once(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     rows = _desktop(checkout)
     path = directory / "live.jsonl"
-    frontier = _write(path, rows)
-    with path.open("ab") as stream:
-        stream.write(b'{"incomplete":"secret')
+    frontier = native_files.write(path, rows)
+    native_files.contents[path] += b'{"incomplete":"secret'
     (locator,) = adapter.discover(root)
     first = adapter.read_delta(locator, None)
     assert first.observations
     assert first.cursor.checkpoint.cursor.offset == frontier
     durable = _decode(_encode(first.cursor, module.StreamCursor), module.StreamCursor)
 
-    archive = tmp_path / "archive"
-    archive.mkdir()
-    _write(archive / "copy.jsonl", rows)
+    archive = directory.with_name("archive")
+    native_files.write(archive / "copy.jsonl", rows)
     other_root = replace(
         root, path=archive, evidence=Evidence(key, _committed_view(first))
     )
@@ -830,16 +834,17 @@ def test_monitor_rescan_enrolls_only_an_exact_receipt_at_the_capture_limit(
     assert scoped.cursor.checkpoint.cursor == limit
 
 
-def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
-    monkeypatch, source, tmp_path
-):
+def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(monkeypatch, native_files):
+    from scanner_policy_cases import scanner
+
+    monkeypatch.setattr(scanner, "_checkout_anchor", native_files._checkout_lookup)
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     _, directory, _ = source
-    foreign = tmp_path / "foreign-private"
-    foreign.mkdir()
+    foreign = directory.with_name("foreign-private")
     path = directory / "receipt.jsonl"
     rows = _receipt_rows(foreign, settle=True)
-    _write(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     lookahead = adapter.read_delta(locator, None)
     boundary = _receipt_request(lookahead)
@@ -849,7 +854,7 @@ def test_monitor_scope_rescan_refuses_a_changed_raw_prefix(
     def change_before_rescan(candidate, *args, **kwargs):
         if candidate._enrollments:
             rows[4] = response("rewritten-before-private", usage(8, 2), usage(8, 2))
-            _write(path, rows)
+            native_files.write(path, rows)
         return scan(candidate, *args, **kwargs)
 
     monkeypatch.setattr(module, "scan", change_before_rescan)
