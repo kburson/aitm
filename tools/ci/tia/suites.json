@@ -335,6 +335,46 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_claude_and_mismatched_build_refuse_under_an_active_profile",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_disposable_authority_cannot_follow_a_new_writer",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_no_profile_rejects_new_and_retained_approval",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_old_capture_frontier_cannot_cross_a_profile_generation",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_rejected_approval_and_enable_leave_later_commands_runnable",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_retained_codex_refuses_before_payload",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_revoked_capture_keeps_payload_dependent_disable_pending",
+      "suite": "unit",
+      "isolation_group": "live-qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row",
+      "suite": "unit",
+      "isolation_group": "route-disposition-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_capture_without_request_id_returns_a_stable_retry_key",
       "suite": "unit",
       "isolation_group": "monitor-inbox-policy"

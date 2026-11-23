@@ -166,12 +166,15 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
     [("capture", "disable"), ("project", "anchor", "add")],
 )
 def test_legacy_global_state_and_monitor_project_flags_cannot_mix(
-    args, monitor, tmp_path, monkeypatch, capsys
+    args, monkeypatch, capsys
 ):
+    root = Path("/fixture")
+    inbox = Mock(side_effect=AssertionError("invalid CLI reached the monitor inbox"))
+    monkeypatch.setattr(monitor_control, "ControlInbox", inbox)
     inputs = (
         ("--source", str(SOURCE))
         if args[0] == "capture"
-        else ("--config", str(tmp_path / "config.json"))
+        else ("--config", str(root / "config.json"))
     )
     monkeypatch.setattr(
         sys,
@@ -179,7 +182,7 @@ def test_legacy_global_state_and_monitor_project_flags_cannot_mix(
         [
             "aitm-usage",
             "--project",
-            str(tmp_path / "legacy"),
+            str(root / "legacy"),
             "monitor",
             *args,
             "--project",
@@ -191,7 +194,7 @@ def test_legacy_global_state_and_monitor_project_flags_cannot_mix(
         cli.main()
     assert rejected.value.code == 2
     assert "cannot combine" in capsys.readouterr().err
-    assert not monitor.root.exists()
+    inbox.assert_not_called()
 
 
 def test_pending_commands_keep_enqueue_order_when_request_ids_sort_backwards(

@@ -524,15 +524,22 @@ def test_codex_wrapper_does_not_cross_native_surfaces(
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
 
 
-def test_linux_codex_scope_command_can_bind_the_project(monkeypatch, source):
+def test_linux_codex_scope_command_can_bind_the_project():
     from aitm_usage.sources.codex import _linux_marker_command, _Marker
 
-    _, _, checkout = source
-    mark_call = _rows(LINUX_CODEX_FIXTURE, checkout)[12]["payload"]
-    assert (
-        _linux_marker_command(mark_call, Path("/pilot-state/state"))
-        is _Marker.MONITOR_SCOPE
-    )
+    project = Path("/fixture/project")
+    checkout = AdapterFrames.checkout
+    command = f"aitm-usage --project {project} scope mark --marker /fixture/marker.json --json"
+    mark_call = {
+        "type": "custom_tool_call",
+        "name": "exec",
+        "input": (
+            "const result = await tools.exec_command("
+            f"{{cmd:{json.dumps(command)},max_output_tokens:1000}});\n"
+            "text(result.output);\n"
+        ),
+    }
+    assert _linux_marker_command(mark_call, project) is _Marker.MONITOR_SCOPE
     assert _linux_marker_command(mark_call, checkout) is None
 
 

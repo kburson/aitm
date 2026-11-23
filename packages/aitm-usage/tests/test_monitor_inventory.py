@@ -135,10 +135,10 @@ def test_native_inventory_audits_actual_selected_route(tmp_path):
 
 
 def _native_audit(tmp_path):
-    from conftest import legacy_monitor_qualification
+    from conftest import install_legacy_monitor_qualification
 
     with pytest.MonkeyPatch.context() as patch:
-        legacy_monitor_qualification.__wrapped__(tmp_path, patch)
+        install_legacy_monitor_qualification(patch, lambda: tmp_path)
         native = NativeJournalFixture(tmp_path, patch, independent_copy=True)
         selected = native.locator(LIVE)
         parked = native.paths[LIVE].with_name("parked.jsonl")
@@ -184,10 +184,10 @@ def _native_audit(tmp_path):
 
 
 def _grok_audit(tmp_path):
-    from conftest import legacy_monitor_qualification
+    from conftest import install_legacy_monitor_qualification
 
     with pytest.MonkeyPatch.context() as patch:
-        legacy_monitor_qualification.__wrapped__(tmp_path, patch)
+        install_legacy_monitor_qualification(patch, lambda: tmp_path)
         native = NativeJournalFixture(tmp_path, patch, independent_copy=True)
         root = tmp_path / "grok"
         parked_id = "10000000-0000-4000-8000-000000000116"

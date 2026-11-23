@@ -12,11 +12,13 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from journal_disposition_cases import DispositionRows
 from monitor_scope_snapshot_cases import disposition_snapshot
 from paired_settlement_cases import (
     assert_pair_refuses_changed_authority,
     assert_pair_refuses_changed_completion,
 )
+from scope_state_cases import route_admission_case
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -315,34 +317,23 @@ def test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck(
 @pytest.mark.parametrize(
     "change", ["copy", "foreign-issuer", "consumed", "revoked", "expired", "withdrawn"]
 )
-def test_journal_disposition_requires_live_issuer_even_on_replay(
-    journal_disposition, monkeypatch, change
-):
+def test_journal_disposition_requires_live_issuer_even_on_replay(request, change):
     from aitm_usage.monitor_control import _filename
-    from aitm_usage.monitor_journal import RoutingJournal
 
+    if change != "consumed":
+        _assert_record_requires_current_proof(
+            request.getfixturevalue("journal_disposition_policy"), change
+        )
+        return
+
+    journal_disposition = request.getfixturevalue("journal_disposition")
     with journal_disposition() as case:
         journal, proof = case.journal, case.proof
         recorded = journal.record_disposition(proof)
         before = journal.as_of()
         scope_bytes = case.scope_file.read_bytes()
-        if change == "copy":
-            proof = replace(proof)
-        elif change == "foreign-issuer":
-            writer = case.scopes.registry
-            journal = RoutingJournal(writer, ScopeState(writer))
-        elif change == "consumed":
-            with case.inbox.publication() as locked:
-                os.unlink(
-                    _filename(case.command.command_id), dir_fd=locked.directory.fd
-                )
-        elif change == "revoked":
-            case.reader.revoke(case.request.grant_id)
-        elif change == "withdrawn":
-            case.reader.withdraw(case.request.grant_id)
-        else:
-            future = datetime.now(UTC) + timedelta(minutes=2)
-            monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
+        with case.inbox.publication() as locked:
+            os.unlink(_filename(case.command.command_id), dir_fd=locked.directory.fd)
         with pytest.raises(LedgerError):
             journal.record_disposition(proof)
         assert journal.as_of() == before
@@ -354,42 +345,85 @@ def test_journal_disposition_requires_live_issuer_even_on_replay(
         )
 
 
+@pytest.fixture
+def journal_disposition_policy(monkeypatch):
+    from aitm_usage import monitor_journal
+
+    case = route_admission_case(monkeypatch, CUTOFF)
+    writer = case.state.registry
+    store = DispositionRows(writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
+    journal = monitor_journal.RoutingJournal(writer, case.state)
+    proof = case.state.verify_route_disposition(case.command, case.terminal)
+    return case, journal, store, proof
+
+
+def _assert_record_requires_current_proof(journal_case, change):
+    from aitm_usage.monitor_journal import RoutingJournal
+
+    case, journal, store, proof = journal_case
+    recorded = journal.record_disposition(proof)
+    assert journal.record_disposition(proof) == recorded
+    before = journal.as_of()
+    scope = case.snapshot
+    rows = store.rows.copy()
+    writes = tuple(store.writes)
+    if change == "copy":
+        proof = replace(proof)
+    elif change == "foreign-issuer":
+        writer = case.state.registry
+        journal = RoutingJournal(writer, ScopeState(writer))
+    elif change == "revoked":
+        case.reader.revoke(case.request.grant_id)
+    elif change == "withdrawn":
+        case.reader.withdraw(case.request.grant_id)
+    else:
+        case.witness_at += timedelta(minutes=2)
+    with pytest.raises(LedgerError):
+        journal.record_disposition(proof)
+    assert journal.as_of() == before
+    assert journal.as_of(recorded.sequence).dispositions[0].change == recorded
+    assert case.snapshot is scope
+    assert store.rows == rows
+    assert tuple(store.writes) == writes
+
+
 @pytest.mark.parametrize("conflict", ["same-command", "same-hold"])
 def test_journal_disposition_conflicting_durable_replay_preserves_the_row(
-    journal_disposition, conflict
+    journal_disposition_policy, conflict
 ):
     from aitm_usage.types import _encode
 
-    with journal_disposition() as case:
-        journal = case.journal
-        written = journal.record_disposition(case.proof)
-        payload = written.disposition
-        record = payload.record
-        evidence = journal._store.evidence
-        if conflict == "same-command":
-            changed = "0" * 64 if payload.hold_digest != "0" * 64 else "1" * 64
-            payload = replace(payload, hold_digest=changed)
-            expected = "command changed"
-        else:
-            other_id = UUID(int=0x634)
-            boundary = replace(
-                record.boundary,
-                receipt_ref=evidence.pseudonymize("scope-receipt", str(other_id)),
-            )
-            payload = replace(
-                payload, record=replace(record, command_id=other_id, boundary=boundary)
-            )
-            expected = "hold already has"
-        raw = _encode(payload, type(payload), validate_ref=evidence.validate_source_ref)
-        with journal._store.transaction(write=True) as connection:
-            connection.execute(
-                "UPDATE route_dispositions SET command = ?, payload = ? WHERE sequence = ?",
-                (str(payload.record.command_id), raw.encode("utf-8"), written.sequence),
-            )
-        before = journal.as_of()
-        with pytest.raises(ConflictError, match=expected):
-            journal.record_disposition(case.proof)
-        assert journal.as_of() == before
+    _, journal, store, proof = journal_disposition_policy
+    written = journal.record_disposition(proof)
+    payload = written.disposition
+    record = payload.record
+    evidence = store.evidence
+    if conflict == "same-command":
+        payload = replace(payload, hold_digest="0" * 64)
+        expected = "command changed"
+    else:
+        other_id = UUID(int=0x634)
+        boundary = replace(
+            record.boundary,
+            receipt_ref=evidence.pseudonymize("scope-receipt", str(other_id)),
+        )
+        payload = replace(
+            payload, record=replace(record, command_id=other_id, boundary=boundary)
+        )
+        expected = "hold already has"
+    raw = _encode(payload, type(payload), validate_ref=evidence.validate_source_ref)
+    _, hold, sequence, commit, _ = store.rows.pop(str(record.command_id))
+    command = str(payload.record.command_id)
+    expected_row = (command, hold, sequence, commit, raw.encode("utf-8"))
+    store.rows[command] = expected_row
+    before = journal.as_of()
+    writes = tuple(store.writes)
+    with pytest.raises(ConflictError, match=expected):
+        journal.record_disposition(proof)
+    assert journal.as_of() == before
+    assert store.rows == {command: expected_row}
+    assert tuple(store.writes) == writes
 
 
 @pytest.mark.parametrize(

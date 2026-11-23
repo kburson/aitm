@@ -17,7 +17,7 @@ from monitor_scope_snapshot_cases import (
     custody_writer,
     snapshot_reader,
 )
-from scope_state_cases import MemoryScope, route_policy_case
+from scope_state_cases import MemoryScope, route_admission_case, route_policy_case
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -2085,7 +2085,6 @@ def _sealed_disposition(
     monkeypatch,
     capsys,
     *,
-    wrong_type=False,
     grant_id=None,
     source_id=SOURCE,
 ):
@@ -2096,7 +2095,7 @@ def _sealed_disposition(
         ScopeInboxReader,
         _enqueue_scope,
     )
-    from aitm_usage.scope_admission import DispositionRequest, MarkRequest
+    from aitm_usage.scope_admission import DispositionRequest
 
     monkeypatch.setattr(
         "aitm_usage.monitor_registry.default_monitor_root", lambda: native.registry.root
@@ -2112,39 +2111,28 @@ def _sealed_disposition(
         command.hold_id,
         command.release_previous,
     )
-    if wrong_type:
-        request = MarkRequest(command.command_id, grant, _issue(A, 203))
-    reader.register(grant, command.project_id, ("mark" if wrong_type else "dispose",))
+    reader.register(grant, command.project_id, ("dispose",))
     reader.advertise(reader.probe(request))
     request_path = tmp_path / f"disposition-{command.command_id}.json"
-    if wrong_type:
-        assert inbox.enqueue_scope(request)
-        stdout = (
-            json.dumps({"command_id": str(command.command_id), "status": "queued"})
-            + "\n"
+    request_path.write_text(
+        json.dumps(
+            {
+                "command_id": str(request.command_id),
+                "grant_id": str(grant),
+                "project_id": str(request.project_id),
+                "hold_id": str(request.hold_id),
+                "release_previous": request.release_previous,
+            }
         )
-    else:
-        request_path.write_text(
-            json.dumps(
-                {
-                    "command_id": str(request.command_id),
-                    "grant_id": str(grant),
-                    "project_id": str(request.project_id),
-                    "hold_id": str(request.hold_id),
-                    "release_previous": request.release_previous,
-                }
-            )
+    )
+    request_path.chmod(0o600)
+    assert (
+        _enqueue_scope(
+            Namespace(request=request_path, scope_request=DispositionRequest, json=True)
         )
-        request_path.chmod(0o600)
-        assert (
-            _enqueue_scope(
-                Namespace(
-                    request=request_path, scope_request=DispositionRequest, json=True
-                )
-            )
-            == 0
-        )
-        stdout = capsys.readouterr().out
+        == 0
+    )
+    stdout = capsys.readouterr().out
     assert json.loads(stdout) == {
         "command_id": str(command.command_id),
         "status": "queued",
@@ -2809,7 +2797,6 @@ def _route_disposition_fixture(
     release=False,
     prior=True,
     disabled=False,
-    wrong_type=False,
     preexisting_legacy=False,
 ):
     from aitm_usage.monitor_journal import RoutingJournal
@@ -2875,7 +2862,6 @@ def _route_disposition_fixture(
         tmp_path,
         monkeypatch,
         capsys,
-        wrong_type=wrong_type,
     )
     assert native.path.read_bytes().startswith(held_prefix)
     assert native.target(batch, hold_id, held_at) == original
@@ -2999,10 +2985,31 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
 def test_issued_route_disposition_requires_current_evidence(
     request, monkeypatch, capsys, change
 ):
-    import os
 
     from aitm_usage.monitor_control import _filename
     from aitm_usage.monitor_scope import HoldState, ScopeState
+
+    if change in {"consumed", "withdrawn", "advertisement-expired"}:
+        case = route_admission_case(monkeypatch, CUTOFF)
+        proof = case.state.verify_route_disposition(case.command, case.terminal)
+        record = case.state.require_route_disposition(proof)
+        if change == "consumed":
+            del case.files.inbox_files[_filename(case.command.command_id)]
+            message = "Current typed disposition is unavailable"
+        elif change == "withdrawn":
+            case.reader.withdraw(case.request.grant_id)
+            message = "Scope consumer is unavailable"
+        else:
+            case.witness_at += timedelta(minutes=2)
+            message = "Scope consumer is unavailable"
+        before = case.snapshot
+        case.publish.reset_mock()
+        with pytest.raises(LedgerError, match=message):
+            case.state.require_route_disposition(proof)
+        assert case.snapshot is before
+        assert case.snapshot.route_dispositions == (record,)
+        case.publish.assert_not_called()
+        return
 
     if change in {"expire", "expired-proposal"}:
         case = route_policy_case(
@@ -3064,20 +3071,10 @@ def test_issued_route_disposition_requires_current_evidence(
                 is HoldState.GAP
             )
             assert native.path.read_bytes() == prefix
-        elif change == "consumed":
-            with current.inbox.publication() as locked:
-                os.unlink(
-                    _filename(current.command.command_id), dir_fd=locked.directory.fd
-                )
-        elif change == "withdrawn":
-            current.reader.withdraw(current.request.grant_id)
         elif change == "revoked":
             current.reader.revoke(current.request.grant_id)
         elif change == "source-relocated":
             native.path.rename(native.path.with_name("relocated.jsonl"))
-        else:
-            future = datetime.now(UTC) + timedelta(minutes=2)
-            monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
         before = state.view()
         error = (
             "Current scope hold cannot authorize"
@@ -3184,6 +3181,17 @@ def test_native_disposition_reconfirms_visible_proof_after_directory_sync_failur
 def test_disposition_proposal_needs_current_owned_span_and_receipt(
     request, monkeypatch, capsys, control
 ):
+    if control == "wrong-typed-request":
+        case = route_admission_case(monkeypatch, CUTOFF, wrong_type=True)
+        before = case.snapshot
+        with pytest.raises(
+            LedgerError, match="Current typed disposition is unavailable"
+        ):
+            case.state.verify_route_disposition(case.command, case.terminal)
+        assert case.snapshot is before
+        case.publish.assert_not_called()
+        return
+
     if control in {"wrong-scope", "copied-receipt", "wrong-owner"}:
         case = route_policy_case(
             monkeypatch,
@@ -3220,14 +3228,12 @@ def test_disposition_proposal_needs_current_owned_span_and_receipt(
             monkeypatch,
             capsys,
             disabled=control == "disabled",
-            wrong_type=control == "wrong-typed-request",
         )
         state = current.state
         terminal, command = current.terminal, current.command
         expected = {
             "disabled": "unsettled native terminal",
             "raw-rewrite": "source prefix changed",
-            "wrong-typed-request": "typed disposition is unavailable",
         }[control]
         if control == "raw-rewrite":
             rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]

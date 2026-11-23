@@ -1,4 +1,5 @@
 from contextlib import nullcontext
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -19,19 +20,33 @@ from aitm_usage.monitor_registry import (
 class MonitorInboxFiles:
     """Supply queued bytes and pinned identities to the real monitor inbox."""
 
-    def __init__(self, monkeypatch, project_id):
-        self.root = Path("/fixture/monitor")
-        self.ledger = _memory_ledger(ledger, project_id, b"p" * 32)
-        self.files = {self.root: {}, self.ledger.root: {}}
+    def __init__(self, monkeypatch, project_id, *, writer=None):
         self.descriptors = {}
-        evidence = _ServiceEvidence(b"a" * 32)
+        self.identities = {}
+        self.ledger = _memory_ledger(ledger, project_id, b"p" * 32)
+        if writer is None:
+            self.root = Path("/fixture/monitor")
+            self.files = {self.root: {}, self.ledger.root: {}}
+            evidence = _ServiceEvidence(b"a" * 32)
+            state = self.identity(str(self.ledger.root))
+            view = RegistryView(
+                projects=(
+                    RegisteredProject(project_id, state, "Fixture", None, (), None),
+                ),
+                source_key_id=evidence.key_id,
+            )
+            writer = Registry(self.root, Mock())
+            monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+        else:
+            self.root = writer.root
+            view = writer.view()
+            evidence = writer.source_evidence()
+            state = scope_admission._project(view, project_id).state
+            self.ledger = replace(self.ledger, root=Path(state.path))
+            self.files = {self.root: {}, self.ledger.root: {}}
+            self.identities[state.path] = state
         self.files[self.root][scope_admission._SOURCE_KEY_FILE] = evidence.key
-        state = self.identity(str(self.ledger.root))
-        view = RegistryView(
-            projects=(RegisteredProject(project_id, state, "Fixture", None, (), None),),
-            source_key_id=evidence.key_id,
-        )
-        self.writer = Registry(self.root, Mock())
+        self.writer = writer
         self.inbox = monitor_control.ControlInbox(self.root)
 
         def read_registry(registry, **kwargs):
@@ -43,7 +58,6 @@ class MonitorInboxFiles:
             return self.ledger
 
         monkeypatch.setattr(Registry, "view", read_registry)
-        monkeypatch.setattr(self.writer, "source_evidence", lambda: evidence)
         monkeypatch.setattr(Registry, "command_status", Mock(return_value=None))
         monkeypatch.setattr(Ledger, "open", open_ledger)
         host = SimpleNamespace(
@@ -69,6 +83,8 @@ class MonitorInboxFiles:
 
     def identity(self, name, *, private=True):
         assert private
+        if name in self.identities:
+            return self.identities[name]
         entries = tuple(self.files)
         return _PhysicalDirectory(name, (1, entries.index(Path(name)) + 1))
 

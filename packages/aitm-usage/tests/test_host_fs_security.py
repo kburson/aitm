@@ -195,8 +195,9 @@ def test_pinned_path_rejects_symlink_and_wrong_owner(tmp_path, monkeypatch):
         ("darwin", "Library/Application Support/aitm-usage-control"),
     ],
 )
-def test_uid_guard_ignores_home_override(tmp_path, monkeypatch, platform, guard_suffix):
-    account = tmp_path / "account"
+def test_uid_guard_ignores_home_override(monkeypatch, platform, guard_suffix):
+    root = Path("/fixture")
+    account = root / "account"
     uid = 65534
 
     def getpwuid(requested_uid):
@@ -208,8 +209,8 @@ def test_uid_guard_ignores_home_override(tmp_path, monkeypatch, platform, guard_
     monkeypatch.setattr(pwd, "getpwuid", getpwuid)
     expected = account / guard_suffix
     assert ledger._control_root() == expected
-    monkeypatch.setenv("HOME", str(tmp_path / "wrong-home"))
-    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "wrong-state"))
+    monkeypatch.setenv("HOME", str(root / "wrong-home"))
+    monkeypatch.setenv("XDG_STATE_HOME", str(root / "wrong-state"))
     assert ledger._control_root() == expected
 
 

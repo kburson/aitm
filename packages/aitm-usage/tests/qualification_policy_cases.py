@@ -37,11 +37,15 @@ from aitm_usage.types import (
 )
 
 
-def qualification_policy(monkeypatch, source_id, cutoff, *, provider=Provider.CODEX):
+def qualification_policy(
+    monkeypatch, source_id, cutoff, *, provider=Provider.CODEX, evidence_key=None
+):
     lease = Mock()
     writer = Registry(Path("/fixture/monitor"), lease)
     foreign = Registry(Path("/fixture/other-monitor"), Mock())
-    evidence = _ServiceEvidence(b"fixture-qualification")
+    evidence = _ServiceEvidence(
+        b"fixture-qualification" if evidence_key is None else evidence_key
+    )
     other_evidence = _ServiceEvidence(b"foreign-fixture-qualification")
     root, foreign_root, directory = (
         _PhysicalDirectory(path, (1, index))

@@ -8,9 +8,10 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
+from monitor_inbox_cases import MonitorInboxFiles
 from qualification_policy_cases import qualification_policy
 
-from aitm_usage import monitor_scope
+from aitm_usage import monitor_control, monitor_scope
 from aitm_usage.monitor_registry import _ServiceEvidence
 from aitm_usage.monitor_scope import (
     AffectedScope,
@@ -21,6 +22,7 @@ from aitm_usage.monitor_scope import (
     _ScopeSnapshot,
 )
 from aitm_usage.monitor_types import NativeSurface
+from aitm_usage.scope_admission import DispositionRequest, MarkRequest
 from aitm_usage.sources.adapter import NativeBoundary
 from aitm_usage.types import (
     BoundaryKind,
@@ -93,8 +95,13 @@ class MemoryScope:
         )
 
 
-def route_policy_case(monkeypatch, cutoff, *, release):
-    root = qualification_policy(monkeypatch, UUID(int=2), cutoff)
+def route_policy_case(monkeypatch, cutoff, *, release, typed_request=False):
+    root = qualification_policy(
+        monkeypatch,
+        UUID(int=2),
+        cutoff,
+        evidence_key=b"q" * 32 if typed_request else None,
+    )
     registry, locator = root.writer, root.locator
     source = locator._source
     evidence = registry.source_evidence()
@@ -191,7 +198,10 @@ def route_policy_case(monkeypatch, cutoff, *, release):
         "span_disposition",
         lambda *args: Eligibility.ELIGIBLE,
     )
-    monkeypatch.setattr(state, "_route_request", lambda command: nullcontext("c" * 64))
+    if not typed_request:
+        monkeypatch.setattr(
+            state, "_route_request", lambda command: nullcontext("c" * 64)
+        )
     monkeypatch.setattr(monitor_scope, "_check_capture_root", Mock())
 
     def capture(native, prior, *, fixed=None):
@@ -230,4 +240,30 @@ def route_policy_case(monkeypatch, cutoff, *, release):
     state.authorize(command, authority)
     case.command = command
     case.terminal = state.verify_boundary(command, authority, batch, target)
+    return case
+
+
+def route_admission_case(monkeypatch, cutoff, *, release=False, wrong_type=False):
+    """Issue a native proposal with the real typed request and witness checks."""
+    case = route_policy_case(monkeypatch, cutoff, release=release, typed_request=True)
+    writer = case.state.registry
+    command = case.command
+    case.files = MonitorInboxFiles(monkeypatch, command.project_id, writer=writer)
+    case.witness_at = case.when
+    monkeypatch.setattr(monitor_control, "_scope_now", lambda: case.witness_at)
+    monkeypatch.setattr(monitor_scope, "_path_exists", case.files.files.__contains__)
+    case.reader = monitor_control.ScopeInboxReader(writer, case.files.inbox)
+    grant_id = UUID(int=0x506)
+    if wrong_type:
+        case.reader.register(grant_id, command.project_id, ("mark",))
+        case.request = MarkRequest(
+            command.command_id, grant_id, monitor_scope.Scope(command.project_id)
+        )
+    else:
+        case.reader.register(grant_id, command.project_id, ("dispose",))
+        case.request = DispositionRequest(
+            command.command_id, grant_id, command.project_id, command.hold_id, release
+        )
+    case.reader.advertise(case.reader.probe(case.request))
+    assert case.files.inbox.enqueue_scope(case.request)
     return case

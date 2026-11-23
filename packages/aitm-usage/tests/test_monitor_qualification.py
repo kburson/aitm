@@ -8,11 +8,11 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from qualification_policy_cases import qualification_policy
+from qualification_policy_cases import CaptureInbox, CapturePolicy, qualification_policy
+from test_codex import CUTOFF
 
-from aitm_usage import monitor_journal, monitor_scope
+from aitm_usage import monitor_journal, monitor_registry, monitor_scope
 from aitm_usage.ledger import LedgerError
-from aitm_usage.monitor_control import ControlInbox
 from aitm_usage.monitor_registry import (
     ApprovedSource,
     CaptureChange,
@@ -61,49 +61,83 @@ def retain_approval(writer, request):
     return approval
 
 
-def test_no_profile_rejects_new_and_retained_approval(tmp_path, approval):
-    with Registry(tmp_path / "monitor").writer() as writer:
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.approve_source(approval)
-        assert writer.view().sources == ()
-
-        retained = retain_approval(writer, approval)
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.approve_source(approval)
-        assert writer.view().sources == (retained,)
-
-
-def test_rejected_approval_and_enable_leave_later_commands_runnable(tmp_path, approval):
-    root = tmp_path / "monitor"
-    writer_root = Registry(root)
+@pytest.fixture
+def approval_policy(monkeypatch):
     project_id = UUID(int=2)
-    state = tmp_path / "project"
-    state.mkdir(mode=0o700)
-    project = ProjectRegistrationRequest(project_id, str(state), "Project")
+    capture = CapturePolicy(monkeypatch, UUID(int=1), CUTOFF, (project_id,))
+    capture.stub_native_reads(monkeypatch)
+    known_directory = monitor_registry._directory
+    project = _PhysicalDirectory("/fixture/project", (1, 10))
+    healthy = _PhysicalDirectory("/fixture/healthy-project", (1, 11))
+    directories = {directory.path: directory for directory in (project, healthy)}
+
+    def directory(path, **options):
+        if path in directories:
+            return directories[path]
+        return known_directory(path, **options)
+
+    monkeypatch.setattr(monitor_registry, "_directory", directory)
+    monkeypatch.setattr(monitor_registry, "_path_exists", lambda path: False)
+    existing = replace(capture.view.projects[0], state=project)
+    capture.view = replace(capture.view, projects=(existing,))
+    return capture
+
+
+def _enable_capture(capture):
+    locator = capture.first
+    capture.append(locator)
+    project_id = capture.view.projects[0].project_id
+    change = CaptureChange(project_id, capture.approved.source_id, True)
+    capture.writer.set_permission(change, capture.advance(change, locator))
+    return change
+
+
+def test_no_profile_rejects_new_and_retained_approval(approval_policy):
+    capture = approval_policy
+    writer = capture.writer
+    retained = capture.approved
+    writer._live_profile = None
+    capture.view = replace(capture.view, sources=())
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.approve_source(retained.approval)
+    assert writer.view().sources == ()
+
+    capture.view = replace(capture.view, sources=(retained,))
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.approve_source(retained.approval)
+    assert writer.view().sources == (retained,)
+
+
+def test_rejected_approval_and_enable_leave_later_commands_runnable(approval_policy):
+    capture = approval_policy
+    writer = capture.writer
+    project_id = capture.view.projects[0].project_id
+    project = ProjectRegistrationRequest(project_id, "/fixture/project", "Project")
+    writer.register_project(project)
+    retained = capture.approved
+    writer._live_profile = None
 
     # The later disable is allowed without a payload because there is no epoch.
-    enable = CaptureChange(project_id, approval.source_id, True)
+    enable = CaptureChange(project_id, retained.source_id, True)
     disable = replace(enable, enabled=False)
-    commands = tuple(
+    inbox = CaptureInbox(writer)
+    inbox.pending.extend(
         ControlCommand(UUID(int=i), payload)
-        for i, payload in enumerate((approval, enable, disable, project), start=3)
+        for i, payload in enumerate(
+            (retained.approval, enable, disable, project), start=3
+        )
     )
-    inbox = ControlInbox(root)
-    with writer_root.writer() as writer:
-        writer.register_project(project)
-        retained = retain_approval(writer, approval)
-        for command in commands:
-            inbox.enqueue(command)
-        receipts = writer.apply_pending(inbox, writer.lease, None)
+    receipts = writer.apply_pending(inbox, writer.lease, None)
 
-        assert [receipt.status for receipt in receipts] == [
-            ControlStatus.REJECTED,
-            ControlStatus.REJECTED,
-            ControlStatus.APPLIED,
-            ControlStatus.APPLIED,
-        ]
-        assert writer.view().sources == (retained,)
-        assert writer.view().epochs == ()
+    assert [receipt.status for receipt in receipts] == [
+        ControlStatus.REJECTED,
+        ControlStatus.REJECTED,
+        ControlStatus.APPLIED,
+        ControlStatus.APPLIED,
+    ]
+    assert writer.view().sources == (retained,)
+    assert writer.view().epochs == ()
+    assert inbox.pending == []
 
 
 def qualify(writer, *, current=lambda _: True):
@@ -144,25 +178,21 @@ def previously_admitted(tmp_path, monkeypatch):
         return NativeJournalFixture(tmp_path, monkeypatch)
 
 
-def test_retained_codex_refuses_before_payload(previously_admitted, monkeypatch):
-    from test_monitor_journal import LIVE
-
+def test_retained_codex_refuses_before_payload(approval_policy, monkeypatch):
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
-    from aitm_usage.monitor_scope import ScopeState
-    from aitm_usage.sources.adapter import ProviderAdapter
 
-    with previously_admitted.registry.writer() as writer:
-        locator = previously_admitted.locator()
-        original = writer.view()
-        monkeypatch.setattr(
-            ProviderAdapter,
-            "read_delta",
-            lambda *a, **k: pytest.fail("live payload read"),
-        )
-        with pytest.raises(_LiveSourceUnavailable) as result:
-            ScopeState(writer).read_source(LIVE, locator)
-        assert result.value.decision.source_id == LIVE
-        assert writer.view() == original
+    capture = approval_policy
+    enable = _enable_capture(capture)
+    writer = capture.writer
+    writer._live_profile = None
+    original = writer.view()
+    read = Mock(side_effect=AssertionError("unqualified live payload read"))
+    monkeypatch.setattr(ProviderAdapter, "read_delta", read)
+    with pytest.raises(_LiveSourceUnavailable) as result:
+        monitor_scope.ScopeState(writer).read_source(enable.source_id, capture.first)
+    assert result.value.decision.source_id == enable.source_id
+    assert writer.view() == original
+    read.assert_not_called()
 
 
 def test_retained_grok_refuses_before_payload(previously_admitted, monkeypatch):
@@ -374,83 +404,78 @@ def _change_prepared_authority(writer, change):
         writer._live_profile = replace(profile, current=None)
 
 
-def test_claude_and_mismatched_build_refuse_under_an_active_profile(tmp_path, approval):
-    with Registry(tmp_path / "monitor").writer() as writer:
-        retained = retain_approval(writer, approval)
-        qualify(writer)
-        assert writer.approve_source(approval) == retained
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.approve_source(replace(approval, client_version="different"))
+def test_claude_and_mismatched_build_refuse_under_an_active_profile(approval_policy):
+    capture = approval_policy
+    writer, retained = capture.writer, capture.approved
+    approval = retained.approval
+    assert writer.approve_source(approval) == retained
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.approve_source(replace(approval, client_version="different"))
 
-        claude = replace(
-            approval,
-            source_id=UUID(int=12),
-            provider="claude",
-            surface="claude-code-macos",
+    claude = replace(
+        approval,
+        source_id=UUID(int=12),
+        provider="claude",
+        surface="claude-code-macos",
+    )
+    before = writer.view()
+    writer._save(
+        replace(
+            before,
+            sources=(*before.sources, ApprovedSource(claude, retained.directory)),
         )
-        before = writer.view()
-        writer._save(
-            replace(
-                before,
-                sources=(*before.sources, ApprovedSource(claude, retained.directory)),
-            )
-        )
-        qualify(writer)
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.approve_source(claude)
+    )
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.approve_source(claude)
 
 
-def test_revoked_capture_keeps_payload_dependent_disable_pending(previously_admitted):
-    from test_monitor_journal import LIVE, A
+def test_revoked_capture_keeps_payload_dependent_disable_pending(approval_policy):
+    capture = approval_policy
+    writer, locator = capture.writer, capture.first
+    enable = _enable_capture(capture)
+    writer._live_profile = None
+    before = writer.view()
+    disable = replace(enable, enabled=False)
+    inbox = CaptureInbox(writer)
+    command = ControlCommand(UUID(int=987), disable)
+    other_id = UUID(int=988)
+    healthy = ControlCommand(
+        other_id,
+        ProjectRegistrationRequest(
+            UUID(int=989), "/fixture/healthy-project", "Independent project"
+        ),
+    )
+    inbox.pending.extend((command, healthy))
 
-    with previously_admitted.registry.writer() as writer:
-        before = writer.view()
-        disable = CaptureChange(A, LIVE, False)
-        inbox = ControlInbox(writer.root)
-        command = ControlCommand(UUID(int=987), disable)
-        inbox.enqueue(command)
-        other_id = UUID(int=988)
-        state = writer.root.parent / "healthy-project"
-        state.mkdir(mode=0o700)
-        healthy = ControlCommand(
-            other_id,
-            ProjectRegistrationRequest(
-                UUID(int=989), str(state), "Independent project"
-            ),
-        )
-        inbox.enqueue(healthy)
+    def locate(change, known):
+        assert change == disable
+        return (locator,) if locator.stream_ref in known else ()
 
-        def locate(change, known):
-            assert change == disable
-            locator = previously_admitted.locator()
-            return (locator,) if locator.stream_ref in known else ()
-
-        (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
-        assert receipt.command_id == other_id
-        assert receipt.status is ControlStatus.APPLIED
-        assert writer.command_status(other_id) == receipt
-        after = writer.view()
-        assert after.epochs == before.epochs
-        assert after.permissions == before.permissions
-        assert writer.command_status(command.command_id) is None
-        with inbox.publication() as locked:
-            assert list(inbox.iter_pending(locked)) == [command]
+    (receipt,) = writer.apply_pending(inbox, writer.lease, locate)
+    assert receipt.command_id == other_id
+    assert receipt.status is ControlStatus.APPLIED
+    assert writer.command_status(other_id) == receipt
+    after = writer.view()
+    assert after.epochs == before.epochs
+    assert after.permissions == before.permissions
+    assert writer.command_status(command.command_id) is None
+    assert inbox.pending == [command]
 
 
-def test_disposable_authority_cannot_follow_a_new_writer(tmp_path, approval):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        retain_approval(writer, approval)
-        qualify(writer)
-        profile = writer._live_profile
-
+def test_disposable_authority_cannot_follow_a_new_writer(approval_policy, monkeypatch):
+    capture = approval_policy
+    writer = capture.writer
+    profile = writer._live_profile
+    writer._writer = None
     with pytest.raises(LedgerError, match="lease"):
-        writer.approve_source(approval)
+        writer.approve_source(capture.approved.approval)
 
-    with registry.writer() as reopened:
-        reopened._live_profile = profile
-        with pytest.raises(LedgerError, match="qualification"):
-            reopened.approve_source(approval)
+    reopened = Registry(writer.root, Mock())
+    monkeypatch.setattr(reopened, "view", writer.view)
+    monkeypatch.setattr(reopened, "source_evidence", writer.source_evidence)
+    reopened._live_profile = profile
+    with pytest.raises(LedgerError, match="qualification"):
+        reopened.approve_source(capture.approved.approval)
 
 
 def test_substrate_shim_is_absent_from_the_installed_package():
@@ -464,20 +489,21 @@ def test_substrate_shim_is_absent_from_the_installed_package():
     assert not (Path(root) / "conftest.py").exists()
 
 
-def test_old_capture_frontier_cannot_cross_a_profile_generation(previously_admitted):
-    from test_monitor_journal import LIVE, A
+def test_old_capture_frontier_cannot_cross_a_profile_generation(approval_policy):
+    capture = approval_policy
+    writer, locator = capture.writer, capture.first
+    project_id = capture.view.projects[0].project_id
+    change = CaptureChange(project_id, capture.approved.source_id, True)
+    frontier = writer.capture_frontier(change, locator)
+    capture.append(locator)
+    writer._live_profile = replace(
+        writer._live_profile, generation=capture.ref("next-profile-generation")
+    )
+    before = writer.view()
 
-    with previously_admitted.registry.writer() as writer:
-        qualify(writer)
-        change = CaptureChange(A, LIVE, True)
-        locator = previously_admitted.locator()
-        frontier = writer.capture_frontier(change, locator)
-        qualify(writer)
-        before = writer.view()
-
-        with pytest.raises(LedgerError, match="qualification"):
-            writer.verify_boundary(change, locator, frontier)
-        assert writer.view() == before
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.verify_boundary(change, locator, frontier)
+    assert writer.view() == before
 
 
 @pytest.mark.parametrize(
@@ -570,25 +596,41 @@ def _assert_profile_mismatch_refuses_approval_and_read(
 
 @pytest.mark.parametrize("with_cursor", (False, True))
 def test_codex_exclusion_requires_consent_for_its_exact_source(
-    previously_admitted, monkeypatch, with_cursor
+    request, monkeypatch, with_cursor
 ):
     from test_monitor_journal import COPY, LIVE
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
-    from aitm_usage.sources.adapter import ProviderAdapter
 
+    if not with_cursor:
+        capture = request.getfixturevalue("approval_policy")
+        enable = _enable_capture(capture)
+        writer = capture.writer
+        writer._live_profile = None
+        capture.view = replace(
+            capture.view, permissions=(replace(enable, source_id=COPY),)
+        )
+        before = writer.view()
+        read = Mock(side_effect=AssertionError("unconsented payload read"))
+        monkeypatch.setattr(ProviderAdapter, "read_delta", read)
+        with pytest.raises(LedgerError, match="no admitted unbounded read") as refusal:
+            ScopeState(writer).read_source(enable.source_id, capture.first)
+        assert getattr(refusal.value, "decision", None) is None
+        assert writer.view() is before
+        read.assert_not_called()
+        return
+
+    previously_admitted = request.getfixturevalue("previously_admitted")
     with previously_admitted.registry.writer() as writer:
         qualify(writer)
         state = ScopeState(writer)
         journal = RoutingJournal(writer, state)
         locator = previously_admitted.locator()
-        cursor = None
-        if with_cursor:
-            prepared = journal.prepare(LIVE, locator)
-            journal.reserve_batch(prepared)
-            cursor = journal.cursor_for(LIVE, locator)
-            assert cursor is not None
+        prepared = journal.prepare(LIVE, locator)
+        journal.reserve_batch(prepared)
+        cursor = journal.cursor_for(LIVE, locator)
+        assert cursor is not None
 
         original = writer.view()
         writer._save(

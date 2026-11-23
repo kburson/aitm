@@ -6,7 +6,9 @@ import subprocess
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -373,12 +375,24 @@ def test_process_info_refuses_invalid_custody(monkeypatch, problem):
     "problem", ["truncated", "length", "path-changed", "image-changed"]
 )
 def test_darwin_process_identity_refuses_ambiguous_executable(
-    tmp_path, monkeypatch, problem
+    request, monkeypatch, problem
 ):
-    image = tmp_path / "candidate"
-    replacement = tmp_path / "replacement"
-    image.write_bytes(b"original executable")
-    replacement.write_bytes(b"replacement executable")
+    inspect_path = Mock(side_effect=AssertionError("invalid path reached inspection"))
+    malformed = problem in {"truncated", "length"}
+    uid = 501 if malformed else os.geteuid()
+    if malformed:
+        root = Path("/fixture")
+        monkeypatch.setattr(process_identity, "Path", inspect_path)
+        monkeypatch.setattr(
+            process_identity, "os", SimpleNamespace(geteuid=lambda: uid)
+        )
+    else:
+        root = request.getfixturevalue("tmp_path")
+    image = root / "candidate"
+    replacement = root / "replacement"
+    if not malformed:
+        image.write_bytes(b"original executable")
+        replacement.write_bytes(b"replacement executable")
 
     class Proc:
         path_reads = 0
@@ -387,7 +401,7 @@ def test_darwin_process_identity_refuses_ambiguous_executable(
             row = pointer._obj
             row.pid = pid
             row.parent_pid = 1
-            row.uid = os.geteuid()
+            row.uid = uid
             row.start_seconds = 10000
             return size
 
@@ -408,6 +422,9 @@ def test_darwin_process_identity_refuses_ambiguous_executable(
     monkeypatch.setattr(process_identity, "sys", SimpleNamespace(platform="darwin"))
     monkeypatch.setattr(process_identity, "_libproc", lambda: proc)
     assert process_identity.read_process_identity(33500) is None
+    if malformed:
+        assert proc.path_reads == 1
+        inspect_path.assert_not_called()
 
 
 def test_darwin_walk_rechecks_parent_incarnation_and_image(staged_scope, monkeypatch):
