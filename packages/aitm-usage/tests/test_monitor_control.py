@@ -2,6 +2,10 @@ import json
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from io import BytesIO
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -81,8 +85,10 @@ def test_exact_enqueues_from_concurrent_producers_converge(monitor):
     "unsafe", ["mode", "symlink", "hardlink", "duplicate", "extra"]
 )
 def test_project_cli_rejects_unsafe_or_untyped_owner_config(
-    unsafe, monitor, tmp_path, monkeypatch, capsys
+    unsafe, request, monkeypatch, capsys
 ):
+    check_shape = unsafe in {"duplicate", "extra"}
+    tmp_path = Path("/fixture") if check_shape else request.getfixturevalue("tmp_path")
     config = tmp_path / "private-config.json"
     private_state = str(tmp_path / "secret-state")
     document = {
@@ -95,22 +101,52 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
         raw = raw[:-1] + ', "display_name": "another"}'
     if unsafe == "extra":
         raw = json.dumps({**document, "unexpected": "private"})
-    config.write_text(raw)
-    config.chmod(0o644 if unsafe == "mode" else 0o600)
-    if unsafe in {"symlink", "hardlink"}:
-        target = config
-        config = tmp_path / "alias.json"
-        if unsafe == "symlink":
-            config.symlink_to(target)
-        else:
-            config.hardlink_to(target)
+    if check_shape:
+        monitor = Mock()
+        pin = Mock()
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        open_file = Mock(return_value=7)
+        monkeypatch.setattr(
+            monitor_control,
+            "os",
+            SimpleNamespace(
+                O_RDONLY=os.O_RDONLY,
+                O_NOFOLLOW=os.O_NOFOLLOW,
+                O_NONBLOCK=os.O_NONBLOCK,
+                open=open_file,
+                fdopen=lambda fd, mode: BytesIO(raw.encode()),
+            ),
+        )
+        monkeypatch.setattr(monitor_control, "_project_path", lambda path: path)
+        monkeypatch.setattr(
+            monitor_control, "_validated_path", lambda path, *, directory: ()
+        )
+        monkeypatch.setattr(monitor_control, "_PinnedPath", lambda *args: pin)
+        monkeypatch.setattr(monitor_control, "ControlInbox", monitor)
+        monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+    else:
+        monitor = request.getfixturevalue("monitor")
+        config.write_text(raw)
+        config.chmod(0o644 if unsafe == "mode" else 0o600)
+        if unsafe in {"symlink", "hardlink"}:
+            target = config
+            config = tmp_path / "alias.json"
+            if unsafe == "symlink":
+                config.symlink_to(target)
+            else:
+                config.hardlink_to(target)
 
     assert _run(monkeypatch, "project", "register", "--config", str(config)) == 1
     output = capsys.readouterr()
     assert json.loads(output.out)["status"] == "invalid-config"
     assert str(config) not in output.out + output.err
     assert private_state not in output.out + output.err
-    assert not monitor.root.exists()
+    if check_shape:
+        open_file.assert_called_once_with(config, flags)
+        assert pin.check.call_count == 2
+        monitor.assert_not_called()
+    else:
+        assert not monitor.root.exists()
 
 
 @pytest.mark.parametrize(

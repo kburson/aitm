@@ -3,16 +3,19 @@
 import os
 import shutil
 import sqlite3
-from contextlib import closing, contextmanager
+import stat
+from contextlib import closing, contextmanager, nullcontext
+from hashlib import sha256
 from pathlib import Path
-from unittest.mock import Mock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
 from aitm_usage import _monitor_journal_store as journal
-from aitm_usage import host_fs
+from aitm_usage import host_fs, ledger
 from aitm_usage.ledger import LedgerError
-from aitm_usage.monitor_registry import Registry
+from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 
 _V1_APPLICATION_ID = 0x4149544A
 # Exact schema from the last v1 writer, before any upgrade code existed.
@@ -652,9 +655,99 @@ def test_damaged_current_store_is_left_byte_for_byte_unchanged(tmp_path):
         assert {path: path.read_bytes() for path in expected_bytes} == expected_bytes
 
 
+_PHYSICAL_STORE_CASES = {
+    ("permissions", ""),
+    ("hardlink", "-wal"),
+    ("symlink", "-shm"),
+    ("missing", ""),
+}
+
+
+def _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage):
+    key = b"j" * 32
+    evidence = _ServiceEvidence(key)
+    root_path = Path("/fixture/monitor")
+    store_path = root_path / journal._STORE
+    root_ids = ((1, 1), (1, 2))
+    root = SimpleNamespace(path=root_path, identities=root_ids, check=Mock(), fd=3)
+    folder = SimpleNamespace(
+        path=store_path, identities=(*root_ids, (1, 3)), check=Mock()
+    )
+    lease = SimpleNamespace(identities=(*root_ids, (1, 4)))
+    view = RegistryView(source_key_id=sha256(key).hexdigest())
+    writer = SimpleNamespace(
+        root=root_path, lease=lease, view=lambda: view, source_evidence=lambda: evidence
+    )
+    files = {
+        path: SimpleNamespace(
+            st_mode=stat.S_IFREG | 0o600,
+            st_nlink=1,
+            st_uid=os.geteuid(),
+            st_dev=1,
+            st_ino=index,
+        )
+        for index, path in enumerate(
+            [
+                root_path / journal._SOURCE_KEY_FILE,
+                *(store_path / name for name in journal._FILES),
+            ],
+            start=5,
+        )
+    }
+    files[store_path] = SimpleNamespace(st_mode=stat.S_IFDIR | 0o700)
+
+    def lstat(path):
+        try:
+            return files[path]
+        except KeyError:
+            raise FileNotFoundError(path) from None
+
+    connection = MagicMock()
+    open_database = Mock(return_value=nullcontext(connection))
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(ledger, "_check_acl", Mock())
+    pinned = {root_path: root, store_path: folder}
+    monkeypatch.setattr(
+        journal, "_pin_directory", lambda path: nullcontext(pinned[path])
+    )
+    monkeypatch.setattr(journal, "_read_private", Mock(return_value=key))
+    monkeypatch.setattr(journal, "_open", open_database)
+    monkeypatch.setattr(
+        journal, "_validate_identity", Mock(return_value=journal._SCHEMA_VERSION)
+    )
+    monkeypatch.setattr(journal, "os", SimpleNamespace(fsync=Mock()))
+    store = journal.JournalStore(writer)
+    open_database.assert_called_once_with(store_path / journal._DATABASE, write=False)
+    open_database.reset_mock()
+
+    path = store_path / (journal._DATABASE + suffix)
+    if damage == "permissions":
+        files[path].st_mode = stat.S_IFREG | 0o644
+    elif damage == "hardlink":
+        files[path].st_nlink = 2
+    elif damage == "symlink":
+        files[path].st_mode = stat.S_IFLNK | 0o777
+    else:
+        del files[path]
+
+    message = "unavailable" if damage == "missing" else "Unsafe private ledger path"
+    with pytest.raises(LedgerError, match=message):
+        _sequences(store)
+    with pytest.raises(LedgerError, match=message):
+        journal.JournalStore(writer)
+    open_database.assert_not_called()
+
+
 @pytest.mark.parametrize("suffix", ["", "-wal", "-shm"])
 @pytest.mark.parametrize("damage", ["permissions", "symlink", "hardlink", "missing"])
-def test_unsafe_database_and_sidecars_refuse_before_open(tmp_path, suffix, damage):
+def test_unsafe_database_and_sidecars_refuse_before_open(
+    request, monkeypatch, suffix, damage
+):
+    if (damage, suffix) not in _PHYSICAL_STORE_CASES:
+        _assert_journal_path_policy_refuses_open(monkeypatch, suffix, damage)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         writer.source_evidence()

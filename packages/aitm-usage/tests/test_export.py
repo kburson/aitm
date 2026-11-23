@@ -7,9 +7,12 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
 from aitm_usage import ledger as store
 from aitm_usage.accounting import account_observations
@@ -32,6 +35,7 @@ from aitm_usage.types import (
     ItemKey,
     ItemKind,
     LedgerBatch,
+    LedgerView,
     MarkerDisposition,
     ModelLabel,
     ProcessingTier,
@@ -159,7 +163,16 @@ def _snapshot(path):
 
 
 def _changed_snapshot(original, destination, *, mutate_row=None, mutate_manifest=None):
-    manifest, data = _snapshot(original)
+    manifest, data = _changed_snapshot_bytes(
+        *_snapshot(original), mutate_row=mutate_row, mutate_manifest=mutate_manifest
+    )
+    destination.mkdir()
+    (destination / "manifest.json").write_bytes(manifest)
+    (destination / "usage.jsonl").write_bytes(data)
+    return destination
+
+
+def _changed_snapshot_bytes(manifest, data, *, mutate_row=None, mutate_manifest=None):
     manifest = json.loads(manifest)
     if mutate_row is not None:
         rows = [json.loads(line) for line in data.splitlines()]
@@ -168,10 +181,7 @@ def _changed_snapshot(original, destination, *, mutate_row=None, mutate_manifest
     manifest["sha256"] = sha256(data).hexdigest()
     if mutate_manifest is not None:
         mutate_manifest(manifest)
-    destination.mkdir()
-    (destination / "manifest.json").write_bytes(_canonical(manifest) + b"\n")
-    (destination / "usage.jsonl").write_bytes(data)
-    return destination
+    return _canonical(manifest) + b"\n", data
 
 
 def _export():
@@ -625,6 +635,50 @@ def test_replacing_outer_stage_during_rename_cannot_publish_substitute(
     assert (replacement / "competitor").read_text() == CANARY
 
 
+def _assert_receiver_refuses_snapshot(monkeypatch, **corruption):
+    from fixtures import receiver
+
+    from aitm_usage import export
+
+    ledger = _memory_ledger(store, PROJECT, b"e" * 32)
+    first, first_marker = _observation(ledger, "first")
+    second, second_marker = _observation(ledger, "second", partial=True)
+    card = load_rate_card()
+    accounting = account_observations(
+        AdapterResult((second, first)), card, ledger=ledger
+    )
+    enrollments = tuple(
+        Revision(
+            _ref(ledger, str(marker.marker_id)),
+            1,
+            ScopeEnrollment(marker, revision.record.boundary, None),
+        )
+        for revision, marker in ((first, first_marker), (second, second_marker))
+    )
+    _, files = export._render(
+        LedgerView(PROJECT, 1, (*accounting.revisions, *enrollments), ()), card
+    )
+    directory = Path("/fixture/export")
+
+    def read(path):
+        assert path.parent == directory
+        return files[path.name]
+
+    monkeypatch.setattr(Path, "read_bytes", read)
+    manifest, rows = receiver._load_snapshot(directory, PROJECT)
+    assert manifest["row_count"] == len(rows) == 2
+    assert all(row["scope"] is not None for row, _ in rows)
+    files[export.MANIFEST_NAME], files[export.USAGE_NAME] = _changed_snapshot_bytes(
+        files[export.MANIFEST_NAME], files[export.USAGE_NAME], **corruption
+    )
+    consumer = object.__new__(receiver.Receiver)
+    consumer._project_id = PROJECT
+    consumer._transaction = Mock()
+    with pytest.raises(ValueError):
+        consumer.import_snapshot(directory)
+    consumer._transaction.assert_not_called()
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -637,8 +691,17 @@ def test_replacing_outer_stage_during_rename_cannot_publish_substitute(
     ],
 )
 def test_receiver_refuses_invalid_manifest_before_writing(
-    project, tmp_path, field, value
+    request, monkeypatch, field, value
 ):
+    def corrupt(manifest):
+        manifest[field] = value
+
+    if field != "sha256":
+        _assert_receiver_refuses_snapshot(monkeypatch, mutate_manifest=corrupt)
+        return
+
+    project = request.getfixturevalue("project")
+    tmp_path = request.getfixturevalue("tmp_path")
     export_as_of = _export()
     from fixtures.receiver import Receiver
 
@@ -648,7 +711,7 @@ def test_receiver_refuses_invalid_manifest_before_writing(
     invalid = _changed_snapshot(
         original,
         tmp_path / "invalid",
-        mutate_manifest=lambda manifest: manifest.update({field: value}),
+        mutate_manifest=corrupt,
     )
     with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
         with pytest.raises(ValueError):
@@ -685,20 +748,27 @@ def test_receiver_refuses_duplicate_source_and_authenticated_tag(project, tmp_pa
 
 
 @pytest.mark.parametrize("field", ["observed_at", "draft_id"])
-def test_receiver_rejects_non_string_datetime_and_draft_uuid(project, tmp_path, field):
-    export_as_of = _export()
-    from fixtures.receiver import Receiver
-
-    _seed(project)
-    original = tmp_path / "original"
-    export_as_of(project.as_of(), load_rate_card(), original)
-
+def test_receiver_rejects_non_string_datetime_and_draft_uuid(
+    request, monkeypatch, field
+):
     def corrupt(rows):
         if field == "observed_at":
             rows[0]["observed_at"] = 123
         else:
             rows[0]["scope"]["item"] = {"kind": "draft", "id": 123}
 
+    if field == "draft_id":
+        _assert_receiver_refuses_snapshot(monkeypatch, mutate_row=corrupt)
+        return
+
+    export_as_of = _export()
+    from fixtures.receiver import Receiver
+
+    project = request.getfixturevalue("project")
+    tmp_path = request.getfixturevalue("tmp_path")
+    _seed(project)
+    original = tmp_path / "original"
+    export_as_of(project.as_of(), load_rate_card(), original)
     invalid = _changed_snapshot(original, tmp_path / "invalid", mutate_row=corrupt)
     with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
         with pytest.raises(ValueError):

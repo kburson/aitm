@@ -1,15 +1,26 @@
 import json
 import os
 import sys
+from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
-from aitm_usage import cli
+from aitm_usage import cli, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
-from aitm_usage.types import Provider, UsageObservation
+from aitm_usage.types import (
+    LedgerView,
+    Provider,
+    ProviderCheckpoint,
+    SourceCheckpoint,
+    SourceCursor,
+    UsageObservation,
+    _encode,
+)
 
 PROJECT = UUID(int=920)
 CUTOFF = "2026-11-09T16:00:00+00:00"
@@ -1228,6 +1239,64 @@ def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
         assert current["observed_through"] == previous["observed_through"]
 
 
+def _status_with_private_input(monkeypatch, invalid):
+    ledger = _memory_ledger(ledger_module, PROJECT, b"h" * 32)
+    when = datetime.fromisoformat(CUTOFF)
+    config = service._Config(
+        PROJECT, ("/fixture/transcripts",), ("/fixture/checkout",), when, (), (), ()
+    )
+    registration = service._registration_revision(ledger, config)
+
+    def ref(value):
+        return ledger.pseudonymize("fixture", value)
+
+    checkpoint = SourceCheckpoint(
+        SourceCursor(ref("stream"), ref("locator"), ref("file"), 1024, ref("prefix")),
+        ProviderCheckpoint(Provider.CODEX, format_version=1),
+    )
+    view = LedgerView(PROJECT, 2, (registration,), (checkpoint,))
+    committed = service._Status(
+        PROJECT,
+        registration.record.configuration_ref,
+        when,
+        "1.2.3",
+        "3.13.9",
+        service.CollectionReport(2, 0, 0, 0, 0, 0, False),
+        (
+            service._Observed(
+                checkpoint.cursor.source_ref,
+                service._observed_proof(ledger, checkpoint, when),
+                when,
+            ),
+        ),
+        service._ProducerMode.SERVICE,
+        123,
+    )
+    pinned = object()
+    files = {
+        service.STATUS_NAME: _encode(committed, service._Status).encode(),
+        service.REGISTRATION_NAME: _encode(config, service._Config).encode(),
+    }
+
+    def private_read(directory, name):
+        assert directory is pinned
+        return files[name]
+
+    monkeypatch.setattr(Ledger, "as_of", lambda self: view)
+    monkeypatch.setattr(service, "_pin_directory", lambda path: nullcontext(pinned))
+    monkeypatch.setattr(service, "_read_private", private_read)
+    monkeypatch.setattr(service, "version", lambda _: "1.2.3")
+    before = service.status_report(ledger.root, ledger)
+    assert before["sources"][0]["observed_through"] == CUTOFF
+    assert before["producer_pid"] == 123
+    payload = json.loads(files[service.STATUS_NAME])
+    del payload["producer_mode"], payload["producer_pid"]
+    files[service.STATUS_NAME] = json.dumps(
+        {**payload, **invalid}, separators=(",", ":"), sort_keys=True
+    ).encode()
+    return before, service.status_report(ledger.root, ledger)
+
+
 @pytest.mark.parametrize(
     "invalid",
     [
@@ -1239,21 +1308,25 @@ def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
         {"producer_mode": "unexpected-private-mode", "producer_pid": 123},
     ],
 )
-def test_status_refuses_malformed_or_half_producer_witness(project, invalid):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    before = command("status", "--json")
-    path = root / "status.json"
-    payload = json.loads(path.read_text())
-    payload.pop("producer_mode", None)
-    payload.pop("producer_pid", None)
-    path.write_text(
-        json.dumps({**payload, **invalid}, separators=(",", ":"), sort_keys=True)
-    )
-
-    status = command("status", "--json")
+def test_status_refuses_malformed_or_half_producer_witness(
+    request, monkeypatch, invalid
+):
+    if invalid.get("producer_pid") == "123":
+        root, sources, checkout, config, command = request.getfixturevalue("project")
+        _fixtures(sources, checkout)
+        command("register", "--config", str(config), "--json")
+        command("collect-once", "--json")
+        before = command("status", "--json")
+        path = root / "status.json"
+        payload = json.loads(path.read_text())
+        payload.pop("producer_mode", None)
+        payload.pop("producer_pid", None)
+        path.write_text(
+            json.dumps({**payload, **invalid}, separators=(",", ":"), sort_keys=True)
+        )
+        status = command("status", "--json")
+    else:
+        before, status = _status_with_private_input(monkeypatch, invalid)
     assert status["producer_mode"] is None
     assert status["producer_pid"] is None
     assert status["heartbeat"] is None
