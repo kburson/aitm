@@ -194,6 +194,11 @@ def codes(result):
     return {(entry.ordinal, entry.code) for entry in result.diagnostics}
 
 
+@pytest.fixture
+def memory_replay(request, monkeypatch):
+    return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=False)
+
+
 def test_codex_deltas_exclusion_and_epochs(project):
     codex = adapter()
     ledger, registration, path, checkout, _ = project
@@ -342,12 +347,12 @@ def test_excluded_work_cannot_spill_through_fresh_sqlite_restart(
     assert result.provider_checkpoint.baseline.total_tokens == 77
 
 
-def test_cutoff_uses_preceding_counter_but_rejects_inflight(project):
+def test_cutoff_uses_preceding_counter_but_rejects_inflight(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     crossing, later = UUID(int=0x140), UUID(int=0x141)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout, BEFORE),
             *begin(checkout, time=BEFORE),
@@ -361,7 +366,9 @@ def test_cutoff_uses_preceding_counter_but_rejects_inflight(project):
             end(later),
         ],
     )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    _, result = replay.read(
+        codex.read_codex, replay.candidate(), codex.CodexState(ledger)
+    )
     (record,) = observations(result)
     assert record.tokens.total_tokens == 10
     assert (7, DiagnosticCode.COVERAGE_GAP) in codes(result)
@@ -814,14 +821,14 @@ def test_bad_counter_is_a_bounded_gap(adapter_frames, invalid):
     assert "payload-secret" not in repr(result)
 
 
-def test_decline_inside_excluded_segment_cannot_rebase_eligible_usage(project):
+def test_decline_inside_excluded_segment_cannot_rebase_eligible_usage(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, outside = project
+    replay = memory_replay
+    ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
     other = UUID(int=0x151)
     back = UUID(int=0x152)
     first, lower, repeated = usage(12, 4), usage(6, 2), usage(12, 4)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -835,10 +842,12 @@ def test_decline_inside_excluded_segment_cannot_rebase_eligible_usage(project):
             end(back),
         ],
     )
-    candidate = source(registration)
-    batch = scan(candidate, None, CUTOFF)
+    candidate = replay.candidate()
+    batch = replay.scan(candidate, None)
     held = next(frame for frame in batch.frames if frame.boundary_only)
-    _, result = read(codex, candidate.with_exclusion(held), codex.CodexState(ledger))
+    _, result = replay.read(
+        codex.read_codex, candidate.with_exclusion(held), codex.CodexState(ledger)
+    )
     assert [record.tokens.total_tokens for record in observations(result)] == [16]
     assert result.provider_checkpoint.baseline == TokenCounts(12, 0, 0, 0, 4, 0)
 
@@ -903,12 +912,12 @@ def test_caller_exclusion_keeps_post_commit_context_advanceable(project):
     assert isinstance(advanced, codex.CodexState)
 
 
-def test_restarted_repeat_response_is_not_a_second_observation(project):
+def test_restarted_repeat_response_is_not_a_second_observation(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -917,13 +926,12 @@ def test_restarted_repeat_response_is_not_a_second_observation(project):
             end(),
         ],
     )
-    candidate = source(registration)
-    batch, result = read(codex, candidate, codex.CodexState(ledger))
-    prior = commit(ledger, batch, result)
+    candidate = replay.candidate()
+    batch, result = replay.read(codex.read_codex, candidate, codex.CodexState(ledger))
+    prior = replay.commit(batch, result)
     later = UUID(int=0x154)
     total = usage(16, 4)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             response("duplicated-response", total, amount, turn=later),
@@ -932,8 +940,10 @@ def test_restarted_repeat_response_is_not_a_second_observation(project):
         ],
         append=True,
     )
-    reopened = Ledger.open(ledger.root, PROJECT)
-    _, resumed = read(codex, candidate, codex.CodexState(reopened), prior)
+    reopened = replay.reopen()
+    _, resumed = replay.read(
+        codex.read_codex, candidate, codex.CodexState(reopened), prior
+    )
     assert resumed.revisions == ()
     assert (8, DiagnosticCode.IDENTITY_CONFLICT) in codes(resumed)
 
@@ -1177,21 +1187,21 @@ def test_usage_remains_measured_when_model_context_is_missing(adapter_frames):
     assert (3, DiagnosticCode.COVERAGE_GAP) in codes(result)
 
 
-def test_stored_unqualified_baseline_cannot_establish_a_delta(project):
+def test_stored_unqualified_baseline_cannot_establish_a_delta(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
-    write(path, [startup(checkout), *begin(checkout), counter(amount, amount), end()])
-    candidate = source(registration)
-    batch, result = read(codex, candidate, codex.CodexState(ledger))
+    replay.write([startup(checkout), *begin(checkout), counter(amount, amount), end()])
+    candidate = replay.candidate()
+    batch, result = replay.read(codex.read_codex, candidate, codex.CodexState(ledger))
     provider = replace(
         result.provider_checkpoint, baseline=TokenCounts(output_tokens=2)
     )
     prior = SourceCheckpoint(batch.cursor, provider)
     ledger.apply(LedgerBatch(checkpoint=prior))
     later = UUID(int=0x156)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             counter(usage(16, 4), amount),
@@ -1199,7 +1209,9 @@ def test_stored_unqualified_baseline_cannot_establish_a_delta(project):
         ],
         append=True,
     )
-    _, result = read(codex, candidate, codex.CodexState(ledger), prior)
+    _, result = replay.read(
+        codex.read_codex, candidate, codex.CodexState(ledger), prior
+    )
     assert result.revisions == ()
     assert (7, DiagnosticCode.COVERAGE_GAP) in codes(result)
     assert result.provider_checkpoint.baseline.total_tokens == 20
@@ -1363,13 +1375,13 @@ def test_unreconciled_first_snapshot_is_a_baseline_not_an_aggregate(adapter_fram
     assert (3, DiagnosticCode.COVERAGE_GAP) in codes(result)
 
 
-def test_repeat_after_unmeasured_excluded_work_reports_coverage(project):
+def test_repeat_after_unmeasured_excluded_work_reports_coverage(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, outside = project
+    replay = memory_replay
+    ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
     outside_turn, returned_turn = UUID(int=0x161), UUID(int=0x162)
     amount = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1382,22 +1394,24 @@ def test_repeat_after_unmeasured_excluded_work_reports_coverage(project):
             end(returned_turn),
         ],
     )
-    candidate = source(registration)
-    held = scan(candidate, None, CUTOFF)
+    candidate = replay.candidate()
+    held = replay.scan(candidate, None)
     exclude = next(frame for frame in held.frames if frame.boundary_only)
-    _, result = read(codex, candidate.with_exclusion(exclude), codex.CodexState(ledger))
+    _, result = replay.read(
+        codex.read_codex, candidate.with_exclusion(exclude), codex.CodexState(ledger)
+    )
     assert [record.tokens.total_tokens for record in observations(result)] == [10]
     assert (10, DiagnosticCode.COVERAGE_GAP) in codes(result)
 
 
 def test_progress_without_a_response_cannot_skip_duplicate_detection_after_restart(
-    project,
+    memory_replay,
 ):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1406,20 +1420,19 @@ def test_progress_without_a_response_cannot_skip_duplicate_detection_after_resta
             end(),
         ],
     )
-    candidate = source(registration)
-    batch, result = read(codex, candidate, codex.CodexState(ledger))
-    prior = commit(ledger, batch, result)
+    candidate = replay.candidate()
+    batch, result = replay.read(codex.read_codex, candidate, codex.CodexState(ledger))
+    prior = replay.commit(batch, result)
     later = UUID(int=0x163)
-    write(path, begin(checkout, later), append=True)
-    reopened = Ledger.open(ledger.root, PROJECT)
+    replay.write(begin(checkout, later), append=True)
+    reopened = replay.reopen()
     state = codex.CodexState(reopened)
-    batch, result = read(codex, candidate, state, prior)
+    batch, result = replay.read(codex.read_codex, candidate, state, prior)
     assert result.revisions == ()
-    prior = commit(reopened, batch, result, prior)
+    prior = replay.commit(batch, result, prior=prior)
     state = codex.advance_codex_state(state, batch, result)
     total = usage(16, 4)
-    write(
-        path,
+    replay.write(
         [
             response("published-once", total, amount, turn=later),
             counter(total, amount),
@@ -1427,7 +1440,7 @@ def test_progress_without_a_response_cannot_skip_duplicate_detection_after_resta
         ],
         append=True,
     )
-    _, result = read(codex, candidate, state, prior)
+    _, result = replay.read(codex.read_codex, candidate, state, prior)
     assert result.revisions == ()
     assert (8, DiagnosticCode.IDENTITY_CONFLICT) in codes(result)
 
@@ -1836,13 +1849,13 @@ def test_unproven_compaction_cannot_allocate_display_change(
         assert DiagnosticCode.COVERAGE_GAP in {code for _, code in codes(result)}
 
 
-def test_inconsistent_positive_counter_cannot_separate_excluded_activity(project):
+def test_inconsistent_positive_counter_cannot_separate_excluded_activity(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, outside = project
+    replay = memory_replay
+    ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
     unrelated, returned = (UUID(int=value) for value in (0x195, 0x196))
     first = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1857,25 +1870,27 @@ def test_inconsistent_positive_counter_cannot_separate_excluded_activity(project
             end(returned),
         ],
     )
-    candidate = source(registration)
-    batch = scan(candidate, None, CUTOFF)
+    candidate = replay.candidate()
+    batch = replay.scan(candidate, None)
     candidate = candidate.with_exclusion(
         next(frame for frame in batch.frames if frame.boundary_only)
     )
-    _, result = read(codex, candidate, codex.CodexState(ledger))
+    _, result = replay.read(codex.read_codex, candidate, codex.CodexState(ledger))
     assert [record.tokens.total_tokens for record in observations(result)] == [10, 8]
 
 
 @pytest.mark.parametrize("aligned", [True, False])
 @pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
 def test_activation_frontier_requires_exact_first_eligible_delta(
-    project, aligned, split
+    request, monkeypatch, aligned, split
 ):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart"
+    )
+    ledger, checkout = replay.ledger, replay.checkout
     first = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout, BEFORE),
             *begin(checkout, time=BEFORE),
@@ -1884,23 +1899,22 @@ def test_activation_frontier_requires_exact_first_eligible_delta(
             end(time=BEFORE),
         ],
     )
-    candidate = source(registration)
+    candidate = replay.candidate()
     state = codex.CodexState(ledger)
     prior = None
     if split != "same-batch":
-        batch, result = read(codex, candidate, state)
+        batch, result = replay.read(codex.read_codex, candidate, state)
         assert result.revisions == ()
-        prior = commit(ledger, batch, result)
+        prior = replay.commit(batch, result)
         state = (
-            codex.CodexState(Ledger.open(ledger.root, PROJECT))
+            codex.CodexState(replay.reopen())
             if split == "restart"
             else codex.advance_codex_state(state, batch, result)
         )
     later = UUID(int=0x201)
     display = usage(16, 4) if aligned else usage(24, 6)
     wholly_eligible = usage(25, 5) if aligned else usage(33, 7)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             response("first-after-activation", usage(16, 4), first, turn=later),
@@ -1910,7 +1924,7 @@ def test_activation_frontier_requires_exact_first_eligible_delta(
         ],
         append=True,
     )
-    batch, result = read(codex, candidate, state, prior)
+    batch, result = replay.read(codex.read_codex, candidate, state, prior)
     expected = [(10, Availability.PARTIAL)]
     if aligned:
         expected.insert(0, (10, Availability.COMPLETE))
@@ -1920,7 +1934,7 @@ def test_activation_frontier_requires_exact_first_eligible_delta(
         (record.tokens.total_tokens, record.availability)
         for record in observations(result)
     ] == expected
-    commit(ledger, batch, result, prior)
+    replay.commit(batch, result, prior=prior)
 
 
 def test_delayed_display_increment_without_eligible_response_is_not_allocated(

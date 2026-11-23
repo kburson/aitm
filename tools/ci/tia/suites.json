@@ -335,6 +335,76 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_account_owner_sideband_cannot_change_the_verified_quota_account",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_excluded_streamed_prefix_uses_latest_qualified_counts_once",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_known_excluded_aggregate_baseline_can_reconcile_single_model",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_reopen_uses_exact_fixed_prior_view",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_unadmitted_lookahead_cannot_change_checkpoint_or_usage",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_cutoff_uses_preceding_counter_but_rejects_inflight",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_decline_inside_excluded_segment_cannot_rebase_eligible_usage",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_inconsistent_positive_counter_cannot_separate_excluded_activity",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_progress_without_a_response_cannot_skip_duplicate_detection_after_restart",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_repeat_after_unmeasured_excluded_work_reports_coverage",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_restarted_repeat_response_is_not_a_second_observation",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_stored_unqualified_baseline_cannot_establish_a_delta",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_coverage_projects_classifications_for_committable_frames",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_scope_join_requires_unique_exact_frame_and_verified_checkout",
+      "suite": "unit",
+      "isolation_group": "transcript-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_darwin_acl_reader_refuses_a_grant",
       "suite": "unit",
       "isolation_group": "host-acl-policy"

@@ -339,12 +339,11 @@ def test_malformed_row_diagnostics_are_closed_and_checkpointable(project):
         assert str(SESSION).encode() not in contents
 
 
-def test_coverage_projects_classifications_for_committable_frames(project):
+def test_coverage_projects_classifications_for_committable_frames(monkeypatch):
     scanner = _scanner()
-    registration, store = project
-    path = registration.source_roots[0] / "source.jsonl"
-    (cwd,) = registration.checkout_anchors
-    path.write_bytes(
+    policy = ScannerPolicy(monkeypatch, PROJECT, CUTOFF)
+    cwd = policy.checkout
+    batch = policy.scan(
         _header(cwd)
         + _turn(cwd)
         + _usage(2)
@@ -353,14 +352,11 @@ def test_coverage_projects_classifications_for_committable_frames(project):
         + _turn(cwd)
         + _usage(4)
     )
-    (candidate,) = scanner.discover(registration)
-    batch = scanner.scan(candidate, None, CUTOFF)
-
     kind = scanner.CoverageKind
     classified = scanner.FrameClassification
-    missing = store.pseudonymize("turn", "closed-without-usage")
-    open_turn = store.pseudonymize("turn", "still-open")
-    seen = store.pseudonymize("turn", "closed-with-usage")
+    missing = policy.evidence.pseudonymize("turn", "closed-without-usage")
+    open_turn = policy.evidence.pseudonymize("turn", "still-open")
+    seen = policy.evidence.pseudonymize("turn", "closed-with-usage")
     coverage = batch.coverage(
         (
             classified(1, kind.CLOSED_TURN, missing),
@@ -409,22 +405,18 @@ def _marker_and_boundary(store, frame, *, marker_number=120, sequence=1):
     return marker, boundary
 
 
-def test_scope_join_requires_unique_exact_frame_and_verified_checkout(project):
-    scanner = _scanner()
-    registration, store = project
-    path = registration.source_roots[0] / "rollout.jsonl"
-    (cwd,) = registration.checkout_anchors
-    path.write_bytes(_header(cwd) + _turn(cwd) + _usage(14))
-    (candidate,) = scanner.discover(registration)
-    batch = scanner.scan(candidate, None, CUTOFF)
+def test_scope_join_requires_unique_exact_frame_and_verified_checkout(monkeypatch):
+    policy = ScannerPolicy(monkeypatch, PROJECT, CUTOFF)
+    cwd = policy.checkout
+    batch = policy.scan(_header(cwd) + _turn(cwd) + _usage(14))
     frame = batch.frames[1]
-    _, boundary = _marker_and_boundary(store, frame)
+    _, boundary = _marker_and_boundary(policy.evidence, frame)
     evidence = batch.scope_evidence(boundary)
 
     assert evidence.boundary == boundary
     assert evidence.anchor_ref == frame.anchor_ref
     assert evidence.anchor_ref is not None
-    other_ref = store.pseudonymize("fixture", "other")
+    other_ref = policy.evidence.pseudonymize("fixture", "other")
     for mismatch in (
         replace(boundary, provider=Provider.CLAUDE),
         replace(boundary, session_ref=other_ref),

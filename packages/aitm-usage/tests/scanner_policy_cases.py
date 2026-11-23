@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
-from aitm_usage.ledger import Ledger
+from aitm_usage.ledger import Ledger, LedgerIdentity
 from aitm_usage.monitor_registry import _ServiceEvidence
 from aitm_usage.types import (
     Eligibility,
@@ -98,6 +98,10 @@ class _ReplayEvidence(_ServiceEvidence):
     project_id: UUID
     history: list[LedgerView]
     root = Path("/fixture/project")
+
+    @property
+    def identity(self) -> LedgerIdentity:
+        return LedgerIdentity(self.project_id, self.key_id)
 
     def as_of(self, sequence=None):
         return self.history[-1 if sequence is None else sequence]
