@@ -1368,32 +1368,32 @@ packages/aitm-usage/tests/test_scan.py::test_checkout_anchor_requires_a_real_con
 packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_enrolls_first_outside_request_through_service[False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_enrolls_first_outside_request_through_service[True]	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_preserves_ordinals_and_archive_authentication	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-hook-key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-parent]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-top-key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[duplicate]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[eof]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[foreign]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-hook-id]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-time]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-user]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[malformed]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-context]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-dequeue]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-enqueue]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[reordered]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[repeated-id]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[sidechain]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-hook-key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-parent]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-top-key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[unknown]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[untimed-drift]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[usage]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-event]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-route]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-user-parent]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-version]	local-integration	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-hook-key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-parent]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[additional-top-key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[duplicate]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[eof]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[foreign]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-hook-id]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-time]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[invalid-user]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[malformed]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-context]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-dequeue]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[missing-enqueue]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[reordered]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[repeated-id]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[sidechain]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-hook-key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-parent]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[success-top-key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[unknown]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[untimed-drift]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[usage]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-event]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-route]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-user-parent]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain[wrong-version]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_claude_uses_provider_qualified_session_and_real_checkout_metadata	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_coverage_projects_classifications_for_committable_frames	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_directory_moved_outside_root_and_restored_during_read_is_quarantined	local-integration	yes	yes
@@ -1409,14 +1409,14 @@ packages/aitm-usage/tests/test_scan.py::test_missing_turn_checkout_does_not_inhe
 packages/aitm-usage/tests/test_scan.py::test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_native_claude_sideband_respects_enrollment_frontier_and_restart	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row0-malformed-usage]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row2-malformed-usage]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row4-malformed-usage]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row5-malformed-usage]	local-integration	yes	yes
-"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""mode"", ""sessionId"": ""00000000-0000-0000-0000-0000000001bc"", ""mode"": ""private""}\n-identity-conflict]"	local-integration	yes	yes
-"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""tools-used"", ""sessionId"": ""00000000-0000-0000-0000-00000000006f"", ""tools"": ""private""}\n-malformed-usage]"	local-integration	yes	yes
-"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""tools-used"", ""sessionId"": ""00000000-0000-0000-0000-00000000006f"", ""tools"": [""""]}\n-malformed-usage]"	local-integration	yes	yes
-"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"":""mode"",""mode"":""private""}\n-identity-conflict]"	local-integration	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row0-malformed-usage]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row2-malformed-usage]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row4-malformed-usage]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[bad_row5-malformed-usage]	fast-unit	yes	yes
+"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""mode"", ""sessionId"": ""00000000-0000-0000-0000-0000000001bc"", ""mode"": ""private""}\n-identity-conflict]"	fast-unit	yes	yes
+"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""tools-used"", ""sessionId"": ""00000000-0000-0000-0000-00000000006f"", ""tools"": ""private""}\n-malformed-usage]"	fast-unit	yes	yes
+"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"": ""tools-used"", ""sessionId"": ""00000000-0000-0000-0000-00000000006f"", ""tools"": [""""]}\n-malformed-usage]"	fast-unit	yes	yes
+"packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap[{""type"":""mode"",""mode"":""private""}\n-identity-conflict]"	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_root_symlink_is_never_implicitly_approved	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_scan_rejects_candidate_from_another_approved_root_set	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_scanner_revalidates_open_snapshot[append]	local-integration	yes	yes
@@ -1425,8 +1425,9 @@ packages/aitm-usage/tests/test_scan.py::test_scanner_revalidates_open_snapshot[o
 packages/aitm-usage/tests/test_scan.py::test_scanner_revalidates_open_snapshot[rename]	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_scanner_revalidates_open_snapshot[rewrite-and-grow]	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_scope_join_requires_unique_exact_frame_and_verified_checkout	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_unsupported_format_never_yields_boundary_proof[header_changes0]	local-integration	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_unsupported_format_never_yields_boundary_proof[header_changes1]	local-integration	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_unsupported_file_never_yields_boundary_proof	local-integration	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_unsupported_format_never_yields_boundary_proof[header_changes0]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_unsupported_format_never_yields_boundary_proof[header_changes1]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_verified_enrollment_holds_candidate_then_replays_first_eligible_after_restart	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_zero_cursor_cannot_verify_copy_of_unknown_prefix	local-integration	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_zero_cursor_detects_a_rewritten_origin_after_rediscovery	local-integration	yes	yes

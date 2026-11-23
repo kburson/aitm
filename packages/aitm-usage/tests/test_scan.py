@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
+from scanner_policy_cases import ScannerPolicy
 
 from aitm_usage.ledger import Ledger
 from aitm_usage.scopes import (
@@ -282,19 +283,30 @@ def test_scanner_revalidates_open_snapshot(project, monkeypatch, mutation):
         {"version": "unknown-version-secret"},
     ],
 )
-def test_unsupported_format_never_yields_boundary_proof(project, header_changes):
-    scanner = _scanner()
-    registration, _ = project
-    path = registration.source_roots[0] / "unsupported.jsonl"
-    path.write_bytes(
-        _header(registration.checkout_anchors[0], **header_changes) + _usage(20)
-    )
-    (candidate,) = scanner.discover(registration)
-    batch = scanner.scan(candidate, None, CUTOFF)
+def test_unsupported_format_never_yields_boundary_proof(monkeypatch, header_changes):
+    policy = ScannerPolicy(monkeypatch, PROJECT, CUTOFF)
+    batch = policy.scan(_header(policy.checkout, **header_changes) + _usage(20))
+
     assert batch.frames == ()
     assert batch.cursor is None
     assert _codes(batch) == {DiagnosticCode.UNSUPPORTED_FORMAT}
     assert "unknown-version-secret" not in repr(batch)
+
+
+def test_unsupported_file_never_yields_boundary_proof(project):
+    scanner = _scanner()
+    registration, _ = project
+    path = registration.source_roots[0] / "unsupported.jsonl"
+    path.write_bytes(
+        _header(registration.checkout_anchors[0], format_version=48) + _usage(20)
+    )
+    (candidate,) = scanner.discover(registration)
+
+    batch = scanner.scan(candidate, None, CUTOFF)
+
+    assert batch.frames == ()
+    assert batch.cursor is None
+    assert _codes(batch) == {DiagnosticCode.UNSUPPORTED_FORMAT}
 
 
 def test_malformed_row_diagnostics_are_closed_and_checkpointable(project):
@@ -1332,20 +1344,15 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
         ),
     ],
 )
-def test_native_claude_untimed_drift_or_identity_is_a_gap(project, bad_row, gap):
-    scanner = _scanner()
-    registration, _ = project
-    (root,) = registration.source_roots
-    (checkout,) = registration.checkout_anchors
-    path = root / "native.jsonl"
-    path.write_bytes(
+def test_native_claude_untimed_drift_or_identity_is_a_gap(monkeypatch, bad_row, gap):
+    policy = ScannerPolicy(monkeypatch, PROJECT, CUTOFF)
+    checkout = policy.checkout
+    batch = policy.scan(
         _claude_timed("user", checkout)
         + bad_row
         + _claude_cost()
         + _claude_timed("assistant", checkout, request="after-gap")
     )
-    (candidate,) = scanner.discover(registration)
-    batch = scanner.scan(candidate, None, CUTOFF)
     assert _codes(batch) == {gap}
     assert batch.commit_sideband == ()
     assert all(frame.ordinal != 1 for frame in batch.frames)
@@ -1572,13 +1579,11 @@ def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(pro
         "eof",
     ],
 )
-def test_claude_startup_prefix_requires_the_entire_proven_native_chain(project, change):
-    scanner = _scanner()
-    registration, _ = project
-    (root,) = registration.source_roots
-    (checkout,) = registration.checkout_anchors
-    path = root / "startup.jsonl"
-    rows = _native_startup_rows(checkout)
+def test_claude_startup_prefix_requires_the_entire_proven_native_chain(
+    monkeypatch, change
+):
+    policy = ScannerPolicy(monkeypatch, PROJECT, CUTOFF)
+    rows = _native_startup_rows(policy.checkout)
     enqueue, dequeue, success, context, user = rows
     if change == "unknown":
         rows.insert(1, {**dequeue, "type": "unknown-startup"})
@@ -1634,9 +1639,7 @@ def test_claude_startup_prefix_requires_the_entire_proven_native_chain(project, 
         assert change == "eof"
         rows.pop()
 
-    path.write_bytes(_startup_bytes(rows))
-    (candidate,) = scanner.discover(registration)
-    batch = scanner.scan(candidate, None, CUTOFF)
+    batch = policy.scan(_startup_bytes(rows))
     assert batch.commit_frames == ()
     assert batch.observed_through is None
     if batch.cursor is not None:

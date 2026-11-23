@@ -335,6 +335,21 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain",
+      "suite": "unit",
+      "isolation_group": "scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_native_claude_untimed_drift_or_identity_is_a_gap",
+      "suite": "unit",
+      "isolation_group": "scanner-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_unsupported_format_never_yields_boundary_proof",
+      "suite": "unit",
+      "isolation_group": "scanner-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_requires_service_custody_before_mutation",
       "suite": "unit",
       "isolation_group": "monitor-policy"
