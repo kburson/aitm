@@ -2005,6 +2005,45 @@ def test_claude_genesis_alone_cannot_prove_a_common_dispute_parent(journal_claud
         assert journal.as_of() == saved
 
 
+def test_claude_common_usage_repeat_cannot_create_a_content_dispute(journal_claude):
+    from test_claude import usage as claude_usage
+
+    from aitm_usage.monitor_journal import _distinct_accepted_child
+
+    native = journal_claude
+    source_id = UUID(int=7)
+    with native.native.registry.writer() as writer:
+        journal, ordinal, prefix = _common_claude_revision(native, writer)
+        _, locate = _claude_archive(
+            native,
+            writer,
+            [*prefix, native.request(3, counts=claude_usage(output=6), stop=None)],
+            source_id,
+        )
+        native.append(native.request(3, counts=claude_usage(output=7)))
+        live = journal.prepare(native.source_id, native.locator())
+        _, common, accepted = _claude_candidates(live, ordinal)
+        assert journal.reserve(accepted, live.progress).status == "pending"
+        saved = journal.as_of()
+        repeat = journal.prepare(source_id, locate())
+        _, repeated_common = _claude_candidates(repeat, ordinal)
+        assert repeated_common.observation.usage == common.observation.usage
+        assert journal.reserve(repeated_common, repeat.progress).status == "replay"
+        proof = journal._scopes.verified_revision(live._read.batch, common.observation)
+        with journal._store.transaction() as connection:
+            assert (
+                _distinct_accepted_child(
+                    connection,
+                    common.observation.key,
+                    proof.witness.successor_material,
+                    common.observation.usage,
+                    journal._store.evidence,
+                )
+                is None
+            )
+        assert journal.as_of() == saved
+
+
 @pytest.mark.parametrize("control", ["equal-child", "disabled", "relocated"])
 def test_claude_conflict_requires_distinct_usage_and_current_independent_custody(
     journal_claude, control

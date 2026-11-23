@@ -262,11 +262,6 @@
       "suite": "integration",
       "isolation_group": "native-process-state"
     },
-    "packages/aitm-usage/tests/test_monitor_scope_snapshot_unit.py": {
-      "owner": "aitm-usage",
-      "suite": "unit",
-      "isolation_group": "monitor-policy"
-    },
     "packages/aitm-usage/tests/test_rollup.py": {
       "owner": "aitm-usage",
       "suite": "integration",
@@ -339,6 +334,16 @@
     }
   },
   "overrides": [
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_competing_receipts_conflict_in_both_native_delivery_orders",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_decoder_rejects_malformed_or_unowned_shape",
+      "suite": "unit",
+      "isolation_group": "monitor-policy"
+    },
     {
       "selector": "packages/aitm-usage/tests/test_grok_pricing.py::test_grok_card_rejects_unproven_rate_classes_and_models",
       "suite": "unit",

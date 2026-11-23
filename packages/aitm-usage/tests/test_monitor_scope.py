@@ -9,6 +9,11 @@ from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
+from monitor_scope_snapshot_cases import (
+    MALFORMED_SNAPSHOT_CASES,
+    assert_rejects_snapshot,
+    snapshot_reader,
+)
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -25,6 +30,7 @@ from test_codex import (
     usage,
     write,
 )
+from test_monitor_policy_unit import assert_same_target_conflict
 
 from aitm_usage.ledger import Ledger, LedgerError
 from aitm_usage.monitor_registry import (
@@ -441,6 +447,11 @@ def _competing(native, *, different_receipt_ordinals=False):
         assert conflicted.project_id is None
         assert conflicted.status == "held"
         assert set(conflicted.affected_projects) == {A, B, C}
+
+
+@pytest.mark.parametrize("reverse", [False, True], ids=["B-first", "C-first"])
+def test_competing_receipts_conflict_in_both_native_delivery_orders(reverse):
+    assert_same_target_conflict(reverse)
 
 
 def test_competing_native_receipts_conflict_at_same_target(native):
@@ -1838,7 +1849,12 @@ def test_legacy_writers_preserve_both_v2_collections(native, operation):
         assert ScopeState(native.registry).view() == state.view()
 
 
-def test_v2_decoder_rejects_malformed_or_unowned_shape(native):
+@pytest.mark.parametrize("changed", MALFORMED_SNAPSHOT_CASES)
+def test_v2_decoder_rejects_malformed_or_unowned_shape(monkeypatch, changed):
+    assert_rejects_snapshot(snapshot_reader(monkeypatch), changed)
+
+
+def test_v2_invalid_snapshot_cannot_be_published(native):
     from aitm_usage.monitor_scope import ScopeState
 
     with native.registry.writer() as writer:

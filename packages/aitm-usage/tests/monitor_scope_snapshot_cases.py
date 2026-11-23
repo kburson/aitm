@@ -40,7 +40,6 @@ def reference(label):
     return _EVIDENCE.pseudonymize("fixture", label)
 
 
-@pytest.fixture
 def snapshot_reader(monkeypatch):
     hold_id = UUID(int=0x501)
     seen = datetime(2026, 1, 1, tzinfo=UTC)
@@ -113,41 +112,40 @@ def snapshot_reader(monkeypatch):
     return json.loads(raw), reader, state
 
 
-@pytest.mark.parametrize(
-    "changed",
-    [
-        "unknown",
-        "mixed",
-        "missing",
-        "extra",
-        "nested",
-        "hold-digest",
-        "command-digest",
-        "request-digest",
-        "held-state",
-        "outcome",
-        "resolved-from-gap",
-        "duplicate-target",
-        "duplicate-disposition",
-        "second-disposition",
-        "unowned-target",
-        "unowned-disposition",
-        "terminal-too-early",
-        "terminal-reused-receipt",
-        "terminal-reused-boundary",
-        "empty-span",
-        "empty-prefix",
-        "same-prefix",
-        "changed-stream",
-        "changed-locator",
-        "changed-incarnation",
-        "changed-session",
-        "wrong-provider",
-        "wrong-target-position",
-        "wrong-hold-surface",
-    ],
+MALFORMED_SNAPSHOT_CASES = (
+    "unknown",
+    "mixed",
+    "missing",
+    "extra",
+    "nested",
+    "hold-digest",
+    "command-digest",
+    "request-digest",
+    "held-state",
+    "outcome",
+    "resolved-from-gap",
+    "duplicate-target",
+    "duplicate-disposition",
+    "second-disposition",
+    "unowned-target",
+    "unowned-disposition",
+    "terminal-too-early",
+    "terminal-reused-receipt",
+    "terminal-reused-boundary",
+    "empty-span",
+    "empty-prefix",
+    "same-prefix",
+    "changed-stream",
+    "changed-locator",
+    "changed-incarnation",
+    "changed-session",
+    "wrong-provider",
+    "wrong-target-position",
+    "wrong-hold-surface",
 )
-def test_v2_decoder_rejects_malformed_or_unowned_shape(snapshot_reader, changed):
+
+
+def assert_rejects_snapshot(snapshot_reader, changed):
     payload, reader, state = snapshot_reader
     target = payload["held_route_targets"][0]
     record = payload["route_dispositions"][0]

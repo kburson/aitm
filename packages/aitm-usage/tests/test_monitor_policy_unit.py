@@ -38,8 +38,7 @@ from aitm_usage.types import (
 EVIDENCE = _ServiceEvidence(b"monitor-policy-unit-test-key")
 
 
-@pytest.fixture
-def handoff_events():
+def _handoff_events():
     origin, early_owner, late_owner = (UUID(int=value) for value in (1, 2, 3))
     checkout = EVIDENCE.pseudonymize("fixture", "checkout")
     position = ScopePosition(
@@ -75,8 +74,8 @@ def handoff_events():
     return earlier, later
 
 
-def test_earlier_handoff_holds_later_handoff_with_stale_generation(handoff_events):
-    earlier, later = handoff_events
+def test_earlier_handoff_holds_later_handoff_with_stale_generation():
+    earlier, later = _handoff_events()
     route, outcomes = _timeline((later,), later.position)
     assert route.scope == later.scope
     assert outcomes[later.command_id].status is HandoffStatus.APPLIED
@@ -89,9 +88,8 @@ def test_earlier_handoff_holds_later_handoff_with_stale_generation(handoff_event
     assert outcomes[later.command_id].status is HandoffStatus.HELD
 
 
-@pytest.mark.parametrize("reverse", [False, True], ids=["B-first", "C-first"])
-def test_same_target_handoff_conflicts_in_both_delivery_orders(handoff_events, reverse):
-    first, second = handoff_events
+def assert_same_target_conflict(reverse):
+    first, second = _handoff_events()
     second = replace(second, position=first.position, affected=first.affected)
     events = (second, first) if reverse else (first, second)
 
