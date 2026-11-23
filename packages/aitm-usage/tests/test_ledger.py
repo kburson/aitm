@@ -856,18 +856,39 @@ def test_symlink_state_files_are_refused_without_touching_target(
     with pytest.raises(LedgerError):
         ledger.apply(types.LedgerBatch())
     assert target.read_bytes() == before
+    original.unlink()
+    target.rename(original)
+    _assert_native_root_symlink_and_key_hardlink(
+        ledger, types, request.getfixturevalue("tmp_path")
+    )
 
 
-def test_symlink_state_root_and_hardlinked_private_key_are_refused(state, tmp_path):
+def _assert_native_root_symlink_and_key_hardlink(ledger, types, tmp_path):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
     linked_root = tmp_path / "linked"
     linked_root.symlink_to(ledger.root, target_is_directory=True)
     with pytest.raises(LedgerError):
         type(ledger).open(linked_root, PROJECT)
     os.link(ledger.key_path, tmp_path / "copied-key")
     with pytest.raises(LedgerError):
+        ledger.apply(types.LedgerBatch())
+
+
+def test_symlink_state_root_and_hardlinked_private_key_are_refused(
+    ledger_path_metadata, modules
+):
+    ledger_module, types = modules
+    metadata = ledger_path_metadata
+    ledger = _observed_ledger(metadata, ledger_module)
+    linked_root = metadata.base / "linked"
+    metadata.alias_directory(linked_root, ledger.root)
+    metadata.replace_with_link(linked_root, ledger.root)
+    with pytest.raises(ledger_module.LedgerError, match="Unsafe private ledger path"):
+        ledger_module.Ledger.open(linked_root, PROJECT)
+    key = ledger.key_path.lstat()
+    metadata.entries[str(ledger.key_path)] = os.stat_result((*key[:3], 2, *key[4:]))
+    with pytest.raises(ledger_module.LedgerError, match="Unsafe private ledger path"):
         ledger.apply(types.LedgerBatch())
 
 

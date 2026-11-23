@@ -444,7 +444,7 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
         _PRODUCT
         + "test_scope_admission.py::test_project_substitution_during_preparation_cannot_publish",
         _PRODUCT
-        + "test_scope_legacy.py::test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock[codex]",
+        + "test_scope_legacy.py::test_adoption_wins_between_legacy_selection_and_publication[mark]",
     ],
 )
 def test_refreshed_scope_modules_share_native_process_isolation(nodeid):

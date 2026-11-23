@@ -1,3 +1,4 @@
+import errno
 import fcntl
 import hmac
 import json
@@ -657,64 +658,16 @@ def test_adopted_replay_preserves_legacy_conflict_for_changed_bytes(memory_legac
 def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
     request, monkeypatch, provider
 ):
-    if provider is Provider.CLAUDE:
-        memory = request.getfixturevalue("memory_legacy")
-        _assert_replay_at_legacy_cutover(memory, monkeypatch)
-        return
-
-    legacy = request.getfixturevalue("legacy")
-    ledger, monitor_root, run = legacy
-    args, payload, _ = invocation(ledger, "mark", provider=provider)
-    command = InboxCommand(COMMAND, PROJECT, payload)
-    scopes.enqueue_command(ledger.root, command)
-    proof = legacy_boundary(ledger, payload)
-    original_publication = scopes._publication
-    cutover_started = False
-    accepted = None
-
-    @contextmanager
-    def publication_after_legacy_commit(inbox):
-        nonlocal accepted, cutover_started
-        if not cutover_started:
-            cutover_started = True
-            with ledger.writer() as writer:
-                (accepted,) = scopes.drain_inbox(writer, (proof,)).receipts
-                assert accepted.disposition is MarkerDisposition.ACCEPTED
-                commit_adoption(ledger, ADOPTION)
-        with original_publication(inbox):
-            yield
-
-    monkeypatch.setattr(scopes, "_publication", publication_after_legacy_commit)
-    code, output = run(args)
-
-    assert cutover_started
-    assert code == 0, output
-    assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
-    assert output.err == ""
-    assert not monitor_root.exists()
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-
-    assert accepted is not None and ledger.command_receipt(command) == accepted
-    before = ledger.as_of()
-    inbox = monitor_control.ControlInbox(monitor_root)
-    with monitor_registry.Registry(monitor_root).writer() as writer:
-        reader = provision_legacy_reader(writer, inbox, ledger)
-        _, example, _ = invocation(ledger, "alias")
-        probe_id = UUID(int=116)
-        probe = InboxCommand(probe_id, PROJECT, replace(example, command_id=probe_id))
-        reader.advertise(reader.probe(adopted_request(probe, ADOPTION, None)))
-        assert scopes.enqueue_command(ledger.root, command) == accepted
-        with inbox.publication() as locked:
-            assert list(inbox.iter_pending(locked)) == []
-    assert ledger.as_of() == before
+    memory = request.getfixturevalue("memory_legacy")
+    _assert_replay_at_legacy_cutover(memory, monkeypatch, provider)
 
 
-def _assert_replay_at_legacy_cutover(memory, monkeypatch):
+def _assert_replay_at_legacy_cutover(memory, monkeypatch, provider):
     ledger = memory.ledger
     args, payload, _ = invocation(
         ledger,
         "mark",
-        provider=Provider.CLAUDE,
+        provider=provider,
         write_input=memory.inputs.__setitem__,
     )
     command = InboxCommand(COMMAND, PROJECT, payload)
@@ -735,12 +688,15 @@ def _assert_replay_at_legacy_cutover(memory, monkeypatch):
         return lock
 
     monkeypatch.setattr(scopes, "_publication", publication_after_legacy_commit)
+    redirect = Mock(side_effect=AssertionError("committed receipt reached monitor"))
+    monkeypatch.setattr(monitor_control, "enqueue_adopted_scope", redirect)
     code, output = memory.run(args)
     assert len(locks) == 1
     assert code == 0, output
     assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
     assert output.err == ""
     assert not memory.inbox
+    redirect.assert_not_called()
 
 
 def test_adopted_legacy_requires_the_compatible_reader_witness(monkeypatch, capsys):
@@ -803,8 +759,12 @@ def _assert_invalid_adoption_policy(monkeypatch, capsys, invalid):
     args, _, _ = invocation(
         ledger, "mark", provider=Provider.CLAUDE, write_input=inputs.__setitem__
     )
-    project = SimpleNamespace(path=ledger.root, identities=((1, 2),), check=Mock())
-    if invalid == "malformed":
+    project = SimpleNamespace(
+        path=ledger.root, identities=((1, 2),), check=Mock(), fd=19
+    )
+    if invalid == "symlink":
+        contents = None
+    elif invalid == "malformed":
         contents = b"private malformed canary"
     elif invalid == "tag":
         data = json.loads(_adoption_bytes(ledger, project, ADOPTION))
@@ -840,7 +800,21 @@ def _assert_invalid_adoption_policy(monkeypatch, capsys, invalid):
     monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
     monkeypatch.setattr(Path, "open", open_input)
     monkeypatch.setattr(scopes, "_pin_directory", lambda path: nullcontext(project))
-    monkeypatch.setattr(scopes, "_read_private", read_adoption)
+    if invalid == "symlink":
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        opened = Mock(side_effect=OSError(errno.ELOOP, "observed linked adoption"))
+        monkeypatch.setattr(
+            scopes,
+            "os",
+            SimpleNamespace(
+                O_RDONLY=os.O_RDONLY,
+                O_NOFOLLOW=os.O_NOFOLLOW,
+                O_NONBLOCK=os.O_NONBLOCK,
+                open=opened,
+            ),
+        )
+    else:
+        monkeypatch.setattr(scopes, "_read_private", read_adoption)
     monkeypatch.setattr(scopes, "_inbox_publication", legacy_write)
     monkeypatch.setattr(monitor_control, "enqueue_adopted_scope", monitor_write)
     monkeypatch.setattr(cli, "version", lambda _: "0.0.0")
@@ -853,42 +827,17 @@ def _assert_invalid_adoption_policy(monkeypatch, capsys, invalid):
     assert output.err == ""
     legacy_write.assert_not_called()
     monitor_write.assert_not_called()
+    if invalid == "symlink":
+        opened.assert_called_once_with(ADOPTION_FILE, flags, dir_fd=project.fd)
 
 
 @pytest.mark.parametrize(
     "invalid", ["malformed", "tag", "project", "key", "path", "identity", "symlink"]
 )
 def test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write(
-    request, monkeypatch, capsys, invalid
+    monkeypatch, capsys, invalid
 ):
-    if invalid != "symlink":
-        _assert_invalid_adoption_policy(monkeypatch, capsys, invalid)
-        return
-
-    ledger, monitor_root, run = request.getfixturevalue("legacy")
-    args, _, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
-    record = ledger.root / ADOPTION_FILE
-    target = ledger.root.parent / "substituted"
-    target.write_text("private substituted canary")
-    record.symlink_to(target)
-    inbox = ledger.root / "inbox"
-    before = tuple(ledger.root.iterdir())
-
-    def monitor_publication(*args):
-        pytest.fail("invalid local adoption reached monitor publication")
-
-    monkeypatch.setattr(
-        monitor_control, "enqueue_adopted_scope", monitor_publication, raising=False
-    )
-    code, output = run(args)
-
-    assert code == 1
-    assert output.out == '{"status": "unavailable"}\n'
-    assert output.err == ""
-    assert not monitor_root.exists()
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert not inbox.exists() or list(inbox.iterdir()) == []
-    assert set(ledger.root.iterdir()) == set(before)
+    _assert_invalid_adoption_policy(monkeypatch, capsys, invalid)
 
 
 @pytest.mark.parametrize("monitor_corrupt", [False, True])

@@ -335,6 +335,201 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_backup_copies_only_authority_in_its_pinned_snapshot",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_restore_refuses_replaced_candidate_store",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_restore_replays_exact_pending_ack_after_final_anchor_commit",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_symlink_state_root_and_hardlinked_private_key_are_refused",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_changed_authority_rolls_back_any_migration_and_event",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_stable_exclusion_is_durable_and_independent_of_healthy_progress",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_delivery_upgrades_are_explicit_and_keep_existing_histories",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_foreign_writer_and_substituted_project_keys_cannot_deliver",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_retained_legacy_journal_snapshot_restores_for_both_readers",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_paired_journal_upgrade_occurs_only_with_first_committed_pair",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_ledger_version.py::test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe",
+      "suite": "unit",
+      "isolation_group": "monitor_ledger_version-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_interrupted_export_requires_receiver_reconciliation",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_journal_store_key_and_lease_share_the_derived_rollback_root",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_restore_with_only_old_witness_holds_replay",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_qualification_reads_owned_receipt_on_disk",
+      "suite": "unit",
+      "isolation_group": "activation_receipt-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_controlled_native_bash_receipt_sets_exact_next_request",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_owner_binding_uses_the_same_serial_cli_proof",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_hook_refuses_executable_change_during_final_ancestry_check",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_native_marker_and_cold_replay",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_revision_rolls_back_when_the_final_read_check_fails",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_pair_refuses_one_bad_side_without_moving_either_frontier",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_pair_settles_two_frontiers_and_preserves_first_ownership",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_enrolls_first_outside_request_through_service",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_generic_anchor_writes_cannot_replace_inbox_admission",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_service_commands_and_coverage",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_failure_preserves_caller_errors_and_cleans_stage",
+      "suite": "unit",
+      "isolation_group": "host_fs_publication-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_fs_security.py::test_linux_pinned_directory_refuses_acl_on_its_descriptor",
+      "suite": "unit",
+      "isolation_group": "host_fs_security-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_exact_enqueues_from_concurrent_producers_converge",
+      "suite": "unit",
+      "isolation_group": "monitor_control-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_incomplete_or_ambiguous_catalog_refuses_selected_stream",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_adopted_path_and_key_are_pinned",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_moved_enrolled_stream_does_not_stall_disable",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_two_clones_share_identity_but_nested_foreign_anchor_fails",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_snapshot_does_not_follow_a_link_to_another_file",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_checkout_anchor_is_rechecked_after_read",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_root_symlink_is_never_implicitly_approved",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_fixed_export_uses_actual_ledger_and_replay_bytes",
       "suite": "unit",
       "isolation_group": "activation_receipt-policy"

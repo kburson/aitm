@@ -354,38 +354,41 @@ def _codex_transcript(checkout):
     ]
 
 
-def test_service_commands_and_coverage(project, monkeypatch):
-    from importlib.metadata import version
-    from platform import python_version
+def test_service_commands_and_coverage(collector_policy, monkeypatch):
+    from datetime import timedelta
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout, partial=True)
-    with monkeypatch.context() as patch:
-        patch.setattr(
-            Ledger, "apply", Mock(side_effect=OSError("registration interrupted"))
+    from aitm_usage.rollup import rollup
+    from aitm_usage.types import ItemKey, ItemKind
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    absent_registration = Mock(
+        side_effect=AssertionError("an unregistered project attempted a session write")
+    )
+    with monkeypatch.context() as unregistered:
+        unregistered.setattr(service, "_private_child", absent_registration)
+        service.remember_claude_session(
+            ledger, ledger.pseudonymize("claude-session", "unregistered-test-session")
         )
-        command("register", "--config", str(config), "--json", expected=1)
-    assert Ledger.open(root, PROJECT).as_of().sequence == 0
-    assert (root / service.REGISTRATION_NAME).stat().st_mode & 0o777 == 0o600
-    result = command("register", "--config", str(config), "--json")
-    assert result["cutoff"] == CUTOFF
-    ledger = Ledger.open(root, PROJECT)
+    assert ledger.as_of().sequence == 0
+    absent_registration.assert_not_called()
+    case.configure()
+    _, private_files = case.use_ledger_rows()
+    partial = b'{"private":"unfinished'
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = (
+            data.replace(b"CHECKOUT", os.fsencode(native.checkout)) + partial
+        )
     assert not ledger.as_of().checkpoints
-
-    with ledger.writer():
-        refused = command("collect-once", "--json", expected=1)
-        assert "writer-active" in json.dumps(refused)
-        before = command("status", "--json")
-        assert before["heartbeat"] is None
-        assert before["producer_mode"] is None
-        assert before["producer_pid"] is None
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    assert case.status()["heartbeat"] is None
+    case.clock.now.return_value += timedelta(minutes=5)
+    status = case.collect()
     assert status["heartbeat"] is not None
     assert status["producer_mode"] == "one-shot"
-    assert status["producer_pid"] == os.getpid()
-    assert status["collector_version"] == version("aitm-usage")
-    assert status["collector_interpreter_version"] == python_version()
+    assert status["producer_pid"] == 123
+    assert status["collector_version"] == "1.2.3"
+    assert status["collector_interpreter_version"] == "3.13.9"
     assert not status["read_gap"]
     assert set(status["coverage"]) == {"codex", "claude"}
     assert status["coverage"]["codex"]["quota"] == "unknown"
@@ -394,44 +397,51 @@ def test_service_commands_and_coverage(project, monkeypatch):
     assert status["task_quota"] == "unknown"
     assert len(status["sources"]) == 2
     for source in status["sources"]:
-        path = sources / f"{source['provider']}.jsonl"
-        assert source["offset"] == path.stat().st_size - len(b'{"private":"unfinished')
+        path = native.root / f"{source['provider']}.jsonl"
+        assert source["offset"] == len(native.contents[path]) - len(partial)
         assert source["observed_through"] < status["heartbeat"]
         assert source["lag_seconds"] > 0
         assert source["retention_seconds"] is None
-    current = ledger.as_of().current
+    view = ledger.as_of()
     assert {
-        r.record.boundary.provider
-        for r in current
-        if isinstance(r.record, UsageObservation)
+        row.record.boundary.provider
+        for row in view.current
+        if isinstance(row.record, UsageObservation)
     } == set(Provider)
-    assert str(checkout) not in json.dumps(status)
+    assert str(native.checkout) not in json.dumps(status)
 
-    rollup = command("rollup", "--item", "83", "--json")
-    assert rollup["direct"]["observation_count"] == 0
-    assert rollup["unattributed"]["tokens"]["output_tokens"] == 8
-    assert rollup["unattributed"]["unknown_price_count"] > 0
+    totals = rollup(ItemKey(ItemKind.ISSUE, 83), view)
+    assert totals.direct.observation_count == 0
+    assert totals.unattributed.tokens["output_tokens"] == 8
+    assert totals.unattributed.unknown_price_count > 0
 
-    sources.chmod(0o000)
-    try:
-        command("collect-once", "--json")
-        unavailable = command("status", "--json")
-    finally:
-        sources.chmod(0o700)
+    with monkeypatch.context() as unavailable:
+        unavailable.setattr(service, "_directory_available", lambda _: False)
+        _assert_unavailable_root_watermarks(status, case.collect())
+
+    malformed = {
+        **json.loads(private_files[service.STATUS_NAME]),
+        "producer_pid": "123",
+    }
+    private_files[service.STATUS_NAME] = json.dumps(
+        malformed, separators=(",", ":"), sort_keys=True
+    ).encode()
+    _assert_malformed_service_status_keeps_watermarks(status, case.status())
+
+
+def _assert_unavailable_root_watermarks(previous, unavailable):
     assert unavailable["root_gaps"] == 1
     assert unavailable["missing_sources"] == 2
     assert [entry["offset"] for entry in unavailable["sources"]] == [
-        entry["offset"] for entry in status["sources"]
+        entry["offset"] for entry in previous["sources"]
     ]
 
-    stored = root / "status.json"
-    malformed = {**json.loads(stored.read_text()), "producer_pid": "123"}
-    stored.write_text(json.dumps(malformed, separators=(",", ":"), sort_keys=True))
-    rejected = command("status", "--json")
+
+def _assert_malformed_service_status_keeps_watermarks(previous, rejected):
     assert rejected["producer_mode"] is None and rejected["producer_pid"] is None
     assert rejected["heartbeat"] is None
     assert [entry["offset"] for entry in rejected["sources"]] == [
-        entry["offset"] for entry in status["sources"]
+        entry["offset"] for entry in previous["sources"]
     ]
 
 
@@ -971,6 +981,29 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
     for path in (root / "claude-sessions").iterdir():
         assert str(claude.SESSION).encode() not in path.read_bytes()
 
+    denied_id = UUID(int=933)
+    denied = checkout.with_name("uncommitted-anchor")
+    denied.mkdir()
+    proposal = _json_file(
+        root.parent,
+        "uncommitted-anchor.json",
+        {
+            "command_id": str(denied_id),
+            "project_id": str(PROJECT),
+            "checkout": str(denied),
+        },
+    )
+    _assert_generic_anchor_cannot_replace_admission(
+        ledger,
+        command,
+        ("source", "add-anchor", "--anchor", str(proposal), "--json"),
+        denied_id,
+        lambda: (path.name for path in (root / "source-anchors").iterdir()),
+        lambda target: (root / "inbox" / target).exists(),
+        "effect-first",
+        monkeypatch,
+    )
+
 
 @pytest.mark.parametrize("account_provider", ["codex", "claude"])
 def test_quota_authority_is_exact_stream_and_provider(
@@ -1268,7 +1301,28 @@ def test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream(
 
 @pytest.mark.parametrize("layout", ["effect-first", "receipt-first", "same-commit"])
 def test_generic_anchor_writes_cannot_replace_inbox_admission(
-    request, monkeypatch, layout
+    anchor_policy, monkeypatch, layout
+):
+    case = anchor_policy
+    anchor_id = UUID(int=933)
+
+    def queue_contains(target):
+        return target.name in case.files.get(case.inbox / target.parent, {})
+
+    _assert_generic_anchor_cannot_replace_admission(
+        case.ledger,
+        case.command,
+        case.proposal(anchor_id),
+        anchor_id,
+        lambda: case.files[case.anchors],
+        queue_contains,
+        layout,
+        monkeypatch,
+    )
+
+
+def _assert_generic_anchor_cannot_replace_admission(
+    ledger, command, args, anchor_id, anchor_files, queue_contains, layout, monkeypatch
 ):
     from aitm_usage import service
     from aitm_usage.ledger import LedgerError
@@ -1282,43 +1336,12 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
         SourceAnchor,
     )
 
-    anchor_id = UUID(int=933)
+    previous_usage = tuple(
+        row
+        for row in ledger.as_of().current
+        if isinstance(row.record, UsageObservation)
+    )
     name = f"{anchor_id}.json"
-    if layout == "effect-first":
-        root, sources, checkout, config, command = request.getfixturevalue("project")
-        added = checkout.with_name("new-private-anchor")
-        added.mkdir()
-        _fixtures(sources, added)
-        command("register", "--config", str(config), "--json")
-        ledger = Ledger.open(root, PROJECT)
-        anchor = _json_file(
-            root.parent,
-            "new-anchor.json",
-            {
-                "command_id": str(anchor_id),
-                "project_id": str(PROJECT),
-                "checkout": str(added),
-            },
-        )
-        args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
-
-        def anchor_files():
-            return (path.name for path in (root / "source-anchors").iterdir())
-
-        def queue_contains(target):
-            return (root / "inbox" / target).exists()
-
-    else:
-        case = request.getfixturevalue("anchor_policy")
-        ledger, command = case.ledger, case.command
-        args = case.proposal(anchor_id)
-
-        def anchor_files():
-            return case.files[case.anchors]
-
-        def queue_contains(target):
-            return target.name in case.files.get(case.inbox / target.parent, {})
-
     staged = service.stage_source_anchor(ledger, Path(args[3]))
     payload = staged.payload
     effect = Revision(
@@ -1387,8 +1410,13 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
     if layout != "same-commit":
         assert queue_contains(Path(name))
     assert not queue_contains(Path("acks") / name)
-    assert not any(
-        isinstance(r.record, UsageObservation) for r in ledger.as_of().current
+    assert (
+        tuple(
+            row
+            for row in ledger.as_of().current
+            if isinstance(row.record, UsageObservation)
+        )
+        == previous_usage
     )
 
 
@@ -1542,11 +1570,20 @@ def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 
 
-def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
+def test_one_shot_status_uses_collecting_subprocess_pid(
+    project, pytestconfig, monkeypatch
+):
     import subprocess
 
     root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
+    _fixtures(sources, checkout, partial=True)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            Ledger, "apply", Mock(side_effect=OSError("registration interrupted"))
+        )
+        command("register", "--config", str(config), "--json", expected=1)
+    assert Ledger.open(root, PROJECT).as_of().sequence == 0
+    assert (root / service.REGISTRATION_NAME).stat().st_mode & 0o777 == 0o600
     command("register", "--config", str(config), "--json")
     runner = FIXTURES / "service" / "run_cli.py"
     console = Path(sys.executable).with_name("aitm-usage")
@@ -1583,6 +1620,25 @@ def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
     assert status["producer_mode"] == "one-shot"
     assert status["producer_pid"] == child_pid
     assert status["producer_pid"] != os.getpid()
+    assert len(status["sources"]) == 2
+    for source in status["sources"]:
+        path = sources / f"{source['provider']}.jsonl"
+        assert source["offset"] == path.stat().st_size - len(b'{"private":"unfinished')
+
+    sources.chmod(0o000)
+    try:
+        command("collect-once", "--json")
+        unavailable = command("status", "--json")
+    finally:
+        sources.chmod(0o700)
+    _assert_unavailable_root_watermarks(status, unavailable)
+
+    stored = root / service.STATUS_NAME
+    malformed = {**json.loads(stored.read_text()), "producer_pid": "123"}
+    stored.write_text(json.dumps(malformed, separators=(",", ":"), sort_keys=True))
+    _assert_malformed_service_status_keeps_watermarks(
+        status, command("status", "--json")
+    )
 
 
 def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(monkeypatch):

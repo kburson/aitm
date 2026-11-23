@@ -177,14 +177,63 @@ def test_cli_requires_installed_proof_for_actual_qualification(monkeypatch, caps
     open_project.assert_not_called()
 
 
-def test_qualification_reads_owned_receipt_on_disk(tmp_path, monkeypatch, capsys):
+def test_qualification_reads_owned_receipt_on_disk(monkeypatch, capsys):
+    import stat
+    from contextlib import nullcontext
+    from io import BytesIO
+    from types import SimpleNamespace
+
+    from aitm_usage import install
+
     monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
-    path = tmp_path / "actual-shaped.json"
-    path.write_text(json.dumps(_receipt()))
-    assert _cli(monkeypatch, capsys, tmp_path, path) == (
+    root = Path("/fixture/project")
+    path = root / "actual-shaped.json"
+    expected = json.dumps(_receipt()).encode()
+    original_os = install.os
+    file_info = SimpleNamespace(
+        st_dev=2,
+        st_ino=8,
+        st_mode=stat.S_IFREG | 0o644,
+        st_uid=501,
+        st_mtime_ns=10,
+        st_ctime_ns=12,
+    )
+    open_file = Mock(return_value=8)
+    open_parent = Mock(return_value=nullcontext(7))
+    reopen = Mock(return_value=file_info)
+    check_acl = Mock()
+    monkeypatch.setattr(install, "_open_parent", open_parent)
+    monkeypatch.setattr(install, "_check_acl", check_acl)
+    monkeypatch.setattr(
+        install,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=original_os.O_RDONLY,
+            O_NONBLOCK=original_os.O_NONBLOCK,
+            O_NOFOLLOW=original_os.O_NOFOLLOW,
+            open=open_file,
+            fdopen=lambda descriptor, mode: BytesIO(expected),
+            fstat=lambda descriptor: file_info,
+            geteuid=lambda: file_info.st_uid,
+            stat=reopen,
+            path=original_os.path,
+        ),
+    )
+    exists = Mock(return_value=False)
+    monkeypatch.setattr(Path, "exists", lambda candidate: exists(candidate))
+    assert _cli(monkeypatch, capsys, root, path) == (
         1,
         {"status": "proof-required"},
     )
+    open_parent.assert_called_once_with(path)
+    open_file.assert_called_once_with(
+        path.name,
+        original_os.O_RDONLY | original_os.O_NONBLOCK | original_os.O_NOFOLLOW,
+        dir_fd=7,
+    )
+    check_acl.assert_called_once_with(8)
+    reopen.assert_called_once_with(path.name, dir_fd=7, follow_symlinks=False)
+    exists.assert_called_once_with(root / qualification.PROOF_NAME)
 
 
 def _unbound_claude_source(
@@ -640,10 +689,22 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     )
     registration = register_project(root, config)
     ledger = Ledger.open(root, PROJECT)
+    public_receipt = tmp_path / "qualification-receipt.json"
+    public_receipt.write_text(json.dumps(_receipt()))
+    public_receipt.chmod(0o644)
+    assert qualification.read_activation_receipt(
+        public_receipt
+    ) == qualification.decode_activation_receipt(public_receipt.read_bytes())
     source = sources / f"{provider}.jsonl"
     command, rows = _processing_order_transcript(
         ledger, checkout, provider, partial(_mark_args, tmp_path)
     )
+    from test_scan import _native_startup_rows, _startup_bytes
+
+    startup = _native_startup_rows(checkout)
+    for row in startup:
+        row["sessionId"] = str(claude.SESSION)
+    rows = [*startup, *rows[1:]]
     marker = command.payload
     target, kind = command.command_id, marker.provider
     remember_claude_session(ledger, marker.session_ref)
@@ -664,9 +725,18 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     assert source.read_bytes() == before_prefix
     before_confirmed_at = datetime.now(UTC)
     assert before.held_sources == 1
+    (checkpoint,) = ledger.as_of().checkpoints
+    assert checkpoint.cursor.offset == len(_startup_bytes(startup[:4]))
+    assert not any(
+        isinstance(row.record, UsageObservation) for row in ledger.as_of().current
+    )
     _write_private(queued, saved.read_bytes())
     released_at = datetime.now(UTC)
-    collect_once(registration, ledger)
+    admitted = collect_once(registration, ledger)
+    assert admitted.deferred_sources == 1
+    assert not any(
+        isinstance(row.record, UsageObservation) for row in ledger.as_of().current
+    )
     after = collect_once(registration, ledger)
     settled = _write_private(
         tmp_path / "settled-status.json", (root / STATUS_NAME).read_bytes()

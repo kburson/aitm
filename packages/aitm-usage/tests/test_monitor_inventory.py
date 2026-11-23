@@ -254,6 +254,7 @@ def test_native_inventory_audits_actual_selected_route(tmp_path):
     assert traces["unchanged-parked"] == 0
     assert traces["changed-parked"] == 1
     assert traces["selected-opens"] > 0
+    assert traces["linked-refusals"] == 2
 
 
 def _native_audit(tmp_path):
@@ -302,6 +303,22 @@ def _native_audit(tmp_path):
                 counts[f"{state}-parked"] = seen.count(parked.name)
                 if state == "unchanged":
                     counts["selected-opens"] = seen.count(native.paths[LIVE].name)
+            counts["linked-refusals"] = 0
+            for link in (Path.symlink_to, Path.hardlink_to):
+                parked.unlink()
+                link(parked, native.paths[LIVE])
+                with (
+                    writer._inventory_cycle(cache) as inventory,
+                    pytest.raises(BoundaryUnavailable, match="Complete metadata"),
+                ):
+                    writer._native_delta(
+                        writer.view(),
+                        CaptureChange(A, LIVE, True),
+                        selected,
+                        None,
+                        inventory=inventory,
+                    )
+                counts["linked-refusals"] += 1
         print(json.dumps(counts))
 
 
@@ -452,30 +469,10 @@ def test_incomplete_or_ambiguous_catalog_refuses_selected_stream(
         _assert_inventory_policy_refuses(request, monkeypatch, fault)
         return
 
-    if fault == "hardlink":
-        _assert_inventory_refuses_linked_transcript(request, monkeypatch)
-        return
-
-    native, selected, parked = request.getfixturevalue("siblings")
-    active = native.paths[LIVE]
-    for link in (Path.symlink_to, Path.hardlink_to):
-        parked.unlink()
-        link(parked, active)
-        with (
-            native.registry.writer() as writer,
-            writer._inventory_cycle(_OriginCache()) as inventory,
-            pytest.raises(BoundaryUnavailable),
-        ):
-            writer._native_delta(
-                writer.view(),
-                CaptureChange(A, LIVE, True),
-                selected,
-                None,
-                inventory=inventory,
-            )
+    _assert_inventory_refuses_linked_transcript(request, monkeypatch, fault)
 
 
-def _assert_inventory_refuses_linked_transcript(request, monkeypatch):
+def _assert_inventory_refuses_linked_transcript(request, monkeypatch, link):
     native, parked, host = _metadata_catalog(request, monkeypatch)
     active = native.paths[LIVE]
     (selected,) = (
@@ -492,7 +489,11 @@ def _assert_inventory_refuses_linked_transcript(request, monkeypatch):
             return metadata
         return original_info(path)
 
-    monkeypatch.setattr(host, "info", entries)
+    if link == "hardlink":
+        monkeypatch.setattr(host, "info", entries)
+    else:
+        del native.files.contents[parked]
+        host.symlinks[parked] = active
     forbidden = Mock(side_effect=AssertionError("linked transcript payload was read"))
     monkeypatch.setattr(source_scan, "_open_snapshot", forbidden)
     cache = _OriginCache()

@@ -2,6 +2,8 @@ import ctypes
 import errno
 import os
 import sys
+from contextlib import nullcontext
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, call
 
@@ -41,6 +43,8 @@ def test_existing_destination_survives_noreplace(request, monkeypatch, directory
         assert not host_fs.publish_noreplace(
             parent.fd, source.name, parent.fd, destination.name
         )
+        assert not scopes._publish(parent, destination.name, b"ignored")
+    assert set(tmp_path.iterdir()) == {source, destination}
     assert os.path.samestat(source_before, source.stat())
     assert os.path.samestat(destination_before, destination.stat())
     assert source.read_bytes() == b"source"
@@ -139,17 +143,59 @@ def test_publication_requires_leaf_names(monkeypatch, target):
     resolve_rename.assert_not_called()
 
 
-def test_publication_failure_preserves_caller_errors_and_cleans_stage(
-    tmp_path, monkeypatch
-):
+def test_publication_failure_preserves_caller_errors_and_cleans_stage(monkeypatch):
     def refused(*args):
         ctypes.set_errno(errno.EACCES)
         return -1
 
-    monkeypatch.setattr(host_fs, "_native_rename", lambda symbol: refused)
-    with _pin_directory(tmp_path) as parent:
-        with pytest.raises(LedgerError):
-            scopes._publish(parent, "inbox-entry", b"new")
-    with pytest.raises(export.ExportError):
-        export._publish(tmp_path / "export", {"manifest.json": b"data"})
-    assert not list(tmp_path.iterdir())
+    rename = Mock(side_effect=refused)
+    monkeypatch.setattr(host_fs, "_native_rename", lambda symbol: rename)
+    parent = SimpleNamespace(fd=11, path=Path("/fixture"), check=Mock())
+    file = Mock()
+    unlink = Mock()
+    open_stage = Mock(return_value=12)
+    monkeypatch.setattr(scopes, "_private", Mock())
+    monkeypatch.setattr(scopes, "_check_acl", Mock())
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            O_WRONLY=os.O_WRONLY,
+            O_CREAT=os.O_CREAT,
+            O_EXCL=os.O_EXCL,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            open=open_stage,
+            fdopen=Mock(return_value=nullcontext(file)),
+            fchmod=Mock(),
+            fstat=Mock(),
+            fsync=Mock(),
+            unlink=unlink,
+        ),
+    )
+    with pytest.raises(LedgerError, match="Unable to publish private inbox file"):
+        scopes._publish(parent, "inbox-entry", b"new")
+    staging = open_stage.call_args.args[0]
+    file.write.assert_called_once_with(b"new")
+    unlink.assert_called_once_with(staging, dir_fd=parent.fd)
+
+    container = SimpleNamespace(
+        fd=13, path=parent.path / ".export", identities=((1, 1), (1, 2))
+    )
+    staged = SimpleNamespace(fd=14)
+    private_child = Mock(return_value=nullcontext(staged))
+    write_snapshot = Mock()
+    monkeypatch.setattr(export, "_new_private_child", private_child)
+    monkeypatch.setattr(export, "_write_snapshot", write_snapshot)
+    unlink.reset_mock()
+    monkeypatch.setattr(export, "os", SimpleNamespace(unlink=unlink))
+    files = {"manifest.json": b"data"}
+    with pytest.raises(export.ExportError, match="Unable to publish export snapshot"):
+        export._publish_staged(
+            container, parent.fd, parent.path / "snapshot", ((1, 1),), files
+        )
+    private_child.assert_called_once_with(
+        container.fd, container.path / "snapshot", container.identities
+    )
+    write_snapshot.assert_called_once_with(staged, files)
+    unlink.assert_called_once_with("manifest.json", dir_fd=staged.fd)
+    assert rename.call_count == 2

@@ -103,13 +103,14 @@ def test_command_status_missing_root_is_unavailable_and_does_not_create_it(
     create.assert_not_called()
 
 
-def test_exact_enqueues_from_concurrent_producers_converge(monitor):
+def test_exact_enqueues_from_concurrent_producers_converge(inbox_policy):
+    monitor = inbox_policy.inbox
     command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
-    with ThreadPoolExecutor(max_workers=4) as workers:
-        receipts = list(workers.map(monitor.enqueue, [command] * 8))
-
-    assert len(set(receipts)) == 1
-    assert receipts[0].status.value == "queued"
+    receipt = monitor.enqueue(command)
+    publication = dict(inbox_policy.inbox_files)
+    assert [monitor.enqueue(command) for _ in range(7)] == [receipt] * 7
+    assert receipt.status.value == "queued"
+    assert len(publication) == 1 and inbox_policy.inbox_files == publication
     with monitor.publication() as locked:
         assert list(monitor.iter_pending(locked)) == [command]
 
@@ -441,10 +442,14 @@ def test_source_and_anchor_cli_queue_typed_owner_declarations(
 def test_enqueues_and_reads_while_coordinator_is_held(monitor):
     command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
     registry = Registry(monitor.root)
-    with ThreadPoolExecutor(max_workers=1) as worker, registry.writer():
-        queued = worker.submit(monitor.enqueue, command).result(timeout=3)
+    with ThreadPoolExecutor(max_workers=4) as worker, registry.writer():
+        submissions = [worker.submit(monitor.enqueue, command) for _ in range(8)]
+        queued = submissions[0].result(timeout=3)
         assert queued.status.value == "queued"
+        assert [future.result(timeout=3) for future in submissions] == [queued] * 8
         assert worker.submit(monitor.status, REQUEST).result(timeout=3) == queued
+        with monitor.publication() as locked:
+            assert list(monitor.iter_pending(locked)) == [command]
 
 
 def test_duplicate_order_prevents_drain(inbox_policy):

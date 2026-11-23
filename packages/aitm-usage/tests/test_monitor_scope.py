@@ -2182,6 +2182,7 @@ def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
         assert state.view().holds == (first, hold)
         if not before_replace:
             assert not list(path.parent.glob(".publishing-*"))
+            _assert_scope_link_is_refused(native, state)
 
 
 @pytest.mark.parametrize("operation", ["mark", "handoff", "hold", "expire", "dispose"])
@@ -2353,23 +2354,45 @@ def test_v2_writer_refuses_uninitialized_source_key_without_creating_it(
     save.assert_not_called()
 
 
-def test_v2_snapshot_does_not_follow_a_link_to_another_file(native):
+def _assert_scope_link_is_refused(native, state):
     from aitm_usage.monitor_scope import ScopeState
 
-    with native.registry.writer() as writer:
-        state = ScopeState(writer)
-        _stored_disposition_fixture(state, native)
-        path = _scope_file(native)
-        external = native.path.parent / "external-scope.json"
-        data = path.read_bytes()
-        path.rename(external)
-        path.symlink_to(external)
-        with pytest.raises(LedgerError):
-            ScopeState(native.registry).view()
-        with pytest.raises(LedgerError):
-            state.expire()
-        assert path.is_symlink()
-        assert external.read_bytes() == data
+    path = _scope_file(native)
+    external = native.path.parent / "external-scope.json"
+    data = path.read_bytes()
+    assert json.loads(data)["format"] == "aitm.usage.monitor-scope/v2"
+    path.rename(external)
+    path.symlink_to(external)
+    with pytest.raises(LedgerError):
+        ScopeState(native.registry).view()
+    with pytest.raises(LedgerError):
+        state.expire()
+    assert path.is_symlink()
+    assert external.read_bytes() == data
+
+
+def test_v2_snapshot_does_not_follow_a_link_to_another_file(monkeypatch):
+    import stat
+    from unittest.mock import Mock
+
+    from aitm_usage import monitor_scope
+
+    payload, _, read_only = snapshot_reader(monkeypatch)
+    state, save, _, _ = custody_writer(monkeypatch, payload)
+    named = Mock(return_value=SimpleNamespace(st_mode=stat.S_IFLNK | 0o777))
+    opened = Mock(side_effect=AssertionError("Scope opened a linked snapshot"))
+    monkeypatch.setattr(
+        monitor_registry, "os", SimpleNamespace(stat=named, open=opened)
+    )
+    monkeypatch.setattr(monitor_scope, "_read_state", monitor_registry._read_state)
+    with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+        read_only.view()
+    with pytest.raises(LedgerError, match="Unsafe private ledger path"):
+        state.expire()
+    assert named.call_count == 2
+    named.assert_called_with(monitor_scope._FILE, dir_fd=42, follow_symlinks=False)
+    opened.assert_not_called()
+    save.assert_not_called()
 
 
 def test_stored_route_disposition_id_is_reserved_against_legacy_writes(

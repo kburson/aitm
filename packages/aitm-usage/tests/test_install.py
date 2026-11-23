@@ -44,6 +44,7 @@ from aitm_usage.types import (
     Provider,
     Revision,
     SourceAnchorCommand,
+    _decode,
     _encode,
 )
 
@@ -143,7 +144,9 @@ def _bundle_bytes(path):
     }
 
 
-def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_path):
+def test_fixed_snapshot_restores_exact_authority_key_and_export(
+    project, tmp_path, monkeypatch
+):
     from aitm_usage.backup import BackupError, backup, restore
     from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
     from aitm_usage.qualification import _verify_exports
@@ -237,16 +240,20 @@ def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_pat
     with pytest.raises(BackupError, match="Invalid private restore bundle or target"):
         restore(destination, ledger.root, ledger.identity)
     assert _bundle_bytes(ledger.root) == before_refusal
+    _assert_native_pending_ack_replays_after_restore(
+        registration, ledger, tmp_path, monkeypatch
+    )
+    _assert_native_pinned_backup_excludes_later_authority(
+        registration, ledger, tmp_path, monkeypatch
+    )
 
 
-def test_backup_copies_only_authority_in_its_pinned_snapshot(
-    project, tmp_path, monkeypatch
+def _assert_native_pinned_backup_excludes_later_authority(
+    registration, ledger, tmp_path, monkeypatch
 ):
     from aitm_usage import backup as recovery
 
-    registration, ledger, _ = project
-    _add_anchor(registration, ledger, tmp_path, 941)
-    late = _add_anchor(registration, ledger, tmp_path, 942, drain=False)
+    late = _add_anchor(registration, ledger, tmp_path, 943, drain=False)
     original = recovery._copy_snapshot
 
     def copy_after_commit(reader, destination):
@@ -255,11 +262,77 @@ def test_backup_copies_only_authority_in_its_pinned_snapshot(
         original(reader, destination)
 
     before = ledger.as_of().sequence
-    monkeypatch.setattr(recovery, "_copy_snapshot", copy_after_commit)
-    target = tmp_path / "backup"
-    receipt = recovery.backup(ledger, target)
+    target = tmp_path / "pinned-backup"
+    with monkeypatch.context() as observed:
+        observed.setattr(recovery, "_copy_snapshot", copy_after_commit)
+        receipt = recovery.backup(ledger, target)
     assert before == receipt.sequence < ledger.as_of().sequence
     assert not any(str(late.command_id) in str(path) for path in _bundle_bytes(target))
+
+
+def _anchor_receipt_values(state, command_id):
+    ledger = state.ledger
+    payload = SourceAnchorCommand(
+        command_id,
+        PROJECT,
+        state.registration.record.configuration_ref,
+        service.checkout_anchor_reference(
+            ledger, Path(f"/fixture/anchor-{command_id}")
+        ),
+    )
+    command = InboxCommand(command_id, PROJECT, payload)
+    effect = service._anchor_revision(ledger, payload)
+    receipt = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    key = ledger.pseudonymize("inbox-command", str(command_id))
+    return effect, Revision(key, 1, receipt)
+
+
+def test_backup_copies_only_authority_in_its_pinned_snapshot(
+    restore_policy, monkeypatch
+):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    first, first_receipt = _anchor_receipt_values(state, UUID(int=941))
+    late, late_receipt = _anchor_receipt_values(state, UUID(int=942))
+    revisions = (state.registration, first, first_receipt, late, late_receipt)
+    sequences = {
+        entry.key.value: (index // 2) + 2 for index, entry in enumerate(revisions[1:])
+    }
+    committed = {entry.key.value: entry for entry in revisions[1:]}
+    observations = []
+
+    def lookup(sql, parameters):
+        assert "JOIN commits" in sql
+        key, revision, payload, cutoff = parameters
+        assert committed[key] == _decode(payload, Revision)
+        assert committed[key].revision == revision
+        observations.append((key, cutoff))
+        sequence = sequences[key]
+        return SimpleNamespace(
+            fetchone=lambda: (sequence,) if sequence <= cutoff else None
+        )
+
+    rows = SimpleNamespace(execute=lookup)
+    monkeypatch.setattr(Ledger, "reader", lambda _: nullcontext(rows))
+    pinned = LedgerView(PROJECT, 2, revisions[:3], ())
+    assert set(recovery._authority_names(state.ledger, pinned)) == {
+        recovery.REGISTRATION_NAME,
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.2.attested",
+    }
+    assert observations == [(first_receipt.key.value, 2), (first.key.value, 2)]
+    assert set(
+        recovery._authority_names(state.ledger, LedgerView(PROJECT, 3, revisions, ()))
+    ) == {
+        recovery.REGISTRATION_NAME,
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=941)}.2.attested",
+        f"{service.ANCHORS_NAME}/{UUID(int=942)}.json",
+        f"{service.ANCHORS_NAME}/{UUID(int=942)}.3.attested",
+    }
 
 
 @pytest.fixture
@@ -349,7 +422,9 @@ def restore_policy(lifecycle_policy, recovery_paths, monkeypatch):
 
     state = SimpleNamespace(
         ledger=ledger,
+        candidate=candidate,
         source=source,
+        inbox=inbox,
         files=files,
         acknowledgments=files[acknowledgments.fd],
         anchors=files[anchors.fd],
@@ -433,15 +508,14 @@ def test_public_restore_refuses_a_loaded_job_before_store_swap(
     swap.assert_not_called()
 
 
-def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
-    project, tmp_path, monkeypatch
+def _assert_native_pending_ack_replays_after_restore(
+    registration, ledger, tmp_path, monkeypatch
 ):
     from aitm_usage.backup import backup, restore
     from aitm_usage.types import MarkerDisposition
 
-    registration, ledger, _ = project
-    command = _add_anchor(registration, ledger, tmp_path, 941, drain=False)
-    anchor, hidden = tmp_path / "anchor-941", tmp_path / "held"
+    command = _add_anchor(registration, ledger, tmp_path, 942, drain=False)
+    anchor, hidden = tmp_path / "anchor-942", tmp_path / "held"
     anchor.rename(hidden)
     service.collect_once(registration, ledger)
     assert ledger.command_receipt(command).disposition is MarkerDisposition.PENDING
@@ -458,7 +532,7 @@ def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
     assert final.disposition is MarkerDisposition.ACCEPTED
     inbox = ledger.root / scopes.INBOX_NAME
     before = _bundle_bytes(inbox)
-    bundle = tmp_path / "backup"
+    bundle = tmp_path / "pending-ack-backup"
     saved = backup(ledger, bundle)
     assert restore(bundle, ledger.root, ledger.identity).sequence == saved.sequence
     assert _bundle_bytes(inbox) == before
@@ -466,6 +540,62 @@ def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
     assert not (inbox / f"{command.command_id}.json").exists()
     assert ledger.command_receipt(command) == final
     assert ledger.as_of().sequence == saved.sequence
+
+
+def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
+    restore_policy, monkeypatch
+):
+    from aitm_usage import backup as recovery
+    from aitm_usage.backup import BackupError, restore
+
+    state = restore_policy
+    ledger = state.ledger
+    effect, revision = _anchor_receipt_values(state, UUID(int=942))
+    final = revision.record
+    command = final.command
+    pending = replace(final, disposition=MarkerDisposition.PENDING)
+    state.view = LedgerView(
+        PROJECT,
+        3,
+        (
+            state.registration,
+            replace(revision, record=pending),
+            effect,
+            replace(revision, revision=2),
+        ),
+        (),
+    )
+    name = f"{command.command_id}.json"
+    state.files[state.inbox.fd][name] = scopes._publication_bytes(command, None)
+    state.acknowledgments[name] = _encode(
+        pending.acknowledgment, CommandAcknowledgment
+    ).encode()
+    monkeypatch.setattr(Ledger, "as_of", lambda _: state.view)
+    monkeypatch.setattr(service, "_pin_directory", recovery._pin_directory)
+
+    def configuration(pin, name):
+        assert pin.path == state.candidate.root and name == recovery.REGISTRATION_NAME
+        return state.authority[name]
+
+    monkeypatch.setattr(service, "_read_private", configuration)
+    observed_live = pending
+
+    def read_receipt(handle, requested):
+        assert requested == command
+        return final if handle is state.candidate else observed_live
+
+    monkeypatch.setattr(Ledger, "command_receipt", read_receipt)
+    original = {fd: dict(files) for fd, files in state.files.items()}
+    with pytest.raises(BackupError, match="conflicts with restored history"):
+        restore(state.source, ledger.root, ledger.identity)
+    state.swap.assert_not_called()
+    assert state.files == original
+
+    observed_live = final
+    state.swap.side_effect = None
+    assert restore(state.source, ledger.root, ledger.identity).sequence == 3
+    state.swap.assert_called_once()
+    assert state.files == original
 
 
 def test_restore_refuses_mismatched_private_proof_or_identity(
@@ -561,6 +691,7 @@ def test_restore_fences_publication_until_atomic_swap(project, tmp_path, monkeyp
         assert publish.result(timeout=5) is None
     service.collect_once(registration, ledger)
     assert ledger.command_receipt(_parent(944)).disposition == "accepted"
+    _assert_native_restore_refuses_replaced_stage(ledger, tmp_path, monkeypatch)
 
 
 def test_restore_refuses_incompatible_store_and_interrupted_staging(
@@ -609,13 +740,13 @@ def test_restore_refuses_incompatible_store_and_interrupted_staging(
     state.swap.assert_not_called()
 
 
-def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch):
+def _assert_native_restore_refuses_replaced_stage(ledger, tmp_path, monkeypatch):
     from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
-    target = tmp_path / "backup"
+    target = tmp_path / "replaced-candidate-backup"
     recovery.backup(ledger, target)
     before = ledger.database_path.parent.stat().st_ino
+    view = ledger.as_of()
     original = recovery._validate_queue
 
     def replace_stage(project, inbox, live, candidate, view):
@@ -624,11 +755,34 @@ def test_restore_refuses_replaced_candidate_store(project, tmp_path, monkeypatch
         directory.rename(directory.with_name("displaced"))
         directory.mkdir(mode=0o700)
 
-    monkeypatch.setattr(recovery, "_validate_queue", replace_stage)
-    with pytest.raises(recovery.BackupError):
-        recovery.restore(target, ledger.root, ledger.identity)
+    with monkeypatch.context() as fault:
+        fault.setattr(recovery, "_validate_queue", replace_stage)
+        with pytest.raises(recovery.BackupError):
+            recovery.restore(target, ledger.root, ledger.identity)
     assert ledger.database_path.parent.stat().st_ino == before
-    assert ledger.as_of().sequence == 1
+    assert ledger.as_of() == view
+
+
+def test_restore_refuses_replaced_candidate_store(restore_policy, monkeypatch):
+    from aitm_usage import backup as recovery
+
+    state = restore_policy
+    ledger = state.ledger
+    pinned = recovery._pin_directory
+    with pinned(state.candidate.database_path.parent) as stage:
+        original = recovery._validate_queue
+
+        def replace_stage(*args):
+            original(*args)
+            stage.check.side_effect = OSError("staged store identity changed")
+
+        monkeypatch.setattr(recovery, "_validate_queue", replace_stage)
+        before = {fd: dict(files) for fd, files in state.files.items()}
+        with pytest.raises(recovery.BackupError, match="Invalid private restore"):
+            recovery.restore(state.source, ledger.root, ledger.identity)
+    stage.check.assert_called_once()
+    state.swap.assert_not_called()
+    assert state.files == before
 
 
 def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_acl):

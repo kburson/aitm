@@ -31,7 +31,7 @@ from aitm_usage.monitor_registry import (
 )
 from aitm_usage.monitor_scope import ScopeState
 from aitm_usage.monitor_types import NativeSurface
-from aitm_usage.sources.adapter import SourceLocator
+from aitm_usage.sources.adapter import SourceLocator, StreamCursor
 from aitm_usage.types import (
     Provider,
     ProviderCheckpoint,
@@ -67,6 +67,7 @@ class _CoveragePolicyStore:
         self.committed = SimpleNamespace(version=4, sequence=0, events={})
         self.attempt = None
         self.writes = []
+        self.progress = {}
 
     @contextmanager
     def transaction(self, *, write=False):
@@ -79,7 +80,8 @@ class _CoveragePolicyStore:
 
         def execute(sql, params=()):
             if sql.startswith("SELECT cursor FROM progress "):
-                return SimpleNamespace(fetchone=lambda: None)
+                raw = self.progress.get(params)
+                return SimpleNamespace(fetchone=lambda: (raw,) if raw else None)
             if sql == "SELECT coalesce(max(sequence), 0) FROM commits":
                 return SimpleNamespace(fetchone=lambda: (view.sequence,))
             if sql == monitor_journal._COVERAGE_ROWS + " WHERE s.identity=?":
@@ -194,38 +196,37 @@ def test_reading_coverage_cannot_upgrade_an_empty_older_store(monkeypatch, versi
 
 
 def test_stable_exclusion_is_durable_and_independent_of_healthy_progress(
-    admitted_sources,
+    monkeypatch,
 ):
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        qualify(writer)
-        journal = RoutingJournal(writer, ScopeState(writer))
-        locator = native.locator()
-        native.append()
-        prepared = journal.prepare(SOURCE, locator)
-        journal.reserve_batch(prepared)
-        with journal._store.transaction(write=True) as connection:
-            journal._store._enable_paired(connection)
-        assert store_version(journal) == 5
-        before = journal.as_of()
-        before_cursor = journal.cursor_for(SOURCE, locator)
-        assert before.claims and before_cursor is not None
+    authority, scopes, journal, store = _coverage_policy(monkeypatch, SOURCE)
+    locator = authority.locator
+    healthy = UUID(int=22)
+    started = authority.view.epochs[0].frontier.checkpoint
+    expected = StreamCursor(replace(started, cursor=replace(started.cursor, offset=64)))
+    healthy_stream = monitor_journal._stream(healthy, locator)
+    store.progress[healthy_stream] = _encode(expected, StreamCursor).encode()
+    store.committed.version = 5
+    store.committed.sequence = 7
+    before = journal.as_of()
 
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(claude.source_id, claude.locator())
-        (event,) = journal.coverage_changes(before.sequence)
-        assert event.sequence == before.sequence + 1
-        assert event.coverage.reason == "UNQUALIFIED_SOURCE"
-        assert event.coverage.extent == "unknown"
-        assert event.disposition is None and event.paired is None
-        assert journal.cursor_for(claude.source_id, claude.locator()) is None
-        assert journal.cursor_for(SOURCE, locator) == before_cursor
-        assert journal.as_of(before.sequence) == before
-        assert journal.as_of().claims == before.claims
-        assert journal.as_of().settlements == before.settlements
-        assert journal.as_of().dispositions == before.dispositions
-        assert journal.coverage_changes(event.sequence) == ()
-        assert store_version(journal) == 6
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, locator)
+    (event,) = journal.coverage_changes(before.sequence)
+    assert event.sequence == before.sequence + 1
+    assert event.coverage.reason == "UNQUALIFIED_SOURCE"
+    assert event.coverage.extent == "unknown"
+    assert event.disposition is None and event.paired is None
+    assert journal.cursor_for(SOURCE, locator) is None
+    assert journal.cursor_for(healthy, locator) == expected
+    reopened = RoutingJournal(authority.writer, scopes)
+    assert reopened.as_of(before.sequence) == before
+    assert reopened.coverage_changes(0) == (event,)
+    assert reopened.coverage_changes(event.sequence) == ()
+    assert store_version(reopened) == 6
+    assert [sql for sql, _ in store.writes] == [
+        "INSERT OR IGNORE INTO commits VALUES (?)",
+        "INSERT INTO source_coverage VALUES (?,?,?,?)",
+    ]
 
 
 def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(monkeypatch):
@@ -393,40 +394,38 @@ def test_only_stable_profile_denials_become_coverage(
 @pytest.mark.parametrize("failure", ("policy", "consent", "location"))
 @pytest.mark.parametrize("confirmation", (1, 2))
 def test_changed_authority_rolls_back_any_migration_and_event(
-    request, monkeypatch, failure, confirmation
+    monkeypatch, failure, confirmation
 ):
-    if confirmation == 1 or failure != "location":
-        _assert_changed_authority_policy(monkeypatch, failure, confirmation)
-        return
+    _assert_changed_authority_policy(monkeypatch, failure, confirmation)
 
-    admitted_sources = request.getfixturevalue("admitted_sources")
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        qualify(writer)
-        state = ScopeState(writer)
-        journal = RoutingJournal(writer, state)
-        locator = claude.locator()
-        verify = state._confirm_live_exclusion
-        checks = 0
 
-        def changed(*args):
-            nonlocal checks
-            checks += 1
-            if checks == confirmation:
-                old = Path(claude.root.path)
-                prior = old.with_name("previous-claude")
-                old.rename(prior)
-                copytree(prior, old)
-            return verify(*args)
+def _assert_native_directory_change_rolls_back(journal, state, claude, monkeypatch):
+    locator = claude.locator()
+    verify = state._confirm_live_exclusion
+    checks = 0
+    old = Path(claude.root.path)
+    prior = old.with_name("previous-claude")
 
-        monkeypatch.setattr(state, "_confirm_live_exclusion", changed)
+    def changed(*args):
+        nonlocal checks
+        checks += 1
+        if checks == 2:
+            old.rename(prior)
+            copytree(prior, old)
+        return verify(*args)
+
+    with monkeypatch.context() as fault:
+        fault.setattr(state, "_confirm_live_exclusion", changed)
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(claude.source_id, locator)
-        assert checks == confirmation
-        assert journal.coverage_changes(0) == ()
-        assert journal.as_of().sequence == 0
-        assert journal.cursor_for(claude.source_id, locator) is None
-        assert store_version(journal) == 4
+    assert checks == 2
+    assert journal.coverage_changes(0) == ()
+    assert journal.as_of().sequence == 0
+    assert journal.cursor_for(claude.source_id, locator) is None
+    assert store_version(journal) == 4
+    # Restore the original inode before validating the independent successful path.
+    old.rename(old.with_name("replacement-claude"))
+    prior.rename(old)
 
 
 def _assert_changed_authority_policy(monkeypatch, failure, confirmation):
@@ -676,17 +675,35 @@ def test_coverage_readback_rejects_corrupted_event_binding(alter):
         monitor_journal._stored_coverage(damaged, evidence)
 
 
-def test_coverage_readback_rejects_deleted_commit_on_disk(admitted_sources):
+def test_coverage_readback_rejects_deleted_commit_on_disk(
+    admitted_sources, monkeypatch
+):
     from test_monitor_journal_store import _sqlite
 
     from aitm_usage._monitor_journal_store import _DATABASE, _STORE
 
     native, claude = admitted_sources
     with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
+        qualify(writer)
+        state = ScopeState(writer)
+        journal = RoutingJournal(writer, state)
+        _assert_native_directory_change_rolls_back(journal, state, claude, monkeypatch)
+        locator = native.locator()
+        native.append()
+        journal.reserve_batch(journal.prepare(SOURCE, locator))
+        with journal._store.transaction(write=True) as connection:
+            journal._store._enable_paired(connection)
+        before = journal.as_of()
+        before_cursor = journal.cursor_for(SOURCE, locator)
+        assert store_version(journal) == 5 and before.claims and before_cursor
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(claude.source_id, claude.locator())
         (event,) = journal.coverage_changes(0)
+        assert event.sequence == before.sequence + 1
+        assert store_version(journal) == 6
+        assert journal.as_of(before.sequence) == before
+        assert journal.as_of().claims == before.claims
+        assert journal.cursor_for(SOURCE, locator) == before_cursor
         candidate = journal.publication_candidate(event)
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))

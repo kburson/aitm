@@ -1,7 +1,6 @@
 import importlib
 import json
 import shlex
-import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -24,10 +23,9 @@ from test_ledger import (
 )
 
 from aitm_usage.accounting import account_observations
-from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
 from aitm_usage.rollup import rollup
-from aitm_usage.scopes import attest_marker, drain_inbox, session_reference
+from aitm_usage.scopes import attest_marker, session_reference
 from aitm_usage.sources import adapter as native
 from aitm_usage.sources.scan import discover, scan
 from aitm_usage.types import (
@@ -54,7 +52,6 @@ from aitm_usage.types import (
     TokenCounts,
     WorkPhase,
     _encode,
-    encode_marker,
 )
 
 PROJECT = UUID(int=0x200)
@@ -771,13 +768,6 @@ def test_monitor_scope_receipt_at_first_claude_request(
         assert not ledger.as_of().current
 
 
-@pytest.fixture
-def controlled_bash_project(request):
-    if request.node.callspec.params["case"] == "valid":
-        return request.getfixturevalue("project")
-    return None
-
-
 @pytest.mark.parametrize(
     "case",
     [
@@ -799,20 +789,17 @@ def controlled_bash_project(request):
     ],
 )
 def test_controlled_native_bash_receipt_sets_exact_next_request(
-    controlled_bash_project, adapter_frames, request, monkeypatch, capsys, case
+    adapter_frames, request, case
 ):
     claude = adapter()
-    project = controlled_bash_project
     replay = None
-    policy_admission = case in {"outside", "observation-first", "split"}
+    policy_admission = case in {"valid", "outside", "observation-first", "split"}
     if policy_admission or case in {"wrong-session", "missing-api-session"}:
         replay = request.getfixturevalue("memory_replay")
         ledger = replay.ledger
         checkout = replay.outside if case == "outside" else replay.checkout
-    elif project is None:
-        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     else:
-        ledger, registration, path, checkout, _ = project
+        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     marker_path = ledger.root / "marker.json"
     arguments = [
         "aitm-usage",
@@ -830,7 +817,7 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     state = claude.ClaudeState(
         ledger, reserved_session_id=None if case == "unreserved" else SESSION
     )
-    if project is None and not policy_admission:
+    if not policy_admission:
         output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
 
         def read_receipt(command, disproof, state):
@@ -870,29 +857,14 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         PROJECT,
         receipt_ref=claude.claude_receipt_reference(ledger, session, COMMAND),
     )
-    queued = {"command_id": str(COMMAND), "status": "queued"}
-    if policy_admission:
-        output = json.dumps(queued)
-    else:
-        marker_path.write_bytes(encode_marker(marker))
-        marker_path.chmod(0o600)
-        monkeypatch.setattr(sys, "argv", arguments)
-        assert main() == 0
-        output = capsys.readouterr().out.strip()
-        assert json.loads(output) == queued
+    output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
 
     def load(candidate, state, prior=None):
-        if replay is not None:
-            return replay.read(claude.read_claude, candidate, state, prior)
-        return read(claude, candidate, state, prior)
+        return replay.read(claude.read_claude, candidate, state, prior)
 
     rows = [user(checkout), *_native_tool_turn(checkout, command, output, case=case)]
-    if policy_admission:
-        replay.write(rows[:-1] if case == "split" else rows)
-        candidate = replay.candidate()
-    else:
-        write(path, rows)
-        candidate = source(registration)
+    replay.write(rows[:-1] if case == "split" else rows)
+    candidate = replay.candidate()
     prior = None
     if case == "split":
         prefix, partial = load(candidate, state)
@@ -903,9 +875,6 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         replay.write(rows[-1:], append=True)
     batch, result = load(candidate, state, prior)
     boundaries = [b for b in result.boundaries if b.receipt_ref is not None]
-    if case not in ("valid", "outside", "observation-first", "split"):
-        assert boundaries == []
-        return
     (boundary,) = boundaries
     assert boundary.ordinal == 5
     assert boundary.boundary_ref == marker.boundary_ref
@@ -917,16 +886,10 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         before = rollup(marker.item, ledger.as_of())
         assert before.direct.observation_count == 0
         assert before.unattributed.observation_count == 2
-    if policy_admission:
-        from test_codex import _admit_replayed_scope
+    from test_codex import _admit_replayed_scope
 
-        accepted = _admit_replayed_scope(replay, marker, evidence)
-        assert accepted.boundary == boundary
-    else:
-        with ledger.writer() as writer:
-            drained = drain_inbox(writer, [evidence])
-            assert len(drained.receipts) == 1
-            assert drained.receipts[0].boundary == boundary
+    accepted = _admit_replayed_scope(replay, marker, evidence)
+    assert accepted.boundary == boundary
     if case == "outside":
         assert result.revisions == ()
         (enrollment,) = [

@@ -371,8 +371,13 @@ def _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, version):
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
-def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, failure):
-    _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 1)
+def test_v1_upgrade_rolls_back_after_ddl_and_can_retry(request, monkeypatch, failure):
+    if failure == "replace-directory":
+        _observe_upgrade_requests(monkeypatch, 1, failure=failure)
+        return
+    _assert_legacy_upgrade_rolls_back(
+        request.getfixturevalue("tmp_path"), monkeypatch, failure, 1
+    )
 
 
 @pytest.mark.parametrize("failure", ["interrupt", "replace-directory"])
@@ -1313,31 +1318,70 @@ def test_route_disposition_table_enforces_strict_identity_and_commit(tmp_path):
                     conn.execute(insert, values)
 
 
-def test_paired_journal_upgrade_occurs_only_with_first_committed_pair(tmp_path):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        writer.source_evidence()
-        store = journal.JournalStore(writer)
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
-        with pytest.raises(RuntimeError, match="abort pair"):
-            with store.transaction(write=True) as conn:
-                store._enable_paired(conn)
-                raise RuntimeError("abort pair")
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+def test_paired_journal_upgrade_occurs_only_with_first_committed_pair(monkeypatch):
+    memory = _journal_observations(monkeypatch)
+    version = 4
+    attempts = []
+
+    def connection(path, *, write):
+        nonlocal version
+        assert path == memory.store / journal._DATABASE
+        before = version
+        migrations = []
+        conn = MagicMock()
+        conn.in_transaction = False
+
+        def execute(sql, params=()):
+            nonlocal version
+            if sql == ("BEGIN IMMEDIATE" if write else "BEGIN"):
+                assert not conn.in_transaction
+                conn.in_transaction = True
+            elif sql == "PRAGMA foreign_key_check":
+                return SimpleNamespace(fetchone=lambda: None)
+            elif sql == "PRAGMA user_version":
+                return SimpleNamespace(fetchone=lambda: (version,))
+            elif write and sql == journal._PAIRED_SCHEMA:
+                migrations.append(sql)
+            elif write and sql == "PRAGMA user_version = 5":
+                assert migrations == [journal._PAIRED_SCHEMA]
+                version = 5
+            else:
+                pytest.fail(f"Unexpected journal statement {sql}")
+
+        def finish(error, *_):
+            nonlocal version
+            if write:
+                attempts.append((len(migrations), error is None))
+                if error is not None:
+                    version = before
+
+        conn.execute.side_effect = execute
+        conn.__exit__.side_effect = finish
+        return nullcontext(conn)
+
+    def validate(conn, key, *, version=None):
+        assert key == memory.writer.view().source_key_id
+        (reported,) = conn.execute("PRAGMA user_version").fetchone()
+        if version is not None and reported != version:
+            raise LedgerError("Unsupported routing journal schema version")
+        return reported
+
+    memory.open_database.side_effect = connection
+    monkeypatch.setattr(journal, "_validate_identity", validate)
+    writer = memory.writer
+    store = journal.JournalStore(writer)
+    with store.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+    with pytest.raises(RuntimeError, match="abort pair"):
         with store.transaction(write=True) as conn:
             store._enable_paired(conn)
-            conn.execute("INSERT INTO commits VALUES (1)")
-            conn.execute("INSERT INTO paired_settlements VALUES (1, ?)", (b"pair",))
-    with registry.writer() as writer:
-        store = journal.JournalStore(writer)
-        with store.transaction() as conn:
-            assert conn.execute("PRAGMA user_version").fetchone() == (5,)
-            assert conn.execute("SELECT * FROM paired_settlements").fetchall() == [
-                (1, b"pair")
-            ]
-            with pytest.raises(
-                LedgerError, match="Unsupported routing journal schema version"
-            ):
-                journal._validate_identity(conn, writer.view().source_key_id, version=4)
+            raise RuntimeError("abort pair")
+    with store.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (4,)
+    with store.transaction(write=True) as conn:
+        store._enable_paired(conn)
+    reopened = journal.JournalStore(writer)
+    with reopened.transaction() as conn:
+        assert conn.execute("PRAGMA user_version").fetchone() == (5,)
+        reopened._enable_paired(conn)
+    assert attempts == [(1, False), (1, True)]

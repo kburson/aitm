@@ -18,6 +18,8 @@ from delivery_policy_cases import (
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_ledger import _memory_ledger
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
+from test_monitor_journal import LIVE
+from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
 from aitm_usage import backup, install, monitor_journal, service
 from aitm_usage import ledger as ledger_module
@@ -488,14 +490,10 @@ def _restore_test_journal_snapshot(registry, source):
 
 @pytest.mark.usefixtures("legacy_monitor_qualification")
 def test_retained_legacy_journal_snapshot_restores_for_both_readers(
-    tmp_path,
-    monkeypatch,
+    journal_transcript_policy,
 ):
-    from test_monitor_journal import LIVE, NativeJournalFixture
-
-    native = NativeJournalFixture(tmp_path, monkeypatch)
+    native = journal_transcript_policy
     native.append(LIVE, native.turn(3))
-    backup_path = tmp_path / "prior-journal.sqlite3"
     with native.registry.writer() as registry:
         journal = RoutingJournal(registry, ScopeState(registry))
         locator = native.locator(LIVE)
@@ -503,27 +501,29 @@ def test_retained_legacy_journal_snapshot_restores_for_both_readers(
         earlier = journal.as_of()
         prior = journal.cursor_for(LIVE, locator)
         assert earlier.claims and prior is not None
-        _save_test_journal_snapshot(journal, backup_path)
+        store = journal._store
+        claims, progress, commits = (
+            store.claims.copy(),
+            store.progress.copy(),
+            store.commits.copy(),
+        )
         assert (
             _decode(_encode(earlier.claims[0], PendingClaim), _LegacyPendingClaim).usage
             == earlier.claims[0].usage
         )
 
-        with closing(sqlite3.connect(backup_path)) as snapshot:
-            stored = {
-                key: _decode(payload, _LegacyClaim).material.usage
-                for key, payload in snapshot.execute("SELECT key,payload FROM claims")
-            }
-            (progress,) = snapshot.execute(
-                "SELECT cursor FROM progress ORDER BY sequence DESC LIMIT 1"
-            ).fetchone()
-            assert stored == {claim.key.value: claim.usage for claim in earlier.claims}
-            assert _decode(progress, StreamCursor) == prior
+        stored = {
+            key: _decode(payload, _LegacyClaim).material.usage
+            for key, (_, _, payload, _) in claims.items()
+        }
+        (cursor_bytes,) = progress.values()
+        assert stored == {claim.key.value: claim.usage for claim in earlier.claims}
+        assert _decode(cursor_bytes, StreamCursor) == prior
 
         native.append(LIVE, native.turn(4))
         journal.reserve_batch(journal.prepare(LIVE, native.locator(LIVE)))
         assert journal.as_of().sequence > earlier.sequence
-        _restore_test_journal_snapshot(registry, backup_path)
+        store.claims, store.progress, store.commits = claims, progress, commits
         reopened = RoutingJournal(registry, ScopeState(registry))
         assert reopened.as_of() == earlier
         assert reopened.cursor_for(LIVE, native.locator(LIVE)) == prior

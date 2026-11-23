@@ -8,7 +8,6 @@ from contextlib import nullcontext
 from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
-from shutil import copytree
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -158,6 +157,7 @@ class _RecoveryPolicy:
         self.pin = memory.pin
         self.key_path = writer.root / _SOURCE_KEY_FILE
         self.key_stats = memory.files
+        self.store_directory = memory.directory
         self.nested = writer.root / "would-be-witness"
         paths = {writer.root, memory.store, self.root, self.nested}
         identities = {
@@ -259,6 +259,9 @@ def test_view_cannot_escape_before_recovery_fsync(request, monkeypatch, after_li
     assert fence.protect(candidate) == recovered
     assert journal.as_of() == before
     assert len(list(root.iterdir())) == 1
+    _assert_native_fence_reopens_intent_and_requires_held_store(
+        journal, root, recovered
+    )
 
 
 def _assert_retry_after_unpublished_witness(policy, monkeypatch):
@@ -345,25 +348,26 @@ def _observe_witness_publication(policy, monkeypatch):
     return staged, staged_fd, publish
 
 
-def test_restore_with_only_old_witness_holds_replay(dispute_candidates, tmp_path):
-    journal, root, first, second = dispute_candidates
+def test_restore_with_only_old_witness_holds_replay(recovery_policy):
+    journal, root = recovery_policy.journal, recovery_policy.root
+    first, second = recovery_policy.disputes()
     fence = RecoveryFence(journal, root)
     one = fence.protect(first)
-    older = tmp_path / "old-witness"
-    copytree(root, older)
+    older = recovery_policy.files.copy()
     two = fence.protect(second)
     assert one.candidate.sequence == two.candidate.sequence
     assert one.anchor != two.anchor
     current = fence.recover(two.anchor)
     assert current.common == two.anchor
     assert not current.held
-    rolled_back = RecoveryFence(journal, older)
+    recovery_policy.files = older
+    rolled_back = RecoveryFence(journal, root)
     result = rolled_back.recover(two.anchor)
     assert result.held
     assert result.common == one.anchor
     with pytest.raises(LedgerError):
         rolled_back.protect(second)
-    assert len(list(older.iterdir())) == 1
+    assert len(recovery_policy.files) == 1
 
 
 @pytest.mark.parametrize("missing", [True, False], ids=["missing", "modified"])
@@ -567,9 +571,23 @@ def test_fence_refuses_lost_coordinator_custody(recovery_custody_policy, monkeyp
 
 
 def test_journal_store_key_and_lease_share_the_derived_rollback_root(
-    coverage_candidate,
+    recovery_custody_policy,
 ):
-    journal, root, candidate = coverage_candidate
+    policy = recovery_custody_policy
+    journal, root, candidate = policy.journal, policy.root, policy.coverage()
+    store = policy.store_directory
+    writer = journal._writer
+    assert writer.lease.identities[:2] == store.identities[:2]
+    assert RecoveryFence(journal, root).protect(candidate).candidate == candidate
+    store.identities = (*store.identities[:-1], (1, 99))
+    with pytest.raises(LedgerError, match="recovery is held"):
+        RecoveryFence(journal, root).protect(candidate)
+    assert len(policy.files) == 1
+
+
+def _assert_native_fence_reopens_intent_and_requires_held_store(
+    journal, root, publication
+):
     writer = journal._writer
     lease = writer.lease
     key = writer.root / _SOURCE_KEY_FILE
@@ -584,13 +602,26 @@ def test_journal_store_key_and_lease_share_the_derived_rollback_root(
         ):
             actual = os.stat(name, dir_fd=rollback.fd, follow_symlinks=False)
             assert os.path.samestat(actual, expected)
-    assert RecoveryFence(journal, root).protect(candidate).candidate == candidate
+    fence = RecoveryFence(journal, root, verify_receiver=_verify_receiver)
+    delivery = _receiver_delivery(journal, publication)
+    intent = fence.record_export_intent(delivery)
+    assert intent.can_send
+    reopened = RecoveryFence(journal, root, verify_receiver=_verify_receiver)
+    assert reopened.recover(intent.anchor).common == intent.anchor
+    assert reopened.record_export_intent(delivery) == replace(intent, can_send=False)
+    accepted = _receipt(intent, ReceiverDisposition.ACCEPTED)
+    assert (
+        reopened.record_receiver_evidence(intent, accepted)
+        is ReceiverDisposition.ACCEPTED
+    )
+    persisted = tuple(sorted(root.iterdir()))
+    assert len(persisted) == 3
     moved = root.parent / "moved-store"
     store.rename(moved)
     store.symlink_to(moved, target_is_directory=True)
     with pytest.raises(LedgerError):
-        RecoveryFence(journal, root).protect(candidate)
-    assert len(list(root.iterdir())) == 1
+        reopened.protect(publication.candidate)
+    assert tuple(sorted(root.iterdir())) == persisted
 
 
 _RECEIVER_KEY = b"fixture receiver has an independent signing key"
@@ -637,8 +668,9 @@ def _receiver_delivery(journal, publication):
     )
 
 
-def test_interrupted_export_requires_receiver_reconciliation(coverage_candidate):
-    journal, root, candidate = coverage_candidate
+def test_interrupted_export_requires_receiver_reconciliation(recovery_policy):
+    journal, root = recovery_policy.journal, recovery_policy.root
+    candidate = recovery_policy.coverage()
     fence = RecoveryFence(journal, root, verify_receiver=_verify_receiver)
     delivery = _receiver_delivery(journal, fence.protect(candidate))
     first = fence.record_export_intent(delivery)
@@ -664,7 +696,7 @@ def test_interrupted_export_requires_receiver_reconciliation(coverage_candidate)
     assert restarted.record_receiver_evidence(second, accepted) is (
         ReceiverDisposition.ACCEPTED
     )
-    files = {item.name: item.read_bytes() for item in root.iterdir()}
+    files = recovery_policy.files.copy()
     assert restarted.record_receiver_evidence(first, accepted) is (
         ReceiverDisposition.ACCEPTED
     )
@@ -675,7 +707,7 @@ def test_interrupted_export_requires_receiver_reconciliation(coverage_candidate)
         is ReceiverDisposition.HELD
     )
     assert not restarted.record_export_intent(delivery).can_send
-    assert files == {item.name: item.read_bytes() for item in root.iterdir()}
+    assert files == recovery_policy.files
     assert all(accepted.proof.hex().encode() not in data for data in files.values())
 
 

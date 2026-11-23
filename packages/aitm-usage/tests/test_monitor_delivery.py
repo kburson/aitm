@@ -1,11 +1,12 @@
 """Exercise committed claims and the two private destination commits."""
 
-import hashlib
 import json
 import sqlite3
-from contextlib import closing, contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -14,6 +15,7 @@ from delivery_policy_cases import (
     delivery_destinations,
     delivery_journal_rows,
 )
+from test_ledger import _memory_ledger
 from test_monitor_journal import (
     COPY,
     LIVE,
@@ -25,6 +27,8 @@ from test_monitor_journal import (
 from test_monitor_journal import journal_claude_policy as journal_claude_policy
 from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
+from aitm_usage import _monitor_journal_store as storage
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_journal import (
     _OWNERSHIP_DISPUTE_ROWS,
@@ -89,7 +93,16 @@ def test_restart_at_reserve_commit_and_ack_yields_one_row(native):
     with native.registry.writer() as registry:
         journal = _journal(registry)
         (reserved,) = _reserve(native, journal)
+        prior_journal = journal.as_of()
+        original = Ledger.open(root, A)
+        prior_project = original.as_of()
         _enable(native, journal)
+        assert journal.as_of() == prior_journal
+        assert original.identity.schema_version == 1
+        upgraded = Ledger.open(root, A)
+        assert upgraded.identity.schema_version == ledger_module.DELIVERY_SCHEMA_VERSION
+        assert upgraded.as_of() == prior_project
+        assert upgraded.monitor_as_of(prior_project.sequence).legacy == prior_project
         tip = journal.as_of().sequence
         ticket = journal.reserve_delivery(reserved.key, 1)
         assert journal.as_of().sequence == tip
@@ -110,6 +123,18 @@ def test_restart_at_reserve_commit_and_ack_yields_one_row(native):
         with Ledger.open(root, A).writer() as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             assert delivery.commit(ticket) == result
+            original_key = writer.key_path.read_bytes()
+            changed_key = original_key[:-1] + bytes([original_key[-1] ^ 1])
+            writer.key_path.write_bytes(changed_key)
+            try:
+                with pytest.raises(LedgerError, match="identity changed"):
+                    delivery.commit(ticket)
+                with pytest.raises(LedgerError, match="identity changed"):
+                    delivery._readback(ticket, result)
+                with pytest.raises(_DeliveryRefused):
+                    journal.ack(delivery, ticket, result)
+            finally:
+                writer.key_path.write_bytes(original_key)
             ack = journal.ack(delivery, ticket, result)
             assert journal.as_of().sequence == tip + 1
 
@@ -297,46 +322,48 @@ def test_destination_transaction_rolls_back_when_receipt_insert_fails(
             assert delivery.commit(ticket).sequence == head + 1
 
 
-def test_foreign_writer_and_substituted_project_keys_cannot_deliver(native):
+def test_foreign_writer_and_substituted_project_keys_cannot_deliver(monkeypatch):
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as registry:
         journal = _journal(registry)
         (reserved,) = _reserve(native, journal)
-        _enable(native, journal)
+        store.delivery_enabled = True
         ticket = journal.reserve_delivery(reserved.key, 1)
-        root = native.ledgers[A].root
-        with Ledger.open(native.ledgers[B].root, B).writer() as writer:
+        open_destination = delivery_destinations(monkeypatch, journal, A, B)
+        with open_destination(B) as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             with pytest.raises(_DeliveryRefused, match="belongs to another project"):
                 delivery.commit(ticket)
             assert writer.monitor_as_of(writer.as_of().sequence).revisions == ()
-        with Ledger.open(root, A).writer() as writer:
+        with open_destination(A) as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             receipt = delivery.commit(ticket)
-            original_key = writer.key_path.read_bytes()
-            changed_key = original_key[:-1] + bytes([original_key[-1] ^ 1])
-            writer.key_path.write_bytes(changed_key)
-            try:
+            before = journal.as_of().sequence
+            with monkeypatch.context() as fault:
+                observed = Mock(return_value=b"replaced writer key")
+                fault.setattr(ledger_module, "_read_key", observed)
                 with pytest.raises(LedgerError, match="identity changed"):
                     delivery.commit(ticket)
                 with pytest.raises(LedgerError, match="identity changed"):
                     delivery._readback(ticket, receipt)
                 with pytest.raises(_DeliveryRefused):
                     journal.ack(delivery, ticket, receipt)
-            finally:
-                writer.key_path.write_bytes(original_key)
+                assert observed.call_count == 3
+                assert journal.as_of().sequence == before
             assert writer._monitor_delivery_receipt(receipt.key, 1) == receipt
             ack = journal.ack(delivery, ticket, receipt)
-        writer.key_path.write_bytes(changed_key)
-        key_id = "sha256:" + hashlib.sha256(changed_key[16:]).hexdigest()
-        with closing(sqlite3.connect(writer.database_path)) as conn:
-            with conn:
-                conn.execute("UPDATE identity SET key_id=?", (key_id,))
-            with Ledger.open(root, A).writer() as substitute:
-                assert substitute.identity.key_id == key_id
-                with pytest.raises(
-                    _DeliveryRefused, match="Destination ledger key changed"
-                ):
-                    ProjectDelivery.attach(journal, substitute)
+        substitute = replace(
+            _memory_ledger(ledger_module, A, b"substitute project signing key"),
+            root=writer.root,
+        )
+        with monkeypatch.context() as changed:
+            writer, _ = delivery_destination(changed, journal, substitute)
+            assert writer.identity.key_id != receipt.destination_key
+            with pytest.raises(
+                _DeliveryRefused, match="Destination ledger key changed"
+            ):
+                ProjectDelivery.attach(journal, writer)
         assert (
             journal.delivery_tail(A, receipt.destination_key) == receipt.claim_sequence
         )
@@ -429,47 +456,105 @@ def test_content_dispute_blocks_new_destination_ack(journal_claude_policy, monke
         assert journal.as_of().sequence == dispute.sequence
 
 
-def test_delivery_upgrades_are_explicit_and_keep_existing_histories(native):
-    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION
-    from aitm_usage.ledger import DELIVERY_SCHEMA_VERSION
-    from aitm_usage.monitor_registry import ProjectRegistrationRequest
-
-    root = native.ledgers[A].root
-    project = Ledger.open(root, A)
-    previous = project.as_of()
+def test_delivery_upgrades_are_explicit_and_keep_existing_histories(
+    journal_transcript_policy, monkeypatch
+):
+    native = journal_transcript_policy
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as registry:
         journal = _journal(registry)
         (existing,) = _reserve(native, journal)
         old = journal.as_of()
+        native_version = storage._SCHEMA_VERSION
+        observed_ddl = []
+        rows = store.execute
+
+        def statements(sql, params=()):
+            nonlocal native_version
+            if sql == "PRAGMA foreign_key_check":
+                return SimpleNamespace(fetchone=lambda: None)
+            if sql in storage._DELIVERY_SCHEMA:
+                observed_ddl.append(sql)
+                return None
+            if sql == f"PRAGMA user_version = {storage._DELIVERY_SCHEMA_VERSION}":
+                native_version = storage._DELIVERY_SCHEMA_VERSION
+                return None
+            return rows(sql, params)
+
+        def journal_identity(connection, key, *, version):
+            assert connection is store and key == store.evidence.key_id
+            assert version == native_version
+
+        monkeypatch.setattr(store, "execute", statements)
+        monkeypatch.setattr(store, "_writer", registry, raising=False)
+        monkeypatch.setattr(store, "_key_id", store.evidence.key_id, raising=False)
+        monkeypatch.setattr(store, "in_transaction", True, raising=False)
+        monkeypatch.setattr(store, "_current_version", lambda _: native_version)
+        monkeypatch.setattr(
+            store,
+            "_enable_delivery",
+            storage.JournalStore._enable_delivery.__get__(store),
+            raising=False,
+        )
+        monkeypatch.setattr(storage, "_validate_identity", journal_identity)
         with pytest.raises(LedgerError, match="coverage schema"):
             journal.enable_delivery(old.sequence)
+        assert observed_ddl == []
+
+        project = replace(
+            _memory_ledger(ledger_module, A, b"project delivery migration"),
+            _writer=object(),
+            _write_paths=SimpleNamespace(check=Mock()),
+        )
+        project_version = ledger_module.SCHEMA_VERSION
+        project_ddl = []
+
+        def destination_sql(sql):
+            nonlocal project_version
+            if sql == "SELECT COALESCE(MAX(sequence), 0) FROM commits":
+                return SimpleNamespace(fetchone=lambda: (3,))
+            if sql == "PRAGMA foreign_key_check":
+                return SimpleNamespace(fetchone=lambda: None)
+            prefix = "PRAGMA user_version = "
+            if sql.startswith(prefix):
+                project_version = int(sql.removeprefix(prefix))
+            else:
+                project_ddl.append(sql)
+
+        connection = SimpleNamespace(execute=destination_sql)
+        monkeypatch.setattr(
+            Ledger, "_write_transaction", lambda _: nullcontext(connection)
+        )
+
+        def project_identity(actual, identity):
+            assert actual is connection and identity.schema_version == project_version
+
+        monkeypatch.setattr(ledger_module, "_validate_identity", project_identity)
         with pytest.raises(LedgerError, match="monitor ledger schema"):
-            project.upgrade_delivery_schema(previous.sequence)
-        _enable(native, journal)
+            project.upgrade_delivery_schema(3)
+        assert project_ddl == []
+
+        native_version = storage._COVERAGE_SCHEMA_VERSION
+        journal.enable_delivery(old.sequence)
+        assert observed_ddl == list(storage._DELIVERY_SCHEMA)
         assert journal.as_of() == old
         assert journal.reserve_delivery(existing.key, 1).claim == old.claims[0]
         assert project.identity.schema_version == 1
-
-        project = Ledger.open(root, A)
-        assert project.identity.schema_version == DELIVERY_SCHEMA_VERSION
-        assert project.as_of() == previous
-        assert project.monitor_as_of(previous.sequence).legacy == previous
-        assert project.upgrade_monitor_schema(previous.sequence) == project.identity
-        assert (
-            registry.register_project(
-                ProjectRegistrationRequest(
-                    A, str(root), "Project 1", anchors=(str(native.anchors[A]),)
-                )
-            ).project_id
-            == A
-        )
-        with pytest.raises(ConflictError):
+        project = replace(project, identity=project.upgrade_monitor_schema(3))
+        project = replace(project, identity=project.upgrade_delivery_schema(3))
+        assert project.identity.schema_version == ledger_module.DELIVERY_SCHEMA_VERSION
+        assert project.upgrade_monitor_schema(3) == project.identity
+        assert project_ddl == [
+            *ledger_module._MONITOR_SCHEMA,
+            ledger_module._DELIVERY_SCHEMA,
+        ]
+        with pytest.raises(ConflictError, match="Journal changed"):
             journal.enable_delivery(old.sequence + 1)
-        with pytest.raises(ConflictError):
-            project.upgrade_delivery_schema(previous.sequence + 1)
-        with journal._store.transaction(write=True) as conn:
-            journal._store._enable_coverage(conn)
-            assert journal._store._current_version(conn) == _DELIVERY_SCHEMA_VERSION
+        with pytest.raises(ConflictError, match="Ledger changed"):
+            project.upgrade_delivery_schema(4)
+        storage.JournalStore._enable_coverage(store, store)
+        assert native_version == storage._DELIVERY_SCHEMA_VERSION
+        assert observed_ddl == list(storage._DELIVERY_SCHEMA)
 
 
 @pytest.mark.parametrize("written_before_supersession", [False, True])

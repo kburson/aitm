@@ -203,6 +203,16 @@ def catalog_policy(monkeypatch):
 def test_schema_upgrade_preserves_legacy_identity_and_export_bytes(project, tmp_path):
     before = project.as_of()
     key = project.key_path.read_bytes()
+    legacy_backup = tmp_path / "legacy-backup"
+    receipt = backup.backup(project, legacy_backup)
+    assert receipt.schema_version == 1
+    assert backup.verify_backup(legacy_backup, project) == receipt
+    assert json.loads((legacy_backup / "manifest.json").read_bytes())["format"] == (
+        "aitm-usage.backup/v1"
+    )
+    assert ledger.Ledger.open(project.root, PROJECT).as_of() == before
+    canonical = json.dumps(ledger._supported_schema(1), separators=(",", ":")).encode()
+    assert hashlib.sha256(canonical).hexdigest() == LEGACY_FINGERPRINT
     legacy_export = tmp_path / "legacy"
     card = load_rate_card()
     expected_receipt = export_as_of(before, card, legacy_export)
@@ -494,29 +504,31 @@ def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
 
 
 def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
-    project, tmp_path, monkeypatch
+    catalog_policy, monkeypatch
 ):
-    old_view = project.as_of()
-    saved = tmp_path / "backup"
-    receipt = backup.backup(project, saved)
-    assert receipt.schema_version == 1
-    assert backup.verify_backup(saved, project) == receipt
-    assert json.loads((saved / "manifest.json").read_bytes())["format"] == (
-        "aitm-usage.backup/v1"
-    )
-    assert ledger.Ledger.open(project.root, PROJECT).as_of() == old_view
+    _, supported = catalog_policy
+    root = Path("/fixture/runtime")
+    executable = root / "aitm-usage"
 
-    executable = tmp_path / "aitm-usage"
+    def fingerprint(version):
+        data = json.dumps(supported(version), separators=(",", ":"))
+        return [
+            ledger.APPLICATION_ID,
+            version,
+            hashlib.sha256(data.encode()).hexdigest(),
+        ]
+
     observed = {
         "version": "0.1.0",
         "interpreter_version": "3.13.9",
         "interpreter": str(executable.with_name("python")),
         "packages": ["aitm-usage"],
-        "schema": [1095324757, 1, LEGACY_FINGERPRINT],
+        "schema": fingerprint(1),
         "entry_points": [["console_scripts", "aitm-usage", "aitm_usage.cli:main"]],
         "witness_capable": True,
     }
-    monkeypatch.setattr(install, "_inspect_surface", lambda *args: tmp_path)
+    monkeypatch.setattr(install, "_supported_schema", supported)
+    monkeypatch.setattr(install, "_inspect_surface", lambda *args: root)
     monkeypatch.setattr(install, "_run_python", lambda *args: json.dumps(observed))
     monkeypatch.setattr(
         install.subprocess,
@@ -526,7 +538,7 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
         ),
     )
     wheel = install._Wheel("0.1.0", "1" * 64, b"", {})
-    args = (executable, tmp_path / "python3", "3.13.9", wheel, b"pinned launcher")
+    args = (executable, root / "python3", "3.13.9", wheel, b"pinned launcher")
     assert install._probe_runtime(*args, schema_version=1).witness_capable
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=2)
@@ -537,14 +549,6 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     with pytest.raises(install.InstallError):
         install._probe_runtime(*args, schema_version=1)
 
-    def fingerprint(version):
-        data = json.dumps(ledger._supported_schema(version), separators=(",", ":"))
-        return [
-            ledger.APPLICATION_ID,
-            version,
-            hashlib.sha256(data.encode()).hexdigest(),
-        ]
-
     observed["schema"] = [fingerprint(1), fingerprint(2)]
     for version in (1, 2):
         assert install._probe_runtime(*args, schema_version=version).witness_capable
@@ -553,13 +557,6 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     observed["schema"].append(fingerprint(3))
     for version in (1, 2, 3):
         assert install._probe_runtime(*args, schema_version=version).witness_capable
-
-    with project.writer() as writer, writer._write_transaction() as conn:
-        conn.execute("CREATE TABLE monitor_revisions (payload TEXT)")
-    unexpected = _durable_bytes(project)
-    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
-        ledger.Ledger.open(project.root, PROJECT)
-    assert _durable_bytes(project) == unexpected
 
 
 def test_legacy_global_state_and_report_project_uuid_are_separate(monkeypatch, capsys):

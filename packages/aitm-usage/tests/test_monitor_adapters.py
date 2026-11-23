@@ -377,7 +377,8 @@ def test_codex_receipt_usage_span_includes_the_later_native_counter(
     assert observation.span_end == 10
 
 
-def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
+def test_linux_codex_native_marker_and_cold_replay(monkeypatch, native_files):
+    source = native_files.source
     module, adapter, root = _adapter(
         monkeypatch, source, system="Linux", arch="aarch64"
     )
@@ -395,7 +396,7 @@ def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
     lines = data.splitlines(keepends=True)
     archived = b"".join(lines[:22])
     path = directory / "cli.jsonl"
-    path.write_bytes(archived)
+    native_files.contents[path] = archived
     (locator,) = adapter.discover(root)
     result = adapter.read_delta(locator, None)
 
@@ -412,10 +413,9 @@ def test_linux_codex_native_marker_and_cold_replay(monkeypatch, source):
     assert result.cursor.checkpoint.cursor.offset == len(archived)
     saved = _decode(_encode(result.cursor, module.StreamCursor), module.StreamCursor)
 
-    with path.open("ab") as stream:
-        stream.write(b"".join(lines[22:]))
+    native_files.contents[path] += b"".join(lines[22:])
     assert (
-        sha256(path.read_bytes()[: saved.checkpoint.cursor.offset]).digest()
+        sha256(native_files.contents[path][: saved.checkpoint.cursor.offset]).digest()
         == sha256(archived).digest()
     )
     cold = module.ProviderAdapter()

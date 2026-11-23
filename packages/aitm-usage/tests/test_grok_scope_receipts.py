@@ -644,22 +644,26 @@ def test_darwin_walk_refuses_invalid_parent_depth_and_birth_order(monkeypatch):
 
 @pytest.mark.parametrize("same_path", [False, True], ids=["new-path", "same-path"])
 def test_hook_refuses_executable_change_during_final_ancestry_check(
-    request, monkeypatch, same_path
+    monkeypatch, same_path
 ):
+    image_path = _observed_executable(17)
+    replacement = _observed_executable(18)
+    monkeypatch.setattr(process_identity, "process_reference_domain", lambda: "")
+
+    def changed_executable():
+        if same_path:
+            image_path.stat.return_value = replacement.stat.return_value
+            return image_path
+        return replacement
+
+    _assert_hook_refuses_executable_change(monkeypatch, image_path, changed_executable)
+
+
+def _assert_hook_refuses_executable_change(monkeypatch, image_path, changed_executable):
     from aitm_usage.sources import grok_scope_hook
 
     evidence = _ServiceEvidence(b"g" * 32)
     start = datetime(2026, 11, 9, 12, tzinfo=UTC)
-    if same_path:
-        root = request.getfixturevalue("tmp_path")
-        image_path = root / "candidate"
-        replacement = root / "replacement"
-        image_path.write_bytes(b"original executable image")
-        replacement.write_bytes(b"new executable image")
-    else:
-        image_path = _observed_executable(17)
-        replacement = _observed_executable(18)
-        monkeypatch.setattr(process_identity, "process_reference_domain", lambda: "")
     process = process_identity.ProcessIdentity(33503, start, image_path)
     name = scope_admission._grok_process_ref(evidence, process.pid, process.started)
     image = scope_admission._grok_image_ref(evidence, process.executable)
@@ -677,10 +681,7 @@ def test_hook_refuses_executable_change_during_final_ancestry_check(
     def read_hop(pid):
         nonlocal changed, observed
         if image_read and not changed:
-            if same_path:
-                replacement.replace(process.executable)
-            else:
-                observed = replace(process, executable=replacement)
+            observed = replace(process, executable=changed_executable())
             changed = True
         return (process.pid if pid == caller else 1), process.started
 
@@ -696,6 +697,7 @@ def test_hook_refuses_executable_change_during_final_ancestry_check(
 def test_platform_native_process_custody_has_no_provider_request(
     isolated_grok_capture,  # noqa: F811
     monkeypatch,
+    tmp_path,
 ):
     import io
 
@@ -703,6 +705,14 @@ def test_platform_native_process_custody_has_no_provider_request(
 
     f = isolated_grok_capture
     evidence = f.writer.source_evidence()
+    image_path = tmp_path / "candidate"
+    replacement = tmp_path / "replacement"
+    image_path.write_bytes(b"original executable image")
+    replacement.write_bytes(b"new executable image")
+    with monkeypatch.context() as patch:
+        _assert_hook_refuses_executable_change(
+            patch, image_path, lambda: replacement.replace(image_path)
+        )
     if sys.platform in ("darwin", "linux") and os.getppid() > 1:
         parent = process_identity.read_process_identity(os.getppid())
         assert parent is not None

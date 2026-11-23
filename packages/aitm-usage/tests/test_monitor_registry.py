@@ -65,16 +65,34 @@ def test_monitor_registry_can_be_opened_without_creating_state(monkeypatch):
     create.assert_not_called()
 
 
-def test_two_clones_share_identity_but_nested_foreign_anchor_fails(tmp_path):
-    module = _module()
-    registry = module.Registry(tmp_path / "monitor")
-    assert registry.view().projects == ()
-    assert not registry.root.exists()
-    first = _directory(tmp_path, "first")
-    clone = _directory(tmp_path, "clone")
-    nested = _directory(clone, "nested")
-    request = _request(module, tmp_path, anchors=(first, clone))
-    other = _request(module, tmp_path, PROJECT_B, anchors=(nested,))
+def test_two_clones_share_identity_but_nested_foreign_anchor_fails(
+    registry_policy, monkeypatch
+):
+    module, registry = registry_policy.module, registry_policy.registry
+    (existing,) = registry.view().projects
+    base = Path("/fixture")
+    first, clone = base / "first", base / "clone"
+    nested, alias = clone / "nested", base / "alias"
+    foreign_state = base / "foreign-state"
+    physical = module._PhysicalDirectory
+
+    def directory(raw, *, private=False):
+        path = Path(raw)
+        if path == Path(existing.state.path):
+            assert private
+            return existing.state
+        if path == alias:
+            path = clone
+        return physical(str(path), registry_policy.native._identity(path))
+
+    monkeypatch.setattr(module, "_directory", directory)
+    monkeypatch.setattr(module, "_identity", registry_policy.native._identity)
+    request = module.ProjectRegistrationRequest(
+        PROJECT_A, existing.state.path, "owner", anchors=(str(first), str(clone))
+    )
+    other = module.ProjectRegistrationRequest(
+        PROJECT_B, str(foreign_state), "foreign", anchors=(str(nested),)
+    )
     with registry.writer() as writer:
         project = writer.register_project(request)
         renamed = writer.register_project(
@@ -82,13 +100,11 @@ def test_two_clones_share_identity_but_nested_foreign_anchor_fails(tmp_path):
         )
         assert project.project_id == renamed.project_id == PROJECT_A
         assert project.anchors == renamed.anchors and len(project.anchors) == 2
-        with pytest.raises(ConflictError):
+        with pytest.raises(ConflictError, match="checkout anchors overlap"):
             writer.register_project(other)
-        with pytest.raises(ConflictError):
-            writer.register_project(replace(other, anchors=(str(tmp_path),)))
-        alias = tmp_path / "alias"
-        alias.symlink_to(clone, target_is_directory=True)
-        with pytest.raises(ConflictError):
+        with pytest.raises(ConflictError, match="checkout anchors overlap"):
+            writer.register_project(replace(other, anchors=(str(base),)))
+        with pytest.raises(ConflictError, match="checkout anchors overlap"):
             writer.register_project(replace(other, anchors=(str(alias),)))
     assert registry.view().projects == (renamed,)
 
@@ -407,33 +423,44 @@ def test_destination_key_cannot_issue_a_native_capture_boundary(registry_policy)
             writer.capture_frontier(change, _locate(policy.reader, root))
 
 
-def test_adopted_path_and_key_are_pinned(tmp_path, monkeypatch):
-    module = _module()
-    registry = module.Registry(tmp_path / "monitor")
+def test_adopted_path_and_key_are_pinned(registry_policy, monkeypatch):
+    from unittest.mock import Mock
+
+    module, registry = registry_policy.module, registry_policy.registry
+    (registered,) = registry.view().projects
+    state = Path(registered.state.path)
+    key_id = "a" * 64
+    opened = Mock(return_value=SimpleNamespace(identity=SimpleNamespace(key_id=key_id)))
     monkeypatch.setattr(module, "default_monitor_root", lambda: registry.root)
-    monkeypatch.setattr(
-        "aitm_usage.ledger._control_root", lambda: tmp_path / "legacy-guard"
-    )
-    request = _request(module, tmp_path)
-    state = Path(request.state_dir)
-    ledger = Ledger.initialize(state, PROJECT_A)
+    monkeypatch.setattr(module.Ledger, "open", opened)
+    module.check_legacy_mutation(state)
+    opened.assert_not_called()
     with registry.writer() as writer:
-        registered = writer.register_project(request)
-        module.check_legacy_mutation(state)
-        view = writer.view()
         writer._save(
             replace(
-                view,
-                projects=(replace(registered, adopted_key_id=ledger.identity.key_id),),
+                writer.view(),
+                projects=(replace(registered, adopted_key_id=key_id),),
             )
         )
+    original_exists = module._path_exists
+    monkeypatch.setattr(
+        module, "_path_exists", lambda p: p == state or original_exists(p)
+    )
     with pytest.raises(module.ProjectAdopted):
         module.check_legacy_mutation(state)
-    state.rename(state.with_name("moved-state"))
-    os.mkdir(state, 0o700)
-    with pytest.raises(LedgerError) as caught:
+    opened.assert_called_once_with(state, PROJECT_A)
+    opened.return_value.identity.key_id = "b" * 64
+    with pytest.raises(LedgerError, match="project key changed"):
         module.check_legacy_mutation(state)
-    assert not isinstance(caught.value, module.ProjectAdopted)
+    monkeypatch.setattr(
+        module,
+        "_directory",
+        lambda path, *, private: replace(registered.state, identity=(1, 999)),
+    )
+    opened.reset_mock()
+    with pytest.raises(LedgerError, match="state identity changed"):
+        module.check_legacy_mutation(state)
+    opened.assert_not_called()
 
 
 def test_lease_free_snapshot_read_survives_atomic_replacement(tmp_path, monkeypatch):
@@ -467,6 +494,37 @@ def test_lease_free_snapshot_read_survives_atomic_replacement(tmp_path, monkeypa
             patch.setattr(os, "fsync", sync_directory)
             assert registry.view(_confirm_publication=True) == next_view
         assert len(synced) == 1 and os.path.samestat(synced[0], root_info)
+
+        checkout = _directory(tmp_path, "checkout")
+        nested = _directory(checkout, "nested")
+        alias = tmp_path / "alias"
+        alias.symlink_to(checkout, target_is_directory=True)
+        registered = writer.register_project(replace(request, anchors=(str(checkout),)))
+        foreign = _request(module, tmp_path, PROJECT_B)
+        for conflicting in (nested, tmp_path, alias):
+            with pytest.raises(ConflictError, match="checkout anchors overlap"):
+                writer.register_project(replace(foreign, anchors=(str(conflicting),)))
+
+        state = Path(request.state_dir)
+        monkeypatch.setattr(module, "default_monitor_root", lambda: registry.root)
+        monkeypatch.setattr(
+            "aitm_usage.ledger._control_root", lambda: tmp_path / "legacy-guard"
+        )
+        ledger = Ledger.initialize(state, PROJECT_A)
+        writer._save(
+            replace(
+                writer.view(),
+                projects=(replace(registered, adopted_key_id=ledger.identity.key_id),),
+            )
+        )
+    with pytest.raises(module.ProjectAdopted):
+        module.check_legacy_mutation(state)
+    moved = state.with_name("moved-state")
+    state.rename(moved)
+    os.mkdir(state, 0o700)
+    with pytest.raises(LedgerError, match="state identity changed"):
+        module.check_legacy_mutation(state)
+    assert Ledger.open(moved, PROJECT_A).identity.key_id == ledger.identity.key_id
 
 
 def _physical_ordinal(log):
@@ -1486,12 +1544,11 @@ def test_disable_future_enrollment_while_approved_root_is_unavailable(monkeypatc
 @pytest.mark.parametrize("timing", ["before-arm", "after-arm"])
 @pytest.mark.parametrize("reuse_name", [False, True], ids=["vacant", "occupied"])
 def test_moved_enrolled_stream_does_not_stall_disable(
-    request, monkeypatch, callback, timing, reuse_name
+    queued_disable_policy, registry_policy, monkeypatch, callback, timing, reuse_name
 ):
-    durable = (reuse_name, timing, callback) == (True, "after-arm", "omitted")
-    fixture = "queued_disable" if durable else "queued_disable_policy"
-    scenario = request.getfixturevalue(fixture)
-    native = None if durable else request.getfixturevalue("registry_policy").native
+    from scanner_policy_cases import scanner
+
+    scenario, native = queued_disable_policy, registry_policy.native
     log, start = scenario.enroll_second()
     prefix = _physical_ordinal(log)
     stream = start.stream_ref
@@ -1501,69 +1558,46 @@ def test_moved_enrolled_stream_does_not_stall_disable(
     archive = scenario.root.path / "archive"
     old_path = log.path
 
-    if native is None:
-        archive.mkdir()
-        original = old_path.stat()
+    original = native._identity(old_path)
+    old = _locate(scenario.reader, scenario.root, stream)._source
 
-        def archive_stream():
-            log.path = old_path.rename(archive / old_path.name)
-            assert os.path.samestat(log.path.stat(), original)
-            if reuse_name:
-                replacement = _DesktopLog(
-                    old_path, log.checkout, session=UUID(int=1000)
-                )
-                assert not os.path.samestat(replacement.path.stat(), original)
-            assert (
-                _locate(scenario.reader, scenario.root, stream)._source._path
-                == log.path
-            )
+    def transcripts(descriptor, root):
+        assert native._identity(root) == descriptor
+        return sorted(path for path in native.contents if path.is_relative_to(root))
 
-    else:
-        from scanner_policy_cases import scanner
+    monkeypatch.setattr(scanner, "_transcripts", transcripts)
+    monkeypatch.setattr(
+        scanner,
+        "_within_source_roots",
+        lambda candidate: (
+            candidate._path in native.contents
+            and candidate._path.is_relative_to(scenario.root.path)
+        ),
+    )
 
-        original = native._identity(old_path)
-        old = _locate(scenario.reader, scenario.root, stream)._source
+    def archive_stream():
+        log.path = archive / old_path.name
+        native.contents[log.path] = native.contents.pop(old_path)
+        native.identities[log.path] = native.identities.pop(old_path)
+        assert native._identity(log.path) == original
+        if reuse_name:
+            _MemoryDesktopLog(native, old_path, session=UUID(int=1000))
+            assert native._identity(old_path) != original
+        assert _locate(scenario.reader, scenario.root, stream)._source._path == log.path
 
-        def transcripts(descriptor, root):
-            assert native._identity(root) == descriptor
-            return sorted(path for path in native.contents if path.is_relative_to(root))
-
-        monkeypatch.setattr(scanner, "_transcripts", transcripts)
-        monkeypatch.setattr(
-            scanner,
-            "_within_source_roots",
-            lambda candidate: (
-                candidate._path in native.contents
-                and candidate._path.is_relative_to(scenario.root.path)
+        _observe_locator(
+            monkeypatch,
+            scenario,
+            native,
+            old,
+            lambda: scanner._CaptureLocatorPresence(
+                at_locator=reuse_name,
+                same_incarnation=True,
+                locator_size=len(native.contents[old_path]) if reuse_name else None,
+                locator_is_original=False,
+                prefix_changed=False,
             ),
         )
-
-        def archive_stream():
-            log.path = archive / old_path.name
-            native.contents[log.path] = native.contents.pop(old_path)
-            native.identities[log.path] = native.identities.pop(old_path)
-            assert native._identity(log.path) == original
-            if reuse_name:
-                _MemoryDesktopLog(native, old_path, session=UUID(int=1000))
-                assert native._identity(old_path) != original
-            assert (
-                _locate(scenario.reader, scenario.root, stream)._source._path
-                == log.path
-            )
-
-            _observe_locator(
-                monkeypatch,
-                scenario,
-                native,
-                old,
-                lambda: scanner._CaptureLocatorPresence(
-                    at_locator=reuse_name,
-                    same_incarnation=True,
-                    locator_size=len(native.contents[old_path]) if reuse_name else None,
-                    locator_is_original=False,
-                    prefix_changed=False,
-                ),
-            )
 
     def locate(change, known):
         assert change in (scenario.disable, scenario.enable)

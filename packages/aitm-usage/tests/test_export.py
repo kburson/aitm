@@ -677,20 +677,54 @@ def test_refuses_unsafe_or_different_destination(
         assert metadata.entries == before
         return
 
+    if kind == "symlink":
+        metadata = request.getfixturevalue("ledger_path_metadata")
+        destination = metadata.base / "destination"
+        target = metadata.base / "target"
+        metadata.add_directory(destination)
+        metadata.replace_with_link(destination, target)
+        before = dict(metadata.entries)
+        parent_info = destination.parent.lstat()
+        open_parent = Mock(return_value=13)
+        close_parent = Mock()
+        stage = Mock(side_effect=AssertionError("Linked destination reached staging"))
+        monkeypatch.setattr(
+            export,
+            "os",
+            SimpleNamespace(
+                O_RDONLY=os.O_RDONLY,
+                O_DIRECTORY=os.O_DIRECTORY,
+                O_NOFOLLOW=os.O_NOFOLLOW,
+                open=open_parent,
+                fstat=lambda fd: parent_info,
+                stat=lambda name, *, dir_fd, follow_symlinks: destination.lstat(),
+                close=close_parent,
+            ),
+        )
+        monkeypatch.setattr(export, "_new_private_child", stage)
+        with pytest.raises(ExportError, match="Invalid export snapshot or destination"):
+            export_as_of(LedgerView(PROJECT, 0, (), ()), reference_rates, destination)
+        stage.assert_not_called()
+        close_parent.assert_called_once_with(13)
+        assert metadata.entries == before
+        return
+
     project = request.getfixturevalue("project")
     tmp_path = request.getfixturevalue("tmp_path")
     card = load_rate_card()
     target = tmp_path / "target"
     target.mkdir(mode=0o700)
     destination = tmp_path / "destination"
-    if kind == "symlink":
-        destination.symlink_to(target, target_is_directory=True)
-    elif kind == "hardlink":
-        export_as_of(project.as_of(), card, destination)
-        os.link(destination / "usage.jsonl", tmp_path / "hardlinked")
-
+    export_as_of(project.as_of(), card, destination)
+    os.link(destination / "usage.jsonl", tmp_path / "hardlinked")
     with pytest.raises(ExportError):
         export_as_of(project.as_of(), card, destination)
+
+    linked = tmp_path / "linked-destination"
+    linked.symlink_to(target, target_is_directory=True)
+    with pytest.raises(ExportError):
+        export_as_of(project.as_of(), card, linked)
+    assert linked.is_symlink()
     assert list(target.iterdir()) == []
     assert not list(tmp_path.glob(".export-*"))
 

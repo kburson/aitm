@@ -23,10 +23,9 @@ from test_ledger import (
 )
 
 from aitm_usage import scopes
-from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
 from aitm_usage.rollup import rollup
-from aitm_usage.scopes import drain_inbox, session_reference
+from aitm_usage.scopes import session_reference
 from aitm_usage.sources import adapter as native
 from aitm_usage.sources.scan import checkout_anchor_reference, discover, scan
 from aitm_usage.types import (
@@ -53,7 +52,6 @@ from aitm_usage.types import (
     SourceCheckpoint,
     TokenCounts,
     WorkPhase,
-    encode_binding,
 )
 
 PROJECT = UUID(int=0x100)
@@ -474,10 +472,10 @@ def marker(codex, ledger, kind=BoundaryKind.REQUEST):
     )
 
 
-def _admit_replayed_scope(replay, scope, proof):
+def _admit_replayed_scope(replay, scope, proof, *, binding=None):
     ledger = replay.ledger
     view = ledger.as_of()
-    command = InboxCommand(scope.marker_id, scope.project_id, scope)
+    command = InboxCommand(scope.marker_id, scope.project_id, binding or scope)
     disposition, accepted_proof, effects = scopes._evaluate(
         ledger, command, view, (proof,), {}
     )
@@ -1353,9 +1351,10 @@ ledger.apply(LedgerBatch(
     assert stored.cursor.offset == path.stat().st_size
 
 
-def test_owner_binding_uses_the_same_serial_cli_proof(project, monkeypatch, capsys):
+def test_owner_binding_uses_the_same_serial_cli_proof(memory_replay):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
     scope = replace(
         marker(codex, ledger),
@@ -1364,26 +1363,8 @@ def test_owner_binding_uses_the_same_serial_cli_proof(project, monkeypatch, caps
     )
     binding = DevelopmentBinding(scope, checkout_anchor_reference(ledger, checkout), 1)
     binding_file = ledger.root / "binding-secret.json"
-    binding_file.write_bytes(encode_binding(binding))
-    monkeypatch.setenv("CODEX_THREAD_ID", str(SESSION))
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "aitm-usage",
-            "--project",
-            str(ledger.root),
-            "development",
-            "bind",
-            "--binding",
-            str(binding_file),
-            "--json",
-        ],
-    )
-    assert main() == 0
-    stdout = capsys.readouterr().out
-    write(
-        path,
+    stdout = json.dumps({"command_id": str(scope.marker_id), "status": "queued"})
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1396,25 +1377,20 @@ def test_owner_binding_uses_the_same_serial_cli_proof(project, monkeypatch, caps
             end(),
         ],
     )
-    candidate = source(registration)
+    candidate = replay.candidate()
     state = codex.CodexState(ledger)
-    batch, result = read(codex, candidate, state)
+    batch, result = replay.read(codex.read_codex, candidate, state)
     (proof,) = [
         batch.scope_evidence(entry)
         for entry in result.boundaries
         if entry.receipt_ref == scope.receipt_ref
     ]
     assert proof.anchor_ref == binding.anchor_ref
-    with ledger.writer() as writer:
-        drain_inbox(writer, [proof])
-    (enrollment,) = [
-        entry.record
-        for entry in ledger.as_of().current
-        if isinstance(entry.record, ScopeEnrollment)
-    ]
+    enrollment = _admit_replayed_scope(replay, scope, proof, binding=binding)
+    assert enrollment.generation == binding.generation
     selected = candidate.with_enrollment(enrollment, batch=batch, evidence=proof)
-    batch, result = read(codex, selected, state)
-    commit(ledger, batch, result)
+    batch, result = replay.read(codex.read_codex, selected, state)
+    replay.commit(batch, result)
     totals = rollup(scope.item, ledger.as_of())
     assert totals.direct.tokens["total_tokens"] == 10
     assert totals.unattributed.observation_count == 0

@@ -1,3 +1,4 @@
+import errno
 import importlib
 import json
 import os
@@ -30,7 +31,7 @@ from aitm_usage.scopes import (
     resolve_scope,
     session_reference,
 )
-from aitm_usage.service import collect_once, register_project, remember_claude_session
+from aitm_usage.service import collect_once, remember_claude_session
 from aitm_usage.sources.claude import (
     claude_receipt_reference,
     claude_request_boundary_reference,
@@ -259,6 +260,11 @@ def test_escape_after_discovery_cannot_read_unapproved_source(
     source_dir.symlink_to(outside, target_is_directory=True)
 
     _assert_escape_refused(scanner, registration, candidate)
+    source_dir.unlink()
+    (root,) = registration.source_roots
+    root.rmdir()
+    root.symlink_to(outside, target_is_directory=True)
+    _assert_escape_refused(scanner, registration, candidate)
 
 
 def _assert_observed_leaf_symlink_refuses_native_read(files, registration, monkeypatch):
@@ -294,19 +300,33 @@ def _assert_escape_refused(scanner, registration, candidate):
     assert "rollout-secret" not in repr(scan)
 
 
-def test_root_symlink_is_never_implicitly_approved(project):
+def test_root_symlink_is_never_implicitly_approved(request, monkeypatch):
     scanner = _scanner()
-    registration, _ = project
+    open_directory = scanner._directory
+    files, registration = request.getfixturevalue("native_scanner")
     (root,) = registration.source_roots
     outside = root.parent / "private-unapproved"
-    outside.mkdir()
-    (outside / "rollout.jsonl").write_bytes(
-        _header(registration.checkout_anchors[0]) + _usage(12)
-    )
-    root.rmdir()
-    root.symlink_to(outside, target_is_directory=True)
+    files.contents[outside / "rollout.jsonl"] = _header(
+        registration.checkout_anchors[0]
+    ) + _usage(12)
+    host = NativeDirectoryMetadata(files, *root.parents)
+    host.install(monkeypatch)
+    host.symlinks[root] = outside
+
+    def open_observed(name, flags, *, dir_fd=None):
+        assert flags == scanner._DIRECTORY_FLAGS and flags & os.O_NOFOLLOW
+        path = Path(name) if dir_fd is None else host.descriptors[dir_fd] / name
+        if path in host.symlinks:
+            raise OSError(errno.ELOOP, "Refused observed symlink", path)
+        return files._identity(path)
+
+    opened = Mock(wraps=open_observed)
+    monkeypatch.setattr(scanner, "_directory", open_directory)
+    monkeypatch.setattr(scanner.os, "open", opened)
 
     assert tuple(scanner.discover(registration)) == ()
+    assert opened.call_args.args == (root.name, scanner._DIRECTORY_FLAGS)
+    assert opened.call_args.kwargs == {"dir_fd": files._identity(root.parent)}
 
 
 def _observe_mutable_snapshot(monkeypatch, files, path, verify):
@@ -413,6 +433,36 @@ def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
         assert batch.frames == batch.commit_frames == ()
         assert batch.cursor is None
         assert _codes(batch) == {DiagnosticCode.SOURCE_REPLACED}
+
+        # A reused path does not hide the original incarnation in an archive.
+        monkeypatch.setattr(scanner, "_decode_row", decode)
+        path.write_bytes(contents)
+        (original,) = scanner.discover(registration)
+        prior = scanner.scan(original, None, CUTOFF).cursor
+        assert prior is not None
+        original_identity = path.stat()
+        archive = path.parent / "archive"
+        archive.mkdir()
+        moved = path.rename(archive / path.name)
+        revised = _header(registration.checkout_anchors[0], session=UUID(int=991))
+        path.write_bytes(revised + _usage(18))
+        assert os.path.samestat(moved.stat(), original_identity)
+        assert not os.path.samestat(path.stat(), original_identity)
+        presence = scanner._capture_locator_presence(
+            path.parent,
+            original._ledger,
+            original.locator_ref,
+            original.incarnation_ref,
+            prior=prior,
+        )
+        assert presence.at_locator and presence.same_incarnation
+        assert not presence.locator_is_original
+        (relocated,) = (
+            item
+            for item in scanner.discover(registration)
+            if item.incarnation_ref == original.incarnation_ref
+        )
+        assert relocated._path == moved
 
 
 @pytest.mark.parametrize(
@@ -882,23 +932,25 @@ def test_checkout_anchor_requires_a_real_confined_directory(
     assert batch.frames[1].anchor_ref is None
 
 
-def test_checkout_anchor_is_rechecked_after_read(project, monkeypatch):
+def test_checkout_anchor_is_rechecked_after_read(native_scanner, monkeypatch):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "rollout.jsonl"
-    path.write_bytes(_header(checkout) + _usage(27))
+    files.contents[path] = _header(checkout) + _usage(27)
     (candidate,) = scanner.discover(registration)
 
+    directories = {checkout: files._identity(checkout)}
+    observed = Mock(side_effect=lambda cwd, anchor: directories.get(anchor))
+    monkeypatch.setattr(scanner, "_confined_checkout_identity", observed)
+    monkeypatch.setattr(scanner, "_checkout_anchor", files._checkout_lookup)
     decode = scanner._decode_row
 
     def move_checkout(raw):
         row = decode(raw)
         if row and row["type"] == "event_msg":
-            displaced = checkout.with_name("displaced")
-            checkout.rename(displaced)
-            checkout.symlink_to(displaced, target_is_directory=True)
+            del directories[checkout]
         return row
 
     monkeypatch.setattr(scanner, "_decode_row", move_checkout)
@@ -906,6 +958,8 @@ def test_checkout_anchor_is_rechecked_after_read(project, monkeypatch):
     assert batch.frames == batch.commit_frames == ()
     assert batch.cursor is None
     assert _codes(batch) == {DiagnosticCode.BOUNDARY_UNVERIFIED}
+    assert observed.call_count >= 2
+    observed.assert_called_with(checkout, checkout)
 
 
 def test_missing_turn_checkout_does_not_inherit_admission(native_scanner):
@@ -1961,32 +2015,13 @@ def _native_startup_tool_turn(checkout, state, command_id):
 def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
     request, monkeypatch, marker_first
 ):
-    if marker_first:
-        case = request.getfixturevalue("collector_policy")
-        registration, store = _observed_startup_collector(case, monkeypatch)
-        source_files = case.native.contents
-    else:
-        registration, store = request.getfixturevalue("project")
-        source_files = None
+    case = request.getfixturevalue("collector_policy")
+    registration, store = _observed_startup_collector(case, monkeypatch)
+    source_files = case.native.contents
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     outside = root.parent / "review-private"
     unrelated = root.parent / "unrelated-private"
-    if source_files is None:
-        outside.mkdir()
-        unrelated.mkdir()
-        config = root.parent / "registration-input.json"
-        config.write_text(
-            json.dumps(
-                {
-                    "project_id": str(PROJECT),
-                    "source_roots": [str(root)],
-                    "checkout_anchors": [str(checkout)],
-                    "cutoff": CUTOFF.isoformat(),
-                }
-            )
-        )
-        registration = register_project(store.root, config)
     project_id = store.identity.project_id
     session = session_reference(store, Provider.CLAUDE, str(SESSION))
     command_id = UUID(int=211)
@@ -2014,10 +2049,7 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
     raw = _startup_bytes(
         rows + _native_startup_tool_turn(outside, store.root, command_id)
     ) + _claude_timed("assistant", unrelated, request="unrelated")
-    if source_files is None:
-        path.write_bytes(raw)
-    else:
-        source_files[path] = raw
+    source_files[path] = raw
     if not marker_first:
         report = collect_once(registration, store)
         assert report.held_sources == 1
@@ -2026,7 +2058,7 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
         assert not any(
             isinstance(revision.record, UsageObservation) for revision in before.current
         )
-        store = Ledger.open(store.root, PROJECT)
+        store = Ledger.open(store.root, project_id)
     enqueue_command(store.root, command)
     accepted = collect_once(registration, store)
     assert accepted.deferred_sources == 1
@@ -2049,8 +2081,7 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
     assert usage.boundary.receipt_ref == marker.receipt_ref
     assert usage.tokens.output_tokens == 4
     assert resolve_scope(usage, view).scope.marker == marker
-    size = path.stat().st_size if source_files is None else len(source_files[path])
-    assert view.checkpoints[0].cursor.offset < size
+    assert view.checkpoints[0].cursor.offset < len(source_files[path])
     again = collect_once(registration, Ledger.open(store.root, project_id))
     assert again.sequence == view.sequence
 

@@ -304,7 +304,31 @@ def test_legacy_anchor_rechecks_under_publication_lock_before_staging(
 def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(
     legacy, request, monkeypatch
 ):
+    from test_scope_legacy import ADOPTION_FILE, invocation
+
+    from aitm_usage.types import Provider, encode_marker
+
     root, _, anchor, run = legacy
+    project = Ledger.open(root, PROJECT)
+    scope, marker, _ = invocation(project, "mark", provider=Provider.CLAUDE)
+    assert scope[2] == "--marker"
+    Path(scope[3]).write_bytes(encode_marker(replace(marker, project_id=PROJECT)))
+    target = root.parent / "alternate-adoption"
+    target.write_bytes(b"alternate private adoption")
+    record = root / ADOPTION_FILE
+    record.symlink_to(target)
+    present = set(root.iterdir())
+    status, output = run(*scope, "--json")
+    assert status == 1 and output.out == '{"status": "unavailable"}\n'
+    assert not output.err
+    assert set(root.iterdir()) == present
+    assert not monitor_registry.default_monitor_root().exists()
+    assert target.read_bytes() == b"alternate private adoption"
+    record.unlink()
+    _assert_native_receipt_at_local_cutover(project, run, monkeypatch)
+    # Start the independent monitor snapshot cutover below from the legacy state.
+    record.unlink()
+
     with Ledger.open(root, PROJECT).writer():
         status, output = run("source", "add-anchor", "--anchor", str(anchor), "--json")
 
@@ -324,7 +348,8 @@ def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(
     before = {
         path: path.read_bytes()
         for directory in (root / "source-anchors", root / "inbox")
-        for path in directory.iterdir()
+        for path in directory.rglob("*")
+        if path.is_file()
     }
     original_publication = scopes._publication
 
@@ -341,8 +366,58 @@ def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(
     assert {
         path: path.read_bytes()
         for directory in (root / "source-anchors", root / "inbox")
-        for path in directory.iterdir()
+        for path in directory.rglob("*")
+        if path.is_file()
     } == before
+
+
+def _assert_native_receipt_at_local_cutover(ledger, run, monkeypatch):
+    from test_scope_legacy import (
+        ADOPTION,
+        CODEX,
+        commit_adoption,
+        invocation,
+        legacy_boundary,
+    )
+
+    from aitm_usage.types import InboxCommand, MarkerDisposition, encode_marker
+
+    args, payload, _ = invocation(ledger, "mark")
+    payload = replace(payload, project_id=ledger.identity.project_id)
+    Path(args[3]).write_bytes(encode_marker(payload))
+    command = InboxCommand(payload.marker_id, payload.project_id, payload)
+    assert scopes.enqueue_command(ledger.root, command) is None
+    proof = legacy_boundary(ledger, payload)
+    original_publication = scopes._publication
+    receipts = []
+
+    @contextmanager
+    def publication_after_commit(inbox):
+        assert not receipts
+        with monkeypatch.context() as original:
+            original.setattr(scopes, "_publication", original_publication)
+            with ledger.writer() as writer:
+                receipts.extend(scopes.drain_inbox(writer, (proof,)).receipts)
+            commit_adoption(ledger, ADOPTION)
+        with original_publication(inbox):
+            yield
+
+    with monkeypatch.context() as cutover:
+        cutover.setenv("CODEX_THREAD_ID", str(CODEX))
+        cutover.setattr(scopes, "_publication", publication_after_commit)
+        code, output = run(*args, "--json")
+    (accepted,) = receipts
+    assert code == 0 and not output.err
+    assert json.loads(output.out) == {
+        "command_id": str(command.command_id),
+        "status": "accepted",
+    }
+    assert accepted.disposition is MarkerDisposition.ACCEPTED
+    assert ledger.command_receipt(command) == accepted
+    before = ledger.as_of()
+    assert scopes.enqueue_command(ledger.root, command) == accepted
+    assert ledger.as_of() == before
+    assert not monitor_registry.default_monitor_root().exists()
 
 
 def test_invalid_legacy_anchor_input_leaves_inbox_untouched(legacy_policy, monkeypatch):

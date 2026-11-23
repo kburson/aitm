@@ -114,31 +114,26 @@ def test_linux_without_xattr_api_refuses_state_admission(
 
 @pytest.mark.parametrize("name", [ACCESS_ACL, DEFAULT_ACL])
 def test_linux_pinned_directory_refuses_acl_on_its_descriptor(
-    request, monkeypatch, name
+    private_path_metadata, monkeypatch, name
 ):
-    if name == ACCESS_ACL:
-        directory = request.getfixturevalue("tmp_path") / "project"
-        directory.mkdir(mode=0o700)
-        identity = directory.stat()
-    else:
-        directory = request.getfixturevalue("private_path_metadata") / "project"
-        identity = directory.lstat()
-        open_directory = Mock(return_value=11)
-        descriptor_info = Mock(return_value=identity)
-        close_directory = Mock()
-        monkeypatch.setattr(
-            ledger,
-            "os",
-            SimpleNamespace(
-                **vars(ledger.os),
-                O_RDONLY=os.O_RDONLY,
-                O_DIRECTORY=os.O_DIRECTORY,
-                O_NOFOLLOW=os.O_NOFOLLOW,
-                open=open_directory,
-                fstat=descriptor_info,
-                close=close_directory,
-            ),
-        )
+    directory = private_path_metadata / "project"
+    identity = directory.lstat()
+    open_directory = Mock(return_value=11)
+    descriptor_info = Mock(return_value=identity)
+    close_directory = Mock()
+    monkeypatch.setattr(
+        ledger,
+        "os",
+        SimpleNamespace(
+            **vars(ledger.os),
+            O_RDONLY=os.O_RDONLY,
+            O_DIRECTORY=os.O_DIRECTORY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            open=open_directory,
+            fstat=descriptor_info,
+            close=close_directory,
+        ),
+    )
 
     descriptor_lookups = []
 
@@ -154,21 +149,18 @@ def test_linux_pinned_directory_refuses_acl_on_its_descriptor(
         raise OSError(errno.ENODATA, "test xattr absence")
 
     monkeypatch.setattr(sys, "platform", "linux")
-    if name == ACCESS_ACL:
-        monkeypatch.setattr(os, "getxattr", getxattr, raising=False)
-    else:
-        monkeypatch.setattr(
-            host_fs, "os", SimpleNamespace(fstat=descriptor_info, getxattr=getxattr)
-        )
+    monkeypatch.setattr(
+        host_fs, "os", SimpleNamespace(fstat=descriptor_info, getxattr=getxattr)
+    )
     with pytest.raises(ledger.LedgerError, match="Unsafe private ACL"):
         with ledger._pin_directory(directory):
             pytest.fail("admitted a directory with an ACL on its descriptor")
-    if name == DEFAULT_ACL:
-        assert descriptor_lookups == [ACCESS_ACL, DEFAULT_ACL]
-        open_directory.assert_called_once_with(
-            directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
-        )
-        close_directory.assert_called_once_with(11)
+    expected = [ACCESS_ACL] if name == ACCESS_ACL else [ACCESS_ACL, DEFAULT_ACL]
+    assert descriptor_lookups == expected
+    open_directory.assert_called_once_with(
+        directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    )
+    close_directory.assert_called_once_with(11)
 
 
 def test_linux_private_regular_file_checks_only_access_acl(
