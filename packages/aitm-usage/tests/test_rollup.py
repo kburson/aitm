@@ -6,7 +6,7 @@ import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Context, Decimal, Inexact, Rounded, localcontext
@@ -17,6 +17,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
 from aitm_usage import accounting, cli, pricing, scopes
 from aitm_usage import ledger as store
@@ -40,6 +41,7 @@ from aitm_usage.types import (
     ItemKind,
     ItemParent,
     LedgerBatch,
+    LedgerView,
     MarkerDisposition,
     ModelLabel,
     ProcessingTier,
@@ -618,15 +620,28 @@ def _durable_bytes(project):
 
 @pytest.mark.parametrize("project_id", [PROJECT, UUID(int=912)])
 @pytest.mark.parametrize("relation", ["alias", "parent"])
-def test_public_batch_refuses_unreceipted_relationship(project, project_id, relation):
+def test_public_batch_refuses_unreceipted_relationship(
+    request, monkeypatch, project_id, relation
+):
+    if relation == "alias":
+        record = DraftAlias(UUID(int=100), project_id, DRAFT, CHILD)
+    else:
+        record = ItemParent(UUID(int=100), project_id, DRAFT, EPIC)
+    if relation != "alias" or project_id != PROJECT:
+        ledger = _memory_ledger(store, PROJECT, b"r" * 32)
+        writer = Mock()
+        monkeypatch.setattr(Ledger, "writer", writer)
+        revision = Revision(ledger.pseudonymize("fixture", relation), 1, record)
+        with pytest.raises(LedgerError, match="require atomic command admission"):
+            ledger.apply(LedgerBatch((revision,)))
+        writer.assert_not_called()
+        return
+
+    project = request.getfixturevalue("project")
     with project.writer() as writer:
         _record_usage(writer, DRAFT, 7)
         before = writer.as_of()
         prior_bytes = _durable_bytes(project)
-        if relation == "alias":
-            record = DraftAlias(UUID(int=100), project_id, DRAFT, CHILD)
-        else:
-            record = ItemParent(UUID(int=100), project_id, DRAFT, EPIC)
         revision = Revision(writer.pseudonymize("fixture", relation), 1, record)
         with pytest.raises((LedgerError, ValueError)):
             writer.apply(LedgerBatch((revision,)))
@@ -638,6 +653,32 @@ def test_public_batch_refuses_unreceipted_relationship(project, project_id, rela
             writer.command_receipt(_command(replace(record, project_id=PROJECT)))
             is None
         )
+
+
+@contextmanager
+def _relationship_policy_writer(monkeypatch, defect):
+    writer = _memory_ledger(store, PROJECT, b"r" * 32)
+    _, _, usage = _usage_fixture(writer, None, 7)
+    revisions = [usage]
+    if defect == "canonical-child":
+        revisions.append(
+            Revision(
+                writer.pseudonymize("item-alias", str(DRAFT.identifier)),
+                1,
+                DraftAlias(UUID(int=101), PROJECT, DRAFT, CHILD),
+            )
+        )
+    view = LedgerView(PROJECT, len(revisions), tuple(revisions), ())
+    connection = Mock(spec=sqlite3.Connection)
+    monkeypatch.setattr(Ledger, "require_writer", Mock())
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda self: nullcontext(connection)
+    )
+    monkeypatch.setattr(Ledger, "as_of", Mock(return_value=view))
+    monkeypatch.setattr(store, "_current_command", Mock(return_value=None))
+    monkeypatch.setattr(store, "_head", Mock(return_value=view.sequence))
+    yield writer
+    connection.execute.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -660,9 +701,19 @@ def test_public_batch_refuses_unreceipted_relationship(project, project_id, rela
         "unexpected-boundary",
     ],
 )
-def test_guarded_commit_requires_exact_relationship_decision(project, item_cli, defect):
-    with project.writer() as writer:
-        _record_usage(writer, DRAFT, 7)
+def test_guarded_commit_requires_exact_relationship_decision(
+    request, monkeypatch, defect
+):
+    project = None
+    if defect in {"project", "incomplete-effect-tuple"}:
+        project = request.getfixturevalue("project")
+        writer_context = project.writer()
+    else:
+        writer_context = _relationship_policy_writer(monkeypatch, defect)
+
+    with writer_context as writer:
+        if project is not None:
+            _record_usage(writer, DRAFT, 7)
         alias = DraftAlias(UUID(int=100), PROJECT, DRAFT, CHILD)
         payload = alias
         alias_key = writer.pseudonymize("item-alias", str(DRAFT.identifier))
@@ -688,11 +739,11 @@ def test_guarded_commit_requires_exact_relationship_decision(project, item_cli, 
         elif defect == "revision-number":
             effect = replace(effect, revision=2)
         elif defect == "canonical-child":
-            _consume(writer, item_cli, "alias", DRAFT, CHILD)
             payload = ItemParent(alias.command_id, PROJECT, DRAFT, EPIC)
             key = writer.pseudonymize("item-parent", "issue:85")
             effect = Revision(key, 1, payload)
         elif defect == "incomplete-effect-tuple":
+            item_cli = request.getfixturevalue("item_cli")
             _consume(writer, item_cli, "parent", DRAFT, EPIC)
             _consume(writer, item_cli, "parent", CHILD, EPIC)
             _consume(writer, item_cli, "alias", DRAFT, CHILD)
@@ -716,11 +767,12 @@ def test_guarded_commit_requires_exact_relationship_decision(project, item_cli, 
             marker, _, _ = _usage_fixture(writer, CHILD, 19)
             command = InboxCommand(marker.marker_id, PROJECT, marker)
         before = writer.as_of()
-        prior_bytes = _durable_bytes(project)
-        prior_rollup = rollup(EPIC, before)
+        if project is not None:
+            prior_bytes = _durable_bytes(project)
+            prior_rollup = rollup(EPIC, before)
         effects = (effect,) if status is MarkerDisposition.ACCEPTED else ()
         if defect == "command-project":
-            with pytest.raises(LedgerError):
+            with pytest.raises(LedgerError, match="Inbox command project identity"):
                 writer.commit_command(
                     CommandReceipt(
                         command, writer.validate_command(_command(alias)), status
@@ -732,14 +784,20 @@ def test_guarded_commit_requires_exact_relationship_decision(project, item_cli, 
             receipt = CommandReceipt(
                 command, writer.validate_command(command), status, boundary
             )
-            with pytest.raises((LedgerError, ValueError)):
+            reason = (
+                "Relationship effect does not match its command"
+                if defect in {"project", "command-id", "command-type", "other-command"}
+                else "Relationship receipt or effects do not match ledger history"
+            )
+            with pytest.raises((LedgerError, ValueError), match=reason):
                 writer.commit_command(
                     receipt, effects, expected_sequence=before.sequence
                 )
+        if project is not None:
             assert writer.command_receipt(command) is None
-        assert _durable_bytes(project) == prior_bytes
-        assert writer.as_of() == before
-        assert rollup(EPIC, writer.as_of()) == prior_rollup
+            assert _durable_bytes(project) == prior_bytes
+            assert writer.as_of() == before
+            assert rollup(EPIC, writer.as_of()) == prior_rollup
 
 
 def test_final_relationship_replay_checks_effect_identity_without_revalidating_graph(
