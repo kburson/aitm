@@ -2,6 +2,7 @@ import importlib
 import json
 import os
 import shlex
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -17,7 +18,9 @@ from scanner_policy_cases import (
     _ReplayEvidence,
 )
 from scope_inbox_policy_cases import attach_scope_inbox_ledger
+from test_accounting import reference_rates as reference_rates
 from test_ledger import _memory_ledger
+from test_service import collector_policy as collector_policy
 
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
@@ -225,7 +228,17 @@ def test_activation_cutoff_and_archive_continuity(project):
 
 
 @pytest.mark.parametrize("swap_parent", [False, True])
-def test_escape_after_discovery_cannot_read_unapproved_source(project, swap_parent):
+def test_escape_after_discovery_cannot_read_unapproved_source(
+    request, monkeypatch, swap_parent
+):
+    if not swap_parent:
+        files, registration = request.getfixturevalue("native_scanner")
+        _assert_observed_leaf_symlink_refuses_native_read(
+            files, registration, monkeypatch
+        )
+        return
+
+    project = request.getfixturevalue("project")
     scanner = _scanner()
     registration, _ = project
     source_dir = registration.source_roots[0] / "live"
@@ -239,12 +252,40 @@ def test_escape_after_discovery_cannot_read_unapproved_source(project, swap_pare
     outside.mkdir()
     (outside / path.name).write_bytes(contents)
     path.unlink()
-    if swap_parent:
-        source_dir.rmdir()
-        source_dir.symlink_to(outside, target_is_directory=True)
-    else:
-        path.symlink_to(outside / path.name)
+    path.symlink_to(outside / path.name)
+    _assert_escape_refused(scanner, registration, candidate)
+    path.unlink()
+    source_dir.rmdir()
+    source_dir.symlink_to(outside, target_is_directory=True)
 
+    _assert_escape_refused(scanner, registration, candidate)
+
+
+def _assert_observed_leaf_symlink_refuses_native_read(files, registration, monkeypatch):
+    scanner = _scanner()
+    (root,) = registration.source_roots
+    directory = root / "live"
+    path = directory / "rollout-secret.jsonl"
+    outside = root.with_name("private-unapproved") / path.name
+    contents = _header(files.checkout) + _usage(17)
+    host = NativeDirectoryMetadata(files, root, directory)
+    host.install(monkeypatch, native_file_reads=True)
+    files.contents[path] = contents
+    (candidate,) = scanner.discover(registration)
+    files.contents[outside] = files.contents.pop(path)
+    files.identities[outside] = files.identities.pop(path)
+    host.symlinks[path] = outside
+    open_native = Mock(wraps=host.open)
+    monkeypatch.setattr(scanner.os, "open", open_native)
+
+    _assert_escape_refused(scanner, registration, candidate)
+    open_native.assert_called_once_with(
+        directory.name, scanner._DIRECTORY_FLAGS, dir_fd=files._identity(root)
+    )
+    assert files.contents[outside] == contents
+
+
+def _assert_escape_refused(scanner, registration, candidate):
     assert tuple(scanner.discover(registration)) == ()
     scan = scanner.scan(candidate, None, CUTOFF)
     assert scan.frames == ()
@@ -294,7 +335,7 @@ def _observe_mutable_snapshot(monkeypatch, files, path, verify):
 )
 def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
     scanner = _scanner()
-    if mutation in {"overwrite", "rewrite-and-grow"}:
+    if mutation in {"overwrite", "rewrite-and-grow", "append"}:
         verify = scanner._verify_snapshot
         files, registration = request.getfixturevalue("native_scanner")
         path = registration.source_roots[0] / "replacement-secret.jsonl"
@@ -327,8 +368,7 @@ def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
             elif mutation == "rewrite-and-grow":
                 write_bytes(header + _usage(99) + _usage(22))
             else:
-                with path.open("ab") as output:
-                    output.write(_usage(22))
+                write_bytes(contents + _usage(22))
         return row
 
     monkeypatch.setattr(scanner, "_decode_row", change_after_read)
@@ -646,30 +686,47 @@ def test_verified_enrollment_holds_candidate_then_replays_first_eligible_after_r
     assert replay.cursor == committed.cursor
 
 
-def test_claude_uses_provider_qualified_session_and_real_checkout_metadata(project):
+def test_claude_uses_provider_qualified_session_and_real_checkout_metadata(
+    native_scanner, monkeypatch
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration = native_scanner
+    store = files.evidence
     path = registration.source_roots[0] / "claude-secret.jsonl"
     (cwd,) = registration.checkout_anchors
+    directory = NativeDirectoryMetadata(files, cwd).info(cwd)
+    native_resolve, native_is_dir, native_stat = Path.resolve, Path.is_dir, Path.stat
+    monkeypatch.setattr(scanner, "_checkout_anchor", files._checkout_lookup)
+    monkeypatch.setattr(
+        Path,
+        "resolve",
+        lambda path, **kwargs: cwd if path == cwd else native_resolve(path, **kwargs),
+    )
+    monkeypatch.setattr(Path, "is_dir", lambda path: path == cwd or native_is_dir(path))
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path, **kwargs: (
+            directory if path == cwd else native_stat(path, **kwargs)
+        ),
+    )
     common = {
         "sessionId": str(SESSION),
         "cwd": str(cwd),
         "version": "2.1.318",
         "timestamp": AFTER.isoformat(),
     }
-    path.write_text(
-        json.dumps(dict(common, type="user", message={"content": "prompt-secret"}))
-        + "\n"
-        + json.dumps(
+    files.write(
+        path,
+        [
+            dict(common, type="user", message={"content": "prompt-secret"}),
             dict(
                 common,
                 type="assistant",
                 requestId="req-secret",
                 message={"id": "msg-secret", "usage": {"output_tokens": 6}},
-            )
-        )
-        + "\n",
-        encoding="utf-8",
+            ),
+        ],
     )
     (candidate,) = scanner.discover(registration)
     batch = scanner.scan(candidate, None, CUTOFF)
@@ -682,6 +739,10 @@ def test_claude_uses_provider_qualified_session_and_real_checkout_metadata(proje
         Eligibility.ELIGIBLE
     ] * 2
     assert batch.provider_checkpoint.client_version is ClientVersion.CLAUDE_2_1_318
+    assert all(
+        frame.anchor_ref == scanner.checkout_anchor_reference(store, cwd)
+        for frame in batch.commit_frames
+    )
     assert not any(
         secret in repr((candidate, batch))
         for secret in (
@@ -1870,27 +1931,35 @@ def _native_startup_tool_turn(checkout, state, command_id):
 
 @pytest.mark.parametrize("marker_first", [True, False])
 def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
-    project, marker_first
+    request, monkeypatch, marker_first
 ):
-    registration, store = project
+    if marker_first:
+        case = request.getfixturevalue("collector_policy")
+        registration, store = _observed_startup_collector(case, monkeypatch)
+        source_files = case.native.contents
+    else:
+        registration, store = request.getfixturevalue("project")
+        source_files = None
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     outside = root.parent / "review-private"
     unrelated = root.parent / "unrelated-private"
-    outside.mkdir()
-    unrelated.mkdir()
-    config = root.parent / "registration-input.json"
-    config.write_text(
-        json.dumps(
-            {
-                "project_id": str(PROJECT),
-                "source_roots": [str(root)],
-                "checkout_anchors": [str(checkout)],
-                "cutoff": CUTOFF.isoformat(),
-            }
+    if source_files is None:
+        outside.mkdir()
+        unrelated.mkdir()
+        config = root.parent / "registration-input.json"
+        config.write_text(
+            json.dumps(
+                {
+                    "project_id": str(PROJECT),
+                    "source_roots": [str(root)],
+                    "checkout_anchors": [str(checkout)],
+                    "cutoff": CUTOFF.isoformat(),
+                }
+            )
         )
-    )
-    registration = register_project(store.root, config)
+        registration = register_project(store.root, config)
+    project_id = store.identity.project_id
     session = session_reference(store, Provider.CLAUDE, str(SESSION))
     command_id = UUID(int=211)
     marker = ScopeMarker(
@@ -1904,22 +1973,23 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
         ItemKey(ItemKind.ISSUE, 87),
         WorkPhase.SOURCE_REVIEW,
         store.pseudonymize("participant", "reviewer"),
-        PROJECT,
+        project_id,
         ReviewRole.REVIEWER,
         claude_receipt_reference(store, session, command_id),
     )
     remember_claude_session(store, session)
-    command = InboxCommand(command_id, PROJECT, marker)
+    command = InboxCommand(command_id, project_id, marker)
     path = root / "startup.jsonl"
     rows = _native_startup_rows(outside)
     # The hooks claim the project checkout, while the first real user is outside it.
     rows[2]["cwd"] = rows[3]["cwd"] = str(checkout)
-    path.write_bytes(
-        _startup_bytes(
-            rows + _native_startup_tool_turn(outside, store.root, command_id)
-        )
-        + _claude_timed("assistant", unrelated, request="unrelated")
-    )
+    raw = _startup_bytes(
+        rows + _native_startup_tool_turn(outside, store.root, command_id)
+    ) + _claude_timed("assistant", unrelated, request="unrelated")
+    if source_files is None:
+        path.write_bytes(raw)
+    else:
+        source_files[path] = raw
     if not marker_first:
         report = collect_once(registration, store)
         assert report.held_sources == 1
@@ -1938,7 +2008,7 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
         for revision in store.as_of().current
     )
 
-    reopened = Ledger.open(store.root, PROJECT)
+    reopened = Ledger.open(store.root, project_id)
     report = collect_once(registration, reopened)
     assert report.held_sources == 1
     view = reopened.as_of()
@@ -1951,9 +2021,47 @@ def test_claude_startup_prefix_enrolls_first_outside_request_through_service(
     assert usage.boundary.receipt_ref == marker.receipt_ref
     assert usage.tokens.output_tokens == 4
     assert resolve_scope(usage, view).scope.marker == marker
-    assert view.checkpoints[0].cursor.offset < path.stat().st_size
-    again = collect_once(registration, Ledger.open(store.root, PROJECT))
+    size = path.stat().st_size if source_files is None else len(source_files[path])
+    assert view.checkpoints[0].cursor.offset < size
+    again = collect_once(registration, Ledger.open(store.root, project_id))
     assert again.sequence == view.sequence
+
+
+def _observed_startup_collector(case, monkeypatch):
+    from aitm_usage import service
+
+    store = case.ledger
+    case.configure()
+    attach_scope_inbox_ledger(monkeypatch, store)
+    case.use_ledger_rows()
+    monkeypatch.setattr(service, "drain_inbox", drain_inbox)
+    pinned_sessions = object()
+    session_files = {}
+    child, read, publish = (
+        service._private_child,
+        service._read_private,
+        service._publish,
+    )
+
+    def private_child(pin, name, *, create):
+        if name == service.CLAUDE_SESSIONS_NAME:
+            return nullcontext(pinned_sessions if create or session_files else None)
+        return child(pin, name, create=create)
+
+    def read_private(pin, name):
+        return session_files.get(name) if pin is pinned_sessions else read(pin, name)
+
+    def publish_private(pin, name, data, **options):
+        if pin is pinned_sessions:
+            assert not options and name not in session_files
+            session_files[name] = data
+            return True
+        return publish(pin, name, data, **options)
+
+    monkeypatch.setattr(service, "_private_child", private_child)
+    monkeypatch.setattr(service, "_read_private", read_private)
+    monkeypatch.setattr(service, "_publish", publish_private)
+    return service.load_registration(store), store
 
 
 def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
@@ -2042,15 +2150,21 @@ def test_capture_position_rejects_rewritten_saved_bytes(native_scanner):
     )
 
 
-def test_capture_locator_presence_finds_moved_inode_and_replacement_type(project):
+def test_capture_locator_presence_finds_moved_inode_and_replacement_type(
+    native_scanner, monkeypatch
+):
     scanner = _scanner()
-    registration, evidence = project
+    files, registration = native_scanner
+    evidence = files.evidence
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "live.jsonl"
-    path.write_bytes(_header(checkout))
+    archive = root / "private-archive"
+    host = NativeDirectoryMetadata(files, root, archive)
+    host.install(monkeypatch)
+    files.contents[path] = _header(checkout)
     (source,) = scanner.discover(registration)
-    original_size = path.stat().st_size
+    original_size = len(files.contents[path])
 
     def presence():
         return scanner._capture_locator_presence(
@@ -2061,26 +2175,25 @@ def test_capture_locator_presence_finds_moved_inode_and_replacement_type(project
     assert initial.at_locator and initial.same_incarnation
     assert initial.locator_size == original_size
     assert initial.locator_is_original
-    archive = root / "private-archive"
-    archive.mkdir()
     archived = archive / "moved.data"
-    path.rename(archived)
+    files.contents[archived] = files.contents.pop(path)
+    files.identities[archived] = files.identities.pop(path)
     moved = presence()
     assert not moved.at_locator and moved.same_incarnation
     assert moved.locator_size is None
-    path.mkdir()
+    host.mkdir(path)
     replaced = presence()
     assert replaced.at_locator and replaced.same_incarnation
     assert replaced.locator_size is None
-    path.rmdir()
-    path.write_bytes(b"replacement")
+    del host.descriptors[files.identities.pop(path)]
+    files.contents[path] = b"replacement"
     replaced_file = presence()
     assert replaced_file.at_locator and replaced_file.same_incarnation
     assert replaced_file.locator_size == len(b"replacement")
     assert not replaced_file.locator_is_original
-    archived.unlink()
+    del files.contents[archived]
     assert presence().at_locator and not presence().same_incarnation
-    path.unlink()
+    del files.contents[path]
     absent = presence()
     assert not absent.at_locator and not absent.same_incarnation
 

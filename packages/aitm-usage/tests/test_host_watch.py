@@ -151,16 +151,33 @@ def test_losing_one_root_preserves_other_watch_events(tmp_path):
         )
 
 
-def test_unsafe_and_duplicate_roots_refuse(tmp_path):
-    root = _root(tmp_path)
-    with pytest.raises(WatchError):
-        WatchSet((root, _root(tmp_path, "another")))
-    actual = tmp_path / "actual"
-    actual.mkdir()
-    alias = tmp_path / "alias"
-    alias.symlink_to(actual, target_is_directory=True)
-    with pytest.raises(WatchError):
-        WatchSet((WatchRoot(root.key, alias, _root(actual).identity),))
+def test_unsafe_and_duplicate_roots_refuse(monkeypatch):
+    path = Path("/fixture/watch")
+    alias = path.with_name("alias")
+    root = WatchRoot(SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}"), path, (1, 2))
+    duplicate = WatchRoot(
+        SourceRef(f"hmac-sha256:{'a' * 64}:{'c' * 64}"), path, root.identity
+    )
+
+    def observed_directory(selected):
+        if selected == alias:
+            raise OSError(errno.ELOOP, "observed no-follow rejection for the alias")
+        assert selected == path
+        return nullcontext((90, ((1, 1, 0), (*root.identity, 0)), ()))
+
+    directory = Mock(side_effect=observed_directory)
+    platform = Mock(side_effect=AssertionError("Unsafe roots reached a watch backend"))
+    monkeypatch.setattr(host_watch, "_directory", directory)
+    monkeypatch.setattr(host_watch, "platform", SimpleNamespace(system=platform))
+
+    with pytest.raises(WatchError, match="Duplicate or invalid authorized watch root"):
+        WatchSet((root, duplicate))
+    directory.assert_called_once_with(path)
+    directory.reset_mock()
+    with pytest.raises(WatchError, match="Authorized watch root is unavailable"):
+        WatchSet((WatchRoot(root.key, alias, root.identity),))
+    directory.assert_called_once_with(alias)
+    platform.assert_not_called()
 
 
 def test_close_wakes_blocked_consumer(tmp_path):

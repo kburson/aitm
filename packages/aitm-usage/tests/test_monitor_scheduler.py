@@ -292,8 +292,8 @@ def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake_policy):
     assert fallback.generation > item.generation
 
 
-def test_restart_recovers_pending_wake_without_its_old_lease(wake):
-    scheduler, resolver, _, now = wake
+def test_restart_recovers_pending_wake_without_its_old_lease(wake_policy):
+    scheduler, resolver, _, now = wake_policy
     assert _change(scheduler, resolver)
     (first,) = scheduler.take_due(now[0], 1)
     restored = Scheduler(resolver.writer, clock=lambda: now[0], lease_ttl=3.0)
@@ -466,8 +466,16 @@ def test_real_socket_and_park_cli_retain_only_keyed_wake_bytes(
         assert listener.serve_once()
         (item,) = scheduler.take_due(now[0], 1)
         assert item.state is ScheduleState.SETTLING
-        assert scheduler.finish(item, caught_up=True)
-        assert scheduler.take_due(now[0], 1) == ()
+        reopened = Scheduler(resolver.writer, clock=lambda: now[0])
+        assert not reopened.finish(item, caught_up=True)
+        (recovered,) = reopened.take_due(now[0], 1)
+        assert (recovered.stream, recovered.generation, recovered.state) == (
+            item.stream,
+            item.generation,
+            item.state,
+        )
+        assert reopened.finish(recovered, caught_up=True)
+        assert reopened.take_due(now[0], 1) == ()
     for path in (resolver.writer.root / "wake").iterdir():
         for raw in (
             b"/raw-path-canary",

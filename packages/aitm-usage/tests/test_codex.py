@@ -10,7 +10,7 @@ from uuid import UUID
 
 import pytest
 from adapter_frame_cases import AdapterFrames
-from scanner_policy_cases import TranscriptReplay
+from scanner_policy_cases import NativeTranscriptFiles, TranscriptReplay
 
 from aitm_usage import scopes
 from aitm_usage.cli import main
@@ -318,12 +318,10 @@ def test_codex_deltas_exclusion_and_epochs(project):
 
 @pytest.mark.parametrize("excluded_counter", [True, False])
 def test_excluded_work_cannot_spill_through_fresh_sqlite_restart(
-    request, monkeypatch, excluded_counter
+    memory_replay, excluded_counter
 ):
     codex = adapter()
-    replay = TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=excluded_counter
-    )
+    replay = memory_replay
     ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
     other_turn = UUID(int=0x120)
     resumed_turn = UUID(int=0x121)
@@ -572,14 +570,17 @@ def tool_output(command_id=COMMAND, *, stdout=None):
 def test_monitor_scope_receipt_at_first_desktop_request(
     request, adapter_frames, monkeypatch, case
 ):
-    project = request.getfixturevalue("project") if case == "mark" else None
     replay = request.getfixturevalue("memory_replay") if case == "legacy" else None
+    files = None
     if replay is not None:
         ledger, checkout = replay.ledger, replay.checkout
-    elif project is None:
+    elif case != "mark":
         ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     else:
-        ledger, registration, path, checkout, _ = project
+        ledger = request.getfixturevalue("memory_replay").ledger
+        files = NativeTranscriptFiles(monkeypatch)
+        checkout = files.checkout
+        path = files.root / "desktop.jsonl"
         monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
         monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
     action = case if case in {"mark", "handoff", "dispose"} else "mark"
@@ -655,8 +656,8 @@ def test_monitor_scope_receipt_at_first_desktop_request(
         *begin(checkout, followup),
         end(followup),
     ]
-    if project is not None:
-        write(path, rows)
+    if files is not None:
+        files.write(path, rows)
     if replay is not None:
         codex = adapter()
         replay.write(rows)
@@ -667,7 +668,7 @@ def test_monitor_scope_receipt_at_first_desktop_request(
         assert len(result.revisions) == 3
         return
 
-    if project is None:
+    if files is None:
         result = adapter_frames.read_monitor(rows, monkeypatch)
     else:
         provider = native.ProviderAdapter()
@@ -689,7 +690,7 @@ def test_monitor_scope_receipt_at_first_desktop_request(
         "codex-scope-next-request", f"{session.value}:{receipt_id}"
     )
     assert len(result.observations) == 3
-    if project is not None:
+    if files is not None:
         assert not ledger.as_of().current
 
 

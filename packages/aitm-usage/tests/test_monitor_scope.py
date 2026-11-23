@@ -2506,7 +2506,7 @@ def _sealed_disposition(
 
 
 def _queue_policy_disposition(
-    native, writer, state, command, *, grant_id=None, append=None
+    native, writer, state, command, *, grant_id=None, append=None, source_id=SOURCE
 ):
     from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
     from aitm_usage.scope_admission import DispositionRequest
@@ -2538,7 +2538,7 @@ def _queue_policy_disposition(
     )
     append_rows = _append_ordered_disposition if append is None else append
     followup, when = append_rows(native, command.command_id, path, stdout)
-    batch = state.read_source(SOURCE, native.locator())
+    batch = state.read_source(source_id, native.locator())
     target = native.target(batch, command.command_id)
     return (
         inbox,

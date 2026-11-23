@@ -1,5 +1,6 @@
 """Run scanner policy on in-memory transcript bytes and explicit custody."""
 
+import errno
 import json
 import stat
 from contextlib import contextmanager, nullcontext
@@ -7,6 +8,7 @@ from dataclasses import dataclass
 from hashlib import sha256
 from importlib import import_module
 from io import BytesIO
+from itertools import count
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -23,6 +25,17 @@ from aitm_usage.types import (
 )
 
 scanner = import_module("aitm_usage.sources.scan")
+_NATIVE_FILE_READS = {
+    name: getattr(scanner, name)
+    for name in (
+        "_open_snapshot",
+        "_probe",
+        "_reprobe",
+        "_transcripts",
+        "_verify_snapshot",
+        "_within_source_roots",
+    )
+}
 
 
 class _SnapshotBytes(BytesIO):
@@ -44,6 +57,7 @@ class NativeTranscriptFiles:
         self.evidence = _ServiceEvidence(b"native-transcript-policy")
         self.contents = {}
         self.identities = {}
+        self._inodes = count(1)
         self.descriptors = {}
         self._checkout_lookup = scanner._checkout_anchor
         self.checkout_paths = {self.checkout}
@@ -73,7 +87,9 @@ class NativeTranscriptFiles:
         return len(data)
 
     def _identity(self, path):
-        return self.identities.setdefault(path, (1, len(self.identities) + 1))
+        if path not in self.identities:
+            self.identities[path] = (1, next(self._inodes))
+        return self.identities[path]
 
     def _identity_chain(self, path):
         return tuple(self._identity(entry) for entry in (*reversed(path.parents), path))
@@ -142,15 +158,24 @@ class NativeDirectoryMetadata:
         self.files = files
         self.versions = dict.fromkeys(paths, 1)
         self.descriptors = {files._identity(path): path for path in paths}
+        self.symlinks = {}
+        self._open_files = {}
+
+    def mkdir(self, path):
+        self.descriptors[self.files._identity(path)] = path
 
     def info(self, path):
         device, inode = self.files._identity(path)
         data = self.files.contents.get(path)
         version = 10_000_000_000 + self.versions.get(path, 0)
+        if path in self.symlinks:
+            mode = stat.S_IFLNK
+        else:
+            mode = stat.S_IFDIR if data is None else stat.S_IFREG
         return SimpleNamespace(
             st_dev=device,
             st_ino=inode,
-            st_mode=(stat.S_IFDIR if data is None else stat.S_IFREG) | 0o700,
+            st_mode=mode | 0o700,
             st_nlink=1,
             st_size=len(data) if data is not None else 0,
             st_mtime_ns=version,
@@ -173,12 +198,27 @@ class NativeDirectoryMetadata:
 
     def scandir(self, fd):
         path = self.descriptors[fd]
+
+        def has_type(child, check, *, follow_symlinks):
+            assert not follow_symlinks
+            return check(self.info(child).st_mode)
+
         entries = [
             SimpleNamespace(
                 name=child.name,
                 stat=lambda *, follow_symlinks, child=child: self.info(child),
+                is_dir=lambda *, follow_symlinks, child=child: has_type(
+                    child, stat.S_ISDIR, follow_symlinks=follow_symlinks
+                ),
+                is_file=lambda *, follow_symlinks, child=child: has_type(
+                    child, stat.S_ISREG, follow_symlinks=follow_symlinks
+                ),
             )
-            for child in (*self.descriptors.values(), *self.files.contents)
+            for child in (
+                *self.descriptors.values(),
+                *self.files.contents,
+                *self.symlinks,
+            )
             if child.parent == path
         ]
         return nullcontext(iter(entries))
@@ -189,17 +229,45 @@ class NativeDirectoryMetadata:
         assert path in self.descriptors.values()
         return self.files._identity(path)
 
+    def open(self, name, flags, *, dir_fd):
+        if flags == scanner._DIRECTORY_FLAGS:
+            return self.open_directory(name, flags, dir_fd=dir_fd)
+        assert flags == scanner._FILE_FLAGS
+        path = self.descriptors[dir_fd] / name
+        if path in self.symlinks:
+            raise OSError(errno.ELOOP, "Refused simulated symlink", path)
+        descriptor = max(self.files.descriptors, default=0) + 1
+        self.files.descriptors[descriptor] = self.files.contents[path]
+        self._open_files[descriptor] = self.info(path)
+        return descriptor
+
+    @contextmanager
+    def fdopen(self, descriptor, mode):
+        assert mode == "rb"
+        try:
+            with _SnapshotBytes(
+                self.files.descriptors[descriptor], descriptor
+            ) as stream:
+                yield stream
+        finally:
+            del self.files.descriptors[descriptor]
+            del self._open_files[descriptor]
+
     def stat(self, name, *, dir_fd, follow_symlinks):
         assert not follow_symlinks
         path = self.descriptors[dir_fd] / name
-        if path not in self.descriptors.values() and path not in self.files.contents:
+        if (
+            path not in self.descriptors.values()
+            and path not in self.files.contents
+            and path not in self.symlinks
+        ):
             raise FileNotFoundError(path)
         return self.info(path)
 
     def close(self, fd):
         assert fd in self.descriptors
 
-    def install(self, monkeypatch):
+    def install(self, monkeypatch, *, native_file_reads=False):
         monkeypatch.setattr(self.files, "_snapshot", self.snapshot)
         monkeypatch.setattr(scanner, "_directory", self.directory)
         monkeypatch.setattr(scanner, "_probe", self.snapshot)
@@ -209,8 +277,15 @@ class NativeDirectoryMetadata:
         monkeypatch.setattr(scanner.os, "open", self.open_directory)
         monkeypatch.setattr(scanner.os, "close", self.close)
         monkeypatch.setattr(scanner.os, "stat", self.stat)
+        if native_file_reads:
+            for name, operation in _NATIVE_FILE_READS.items():
+                monkeypatch.setattr(scanner, name, operation)
+            monkeypatch.setattr(scanner.os, "open", self.open)
+            monkeypatch.setattr(scanner.os, "fdopen", self.fdopen)
 
     def fstat(self, fd):
+        if fd in self._open_files:
+            return self._open_files[fd]
         return self.info(self.descriptors[fd])
 
 

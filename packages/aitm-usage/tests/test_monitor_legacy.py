@@ -142,27 +142,38 @@ def test_legacy_mutation_reports_adoption_before_opening_input(
     assert legacy_policy.inbox == {}
 
 
-def test_legacy_register_rechecks_after_entering_writer(legacy, adopt, monkeypatch):
-    root, config, _, run = legacy
-    ledger = Ledger.open(root, PROJECT)
-    before = ledger.as_of().sequence
-    registration = root / "registration.json"
-    registration.unlink()
-    original_writer = Ledger.writer
+def test_legacy_register_rechecks_after_entering_writer(legacy_policy, monkeypatch):
+    ledger = legacy_policy.ledger
+    config = _existing_registration_input(legacy_policy, monkeypatch)
+    enter = Mock()
+    pin = Mock(return_value=nullcontext(SimpleNamespace(path=ledger.root)))
+    observe = Mock(side_effect=AssertionError("Adopted registration read ledger rows"))
+    publish = Mock(
+        side_effect=AssertionError("Adopted registration reached publication")
+    )
+    apply = Mock(side_effect=AssertionError("Adopted registration tried to commit"))
 
     @contextmanager
-    def writer_after_cutover(self):
-        with original_writer(self) as writer:
-            adopt()
-            yield writer
+    def writer_after_cutover(actual):
+        assert actual is ledger
+        enter()
+        legacy_policy.adopt_current()
+        yield actual
 
     monkeypatch.setattr(Ledger, "writer", writer_after_cutover)
-    status, output = run("register", "--config", str(config), "--json")
+    monkeypatch.setattr(Ledger, "as_of", observe)
+    monkeypatch.setattr(Ledger, "apply", apply)
+    monkeypatch.setattr(service, "_pin_directory", pin)
+    monkeypatch.setattr(service, "_publish_exact", publish)
+    status, output = legacy_policy.run(("register", "--config", str(config)))
 
     assert status == 1
     assert json.loads(output.out) == {"status": "project-adopted-use-monitor"}
-    assert ledger.as_of().sequence == before
-    assert not registration.exists()
+    enter.assert_called_once_with()
+    pin.assert_called_once_with(ledger.root)
+    observe.assert_not_called()
+    publish.assert_not_called()
+    apply.assert_not_called()
 
 
 def test_legacy_register_rereads_adoption_on_writer_refusal(legacy_policy, monkeypatch):

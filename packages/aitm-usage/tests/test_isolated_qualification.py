@@ -582,10 +582,10 @@ def test_closed_resolver_cannot_copy_the_unpatched_codex_fixture(monkeypatch):
     fstat.assert_called_once_with(3)
 
 
-def test_signed_supersession_invalidates_the_prior_generation(installed):
+def test_signed_supersession_invalidates_the_prior_generation(installed_policy):
     from aitm_usage import _isolated_qualification as pilot
 
-    native, writer, issuer, activate, _, sign = installed
+    native, writer, issuer, activate, _, sign = installed_policy
     activate()
     locator = native.locator()
     scope = ScopeState(writer)
@@ -595,6 +595,7 @@ def test_signed_supersession_invalidates_the_prior_generation(installed):
     assert profile.current(installation)
     proposal = issuer.proposal("replace", 2, datetime.now(UTC) + timedelta(minutes=2))
     pilot._install_isolated_profile(issuer, proposal, sign(proposal))
+    assert writer._live_profile.generation != profile.generation
     assert not profile.current(installation)
     assert writer._live_profile.current(installation)
     with pytest.raises(_LiveSourceUnavailable):

@@ -335,6 +335,96 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_monitor_scope_receipt_at_first_claude_request",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_native_api_start_before_cutoff_cannot_enter_after_restart",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_streamed_processing_evidence_controls_accounting_across_restart",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_excluded_work_cannot_spill_through_fresh_sqlite_restart",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_monitor_scope_receipt_at_first_desktop_request",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_process_identity_refuses_ambiguous_executable",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bind_validation_and_publication_refuses_commit",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_host_watch.py::test_unsafe_and_duplicate_roots_refuse",
+      "suite": "unit",
+      "isolation_group": "host_watch-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation",
+      "suite": "unit",
+      "isolation_group": "isolated_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_register_rechecks_after_entering_writer",
+      "suite": "unit",
+      "isolation_group": "monitor_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_restart_recovers_pending_wake_without_its_old_lease",
+      "suite": "unit",
+      "isolation_group": "monitor_scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_public_batch_refuses_unreceipted_relationship",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_relationship_cli_drains_in_publication_order",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_retirement_compares_the_complete_captured_transport",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_locator_presence_finds_moved_inode_and_replacement_type",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_claude_uses_provider_qualified_session_and_real_checkout_metadata",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_legacy_invocations_preserve_command_and_receipt",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_causal_revision_survives_stale_replay_after_restart",
       "suite": "unit",
       "isolation_group": "monitor_journal-policy"

@@ -16,7 +16,6 @@ from test_accounting import reference_rates  # noqa: F401, F811
 from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
-from aitm_usage.pricing import load_rate_card
 from aitm_usage.rollup import rollup
 from aitm_usage.scopes import attest_marker, drain_inbox, session_reference
 from aitm_usage.sources import adapter as native
@@ -357,11 +356,11 @@ def test_stream_conflicts_keep_accepted_prior_and_retry_keeps_own_effort(
     } <= diagnostics(result)
 
 
-def test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen(project):
+def test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen(memory_replay):
     claude = adapter()
-    ledger, registration, path, checkout, outside = project
-    write(
-        path,
+    replay = memory_replay
+    ledger, checkout, outside = replay.ledger, replay.checkout, replay.outside
+    replay.write(
         [
             user(checkout, BEFORE),
             request(checkout, time=BEFORE),
@@ -369,10 +368,12 @@ def test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen(project):
             request(checkout, req="req-allowed", msg="msg-allowed", counts=usage(11)),
         ],
     )
-    candidate = source(registration)
-    before = scan(candidate, None, CUTOFF)
+    candidate = replay.candidate()
+    before = replay.scan(candidate)
     candidate = candidate.with_exclusion(before.frames[2])
-    first_batch, first = read(claude, candidate, claude.ClaudeState(ledger))
+    first_batch, first = replay.read(
+        claude.read_claude, candidate, claude.ClaudeState(ledger)
+    )
     (allowed,) = first.revisions
     assert allowed.record.tokens.output_tokens == 11
     tombstones = [
@@ -380,10 +381,9 @@ def test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen(project):
     ]
     assert len(tombstones) == 2
     assert all(p.tokens == TokenCounts() for p in tombstones)
-    prior = commit(ledger, first_batch, first)
+    prior = replay.commit(first_batch, first)
 
-    write(
-        path,
+    replay.write(
         [
             request(checkout, counts=usage(71)),
             request(checkout, req="req-outside", msg="msg-outside", counts=usage(81)),
@@ -397,8 +397,11 @@ def test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen(project):
         ],
         append=True,
     )
-    ledger = Ledger.open(ledger.root, PROJECT)
-    _, second = read(claude, candidate, claude.ClaudeState(ledger), prior)
+    ledger = replay.reopen()
+    assert ledger.as_of().checkpoints == (prior,)
+    _, second = replay.read(
+        claude.read_claude, candidate, claude.ClaudeState(ledger), prior
+    )
     assert second.revisions == ()
     assert second.provider_checkpoint.baseline is None
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(second)
@@ -608,13 +611,6 @@ def _native_tool_turn(checkout, command, output, *, case="valid"):
     return [call, result, attachment, telemetry, target]
 
 
-@pytest.fixture
-def monitor_receipt_project(request):
-    if request.node.callspec.params["case"] == "mark":
-        return request.getfixturevalue("project")
-    return None
-
-
 @pytest.mark.parametrize(
     "case",
     [
@@ -643,11 +639,11 @@ def monitor_receipt_project(request):
     ],
 )
 def test_monitor_scope_receipt_at_first_claude_request(
-    monitor_receipt_project, adapter_frames, memory_replay, monkeypatch, case
+    adapter_frames, memory_replay, monkeypatch, case
 ):
-    project = monitor_receipt_project
     files = None
     if case in {
+        "mark",
         "missing-call-session",
         "missing-result-session",
         "wrong-result-session",
@@ -655,13 +651,13 @@ def test_monitor_scope_receipt_at_first_claude_request(
         files = NativeTranscriptFiles(monkeypatch)
         ledger, transcript_root, checkout = files.source
         path = transcript_root / "native.jsonl"
+        if case == "mark":
+            ledger = memory_replay.ledger
     elif case == "legacy":
         ledger, checkout = memory_replay.ledger, memory_replay.checkout
-    elif project is not None:
-        ledger, _, path, checkout, _ = project
     else:
         ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
-    if files is not None or project is not None:
+    if files is not None:
         monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
         monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
     action = case if case in {"mark", "handoff", "dispose"} else "mark"
@@ -728,8 +724,6 @@ def test_monitor_scope_receipt_at_first_claude_request(
     ]
     if files is not None:
         files.write(path, rows)
-    elif project is not None:
-        write(path, rows)
     if case == "legacy":
         claude = adapter()
         memory_replay.write(rows)
@@ -742,7 +736,7 @@ def test_monitor_scope_receipt_at_first_claude_request(
         assert len(result.revisions) == 3
         return
 
-    if project is None and files is None:
+    if files is None:
         result = adapter_frames.read_monitor(rows, monkeypatch)
     else:
         provider = native.ProviderAdapter()
@@ -762,7 +756,7 @@ def test_monitor_scope_receipt_at_first_claude_request(
         "claude-scope-next-request", f"{session.value}:{receipt_id}"
     )
     assert len(result.observations) == 3
-    if project is not None:
+    if case == "mark":
         assert not ledger.as_of().current
 
 
@@ -1333,22 +1327,23 @@ def test_account_owner_sideband_cannot_change_the_verified_quota_account(memory_
     assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
 
 
-def test_native_api_start_before_cutoff_cannot_enter_after_restart(project):
+def test_native_api_start_before_cutoff_cannot_enter_after_restart(memory_replay):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
+    replay = memory_replay
+    ledger, checkout = replay.ledger, replay.checkout
+    replay.write(
         [
             user(checkout, BEFORE),
             row("api-request", checkout, BEFORE, id="native-api-before-cutoff"),
         ],
     )
-    candidate = source(registration)
-    first, result = read(claude, candidate, claude.ClaudeState(ledger))
+    candidate = replay.candidate()
+    first, result = replay.read(
+        claude.read_claude, candidate, claude.ClaudeState(ledger)
+    )
     assert result.revisions == ()
-    prior = commit(ledger, first, result)
-    write(
-        path,
+    prior = replay.commit(first, result)
+    replay.write(
         [
             request(checkout, requestRef="native-api-before-cutoff"),
             row("api-request", checkout, id="native-api-after-cutoff"),
@@ -1361,8 +1356,11 @@ def test_native_api_start_before_cutoff_cannot_enter_after_restart(project):
         ],
         append=True,
     )
-    ledger = Ledger.open(ledger.root, PROJECT)
-    _, resumed = read(claude, candidate, claude.ClaudeState(ledger), prior)
+    ledger = replay.reopen()
+    assert ledger.as_of().checkpoints == (prior,)
+    _, resumed = replay.read(
+        claude.read_claude, candidate, claude.ClaudeState(ledger), prior
+    )
     (new,) = resumed.revisions
     assert new.record.boundary.ordinal == 4
     assert all(
@@ -1370,7 +1368,8 @@ def test_native_api_start_before_cutoff_cannot_enter_after_restart(project):
         for p in resumed.provider_checkpoint.request_prefix
         if p.ordinal < 4
     )
-    assert b"native-api-before-cutoff" not in ledger.database_path.read_bytes()
+    payload = _encode(prior, SourceCheckpoint, validate_ref=ledger.validate_source_ref)
+    assert "native-api-before-cutoff" not in payload
 
 
 def test_unknown_model_labels_do_not_merge_conflicting_revisions(memory_replay):
@@ -1492,27 +1491,6 @@ def test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total(
     assert result.revisions[-1].record.availability is Availability.COMPLETE
 
 
-def _accounted_scan(claude, ledger, candidate, prior=None, *, reserved_session_id=None):
-    with ledger.writer() as writer:
-        batch, result = read(
-            claude,
-            candidate,
-            claude.ClaudeState(writer, reserved_session_id=reserved_session_id),
-            prior,
-        )
-        if reserved_session_id is not None:
-            drain_inbox(
-                writer,
-                [batch.scope_evidence(boundary) for boundary in result.boundaries],
-            )
-        checkpoint = SourceCheckpoint(batch.cursor, result.provider_checkpoint)
-        accounting = account_observations(result, load_rate_card(), ledger=writer)
-        sequence = writer.apply(
-            replace(accounting, checkpoint=checkpoint, prior_checkpoint=prior)
-        )
-    return result, checkpoint, sequence
-
-
 def _accounted_replay(claude, replay, candidate, rates, prior=None, *, marker=None):
     ledger = replay.ledger
     state = claude.ClaudeState(ledger, reserved_session_id=SESSION if marker else None)
@@ -1544,14 +1522,6 @@ def _with_processing(counts, metadata):
     return counts
 
 
-@pytest.fixture
-def pricing_replay(request, monkeypatch, processing):
-    durable = not processing
-    return TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=durable
-    ), durable
-
-
 @pytest.mark.parametrize(
     ("processing", "expected_tier", "expected_price"),
     [
@@ -1572,21 +1542,19 @@ def pricing_replay(request, monkeypatch, processing):
     ],
 )
 def test_streamed_processing_evidence_controls_accounting_across_restart(
-    pricing_replay,
+    memory_replay,
     processing,
     expected_tier,
     expected_price,
     reference_rates,  # noqa: F811
 ):
     claude = adapter()
-    transcript, durable = pricing_replay
+    transcript = memory_replay
     ledger, checkout = transcript.ledger, transcript.checkout
     transcript.write([user(checkout), request(checkout, counts=usage(3), stop=None)])
     candidate = transcript.candidate()
 
     def accounted(prior=None):
-        if durable:
-            return _accounted_scan(claude, ledger, candidate, prior)
         return _accounted_replay(claude, transcript, candidate, reference_rates, prior)
 
     initial, prior, first_sequence = accounted()

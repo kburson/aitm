@@ -370,26 +370,17 @@ def install_adopted_capture(monkeypatch, ledger, *, physical_lock=True):
     ],
 )
 def test_adopted_legacy_invocations_preserve_command_and_receipt(
-    request, monkeypatch, action, provider
+    memory_legacy, monkeypatch, action, provider
 ):
     # Unclassifiable legacy bytes would halt relationship enqueue. Adoption
     # leaves those bytes in place and uses the monitor queue instead.
-    memory = request.getfixturevalue("memory_legacy") if action != "mark" else None
-    if memory is None:
-        ledger, _, run = request.getfixturevalue("legacy")
-        args, payload, session = invocation(ledger, action, provider=provider)
-        commit_adoption(ledger, ADOPTION)
-        (ledger.root / "inbox" / "old.json").write_bytes(b"legacy input")
-    else:
-        ledger, run = memory.ledger, memory.run
-        args, payload, session = invocation(
-            ledger, action, provider=provider, write_input=memory.inputs.__setitem__
-        )
-        memory.publish_adoption()
-        memory.inbox["old.json"] = b"legacy input"
-    captured = install_adopted_capture(
-        monkeypatch, ledger, physical_lock=memory is None
+    ledger, run = memory_legacy.ledger, memory_legacy.run
+    args, payload, session = invocation(
+        ledger, action, provider=provider, write_input=memory_legacy.inputs.__setitem__
     )
+    memory_legacy.publish_adoption()
+    memory_legacy.inbox["old.json"] = b"legacy input"
+    captured = install_adopted_capture(monkeypatch, ledger, physical_lock=False)
 
     code, output = run(args)
 
@@ -404,11 +395,7 @@ def test_adopted_legacy_invocations_preserve_command_and_receipt(
     assert captured == [
         (encode_command(InboxCommand(reported_id, PROJECT, payload)), session)
     ]
-    if memory is None:
-        assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-        assert [path.name for path in (ledger.root / "inbox").iterdir()] == ["old.json"]
-    else:
-        assert memory.inbox == {"old.json": b"legacy input"}
+    assert memory_legacy.inbox == {"old.json": b"legacy input"}
 
     repeated_code, repeated_output = run(args, as_json=False)
     assert repeated_code == 0

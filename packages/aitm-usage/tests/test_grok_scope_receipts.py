@@ -500,37 +500,26 @@ def test_process_info_refuses_invalid_custody(monkeypatch, problem):
 @pytest.mark.parametrize(
     "problem", ["truncated", "length", "path-changed", "image-changed"]
 )
-def test_darwin_process_identity_refuses_ambiguous_executable(
-    request, monkeypatch, problem
-):
+def test_darwin_process_identity_refuses_ambiguous_executable(monkeypatch, problem):
     inspect_path = Mock(side_effect=AssertionError("invalid path reached inspection"))
     malformed = problem in {"truncated", "length"}
-    physical_replacement = problem == "image-changed"
-    uid = os.geteuid() if physical_replacement else 501
-    root = (
-        request.getfixturevalue("tmp_path")
-        if physical_replacement
-        else Path("/fixture")
-    )
+    uid = 501
+    root = Path("/fixture")
     image = root / "candidate"
     replacement = root / "replacement"
+    paths = {
+        str(image): _observed_executable(17),
+        str(replacement): _observed_executable(18),
+    }
     if malformed:
         monkeypatch.setattr(process_identity, "Path", inspect_path)
-    elif physical_replacement:
-        image.write_bytes(b"original executable")
-        replacement.write_bytes(b"replacement executable")
     else:
-        paths = {
-            str(image): _observed_executable(17),
-            str(replacement): _observed_executable(18),
-        }
         monkeypatch.setattr(process_identity, "Path", paths.__getitem__)
-    if not physical_replacement:
-        monkeypatch.setattr(
-            process_identity,
-            "os",
-            SimpleNamespace(geteuid=lambda: uid, fsdecode=os.fsdecode),
-        )
+    monkeypatch.setattr(
+        process_identity,
+        "os",
+        SimpleNamespace(geteuid=lambda: uid, fsdecode=os.fsdecode),
+    )
 
     class Proc:
         path_reads = 0
@@ -550,7 +539,9 @@ def test_darwin_process_identity_refuses_ambiguous_executable(
                 if problem == "path-changed":
                     path = replacement
                 if problem == "image-changed":
-                    replacement.replace(image)
+                    paths[str(image)].stat.return_value = paths[
+                        str(replacement)
+                    ].stat.return_value
             buffer.value = os.fsencode(path)
             if problem == "truncated":
                 return size
@@ -892,11 +883,14 @@ def test_profile_revision_before_first_bind_preserves_unbound_attempt(
 
 
 def test_rotation_between_bind_validation_and_publication_refuses_commit(
-    staged_scope, monkeypatch
+    staged_scope_policy, monkeypatch
 ):
-    f, _, _, checkout, selector, lookup, bind = _ready_scope(staged_scope, monkeypatch)
+    f, _, _, checkout, selector, lookup, bind = _ready_scope(
+        staged_scope_policy, monkeypatch
+    )
     original = scope_admission._publish
     invoked = []
+    saved = f.scope_files.files[f.writer.root / scope_admission._GROK_RECEIPTS].copy()
 
     def publish(*args, **kwargs):
         invoked.append(True)
@@ -907,6 +901,7 @@ def test_rotation_between_bind_validation_and_publication_refuses_commit(
     with pytest.raises(LedgerError, match="qualification revision changed"):
         bind(f.writer.root, selector, SESSION, PROMPT_A, checkout)
     assert invoked == [True]
+    assert f.scope_files.files[f.writer.root / scope_admission._GROK_RECEIPTS] == saved
     with (
         scope_admission._pin_directory(f.writer.root) as root,
         scope_admission._private_child(

@@ -1031,6 +1031,7 @@ class _MemoryJournalTranscripts(_JournalTranscriptInputs):
             evidence=self.evidence,
         )
         self.registry = state.registry
+        self.state_files = state.files
         journal = _ClaimJournalRows(self.evidence)
         monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
         with self.registry.writer() as writer:
@@ -2998,16 +2999,51 @@ def test_v3_upgrade_preserves_native_journal_historical_views(tmp_path, monkeypa
 
 @pytest.fixture
 def journal_pair(native, tmp_path, monkeypatch, capsys):
+    yield from _journal_pair(native, monkeypatch, tmp_path=tmp_path, capsys=capsys)
+
+
+@pytest.fixture
+def journal_pair_policy(monkeypatch):
+    from test_ledger import _memory_ledger
+
+    from aitm_usage import ledger as ledger_module
+    from aitm_usage import scopes
+
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    native.ledgers = {}
+    for project in native.registry.view().projects:
+        path = Path(project.state.path)
+        ledger = _memory_ledger(
+            ledger_module, project.project_id, project.project_id.bytes
+        )
+        native.ledgers[project.project_id] = replace(ledger, root=path)
+        native.state_files.ensure(path)
+        native.state_files.identities[project.state.path] = project.state
+
+    def open_ledger(path, project):
+        ledger = native.ledgers[project]
+        assert path == ledger.root
+        return ledger
+
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(scopes, "_read_private", native.state_files.read)
+    yield from _journal_pair(native, monkeypatch)
+
+
+def _journal_pair(native, monkeypatch, *, tmp_path=None, capsys=None):
     from test_monitor_scope import (
         NativeScopeFixture,
         _append_completed_disposition,
         _issue,
+        _queue_policy_disposition,
         _sealed_disposition,
     )
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import Disposition, Handoff
     from aitm_usage.sources.scan import checkout_anchor_reference
+
+    memory = isinstance(native, _MemoryJournalTranscripts)
 
     class Carrier(NativeScopeFixture):
         def __init__(self, source_id, project, clock):
@@ -3020,6 +3056,20 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
 
         def locator(self):
             return native.locator(self.source_id)
+
+        def _transcript_bytes(self):
+            if memory:
+                return native.files.contents[self.path]
+            return super()._transcript_bytes()
+
+        def _replace_transcript(self, contents):
+            if memory:
+                native.files.contents[self.path] = contents
+            else:
+                super()._replace_transcript(contents)
+
+        def _append_rows(self, rows):
+            native.append(self.source_id, rows)
 
         def append(self, command_id=None, *, checkout=None, **kwargs):
             return super().append(command_id, checkout=self.project, **kwargs)
@@ -3044,12 +3094,12 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                     output = tool_output(command)
                     output["timestamp"] = when.isoformat()
                     rows.append(output)
-                write(self.path, [*rows, end(turn, time=when)], append=True)
+                self._append_rows([*rows, end(turn, time=when)])
 
             append_turn(f"boundary-tool-{command_id}", command=command_id)
             if shared and self.project == A:
                 self.padding(1)
-            ordinal = len(self.path.read_bytes().splitlines())
+            ordinal = len(self._transcript_bytes().splitlines())
             append_turn(
                 "paired-obligation" if shared else f"boundary-usage-{command_id}"
             )
@@ -3065,7 +3115,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                 }
                 for _ in range(count)
             ]
-            write(self.path, rows, append=True)
+            self._append_rows(rows)
 
         def prepare(self, writer, journal):
             state = ScopeState(writer, clock=lambda: self.clock[0])
@@ -3133,10 +3183,23 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                     carrier, command, request, stdout, project_id=self.project
                 )
 
-            with monkeypatch.context() as patch:
-                patch.setattr("test_monitor_scope._append_ordered_disposition", append)
-                _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
-                    _sealed_disposition(
+            grant_id = UUID(int=0xA00 + self.source_id.int)
+            if memory:
+                publication = _queue_policy_disposition(
+                    self,
+                    writer,
+                    self.state,
+                    self.command,
+                    source_id=self.source_id,
+                    grant_id=grant_id,
+                    append=append,
+                )
+            else:
+                with monkeypatch.context() as patch:
+                    patch.setattr(
+                        "test_monitor_scope._append_ordered_disposition", append
+                    )
+                    publication = _sealed_disposition(
                         self,
                         writer,
                         self.state,
@@ -3145,9 +3208,11 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                         patch,
                         capsys,
                         source_id=self.source_id,
-                        grant_id=UUID(int=0xA00 + self.source_id.int),
+                        grant_id=grant_id,
                     )
-                )
+            _, self.reader, self.request, _, _, _, self.closed_turn, self.when = (
+                publication
+            )
 
         def prove(self):
             batch = self.state.read_source(
@@ -3161,8 +3226,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
         def late_usage(self):
             self.total += 4
             total, delta = usage(self.total, self.total), usage(4, 4)
-            write(
-                self.path,
+            self._append_rows(
                 [
                     response(
                         "same-turn-after-close",
@@ -3172,8 +3236,7 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
                         turn=self.closed_turn,
                     ),
                     counter(total, delta, time=self.when),
-                ],
-                append=True,
+                ]
             )
 
     clock = [datetime(2026, 11, 10, tzinfo=UTC)]
@@ -3198,6 +3261,24 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
         assert first.key == dispute.key
         for side in (owner, rival):
             side.complete(writer)
+
+        def scope_bytes():
+            if memory:
+                return native.state_files.files[writer.root]["scope-v1.json"]
+            return (writer.root / "scope-v1.json").read_bytes()
+
+        def recorded_rows():
+            if not memory:
+                return _prior_journal_rows(journal)
+            store = journal._store
+            return (
+                store.commits.copy(),
+                store.rows.copy(),
+                store.claims.copy(),
+                store.disputes.copy(),
+                store.progress.copy(),
+            )
+
         yield SimpleNamespace(
             journal=journal,
             writer=writer,
@@ -3209,6 +3290,8 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
             dispute=dispute,
             clock=clock,
             restart=restart,
+            scope_bytes=scope_bytes,
+            recorded_rows=recorded_rows,
         )
 
 
@@ -3266,13 +3349,14 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
         _assert_pair_refuses_late_same_turn_usage(monkeypatch, index)
         return
 
-    case = request.getfixturevalue("journal_pair")
+    memory = failure in {"grant", "disabled"}
+    case = request.getfixturevalue("journal_pair_policy" if memory else "journal_pair")
     journal = case.journal
     good = [case.owner.prove(), case.rival.prove()]
     carriers = (case.owner, case.rival)
     source = carriers[index]
     prior = journal.as_of()
-    original_rows = _prior_journal_rows(journal)
+    original_rows = case.recorded_rows()
     if failure == "grant":
         source.reader.withdraw(source.request.grant_id)
     elif failure == "disabled":
@@ -3284,13 +3368,22 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
         case.writer.set_permission(change, boundary)
     elif failure == "swap":
         good.reverse()
-    scope = case.writer.root / "scope-v1.json"
-    scope_bytes = scope.read_bytes()
+    scope_bytes = case.scope_bytes()
+    if memory:
+        monkeypatch.setattr(
+            journal,
+            "_build_settlement_change",
+            Mock(
+                side_effect=AssertionError(
+                    "invalid authority reached settlement writes"
+                )
+            ),
+        )
     with pytest.raises(LedgerError):
         journal.settle_disposition(case.key, *good)
     assert journal.as_of() == prior
-    assert _prior_journal_rows(journal) == original_rows
-    assert scope.read_bytes() == scope_bytes
+    assert case.recorded_rows() == original_rows
+    assert case.scope_bytes() == scope_bytes
     with journal._store.transaction() as connection:
         assert connection.execute("PRAGMA user_version").fetchone() == (4,)
 
@@ -3516,10 +3609,11 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
         _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof)
         return
 
-    case = request.getfixturevalue("journal_pair")
+    memory = disproof == "different-checkout"
+    case = request.getfixturevalue("journal_pair_policy" if memory else "journal_pair")
     carriers = (case.owner, case.rival)
     bad, other = carriers[side], carriers[1 - side]
-    prior, rows = case.journal.as_of(), _prior_journal_rows(case.journal)
+    prior, rows = case.journal.as_of(), case.recorded_rows()
     proofs = tuple(carrier.prove() for carrier in carriers)
     _damage_completed_disposition(
         bad, disproof, bad.when, bad.closed_turn, other_project=other.project
@@ -3545,10 +3639,20 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
             bad.state.completion_witness(bad.command, bad.auth, batch, target) is None
             for target in targets
         )
+    if memory:
+        monkeypatch.setattr(
+            case.journal,
+            "_build_settlement_change",
+            Mock(
+                side_effect=AssertionError(
+                    "invalid completion reached settlement writes"
+                )
+            ),
+        )
     with pytest.raises(LedgerError):
         case.journal.settle_disposition(case.key, *proofs)
     assert case.journal.as_of() == prior
-    assert _prior_journal_rows(case.journal) == rows
+    assert case.recorded_rows() == rows
 
 
 def _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof):

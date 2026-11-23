@@ -276,6 +276,14 @@ def test_graduation_and_inclusive_rollup(project, item_cli):
         _record_usage(writer, CHILD, 5, review=True)
         _record_usage(writer, None, 17)
         before = writer.as_of()
+        direct = DraftAlias(UUID(int=100), PROJECT, DRAFT, CHILD)
+        revision = Revision(writer.pseudonymize("fixture", "alias"), 1, direct)
+        durable = _durable_bytes(project)
+        with pytest.raises(LedgerError, match="require atomic command admission"):
+            writer.apply(LedgerBatch((revision,)))
+        assert _durable_bytes(project) == durable
+        assert writer.as_of() == before
+        assert writer.command_receipt(_command(direct)) is None
         receipt = _consume(writer, item_cli, "alias", DRAFT, CHILD)
         graduated = writer.as_of()
         assert enqueue_command(writer.root, receipt.command) == receipt
@@ -450,7 +458,14 @@ def relationship_transport_policy(monkeypatch, capsys):
         }
         return receipt
 
-    return SimpleNamespace(project=project, consume=consume, queue=queue, rows=rows)
+    return SimpleNamespace(
+        project=project,
+        consume=consume,
+        queue=queue,
+        rows=rows,
+        inbox=directories["inbox"],
+        acks=directories["acks"],
+    )
 
 
 def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(
@@ -954,15 +969,15 @@ def test_public_batch_refuses_unreceipted_relationship(
         writer.assert_not_called()
         return
 
-    project = request.getfixturevalue("project")
-    with project.writer() as writer:
+    case = request.getfixturevalue("relationship_transport_policy")
+    with case.project.writer() as writer:
         _record_usage(writer, DRAFT, 7)
         before = writer.as_of()
-        prior_bytes = _durable_bytes(project)
+        prior_writes = case.rows.writes.copy()
         revision = Revision(writer.pseudonymize("fixture", relation), 1, record)
-        with pytest.raises((LedgerError, ValueError)):
+        with pytest.raises(LedgerError, match="require atomic command admission"):
             writer.apply(LedgerBatch((revision,)))
-        assert _durable_bytes(project) == prior_bytes
+        assert case.rows.writes == prior_writes
         assert writer.as_of() == before
         assert rollup(EPIC, writer.as_of()) == rollup(EPIC, before)
         assert rollup(CHILD, writer.as_of()) == rollup(CHILD, before)
@@ -1143,25 +1158,23 @@ def _conflicting_links(writer, item_cli):
     _consume(writer, item_cli, "parent", CHILD, OTHER_EPIC)
 
 
-def test_relationship_cli_drains_in_publication_order(project, item_cli):
-    with project.writer() as writer:
-        _conflicting_links(writer, item_cli)
+def test_relationship_cli_drains_in_publication_order(relationship_transport_policy):
+    case = relationship_transport_policy
+    with case.project.writer() as writer:
+        case.consume(writer, "parent", DRAFT, EPIC)
+        case.consume(writer, "parent", CHILD, OTHER_EPIC)
         _record_usage(writer, DRAFT, 7)
         before = writer.as_of()
-        first = _queue_cli(
-            writer, item_cli, "parent", CHILD, EPIC, command_id=UUID(int=300)
-        )
-        alias = _queue_cli(
-            writer, item_cli, "alias", DRAFT, CHILD, command_id=UUID(int=100)
-        )
-        first_path = _publication_path(writer, first.command_id)
-        original = first_path.read_bytes()
+        first = case.queue(writer, "parent", CHILD, EPIC, command_id=UUID(int=300))
+        alias = case.queue(writer, "alias", DRAFT, CHILD, command_id=UUID(int=100))
+        first_name = f"{first.command_id}.json"
+        original = case.inbox[first_name]
         assert enqueue_command(writer.root, first) is None
-        assert first_path.read_bytes() == original
+        assert case.inbox[first_name] == original
         changed = replace(first, payload=replace(first.payload, parent=OTHER_EPIC))
         with pytest.raises(ConflictError):
             enqueue_command(writer.root, changed)
-        assert first_path.read_bytes() == original
+        assert case.inbox[first_name] == original
 
         results = drain_inbox(writer, ()).receipts
         assert [(r.command, r.disposition) for r in results] == [
@@ -1178,12 +1191,10 @@ def test_relationship_cli_drains_in_publication_order(project, item_cli):
         assert rollup(CHILD, after_alias).direct.tokens == {"output_tokens": 7}
         assert rollup(CHILD, writer.as_of(before.sequence)).direct.tokens == {}
 
-        earlier = _queue_cli(
-            writer, item_cli, "parent", CHILD, OTHER_EPIC, command_id=UUID(int=400)
+        earlier = case.queue(
+            writer, "parent", CHILD, OTHER_EPIC, command_id=UUID(int=400)
         )
-        later = _queue_cli(
-            writer, item_cli, "parent", CHILD, EPIC, command_id=UUID(int=200)
-        )
+        later = case.queue(writer, "parent", CHILD, EPIC, command_id=UUID(int=200))
         results = drain_inbox(writer, ()).receipts
         assert [r.command for r in results] == [earlier, later]
         assert rollup(
@@ -1452,12 +1463,13 @@ def test_invalid_relationship_order_halts_only_relationships(monkeypatch, defect
 
 
 def test_retirement_compares_the_complete_captured_transport(
-    project, item_cli, monkeypatch
+    relationship_transport_policy, monkeypatch
 ):
-    with project.writer() as writer:
-        command = _queue_cli(writer, item_cli, "parent", CHILD, EPIC)
-        path = _publication_path(writer, command.command_id)
-        original = path.read_bytes()
+    case = relationship_transport_policy
+    with case.project.writer() as writer:
+        command = case.queue(writer, "parent", CHILD, EPIC)
+        name = f"{command.command_id}.json"
+        original = case.inbox[name]
         commit = Ledger.commit_command
         replacement = _canonical_json(
             {"command": json.loads(encode_command(command)), "order": 2}
@@ -1465,19 +1477,19 @@ def test_retirement_compares_the_complete_captured_transport(
 
         def change_order_after_commit(ledger, *args, **kwargs):
             receipt = commit(ledger, *args, **kwargs)
-            path.write_bytes(replacement)
+            case.inbox[name] = replacement
             return receipt
 
         with monkeypatch.context() as patch:
             patch.setattr(Ledger, "commit_command", change_order_after_commit)
             with pytest.raises(ConflictError):
                 drain_inbox(writer, ())
-        assert path.read_bytes() == replacement
-        assert not (path.parent / "acks" / path.name).exists()
+        assert case.inbox[name] == replacement
+        assert name not in case.acks
         view = writer.as_of()
         receipt = writer.command_receipt(command)
         assert receipt.disposition is MarkerDisposition.ACCEPTED
-        path.write_bytes(original)
+        case.inbox[name] = original
         assert drain_inbox(writer, ()).receipts == (receipt,)
         assert writer.as_of() == view
-        assert not path.exists()
+        assert name not in case.inbox
