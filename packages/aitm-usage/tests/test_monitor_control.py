@@ -72,14 +72,27 @@ def inbox_policy(monkeypatch):
 
 
 def test_command_status_missing_root_is_unavailable_and_does_not_create_it(
-    monitor, monkeypatch, capsys
+    monkeypatch, capsys
 ):
+    root = Path("/fixture/missing-monitor")
+    exists = Mock(return_value=False)
+    validate = Mock(return_value=())
+    pin = Mock(side_effect=AssertionError("status opened a missing monitor"))
+    create = Mock(side_effect=AssertionError("status created a missing monitor"))
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+    monkeypatch.setattr(monitor_control, "_path_exists", exists)
+    monkeypatch.setattr(monitor_control, "_validated_path", validate)
+    monkeypatch.setattr(monitor_control, "_pin_directory", pin)
+    monkeypatch.setattr(monitor_control, "_ensure_private_directory", create)
     assert _status(monkeypatch) == 1
     assert json.loads(capsys.readouterr().out) == {
         "command_id": str(REQUEST),
         "status": "unavailable",
     }
-    assert not monitor.root.exists()
+    exists.assert_called_once_with(root)
+    validate.assert_called_once_with(root, directory=True, allow_missing=True)
+    pin.assert_not_called()
+    create.assert_not_called()
 
 
 def test_exact_enqueues_from_concurrent_producers_converge(monitor):

@@ -2,16 +2,22 @@ import json
 import os
 import sys
 from contextlib import nullcontext
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from scanner_policy_cases import NativeTranscriptFiles
+from test_accounting import reference_rates as reference_rates
 from test_ledger import _memory_ledger
 
 from aitm_usage import cli, service
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
+from aitm_usage.scopes import InboxDrain
 from aitm_usage.types import (
     LedgerView,
     Provider,
@@ -65,7 +71,95 @@ def _fixtures(sources, checkout, *, partial=False):
         )
 
 
+@pytest.fixture
+def collector_policy(monkeypatch, reference_rates):
+    native = NativeTranscriptFiles(monkeypatch)
+    ledger = replace(
+        _memory_ledger(ledger_module, PROJECT, b"c" * 32), _writer=object()
+    )
+    cutoff = datetime.fromisoformat(CUTOFF)
+    private_files = {}
+    view = LedgerView(PROJECT, 0, (), ())
+    directory = object()
+
+    def configure(**changes):
+        nonlocal view
+        config = service._Config(
+            PROJECT, (str(native.root),), (str(native.checkout),), cutoff, (), (), ()
+        )
+        config = replace(config, **changes)
+        private_files[service.REGISTRATION_NAME] = _encode(
+            config, service._Config
+        ).encode()
+        view = LedgerView(
+            PROJECT, 1, (service._registration_revision(ledger, config),), ()
+        )
+
+    def apply(writer, batch):
+        nonlocal view
+        assert writer is ledger
+        checkpoints = {item.cursor.source_ref: item for item in view.checkpoints}
+        if batch.checkpoint is not None:
+            key = batch.checkpoint.cursor.source_ref
+            assert checkpoints.get(key) == batch.prior_checkpoint
+            checkpoints[key] = batch.checkpoint
+        view = LedgerView(
+            PROJECT,
+            view.sequence + 1,
+            (*view.revisions, *batch.revisions),
+            tuple(checkpoints.values()),
+        )
+        return view.sequence
+
+    def read_private(pinned, name):
+        assert pinned is directory
+        return private_files.get(name)
+
+    def publish(pinned, name, data, *, replace_pending):
+        assert pinned is directory and name == service.STATUS_NAME and replace_pending
+        private_files[name] = data
+
+    def open_ledger(path, project_id):
+        assert (path, project_id) == (ledger.root, PROJECT)
+        return ledger
+
+    monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
+    monkeypatch.setattr(Ledger, "as_of", lambda writer: view)
+    monkeypatch.setattr(Ledger, "writer", lambda writer: nullcontext(writer))
+    monkeypatch.setattr(Ledger, "require_writer", lambda writer: None)
+    monkeypatch.setattr(Ledger, "_apply", apply)
+    monkeypatch.setattr(
+        service, "_directory_available", lambda path: path == native.root
+    )
+    monkeypatch.setattr(service, "_pin_directory", lambda _: nullcontext(directory))
+    monkeypatch.setattr(service, "_read_private", read_private)
+    monkeypatch.setattr(service, "_private_child", lambda *a, **k: nullcontext(None))
+    monkeypatch.setattr(service, "drain_inbox", lambda *a: InboxDrain())
+    monkeypatch.setattr(service, "_abandoned_publications", lambda _: 0)
+    monkeypatch.setattr(service, "_publish", publish)
+    monkeypatch.setattr(service, "load_rate_card", lambda: reference_rates)
+    monkeypatch.setattr(service, "version", lambda _: "1.2.3")
+    monkeypatch.setattr(
+        service, "platform", SimpleNamespace(python_version=lambda: "3.13.9")
+    )
+    monkeypatch.setattr(service, "os", SimpleNamespace(getpid=lambda: 123))
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = cutoff
+    monkeypatch.setattr(service, "datetime", clock)
+
+    def collect():
+        service.collect_once(service.load_registration(ledger), ledger)
+        return service.status_report(ledger.root, ledger)
+
+    return SimpleNamespace(
+        native=native, ledger=ledger, configure=configure, collect=collect
+    )
+
+
 def test_service_commands_and_coverage(project):
+    from importlib.metadata import version
+    from platform import python_version
+
     root, sources, checkout, config, command = project
     _fixtures(sources, checkout, partial=True)
     result = command("register", "--config", str(config), "--json")
@@ -85,6 +179,8 @@ def test_service_commands_and_coverage(project):
     assert status["heartbeat"] is not None
     assert status["producer_mode"] == "one-shot"
     assert status["producer_pid"] == os.getpid()
+    assert status["collector_version"] == version("aitm-usage")
+    assert status["collector_interpreter_version"] == python_version()
     assert not status["read_gap"]
     assert set(status["coverage"]) == {"codex", "claude"}
     assert status["coverage"]["codex"]["quota"] == "unknown"
@@ -626,28 +722,28 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
 
 
 @pytest.mark.parametrize("account_provider", ["codex", "claude"])
-def test_quota_authority_is_exact_stream_and_provider(project, account_provider):
+def test_quota_authority_is_exact_stream_and_provider(
+    collector_policy, account_provider
+):
     from aitm_usage.scopes import session_reference
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    ledger = Ledger.initialize(root, PROJECT)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = data.replace(
+            b"CHECKOUT", str(native.checkout).encode()
+        )
     session_ref = session_reference(ledger, Provider.CODEX, str(UUID(int=0x101)))
     stream = ledger.pseudonymize("codex-stream", session_ref.value)
     account = ledger.pseudonymize("account", "private-confirmed-account")
-    data = json.loads(config.read_text())
-    data["account_refs"] = [
-        {
-            "provider": account_provider,
-            "stream_ref": stream.value,
-            "account_ref": account.value,
-        }
-    ]
-    data["retention_limits"] = [{"provider": "codex", "seconds": 604800}]
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    case.configure(
+        account_refs=(
+            service._AccountAuthority(Provider(account_provider), stream, account),
+        ),
+        retention_limits=(service._RetentionLimit(Provider.CODEX, 604800),),
+    )
+    status = case.collect()
     expected = "observed" if account_provider == "codex" else "unknown"
     assert status["coverage"]["codex"]["quota"] == expected
     assert status["coverage"]["claude"]["quota"] == "unknown"
@@ -663,18 +759,18 @@ def test_quota_authority_is_exact_stream_and_provider(project, account_provider)
 
 @pytest.mark.parametrize("explicit", [False, True])
 def test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded(
-    project, explicit
+    collector_policy, explicit
 ):
-    from test_claude import request, usage, user, write
+    from test_claude import request, usage, user
 
     from aitm_usage.sources.scan import discover, scan
-    from aitm_usage.types import Registration
 
-    root, sources, checkout, config, command = project
+    case = collector_policy
+    native, ledger = case.native, case.ledger
+    checkout = native.checkout
     unrelated = checkout.with_name("unrelated-private")
-    unrelated.mkdir()
-    write(
-        sources / "claude.jsonl",
+    native.write(
+        native.root / "claude.jsonl",
         [
             user(unrelated),
             request(
@@ -686,45 +782,31 @@ def test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded(
             ),
         ],
     )
+    case.configure()
     if explicit:
-        Ledger.initialize(root, PROJECT)
-        registration = Registration(
-            PROJECT, root, (sources,), (checkout,), datetime.fromisoformat(CUTOFF)
-        )
+        registration = service.load_registration(ledger)
         (candidate,) = discover(registration)
         batch = scan(candidate, None, registration.cutoff)
-        data = json.loads(config.read_text())
-        data["excluded_segments"] = [batch.frames[0].segment_ref.value]
-        config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    view = Ledger.open(root, PROJECT).as_of()
+        case.configure(excluded_segments=(batch.frames[0].segment_ref,))
+    status = case.collect()
+    view = ledger.as_of()
     measured = [
         r.record.tokens.output_tokens
         for r in view.current
         if isinstance(r.record, UsageObservation)
     ]
     assert measured == ([4] if explicit else [])
-    assert command("status", "--json")["held_sources"] == (0 if explicit else 1)
+    assert status["held_sources"] == (0 if explicit else 1)
 
 
-def test_status_matches_producer_runtime_and_authenticates_observed_time(project):
-    from importlib.metadata import version
-    from platform import python_version
+def test_status_matches_producer_runtime_and_authenticates_observed_time(monkeypatch):
+    def change_watermark(payload):
+        payload["observed"][0]["through"] = "2026-11-09T16:01:00+00:00"
 
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    first = command("status", "--json")
-    assert first["collector_version"] == version("aitm-usage")
-    assert first["collector_interpreter_version"] == python_version()
-    path = root / "status.json"
-    data = json.loads(path.read_text())
-    ref = data["observed"][0]["source_ref"]
-    data["observed"][0]["through"] = "2026-11-09T16:01:00+00:00"
-    path.write_text(json.dumps(data, separators=(",", ":"), sort_keys=True))
-    status = command("status", "--json")
+    first, status = _read_changed_status(monkeypatch, change_watermark)
+    assert first["collector_version"] == "1.2.3"
+    assert first["collector_interpreter_version"] == "3.13.9"
+    ref = first["sources"][0]["source_ref"]
     source = next(source for source in status["sources"] if source["source_ref"] == ref)
     assert source["observed_through"] is None
     assert source["lag_seconds"] is None
@@ -732,23 +814,26 @@ def test_status_matches_producer_runtime_and_authenticates_observed_time(project
 
 
 @pytest.mark.parametrize("owner_matches", [True, False])
-def test_claude_quota_still_requires_native_same_segment_owner(project, owner_matches):
+def test_claude_quota_still_requires_native_same_segment_owner(
+    collector_policy, owner_matches
+):
     from datetime import timedelta
 
-    from test_claude import ACCOUNT, AFTER, SESSION, owner, request, row, user, write
+    from test_claude import ACCOUNT, AFTER, SESSION, owner, request, row, user
 
     from aitm_usage.scopes import session_reference
     from aitm_usage.types import AccountObservation
 
-    root, sources, checkout, config, command = project
-    ledger = Ledger.initialize(root, PROJECT)
+    case = collector_policy
+    native, ledger = case.native, case.ledger
+    checkout = native.checkout
     session_ref = session_reference(ledger, Provider.CLAUDE, str(SESSION))
     stream = ledger.pseudonymize("claude-stream", session_ref.value)
     account = ledger.pseudonymize(
         "claude-account", str(ACCOUNT if owner_matches else UUID(int=987))
     )
-    write(
-        sources / "claude.jsonl",
+    native.write(
+        native.root / "claude.jsonl",
         [
             user(checkout),
             request(checkout),
@@ -765,18 +850,10 @@ def test_claude_quota_still_requires_native_same_segment_owner(project, owner_ma
             ),
         ],
     )
-    data = json.loads(config.read_text())
-    data["account_refs"] = [
-        {
-            "provider": "claude",
-            "stream_ref": stream.value,
-            "account_ref": account.value,
-        }
-    ]
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    status = command("status", "--json")
+    case.configure(
+        account_refs=(service._AccountAuthority(Provider.CLAUDE, stream, account),),
+    )
+    status = case.collect()
     assert status["coverage"]["claude"]["quota"] == (
         "observed" if owner_matches else "unknown"
     )
@@ -1208,19 +1285,8 @@ def test_one_shot_status_uses_collecting_subprocess_pid(project, pytestconfig):
     assert status["producer_pid"] != os.getpid()
 
 
-def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    before = command("status", "--json")
-    path = root / "status.json"
-    payload = json.loads(path.read_text())
-    payload.pop("producer_mode", None)
-    payload.pop("producer_pid", None)
-    path.write_text(json.dumps(payload, separators=(",", ":"), sort_keys=True))
-
-    legacy = command("status", "--json")
+def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(monkeypatch):
+    before, legacy = _status_with_private_input(monkeypatch, {})
     assert legacy["producer_mode"] is None
     assert legacy["producer_pid"] is None
     for key in (
@@ -1239,7 +1305,7 @@ def test_legacy_status_keeps_heartbeat_and_authenticated_watermarks(project):
         assert current["observed_through"] == previous["observed_through"]
 
 
-def _status_with_private_input(monkeypatch, invalid):
+def _read_changed_status(monkeypatch, mutate):
     ledger = _memory_ledger(ledger_module, PROJECT, b"h" * 32)
     when = datetime.fromisoformat(CUTOFF)
     config = service._Config(
@@ -1290,11 +1356,19 @@ def _status_with_private_input(monkeypatch, invalid):
     assert before["sources"][0]["observed_through"] == CUTOFF
     assert before["producer_pid"] == 123
     payload = json.loads(files[service.STATUS_NAME])
-    del payload["producer_mode"], payload["producer_pid"]
+    mutate(payload)
     files[service.STATUS_NAME] = json.dumps(
-        {**payload, **invalid}, separators=(",", ":"), sort_keys=True
+        payload, separators=(",", ":"), sort_keys=True
     ).encode()
     return before, service.status_report(ledger.root, ledger)
+
+
+def _status_with_private_input(monkeypatch, invalid):
+    def change_producer(payload):
+        del payload["producer_mode"], payload["producer_pid"]
+        payload.update(invalid)
+
+    return _read_changed_status(monkeypatch, change_producer)
 
 
 @pytest.mark.parametrize(

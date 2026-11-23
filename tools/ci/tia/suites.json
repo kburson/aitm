@@ -335,6 +335,76 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_backup_refuses_output_inside_replaceable_store",
+      "suite": "unit",
+      "isolation_group": "installation-guards"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_portable_supervisor_holds_existing_legacy_registration",
+      "suite": "unit",
+      "isolation_group": "installation-guards"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_portable_supervisor_refuses_stop_without_writer_exclusion",
+      "suite": "unit",
+      "isolation_group": "installation-guards"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_public_restore_refuses_a_loaded_job_before_store_swap",
+      "suite": "unit",
+      "isolation_group": "installation-guards"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_same_pid_with_different_start_cannot_certify_health",
+      "suite": "unit",
+      "isolation_group": "installation-guards"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_command_status_missing_root_is_unavailable_and_does_not_create_it",
+      "suite": "unit",
+      "isolation_group": "monitor-inbox-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_cache_renews_through_same_authority_and_rejects_closed_or_foreign_writer",
+      "suite": "unit",
+      "isolation_group": "inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_midcycle_key_identity_change_refuses_existing_writer_cache",
+      "suite": "unit",
+      "isolation_group": "inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_previously_cached_origin_reauthenticates_if_clock_is_racy_or_future",
+      "suite": "unit",
+      "isolation_group": "inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_claude_quota_still_requires_native_same_segment_owner",
+      "suite": "unit",
+      "isolation_group": "collector-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_legacy_status_keeps_heartbeat_and_authenticated_watermarks",
+      "suite": "unit",
+      "isolation_group": "collector-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_quota_authority_is_exact_stream_and_provider",
+      "suite": "unit",
+      "isolation_group": "collector-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_status_matches_producer_runtime_and_authenticates_observed_time",
+      "suite": "unit",
+      "isolation_group": "collector-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded",
+      "suite": "unit",
+      "isolation_group": "collector-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_position_counts_absolute_rows_and_pins_torn_prefix",
       "suite": "unit",
       "isolation_group": "native-scanner-policy"

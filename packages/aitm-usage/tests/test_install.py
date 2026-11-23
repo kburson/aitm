@@ -19,9 +19,11 @@ from uuid import UUID
 from zipfile import ZipFile
 
 import pytest
+from test_ledger import _memory_ledger
 
 import aitm_usage
 from aitm_usage import cli, install, scopes, service
+from aitm_usage import ledger as ledger_module
 from aitm_usage.export import export_as_of
 from aitm_usage.ledger import KEY_NAME, Ledger, LedgerIdentity
 from aitm_usage.pricing import load_rate_card
@@ -256,21 +258,43 @@ def test_restore_refuses_ahead_ack_and_preserves_files(project, tmp_path):
     assert _durable_bytes(ledger.root) == before
 
 
-def test_public_restore_refuses_a_loaded_job_before_store_swap(
-    project, tmp_path, monkeypatch
-):
-    from aitm_usage.backup import BackupError, backup, restore
+@pytest.fixture
+def install_policy_ledger():
+    return _memory_ledger(ledger_module, PROJECT, b"i" * 32)
 
-    _, ledger, _ = project
-    source = tmp_path / "backup"
-    backup(ledger, source)
-    before = ledger.database_path.parent.stat().st_ino
-    control = install.ServiceSupervisor(ledger)
-    monkeypatch.setattr(control, "job", lambda label: object())
-    monkeypatch.setattr(install, "ServiceSupervisor", lambda _ledger: control)
-    with pytest.raises(BackupError):
+
+@pytest.fixture
+def lifecycle_policy(install_policy_ledger, monkeypatch):
+    guard = Mock()
+    supervisor = SimpleNamespace(
+        plist_directory=Path("/fixture/services"), job=Mock(return_value=None)
+    )
+    monkeypatch.setattr(
+        install, "_lifecycle", lambda agent: nullcontext((object(), guard))
+    )
+    monkeypatch.setattr(install, "_read_private", Mock(return_value=None))
+    monkeypatch.setattr(install._Agent, "read", lambda agent: b"")
+    return install_policy_ledger, supervisor
+
+
+def test_public_restore_refuses_a_loaded_job_before_store_swap(
+    lifecycle_policy, monkeypatch
+):
+    from aitm_usage.backup import BackupError, restore
+
+    ledger, control = lifecycle_policy
+    source = Path("/fixture/backup")
+    control.job.return_value = object()
+    open_ledger = Mock(return_value=ledger)
+    swap = Mock(side_effect=AssertionError("running service reached restore"))
+    monkeypatch.setattr(Ledger, "open", open_ledger)
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(install, "_restore_stopped", swap)
+    with pytest.raises(BackupError, match="not a stopped compatible project"):
         restore(source, ledger.root, ledger.identity)
-    assert ledger.database_path.parent.stat().st_ino == before
+    open_ledger.assert_called_once_with(ledger.root, PROJECT)
+    control.job.assert_called_once_with(f"org.aitm.usage.{PROJECT}")
+    swap.assert_not_called()
 
 
 def test_restore_replays_exact_pending_ack_after_final_anchor_commit(
@@ -964,42 +988,80 @@ def test_upgrade_refuses_witness_incapable_running_prior(
 
 
 def test_same_pid_with_different_start_cannot_certify_health(
-    project, tmp_path, launch_control, monkeypatch
+    runtime_receipt, monkeypatch
 ):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "incarnation")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        interpreter,
+    from aitm_usage.supervisor import ManagedProcess, ServiceJob
+
+    case = runtime_receipt
+    runtime = case.runtime
+    case.ledger.identity.project_id = PROJECT
+    case.set_console(install._launcher(case.python, case.site))
+    control = SimpleNamespace(
+        plist_directory=Path("/fixture/services"), job=Mock(), process=Mock()
     )
-    agent = install._Agent(ledger, launch_control)
-    program = launch_control.loaded.program
-    runtime = install._runtime_for(agent, program)
-    process = launch_control.process(launch_control.loaded.pid)
+    agent = install._Agent(case.ledger, control)
+    registration = agent.payload(runtime.executable)
+    plist = plistlib.dumps(registration)
+    pid = 5301
+    control.job.return_value = ServiceJob(
+        agent.label,
+        agent.plist,
+        runtime.executable,
+        tuple(registration["ProgramArguments"]),
+        pid,
+    )
+    started = datetime(2026, 11, 20, tzinfo=UTC)
+    heartbeat = started + timedelta(seconds=1)
+    clock = Mock(wraps=datetime)
+    clock.now.return_value = heartbeat
+    monkeypatch.setattr(install, "datetime", clock)
+    monkeypatch.setattr(install._Agent, "read", lambda agent: plist)
+    monkeypatch.setattr(
+        install,
+        "status_report",
+        Mock(
+            return_value={
+                "read_gap": False,
+                "registration_gap": False,
+                "status_sequence": 1,
+                "collector_version": runtime.version,
+                "collector_interpreter_version": runtime.interpreter_version,
+                "producer_mode": "service",
+                "producer_pid": pid,
+                "heartbeat": heartbeat.isoformat(),
+            }
+        ),
+    )
+    process = ManagedProcess(pid, started, runtime.interpreter)
+    control.process.return_value = process
+    assert agent.healthy(runtime, plist, started).process == process
     changed = replace(process, started=process.started + timedelta(microseconds=1))
-    inspections = iter([process, changed])
-    monkeypatch.setattr(launch_control, "process", lambda pid: next(inspections))
-    assert (
-        agent.healthy(runtime, agent.read(), datetime.now(UTC) - timedelta(seconds=15))
-        is None
-    )
+    control.process.reset_mock()
+    control.process.side_effect = (process, changed)
+    assert agent.healthy(runtime, plist, started) is None
+    assert control.process.call_count == 2
 
 
-def test_backup_refuses_output_inside_replaceable_store(project):
-    from aitm_usage.backup import BackupError, backup
+def test_backup_refuses_output_inside_replaceable_store(
+    install_policy_ledger, monkeypatch
+):
+    from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
-    directory = ledger.database_path.parent / "nested-backup"
-    with pytest.raises(BackupError):
-        backup(ledger, directory)
-    assert not directory.exists()
+    ledger = install_policy_ledger
+    store = ledger.database_path.parent
+    directory = store / "nested-backup"
+    identities = ((1, 1), (1, 2), (1, 3))
+    pin = Mock(return_value=nullcontext(Mock(path=store, identities=identities)))
+    ancestry = Mock(return_value=identities)
+    stage = Mock(side_effect=AssertionError("contained output reached backup staging"))
+    monkeypatch.setattr(recovery, "_pin_directory", pin)
+    monkeypatch.setattr(recovery, "_validated_path", ancestry)
+    monkeypatch.setattr(recovery, "TemporaryDirectory", stage)
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.backup(ledger, directory)
+    pin.assert_called_once_with(store)
+    ancestry.assert_called_once_with(directory, directory=True, allow_missing=True)
+    stage.assert_not_called()
 
 
 def test_backup_refuses_store_through_physical_path_alias(
@@ -1493,31 +1555,48 @@ def test_portable_supervisor_reaps_owned_service_across_controllers(
 
 
 def test_portable_supervisor_holds_existing_legacy_registration(
-    project, tmp_path, monkeypatch
+    install_policy_ledger, monkeypatch
 ):
-    from aitm_usage.supervisor import ServiceSupervisor
+    from aitm_usage import supervisor as managed_service
 
-    _, ledger, _ = project
-    legacy = tmp_path / "legacy.plist"
-    legacy.touch()
-    supervisor = ServiceSupervisor(ledger)
+    ledger = install_policy_ledger
+    legacy = Path("/fixture/legacy.plist")
+    monkeypatch.setattr(
+        managed_service, "_guard_path", lambda *_: Path("/fixture/writer.lock")
+    )
+    supervisor = managed_service.ServiceSupervisor(ledger)
     monkeypatch.setattr(supervisor, "_legacy_registration", lambda: legacy)
+    path_exists = Mock(return_value=True)
+    monkeypatch.setattr(managed_service, "_path_exists", path_exists)
+    monkeypatch.setattr(install._Agent, "read", lambda agent: b"")
+    lifecycle = Mock(side_effect=AssertionError("dry run mutated service state"))
+    monkeypatch.setattr(install, "_lifecycle", lifecycle)
     with pytest.raises(install.InstallError, match="legacy LaunchAgent"):
         install.stop_agent(ledger, supervisor, dry_run=True)
-    assert legacy.exists()
-    assert not supervisor.plist_directory.exists()
+    path_exists.assert_called_once_with(legacy)
+    lifecycle.assert_not_called()
 
 
 def test_portable_supervisor_refuses_stop_without_writer_exclusion(
-    project, monkeypatch
+    lifecycle_policy, monkeypatch
 ):
     from aitm_usage.ledger import WriterActive
-    from aitm_usage.supervisor import ServiceSupervisor
 
-    _, ledger, _ = project
+    ledger, supervisor = lifecycle_policy
+    guard = Mock(side_effect=WriterActive("project writer is active"))
+    lease = Mock(side_effect=AssertionError("busy writer reached local lease"))
+    sleep = Mock(side_effect=AssertionError("zero timeout entered another retry"))
+    monkeypatch.setattr(install, "project_guard", guard)
+    monkeypatch.setattr(install, "_lease", lease)
+    monkeypatch.setattr(
+        install, "time", SimpleNamespace(monotonic=lambda: 0, sleep=sleep)
+    )
     monkeypatch.setattr(install, "_STOP_TIMEOUT", 0)
-    with ledger.writer(), pytest.raises(WriterActive):
-        install.stop_agent(ledger, ServiceSupervisor(ledger))
+    with pytest.raises(WriterActive, match="project writer is active"):
+        install.stop_agent(ledger, supervisor)
+    guard.assert_called_once_with(ledger.root, PROJECT)
+    lease.assert_not_called()
+    sleep.assert_not_called()
 
 
 def test_portable_supervisor_owner_refuses_a_reaped_child():
