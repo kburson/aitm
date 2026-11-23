@@ -1237,11 +1237,12 @@ def _assert_late_claude_revision_preserves_scope(claude_scope, *, same_project):
             state.verified_revision(current, revised)
 
 
-def test_claude_revision_rejects_a_replaced_fixed_prefix(claude_scope):
+def test_claude_revision_rejects_a_replaced_fixed_prefix(claude_scope_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_scope import ScopeState
 
+    claude_scope = claude_scope_policy
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -1255,9 +1256,13 @@ def test_claude_revision_rejects_a_replaced_fixed_prefix(claude_scope):
         assert state.verified_revision(batch, revision) is not None
 
         path = claude_scope.path
-        original = path.rename(path.with_suffix(".retained"))
-        claude_scope._replace_transcript(original.read_bytes())
-        with pytest.raises(LedgerError):
+        original = native.files.contents[path]
+        prior = claude_scope.locator()._source.incarnation_ref
+        device, inode = native.files._identity(path)
+        native.files.identities[path] = (device, inode + 100)
+        assert claude_scope.locator()._source.incarnation_ref != prior
+        assert native.files.contents[path] == original
+        with pytest.raises(LedgerError, match="Verified native scope source changed"):
             state.verified_revision(batch, revision)
 
 
@@ -1580,9 +1585,12 @@ def test_hold_overflow_becomes_a_gap_without_displacing_existing_hold(monkeypatc
     ]
 
 
-def test_exact_handoff_retry_after_restart_and_source_growth_keeps_one_event(native):
+def test_exact_handoff_retry_after_restart_and_source_growth_keeps_one_event(
+    native_scope_policy,
+):
     from aitm_usage.monitor_scope import ScopeState
 
+    native = native_scope_policy
     command_id = UUID(int=0x301)
     with native.registry.writer() as writer:
         state = ScopeState(writer)
@@ -1743,22 +1751,22 @@ def _assert_grok_scope_without_capture(
 
 
 @pytest.mark.parametrize("cause", ["revoked", "replaced-inode"])
-def test_scope_native_read_requires_current_enrolled_physical_source(request, cause):
+def test_scope_native_read_requires_current_enrolled_physical_source(
+    native_scope_policy, cause
+):
     from aitm_usage.monitor_scope import ScopeState
 
-    native = request.getfixturevalue(
-        "native_scope_policy" if cause == "revoked" else "native"
-    )
+    native = native_scope_policy
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         assert state.read_source(SOURCE, native.locator()).observations
         if cause == "revoked":
             native.revoke(writer)
         else:
-            original = native.transcripts.parent / "retired.jsonl"
-            native.path.rename(original)
-            native.path.write_bytes(original.read_bytes())
-            assert native.path.stat().st_ino != original.stat().st_ino
+            previous = native.locator()._source.incarnation_ref
+            device, inode = native.files._identity(native.path)
+            native.files.identities[native.path] = (device, inode + 100)
+            assert native.locator()._source.incarnation_ref != previous
 
         native.append()
         with pytest.raises(LedgerError):
@@ -2270,46 +2278,46 @@ def test_v2_writer_requires_service_custody_before_mutation(monkeypatch, changed
     save.assert_not_called()
 
 
-def test_v2_writer_leaves_foreign_receipt_on_disk_unchanged(native):
+def test_v2_writer_leaves_foreign_receipt_on_disk_unchanged(native_scope_policy):
     from aitm_usage.monitor_scope import ScopeState
 
+    native = native_scope_policy
     with native.registry.writer() as writer:
         now = AFTER
         state = ScopeState(writer, clock=lambda: now)
         hold, *_, payload = _stored_disposition_fixture(state, native)
         wrong = native.receipt_ref(UUID(int=0x505)).value
         payload["route_dispositions"][0]["boundary"]["receipt_ref"] = wrong
-        path = _scope_file(native)
         data = _scope_bytes(payload)
-        path.write_bytes(data)
+        native._replace_scope_bytes(data)
         assert len(ScopeState(native.registry).view().holds) == 1
 
         now = hold.expires_at
         with pytest.raises(LedgerError, match="receipt is bound to another command"):
             state.expire()
 
-        assert path.read_bytes() == data
+        assert native._scope_bytes() == data
 
 
 def test_v2_writer_refuses_uninitialized_source_key_without_creating_it(
-    native, tmp_path
+    monkeypatch,
 ):
-    from aitm_usage.monitor_scope import ScopeState
+    from unittest.mock import Mock
 
-    with native.registry.writer() as writer:
-        *_, payload = _stored_disposition_fixture(ScopeState(writer), native)
-    target = Registry(tmp_path / "separate-monitor")
-    with target.writer() as writer:
-        path = writer.root / "scope-v1.json"
-        data = _scope_bytes(payload)
-        path.write_bytes(data)
-        path.chmod(0o600)
-        before = tuple(writer.root.iterdir())
-        assert ScopeState(target).view().holds
-        with pytest.raises(LedgerError, match="initialized monitor source key"):
-            ScopeState(writer).expire()
-        assert tuple(writer.root.iterdir()) == before
-        assert path.read_bytes() == data
+    payload, read, read_only = snapshot_reader(monkeypatch)
+    state, save, _, _ = custody_writer(monkeypatch, payload)
+    registry = state.registry
+    registry.view = monitor_registry.RegistryView
+    registry.source_evidence = Mock(
+        side_effect=AssertionError("Scope mutation attempted to create a source key")
+    )
+    original = read.return_value
+    assert read_only.view().holds
+    with pytest.raises(LedgerError, match="initialized monitor source key"):
+        state.expire()
+    assert read.return_value == original
+    registry.source_evidence.assert_not_called()
+    save.assert_not_called()
 
 
 def test_v2_snapshot_does_not_follow_a_link_to_another_file(native):

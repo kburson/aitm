@@ -3002,14 +3002,47 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
     yield from _journal_pair(native, monkeypatch, tmp_path=tmp_path, capsys=capsys)
 
 
+class _PairedClaimJournalRows(_ClaimJournalRows):
+    """Expose the committed ownership inputs to the actual swap validation."""
+
+    def execute(self, sql, parameters=()):
+        if sql == (
+            "SELECT 1 FROM route_dispositions WHERE command IN (?,?,?,?)"
+            " OR hold IN (?,?,?,?) LIMIT 1"
+        ):
+            return _Rows(
+                (1,)
+                for command, hold, *_ in self.rows.values()
+                if command in parameters[:4] or hold in parameters[4:]
+            )
+        if sql == "SELECT sequence FROM claims WHERE key = ?":
+            (key,) = parameters
+            claim = self.claims.get(key)
+            return _Rows([(claim[-1],)] if claim is not None else [])
+        if sql == "SELECT sequence FROM disputes WHERE key = ?":
+            (key,) = parameters
+            return SimpleNamespace(
+                fetchall=lambda: [
+                    (sequence,)
+                    for (claim, *_), sequence in self.disputes.items()
+                    if claim == key
+                ]
+            )
+        if sql == "SELECT 1 FROM content_disputes WHERE key = ?":
+            return _Rows()
+        return super().execute(sql, parameters)
+
+
 @pytest.fixture
 def journal_pair_policy(monkeypatch):
     from test_ledger import _memory_ledger
 
     from aitm_usage import ledger as ledger_module
-    from aitm_usage import scopes
+    from aitm_usage import monitor_journal, scopes
 
     native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    journal = _PairedClaimJournalRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
     native.ledgers = {}
     for project in native.registry.view().projects:
         path = Path(project.state.path)
@@ -3349,7 +3382,9 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
         _assert_pair_refuses_late_same_turn_usage(monkeypatch, index)
         return
 
-    memory = failure in {"grant", "disabled"}
+    memory = failure in {"grant", "disabled"} or (
+        failure == "swap" and broken == "rival"
+    )
     case = request.getfixturevalue("journal_pair_policy" if memory else "journal_pair")
     journal = case.journal
     good = [case.owner.prove(), case.rival.prove()]
@@ -3369,7 +3404,7 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
     elif failure == "swap":
         good.reverse()
     scope_bytes = case.scope_bytes()
-    if memory:
+    if failure in {"grant", "disabled"}:
         monkeypatch.setattr(
             journal,
             "_build_settlement_change",
@@ -3379,7 +3414,8 @@ def test_pair_refuses_one_bad_side_without_moving_either_frontier(
                 )
             ),
         )
-    with pytest.raises(LedgerError):
+    reason = "Paired settlement first ownership changed" if failure == "swap" else None
+    with pytest.raises(LedgerError, match=reason):
         journal.settle_disposition(case.key, *good)
     assert journal.as_of() == prior
     assert case.recorded_rows() == original_rows
@@ -3609,7 +3645,7 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
         _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof)
         return
 
-    memory = disproof == "different-checkout"
+    memory = disproof in {"different-checkout", "missing-baseline"}
     case = request.getfixturevalue("journal_pair_policy" if memory else "journal_pair")
     carriers = (case.owner, case.rival)
     bad, other = carriers[side], carriers[1 - side]

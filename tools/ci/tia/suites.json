@@ -335,6 +335,71 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_revision_witnesses_bind_each_committing_row",
+      "suite": "unit",
+      "isolation_group": "monitor_adapters-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_initializes_or_adopts_source_key",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_damaged_current_store_is_left_byte_for_byte_unchanged",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_damaged_legacy_store_is_left_byte_for_byte_unchanged",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_preexisting_empty_store_is_never_replaced",
+      "suite": "unit",
+      "isolation_group": "monitor_journal_store-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_claude_revision_rejects_a_replaced_fixed_prefix",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_exact_handoff_retry_after_restart_and_source_growth_keeps_one_event",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_scope_native_read_requires_current_enrolled_physical_source",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_leaves_foreign_receipt_on_disk_unchanged",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_refuses_uninitialized_source_key_without_creating_it",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_returns_the_exact_durable_legacy_outcome",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_committed_excluded_and_pre_cutoff_tombstones_survive_reopen",
       "suite": "unit",
       "isolation_group": "claude-policy"

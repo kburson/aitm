@@ -981,19 +981,11 @@ def test_claude_streamed_revision_and_nested_overlap(monkeypatch, native_files):
     ]
 
 
-@pytest.fixture
-def revision_witness_storage(request):
-    if request.node.callspec.params["terminal_kind"] == "cost-state":
-        files = request.getfixturevalue("native_files")
-        return files.source, files
-    return request.getfixturevalue("source"), None
-
-
 @pytest.mark.parametrize("terminal_kind", ["result", "cost-state"])
 def test_claude_revision_witnesses_bind_each_committing_row(
-    monkeypatch, revision_witness_storage, terminal_kind
+    monkeypatch, native_files, terminal_kind
 ):
-    source, files = revision_witness_storage
+    source = native_files.source
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "revisions.jsonl"
@@ -1013,8 +1005,7 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         request(checkout),
         terminal,
     ]
-    write_rows = _write if files is None else files.write
-    write_rows(path, rows)
+    native_files.write(path, rows)
     (locator,) = adapter.discover(root)
     legacy = adapter.read_delta(locator, None)
     assert [
@@ -1038,7 +1029,7 @@ def test_claude_revision_witnesses_bind_each_committing_row(
         (1, 4, 5, terminal_kind),
         (2, 2, 5, terminal_kind),
     ]
-    native_bytes = path.read_bytes() if files is None else files.contents[path]
+    native_bytes = native_files.contents[path]
     native_lines = native_bytes.splitlines(keepends=True)
     for (observation, witness), (prior_index, current_index) in zip(
         witnesses, [(0, 2), (2, 3), (3, 4), (1, 5)], strict=True
@@ -1075,11 +1066,7 @@ def test_claude_revision_witnesses_bind_each_committing_row(
 
     archive = directory.parent / "archive-private"
     archived_path = archive / path.name
-    if files is None:
-        archive.mkdir()
-        archived_path.write_bytes(native_bytes)
-    else:
-        files.contents[archived_path] = native_bytes
+    native_files.contents[archived_path] = native_bytes
     (archived,) = adapter.discover(replace(root, path=archive))
     copied_witnesses = []
     copied = adapter.read_delta(archived, None, _revision_witnesses=copied_witnesses)

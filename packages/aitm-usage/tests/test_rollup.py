@@ -10,6 +10,7 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Context, Decimal, Inexact, Rounded, localcontext
+from io import BytesIO
 from pathlib import Path
 from threading import Event, current_thread
 from types import SimpleNamespace
@@ -260,7 +261,7 @@ def _graduated_relationships(ledger):
     )
 
 
-def test_graduation_and_inclusive_rollup(project, item_cli):
+def test_graduation_and_inclusive_rollup(project, item_cli, monkeypatch, capsys):
     with project.writer() as writer:
         with pytest.raises(WriterActive), project.writer():
             pass
@@ -334,6 +335,16 @@ def test_graduation_and_inclusive_rollup(project, item_cli):
     assert rollup(DRAFT, reopened.as_of(before.sequence)).direct.tokens == {
         "output_tokens": 7
     }
+
+    wal = Path(f"{project.database_path}-wal")
+    prior_bytes = _durable_bytes(project)
+    wal.chmod(0o644)
+    try:
+        assert _invoke_item_alias(monkeypatch, project.root) == 1
+        _assert_item_refusal(*capsys.readouterr())
+        assert _durable_bytes(project) == prior_bytes
+    finally:
+        wal.chmod(0o600)
 
 
 @pytest.fixture
@@ -639,35 +650,21 @@ def test_item_refuses_untrusted_filesystem_state(request, monkeypatch, capsys, d
     if defect in ("identity", "schema"):
         _assert_item_refuses_observed_database(monkeypatch, capsys, defect)
         return
-    if defect == "guard":
-        metadata = request.getfixturevalue("ledger_path_metadata")
-        _assert_item_refuses_missing_observed_guard(metadata, monkeypatch, capsys)
-        return
-
-    project = request.getfixturevalue("project")
-    root = project.root
-    if defect == "other-project":
-        with store._connection(project.database_path, write=True) as conn, conn:
-            conn.execute("UPDATE identity SET project_id = ?", (str(UUID(int=80)),))
-        prior_bytes = _durable_bytes(project)
-    elif defect == "sidecar":
-        Path(f"{project.database_path}-wal").chmod(0o644)
-    else:
-        project.key_path.write_bytes(PROJECT.bytes + b"x" * 32)
-    assert _invoke_item_alias(monkeypatch, root) == 1
-    _assert_item_refusal(*capsys.readouterr())
-    assert not (root / "inbox").exists()
-    if defect == "other-project":
-        assert _durable_bytes(project) == prior_bytes
+    metadata = request.getfixturevalue("ledger_path_metadata")
+    _assert_item_refuses_observed_storage(metadata, monkeypatch, capsys, defect)
 
 
-def _assert_item_refuses_missing_observed_guard(metadata, monkeypatch, capsys):
+def _assert_item_refuses_observed_storage(metadata, monkeypatch, capsys, defect):
     root = metadata.base / "project"
     key = b"r" * 32
     ledger = Ledger(root, store._identity(PROJECT, key), key)
     _observe_storage(metadata, ledger)
-    guard = store._guard_path(root, PROJECT)
-    del metadata.entries[str(guard)]
+    observed_project = UUID(int=80) if defect == "other-project" else PROJECT
+    if defect == "guard":
+        del metadata.entries[str(store._guard_path(root, PROJECT))]
+    if defect == "sidecar":
+        wal = ledger.database_path.with_name(ledger.database_path.name + "-wal")
+        metadata.lower_permissions(wal, 0o644)
     before = metadata.entries.copy()
 
     def read_identity(path, *, write):
@@ -675,25 +672,60 @@ def _assert_item_refuses_missing_observed_guard(metadata, monkeypatch, capsys):
 
         def execute(sql):
             assert sql == "SELECT project_id FROM identity WHERE singleton = 1"
-            return SimpleNamespace(fetchone=lambda: (str(PROJECT),))
+            return SimpleNamespace(fetchone=lambda: (str(observed_project),))
 
         return nullcontext(SimpleNamespace(execute=execute))
 
-    publish = Mock(side_effect=AssertionError("Unguarded project reached publication"))
-    read_key = Mock(side_effect=AssertionError("Unguarded project reached key read"))
+    class ObservedKey(BytesIO):
+        def __init__(self, descriptor):
+            super().__init__(PROJECT.bytes + b"x" * 32)
+            self.descriptor = descriptor
+
+        def fileno(self):
+            return self.descriptor
+
+    def open_key(descriptor, mode):
+        assert (descriptor.path, mode) == (ledger.key_path, "rb")
+        return ObservedKey(descriptor)
+
+    rows = _LedgerRows(ledger.identity, store.APPLICATION_ID, ())
+
+    def observe_ledger(path, *, write):
+        assert (path, write) == (ledger.database_path, False)
+        return nullcontext(rows.connect(write=write))
+
+    publish = Mock(side_effect=AssertionError("Unsafe project reached publication"))
+    read_key = Mock(wraps=store._read_key)
+    validate_identity = Mock(wraps=store._validate_identity)
     identify = Mock(side_effect=read_identity)
     monkeypatch.setattr(cli, "Path", type(root))
     monkeypatch.setattr(cli, "_connection", identify)
     monkeypatch.setattr(cli, "enqueue_command", publish)
     monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
     monkeypatch.setattr(store, "_read_key", read_key)
+    if defect == "key":
+        monkeypatch.setattr(store.os, "fdopen", open_key, raising=False)
+        monkeypatch.setattr(store, "_connection", observe_ledger)
+        monkeypatch.setattr(store, "_supported_schema", lambda _: rows.schema)
+        monkeypatch.setattr(store, "_validate_identity", validate_identity)
 
     assert _invoke_item_alias(monkeypatch, root) == 1
     _assert_item_refusal(*capsys.readouterr())
     assert metadata.entries == before
-    identify.assert_called_once_with(ledger.database_path, write=False)
     publish.assert_not_called()
-    read_key.assert_not_called()
+    assert rows.writes == []
+    if defect == "sidecar":
+        identify.assert_not_called()
+    else:
+        identify.assert_called_once_with(ledger.database_path, write=False)
+    if defect == "key":
+        read_key.assert_called_once()
+        validate_identity.assert_called_once()
+        assert validate_identity.call_args.args[1] == store._identity(
+            PROJECT, b"x" * 32
+        )
+    else:
+        read_key.assert_not_called()
 
 
 def _assert_item_refuses_observed_database(monkeypatch, capsys, defect):

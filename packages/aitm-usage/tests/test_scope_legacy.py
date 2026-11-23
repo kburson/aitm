@@ -530,19 +530,6 @@ def _legacy_outcome_inputs(ledger, command, status):
     return prior, prior_evidence, evidence
 
 
-def establish_legacy_outcome(ledger, command, status):
-    prior, prior_evidence, evidence = _legacy_outcome_inputs(ledger, command, status)
-    with ledger.writer() as writer:
-        if prior is not None:
-            scopes.enqueue_command(ledger.root, prior)
-            (receipt,) = scopes.drain_inbox(writer, prior_evidence).receipts
-            assert receipt.disposition is MarkerDisposition.ACCEPTED
-        scopes.enqueue_command(ledger.root, command)
-        (receipt,) = scopes.drain_inbox(writer, evidence).receipts
-    assert receipt.disposition is status
-    return receipt
-
-
 def _evaluate_replayed_receipt(ledger, command, status):
     prior, prior_evidence, evidence = _legacy_outcome_inputs(ledger, command, status)
 
@@ -569,19 +556,6 @@ def _evaluate_replayed_receipt(ledger, command, status):
     receipt, _ = evaluate(command, view, evidence, receipts)
     assert receipt.disposition is status
     return receipt
-
-
-@contextmanager
-def adopted_with_witness(ledger, monitor_root):
-    commit_adoption(ledger, ADOPTION)
-    inbox = monitor_control.ControlInbox(monitor_root)
-    with monitor_registry.Registry(monitor_root).writer() as writer:
-        reader = provision_legacy_reader(writer, inbox, ledger)
-        _, example, _ = invocation(ledger, "alias")
-        probe_id = UUID(int=116)
-        probe = InboxCommand(probe_id, PROJECT, replace(example, command_id=probe_id))
-        reader.advertise(reader.probe(adopted_request(probe, ADOPTION, None)))
-        yield inbox
 
 
 def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status):
@@ -625,38 +599,9 @@ def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status
     "status", [MarkerDisposition.ACCEPTED, MarkerDisposition.CONFLICT]
 )
 def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
-    request, monkeypatch, capsys, action, provider, status
+    monkeypatch, capsys, action, provider, status
 ):
-    if (status, action, provider) != (
-        MarkerDisposition.ACCEPTED,
-        "mark",
-        Provider.CLAUDE,
-    ):
-        _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status)
-        return
-
-    legacy = request.getfixturevalue("legacy")
-    ledger, monitor_root, run = legacy
-    args, payload, session = invocation(ledger, action, provider=provider)
-    command = InboxCommand(COMMAND, PROJECT, payload)
-    expected = establish_legacy_outcome(ledger, command, status)
-    before = ledger.as_of().sequence
-
-    with adopted_with_witness(ledger, monitor_root) as inbox:
-        code, output = run(args)
-        assert code == 0, output
-        assert (
-            output.out == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
-        )
-        assert output.err == ""
-        assert (
-            scopes.enqueue_command(ledger.root, command, claude_session=session)
-            == expected
-        )
-        with inbox.publication() as locked:
-            assert list(inbox.iter_pending(locked)) == []
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert ledger.as_of().sequence == before
+    _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status)
 
 
 def test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state(
@@ -725,15 +670,16 @@ def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
     proof = legacy_boundary(ledger, payload)
     original_publication = scopes._publication
     cutover_started = False
+    accepted = None
 
     @contextmanager
     def publication_after_legacy_commit(inbox):
-        nonlocal cutover_started
+        nonlocal accepted, cutover_started
         if not cutover_started:
             cutover_started = True
             with ledger.writer() as writer:
-                (receipt,) = scopes.drain_inbox(writer, (proof,)).receipts
-                assert receipt.disposition is MarkerDisposition.ACCEPTED
+                (accepted,) = scopes.drain_inbox(writer, (proof,)).receipts
+                assert accepted.disposition is MarkerDisposition.ACCEPTED
                 commit_adoption(ledger, ADOPTION)
         with original_publication(inbox):
             yield
@@ -747,6 +693,20 @@ def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
     assert output.err == ""
     assert not monitor_root.exists()
     assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+
+    assert accepted is not None and ledger.command_receipt(command) == accepted
+    before = ledger.as_of()
+    inbox = monitor_control.ControlInbox(monitor_root)
+    with monitor_registry.Registry(monitor_root).writer() as writer:
+        reader = provision_legacy_reader(writer, inbox, ledger)
+        _, example, _ = invocation(ledger, "alias")
+        probe_id = UUID(int=116)
+        probe = InboxCommand(probe_id, PROJECT, replace(example, command_id=probe_id))
+        reader.advertise(reader.probe(adopted_request(probe, ADOPTION, None)))
+        assert scopes.enqueue_command(ledger.root, command) == accepted
+        with inbox.publication() as locked:
+            assert list(inbox.iter_pending(locked)) == []
+    assert ledger.as_of() == before
 
 
 def _assert_replay_at_legacy_cutover(memory, monkeypatch):

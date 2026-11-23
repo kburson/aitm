@@ -115,7 +115,8 @@ class NativeTranscriptFiles:
     @contextmanager
     def _open_snapshot(self, path, *, identity_prefix):
         snapshot = self._snapshot(path)
-        assert snapshot.identity[: len(identity_prefix)] == identity_prefix
+        if snapshot.identity[: len(identity_prefix)] != identity_prefix:
+            raise scanner._ChangedSource
         contents = self.contents[path]
         descriptor = max(self.descriptors, default=0) + 1
         self.descriptors[descriptor] = contents

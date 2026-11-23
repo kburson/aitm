@@ -916,14 +916,26 @@ def test_rotation_between_bind_validation_and_publication_refuses_commit(
     assert lookup(SESSION, PROMPT_A, "exact-event") is None
 
 
-def test_ordinary_checkout_mode_can_be_physically_identified(tmp_path):
-    from aitm_usage.monitor_registry import _directory
+def test_ordinary_checkout_mode_can_be_physically_identified(monkeypatch):
+    from aitm_usage import monitor_registry
 
-    checkout = tmp_path / "ordinary-checkout"
-    checkout.mkdir()
-    checkout.chmod(0o755)
-    physical = checkout.stat()
-    assert _directory(str(checkout)).identity == (physical.st_dev, physical.st_ino)
+    physical = os.stat_result((stat.S_IFDIR | 0o755, 17, 3, 1, 501, 0, 0, 0, 0, 0))
+
+    class Checkout(type(Path())):
+        def resolve(self, *, strict):
+            assert strict
+            return self
+
+        def stat(self, *, follow_symlinks=True):
+            return physical
+
+    monkeypatch.setattr(monitor_registry, "Path", Checkout)
+    private_check = Mock(side_effect=AssertionError("Checkout required private modes"))
+    monkeypatch.setattr(monitor_registry, "validate_private_path", private_check)
+    path = "/fixture/ordinary-checkout"
+    observed = monitor_registry._directory(path)
+    assert observed == monitor_registry._PhysicalDirectory(path, (3, 17))
+    private_check.assert_not_called()
 
 
 def test_expired_first_bind_keeps_exact_original_scope_unpublished(
