@@ -231,13 +231,6 @@ def memory_replay(request, monkeypatch):
 
 
 @pytest.fixture
-def nested_replay(request, monkeypatch, child):
-    return TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=child == "matching"
-    )
-
-
-@pytest.fixture
 def overlap_replay(request, monkeypatch, excluded):
     return TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=not excluded)
 
@@ -622,10 +615,7 @@ def _native_tool_turn(checkout, command, output, *, case="valid"):
 
 @pytest.fixture
 def monitor_receipt_project(request):
-    if request.node.callspec.params["case"] in {
-        "mark",
-        "legacy",
-    }:
+    if request.node.callspec.params["case"] == "mark":
         return request.getfixturevalue("project")
     return None
 
@@ -658,7 +648,7 @@ def monitor_receipt_project(request):
     ],
 )
 def test_monitor_scope_receipt_at_first_claude_request(
-    monitor_receipt_project, adapter_frames, monkeypatch, case
+    monitor_receipt_project, adapter_frames, memory_replay, monkeypatch, case
 ):
     project = monitor_receipt_project
     files = None
@@ -670,8 +660,10 @@ def test_monitor_scope_receipt_at_first_claude_request(
         files = NativeTranscriptFiles(monkeypatch)
         ledger, transcript_root, checkout = files.source
         path = transcript_root / "native.jsonl"
+    elif case == "legacy":
+        ledger, checkout = memory_replay.ledger, memory_replay.checkout
     elif project is not None:
-        ledger, registration, path, checkout, _ = project
+        ledger, _, path, checkout, _ = project
     else:
         ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     if files is not None or project is not None:
@@ -745,8 +737,11 @@ def test_monitor_scope_receipt_at_first_claude_request(
         write(path, rows)
     if case == "legacy":
         claude = adapter()
-        _, result = read(
-            claude, source(registration), claude.ClaudeState(ledger, SESSION)
+        memory_replay.write(rows)
+        _, result = memory_replay.read(
+            claude.read_claude,
+            memory_replay.candidate(),
+            claude.ClaudeState(ledger, SESSION),
         )
         assert not any(boundary.receipt_ref for boundary in result.boundaries)
         assert len(result.revisions) == 3
@@ -778,7 +773,7 @@ def test_monitor_scope_receipt_at_first_claude_request(
 
 @pytest.fixture
 def controlled_bash_project(request):
-    if request.node.callspec.params["case"] in {"valid", "outside"}:
+    if request.node.callspec.params["case"] == "valid":
         return request.getfixturevalue("project")
     return None
 
@@ -809,16 +804,15 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     claude = adapter()
     project = controlled_bash_project
     replay = None
-    policy_admission = case in {"observation-first", "split"}
+    policy_admission = case in {"outside", "observation-first", "split"}
     if policy_admission or case in {"wrong-session", "missing-api-session"}:
         replay = request.getfixturevalue("memory_replay")
-        ledger, checkout = replay.ledger, replay.checkout
+        ledger = replay.ledger
+        checkout = replay.outside if case == "outside" else replay.checkout
     elif project is None:
         ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     else:
-        ledger, registration, path, checkout, outside = project
-        if case == "outside":
-            checkout = outside
+        ledger, registration, path, checkout, _ = project
     marker_path = ledger.root / "marker.json"
     arguments = [
         "aitm-usage",
@@ -943,7 +937,7 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         candidate = candidate.with_enrollment(
             enrollment, batch=batch, evidence=evidence
         )
-        batch, result = read(claude, candidate, state)
+        batch, result = load(candidate, state)
         assert len(result.revisions) == 1
     assert result.revisions[-1].record.boundary == boundary
     if case != "observation-first":
@@ -955,10 +949,10 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
 
 @pytest.mark.parametrize("child", ["matching", "absent", "other-tool", "unlinked"])
 def test_nested_agent_report_does_not_double_count_or_inherit_scope(
-    nested_replay, child
+    memory_replay, child
 ):
     claude = adapter()
-    replay = nested_replay
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     call_id = "toolu-private-agent"
     parent, completed = str(UUID(int=0x220)), str(UUID(int=0x221))
@@ -1678,26 +1672,16 @@ def test_initial_unproven_processing_stays_unknown_after_standard_revision(
     assert rollup(item, ledger.as_of()).unattributed.unknown_price_count == 1
 
 
-@pytest.fixture
-def late_processing_replay(request, monkeypatch, late_output):
-    durable = late_output == 4
-    return TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=durable
-    ), durable
-
-
 @pytest.mark.parametrize(
     "late_output", [4, 5, 3, True], ids=["unchanged", "increase", "decrease", "invalid"]
 )
 def test_late_processing_contradiction_revokes_price_with_original_scope(
-    late_processing_replay,
-    monkeypatch,
-    capsys,
+    memory_replay,
     late_output,
     reference_rates,  # noqa: F811
 ):
     claude = adapter()
-    replay, durable = late_processing_replay
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     session = session_reference(ledger, Provider.CLAUDE, str(SESSION))
     item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
@@ -1728,27 +1712,12 @@ def test_late_processing_contradiction_revokes_price_with_original_scope(
         str(SESSION),
         "--json",
     ]
-    if durable:
-        marker_path.write_bytes(encode_marker(marker))
-        marker_path.chmod(0o600)
-        monkeypatch.setattr(sys, "argv", arguments)
-        assert main() == 0
-        output = capsys.readouterr().out.strip()
-    else:
-        output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
+    output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
     rows = _native_tool_turn(checkout, shlex.join(arguments), output)
     replay.write([user(checkout), *rows, cost(**{MODEL: model_counts(8, 4, 10, 6, 8)})])
     candidate = replay.candidate()
 
     def accounted(prior=None):
-        if durable:
-            return _accounted_scan(
-                claude,
-                ledger,
-                candidate,
-                prior,
-                reserved_session_id=SESSION if prior is None else None,
-            )
         return _accounted_replay(
             claude,
             replay,

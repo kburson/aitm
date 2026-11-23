@@ -452,18 +452,20 @@ def test_incomplete_or_ambiguous_catalog_refuses_selected_stream(
         _assert_inventory_policy_refuses(request, monkeypatch, fault)
         return
 
+    if fault == "hardlink":
+        _assert_inventory_refuses_linked_transcript(request, monkeypatch)
+        return
+
     native, selected, parked = request.getfixturevalue("siblings")
     active = native.paths[LIVE]
-    parked.unlink()
-    if fault == "hardlink":
-        os.link(active, parked)
-    else:
-        parked.symlink_to(active)
-    with (
-        native.registry.writer() as writer,
-        writer._inventory_cycle(_OriginCache()) as inventory,
-    ):
-        with pytest.raises(BoundaryUnavailable):
+    for link in (Path.symlink_to, Path.hardlink_to):
+        parked.unlink()
+        link(parked, active)
+        with (
+            native.registry.writer() as writer,
+            writer._inventory_cycle(_OriginCache()) as inventory,
+            pytest.raises(BoundaryUnavailable),
+        ):
             writer._native_delta(
                 writer.view(),
                 CaptureChange(A, LIVE, True),
@@ -471,6 +473,43 @@ def test_incomplete_or_ambiguous_catalog_refuses_selected_stream(
                 None,
                 inventory=inventory,
             )
+
+
+def _assert_inventory_refuses_linked_transcript(request, monkeypatch):
+    native, parked, host = _metadata_catalog(request, monkeypatch)
+    active = native.paths[LIVE]
+    (selected,) = (
+        locator
+        for locator in native.adapter.discover(native.roots[LIVE])
+        if locator._source._path == active
+    )
+    original_info = host.info
+
+    def entries(path):
+        if path in (active, parked):
+            metadata = original_info(active)
+            metadata.st_nlink = 2
+            return metadata
+        return original_info(path)
+
+    monkeypatch.setattr(host, "info", entries)
+    forbidden = Mock(side_effect=AssertionError("linked transcript payload was read"))
+    monkeypatch.setattr(source_scan, "_open_snapshot", forbidden)
+    cache = _OriginCache()
+    with (
+        native.registry.writer() as writer,
+        writer._inventory_cycle(cache) as inventory,
+        pytest.raises(BoundaryUnavailable, match="Complete metadata"),
+    ):
+        writer._native_delta(
+            writer.view(),
+            CaptureChange(A, LIVE, True),
+            selected,
+            None,
+            inventory=inventory,
+        )
+    forbidden.assert_not_called()
+    assert not cache._entries
 
 
 def _assert_inventory_policy_refuses(request, monkeypatch, fault):
@@ -779,22 +818,23 @@ def _metadata_catalog(request, monkeypatch, *, nested=False):
 
 
 def test_inventory_rechecks_root_identity_even_without_existing_registry_match(
-    siblings,
+    request,
+    monkeypatch,
 ):
-    native, _, parked = siblings
+    native, parked, _ = _metadata_catalog(request, monkeypatch)
     directory = parked.parent
-    moved = directory.with_name("moved-approved")
+    files = native.files
+    original = files._identity(directory)
+    replacement = (original[0], 999)
     cache = _OriginCache()
     with native.registry.writer() as writer:
         with writer._inventory_cycle(cache) as inventory:
-            directory.rename(moved)
-            directory.mkdir()
+            files.identities[directory] = replacement
             with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
                 tuple(
                     ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)
                 )
-            directory.rmdir()
-            moved.rename(directory)
+            files.identities[directory] = original
             with pytest.raises(_InventoryUnavailable, match="Complete metadata"):
                 tuple(
                     ProviderAdapter()._inventory_discover(native.roots[LIVE], inventory)

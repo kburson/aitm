@@ -3,8 +3,10 @@
 import hmac
 import json
 import os
+import stat
 from contextlib import nullcontext
 from dataclasses import replace
+from io import BytesIO
 from pathlib import Path
 from shutil import copytree
 from types import SimpleNamespace
@@ -18,7 +20,7 @@ from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
 from aitm_usage import ledger as ledger_module
-from aitm_usage import monitor_recovery
+from aitm_usage import monitor_recovery, scopes
 from aitm_usage._monitor_journal_store import _STORE as _JOURNAL_STORE
 from aitm_usage._monitor_journal_store import JournalStore
 from aitm_usage.ledger import Ledger, LedgerError, _pin_directory
@@ -109,6 +111,7 @@ class _RecoveryPolicy:
             publication_candidate=self._candidate,
         )
         directory = SimpleNamespace(path=self.root, fd=17, check=Mock())
+        self.witness_fd = directory.fd
 
         def session(fence):
             assert fence._journal is self.journal and fence._root == self.root
@@ -213,23 +216,26 @@ def recovery_custody_policy(monkeypatch):
 
 
 @pytest.mark.parametrize("after_link", [False, True], ids=["before-link", "after-link"])
-def test_view_cannot_escape_before_recovery_fsync(
-    coverage_candidate, monkeypatch, after_link
-):
+def test_view_cannot_escape_before_recovery_fsync(request, monkeypatch, after_link):
+    if not after_link:
+        policy = request.getfixturevalue("recovery_custody_policy")
+        _assert_retry_after_unpublished_witness(policy, monkeypatch)
+        return
+
+    coverage_candidate = request.getfixturevalue("coverage_candidate")
     journal, root, candidate = coverage_candidate
     fence = RecoveryFence(journal, root)
     publish = monitor_recovery._publish
 
     def interrupted(*args, **kwargs):
-        if after_link:
-            publish(*args, **kwargs)
+        publish(*args, **kwargs)
         raise OSError("interrupted witness publication")
 
     with monkeypatch.context() as failure:
         failure.setattr(monitor_recovery, "_publish", interrupted)
         with pytest.raises(LedgerError):
             fence.protect(candidate)
-    assert len(list(root.iterdir())) == int(after_link)
+    assert len(list(root.iterdir())) == 1
     os_fsync = os.fsync
     directory_synced = []
 
@@ -245,6 +251,83 @@ def test_view_cannot_escape_before_recovery_fsync(
     assert recovered.anchor.ordinal == 1
     assert fence.protect(candidate) == recovered
     assert len(list(root.iterdir())) == 1
+
+
+def _assert_retry_after_unpublished_witness(policy, monkeypatch):
+    fence = RecoveryFence(policy.journal, policy.root)
+    candidate = policy.coverage()
+    staged = {}
+    sync = monitor_recovery.os.fsync
+    witness_fd = policy.witness_fd
+    staged_fd = 18
+    mode = os.stat_result((stat.S_IFREG | 0o600, 18, 1, 1, os.geteuid(), 0, 0, 0, 0, 0))
+    output = None
+
+    def open_stage(name, flags, permissions, *, dir_fd):
+        nonlocal output
+        assert dir_fd == witness_fd and permissions == 0o600
+        assert flags == os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        assert name.startswith(".publishing-") and name not in staged
+        output = staged[name] = BytesIO()
+        return staged_fd
+
+    def unlink_stage(name, *, dir_fd):
+        assert dir_fd == witness_fd
+        try:
+            del staged[name]
+        except KeyError:
+            raise FileNotFoundError(name) from None
+
+    def file_stream(fd, mode):
+        assert (fd, mode) == (staged_fd, "wb") and output is not None
+        return nullcontext(output)
+
+    def publish(src_fd, source, dst_fd, destination):
+        assert (src_fd, dst_fd) == (witness_fd, witness_fd)
+        assert destination not in policy.files
+        policy.files[destination] = staged.pop(source).getvalue()
+        return True
+
+    monkeypatch.setattr(monitor_recovery, "_publish", scopes._publish)
+    monkeypatch.setattr(scopes, "_check_acl", Mock())
+    monkeypatch.setattr(
+        scopes,
+        "os",
+        SimpleNamespace(
+            O_WRONLY=os.O_WRONLY,
+            O_CREAT=os.O_CREAT,
+            O_EXCL=os.O_EXCL,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            open=open_stage,
+            fdopen=file_stream,
+            fchmod=Mock(),
+            fstat=lambda fd: mode,
+            fsync=sync,
+            unlink=unlink_stage,
+        ),
+    )
+    rename = Mock(side_effect=(OSError("interrupted before witness link"), True))
+
+    def publish_after_fault(*args):
+        rename(*args)
+        return publish(*args)
+
+    monkeypatch.setattr(scopes, "publish_noreplace", publish_after_fault)
+    with pytest.raises(LedgerError, match="Verified publication recovery is held"):
+        fence.protect(candidate)
+    assert not staged and not policy.files
+    sync.assert_called_once_with(staged_fd)
+
+    recovered = fence.protect(candidate)
+    assert recovered.candidate == candidate and recovered.anchor.ordinal == 1
+    assert [invocation.args for invocation in sync.call_args_list] == [
+        (staged_fd,),
+        (staged_fd,),
+        (witness_fd,),
+    ]
+    assert not staged and len(policy.files) == 1
+    assert fence.protect(candidate) == recovered
+    assert rename.call_count == 2
 
 
 def test_restore_with_only_old_witness_holds_replay(dispute_candidates, tmp_path):

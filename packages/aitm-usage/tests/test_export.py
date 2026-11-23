@@ -3,19 +3,21 @@ import os
 import stat
 import subprocess
 import sys
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 from uuid import UUID
 
 import pytest
 from test_accounting import reference_rates as reference_rates
 from test_ledger import _memory_ledger
+from test_ledger import ledger_path_metadata as ledger_path_metadata
+from test_ledger import modules as modules
 
 from aitm_usage import ledger as store
 from aitm_usage.accounting import account_observations
@@ -577,6 +579,23 @@ def test_refuses_unsafe_or_different_destination(
     if kind == "conflict":
         _assert_observed_destination_conflict(monkeypatch, reference_rates)
         return
+    if kind == "parent-symlink":
+        metadata = request.getfixturevalue("ledger_path_metadata")
+        parent = metadata.base / "link"
+        target = metadata.base / "target"
+        metadata.add_directory(parent)
+        metadata.replace_with_link(parent, target)
+        assert parent.stat() == target.lstat()
+        before = dict(metadata.entries)
+        open_parent = Mock(side_effect=AssertionError("Linked export ancestor opened"))
+        monkeypatch.setattr(export, "os", SimpleNamespace(open=open_parent))
+        with pytest.raises(ExportError, match="Invalid export snapshot or destination"):
+            export_as_of(
+                LedgerView(PROJECT, 0, (), ()), reference_rates, parent / "child"
+            )
+        open_parent.assert_not_called()
+        assert metadata.entries == before
+        return
 
     project = request.getfixturevalue("project")
     tmp_path = request.getfixturevalue("tmp_path")
@@ -586,9 +605,6 @@ def test_refuses_unsafe_or_different_destination(
     destination = tmp_path / "destination"
     if kind == "symlink":
         destination.symlink_to(target, target_is_directory=True)
-    elif kind == "parent-symlink":
-        destination.symlink_to(target, target_is_directory=True)
-        destination = destination / "child"
     elif kind == "hardlink":
         export_as_of(project.as_of(), card, destination)
         os.link(destination / "usage.jsonl", tmp_path / "hardlinked")
@@ -599,18 +615,24 @@ def test_refuses_unsafe_or_different_destination(
     assert not list(tmp_path.glob(".export-*"))
 
 
-def _assert_observed_destination_conflict(monkeypatch, card):
+def _assert_observed_destination_conflict(monkeypatch, card, *, competing=False):
     from aitm_usage import export
 
     destination = Path("/fixture/export")
     ancestry = ((1, 1), (1, 2))
     pin = SimpleNamespace(identities=(*ancestry, (1, 3)), fd=13)
-    contents = {"unrelated": CANARY.encode()}
+    contents = {} if competing else {"unrelated": CANARY.encode()}
     observed = Mock(return_value=ancestry)
     open_parent = Mock(return_value=9)
     stat_destination = Mock(return_value=object())
     sync = Mock(side_effect=AssertionError("A conflicting snapshot is not replayed"))
     stage = Mock(side_effect=AssertionError("A conflicting snapshot is not replaced"))
+    remove = Mock(side_effect=AssertionError("An existing export must not be removed"))
+    if competing:
+        stat_destination.side_effect = FileNotFoundError
+        stage, remove, publish = _observe_competing_publication(
+            export, monkeypatch, destination, ancestry, contents
+        )
     monkeypatch.setattr(export, "_validated_path", observed)
     monkeypatch.setattr(export, "_pin_directory", Mock(return_value=nullcontext(pin)))
     monkeypatch.setattr(export, "_new_private_child", stage)
@@ -626,6 +648,7 @@ def _assert_observed_destination_conflict(monkeypatch, card):
             stat=stat_destination,
             listdir=lambda fd: tuple(contents),
             fsync=sync,
+            unlink=remove,
             close=Mock(),
         ),
     )
@@ -638,15 +661,77 @@ def _assert_observed_destination_conflict(monkeypatch, card):
         destination.name, dir_fd=9, follow_symlinks=False
     )
     export._pin_directory.assert_called_once_with(destination)
-    stage.assert_not_called()
+    if competing:
+        publish.assert_called_once_with(15, "snapshot", 9, destination.name)
+        assert stage.call_count == 2
+        assert remove.call_args_list == [
+            call("usage.jsonl", dir_fd=16),
+            call("manifest.json", dir_fd=16),
+        ]
+    else:
+        stage.assert_not_called()
+        remove.assert_not_called()
     sync.assert_not_called()
     assert contents == {"unrelated": CANARY.encode()}
 
 
+def _observe_competing_publication(
+    export, monkeypatch, destination, ancestry, contents
+):
+    written = {}
+    container = SimpleNamespace(fd=15, identities=(*ancestry, (1, 4)))
+    staged = SimpleNamespace(fd=16, identities=(*container.identities, (1, 5)))
+
+    @contextmanager
+    def stage(parent_fd, path, identities):
+        if parent_fd == 9:
+            assert path.parent == destination.parent and path.name.startswith(
+                ".export-"
+            )
+            assert identities == ancestry
+            container.path = path
+            pin = container
+        else:
+            assert parent_fd == container.fd and path == container.path / "snapshot"
+            assert identities == container.identities
+            pin = staged
+        try:
+            yield pin
+        finally:
+            assert not written
+
+    def write(pin, files):
+        assert pin is staged
+        written.update(files)
+
+    def compete(*_):
+        assert written.keys() == {"usage.jsonl", "manifest.json"}
+        assert not contents
+        contents["unrelated"] = CANARY.encode()
+        return False
+
+    def unlink(name, *, dir_fd):
+        assert dir_fd == staged.fd and name not in contents
+        del written[name]
+
+    publish = Mock(side_effect=compete)
+    monkeypatch.setattr(export, "_write_snapshot", write)
+    monkeypatch.setattr(export, "publish_noreplace", publish)
+    return Mock(side_effect=stage), Mock(side_effect=unlink), publish
+
+
 @pytest.mark.parametrize("identical", [False, True])
 def test_competing_destination_keeps_complete_atomic_visibility(
-    project, tmp_path, monkeypatch, identical
+    request, monkeypatch, reference_rates, identical
 ):
+    if not identical:
+        _assert_observed_destination_conflict(
+            monkeypatch, reference_rates, competing=True
+        )
+        return
+
+    project = request.getfixturevalue("project")
+    tmp_path = request.getfixturevalue("tmp_path")
     export_as_of = _export()
     from aitm_usage import export
 
@@ -669,16 +754,13 @@ def test_competing_destination_keeps_complete_atomic_visibility(
                 stat.S_IMODE(os.stat(name, dir_fd=staged).st_mode) for name in names
             } == {0o600}
             destination.mkdir(mode=0o700)
-            if identical:
-                for name in names:
-                    with os.fdopen(
-                        os.open(name, os.O_RDONLY, dir_fd=staged), "rb"
-                    ) as original:
-                        copy = destination / name
-                        copy.write_bytes(original.read())
-                        copy.chmod(0o600)
-            else:
-                (destination / "competitor").write_text(CANARY)
+            for name in names:
+                with os.fdopen(
+                    os.open(name, os.O_RDONLY, dir_fd=staged), "rb"
+                ) as original:
+                    copy = destination / name
+                    copy.write_bytes(original.read())
+                    copy.chmod(0o600)
         finally:
             os.close(staged)
         return real_publish(src_fd, source, dst_fd, target)
@@ -692,16 +774,9 @@ def test_competing_destination_keeps_complete_atomic_visibility(
     monkeypatch.setattr(os, "fsync", fsync)
     view = project.as_of()
     card = load_rate_card()
-    if identical:
-        receipt = export_as_of(view, card, destination)
-        assert receipt.sha256 == sha256(_snapshot(destination)[1]).hexdigest()
-        assert len(parent_syncs) == 1
-    else:
-        with pytest.raises(export.ExportError):
-            export_as_of(view, card, destination)
-        assert (destination / "competitor").read_text() == CANARY
-        assert {path.name for path in destination.iterdir()} == {"competitor"}
-        assert parent_syncs == []
+    receipt = export_as_of(view, card, destination)
+    assert receipt.sha256 == sha256(_snapshot(destination)[1]).hexdigest()
+    assert len(parent_syncs) == 1
     assert not list(tmp_path.glob(".export-*"))
 
 

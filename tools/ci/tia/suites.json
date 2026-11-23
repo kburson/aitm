@@ -335,6 +335,81 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_late_processing_contradiction_revokes_price_with_original_scope",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_nested_agent_report_does_not_double_count_or_inherit_scope",
+      "suite": "unit",
+      "isolation_group": "claude-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_compaction_reconciles_separate_counter_windows",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_configured_processing_tier_is_bound_to_current_context",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_split_turn_and_tool_receipt_only_survive_post_commit_advance",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_stale_quota_counter_cannot_separate_unmeasured_exclusion",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_unpublished_response_identity_is_deduplicated_after_commit",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_inventory_rechecks_root_identity_even_without_existing_registry_match",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_claude_cost_state_checks_its_physical_row",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_disposition_proposal_needs_current_owned_span_and_receipt",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_legacy_writers_preserve_both_v2_collections",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_scope_fixture_uses_the_real_receipt_linked_native_observation",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_locator_presence_fails_closed_on_unreadable_directory",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_in_place_origin_change_cannot_hide_behind_append",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_publication_and_consumption_reject_unsafe_or_untyped_inputs",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_accounting.py::test_accounting_rejects_foreign_reference_through_ledger_admission",
       "suite": "unit",
       "isolation_group": "accounting-policy"

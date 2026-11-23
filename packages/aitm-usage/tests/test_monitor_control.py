@@ -119,7 +119,8 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
     unsafe, request, monkeypatch, capsys
 ):
     check_shape = unsafe in {"duplicate", "extra"}
-    observed = check_shape or unsafe == "mode"
+    unsafe_metadata = unsafe in {"mode", "hardlink"}
+    observed = check_shape or unsafe_metadata
     tmp_path = Path("/fixture") if observed else request.getfixturevalue("tmp_path")
     config = tmp_path / "private-config.json"
     private_state = str(tmp_path / "secret-state")
@@ -149,15 +150,17 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
                 fdopen=lambda fd, mode: BytesIO(raw.encode()),
             ),
         )
-        if unsafe == "mode":
+        if unsafe_metadata:
             uid = 501
             paths = dict.fromkeys(config.parents, stat.S_IFDIR | 0o700)
-            paths[config] = stat.S_IFREG | 0o644
+            paths[config] = stat.S_IFREG | (0o644 if unsafe == "mode" else 0o600)
+            link_count = 2 if unsafe == "hardlink" else 1
 
             class ObservedConfig(type(Path())):
                 def lstat(self):
                     mode = paths[self]
-                    return os.stat_result((mode, 1, 1, 1, uid, 0, 0, 0, 0, 0))
+                    links = link_count if self == config else 1
+                    return os.stat_result((mode, 1, 1, links, uid, 0, 0, 0, 0, 0))
 
             def observed_path(path):
                 return ObservedConfig(ledger._project_path(path))
@@ -179,13 +182,9 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
         monitor = request.getfixturevalue("monitor")
         config.write_text(raw)
         config.chmod(0o600)
-        if unsafe in {"symlink", "hardlink"}:
-            target = config
-            config = tmp_path / "alias.json"
-            if unsafe == "symlink":
-                config.symlink_to(target)
-            else:
-                config.hardlink_to(target)
+        target = config
+        config = tmp_path / "alias.json"
+        config.symlink_to(target)
 
     assert _run(monkeypatch, "project", "register", "--config", str(config)) == 1
     output = capsys.readouterr()
@@ -196,11 +195,19 @@ def test_project_cli_rejects_unsafe_or_untyped_owner_config(
         open_file.assert_called_once_with(config, flags)
         assert pin.check.call_count == 2
         monitor.assert_not_called()
-    elif unsafe == "mode":
+    elif unsafe_metadata:
         open_file.assert_not_called()
         monitor.assert_not_called()
     else:
         assert not monitor.root.exists()
+        hardlink = tmp_path / "hardlink.json"
+        hardlink.hardlink_to(target)
+        assert _run(monkeypatch, "project", "register", "--config", str(hardlink)) == 1
+        physical = capsys.readouterr()
+        assert json.loads(physical.out)["status"] == "invalid-config"
+        assert str(hardlink) not in physical.out + physical.err
+        assert not monitor.root.exists()
+        assert target.read_text() == raw
 
 
 @pytest.mark.parametrize(

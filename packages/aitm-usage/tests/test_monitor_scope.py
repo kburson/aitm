@@ -405,7 +405,10 @@ def native(tmp_path, monkeypatch):
     return NativeScopeFixture(tmp_path, monkeypatch)
 
 
-def test_scope_fixture_uses_the_real_receipt_linked_native_observation(native):
+def test_scope_fixture_uses_the_real_receipt_linked_native_observation(
+    native_scope_policy,
+):
+    native = native_scope_policy
     command_id = UUID(int=0x301)
     receipt, ordinal = native.append(command_id)
     batch = native.adapter.read_delta(native.locator(), None)
@@ -1317,16 +1320,14 @@ def test_claude_terminal_proof_cannot_depend_on_other_disabled_counters(
 
 
 @pytest.mark.parametrize("reenable", [False, True], ids=["disabled", "reenabled"])
-def test_claude_cost_state_checks_its_physical_row(request, reenable):
+def test_claude_cost_state_checks_its_physical_row(claude_scope_policy, reenable):
     from test_claude import MODEL, cost, model_counts
     from test_claude import user as claude_user
 
     from aitm_usage.monitor_scope import ScopeState
     from aitm_usage.types import Availability, Eligibility
 
-    claude_scope = request.getfixturevalue(
-        "claude_scope_policy" if reenable else "claude_scope"
-    )
+    claude_scope = claude_scope_policy
     native = claude_scope.native
     with native.registry.writer() as writer:
         claude_scope.approve(writer)
@@ -2110,12 +2111,10 @@ def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
 
 
 @pytest.mark.parametrize("operation", ["mark", "handoff", "hold", "expire", "dispose"])
-def test_legacy_writers_preserve_both_v2_collections(request, operation):
+def test_legacy_writers_preserve_both_v2_collections(native_scope_policy, operation):
     from aitm_usage.monitor_scope import Mark, ScopeState
 
-    native = request.getfixturevalue(
-        "native" if operation == "dispose" else "native_scope_policy"
-    )
+    native = native_scope_policy
     with native.registry.writer() as writer:
         moment = AFTER
         state = ScopeState(writer, clock=lambda: moment)
@@ -3646,7 +3645,7 @@ def test_native_disposition_reconfirms_visible_proof_after_directory_sync_failur
     ],
 )
 def test_disposition_proposal_needs_current_owned_span_and_receipt(
-    request, monkeypatch, capsys, control
+    request, monkeypatch, control
 ):
     if control == "wrong-typed-request":
         case = route_admission_case(monkeypatch, CUTOFF, wrong_type=True)
@@ -3685,19 +3684,12 @@ def test_disposition_proposal_needs_current_owned_span_and_receipt(
         case.publish.assert_not_called()
         return
 
-    if control == "disabled":
-        native = request.getfixturevalue("native_scope_policy")
-        tmp_path = None
-    else:
-        native = request.getfixturevalue("native")
-        tmp_path = request.getfixturevalue("tmp_path")
+    native = request.getfixturevalue("native_scope_policy")
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
             native,
             writer,
-            tmp_path,
-            monkeypatch,
-            capsys,
+            monkeypatch=monkeypatch,
             disabled=control == "disabled",
         )
         state = current.state
@@ -3707,11 +3699,15 @@ def test_disposition_proposal_needs_current_owned_span_and_receipt(
             "raw-rewrite": "source prefix changed",
         }[control]
         if control == "raw-rewrite":
-            rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
+            rows = [
+                json.loads(line) for line in native._transcript_bytes().splitlines()
+            ]
             rows[current.held_at]["fixturePadding"] = (
                 "same native evidence, changed raw bytes"
             )
-            write(native.path, rows)
+            native._replace_transcript(
+                b"".join((json.dumps(row) + "\n").encode() for row in rows)
+            )
             batch = state.read_source(SOURCE, native.locator())
             target = native.target(batch, current.command.command_id)
             assert target.boundary == terminal.native_boundary

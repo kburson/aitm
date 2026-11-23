@@ -136,7 +136,7 @@ def memory_legacy(monkeypatch, capsys):
     return _memory_legacy(monkeypatch, capsys)
 
 
-def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
+def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None, claude_memo=False):
     monitor = None
     if monitor_registered is None:
         ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
@@ -149,6 +149,7 @@ def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
     inbox_files = {}
     inputs = {}
     receipt_rows = {}
+    receipt_reads = []
 
     def open_ledger(path, project_id):
         assert (path, project_id) == (ledger.root, PROJECT)
@@ -158,12 +159,16 @@ def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
         assert path == ledger.root
         return nullcontext(project)
 
-    def inbox_publication(actual_ledger, *, project):
-        assert actual_ledger is ledger
+    def private_child(parent, name, *, create):
+        assert parent is project and name == scopes.INBOX_NAME and create
+        return nullcontext(inbox)
+
+    def publication(directory):
+        assert directory is inbox
         assert ADOPTION_FILE not in state_files, (
             "adoption must fence legacy publication"
         )
-        return nullcontext((project, inbox))
+        return nullcontext()
 
     def read_private(directory, name):
         if getattr(directory, "path", None) == project.path:
@@ -188,6 +193,7 @@ def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
 
     def query_receipt(_query, params):
         (key,) = params
+        receipt_reads.append(key)
         return SimpleNamespace(fetchone=lambda: receipt_rows.get(key))
 
     def store_receipt(receipt):
@@ -215,11 +221,13 @@ def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
     monkeypatch.setattr(cli, "open_project", lambda path: open_ledger(path, PROJECT))
     monkeypatch.setattr(cli, "version", lambda _: "0.0.0")
     monkeypatch.setattr(scopes, "_pin_directory", pin_project)
-    monkeypatch.setattr(scopes, "_inbox_publication", inbox_publication)
+    monkeypatch.setattr(scopes, "_private_child", private_child)
+    monkeypatch.setattr(scopes, "_publication", publication)
     monkeypatch.setattr(scopes, "_read_private", read_private)
     monkeypatch.setattr(scopes, "_publish", publish)
     monkeypatch.setattr(scopes, "os", SimpleNamespace(listdir=list_inbox))
-    monkeypatch.setattr(service, "remember_claude_session", unexpected_memo)
+    if not claude_memo:
+        monkeypatch.setattr(service, "remember_claude_session", unexpected_memo)
     if monitor is None:
         monkeypatch.setattr(monitor_registry.Registry, "view", unexpected_registry)
         monkeypatch.setattr(
@@ -256,6 +264,7 @@ def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
         run=_cli_runner(ledger.root, monkeypatch, capsys),
         publish_adoption=publish_adoption,
         store_receipt=store_receipt,
+        receipt_reads=receipt_reads,
         monitor=monitor,
     )
 
@@ -578,73 +587,34 @@ def adopted_with_witness(ledger, monitor_root):
 
 
 _DURABLE_REPLAY_CASES = {
-    (MarkerDisposition.ACCEPTED, "alias", Provider.CODEX),
     (MarkerDisposition.ACCEPTED, "mark", Provider.CLAUDE),
     (MarkerDisposition.CONFLICT, "bind", Provider.CODEX),
 }
 
 
 def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status):
-    ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
-    inputs = {}
+    memory = _memory_legacy(monkeypatch, capsys)
+    ledger = memory.ledger
     args, payload, session = invocation(
-        ledger, action, provider=provider, write_input=inputs.__setitem__
+        ledger, action, provider=provider, write_input=memory.inputs.__setitem__
     )
     command = InboxCommand(COMMAND, PROJECT, payload)
     expected = _evaluate_replayed_receipt(ledger, command, status)
-    key = ledger.pseudonymize("inbox-command", str(COMMAND))
-    connection = Mock()
-    connection.execute.return_value.fetchone.return_value = (
-        1,
-        _encode(Revision(key, 1, expected), Revision),
-    )
-    publication = Mock(
-        side_effect=AssertionError("replay opened the publication queue")
-    )
-    monitor_write = Mock(side_effect=AssertionError("replay forwarded the command"))
-
-    def open_ledger(directory, project_id):
-        assert (directory, project_id) == (ledger.root, PROJECT)
-        return ledger
-
-    with monkeypatch.context() as patch:
-        patch.setattr(Ledger, "open", staticmethod(open_ledger))
-        patch.setattr(Ledger, "reader", lambda self: nullcontext(connection))
-        patch.setattr(scopes, "_pin_directory", lambda path: nullcontext(object()))
-        patch.setattr(scopes, "read_monitor_adoption", Mock(return_value=ADOPTION))
-        patch.setattr(scopes, "_inbox_publication", publication)
-        patch.setattr(monitor_control, "enqueue_adopted_scope", monitor_write)
-        if inputs:
-
-            def open_input(path, mode):
-                assert mode == "rb"
-                return BytesIO(inputs[path])
-
-            patch.setattr(Path, "open", open_input)
-            patch.setattr(cli, "version", lambda _: "0.0.0")
-            patch.setenv("CODEX_THREAD_ID", str(CODEX))
-            patch.setattr(
-                sys,
-                "argv",
-                ["aitm-usage", "--project", str(ledger.root), *args, "--json"],
-            )
-            assert cli.main() == 0
-            output = capsys.readouterr()
-            assert (
-                output.out
-                == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
-            )
-            assert output.err == ""
+    memory.store_receipt(expected)
+    memory.publish_adoption()
+    if memory.inputs:
+        code, output = memory.run(args)
+        assert code == 0, output
         assert (
-            scopes.enqueue_command(ledger.root, command, claude_session=session)
-            == expected
+            output.out == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
         )
-
-    reads = connection.execute.call_args_list
-    assert len(reads) == 1 + bool(inputs)
-    assert all(args[1] == (key.value,) for args, _ in reads)
-    publication.assert_not_called()
-    monitor_write.assert_not_called()
+        assert output.err == ""
+    assert (
+        scopes.enqueue_command(ledger.root, command, claude_session=session) == expected
+    )
+    key = ledger.pseudonymize("inbox-command", str(COMMAND)).value
+    assert memory.receipt_reads == [key] * (1 + bool(memory.inputs))
+    assert not memory.inbox
 
 
 @pytest.mark.parametrize(
@@ -677,21 +647,16 @@ def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
     before = ledger.as_of().sequence
 
     with adopted_with_witness(ledger, monitor_root) as inbox:
-        if isinstance(payload, (DraftAlias, ItemParent)):
-            # CLI relationship invocations always create another UUID.
-            assert scopes.enqueue_command(ledger.root, command) == expected
-        else:
-            code, output = run(args)
-            assert code == 0, output
-            assert (
-                output.out
-                == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
-            )
-            assert output.err == ""
-            assert (
-                scopes.enqueue_command(ledger.root, command, claude_session=session)
-                == expected
-            )
+        code, output = run(args)
+        assert code == 0, output
+        assert (
+            output.out == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
+        )
+        assert output.err == ""
+        assert (
+            scopes.enqueue_command(ledger.root, command, claude_session=session)
+            == expected
+        )
         with inbox.publication() as locked:
             assert list(inbox.iter_pending(locked)) == []
     assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
@@ -749,8 +714,14 @@ def test_adopted_replay_preserves_legacy_conflict_for_changed_bytes(memory_legac
 
 @pytest.mark.parametrize("provider", [Provider.CLAUDE, Provider.CODEX])
 def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
-    legacy, monkeypatch, provider
+    request, monkeypatch, provider
 ):
+    if provider is Provider.CLAUDE:
+        memory = request.getfixturevalue("memory_legacy")
+        _assert_replay_at_legacy_cutover(memory, monkeypatch)
+        return
+
+    legacy = request.getfixturevalue("legacy")
     ledger, monitor_root, run = legacy
     args, payload, _ = invocation(ledger, "mark", provider=provider)
     command = InboxCommand(COMMAND, PROJECT, payload)
@@ -780,6 +751,40 @@ def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
     assert output.err == ""
     assert not monitor_root.exists()
     assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+
+
+def _assert_replay_at_legacy_cutover(memory, monkeypatch):
+    ledger = memory.ledger
+    args, payload, _ = invocation(
+        ledger,
+        "mark",
+        provider=Provider.CLAUDE,
+        write_input=memory.inputs.__setitem__,
+    )
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    assert scopes.enqueue_command(ledger.root, command) is None
+    name = f"{COMMAND}.json"
+    assert memory.inbox[name] == encode_command(command)
+    accepted = _evaluate_replayed_receipt(ledger, command, MarkerDisposition.ACCEPTED)
+    original_publication = scopes._publication
+    locks = []
+
+    def publication_after_legacy_commit(inbox):
+        lock = original_publication(inbox)
+        assert not locks
+        locks.append(inbox)
+        memory.store_receipt(accepted)
+        memory.publish_adoption()
+        del memory.inbox[name]
+        return lock
+
+    monkeypatch.setattr(scopes, "_publication", publication_after_legacy_commit)
+    code, output = memory.run(args)
+    assert len(locks) == 1
+    assert code == 0, output
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
+    assert output.err == ""
+    assert not memory.inbox
 
 
 def test_adopted_legacy_requires_the_compatible_reader_witness(monkeypatch, capsys):
@@ -932,14 +937,14 @@ def test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write(
 
 @pytest.mark.parametrize("monitor_corrupt", [False, True])
 def test_pre_adoption_claude_records_memo_and_replays_receipt_despite_monitor_state(
-    legacy, monkeypatch, monitor_corrupt
+    request, monkeypatch, capsys, monitor_corrupt
 ):
-    ledger, monitor_root, run = legacy
     if monitor_corrupt:
-        monitor_root.mkdir(mode=0o700)
-        registry = monitor_root / "registry-v1.json"
-        registry.write_bytes(b"private invalid registry")
-        registry.chmod(0o600)
+        _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys)
+        return
+
+    legacy = request.getfixturevalue("legacy")
+    ledger, monitor_root, run = legacy
 
     def read_registry(*args, **kwargs):
         pytest.fail("pre-adoption command reached the unrelated monitor registry")
@@ -970,8 +975,67 @@ def test_pre_adoption_claude_records_memo_and_replays_receipt_despite_monitor_st
         code, output = run(args)
         assert code == 0, output
         assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
-    if not monitor_corrupt:
-        assert not monitor_root.exists()
+    assert not monitor_root.exists()
+
+
+def _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys):
+    memory = _memory_legacy(
+        monkeypatch, capsys, monitor_registered=False, claude_memo=True
+    )
+    ledger = memory.ledger
+    registered = service._Config(
+        PROJECT, ("/fixture/source",), ("/fixture/checkout",), NOW, (), (), ()
+    )
+    configuration = _encode(registered, service._Config).encode()
+    view = LedgerView(
+        PROJECT, 1, (service._registration_revision(ledger, registered),), ()
+    )
+    project, sessions = object(), object()
+    files = {project: {service.REGISTRATION_NAME: configuration}, sessions: {}}
+    monitor = memory.monitor
+    broken = {"registry-v1.json": b"private invalid registry"}
+    monitor.files[monitor.root] = broken.copy()
+
+    def pin_project(path):
+        assert path == ledger.root
+        return nullcontext(project)
+
+    def child(directory, name, *, create):
+        assert directory is project and name == CLAUDE_SESSIONS_NAME and create
+        return nullcontext(sessions)
+
+    def publish(directory, name, data):
+        assert directory is sessions and name not in files[sessions]
+        files[sessions][name] = data
+        return True
+
+    monkeypatch.setattr(Ledger, "as_of", lambda _: view)
+    monkeypatch.setattr(service, "_pin_directory", pin_project)
+    monkeypatch.setattr(service, "_private_child", child)
+    monkeypatch.setattr(
+        service, "_read_private", lambda pin, name: files[pin].get(name)
+    )
+    monkeypatch.setattr(service, "_publish", publish)
+    args, marker, session = invocation(
+        ledger, "mark", provider=Provider.CLAUDE, write_input=memory.inputs.__setitem__
+    )
+    command = InboxCommand(COMMAND, PROJECT, marker)
+    code, output = memory.run(args)
+    assert code == 0, output
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
+    assert memory.inbox == {f"{COMMAND}.json": encode_command(command)}
+    (memo,) = files[sessions].values()
+    assert memo == json.dumps(session.value).encode()
+    assert str(CLAUDE).encode() not in memo
+
+    accepted = _evaluate_replayed_receipt(ledger, command, MarkerDisposition.ACCEPTED)
+    memory.store_receipt(accepted)
+    memory.inbox.clear()
+    code, output = memory.run(args)
+    assert code == 0, output
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
+    assert not memory.inbox
+    assert monitor.files[monitor.root] == broken
 
 
 @pytest.mark.parametrize("action", ["bind", "correct", "alias", "parent"])

@@ -1,5 +1,6 @@
 import importlib
 import json
+import os
 import shlex
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -107,7 +108,7 @@ def scanner_replay_ledger(native_scanner, monkeypatch):
         _write_paths=SimpleNamespace(check=Mock()),
     )
     files.evidence = ledger
-    rows = attach_scope_inbox_ledger(monkeypatch, ledger)
+    rows = attach_scope_inbox_ledger(monkeypatch, ledger).rows
     return files, registration, ledger, rows
 
 
@@ -267,6 +268,27 @@ def test_root_symlink_is_never_implicitly_approved(project):
     assert tuple(scanner.discover(registration)) == ()
 
 
+def _observe_mutable_snapshot(monkeypatch, files, path, verify):
+    scanner = _scanner()
+    host = NativeDirectoryMetadata(files, path.parent)
+    host.install(monkeypatch)
+    monkeypatch.setattr(scanner, "_verify_snapshot", verify)
+
+    def fstat(fd):
+        assert fd in files.descriptors
+        return host.info(path)
+
+    monkeypatch.setattr(scanner.os, "fstat", fstat)
+
+    def write(data):
+        files.contents[path] = data
+        for fd in files.descriptors:
+            files.descriptors[fd] = data
+        host.versions[path] = host.versions.get(path, 0) + 1
+
+    return write
+
+
 @pytest.mark.parametrize(
     "mutation", ["rename", "delete", "overwrite", "rewrite-and-grow", "append"]
 )
@@ -275,23 +297,8 @@ def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
     if mutation in {"overwrite", "rewrite-and-grow"}:
         verify = scanner._verify_snapshot
         files, registration = request.getfixturevalue("native_scanner")
-        directory = registration.source_roots[0]
-        path = directory / "replacement-secret.jsonl"
-        host = NativeDirectoryMetadata(files, directory)
-        host.install(monkeypatch)
-        monkeypatch.setattr(scanner, "_verify_snapshot", verify)
-
-        def fstat(fd):
-            assert fd in files.descriptors
-            return host.info(path)
-
-        monkeypatch.setattr(scanner.os, "fstat", fstat)
-
-        def write_bytes(data):
-            files.contents[path] = data
-            for fd in files.descriptors:
-                files.descriptors[fd] = data
-            host.versions[path] = host.versions.get(path, 0) + 1
+        path = registration.source_roots[0] / "replacement-secret.jsonl"
+        write_bytes = _observe_mutable_snapshot(monkeypatch, files, path, verify)
     else:
         registration, _ = request.getfixturevalue("project")
         path = registration.source_roots[0] / "replacement-secret.jsonl"
@@ -688,12 +695,14 @@ def test_claude_uses_provider_qualified_session_and_real_checkout_metadata(proje
     )
 
 
-def test_in_place_origin_change_cannot_hide_behind_append(project, monkeypatch):
+def test_in_place_origin_change_cannot_hide_behind_append(request, monkeypatch):
     scanner = _scanner()
-    registration, _ = project
+    verify = scanner._verify_snapshot
+    files, registration = request.getfixturevalue("native_scanner")
     path = registration.source_roots[0] / "rollout.jsonl"
+    write_bytes = _observe_mutable_snapshot(monkeypatch, files, path, verify)
     (cwd,) = registration.checkout_anchors
-    path.write_bytes(_header(cwd) + _usage(12))
+    write_bytes(_header(cwd) + _usage(12))
     (candidate,) = scanner.discover(registration)
     decode = scanner._decode_row
     changed = False
@@ -703,9 +712,7 @@ def test_in_place_origin_change_cannot_hide_behind_append(project, monkeypatch):
         row = decode(raw)
         if row and row["type"] == "session_meta" and not changed:
             changed = True
-            path.write_bytes(
-                _header(cwd, session=UUID(int=404)) + _usage(12) + _usage(15)
-            )
+            write_bytes(_header(cwd, session=UUID(int=404)) + _usage(12) + _usage(15))
         return row
 
     monkeypatch.setattr(scanner, "_decode_row", change_origin)
@@ -738,18 +745,47 @@ def test_zero_cursor_cannot_verify_copy_of_unknown_prefix(native_scanner):
 
 
 @pytest.mark.parametrize("invalid_cwd", ["symlink", "unicode"])
-def test_checkout_anchor_requires_a_real_confined_directory(project, invalid_cwd):
+def test_checkout_anchor_requires_a_real_confined_directory(
+    request, monkeypatch, invalid_cwd
+):
     scanner = _scanner()
-    registration, _ = project
-    (root,) = registration.source_roots
-    (checkout,) = registration.checkout_anchors
-    external = root.parent / "external"
-    external.mkdir()
-    spoofed = checkout / "symlink"
-    spoofed.symlink_to(external, target_is_directory=True)
-    cwd = spoofed if invalid_cwd == "symlink" else checkout / "\ud800"
-    path = root / "source.jsonl"
-    path.write_bytes(_header(cwd) + _usage(11))
+    if invalid_cwd == "symlink":
+        registration, _ = request.getfixturevalue("project")
+        (root,) = registration.source_roots
+        (checkout,) = registration.checkout_anchors
+        external = root.parent / "external"
+        external.mkdir()
+        cwd = checkout / "symlink"
+        cwd.symlink_to(external, target_is_directory=True)
+        path = root / "source.jsonl"
+        path.write_bytes(_header(cwd) + _usage(11))
+    else:
+        files, registration = request.getfixturevalue("native_scanner")
+        (root,) = registration.source_roots
+        (checkout,) = registration.checkout_anchors
+        cwd = checkout / "\ud800"
+        path = root / "source.jsonl"
+        with pytest.raises(UnicodeEncodeError):
+            os.fsencode(cwd)
+        resolve = Path.resolve
+        is_dir = Path.is_dir
+        monkeypatch.setattr(
+            Path,
+            "resolve",
+            lambda value, **options: (
+                value if value == checkout else resolve(value, **options)
+            ),
+        )
+        monkeypatch.setattr(
+            Path,
+            "is_dir",
+            lambda value, **options: (
+                False if value == cwd else is_dir(value, **options)
+            ),
+        )
+        monkeypatch.setattr(scanner, "_checkout_anchor", files._checkout_lookup)
+        files.contents[path] = _header(cwd) + _usage(11)
+
     (candidate,) = scanner.discover(registration)
     batch = scanner.scan(candidate, None, CUTOFF)
     assert batch.cursor.offset == 0
@@ -2091,21 +2127,27 @@ def test_capture_locator_presence_rechecks_earlier_directory_after_rename(
     assert raced
 
 
-def test_capture_locator_presence_fails_closed_on_unreadable_directory(project):
+def test_capture_locator_presence_fails_closed_on_unreadable_directory(
+    native_scanner, monkeypatch
+):
     scanner = _scanner()
-    registration, evidence = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
-    (checkout,) = registration.checkout_anchors
-    path = root / "live.jsonl"
-    path.write_bytes(_header(checkout))
-    (source,) = scanner.discover(registration)
-    path.unlink()
     unreadable = root / "unreadable"
-    unreadable.mkdir(mode=0o000)
-    try:
-        with pytest.raises(PermissionError):
-            scanner._capture_locator_presence(
-                root, evidence, source.locator_ref, source.incarnation_ref
-            )
-    finally:
-        unreadable.chmod(0o700)
+    host = NativeDirectoryMetadata(files, root, unreadable)
+    host.install(monkeypatch)
+    path = root / "live.jsonl"
+    files.contents[path] = _header(files.checkout)
+    (source,) = scanner.discover(registration)
+    del files.contents[path]
+
+    def scandir(fd):
+        if host.descriptors[fd] == unreadable:
+            raise PermissionError("Observed unreadable native directory")
+        return host.scandir(fd)
+
+    monkeypatch.setattr(scanner.os, "scandir", scandir)
+    with pytest.raises(PermissionError, match="Observed unreadable native directory"):
+        scanner._capture_locator_presence(
+            root, files.evidence, source.locator_ref, source.incarnation_ref
+        )

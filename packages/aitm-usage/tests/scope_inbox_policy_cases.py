@@ -8,7 +8,7 @@ from test_ledger import _LedgerRows
 
 from aitm_usage import ledger as ledger_module
 from aitm_usage import scopes
-from aitm_usage.ledger import Ledger
+from aitm_usage.ledger import Ledger, LedgerError
 
 
 def attach_scope_inbox_ledger(monkeypatch, ledger):
@@ -22,19 +22,27 @@ def attach_scope_inbox_ledger(monkeypatch, ledger):
         SimpleNamespace(fd=index, check=Mock()) for index in range(3)
     )
     project.path = ledger.root
-    states = {directory.fd: {} for directory in (project, inbox, acks)}
+    states = {project.fd: {}}
+    denied = set()
 
     def pin(path):
         assert path == ledger.root
         return nullcontext(project)
 
     def child(parent, name, *, create):
-        if parent is project and name == scopes.INBOX_NAME:
-            return nullcontext(inbox)
-        assert parent is inbox and name == scopes.ACKS_NAME and create
-        return nullcontext(acks)
+        if parent is project:
+            assert name == scopes.INBOX_NAME
+            selected = inbox
+        else:
+            assert parent is inbox and name == scopes.ACKS_NAME
+            selected = acks
+        if create:
+            states.setdefault(selected.fd, {})
+        return nullcontext(selected if selected.fd in states else None)
 
     def read(directory, name):
+        if (directory.fd, name) in denied:
+            raise OSError("Private inbox descriptor unavailable")
         return states[directory.fd].get(name)
 
     def publish(directory, name, contents, *, replace_pending=False):
@@ -62,8 +70,9 @@ def attach_scope_inbox_ledger(monkeypatch, ledger):
 
     def open_ledger(path, project_id=None):
         assert path == ledger.root
-        assert project_id in (None, ledger.identity.project_id)
+        if project_id not in (None, ledger.identity.project_id):
+            raise LedgerError("Project identity changed")
         return ledger
 
     monkeypatch.setattr(Ledger, "open", staticmethod(open_ledger))
-    return rows
+    return SimpleNamespace(rows=rows, states=states, inbox=inbox, denied=denied)

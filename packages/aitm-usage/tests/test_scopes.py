@@ -240,13 +240,18 @@ def scope_policy(monkeypatch):
 
 
 @pytest.fixture
-def scope_receipt_ledger(monkeypatch):
+def scope_receipt_transport(monkeypatch):
     ledger = replace(
         _memory_ledger(store, PROJECT, b"r" * 32),
         _writer=object(),
         _write_paths=SimpleNamespace(check=Mock()),
     )
-    attach_scope_inbox_ledger(monkeypatch, ledger)
+    return ledger, attach_scope_inbox_ledger(monkeypatch, ledger)
+
+
+@pytest.fixture
+def scope_receipt_ledger(scope_receipt_transport):
+    ledger, _ = scope_receipt_transport
     return ledger
 
 
@@ -793,11 +798,13 @@ def test_cli_publication_is_private_authenticated_and_lease_free(project, tmp_pa
                 assert b"raw-tool-input-canary" not in contents
 
 
-def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(project, tmp_path):
-
+def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(
+    scope_receipt_transport,
+):
+    project, storage = scope_receipt_transport
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "valid")
-    foreign = Ledger.initialize(tmp_path / "foreign", OTHER_PROJECT)
+    foreign = _memory_ledger(store, OTHER_PROJECT, b"f" * 32)
     fabricated = SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}")
     for bad in (
         replace(marker, project_id=OTHER_PROJECT),
@@ -808,37 +815,29 @@ def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(project, tm
     ):
         with pytest.raises((LedgerError, ValueError)):
             enqueue_marker(project.root, bad)
-    assert not (project.root / "inbox").exists()
+    assert storage.inbox.fd not in storage.states
 
     enqueue_marker(project.root, marker)
-    inbox = project.root / "inbox"
-    complete = (inbox / f"{marker.marker_id}.json").read_bytes()
-    (inbox / ".partial-command").write_bytes(complete[:40])
-    malformed_id = UUID(int=4)
-    malformed = inbox / f"{malformed_id}.json"
-    malformed.write_bytes(complete + b"\n")
-    malformed.chmod(0o600)
-    forged = inbox / f"{UUID(int=5)}.json"
-    forged.write_bytes(
-        encode_command(
-            InboxCommand(
-                UUID(int=5),
-                PROJECT,
-                replace(marker, marker_id=UUID(int=5), participant_ref=fabricated),
-            )
+    inbox = storage.states[storage.inbox.fd]
+    complete = inbox[f"{marker.marker_id}.json"]
+    inbox[".partial-command"] = complete[:40]
+    inbox[f"{UUID(int=4)}.json"] = complete + b"\n"
+    inbox[f"{UUID(int=5)}.json"] = encode_command(
+        InboxCommand(
+            UUID(int=5),
+            PROJECT,
+            replace(marker, marker_id=UUID(int=5), participant_ref=fabricated),
         )
     )
-    forged.chmod(0o600)
-    linked = inbox / f"{UUID(int=6)}.json"
-    linked.symlink_to(malformed)
-    deeply_nested = inbox / f"{UUID(int=7)}.json"
-    deeply_nested.write_bytes(b"[" * 10000 + b"]" * 10000)
-    deeply_nested.chmod(0o600)
+    linked = f"{UUID(int=6)}.json"
+    inbox[linked] = b""
+    storage.denied.add((storage.inbox.fd, linked))
+    inbox[f"{UUID(int=7)}.json"] = b"[" * 10000 + b"]" * 10000
     with project.writer() as writer:
         report = drain_inbox(writer, (f.boundary(marker, 8),))
         assert len(report.receipts) == 1
         assert report.invalid_publications == 4
-        assert (inbox / ".partial-command").exists()
+        assert inbox[".partial-command"] == complete[:40]
     assert len(project.as_of().revisions) == 2
 
 
@@ -1018,6 +1017,23 @@ def test_inbox_directory_refuses_symlink_destination(project, tmp_path):
         drain_inbox(writer, ())
     assert list(target.iterdir()) == []
     assert project.as_of().sequence == 0
+
+    inbox = project.root / "inbox"
+    inbox.unlink()
+    enqueue_marker(project.root, marker)
+    linked = f.marker(2, 2, CHILD, "linked")
+    payload = encode_command(InboxCommand(linked.marker_id, PROJECT, linked))
+    external = target / f"{linked.marker_id}.json"
+    external.write_bytes(payload)
+    external.chmod(0o600)
+    (inbox / external.name).symlink_to(external)
+    with project.writer() as writer:
+        report = drain_inbox(writer, (f.boundary(marker, 8), f.boundary(linked, 9)))
+        assert [receipt.command.command_id for receipt in report.receipts] == [
+            marker.marker_id
+        ]
+        assert report.invalid_publications == 1
+    assert external.read_bytes() == payload
 
 
 def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(

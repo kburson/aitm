@@ -816,10 +816,10 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
 
 @pytest.mark.parametrize("fresh", [True, False])
 def test_split_turn_and_tool_receipt_only_survive_post_commit_advance(
-    request, monkeypatch, fresh
+    memory_replay, fresh
 ):
     codex = adapter()
-    replay = TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=fresh)
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     first, second = usage(8, 2), usage(6, 2)
     replay.write(
@@ -1525,13 +1525,9 @@ def test_progress_without_a_response_cannot_skip_duplicate_detection_after_resta
 
 
 @pytest.mark.parametrize("split", ["new-context", "restart", "unknown-tier"])
-def test_configured_processing_tier_is_bound_to_current_context(
-    request, monkeypatch, split
-):
+def test_configured_processing_tier_is_bound_to_current_context(memory_replay, split):
     codex = adapter()
-    replay = TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart"
-    )
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
     settings = {
@@ -1590,16 +1586,10 @@ def test_configured_processing_tier_is_bound_to_current_context(
 @pytest.mark.parametrize("stale_in", ["excluded", "eligible"])
 @pytest.mark.parametrize("restart", [False, True])
 def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
-    request, monkeypatch, stale_in, restart
+    memory_replay, stale_in, restart
 ):
     codex = adapter()
-    replay = TranscriptReplay(
-        request,
-        monkeypatch,
-        PROJECT,
-        CUTOFF,
-        durable=restart and stale_in == "excluded",
-    )
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     outside = replay.outside
     unrelated, returned, later = (UUID(int=value) for value in (0x180, 0x181, 0x182))
@@ -1651,12 +1641,10 @@ def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
 @pytest.mark.parametrize("phase", ["excluded", "pre-cutoff", "suppressed"])
 @pytest.mark.parametrize("restart", [False, True])
 def test_unpublished_response_identity_is_deduplicated_after_commit(
-    request, monkeypatch, phase, restart
+    memory_replay, phase, restart
 ):
     codex = adapter()
-    replay = TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=restart and phase == "excluded"
-    )
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     outside = replay.outside
     time = BEFORE if phase == "pre-cutoff" else AFTER
@@ -1724,11 +1712,9 @@ def compaction(record):
 
 
 @pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
-def test_compaction_reconciles_separate_counter_windows(request, monkeypatch, split):
+def test_compaction_reconciles_separate_counter_windows(memory_replay, split):
     codex = adapter()
-    replay = TranscriptReplay(
-        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart"
-    )
+    replay = memory_replay
     ledger, checkout = replay.ledger, replay.checkout
     first, compact_amount, next_amount = usage(8, 2), usage(4, 1), usage(6, 1)
     compact_response = response("compaction-response", usage(12, 3), compact_amount)
