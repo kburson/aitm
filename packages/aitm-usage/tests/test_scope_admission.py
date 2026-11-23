@@ -1,11 +1,14 @@
 """Scoped producer admission and the mixed monitor inbox."""
 
 import json
+import os
 import shutil
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -13,6 +16,7 @@ import pytest
 from monitor_inbox_cases import MonitorInboxFiles
 
 from aitm_usage import cli, monitor_control, monitor_registry
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
 from aitm_usage.monitor_registry import (
@@ -350,55 +354,108 @@ def test_replaced_project_ledger_key_does_not_preserve_grant(ready, tmp_path):
 
 
 def test_scope_cli_handoff_and_disposition_with_distinct_pinned_requests(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
+    from test_ledger import _memory_ledger
+
     from aitm_usage.scope_admission import DispositionRequest, HandoffRequest
     from aitm_usage.types import _encode
 
-    root = tmp_path / "monitor"
-    inbox = ControlInbox(root)
+    root = Path("/fixture/monitor")
+    origin = _PhysicalDirectory("/fixture/origin", (1, 10))
+    destination = _PhysicalDirectory("/fixture/destination", (1, 11))
+    evidence = _ServiceEvidence(b"a" * 32)
+    writer = Registry(root, Mock())
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    initial = RegistryView(
+        projects=(
+            RegisteredProject(PROJECT, origin, "Origin", None, (), None),
+            RegisteredProject(CONTROL, destination, "Destination", None, (), None),
+        ),
+        source_key_id=evidence.key_id,
+    )
+    state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
+    target = replace(
+        _memory_ledger(ledger_module, CONTROL, b"t" * 32), root=Path(destination.path)
+    )
+    state.identities[destination.path] = destination
+    state.ensure(target.root)
+    ledgers = {
+        (state.ledger.root, PROJECT): state.ledger,
+        (target.root, CONTROL): target,
+    }
+    monkeypatch.setattr(Ledger, "open", lambda path, project: ledgers[path, project])
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+
     handoff = HandoffRequest(COMMAND, GRANT, PROJECT, Scope(CONTROL), 0)
     dispose = DispositionRequest(UUID(int=9), GRANT, PROJECT, COMMAND, True)
-    with Registry(root).writer() as writer:
-        for project in (PROJECT, CONTROL):
-            state = Ledger.initialize(tmp_path / f"project-{project}", project)
-            writer.register_project(
-                ProjectRegistrationRequest(project, str(state.root), "Project")
-            )
-        writer.source_evidence()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(GRANT, PROJECT, ("handoff", "dispose"))
-        reader.advertise(reader.probe(handoff))
-        for action, request in (("handoff", handoff), ("dispose", dispose)):
-            path = tmp_path / f"{action}.json"
-            path.write_text(_encode(request, type(request)))
-            path.chmod(0o600)
-            monkeypatch.setattr(
-                sys,
-                "argv",
-                [
-                    "aitm-usage",
-                    "monitor",
-                    "scope",
-                    action,
-                    "--request",
-                    str(path),
-                    "--json",
-                ],
-            )
-            assert cli.main() == 0
-            assert capsys.readouterr().out == (
-                f'{{"command_id": "{request.command_id}", "status": "queued"}}\n'
-            )
+    requests = (("handoff", handoff), ("dispose", dispose))
+    inputs = {
+        Path(f"/fixture/{action}.json"): (fd, _encode(request, type(request)).encode())
+        for fd, (action, request) in enumerate(requests, start=20)
+    }
+    payloads = dict(inputs.values())
 
-        with inbox.publication() as locked:
-            assert tuple(
-                item.body.request for item in reader.iter_verified(locked)
-            ) == (
-                handoff,
-                dispose,
-            )
+    def validate_path(path, *, directory):
+        assert not directory
+        return ((1, inputs[path][0]),)
+
+    def open_input(path, flags):
+        assert flags == os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        return inputs[path][0]
+
+    def open_descriptor(fd, mode):
+        assert mode == "rb"
+        return BytesIO(payloads[fd])
+
+    def pin_input(path, fd, directory, identities):
+        assert fd == inputs[path][0]
+        assert identities == validate_path(path, directory=directory)
+        return SimpleNamespace(check=Mock())
+
+    host = monitor_control.os
+    monkeypatch.setattr(
+        monitor_control,
+        "os",
+        SimpleNamespace(
+            **vars(host),
+            O_RDONLY=os.O_RDONLY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            open=open_input,
+            fdopen=open_descriptor,
+        ),
+    )
+    monkeypatch.setattr(monitor_control, "_validated_path", validate_path)
+    monkeypatch.setattr(monitor_control, "_PinnedPath", pin_input)
+    reader = ScopeInboxReader(writer, state.inbox)
+    reader.register(GRANT, PROJECT, ("handoff", "dispose"))
+    reader.advertise(reader.probe(handoff))
+    for action, request in requests:
+        path = Path(f"/fixture/{action}.json")
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "aitm-usage",
+                "monitor",
+                "scope",
+                action,
+                "--request",
+                str(path),
+                "--json",
+            ],
+        )
+        assert cli.main() == 0
+        assert capsys.readouterr().out == (
+            f'{{"command_id": "{request.command_id}", "status": "queued"}}\n'
+        )
+
+    with state.inbox.publication() as locked:
+        assert tuple(item.body.request for item in reader.iter_verified(locked)) == (
+            handoff,
+            dispose,
+        )
 
 
 def test_replayed_active_grant_file_cannot_reverse_revocation(admission_policy):

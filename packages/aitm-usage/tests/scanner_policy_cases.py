@@ -1,6 +1,7 @@
 """Run scanner policy on in-memory transcript bytes and explicit custody."""
 
 import json
+import stat
 from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from hashlib import sha256
@@ -132,6 +133,85 @@ class NativeTranscriptFiles:
     def _verify_snapshot(self, stream, path, snapshot, offset, digest):
         assert snapshot.same_path(self._snapshot(path))
         assert sha256(self.contents[path][:offset]).hexdigest() == digest
+
+
+class NativeDirectoryMetadata:
+    """Supply descriptor-relative directory metadata to the real inventory walk."""
+
+    def __init__(self, files, *paths):
+        self.files = files
+        self.versions = dict.fromkeys(paths, 1)
+        self.descriptors = {files._identity(path): path for path in paths}
+
+    def info(self, path):
+        device, inode = self.files._identity(path)
+        data = self.files.contents.get(path)
+        version = 10_000_000_000 + self.versions.get(path, 0)
+        return SimpleNamespace(
+            st_dev=device,
+            st_ino=inode,
+            st_mode=(stat.S_IFDIR if data is None else stat.S_IFREG) | 0o700,
+            st_nlink=1,
+            st_size=len(data) if data is not None else 0,
+            st_mtime_ns=version,
+            st_ctime_ns=version,
+        )
+
+    def chain(self, path):
+        parents = (*reversed(path.parents), path)
+        return tuple((*self.files._identity(entry), 0) for entry in parents)
+
+    def times(self, path):
+        return tuple(self.info(parent).st_ctime_ns for parent in reversed(path.parents))
+
+    def directory(self, path):
+        times = (*self.times(path), self.info(path).st_ctime_ns)
+        return nullcontext((self.files._identity(path), self.chain(path), times))
+
+    def snapshot(self, path):
+        return scanner._Snapshot(self.chain(path), self.times(path), self.info(path))
+
+    def scandir(self, fd):
+        path = self.descriptors[fd]
+        entries = [
+            SimpleNamespace(
+                name=child.name,
+                stat=lambda *, follow_symlinks, child=child: self.info(child),
+            )
+            for child in (*self.descriptors.values(), *self.files.contents)
+            if child.parent == path
+        ]
+        return nullcontext(iter(entries))
+
+    def open_directory(self, name, flags, *, dir_fd):
+        assert flags == scanner._DIRECTORY_FLAGS
+        path = self.descriptors[dir_fd] / name
+        assert path in self.descriptors.values()
+        return self.files._identity(path)
+
+    def stat(self, name, *, dir_fd, follow_symlinks):
+        assert not follow_symlinks
+        path = self.descriptors[dir_fd] / name
+        if path not in self.descriptors.values() and path not in self.files.contents:
+            raise FileNotFoundError(path)
+        return self.info(path)
+
+    def close(self, fd):
+        assert fd in self.descriptors
+
+    def install(self, monkeypatch):
+        monkeypatch.setattr(self.files, "_snapshot", self.snapshot)
+        monkeypatch.setattr(scanner, "_directory", self.directory)
+        monkeypatch.setattr(scanner, "_probe", self.snapshot)
+        monkeypatch.setattr(scanner, "_reprobe", self.snapshot)
+        monkeypatch.setattr(scanner.os, "fstat", self.fstat)
+        monkeypatch.setattr(scanner.os, "scandir", self.scandir)
+        monkeypatch.setattr(scanner.os, "open", self.open_directory)
+        monkeypatch.setattr(scanner.os, "close", self.close)
+        monkeypatch.setattr(scanner.os, "stat", self.stat)
+
+    def fstat(self, fd):
+        return self.info(self.descriptors[fd])
 
 
 class ScannerPolicy:

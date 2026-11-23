@@ -713,10 +713,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     carrier_suffix,
 ):
     codex = adapter()
-    durable = (native_output, aligned, carrier_suffix) in {
-        ("message", True, ""),
-        (None, False, ""),
-    }
+    durable = (native_output, aligned, carrier_suffix) == ("message", True, "")
     replay = TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=durable)
     ledger, outside = replay.ledger, replay.outside
     first, last = usage(8, 2), usage(6, 2)

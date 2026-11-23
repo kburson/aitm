@@ -10,6 +10,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from delivery_policy_cases import DeliveryJournalRows, delivery_destination
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
@@ -245,16 +246,16 @@ def test_grok_unsettled_mark_cannot_claim_or_advance(grok_delivery_policy):
 
 
 def test_grok_revocation_between_prepare_and_reserve_cannot_claim(
-    isolated_grok_capture,
+    grok_delivery_policy,
 ):
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     before = journal.as_of()
-    f.revise("revoke", 2)
+    f.writer._live_profile = replace(f.writer._live_profile, current=lambda _: False)
     with pytest.raises(_LiveSourceUnavailable):
         journal.reserve_batch(prepared)
     assert _stored_progress(journal, prepared) is None
@@ -645,13 +646,15 @@ def test_grok_existing_owner_survives_an_independently_eligible_rival_claim(
 
 
 def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
-    tmp_path,
-    monkeypatch,
+    grok_capture_policy, monkeypatch
 ):
+    from test_monitor_coverage import _CoveragePolicyStore
+
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    retained = isolated_grok_capture.__wrapped__(tmp_path, monkeypatch, request=None)
-    f = next(retained)
+    f = grok_capture_policy
+    store = _CoveragePolicyStore(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     journal = RoutingJournal(f.writer, f.state)
     monkeypatch.setattr(
         GrokAdapter,
@@ -667,26 +670,24 @@ def test_preenrollment_and_stable_policy_exclusion_do_not_open_payload(
     f.writer._save(
         replace(view, permissions=(CaptureChange(f.project, f.source_id, True),))
     )
-    with pytest.raises(StopIteration):
-        next(retained)
-    with Registry(f.writer.root).writer() as writer:
-        scopes = ScopeState(writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
-        journal = RoutingJournal(writer, scopes)
-        with pytest.raises(_LiveSourceUnavailable):
-            journal.prepare(f.source_id, f.locator())
-        (exclusion,) = journal.coverage_changes(0)
-        assert exclusion.coverage.reason == "UNQUALIFIED_SOURCE"
-        assert exclusion.coverage.extent == "unknown"
-        assert journal.as_of().claims == ()
-        with journal._store.transaction() as conn:
-            assert conn.execute("SELECT count(*) FROM progress").fetchone() == (0,)
+    f.writer._live_profile = None
+    scopes = ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier))
+    journal = RoutingJournal(f.writer, scopes)
+    with pytest.raises(_LiveSourceUnavailable):
+        journal.prepare(f.source_id, f.locator())
+    (exclusion,) = journal.coverage_changes(0)
+    assert exclusion.coverage.reason == "UNQUALIFIED_SOURCE"
+    assert exclusion.coverage.extent == "unknown"
+    assert store.committed.sequence == exclusion.sequence == 1
 
 
 def test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed(
-    isolated_grok_capture,
+    grok_delivery_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f, second=False)
+    rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: rows)
     journal = RoutingJournal(f.writer, f.state)
     verified = journal.prepare(f.source_id, f.locator())
     observational = f.reader.read_delta(f.locator(), None).cursor
@@ -698,13 +699,14 @@ def test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed(
         _source_checkpoint(verified.progress)
     assert _stored_progress(journal, verified) is None
     (reserved,) = journal.reserve_batch(verified)
-    _enable_delivery(f, journal)
+    rows.delivery_enabled = True
     ticket = journal.reserve_delivery(reserved.key, 1)
     mismatched = replace(ticket, claim=replace(ticket.claim, revision=2))
-    with _ledger(f).writer() as writer:
-        delivery = ProjectDelivery.attach(journal, writer)
-        with pytest.raises(_DeliveryRefused, match="Grok usage proof changed"):
-            delivery._monitor_revision(mismatched)
-        with pytest.raises(_DeliveryRefused):
-            delivery.commit(mismatched)
-        assert writer.as_of().sequence == 0
+    writer, destination = delivery_destination(monkeypatch, journal, _ledger(f))
+    delivery = ProjectDelivery.attach(journal, writer)
+    with pytest.raises(_DeliveryRefused, match="Grok usage proof changed"):
+        delivery._monitor_revision(mismatched)
+    with pytest.raises(_DeliveryRefused):
+        delivery.commit(mismatched)
+    assert destination.commits == set()
+    assert destination.revisions == destination.receipts == {}

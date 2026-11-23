@@ -11,7 +11,7 @@ from uuid import UUID
 import pytest
 from native_registry_cases import native_registry_policy
 from qualification_policy_cases import CaptureInbox, CapturePolicy
-from scanner_policy_cases import NativeTranscriptFiles
+from scanner_policy_cases import NativeDirectoryMetadata, NativeTranscriptFiles
 from test_codex import AFTER, CUTOFF, SESSION, begin, counter, end, response, usage
 from test_ledger import _memory_ledger
 from test_monitor_adapters import CODEX_FIXTURE, _adapter, _restart_rows
@@ -1069,6 +1069,8 @@ def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfi
         reader, root = policy.reader, policy.root
         checkout = policy.native.checkout
         path = root.path / "claude.jsonl"
+        if unfinished == "abandoned":
+            NativeDirectoryMetadata(policy.native, root.path).install(monkeypatch)
 
         def store(rows, *, append=False):
             policy.native.write(path, rows, append=append)
@@ -1178,18 +1180,6 @@ def test_queued_claude_disable_uses_the_physical_tail(request, monkeypatch, unfi
             is Eligibility.UNKNOWN
         )
     if unfinished == "abandoned":
-        from scanner_policy_cases import scanner
-
-        native_source = _locate(reader, root)._source
-        _observe_locator(
-            monkeypatch,
-            SimpleNamespace(root=root, module=module),
-            policy.native,
-            native_source,
-            lambda: scanner._CaptureLocatorPresence(
-                True, True, len(policy.native.contents[path]), True, False
-            ),
-        )
         assert (
             registry.span_disposition(
                 PROJECT_A, SOURCE, start.stream_ref, completed_start, expected

@@ -3,11 +3,13 @@ import os
 import stat
 import subprocess
 import sys
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from hashlib import sha256
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
@@ -259,7 +261,17 @@ def test_replay_cutoff_and_pending_finalization(project, tmp_path):
     assert json.loads(original_manifest)["schema"] == SCHEMA
 
     database = tmp_path / "receiver.sqlite"
+    invalid_digest = _changed_snapshot(
+        original,
+        tmp_path / "invalid-digest",
+        mutate_manifest=lambda manifest: manifest.update(sha256="0" * 64),
+    )
     with Receiver(database, PROJECT) as receiver:
+        with pytest.raises(ValueError, match="Invalid usage export digest"):
+            receiver.import_snapshot(invalid_digest)
+        assert receiver.watermark is None
+        assert receiver.accepted == {}
+        assert receiver.pending == set()
         with pytest.raises(ImportInterrupted):
             receiver.import_snapshot(original, interrupt_after=2)
         assert receiver.watermark is None
@@ -562,6 +574,10 @@ def test_refuses_unsafe_or_different_destination(
         inspect_destination.assert_not_called()
         return
 
+    if kind == "conflict":
+        _assert_observed_destination_conflict(monkeypatch, reference_rates)
+        return
+
     project = request.getfixturevalue("project")
     tmp_path = request.getfixturevalue("tmp_path")
     card = load_rate_card()
@@ -576,16 +592,55 @@ def test_refuses_unsafe_or_different_destination(
     elif kind == "hardlink":
         export_as_of(project.as_of(), card, destination)
         os.link(destination / "usage.jsonl", tmp_path / "hardlinked")
-    else:
-        destination.mkdir(mode=0o700)
-        (destination / "unrelated").write_text(CANARY)
 
     with pytest.raises(ExportError):
         export_as_of(project.as_of(), card, destination)
     assert list(target.iterdir()) == []
     assert not list(tmp_path.glob(".export-*"))
-    if kind == "conflict":
-        assert (destination / "unrelated").read_text() == CANARY
+
+
+def _assert_observed_destination_conflict(monkeypatch, card):
+    from aitm_usage import export
+
+    destination = Path("/fixture/export")
+    ancestry = ((1, 1), (1, 2))
+    pin = SimpleNamespace(identities=(*ancestry, (1, 3)), fd=13)
+    contents = {"unrelated": CANARY.encode()}
+    observed = Mock(return_value=ancestry)
+    open_parent = Mock(return_value=9)
+    stat_destination = Mock(return_value=object())
+    sync = Mock(side_effect=AssertionError("A conflicting snapshot is not replayed"))
+    stage = Mock(side_effect=AssertionError("A conflicting snapshot is not replaced"))
+    monkeypatch.setattr(export, "_validated_path", observed)
+    monkeypatch.setattr(export, "_pin_directory", Mock(return_value=nullcontext(pin)))
+    monkeypatch.setattr(export, "_new_private_child", stage)
+    monkeypatch.setattr(
+        export,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=os.O_RDONLY,
+            O_DIRECTORY=os.O_DIRECTORY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            open=open_parent,
+            fstat=lambda fd: SimpleNamespace(st_dev=1, st_ino=2),
+            stat=stat_destination,
+            listdir=lambda fd: tuple(contents),
+            fsync=sync,
+            close=Mock(),
+        ),
+    )
+    with pytest.raises(export.ExportError, match="Conflicting export destination"):
+        export.export_as_of(LedgerView(PROJECT, 0, (), ()), card, destination)
+    open_parent.assert_called_once_with(
+        destination.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    )
+    stat_destination.assert_called_once_with(
+        destination.name, dir_fd=9, follow_symlinks=False
+    )
+    export._pin_directory.assert_called_once_with(destination)
+    stage.assert_not_called()
+    sync.assert_not_called()
+    assert contents == {"unrelated": CANARY.encode()}
 
 
 @pytest.mark.parametrize("identical", [False, True])
@@ -741,36 +796,17 @@ def _assert_receiver_refuses_snapshot(
     ],
 )
 def test_receiver_refuses_invalid_manifest_before_writing(
-    request, monkeypatch, rendered_snapshot, field, value
+    monkeypatch, rendered_snapshot, field, value
 ):
     def corrupt(manifest):
         manifest[field] = value
 
-    if field != "sha256":
-        _assert_receiver_refuses_snapshot(
-            monkeypatch, rendered_snapshot, mutate_manifest=corrupt
-        )
-        return
-
-    project = request.getfixturevalue("project")
-    tmp_path = request.getfixturevalue("tmp_path")
-    export_as_of = _export()
-    from fixtures.receiver import Receiver
-
-    _seed(project)
-    original = tmp_path / "original"
-    export_as_of(project.as_of(), load_rate_card(), original)
-    invalid = _changed_snapshot(
-        original,
-        tmp_path / "invalid",
+    _assert_receiver_refuses_snapshot(
+        monkeypatch,
+        rendered_snapshot,
+        match="Invalid usage export digest" if field == "sha256" else None,
         mutate_manifest=corrupt,
     )
-    with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
-        with pytest.raises(ValueError):
-            receiver.import_snapshot(invalid)
-        assert receiver.watermark is None
-        assert receiver.accepted == {}
-        assert receiver.pending == set()
 
 
 def test_receiver_refuses_duplicate_source_and_authenticated_tag(

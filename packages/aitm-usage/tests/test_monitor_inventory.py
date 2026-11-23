@@ -19,7 +19,7 @@ from uuid import UUID
 
 import pytest
 from qualification_policy_cases import qualification_policy
-from scanner_policy_cases import NativeTranscriptFiles
+from scanner_policy_cases import NativeDirectoryMetadata, NativeTranscriptFiles
 from test_codex import CUTOFF
 from test_grok import FIXTURES, GROK_BINARY, SESSION
 from test_monitor_adapters import _desktop
@@ -45,6 +45,7 @@ from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 from aitm_usage.sources.scan import _InventoryUnavailable, _OriginCache
 
 source_scan = import_module("aitm_usage.sources.scan")
+_REVALIDATE_CATALOG = source_scan._revalidate_catalog
 
 pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
 
@@ -539,15 +540,20 @@ def _assert_inventory_policy_refuses(request, monkeypatch, fault):
 
 
 def test_metadata_inventory_rejects_changed_sibling_before_return_and_same_cycle_retry(
-    siblings, monkeypatch
+    request, monkeypatch
 ):
-    native, selected, parked = siblings
+    native, parked, _ = _metadata_catalog(request, monkeypatch)
+    (selected,) = (
+        locator
+        for locator in native.adapter.discover(native.roots[LIVE])
+        if locator._source._path == native.paths[LIVE]
+    )
     original = source_scan._revalidate_catalog
     cache = _OriginCache()
 
     def changed(catalog):
         monkeypatch.setattr(source_scan, "_revalidate_catalog", original)
-        parked.write_bytes(parked.read_bytes() + b"\n")
+        native.files.contents[parked] += b"\n"
         original(catalog)
 
     monkeypatch.setattr(source_scan, "_revalidate_catalog", changed)
@@ -679,41 +685,62 @@ def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
     "when", ["during-walk", "root-revalidation", "nested-revalidation"]
 )
 def test_superseded_directory_witness_holds_catalog_without_staging(
-    siblings, monkeypatch, when
+    request, monkeypatch, when
 ):
-    native, selected, parked = siblings
-    root = parked.parent
-    nested = root / "nested"
-    nested.mkdir()
-    parked.rename(nested / parked.name)
-    changed = root if when == "root-revalidation" else nested
-    marker = changed / "membership-change"
-    before = source_scan._directory_witness(changed.stat())
+    if when == "root-revalidation":
+        native, selected, parked = request.getfixturevalue("siblings")
+        changed = parked.parent
+        nested = changed / "nested"
+        nested.mkdir()
+        parked.rename(nested / parked.name)
+        marker = changed / "membership-change"
+        before = source_scan._directory_witness(changed.stat())
+        original = source_scan._revalidate_catalog
 
-    if when == "during-walk":
-        original = source_scan.os.scandir
-        inode = changed.stat().st_ino
-
-        @contextmanager
-        def change_after_scan(directory):
-            with original(directory) as entries:
-                yield entries
-            if isinstance(directory, int) and os.fstat(directory).st_ino == inode:
-                monkeypatch.setattr(source_scan.os, "scandir", original)
-                marker.touch()
-
-        monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
-    else:
-        original_revalidate = source_scan._revalidate_catalog
-
-        def change_before_revalidation(catalog):
-            monkeypatch.setattr(source_scan, "_revalidate_catalog", original_revalidate)
+        def revalidate(catalog):
+            monkeypatch.setattr(source_scan, "_revalidate_catalog", original)
             marker.touch()
-            original_revalidate(catalog)
+            original(catalog)
 
-        monkeypatch.setattr(
-            source_scan, "_revalidate_catalog", change_before_revalidation
-        )
+        def verify_change():
+            assert marker.exists()
+            assert source_scan._directory_witness(changed.stat()) != before
+
+        monkeypatch.setattr(source_scan, "_revalidate_catalog", revalidate)
+    else:
+        native, parked, tree = _metadata_catalog(request, monkeypatch, nested=True)
+        selected = native.locator(LIVE)
+        changed = parked.parent
+        marker = changed / "membership-change"
+
+        def change_directory():
+            native.files.contents[marker] = b""
+            tree.versions[changed] += 1
+
+        def verify_change():
+            assert marker in native.files.contents and tree.versions[changed] == 2
+
+        if when == "during-walk":
+
+            @contextmanager
+            def change_after_scan(fd):
+                with tree.scandir(fd) as entries:
+                    yield entries
+                if tree.descriptors[fd] == changed:
+                    monkeypatch.setattr(source_scan.os, "scandir", tree.scandir)
+                    change_directory()
+
+            monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
+        else:
+
+            def revalidate(catalog):
+                monkeypatch.setattr(
+                    source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG
+                )
+                change_directory()
+                _REVALIDATE_CATALOG(catalog)
+
+            monkeypatch.setattr(source_scan, "_revalidate_catalog", revalidate)
 
     cache = _OriginCache()
     with native.registry.writer() as writer:
@@ -723,14 +750,32 @@ def test_superseded_directory_witness_holds_catalog_without_staging(
                     writer._current_candidate(
                         writer.view(), LIVE, selected, inventory=inventory
                     )
-            assert marker.exists()
-            assert source_scan._directory_witness(changed.stat()) != before
+            verify_change()
             assert not cache._entries
         with writer._inventory_cycle(cache) as refreshed:
             _, current = writer._current_candidate(
                 writer.view(), LIVE, selected, inventory=refreshed
             )
             assert current.stream_ref == selected.stream_ref
+
+
+def _metadata_catalog(request, monkeypatch, *, nested=False):
+    native, _, parked, walk_catalog = request.getfixturevalue("inventory_transcripts")
+    files = native.files
+    root = parked.parent
+    if nested:
+        subdirectory = root / "nested"
+        moved = subdirectory / parked.name
+        files.contents[moved] = files.contents.pop(parked)
+        parked = moved
+        tree = NativeDirectoryMetadata(files, root, subdirectory)
+    else:
+        tree = NativeDirectoryMetadata(files, root)
+
+    tree.install(monkeypatch)
+    monkeypatch.setattr(source_scan, "_complete_catalog", walk_catalog)
+    monkeypatch.setattr(source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG)
+    return native, parked, tree
 
 
 def test_inventory_rechecks_root_identity_even_without_existing_registry_match(

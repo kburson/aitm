@@ -105,6 +105,157 @@ def installed(tmp_path, monkeypatch):
         assert type(caught.value) is _LiveSourceUnavailable
 
 
+@pytest.fixture
+def installed_policy(monkeypatch):
+    import os
+    import stat
+    from hashlib import sha256
+    from io import BytesIO
+    from types import SimpleNamespace
+
+    from test_monitor_journal import _ClaimJournalRows, _Rows
+    from test_monitor_scope import MemoryNativeScopeFixture
+
+    from aitm_usage import _isolated_qualification as pilot
+    from aitm_usage import monitor_journal, monitor_registry
+
+    native = MemoryNativeScopeFixture(monkeypatch)
+    native.append()
+    paths = tuple(
+        native.transcripts.with_name(name)
+        for name in ("owner", "provider", "workspace", "image")
+    )
+    roots = {
+        str(path): monitor_registry._PhysicalDirectory(
+            str(path), native.files._identity(path)
+        )
+        for path in paths
+    }
+    directory = monitor_registry._directory
+
+    def observed_directory(path, *, private):
+        assert private
+        return roots[path] if path in roots else directory(path, private=True)
+
+    monkeypatch.setattr(pilot, "_directory", observed_directory)
+    layout = pilot._PilotLayout.create(*paths, native.transcripts)
+    files = native.state_files
+    session = layout.native_session("fixture-session")
+    files.files[session] = {"updates.jsonl": b'{"fixture":true}\n', "usage.json": b"{}"}
+    closure = pilot._NativeClosure(
+        session.name,
+        "fixture-prompt",
+        "fixture-event",
+        datetime.now(UTC),
+        *(
+            sha256(files.files[session][name]).hexdigest()
+            for name in ("updates.jsonl", "usage.json")
+        ),
+        sha256(b"fixture closure receipt").hexdigest(),
+    )
+
+    class ImageBytes(BytesIO):
+        def fileno(self):
+            return 117
+
+    data = b"exact installed image"
+    image = pilot._OpenedExecutable(
+        paths[-1] / "candidate", ImageBytes(data), (2, 117), sha256(data).hexdigest()
+    )
+    image_info = SimpleNamespace(
+        st_mode=stat.S_IFREG | 0o500,
+        st_uid=501,
+        st_nlink=1,
+        st_dev=2,
+        st_ino=117,
+    )
+    lstat = Path.lstat
+
+    def file_info(fd):
+        assert fd == image.stream.fileno()
+        return image_info
+
+    def check_acl(fd):
+        assert fd == image.stream.fileno()
+
+    def publish(pinned, name, raw, *, replace_pending, before_commit):
+        assert (
+            pinned.path == files.root
+            and name == pilot._REVISION_FILE
+            and replace_pending
+        )
+        before_commit()
+        files.files[pinned.path][name] = raw
+        return True
+
+    def sign(payload):
+        return sha256(b"fixture external signature\0" + payload).digest()
+
+    def verify_owner(_issuer, payload, signature):
+        if sign(payload) != signature:
+            raise LedgerError("Fixture verifier refused the proposal signature")
+
+    monkeypatch.setattr(
+        Path, "lstat", lambda path: image_info if path == image.path else lstat(path)
+    )
+    monkeypatch.setattr(
+        pilot, "os", SimpleNamespace(fstat=file_info, geteuid=lambda: 501, path=os.path)
+    )
+    monkeypatch.setattr(pilot, "_check_acl", check_acl)
+    monkeypatch.setattr(pilot, "_pin_directory", files.pin)
+    monkeypatch.setattr(pilot, "_read_private", files.read)
+    monkeypatch.setattr(pilot, "_publish", publish)
+    monkeypatch.setattr(pilot._Issuer, "_verify_owner", verify_owner)
+
+    class JournalRows(_ClaimJournalRows):
+        def execute(self, sql, parameters=()):
+            if sql == "SELECT COALESCE(MAX(sequence), 0) FROM commits":
+                return super().execute(
+                    "SELECT coalesce(max(sequence), 0) FROM commits", parameters
+                )
+            if sql == "SELECT count(*) FROM claims":
+                assert not parameters
+                return _Rows([(len(self.claims),)])
+            return super().execute(sql, parameters)
+
+    rows = JournalRows(native.evidence)
+
+    def open_journal(writer):
+        assert (
+            writer.root == native.registry.root
+            and writer.source_evidence() == rows.evidence
+        )
+        return rows
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_journal)
+    with native.registry.writer() as writer:
+        (source,) = writer.view().sources
+        expected = _LiveSourceTuple.from_approval(source)
+        writer._live_profile = None
+        monkeypatch.setattr(
+            pilot,
+            "_approved_pilot_tuple",
+            lambda digest: expected if digest == image.sha256 else None,
+        )
+        issuer = pilot._prepare_isolated_issuer(
+            writer, layout, image, closure, b"ssh-ed25519 " + b"a" * 68
+        )
+
+        def activate():
+            payload = issuer.proposal(
+                "activate", 1, datetime.now(UTC) + timedelta(minutes=5)
+            )
+            return pilot._install_isolated_profile(issuer, payload, sign(payload))
+
+        def revoke():
+            payload = issuer.proposal(
+                "revoke", 2, datetime.now(UTC) + timedelta(minutes=5)
+            )
+            issuer.revoke(payload, sign(payload))
+
+        yield native, writer, issuer, activate, revoke, sign
+
+
 def _durable(journal, native):
     view = journal.as_of()
     with journal._store.transaction() as conn:
@@ -125,8 +276,9 @@ def _durable(journal, native):
 @pytest.mark.parametrize("admitted", (True, False))
 @pytest.mark.parametrize("retry", (True, False))
 def test_admission_drives_private_denial_without_a_journal_change(
-    installed, monkeypatch, admitted, retry
+    request, monkeypatch, admitted, retry
 ):
+    installed = request.getfixturevalue("installed" if admitted else "installed_policy")
     native, writer, _, activate, revoke, _ = installed
     activate()
     scopes = ScopeState(writer)
@@ -184,15 +336,17 @@ def test_admission_drives_private_denial_without_a_journal_change(
 
 @pytest.mark.parametrize("fault", (TypeError, KeyError))
 def test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed(
-    installed, monkeypatch, fault
+    installed_policy, monkeypatch, fault
 ):
     from aitm_usage import _isolated_qualification as pilot
 
-    native, writer, _, activate, _, _ = installed
+    native, writer, _, activate, _, _ = installed_policy
     assert writer._live_profile is None
     activate()
     journal = RoutingJournal(writer, ScopeState(writer))
     prepared = journal.prepare(SOURCE, native.locator())
+    assert prepared.candidates
+    before = _durable(journal, native)
 
     def unreadable(*_):
         raise fault("protected reader failure")
@@ -201,6 +355,7 @@ def test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed(
     with pytest.raises(_LiveSourceUnavailable) as captured:
         journal.reserve_batch(prepared)
     assert captured.value.decision is not None
+    assert _durable(journal, native) == before
     assert Registry(writer.root)._live_profile is None
 
 
@@ -398,13 +553,15 @@ def test_signed_supersession_invalidates_the_prior_generation(installed):
     assert scope.read_source(SOURCE, locator).observations
 
 
-def test_currentness_preserves_cancellation(installed, monkeypatch):
+def test_currentness_preserves_cancellation(installed_policy, monkeypatch):
     from aitm_usage import _isolated_qualification as pilot
 
-    native, writer, _, activate, _, _ = installed
+    native, writer, _, activate, _, _ = installed_policy
     activate()
     journal = RoutingJournal(writer, ScopeState(writer))
     prepared = journal.prepare(SOURCE, native.locator())
+    assert prepared.candidates
+    before = _durable(journal, native)
 
     def cancelled(*_):
         raise KeyboardInterrupt
@@ -412,6 +569,7 @@ def test_currentness_preserves_cancellation(installed, monkeypatch):
     monkeypatch.setattr(pilot, "_read_private", cancelled)
     with pytest.raises(KeyboardInterrupt):
         journal.reserve_batch(prepared)
+    assert _durable(journal, native) == before
 
 
 def test_revocation_is_terminal_and_writer_thread_is_private(installed):

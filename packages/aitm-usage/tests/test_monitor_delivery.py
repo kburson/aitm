@@ -3,13 +3,17 @@
 import hashlib
 import json
 import sqlite3
-from contextlib import closing, contextmanager
+from contextlib import closing, contextmanager, nullcontext
 from dataclasses import replace
+from pathlib import Path
 from uuid import UUID
 
 import pytest
+from delivery_policy_cases import delivery_destination, delivery_journal_rows
 from test_monitor_journal import COPY, LIVE, A, B, NativeJournalFixture
 from test_monitor_journal import journal_claude as journal_claude
+from test_monitor_journal import journal_claude_policy as journal_claude_policy
+from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_journal import (
@@ -18,6 +22,7 @@ from aitm_usage.monitor_journal import (
     _CandidateBasis,
     _DeliveryRefused,
 )
+from aitm_usage.monitor_registry import _project
 from aitm_usage.monitor_scope import ScopeState
 from aitm_usage.monitor_writer import ProjectDelivery
 
@@ -296,30 +301,41 @@ def test_foreign_writer_and_substituted_project_keys_cannot_deliver(native):
         assert journal.as_of().sequence == ack.sequence
 
 
-def test_ack_refuses_changed_destination_row_payload(native):
+def test_ack_refuses_changed_destination_row_payload(
+    journal_transcript_policy, monkeypatch
+):
+    native = journal_transcript_policy
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as registry:
         journal = _journal(registry)
         (reserved,) = _reserve(native, journal)
-        _enable(native, journal)
+        store.delivery_enabled = True
         ticket = journal.reserve_delivery(reserved.key, 1)
-        with Ledger.open(native.ledgers[A].root, A).writer() as writer:
-            delivery = ProjectDelivery.attach(journal, writer)
-            receipt = delivery.commit(ticket)
-            with writer._write_transaction() as conn:
-                (original,) = conn.execute(
-                    "SELECT payload FROM monitor_revisions WHERE key=?",
-                    (receipt.key.value,),
-                ).fetchone()
-                payload = json.loads(original)
-                payload["observation"]["tokens"]["total_tokens"] += 1
-                conn.execute(
-                    "UPDATE monitor_revisions SET payload=? WHERE key=?",
-                    (json.dumps(payload, separators=(",", ":")), receipt.key.value),
-                )
-            tip = journal.as_of().sequence
-            with pytest.raises(_DeliveryRefused):
-                journal.ack(delivery, ticket, receipt)
-            assert journal.as_of().sequence == tip
+        project = _project(registry.view(), A)
+        ledger = Ledger.open(Path(project.state.path), A)
+        writer, destination = delivery_destination(monkeypatch, journal, ledger)
+        delivery = ProjectDelivery.attach(journal, writer)
+        receipt = delivery.commit(ticket)
+        assert (
+            writer._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
+        )
+        key = receipt.key.value, receipt.revision
+        sequence, original = destination.revisions[key]
+        payload = json.loads(original)
+        payload["observation"]["tokens"]["total_tokens"] += 1
+        destination.revisions[key] = (
+            sequence,
+            json.dumps(payload, sort_keys=True, separators=(",", ":")),
+        )
+        with pytest.raises(
+            LedgerError, match="Invalid committed project delivery receipt"
+        ):
+            writer._monitor_delivery_receipt(receipt.key, receipt.revision)
+        tip = journal.as_of().sequence
+        with pytest.raises(_DeliveryRefused):
+            journal.ack(delivery, ticket, receipt)
+        assert journal.as_of().sequence == tip
+        assert not store.acks
 
 
 def test_content_dispute_blocks_new_destination_ack(journal_claude):
@@ -413,12 +429,17 @@ def test_delivery_upgrades_are_explicit_and_keep_existing_histories(native):
 
 @pytest.mark.parametrize("written_before_supersession", [False, True])
 def test_superseded_revision_cannot_create_an_ack(
-    journal_claude, written_before_supersession
+    request, monkeypatch, written_before_supersession
 ):
     from test_claude import usage as claude_usage
     from test_monitor_journal import _claude_candidates
 
-    native = journal_claude
+    store = None
+    if written_before_supersession:
+        native = request.getfixturevalue("journal_claude")
+    else:
+        native = request.getfixturevalue("journal_claude_policy")
+        store = delivery_journal_rows(monkeypatch, native.native.registry)
     with native.native.registry.writer() as registry:
         native.approve(registry)
         ordinal = native.append(native.request(3, stop=None))
@@ -427,10 +448,17 @@ def test_superseded_revision_cannot_create_an_ack(
         (original,) = _claude_candidates(prepared, ordinal)
         accepted = journal.reserve(original, prepared.progress)
         assert accepted.status == "pending"
-        _enable(native.native, journal)
+        ledger = Ledger.open(native.native.ledgers[A].root, A)
+        if store is None:
+            _enable(native.native, journal)
+            destination_writer = Ledger.open(ledger.root, A).writer()
+        else:
+            store.delivery_enabled = True
+            writer, destination = delivery_destination(monkeypatch, journal, ledger)
+            destination_writer = nullcontext(writer)
         old = journal.reserve_delivery(accepted.key, 1)
 
-        with Ledger.open(native.native.ledgers[A].root, A).writer() as writer:
+        with destination_writer as writer:
             delivery = ProjectDelivery.attach(journal, writer)
             early = delivery.commit(old) if written_before_supersession else None
             native.append(native.request(3, counts=claude_usage(output=6)))
@@ -447,7 +475,10 @@ def test_superseded_revision_cannot_create_an_ack(
             latest = journal.reserve_delivery(accepted.key, 2)
             receipt = delivery.commit(latest)
             assert receipt.revision == 2
-            journal.ack(delivery, latest, receipt)
+            ack = journal.ack(delivery, latest, receipt)
             committed = writer.monitor_as_of(receipt.sequence)
             expected = (1, 2) if written_before_supersession else (2,)
             assert tuple(row.revision for row in committed.revisions) == expected
+            if store is not None:
+                assert writer._monitor_delivery_receipt(receipt.key, 2) == receipt
+                assert journal.ack(delivery, latest, receipt) == ack

@@ -13,11 +13,14 @@ from unittest.mock import Mock
 import pytest
 from test_monitor_coverage import admitted_sources as admitted_sources
 from test_monitor_journal import COPY, LIVE, B, NativeJournalFixture
+from test_monitor_journal_store import _journal_observations
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
+from aitm_usage import ledger as ledger_module
 from aitm_usage import monitor_recovery
 from aitm_usage._monitor_journal_store import _STORE as _JOURNAL_STORE
+from aitm_usage._monitor_journal_store import JournalStore
 from aitm_usage.ledger import Ledger, LedgerError, _pin_directory
 from aitm_usage.monitor_journal import (
     JournalChange,
@@ -32,7 +35,12 @@ from aitm_usage.monitor_recovery import (
     VerifiedReceiverEvidence,
     _overlaps,
 )
-from aitm_usage.monitor_registry import _SOURCE_KEY_FILE, _STATE_FILE, _ServiceEvidence
+from aitm_usage.monitor_registry import (
+    _SOURCE_KEY_FILE,
+    Registry,
+    RegistryView,
+    _ServiceEvidence,
+)
 from aitm_usage.monitor_scope import ScopeState
 
 
@@ -89,7 +97,7 @@ def dispute_candidates(request, monkeypatch):
 class _RecoveryPolicy:
     """Supply verified journal candidates and witness bytes to the real fence."""
 
-    def __init__(self, monkeypatch):
+    def __init__(self, monkeypatch, *, observe_custody=False):
         self.root = Path("/fixture/witness")
         self.files = {}
         self.evidence = _ServiceEvidence(b"fixture recovery witness authority")
@@ -121,12 +129,51 @@ class _RecoveryPolicy:
             self.files[name] = data
             return True
 
-        monkeypatch.setattr(RecoveryFence, "_session", session)
+        if observe_custody:
+            self._observe_custody(monkeypatch, directory)
+        else:
+            monkeypatch.setattr(RecoveryFence, "_session", session)
         monkeypatch.setattr(monitor_recovery, "_read_private", read)
         monkeypatch.setattr(monitor_recovery, "_publish", publish)
         monkeypatch.setattr(
             monitor_recovery, "os", SimpleNamespace(listdir=listdir, fsync=Mock())
         )
+
+    def _observe_custody(self, monkeypatch, directory):
+        memory = _journal_observations(monkeypatch)
+        writer = Registry(memory.writer.root, memory.writer.lease)
+        monkeypatch.setattr(writer, "view", memory.writer.view)
+        monkeypatch.setattr(writer, "source_evidence", memory.writer.source_evidence)
+        self.journal._writer = writer
+        self.journal._store = JournalStore(writer)
+        self.evidence = self.journal._store.evidence
+        self.pin = memory.pin
+        self.key_path = writer.root / _SOURCE_KEY_FILE
+        self.key_stats = memory.files
+        self.nested = writer.root / "would-be-witness"
+        paths = {writer.root, memory.store, self.root, self.nested}
+        identities = {
+            path: (1, index)
+            for index, path in enumerate(
+                sorted({parent for path in paths for parent in (*path.parents, path)}),
+                start=1,
+            )
+        }
+
+        def ancestry(path, *, directory, allow_missing):
+            assert path in paths and directory and allow_missing
+            return tuple(identities[item] for item in (*reversed(path.parents), path))
+
+        def pin(path):
+            if path == self.root:
+                return nullcontext(directory)
+            if path == self.nested:
+                return nullcontext(SimpleNamespace(path=path))
+            return memory.pin(path)
+
+        monkeypatch.setattr(ledger_module, "_validated_path", ancestry)
+        monkeypatch.setattr(monitor_recovery, "_pin_directory", pin)
+        monkeypatch.setattr(monitor_recovery, "_publication", nullcontext)
 
     def _listed(self, after, *, coverage):
         return tuple(
@@ -158,6 +205,11 @@ class _RecoveryPolicy:
 @pytest.fixture
 def recovery_policy(monkeypatch):
     return _RecoveryPolicy(monkeypatch)
+
+
+@pytest.fixture
+def recovery_custody_policy(monkeypatch):
+    return _RecoveryPolicy(monkeypatch, observe_custody=True)
 
 
 @pytest.mark.parametrize("after_link", [False, True], ids=["before-link", "after-link"])
@@ -217,20 +269,17 @@ def test_restore_with_only_old_witness_holds_replay(dispute_candidates, tmp_path
 
 
 @pytest.mark.parametrize("missing", [True, False], ids=["missing", "modified"])
-def test_recovery_holds_at_the_authenticated_prefix(request, missing):
-    if missing:
-        journal, root, first, second = request.getfixturevalue("dispute_candidates")
-    else:
-        policy = request.getfixturevalue("recovery_policy")
-        journal, root = policy.journal, policy.root
-        first, second = policy.disputes()
+def test_recovery_holds_at_the_authenticated_prefix(recovery_policy, missing):
+    policy = recovery_policy
+    journal, root = policy.journal, policy.root
+    first, second = policy.disputes()
     fence = RecoveryFence(journal, root)
     one = fence.protect(first)
     two = fence.protect(second)
+    tail = max(policy.files)
     if missing:
-        max(root.iterdir()).unlink()
+        del policy.files[tail]
     else:
-        tail = max(policy.files)
         policy.files[tail] = policy.files[tail].replace(
             b"monitor-recovery/v1", b"invalid"
         )
@@ -303,23 +352,29 @@ def test_fence_refuses_an_unwitnessed_older_candidate(
 
 
 def test_forged_candidate_against_keyless_registry_creates_no_key(
-    coverage_candidate,
+    recovery_custody_policy,
+    monkeypatch,
 ):
-    journal, root, candidate = coverage_candidate
+    policy = recovery_custody_policy
+    journal, root, candidate = policy.journal, policy.root, policy.coverage()
     writer = journal._writer
-    key_file = writer.root / _SOURCE_KEY_FILE
-    key_file.unlink()
-    (writer.root / _STATE_FILE).unlink()
+    del policy.key_stats[policy.key_path]
+    monkeypatch.setattr(writer, "view", lambda: RegistryView())
+    writer.source_evidence.reset_mock()
+    policy.pin.reset_mock()
     with pytest.raises(LedgerError):
         RecoveryFence(journal, root).protect(
             replace(candidate, sequence=candidate.sequence + 1)
         )
-    assert not key_file.exists()
-    assert not list(root.iterdir())
+    assert policy.key_path not in policy.key_stats
+    assert not policy.files
+    writer.source_evidence.assert_not_called()
+    policy.pin.assert_not_called()
 
 
-def test_fence_rejects_forged_types_and_a_root_inside_journal(coverage_candidate):
-    journal, root, candidate = coverage_candidate
+def test_fence_rejects_forged_types_and_a_root_inside_journal(recovery_custody_policy):
+    policy = recovery_custody_policy
+    journal, root, candidate = policy.journal, policy.root, policy.coverage()
     fence = RecoveryFence(journal, root)
     for forged in (
         replace(candidate, sequence=True),
@@ -332,19 +387,17 @@ def test_fence_rejects_forged_types_and_a_root_inside_journal(coverage_candidate
     ):
         with pytest.raises(LedgerError):
             fence.protect(forged)
-    assert not list(root.iterdir())
-    nested = journal._writer.root / "would-be-witness"
-    nested.mkdir(mode=0o700)
+    assert not policy.files
     with pytest.raises(LedgerError):
-        RecoveryFence(journal, nested).protect(candidate)
-    assert not list(nested.iterdir())
+        RecoveryFence(journal, policy.nested).protect(candidate)
     with pytest.raises(LedgerError):
         RecoveryFence(journal, root, project_stores=(root,)).protect(candidate)
-    assert not list(root.iterdir())
+    assert not policy.files
 
 
-def test_fence_refuses_lost_coordinator_custody(coverage_candidate, monkeypatch):
-    journal, root, candidate = coverage_candidate
+def test_fence_refuses_lost_coordinator_custody(recovery_custody_policy, monkeypatch):
+    policy = recovery_custody_policy
+    journal, root, candidate = policy.journal, policy.root, policy.coverage()
     fence = RecoveryFence(journal, root)
     ready = fence.protect(candidate)
     with monkeypatch.context() as fault:
@@ -353,7 +406,7 @@ def test_fence_refuses_lost_coordinator_custody(coverage_candidate, monkeypatch)
             fence.protect(candidate)
         lost = fence.recover(ready.anchor)
         assert lost.held and lost.common is None
-    assert len(list(root.iterdir())) == 1
+    assert len(policy.files) == 1
 
 
 def test_journal_store_key_and_lease_share_the_derived_rollback_root(

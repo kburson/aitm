@@ -335,6 +335,116 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_host_fs_publication.py::test_unsupported_primitive_fails_without_replacement",
+      "suite": "unit",
+      "isolation_group": "host_fs_publication-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_scope_cli_handoff_and_disposition_with_distinct_pinned_requests",
+      "suite": "unit",
+      "isolation_group": "scope_admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_legacy_requires_the_compatible_reader_witness",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_committed_adoption_without_monitor_registration_fails_closed",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_receiver_refuses_invalid_manifest_before_writing",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_isolated_qualification.py::test_currentness_preserves_cancellation",
+      "suite": "unit",
+      "isolation_group": "isolated_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions_fail_closed_and_fresh_writer_starts_closed",
+      "suite": "unit",
+      "isolation_group": "isolated_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_ack_refuses_changed_destination_row_payload",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_revocation_between_prepare_and_reserve_cannot_claim",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_observational_cursor_and_mismatched_guarded_grok_claim_fail_closed",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_preenrollment_and_stable_policy_exclusion_do_not_open_payload",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_metadata_inventory_rejects_changed_sibling_before_return_and_same_cycle_retry",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_refuses_lost_coordinator_custody",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_rejects_forged_types_and_a_root_inside_journal",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_forged_candidate_against_keyless_registry_creates_no_key",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_recovery_holds_at_the_authenticated_prefix",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_a_second_verified_command_cannot_replace_a_stored_route_proposal",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_competing_native_receipts_conflict_at_same_target",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_retains_private_settlement_progress",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_legacy_resolution_blocks_first_route_proposal_without_rewriting_native_rows",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_resolved_hold_rejects_original_handoff_after_restart",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_retained_hold_writes_its_boundary_and_fixed_prefix_together",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_a_competing_pending_mark_cannot_replace_the_session_or_publisher",
       "suite": "unit",
       "isolation_group": "grok_scope_receipts-policy"

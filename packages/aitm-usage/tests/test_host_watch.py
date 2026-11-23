@@ -6,10 +6,13 @@ import os
 import platform
 import subprocess
 import sys
+from contextlib import nullcontext
 from hashlib import sha256
 from pathlib import Path
 from threading import Event, Thread
 from time import monotonic
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -44,7 +47,9 @@ def _startup(watches, root):
 
 
 def test_native_watch_reports_change_and_retires_resources(tmp_path):
-    root = _root(tmp_path)
+    watched = tmp_path / "watched"
+    watched.mkdir()
+    root = _root(watched)
     payload = root.path / "transcript.jsonl"
     payload.write_text("initial")
     with WatchSet((root,)) as watches:
@@ -52,6 +57,12 @@ def test_native_watch_reports_change_and_retires_resources(tmp_path):
         payload.write_text("same length, changed content")
         event = _next(watches, lambda event: event.kind is WatchKind.CHANGED)
         assert event.key == root.key
+        retired = watched.rename(tmp_path / "retired")
+        watched.mkdir()
+        terminal = _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED)
+        assert terminal.key == root.key
+        (retired / "late.jsonl").touch()
+        assert watches.events(0) == ()
     watches.close()
     assert watches.events(0) == ()
 
@@ -60,7 +71,12 @@ def test_native_watch_reports_change_and_retires_resources(tmp_path):
     "replacement",
     [None, "directory", "symlink"],
 )
-def test_root_loss_and_replacement_are_terminal(tmp_path, replacement):
+def test_root_loss_and_replacement_are_terminal(request, monkeypatch, replacement):
+    if replacement != "symlink":
+        _assert_watch_retires_unavailable_root(monkeypatch, replacement)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     watched = tmp_path / "watched"
     watched.mkdir()
     root = _root(watched)
@@ -68,15 +84,52 @@ def test_root_loss_and_replacement_are_terminal(tmp_path, replacement):
     with WatchSet((root,)) as watches:
         _startup(watches, root)
         watched.rename(other)
-        if replacement == "directory":
-            watched.mkdir()
-        elif replacement == "symlink":
-            watched.symlink_to(other, target_is_directory=True)
-        expected = WatchKind.ROOT_REPLACED if replacement else WatchKind.ROOT_LOST
-        item = _next(watches, lambda event: event.kind is expected)
+        watched.symlink_to(other, target_is_directory=True)
+        item = _next(watches, lambda event: event.kind is WatchKind.ROOT_REPLACED)
         assert item.key == root.key
         (other / "late.jsonl").touch()
         assert watches.events(0.10) == ()
+
+
+def _assert_watch_retires_unavailable_root(monkeypatch, replacement):
+    path = Path("/fixture/watch")
+    key = SourceRef(f"hmac-sha256:{'a' * 64}:{'b' * 64}")
+    root = WatchRoot(key, path, (1, 2))
+    chain = ((1, 1, 0), (1, 2, 0))
+    missing = False
+    native = Mock()
+    native.alive.return_value = True
+    backend = Mock(return_value=native)
+
+    def directory(selected):
+        assert selected == path
+        if missing:
+            raise FileNotFoundError(errno.ENOENT, "observed missing directory")
+        return nullcontext((90, chain, ()))
+
+    monkeypatch.setattr(host_watch, "_directory", directory)
+    monkeypatch.setattr(host_watch, "_Darwin", backend)
+    monkeypatch.setattr(
+        host_watch, "platform", SimpleNamespace(system=lambda: "Darwin")
+    )
+    with WatchSet((root,)) as watches:
+        _startup(watches, root)
+        changed = backend.call_args.args[1]
+        changed(key, 0)
+        if replacement == "directory":
+            chain = (*chain[:-1], (1, 3, 0))
+            expected = WatchKind.ROOT_REPLACED
+        else:
+            missing = True
+            expected = WatchKind.ROOT_LOST
+
+        (terminal,) = watches.events(0)
+        assert (terminal.key, terminal.kind) == (key, expected)
+        native.drop.assert_called_once_with(key)
+        changed(key, 0)
+        assert watches.events(0) == ()
+
+    native.close.assert_called_once()
 
 
 def test_losing_one_root_preserves_other_watch_events(tmp_path):

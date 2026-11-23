@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, Mock, call
 from uuid import UUID
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from qualification_policy_cases import qualification_policy
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
@@ -695,8 +696,14 @@ def test_open_refuses_unknown_schema_version(monkeypatch):
 
 @pytest.mark.parametrize("consent", (False, True))
 def test_grok_coverage_rechecks_exact_consent_before_payload(
-    admitted_sources, monkeypatch, tmp_path, consent
+    request, monkeypatch, consent
 ):
+    if not consent:
+        _assert_grok_coverage_requires_observed_consent(
+            request.getfixturevalue("grok_capture_policy"), monkeypatch
+        )
+        return
+
     from datetime import UTC, datetime
 
     from test_grok import FIXTURES, GROK_BINARY, SESSION
@@ -707,8 +714,8 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
     )
     from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
-    native, _ = admitted_sources
-    root = tmp_path / "grok"
+    native, _ = request.getfixturevalue("admitted_sources")
+    root = request.getfixturevalue("tmp_path") / "grok"
     session = root / SESSION
     session.mkdir(parents=True)
     for filename in ("updates.jsonl", "usage.json"):
@@ -728,9 +735,7 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
         )
         retained = ApprovedSource(req, _directory(str(root)))
         initial = writer.view()
-        permissions = initial.permissions + (
-            (CaptureChange(A, source, True),) if consent else ()
-        )
+        permissions = (*initial.permissions, CaptureChange(A, source, True))
         writer._save(
             replace(
                 initial, sources=(*initial.sources, retained), permissions=permissions
@@ -762,7 +767,7 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
         journal = RoutingJournal(writer, ScopeState(writer, grok_reader=reader))
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(source, locator)
-        assert len(journal.coverage_changes(0)) == int(consent)
+        assert len(journal.coverage_changes(0)) == 1
         assert journal.as_of().claims == ()
         with journal._store.transaction() as connection:
             assert connection.execute("SELECT count(*) FROM progress").fetchone() == (
@@ -771,7 +776,34 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
         qualify(writer)
         with pytest.raises(LedgerError, match="no verified native session"):
             journal.prepare(source, locator)
-        assert len(journal.coverage_changes(0)) == int(consent)
+        assert len(journal.coverage_changes(0)) == 1
+
+
+def _assert_grok_coverage_requires_observed_consent(case, monkeypatch):
+    case.write(case.rows, 2)
+    locator = case.locator()
+    writer = case.writer
+    store = _CoveragePolicyStore(writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
+    payload = Mock(side_effect=AssertionError("unqualified payload was read"))
+    monkeypatch.setattr(case.reader, "read_delta", payload)
+    journal = RoutingJournal(writer, case.state)
+    installed = writer._live_profile
+    writer._live_profile = None
+
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(case.source_id, locator)
+    assert journal.coverage_changes(0) == ()
+    assert store.committed.sequence == 0
+    assert store_version(journal) == 4
+    assert store.attempt is None
+
+    writer._live_profile = installed
+    with pytest.raises(LedgerError, match="no verified native session"):
+        journal.prepare(case.source_id, locator)
+    assert journal.coverage_changes(0) == ()
+    assert store.committed.sequence == 0
+    payload.assert_not_called()
 
 
 def test_coverage_readback_requires_the_original_live_writer(admitted_sources):

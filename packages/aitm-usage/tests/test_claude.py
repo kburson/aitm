@@ -778,12 +778,7 @@ def test_monitor_scope_receipt_at_first_claude_request(
 
 @pytest.fixture
 def controlled_bash_project(request):
-    if request.node.callspec.params["case"] in {
-        "valid",
-        "outside",
-        "observation-first",
-        "split",
-    }:
+    if request.node.callspec.params["case"] in {"valid", "outside"}:
         return request.getfixturevalue("project")
     return None
 
@@ -814,7 +809,8 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     claude = adapter()
     project = controlled_bash_project
     replay = None
-    if case in {"wrong-session", "missing-api-session"}:
+    policy_admission = case in {"observation-first", "split"}
+    if policy_admission or case in {"wrong-session", "missing-api-session"}:
         replay = request.getfixturevalue("memory_replay")
         ledger, checkout = replay.ledger, replay.checkout
     elif project is None:
@@ -840,7 +836,7 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
     state = claude.ClaudeState(
         ledger, reserved_session_id=None if case == "unreserved" else SESSION
     )
-    if project is None:
+    if project is None and not policy_admission:
         output = json.dumps({"command_id": str(COMMAND), "status": "queued"})
 
         def read_receipt(command, disproof, state):
@@ -880,24 +876,38 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         PROJECT,
         receipt_ref=claude.claude_receipt_reference(ledger, session, COMMAND),
     )
-    marker_path.write_bytes(encode_marker(marker))
-    marker_path.chmod(0o600)
-    monkeypatch.setattr(sys, "argv", arguments)
-    assert main() == 0
-    output = capsys.readouterr().out.strip()
-    assert json.loads(output) == {"command_id": str(COMMAND), "status": "queued"}
+    queued = {"command_id": str(COMMAND), "status": "queued"}
+    if policy_admission:
+        output = json.dumps(queued)
+    else:
+        marker_path.write_bytes(encode_marker(marker))
+        marker_path.chmod(0o600)
+        monkeypatch.setattr(sys, "argv", arguments)
+        assert main() == 0
+        output = capsys.readouterr().out.strip()
+        assert json.loads(output) == queued
+
+    def load(candidate, state, prior=None):
+        if replay is not None:
+            return replay.read(claude.read_claude, candidate, state, prior)
+        return read(claude, candidate, state, prior)
+
     rows = [user(checkout), *_native_tool_turn(checkout, command, output, case=case)]
-    write(path, rows[:-1] if case == "split" else rows)
-    candidate = source(registration)
+    if policy_admission:
+        replay.write(rows[:-1] if case == "split" else rows)
+        candidate = replay.candidate()
+    else:
+        write(path, rows)
+        candidate = source(registration)
     prior = None
     if case == "split":
-        prefix, partial = read(claude, candidate, state)
+        prefix, partial = load(candidate, state)
         with pytest.raises(ValueError):
             claude.advance_claude_state(state, prefix, partial)
         prior = commit(ledger, prefix, partial)
         state = claude.advance_claude_state(state, prefix, partial)
-        write(path, rows[-1:], append=True)
-    batch, result = read(claude, candidate, state, prior)
+        replay.write(rows[-1:], append=True)
+    batch, result = load(candidate, state, prior)
     boundaries = [b for b in result.boundaries if b.receipt_ref is not None]
     if case not in ("valid", "outside", "observation-first", "split"):
         assert boundaries == []
@@ -913,10 +923,16 @@ def test_controlled_native_bash_receipt_sets_exact_next_request(
         before = rollup(marker.item, ledger.as_of())
         assert before.direct.observation_count == 0
         assert before.unattributed.observation_count == 2
-    with ledger.writer() as writer:
-        drained = drain_inbox(writer, [evidence])
-        assert len(drained.receipts) == 1
-        assert drained.receipts[0].boundary == boundary
+    if policy_admission:
+        from test_codex import _admit_replayed_scope
+
+        accepted = _admit_replayed_scope(replay, marker, evidence)
+        assert accepted.boundary == boundary
+    else:
+        with ledger.writer() as writer:
+            drained = drain_inbox(writer, [evidence])
+            assert len(drained.receipts) == 1
+            assert drained.receipts[0].boundary == boundary
     if case == "outside":
         assert result.revisions == ()
         (enrollment,) = [

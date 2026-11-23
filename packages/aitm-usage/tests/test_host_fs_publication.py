@@ -68,7 +68,7 @@ def test_directory_exchange_and_durability(tmp_path, monkeypatch):
 @pytest.mark.parametrize(
     "failure", [errno.ENOTSUP, errno.ENOSYS, errno.EINVAL, errno.EACCES]
 )
-def test_unsupported_primitive_fails_without_replacement(request, monkeypatch, failure):
+def test_unsupported_primitive_fails_without_replacement(monkeypatch, failure):
     def refused(*args):
         ctypes.set_errno(failure)
         return -1
@@ -76,38 +76,27 @@ def test_unsupported_primitive_fails_without_replacement(request, monkeypatch, f
     rename = Mock(side_effect=refused)
     monkeypatch.setattr(host_fs, "_native_rename", lambda symbol: rename)
 
-    def reject(live, candidate):
-        with pytest.raises(host_fs.HostFilesystemError, match="rename private entries"):
-            host_fs.publish_noreplace(candidate.fd, "state", live.fd, "state")
-        with pytest.raises(backup.BackupError, match="replace the private store"):
-            backup._swap_store(live, candidate)
-        assert rename.call_args_list == [
-            call(
-                candidate.fd,
-                b"state",
-                live.fd,
-                b"state",
-                0x4 if sys.platform == "darwin" else 0x1,
-            ),
-            call(candidate.fd, b"state", live.fd, b"state", 0x2),
-        ]
-
-    if failure != errno.ENOTSUP:
-        fsync = Mock(side_effect=AssertionError("refused rename reached fsync"))
-        monkeypatch.setattr(backup, "os", SimpleNamespace(fsync=fsync))
-        reject(SimpleNamespace(fd=11), SimpleNamespace(fd=12))
-        fsync.assert_not_called()
-        return
-
-    project, staged = _restore_parents(request.getfixturevalue("tmp_path"))
-    live_before = (project / "state").stat()
-    staged_before = (staged / "state").stat()
-    with _pin_directory(project) as live, _pin_directory(staged) as candidate:
-        reject(live, candidate)
-    assert os.path.samestat(live_before, (project / "state").stat())
-    assert os.path.samestat(staged_before, (staged / "state").stat())
-    assert (project / "state" / "sentinel").read_text() == "project"
-    assert (staged / "state" / "sentinel").read_text() == "staged"
+    # Any fallback through os.rename/os.replace must fail this test.
+    monkeypatch.setattr(host_fs, "os", SimpleNamespace(fsencode=os.fsencode))
+    fsync = Mock(side_effect=AssertionError("refused rename reached fsync"))
+    monkeypatch.setattr(backup, "os", SimpleNamespace(fsync=fsync))
+    live = SimpleNamespace(fd=11)
+    candidate = SimpleNamespace(fd=12)
+    with pytest.raises(host_fs.HostFilesystemError, match="rename private entries"):
+        host_fs.publish_noreplace(candidate.fd, "state", live.fd, "state")
+    with pytest.raises(backup.BackupError, match="replace the private store"):
+        backup._swap_store(live, candidate)
+    assert rename.call_args_list == [
+        call(
+            candidate.fd,
+            b"state",
+            live.fd,
+            b"state",
+            0x4 if sys.platform == "darwin" else 0x1,
+        ),
+        call(candidate.fd, b"state", live.fd, b"state", 0x2),
+    ]
+    fsync.assert_not_called()
 
 
 @pytest.mark.parametrize("platform", ["darwin", "linux", "freebsd"])

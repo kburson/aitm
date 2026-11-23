@@ -13,9 +13,17 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from monitor_inbox_cases import MonitorInboxFiles
 from test_ledger import _memory_ledger
 
-from aitm_usage import cli, monitor_control, monitor_registry, scopes, service
+from aitm_usage import (
+    cli,
+    monitor_control,
+    monitor_registry,
+    scope_admission,
+    scopes,
+    service,
+)
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
 from aitm_usage.scope_admission import adopted_request, legacy_grant_id
@@ -125,7 +133,16 @@ def legacy(tmp_path, monkeypatch, capsys):
 
 @pytest.fixture
 def memory_legacy(monkeypatch, capsys):
-    ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
+    return _memory_legacy(monkeypatch, capsys)
+
+
+def _memory_legacy(monkeypatch, capsys, *, monitor_registered=None):
+    monitor = None
+    if monitor_registered is None:
+        ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
+    else:
+        monitor = MonitorInboxFiles(monkeypatch, PROJECT)
+        ledger = monitor.ledger
     project = SimpleNamespace(path=ledger.root, identities=((1, 2),), check=Mock())
     inbox = SimpleNamespace(fd=10)
     state_files = {}
@@ -149,7 +166,7 @@ def memory_legacy(monkeypatch, capsys):
         return nullcontext((project, inbox))
 
     def read_private(directory, name):
-        if directory is project:
+        if getattr(directory, "path", None) == project.path:
             assert name == ADOPTION_FILE
             return state_files.get(name)
         assert directory is inbox
@@ -203,8 +220,32 @@ def memory_legacy(monkeypatch, capsys):
     monkeypatch.setattr(scopes, "_publish", publish)
     monkeypatch.setattr(scopes, "os", SimpleNamespace(listdir=list_inbox))
     monkeypatch.setattr(service, "remember_claude_session", unexpected_memo)
-    monkeypatch.setattr(monitor_registry.Registry, "view", unexpected_registry)
-    monkeypatch.setattr(monitor_control, "enqueue_adopted_scope", unexpected_enqueue)
+    if monitor is None:
+        monkeypatch.setattr(monitor_registry.Registry, "view", unexpected_registry)
+        monkeypatch.setattr(
+            monitor_control, "enqueue_adopted_scope", unexpected_enqueue
+        )
+    else:
+        monkeypatch.setattr(
+            monitor_registry, "default_monitor_root", lambda: monitor.root
+        )
+        if monitor_registered:
+            view = monitor.writer.view()
+            (registered,) = view.projects
+            adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
+
+            def read_registry(registry, **_):
+                assert registry.root == monitor.root
+                return replace(view, projects=(adopted,))
+
+            def pin_grant(path):
+                return pin_project(path) if path == ledger.root else monitor.pin(path)
+
+            monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
+            monkeypatch.setattr(scope_admission, "_pin_directory", pin_grant)
+        else:
+            del monitor.files[monitor.root]
+            monkeypatch.setattr(monitor_registry.Registry, "view", unexpected_registry)
     monkeypatch.setattr(Path, "open", open_input)
     monkeypatch.setenv("CODEX_THREAD_ID", str(CODEX))
 
@@ -215,6 +256,7 @@ def memory_legacy(monkeypatch, capsys):
         run=_cli_runner(ledger.root, monkeypatch, capsys),
         publish_adoption=publish_adoption,
         store_receipt=store_receipt,
+        monitor=monitor,
     )
 
 
@@ -740,48 +782,58 @@ def test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock(
     assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
 
 
-def test_adopted_legacy_requires_the_compatible_reader_witness(legacy):
-    ledger, monitor_root, run = legacy
-    args, payload, session = invocation(ledger, "mark", provider=Provider.CLAUDE)
-    commit_adoption(ledger, ADOPTION)
-    inbox = monitor_control.ControlInbox(monitor_root)
+def test_adopted_legacy_requires_the_compatible_reader_witness(monkeypatch, capsys):
+    memory = _memory_legacy(monkeypatch, capsys, monitor_registered=True)
+    ledger = memory.ledger
+    args, payload, session = invocation(
+        ledger, "mark", provider=Provider.CLAUDE, write_input=memory.inputs.__setitem__
+    )
+    memory.publish_adoption()
+    inbox = memory.monitor.inbox
     command = InboxCommand(COMMAND, PROJECT, payload)
-    with monitor_registry.Registry(monitor_root).writer() as writer:
-        reader = provision_legacy_reader(writer, inbox, ledger)
+    reader = monitor_control.ScopeInboxReader(memory.monitor.writer, inbox)
+    reader.register(
+        legacy_grant_id(PROJECT, ADOPTION), PROJECT, ("legacy",), adoption_id=ADOPTION
+    )
 
-        code, output = run(args)
+    code, output = memory.run(args)
 
-        assert code == 1
-        assert output.out == '{"status": "unavailable"}\n'
-        assert output.err == ""
-        with inbox.publication() as locked:
-            assert list(inbox.iter_pending(locked)) == []
+    assert code == 1
+    assert output.out == '{"status": "unavailable"}\n'
+    assert output.err == ""
+    with inbox.publication() as locked:
+        assert list(inbox.iter_pending(locked)) == []
 
-        reader.advertise(reader.probe(adopted_request(command, ADOPTION, session)))
-        code, output = run(args)
-        assert code == 0
-        assert output.out == f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
-        with inbox.publication() as locked:
-            (queued,) = reader.iter_verified(locked)
-        assert queued.body.request.legacy_bytes.encode() == encode_command(command)
-        assert queued.body.request.claude_session == session
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert list((ledger.root / "inbox").iterdir()) == []
+    reader.advertise(reader.probe(adopted_request(command, ADOPTION, session)))
+    code, output = memory.run(args)
+    assert code == 0
+    assert output.out == f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
+    with inbox.publication() as locked:
+        (queued,) = reader.iter_verified(locked)
+    assert queued.body.request.legacy_bytes.encode() == encode_command(command)
+    assert queued.body.request.claude_session == session
+    assert not memory.inbox
 
 
-def test_committed_adoption_without_monitor_registration_fails_closed(legacy):
-    ledger, monitor_root, run = legacy
-    args, _, _ = invocation(ledger, "mark", provider=Provider.CLAUDE)
-    commit_adoption(ledger, ADOPTION)
+def test_committed_adoption_without_monitor_registration_fails_closed(
+    monkeypatch, capsys
+):
+    memory = _memory_legacy(monkeypatch, capsys, monitor_registered=False)
+    args, _, _ = invocation(
+        memory.ledger,
+        "mark",
+        provider=Provider.CLAUDE,
+        write_input=memory.inputs.__setitem__,
+    )
+    memory.publish_adoption()
 
-    code, output = run(args, as_json=False)
+    code, output = memory.run(args, as_json=False)
 
     assert code == 1
     assert output.out == ""
     assert output.err == "aitm-usage: unavailable\n"
-    assert not monitor_root.exists()
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert list((ledger.root / "inbox").iterdir()) == []
+    assert memory.monitor.root not in memory.monitor.files
+    assert not memory.inbox
 
 
 def _assert_invalid_adoption_policy(monkeypatch, capsys, invalid):
