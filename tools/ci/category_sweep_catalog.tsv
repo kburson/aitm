@@ -1033,6 +1033,10 @@ packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_register_rechecks_
 packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_register_rereads_adoption_on_writer_refusal	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_register_uses_read_only_opener_for_existing_store	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_legacy.py::test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_policy_unit.py::test_content_dispute_requires_one_distinct_accepted_child[ambiguous-children]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_policy_unit.py::test_content_dispute_requires_one_distinct_accepted_child[equal-usage]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_policy_unit.py::test_content_dispute_requires_one_distinct_accepted_child[one-child]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_policy_unit.py::test_earlier_handoff_holds_later_handoff_with_stale_generation	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_qualification.py::test_claude_and_mismatched_build_refuse_under_an_active_profile	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_qualification.py::test_codex_exclusion_requires_consent_for_its_exact_source[False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_qualification.py::test_codex_exclusion_requires_consent_for_its_exact_source[True]	local-integration	yes	yes
