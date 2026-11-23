@@ -335,6 +335,41 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_changed_same_owner_usage_is_held_without_advancing_prior_cursor",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_copy_without_verified_native_session_cannot_create_an_owner",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_existing_native_identity_conflict_diagnostic_blocks_progress",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_distinguishes_generic_native_codex_gap_from_quota",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_rejects_cloned_proof_and_foreign_physical_cursor",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_unfinished_native_turn_cannot_reserve_without_a_cursor",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_verified_first_claim_is_immutable_across_exact_replay",
+      "suite": "unit",
+      "isolation_group": "journal-capture-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_capture_frontier_waits_for_complete_native_tail",
       "suite": "unit",
       "isolation_group": "registry-capture-policy"

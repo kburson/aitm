@@ -813,7 +813,7 @@ packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_w
 packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[nested-revalidation]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[root-revalidation]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_causal_revision_survives_stale_replay_after_restart	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_changed_same_owner_usage_is_held_without_advancing_prior_cursor	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_changed_same_owner_usage_is_held_without_advancing_prior_cursor	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_common_usage_repeat_cannot_create_a_content_dispute	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody[disabled]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody[equal-child]	local-integration	yes	yes
@@ -832,10 +832,10 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_
 packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_conflict_stalls_affected_source_without_regressing_history[v4-proposal]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_competing_project_claims_cannot_double_charge	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_copy_without_verified_native_session_cannot_create_an_owner	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_copy_without_verified_native_session_cannot_create_an_owner	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_corrupt_pair_payload_refuses_routing_without_moving_frontiers	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_coverage_upgrade_preserves_a_real_paired_settlement	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_existing_native_identity_conflict_diagnostic_blocks_progress	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_existing_native_identity_conflict_diagnostic_blocks_progress	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_claude_explicit_quota_gap_preserves_earlier_cursor	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row[same-command]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_conflicting_durable_replay_preserves_the_row[same-hold]	fast-unit	yes	yes
@@ -853,7 +853,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requ
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[revoked]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay[withdrawn]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_rolls_back_sequence_and_row_on_final_recheck	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_journal_distinguishes_generic_native_codex_gap_from_quota	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_journal_distinguishes_generic_native_codex_gap_from_quota	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_independently_admitted_claude_copy_with_changed_scope	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_keyed_grok_contradiction_without_touching_codex	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics[aggregate-overlap]	local-integration	yes	yes
@@ -864,7 +864,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_journal_reconfirms_visib
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement[gap]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement[resolved]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_refuses_mismatched_v1_first_claim_payload	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_journal_rejects_cloned_proof_and_foreign_physical_cursor	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_journal_rejects_cloned_proof_and_foreign_physical_cursor	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[abort-owner]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid[abort-rival]	fast-unit	yes	yes
@@ -944,7 +944,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_partial_batch_keeps_prio
 packages/aitm-usage/tests/test_monitor_journal.py::test_reservation_and_cursor_commit_together	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_stale_expected_prior_and_replaced_incarnation_are_refused	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_terminal_receipt_without_following_usage_requires_exact_scope_event	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_unfinished_native_turn_cannot_reserve_without_a_cursor	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_unfinished_native_turn_cannot_reserve_without_a_cursor	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_v1_layout_genesis_reauthenticates_normalized_material_after_capture	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_v2_claude_replay_requires_the_whole_durable_edge[before-original]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_v2_claude_replay_requires_the_whole_durable_edge[between-edges]	local-integration	yes	yes
@@ -953,7 +953,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_v3_upgrade_preserves_nat
 packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[head-child]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_branches_record_one_durable_content_dispute[later-head]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_verified_claude_revision_does_not_change_saved_original_scope	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_verified_first_claim_is_immutable_across_exact_replay	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_verified_first_claim_is_immutable_across_exact_replay	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_initializes_or_adopts_source_key[changed]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_initializes_or_adopts_source_key[missing]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_initializes_or_adopts_source_key[uninitialized]	local-integration	yes	yes

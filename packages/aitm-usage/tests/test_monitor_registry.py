@@ -2,16 +2,14 @@
 
 import json
 import os
-from contextlib import contextmanager
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from monitor_inbox_cases import MonitorInboxFiles
+from native_registry_cases import native_registry_policy
 from qualification_policy_cases import CaptureInbox, CapturePolicy
 from scanner_policy_cases import NativeTranscriptFiles
 from test_codex import AFTER, CUTOFF, SESSION, begin, counter, end, response, usage
@@ -19,7 +17,7 @@ from test_ledger import _memory_ledger
 from test_monitor_adapters import CODEX_FIXTURE, _adapter, _restart_rows
 from test_monitor_adapters import source as source
 
-from aitm_usage._monitor_qualification import _InstallationProof, _LiveProfile
+from aitm_usage._monitor_qualification import _InstallationProof
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.types import Eligibility
 
@@ -185,29 +183,11 @@ def registry_policy(monkeypatch):
     native = NativeTranscriptFiles(monkeypatch)
     evidence = module._ServiceEvidence(b"r" * 32)
     control_path, project_path = Path("/fixture/monitor"), Path("/fixture/project")
-    paths = (control_path, project_path, native.root)
-    directories = {
-        str(path): module._PhysicalDirectory(str(path), native._identity(path))
-        for path in paths
-    }
-    real_resolve = Path.resolve
-
-    def resolve(path, *args, **kwargs):
-        if path in paths:
-            return path
-        return real_resolve(path, *args, **kwargs)
-
-    monkeypatch.setattr(Path, "resolve", resolve)
-    monkeypatch.setattr(module, "_directory", lambda path, **_: directories[path])
-    monkeypatch.setattr(module, "_probe", native._snapshot)
-    _, reader, root = _adapter(monkeypatch, (evidence, native.root, native.checkout))
-    root = replace(root, evidence=evidence)
-    control, project, transcripts = (directories[str(path)] for path in paths)
-    initial = module.RegistryView(
-        projects=(module.RegisteredProject(PROJECT_A, project, "A", None, (), None),),
-        source_key_id=evidence.key_id,
+    control, project_dir, transcripts = (
+        module._PhysicalDirectory(str(path), native._identity(path))
+        for path in (control_path, project_path, native.root)
     )
-
+    project = module.RegisteredProject(PROJECT_A, project_dir, "A", None, (), None)
     installation = _InstallationProof(
         transcripts,
         module._LiveSourceTuple(
@@ -215,47 +195,14 @@ def registry_policy(monkeypatch):
         ),
         evidence.pseudonymize("executable", "codex"),
     )
-
-    def writer_for(lease):
-        writer = module.Registry(control_path, lease)
-        writer._live_profile = _LiveProfile(
-            control,
-            lease,
-            evidence.pseudonymize("generation", "fixture"),
-            (installation,),
-            lambda _: True,
-        )
-        return writer
-
-    initial_writer = writer_for(Mock())
-    monkeypatch.setattr(initial_writer, "source_evidence", lambda: evidence)
-    files = MonitorInboxFiles(
-        monkeypatch, PROJECT_A, writer=initial_writer, initial_view=initial
+    _, reader, root = _adapter(monkeypatch, (evidence, native.root, native.checkout))
+    state = native_registry_policy(
+        monkeypatch, native, control=control, projects=(project,),
+        installations=(installation,), evidence=evidence,
     )
-    monkeypatch.setattr(
-        module,
-        "_read_private",
-        files.read,
-    )
-    registry = module.Registry(control_path)
-
-    @contextmanager
-    def open_writer(registry):
-        assert registry.root == control_path
-        writer = writer_for(Mock())
-        try:
-            yield writer
-        finally:
-            writer._writer = None
-
-    monkeypatch.setattr(module.Registry, "writer", open_writer)
     return SimpleNamespace(
-        native=native,
-        module=module,
-        registry=registry,
-        reader=reader,
-        root=root,
-        inbox=files.inbox,
+        native=native, module=module, registry=state.registry, reader=reader,
+        root=replace(root, evidence=evidence), inbox=state.inbox,
     )
 
 

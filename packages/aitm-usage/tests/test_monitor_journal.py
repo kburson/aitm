@@ -6,18 +6,21 @@ import shlex
 from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from shutil import copyfile
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from journal_disposition_cases import DispositionRows
+from journal_disposition_cases import DispositionRows, _Rows
 from monitor_scope_snapshot_cases import disposition_snapshot
+from native_registry_cases import native_registry_policy
 from paired_settlement_cases import (
     assert_pair_refuses_changed_authority,
     assert_pair_refuses_changed_completion,
 )
+from scanner_policy_cases import NativeTranscriptFiles
 from scope_state_cases import route_admission_case
 from test_codex import (
     AFTER,
@@ -38,6 +41,11 @@ from test_monitor_scope import (
     _damage_completed_disposition,
 )
 
+from aitm_usage import monitor_registry
+from aitm_usage._monitor_qualification import (
+    _InstallationProof,
+    _LiveSourceTuple,
+)
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_registry import (
     CaptureChange,
@@ -602,7 +610,26 @@ def test_journal_disposition_projects_each_matching_origin_once(journal_disposit
         )
 
 
-class NativeJournalFixture:
+class _JournalTranscriptInputs:
+    def turn(self, number, *, checkout=A, increment=4, prior=None):
+        turn = UUID(int=0x200 + number)
+        time = AFTER + timedelta(seconds=number)
+        prior = 4 * (number - 1) if prior is None else prior
+        total = usage(prior + increment, prior + increment)
+        last = usage(increment, increment)
+        return [
+            *begin(self.anchors[checkout], turn, time=time),
+            response(f"native-response-{number}", total, last, time=time, turn=turn),
+            counter(total, last, time=time),
+            end(turn, time=time),
+        ]
+
+    def locator(self, source=LIVE):
+        (locator,) = self.adapter.discover(self.roots[source])
+        return locator
+
+
+class NativeJournalFixture(_JournalTranscriptInputs):
     def __init__(self, base, monkeypatch, *, independent_copy=False):
         monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: base / "control")
         monkeypatch.setattr(
@@ -676,19 +703,6 @@ class NativeJournalFixture:
                     )
                     writer.set_permission(change, proof)
 
-    def turn(self, number, *, checkout=A, increment=4, prior=None):
-        turn = UUID(int=0x200 + number)
-        time = AFTER + timedelta(seconds=number)
-        prior = 4 * (number - 1) if prior is None else prior
-        total = usage(prior + increment, prior + increment)
-        last = usage(increment, increment)
-        return [
-            *begin(self.anchors[checkout], turn, time=time),
-            response(f"native-response-{number}", total, last, time=time, turn=turn),
-            counter(total, last, time=time),
-            end(turn, time=time),
-        ]
-
     def _source_rows(self, source, rows):
         if source != COPY or not self.independent_copy:
             return rows
@@ -708,18 +722,192 @@ class NativeJournalFixture:
     def append(self, source, rows):
         write(self.paths[source], self._source_rows(source, rows), append=True)
 
-    def locator(self, source=LIVE):
-        (locator,) = self.adapter.discover(self.roots[source])
-        return locator
-
 
 @pytest.fixture
 def native(tmp_path, monkeypatch):
     return NativeJournalFixture(tmp_path, monkeypatch)
 
 
-def test_verified_first_claim_is_immutable_across_exact_replay(native):
+class _ClaimJournalRows(DispositionRows):
+    """Model the current claims and cursor rows needed by capture policy tests."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.claims = {}
+        self.progress = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        claims, progress = self.claims.copy(), self.progress.copy()
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.claims, self.progress = claims, progress
+            raise
+        if not write:
+            assert (self.claims, self.progress) == (claims, progress)
+
+    def execute(self, sql, parameters=()):
+        if sql == "PRAGMA user_version":
+            return _Rows([(self._current_version(self),)])
+        if sql.startswith("SELECT cursor FROM progress WHERE "):
+            cursor = self.progress.get(parameters)
+            return _Rows() if cursor is None else _Rows([(cursor,)])
+        if sql.startswith("INSERT INTO progress("):
+            *stream, sequence, cursor = parameters
+            assert sequence in self.commits
+            self.progress[tuple(stream)] = cursor
+            return _Rows()
+        if sql == "SELECT project,digest,payload,sequence FROM claims WHERE key = ?":
+            (key,) = parameters
+            row = self.claims.get(key)
+            return _Rows() if row is None else _Rows([row])
+        if sql.startswith("INSERT INTO claims("):
+            key, project, digest, payload, sequence = parameters
+            assert key not in self.claims and sequence in self.commits
+            self.claims[key] = project, digest, payload, sequence
+            return _Rows()
+        if sql.startswith("SELECT key,project,payload,digest,sequence FROM claims"):
+            (limit,) = parameters
+            return _Rows(
+                sorted(
+                    (
+                        (key, project, payload, digest, sequence)
+                        for key, (
+                            project,
+                            digest,
+                            payload,
+                            sequence,
+                        ) in self.claims.items()
+                        if sequence <= limit
+                    ),
+                    key=lambda row: (row[-1], row[0]),
+                )
+            )
+        if sql == "SELECT min(sequence) FROM disputes WHERE key = ?":
+            return _Rows([(None,)])
+        if sql.startswith(
+            (
+                "SELECT sequence,payload FROM content_disputes WHERE key = ?",
+                "SELECT sequence,later_ordinal,material,predecessor,payload FROM claim_revisions",
+            )
+        ):
+            return _Rows()
+        return super().execute(sql, parameters)
+
+
+class _MemoryJournalTranscripts(_JournalTranscriptInputs):
+    def __init__(self, monkeypatch):
+        from aitm_usage import monitor_journal
+
+        self.files = NativeTranscriptFiles(monkeypatch)
+        self.anchors = {A: self.files.checkout}
+        self.adapter = ProviderAdapter()
+        self.evidence = monitor_registry._ServiceEvidence(b"j" * 32)
+        self.roots = {
+            source: SourceRoot(
+                self.files.root / str(source),
+                CUTOFF,
+                tuple(self.anchors.values()),
+                self.evidence,
+            )
+            for source in (LIVE, COPY)
+        }
+        self.paths = {
+            source: root.path / "desktop.jsonl" for source, root in self.roots.items()
+        }
+
+        def physical(path):
+            return monitor_registry._PhysicalDirectory(
+                str(path), self.files._identity(path)
+            )
+
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.system", lambda: "Darwin"
+        )
+        monkeypatch.setattr(
+            "aitm_usage.sources.adapter.platform.machine", lambda: "arm64"
+        )
+        project = monitor_registry.RegisteredProject(
+            A,
+            physical(Path("/fixture/project")),
+            "A",
+            None,
+            (physical(self.anchors[A]),),
+            None,
+        )
+        installations = tuple(
+            _InstallationProof(
+                physical(root.path),
+                _LiveSourceTuple(
+                    "codex",
+                    "codex-desktop-macos",
+                    "Darwin",
+                    "arm64",
+                    "0.167.0-alpha.3.2",
+                    1,
+                ),
+                self.evidence.pseudonymize("executable", "fixture"),
+            )
+            for root in self.roots.values()
+        )
+        state = native_registry_policy(
+            monkeypatch,
+            self.files,
+            control=physical(Path("/fixture/monitor")),
+            projects=(project,),
+            installations=installations,
+            evidence=self.evidence,
+        )
+        self.registry = state.registry
+        journal = _ClaimJournalRows(self.evidence)
+        monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal)
+        with self.registry.writer() as writer:
+            for source, root in self.roots.items():
+                self.files.write(
+                    self.paths[source],
+                    [
+                        startup(self.anchors[A], originator="Codex Desktop"),
+                        *self.turn(1),
+                    ],
+                )
+                writer.approve_source(
+                    SourceApprovalRequest(
+                        source,
+                        "codex",
+                        "codex-desktop-macos",
+                        "Darwin",
+                        "arm64",
+                        "0.167.0-alpha.3.2",
+                        1,
+                        str(root.path),
+                    )
+                )
+                change = CaptureChange(A, source, True)
+                frontier = writer.capture_frontier(change, self.locator(source))
+                self.append(source, self.turn(2))
+                proof = writer.verify_boundary(change, self.locator(source), frontier)
+                writer.set_permission(change, proof)
+
+    def append(self, source, rows):
+        path = self.paths[source]
+        previous = self.files.contents[path]
+        self.files.write(path, rows)
+        self.files.contents[path] = previous + self.files.contents[path]
+
+
+@pytest.fixture
+def journal_transcript_policy(monkeypatch):
+    return _MemoryJournalTranscripts(monkeypatch)
+
+
+def test_verified_first_claim_is_immutable_across_exact_replay(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -743,8 +931,12 @@ def test_verified_first_claim_is_immutable_across_exact_replay(native):
         assert journal.as_of() == first
 
 
-def test_journal_rejects_cloned_proof_and_foreign_physical_cursor(native):
+def test_journal_rejects_cloned_proof_and_foreign_physical_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -871,8 +1063,12 @@ def test_competing_project_claims_cannot_double_charge(native):
         assert journal.as_of() == after
 
 
-def test_changed_same_owner_usage_is_held_without_advancing_prior_cursor(native):
+def test_changed_same_owner_usage_is_held_without_advancing_prior_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -1000,8 +1196,12 @@ def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
         assert len(journal.as_of().claims) == 2
 
 
-def test_existing_native_identity_conflict_diagnostic_blocks_progress(native):
+def test_existing_native_identity_conflict_diagnostic_blocks_progress(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     with native.registry.writer() as writer:
         state = ScopeState(writer)
@@ -1031,8 +1231,12 @@ def test_existing_native_identity_conflict_diagnostic_blocks_progress(native):
         assert journal.cursor_for(LIVE, locator) == first.progress
 
 
-def test_unfinished_native_turn_cannot_reserve_without_a_cursor(native):
+def test_unfinished_native_turn_cannot_reserve_without_a_cursor(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     native.append(LIVE, native.turn(3)[:-1])
     with native.registry.writer() as writer:
@@ -1046,15 +1250,19 @@ def test_unfinished_native_turn_cannot_reserve_without_a_cursor(native):
         assert journal.cursor_for(LIVE, locator) is None
 
 
-def test_copy_without_verified_native_session_cannot_create_an_owner(native):
+def test_copy_without_verified_native_session_cannot_create_an_owner(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
+
+    native = journal_transcript_policy
 
     original = native.locator()
     copy_path = native.paths[LIVE].with_name("no-session.jsonl")
     header = startup(native.anchors[A], originator="Codex Desktop")
     del header["payload"]["id"]
     del header["payload"]["session_id"]
-    write(copy_path, [header, *native.turn(1), *native.turn(2)])
+    native.files.write(copy_path, [header, *native.turn(1), *native.turn(2)])
     copy = next(
         item
         for item in native.adapter.discover(native.roots[LIVE])
@@ -2410,11 +2618,11 @@ def test_journal_holds_independently_admitted_claude_copy_with_changed_scope(
 
 
 def test_journal_distinguishes_generic_native_codex_gap_from_quota(
-    tmp_path, monkeypatch
+    journal_transcript_policy,
 ):
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = NativeJournalFixture(tmp_path, monkeypatch)
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         prior = journal.prepare(LIVE, native.locator())
@@ -2430,7 +2638,7 @@ def test_journal_distinguishes_generic_native_codex_gap_from_quota(
         assert diagnostic.code is DiagnosticCode.COVERAGE_GAP
         assert diagnostic.provider is Provider.CODEX
         assert diagnostic.source_ref == locator.stream_ref and batch.source_id == LIVE
-        raw = native.paths[LIVE].read_bytes().splitlines()
+        raw = native.files.contents[native.paths[LIVE]].splitlines()
         assert json.loads(raw[diagnostic.ordinal])["payload"]["type"] == "task_complete"
         assert journal._boundaries_settled(current._read, journal._scopes.view(batch))
         assert all(
