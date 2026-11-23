@@ -1,0 +1,113 @@
+"""Already-verified frames for adapter policy tests."""
+
+import hashlib
+import json
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from uuid import UUID
+
+from aitm_usage.monitor_registry import _ServiceEvidence
+from aitm_usage.scopes import session_reference
+from aitm_usage.sources.scan import FrameBatch, SidebandFrame, SidebandKind, SourceFrame
+from aitm_usage.types import (
+    ClientVersion,
+    Eligibility,
+    Provider,
+    ProviderCheckpoint,
+    SourceCursor,
+)
+
+
+class _AdapterEvidence(_ServiceEvidence):
+    root = Path("/fixture/project")
+
+
+@dataclass(frozen=True)
+class AdapterFrames:
+    provider: Provider
+    client: ClientVersion
+    session_id: UUID
+    cutoff: datetime
+    ledger = _AdapterEvidence(b"adapter-frame-policy-fixture")
+    checkout = Path("/fixture/checkout")
+
+    def batch(self, rows):
+        evidence = self.ledger
+        session = session_reference(evidence, self.provider, str(self.session_id))
+        stream = evidence.pseudonymize("fixture", "stream")
+        segment = evidence.pseudonymize("fixture", "segment")
+        anchor = evidence.pseudonymize("fixture", "checkout")
+        frames = []
+        sideband = []
+        prefix = hashlib.sha256()
+        offset = 0
+
+        for ordinal, row in enumerate(rows):
+            line = (json.dumps(row) + "\n").encode()
+            offset += len(line)
+            prefix.update(line)
+            if self.provider is Provider.CLAUDE and row["type"] in (
+                SidebandKind.COST_STATE,
+                SidebandKind.SESSION_OWNER,
+            ):
+                if row["type"] == SidebandKind.SESSION_OWNER:
+                    content = {
+                        "account_ref": evidence.pseudonymize(
+                            "claude-account", row["accountUuid"]
+                        )
+                    }
+                else:
+                    content = {"modelUsage": row["modelUsage"]}
+                sideband.append(
+                    SidebandFrame(
+                        SidebandKind(row["type"]),
+                        self.provider,
+                        session,
+                        stream,
+                        ordinal,
+                        segment,
+                        frames[-1].ordinal,
+                        content,
+                        _prefix=prefix.hexdigest(),
+                    )
+                )
+                continue
+
+            observed_at = datetime.fromisoformat(row["timestamp"])
+            frames.append(
+                SourceFrame(
+                    self.provider,
+                    session,
+                    stream,
+                    ordinal,
+                    observed_at,
+                    self.client,
+                    1,
+                    segment,
+                    anchor,
+                    observed_at < self.cutoff,
+                    row,
+                    eligibility=Eligibility.ELIGIBLE,
+                    _prefix=prefix.hexdigest(),
+                )
+            )
+
+        cursor = SourceCursor(
+            stream,
+            evidence.pseudonymize("fixture", "locator"),
+            evidence.pseudonymize("fixture", "incarnation"),
+            offset,
+            evidence.pseudonymize("fixture", prefix.hexdigest()),
+        )
+        return FrameBatch(
+            frames=tuple(frames),
+            commit_frames=tuple(frames),
+            cursor=cursor,
+            provider_checkpoint=ProviderCheckpoint(
+                self.provider, client_version=self.client, format_version=1
+            ),
+            sideband=tuple(sideband),
+            commit_sideband=tuple(sideband),
+            observed_through=max(frame.observed_at for frame in frames),
+        )

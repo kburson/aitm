@@ -335,6 +335,96 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_cost_state_requires_exact_model_categories_and_stop_reason",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_incomplete_later_content_does_not_crash_or_change_tool_order",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_later_owner_conflict_invalidates_earlier_quota_in_same_prefix",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_missing_terminal_stays_visible_when_quota_is_present",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_session_pseudonym_is_never_a_quota_account",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_stream_conflicts_keep_accepted_prior_and_retry_keeps_own_effort",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_structured_quota_requires_authenticated_account",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_terminal_cannot_convert_an_explicit_invalid_ttl_to_zero",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_claude.py::test_wrong_provider_model_stays_unknown",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_bad_counter_is_a_bounded_gap",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_conflicting_reasoning_is_detected_when_last_omits_subset",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_delayed_display_increment_without_eligible_response_is_not_allocated",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_inline_quota_reports_invalid_or_unverifiable_retained_evidence",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_truncation_decline_conflicting_response_and_retry_are_gaps",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_unproven_compaction_cannot_allocate_display_change",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_unreconciled_first_snapshot_is_a_baseline_not_an_aggregate",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_usage_remains_measured_when_model_context_is_missing",
+      "suite": "unit",
+      "isolation_group": "adapter-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_install.py::test_installed_runtime_checks_interpreter_digest_before_any_execution",
       "suite": "unit",
       "isolation_group": "install-and-cli-validation"

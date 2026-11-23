@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from adapter_frame_cases import AdapterFrames
 
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
@@ -19,6 +20,7 @@ from aitm_usage.sources.scan import checkout_anchor_reference, discover, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
+    ClientVersion,
     DevelopmentBinding,
     DiagnosticCode,
     Effort,
@@ -58,6 +60,13 @@ def adapter():
         "U04 must supply the Codex adapter"
     )
     return importlib.import_module(name)
+
+
+@pytest.fixture
+def adapter_frames():
+    return AdapterFrames(
+        Provider.CODEX, ClientVersion.CODEX_0_167_0_ALPHA_3_2, SESSION, CUTOFF
+    )
 
 
 @pytest.fixture
@@ -357,29 +366,27 @@ def test_cutoff_uses_preceding_counter_but_rejects_inflight(project):
     assert (7, DiagnosticCode.COVERAGE_GAP) in codes(result)
 
 
-def test_truncation_decline_conflicting_response_and_retry_are_gaps(project):
+def test_truncation_decline_conflicting_response_and_retry_are_gaps(adapter_frames):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     amount = usage(12, 4, 8, 2)
     delta = usage(3, 1)
-    write(
-        path,
-        [
-            startup(checkout, forked_from_id=str(CHILD)),
-            *begin(checkout),
-            counter(amount, amount),
-            counter(usage(5, 1), usage(5, 1)),
-            response("duplicate-secret", usage(15, 5, 8, 2), delta),
-            counter(usage(15, 5, 8, 2), delta),
-            response("duplicate-secret", usage(18, 6, 8, 2), delta),
-            counter(usage(18, 6, 8, 2), delta),
-            event("stream_error", message="retry-secret"),
-            response("retry-response-secret", usage(21, 7, 8, 2), delta),
-            counter(usage(21, 7, 8, 2), delta),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [
+        startup(checkout, forked_from_id=str(CHILD)),
+        *begin(checkout),
+        counter(amount, amount),
+        counter(usage(5, 1), usage(5, 1)),
+        response("duplicate-secret", usage(15, 5, 8, 2), delta),
+        counter(usage(15, 5, 8, 2), delta),
+        response("duplicate-secret", usage(18, 6, 8, 2), delta),
+        counter(usage(18, 6, 8, 2), delta),
+        event("stream_error", message="retry-secret"),
+        response("retry-response-secret", usage(21, 7, 8, 2), delta),
+        counter(usage(21, 7, 8, 2), delta),
+        end(),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     assert [
         (record.tokens.total_tokens, record.availability)
         for record in observations(result)
@@ -784,13 +791,14 @@ def test_split_turn_and_tool_receipt_only_survive_post_commit_advance(project, f
 
 
 @pytest.mark.parametrize("invalid", [True, 2**63, -1, "12", None])
-def test_bad_counter_is_a_bounded_gap(project, invalid):
+def test_bad_counter_is_a_bounded_gap(adapter_frames, invalid):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     amount = usage(12, 4, 8, 2)
     bad = dict(amount, input_tokens=invalid, unrecognized="payload-secret")
-    write(path, [startup(checkout), *begin(checkout), counter(bad, amount), end()])
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [startup(checkout), *begin(checkout), counter(bad, amount), end()]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     assert result.revisions == ()
     assert (3, DiagnosticCode.MALFORMED_USAGE) in codes(result)
     assert "payload-secret" not in repr(result)
@@ -1056,9 +1064,11 @@ def test_turn_receipt_requires_the_next_verified_start_in_the_same_segment(proje
         "credits-only",
     ],
 )
-def test_inline_quota_reports_invalid_or_unverifiable_retained_evidence(project, case):
+def test_inline_quota_reports_invalid_or_unverifiable_retained_evidence(
+    adapter_frames, case
+):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     rows = [json.loads(line) for line in FIXTURE.read_text().splitlines()]
     rows[0]["payload"]["cwd"] = rows[2]["payload"]["cwd"] = str(checkout)
     counter_payload = rows[4]["payload"]
@@ -1089,9 +1099,10 @@ def test_inline_quota_reports_invalid_or_unverifiable_retained_evidence(project,
             },
         ),
     )
-    write(path, rows)
-    candidate = source(registration)
-    _, result = read(codex, candidate, codex.CodexState(ledger, account))
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(
+        batch, codex.CodexState(ledger, account), Eligibility.ELIGIBLE
+    )
     (record,) = observations(result)
     assert record.tokens == TokenCounts(12, 8, 0, 0, 4, 2, 16)
     assert record.availability is Availability.COMPLETE
@@ -1103,7 +1114,7 @@ def test_inline_quota_reports_invalid_or_unverifiable_retained_evidence(project,
             DiagnosticCode.COVERAGE_GAP,
             5,
             Provider.CODEX,
-            candidate.stream_ref,
+            batch.cursor.source_ref,
         )
         for canary in (
             "credits-secret",
@@ -1129,21 +1140,19 @@ def test_inline_quota_does_not_leak_from_unadmitted_source(project, excluded):
     assert result.revisions == result.quota == result.diagnostics == ()
 
 
-def test_usage_remains_measured_when_model_context_is_missing(project):
+def test_usage_remains_measured_when_model_context_is_missing(adapter_frames):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     amount = usage(8, 2)
-    write(
-        path,
-        [
-            startup(checkout),
-            event("task_started", turn_id=str(TURN)),
-            response("model-unavailable", amount, amount),
-            counter(amount, amount),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [
+        startup(checkout),
+        event("task_started", turn_id=str(TURN)),
+        response("model-unavailable", amount, amount),
+        counter(amount, amount),
+        end(),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     (record,) = observations(result)
     assert record.availability is Availability.COMPLETE
     assert record.tokens.total_tokens == 10
@@ -1320,20 +1329,18 @@ def test_owner_binding_uses_the_same_serial_cli_proof(project, monkeypatch, caps
     assert totals.unattributed.observation_count == 0
 
 
-def test_unreconciled_first_snapshot_is_a_baseline_not_an_aggregate(project):
+def test_unreconciled_first_snapshot_is_a_baseline_not_an_aggregate(adapter_frames):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
-        [
-            startup(checkout),
-            *begin(checkout),
-            counter(usage(80, 20), usage(8, 2)),
-            counter(usage(88, 22), usage(8, 2)),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    rows = [
+        startup(checkout),
+        *begin(checkout),
+        counter(usage(80, 20), usage(8, 2)),
+        counter(usage(88, 22), usage(8, 2)),
+        end(),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     (record,) = observations(result)
     assert record.tokens.total_tokens == 10
     assert (3, DiagnosticCode.COVERAGE_GAP) in codes(result)
@@ -1668,27 +1675,25 @@ def test_compaction_reconciles_separate_counter_windows(project, split):
     assert "compaction-secret" not in repr(result)
 
 
-def test_conflicting_reasoning_is_detected_when_last_omits_subset(project):
+def test_conflicting_reasoning_is_detected_when_last_omits_subset(adapter_frames):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     first = usage(8, 2, reasoning=1)
     last = usage(6, 3)
     last.pop("reasoning_output_tokens")
     thread_total = usage(14, 5)
     thread_total.pop("reasoning_output_tokens")
-    write(
-        path,
-        [
-            startup(checkout),
-            *begin(checkout),
-            response("before-reasoning", first, first),
-            counter(first, first),
-            response("conflicting-reasoning", thread_total, usage(6, 3, reasoning=2)),
-            counter(usage(14, 5, reasoning=2), last),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [
+        startup(checkout),
+        *begin(checkout),
+        response("before-reasoning", first, first),
+        counter(first, first),
+        response("conflicting-reasoning", thread_total, usage(6, 3, reasoning=2)),
+        counter(usage(14, 5, reasoning=2), last),
+        end(),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     first_request, second = observations(result)
     assert first_request.availability is Availability.COMPLETE
     assert second.availability is Availability.PARTIAL
@@ -1755,9 +1760,11 @@ def test_warm_scanner_frontier_keeps_provisional_first_request_output(project):
     "broken", ["missing-world-state", "contradictory-embedded-turn"]
 )
 @pytest.mark.parametrize("display", ["decline", "positive"])
-def test_unproven_compaction_cannot_allocate_display_change(project, broken, display):
+def test_unproven_compaction_cannot_allocate_display_change(
+    adapter_frames, broken, display
+):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     amount = usage(8, 2)
     compact_record = response("possible-compaction", usage(16, 4), amount)
     witness = compaction(compact_record)
@@ -1769,31 +1776,29 @@ def test_unproven_compaction_cannot_allocate_display_change(project, broken, dis
             compact_record["payload"], turn_token_usage=usage(1, 1)
         )
     total = usage(6, 1) if display == "decline" else usage(10, 3)
-    write(
-        path,
-        [
-            startup(checkout),
-            *begin(checkout),
-            response("first-display", amount, amount),
-            counter(amount, amount),
-            compact_record,
-            witness,
-            *followup,
-            begin(checkout)[1],
-            event(
-                "thread_settings_applied",
-                thread_id=str(SESSION),
-                thread_settings={
-                    "model": "gpt-6-astra",
-                    "model_provider_id": "openai",
-                    "service_tier": "default",
-                },
-            ),
-            counter(total, amount),
-            end(),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [
+        startup(checkout),
+        *begin(checkout),
+        response("first-display", amount, amount),
+        counter(amount, amount),
+        compact_record,
+        witness,
+        *followup,
+        begin(checkout)[1],
+        event(
+            "thread_settings_applied",
+            thread_id=str(SESSION),
+            thread_settings={
+                "model": "gpt-6-astra",
+                "model_provider_id": "openai",
+                "service_tier": "default",
+            },
+        ),
+        counter(total, amount),
+        end(),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     assert [record.tokens.total_tokens for record in observations(result)] == [10]
     if display == "decline":
         assert result.provider_checkpoint.baseline.input_tokens == 8
@@ -1889,24 +1894,24 @@ def test_activation_frontier_requires_exact_first_eligible_delta(
     commit(ledger, batch, result, prior)
 
 
-def test_delayed_display_increment_without_eligible_response_is_not_allocated(project):
+def test_delayed_display_increment_without_eligible_response_is_not_allocated(
+    adapter_frames,
+):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     first = usage(8, 2)
     later = UUID(int=0x202)
-    write(
-        path,
-        [
-            startup(checkout, BEFORE),
-            *begin(checkout, time=BEFORE),
-            response("only-pre-cutoff-response", first, first, time=BEFORE),
-            counter(first, first, time=BEFORE),
-            end(time=BEFORE),
-            *begin(checkout, later),
-            counter(usage(16, 4), first),
-            end(later),
-        ],
-    )
-    _, result = read(codex, source(registration), codex.CodexState(ledger))
+    rows = [
+        startup(checkout, BEFORE),
+        *begin(checkout, time=BEFORE),
+        response("only-pre-cutoff-response", first, first, time=BEFORE),
+        counter(first, first, time=BEFORE),
+        end(time=BEFORE),
+        *begin(checkout, later),
+        counter(usage(16, 4), first),
+        end(later),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = codex.read_codex(batch, codex.CodexState(ledger), Eligibility.ELIGIBLE)
     assert result.revisions == ()
     assert (8, DiagnosticCode.COVERAGE_GAP) in codes(result)

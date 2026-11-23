@@ -9,6 +9,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from adapter_frame_cases import AdapterFrames
 
 from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
@@ -21,6 +22,7 @@ from aitm_usage.sources.scan import discover, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
+    ClientVersion,
     DiagnosticCode,
     Effort,
     Eligibility,
@@ -60,6 +62,11 @@ def adapter():
         "U05 must supply the Claude Code adapter"
     )
     return importlib.import_module(name)
+
+
+@pytest.fixture
+def adapter_frames():
+    return AdapterFrames(Provider.CLAUDE, ClientVersion.CLAUDE_2_1_318, SESSION, CUTOFF)
 
 
 @pytest.fixture
@@ -284,50 +291,50 @@ def test_claude_revisions_terminal_and_nested_usage(project):
 @pytest.mark.parametrize(
     "mismatch", ["model", "categories", "missing-category", "unfinished"]
 )
-def test_cost_state_requires_exact_model_categories_and_stop_reason(project, mismatch):
+def test_cost_state_requires_exact_model_categories_and_stop_reason(
+    adapter_frames, mismatch
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     counters = model_counts()
     if mismatch == "categories":
         counters = model_counts(uncached=3, cached=4)
     elif mismatch == "missing-category":
         del counters["cacheCreationEphemeral1hInputTokens"]
-    write(
-        path,
-        [
-            user(checkout),
-            request(checkout, stop=None if mismatch == "unfinished" else STOP),
-            cost(**{"other-model" if mismatch == "model" else MODEL: counters}),
-        ],
-    )
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    rows = [
+        user(checkout),
+        request(checkout, stop=None if mismatch == "unfinished" else STOP),
+        cost(**{"other-model" if mismatch == "model" else MODEL: counters}),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     assert len(result.revisions) == 1
     assert result.revisions[0].record.availability is Availability.PARTIAL
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
 
 
-def test_stream_conflicts_keep_accepted_prior_and_retry_keeps_own_effort(project):
+def test_stream_conflicts_keep_accepted_prior_and_retry_keeps_own_effort(
+    adapter_frames,
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(
-        path,
-        [
-            user(checkout),
-            request(checkout),
-            request(checkout, msg="msg-conflict"),
-            request(checkout, req="req-conflict"),
-            request(checkout, counts=usage(3)),
-            request(checkout, counts=usage(5), model="unsupported-model"),
-            request(
-                checkout,
-                req="req-retry",
-                msg="msg-retry",
-                model="unapproved-model",
-                effort="max",
-            ),
-        ],
-    )
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    rows = [
+        user(checkout),
+        request(checkout),
+        request(checkout, msg="msg-conflict"),
+        request(checkout, req="req-conflict"),
+        request(checkout, counts=usage(3)),
+        request(checkout, counts=usage(5), model="unsupported-model"),
+        request(
+            checkout,
+            req="req-retry",
+            msg="msg-retry",
+            model="unapproved-model",
+            effort="max",
+        ),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     assert [r.record.boundary.ordinal for r in result.revisions] == [1, 6]
     assert [r.record.model for r in result.revisions] == [
         ModelLabel.CLAUDE_OPUS_5_5,
@@ -433,50 +440,48 @@ def test_unadmitted_lookahead_cannot_change_checkpoint_or_usage(project):
 
 
 @pytest.mark.parametrize("account", [True, False])
-def test_structured_quota_requires_authenticated_account(project, account):
+def test_structured_quota_requires_authenticated_account(adapter_frames, account):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     ref = ledger.pseudonymize("claude-account", str(ACCOUNT)) if account else None
     reset = int((AFTER + timedelta(hours=1)).timestamp())
-    write(
-        path,
-        [
-            user(checkout),
-            owner(),
-            row(
-                "rate_limit_event",
-                checkout,
-                rate_limit_info={
-                    "status": "allowed",
-                    "rateLimitType": "five_hour",
-                    "resetsAt": reset,
-                    "utilization": 0.6725,
-                },
-            ),
-            row(
-                "rate_limit_event",
-                checkout,
-                rate_limit_info={
-                    "status": "allowed",
-                    "rateLimitType": "seven_day_opus",
-                    "resetsAt": reset,
-                    "utilization": 0.2,
-                },
-            ),
-            row(
-                "rate_limit_event",
-                checkout,
-                rate_limit_info={
-                    "status": "allowed",
-                    "rateLimitType": "seven_day",
-                    "resetsAt": reset,
-                    "utilization": True,
-                },
-            ),
-        ],
-    )
-    _, result = read(
-        claude, source(registration), claude.ClaudeState(ledger, account_ref=ref)
+    rows = [
+        user(checkout),
+        owner(),
+        row(
+            "rate_limit_event",
+            checkout,
+            rate_limit_info={
+                "status": "allowed",
+                "rateLimitType": "five_hour",
+                "resetsAt": reset,
+                "utilization": 0.6725,
+            },
+        ),
+        row(
+            "rate_limit_event",
+            checkout,
+            rate_limit_info={
+                "status": "allowed",
+                "rateLimitType": "seven_day_opus",
+                "resetsAt": reset,
+                "utilization": 0.2,
+            },
+        ),
+        row(
+            "rate_limit_event",
+            checkout,
+            rate_limit_info={
+                "status": "allowed",
+                "rateLimitType": "seven_day",
+                "resetsAt": reset,
+                "utilization": True,
+            },
+        ),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(
+        batch, claude.ClaudeState(ledger, account_ref=ref), Eligibility.ELIGIBLE
     )
     assert result.revisions == ()
     if account:
@@ -1026,17 +1031,18 @@ def test_excluded_streamed_prefix_uses_latest_qualified_counts_once(project):
     assert result.revisions[-1].record.tokens.output_tokens == 4
 
 
-def test_wrong_provider_model_stays_unknown(project):
+def test_wrong_provider_model_stays_unknown(adapter_frames):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(path, [user(checkout), request(checkout, model="gpt-6-astra")])
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    rows = [user(checkout), request(checkout, model="gpt-6-astra")]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     assert result.revisions[0].record.model is ModelLabel.UNKNOWN
 
 
-def test_incomplete_later_content_does_not_crash_or_change_tool_order(project):
+def test_incomplete_later_content_does_not_crash_or_change_tool_order(adapter_frames):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     call_id = "toolu-genuine"
     first = request(
         checkout,
@@ -1047,64 +1053,62 @@ def test_incomplete_later_content_does_not_crash_or_change_tool_order(project):
     )
     malformed = request(checkout, stop="tool_use")
     del malformed["message"]["content"]
-    write(path, [user(checkout), first, malformed])
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    rows = [user(checkout), first, malformed]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     assert len(result.revisions) == 1
 
 
-def test_session_pseudonym_is_never_a_quota_account(project):
+def test_session_pseudonym_is_never_a_quota_account(adapter_frames):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     reset = int((AFTER + timedelta(hours=1)).timestamp())
-    write(
-        path,
-        [
-            user(checkout),
-            row(
-                "rate_limit_event",
-                checkout,
-                rate_limit_info={
-                    "status": "allowed",
-                    "rateLimitType": "seven_day",
-                    "resetsAt": reset,
-                    "utilization": 0.2,
-                },
-            ),
-        ],
-    )
-    candidate = source(registration)
-    _, result = read(
-        claude, candidate, claude.ClaudeState(ledger, account_ref=candidate.session_ref)
+    rows = [
+        user(checkout),
+        row(
+            "rate_limit_event",
+            checkout,
+            rate_limit_info={
+                "status": "allowed",
+                "rateLimitType": "seven_day",
+                "resetsAt": reset,
+                "utilization": 0.2,
+            },
+        ),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(
+        batch,
+        claude.ClaudeState(ledger, account_ref=batch.frames[0].session_ref),
+        Eligibility.ELIGIBLE,
     )
     assert not result.quota
     assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
 
 
-def test_missing_terminal_stays_visible_when_quota_is_present(project):
+def test_missing_terminal_stays_visible_when_quota_is_present(adapter_frames):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     reset = int((AFTER + timedelta(hours=1)).timestamp())
-    write(
-        path,
-        [
-            user(checkout),
-            request(checkout),
-            owner(),
-            row(
-                "rate_limit_event",
-                checkout,
-                rate_limit_info={
-                    "status": "allowed",
-                    "rateLimitType": "seven_day",
-                    "resetsAt": reset,
-                    "utilization": 0.2,
-                },
-            ),
-        ],
-    )
+    rows = [
+        user(checkout),
+        request(checkout),
+        owner(),
+        row(
+            "rate_limit_event",
+            checkout,
+            rate_limit_info={
+                "status": "allowed",
+                "rateLimitType": "seven_day",
+                "resetsAt": reset,
+                "utilization": 0.2,
+            },
+        ),
+    ]
     account = ledger.pseudonymize("claude-account", str(ACCOUNT))
-    _, result = read(
-        claude, source(registration), claude.ClaudeState(ledger, account_ref=account)
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(
+        batch, claude.ClaudeState(ledger, account_ref=account), Eligibility.ELIGIBLE
     )
     assert result.quota
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
@@ -1284,13 +1288,14 @@ def test_quota_requires_owner_in_current_committed_prefix(project, reopen, old_o
     assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
 
 
-def test_later_owner_conflict_invalidates_earlier_quota_in_same_prefix(project):
+def test_later_owner_conflict_invalidates_earlier_quota_in_same_prefix(adapter_frames):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     account = ledger.pseudonymize("claude-account", str(ACCOUNT))
-    write(path, [user(checkout), owner(), rate_event(checkout), owner(OTHER_ACCOUNT)])
-    batch, result = read(
-        claude, source(registration), claude.ClaudeState(ledger, account_ref=account)
+    rows = [user(checkout), owner(), rate_event(checkout), owner(OTHER_ACCOUNT)]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(
+        batch, claude.ClaudeState(ledger, account_ref=account), Eligibility.ELIGIBLE
     )
     assert len(batch.commit_sideband) == 2
     assert result.quota == ()
@@ -1298,53 +1303,53 @@ def test_later_owner_conflict_invalidates_earlier_quota_in_same_prefix(project):
 
 
 @pytest.mark.parametrize("bad_value", [-1, True, None, "0"])
-def test_terminal_cannot_convert_an_explicit_invalid_ttl_to_zero(project, bad_value):
+def test_terminal_cannot_convert_an_explicit_invalid_ttl_to_zero(
+    adapter_frames, bad_value
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     counters = model_counts(write5=0, write1=0)
     counters["cacheCreationEphemeral5mInputTokens"] = bad_value
     del counters["cacheCreationEphemeral1hInputTokens"]
-    write(
-        path,
-        [
-            user(checkout),
-            request(checkout, counts=usage(write5=0, write1=0)),
-            row(
-                "result",
-                checkout,
-                subtype="success",
-                is_error=False,
-                modelUsage={MODEL: counters},
-            ),
-        ],
-    )
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    rows = [
+        user(checkout),
+        request(checkout, counts=usage(write5=0, write1=0)),
+        row(
+            "result",
+            checkout,
+            subtype="success",
+            is_error=False,
+            modelUsage={MODEL: counters},
+        ),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     (revision,) = result.revisions
     assert revision.record.availability is Availability.PARTIAL
     assert DiagnosticCode.UNRECONCILED_USAGE in diagnostics(result)
 
 
-def test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total(project):
+def test_terminal_can_infer_both_zero_ttls_from_explicit_zero_write_total(
+    adapter_frames,
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
     counters = model_counts(write5=0, write1=0)
     del counters["cacheCreationEphemeral5mInputTokens"]
     del counters["cacheCreationEphemeral1hInputTokens"]
-    write(
-        path,
-        [
-            user(checkout),
-            request(checkout, counts=usage(write5=0, write1=0)),
-            row(
-                "result",
-                checkout,
-                subtype="success",
-                is_error=False,
-                modelUsage={MODEL: counters},
-            ),
-        ],
-    )
-    _, result = read(claude, source(registration), claude.ClaudeState(ledger))
+    rows = [
+        user(checkout),
+        request(checkout, counts=usage(write5=0, write1=0)),
+        row(
+            "result",
+            checkout,
+            subtype="success",
+            is_error=False,
+            modelUsage={MODEL: counters},
+        ),
+    ]
+    batch = adapter_frames.batch(rows)
+    result = claude.read_claude(batch, claude.ClaudeState(ledger), Eligibility.ELIGIBLE)
     assert result.revisions[-1].record.availability is Availability.COMPLETE
 
 
