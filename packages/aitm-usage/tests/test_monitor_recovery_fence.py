@@ -3,8 +3,12 @@
 import hmac
 import json
 import os
+from contextlib import nullcontext
 from dataclasses import replace
+from pathlib import Path
 from shutil import copytree
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from test_monitor_coverage import admitted_sources as admitted_sources
@@ -12,9 +16,15 @@ from test_monitor_journal import COPY, LIVE, B, NativeJournalFixture
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
+from aitm_usage import monitor_recovery
 from aitm_usage._monitor_journal_store import _STORE as _JOURNAL_STORE
 from aitm_usage.ledger import Ledger, LedgerError, _pin_directory
-from aitm_usage.monitor_journal import RoutingJournal
+from aitm_usage.monitor_journal import (
+    JournalChange,
+    PublicationCandidate,
+    RoutingJournal,
+    _CandidateBasis,
+)
 from aitm_usage.monitor_recovery import (
     ReceiverDelivery,
     ReceiverDisposition,
@@ -22,7 +32,7 @@ from aitm_usage.monitor_recovery import (
     VerifiedReceiverEvidence,
     _overlaps,
 )
-from aitm_usage.monitor_registry import _SOURCE_KEY_FILE, _STATE_FILE
+from aitm_usage.monitor_registry import _SOURCE_KEY_FILE, _STATE_FILE, _ServiceEvidence
 from aitm_usage.monitor_scope import ScopeState
 
 
@@ -44,12 +54,18 @@ def coverage_candidate(admitted_sources, tmp_path):
 
 
 @pytest.fixture
-def dispute_candidates(tmp_path, monkeypatch, legacy_monitor_qualification, request):
+def dispute_candidates(request, monkeypatch):
+    if not getattr(request, "param", True):
+        policy = request.getfixturevalue("recovery_policy")
+        yield policy.journal, policy.root, *policy.disputes(grouped=False)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
+    request.getfixturevalue("legacy_monitor_qualification")
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
     native = NativeJournalFixture(tmp_path, monkeypatch)
     root = tmp_path / "witness"
     root.mkdir(mode=0o700)
-    grouped = getattr(request, "param", True)
     for number in (3, 4):
         native.append(LIVE, native.turn(number))
     with native.registry.writer() as writer:
@@ -57,11 +73,11 @@ def dispute_candidates(tmp_path, monkeypatch, legacy_monitor_qualification, requ
         journal.reserve_batch(journal.prepare(LIVE, native.locator()))
         for number in (3, 4):
             native.append(COPY, native.turn(number, checkout=B))
-            if grouped and number == 3:
+            if number == 3:
                 continue
             journal.reserve_batch(journal.prepare(COPY, native.locator(COPY)))
         first, second = journal.dispute_changes(0)
-        assert (first.sequence == second.sequence) == grouped
+        assert first.sequence == second.sequence
         yield (
             journal,
             root,
@@ -70,12 +86,84 @@ def dispute_candidates(tmp_path, monkeypatch, legacy_monitor_qualification, requ
         )
 
 
+class _RecoveryPolicy:
+    """Supply verified journal candidates and witness bytes to the real fence."""
+
+    def __init__(self, monkeypatch):
+        self.root = Path("/fixture/witness")
+        self.files = {}
+        self.evidence = _ServiceEvidence(b"fixture recovery witness authority")
+        self.changes = []
+        self.journal = SimpleNamespace(
+            _store=SimpleNamespace(evidence=self.evidence),
+            coverage_changes=lambda after: self._listed(after, coverage=True),
+            dispute_changes=lambda after: self._listed(after, coverage=False),
+            publication_candidate=self._candidate,
+        )
+        directory = SimpleNamespace(path=self.root, fd=17, check=Mock())
+
+        def session(fence):
+            assert fence._journal is self.journal and fence._root == self.root
+            return nullcontext((directory, self.evidence))
+
+        def listdir(fd):
+            assert fd == directory.fd
+            return tuple(self.files)
+
+        def read(source, name):
+            assert source is directory
+            return self.files.get(name)
+
+        def publish(destination, name, data, *, replace_pending):
+            assert destination is directory and not replace_pending
+            if name in self.files:
+                return False
+            self.files[name] = data
+            return True
+
+        monkeypatch.setattr(RecoveryFence, "_session", session)
+        monkeypatch.setattr(monitor_recovery, "_read_private", read)
+        monkeypatch.setattr(monitor_recovery, "_publish", publish)
+        monkeypatch.setattr(
+            monitor_recovery, "os", SimpleNamespace(listdir=listdir, fsync=Mock())
+        )
+
+    def _listed(self, after, *, coverage):
+        return tuple(
+            change
+            for change, candidate in self.changes
+            if change.sequence > after
+            and (candidate.basis is _CandidateBasis.COVERAGE) == coverage
+        )
+
+    def _candidate(self, change):
+        return next(candidate for listed, candidate in self.changes if listed is change)
+
+    def _add(self, sequence, basis, label):
+        identity = self.evidence.pseudonymize("fixture-candidate", label)
+        candidate = PublicationCandidate(sequence, basis, identity)
+        self.changes.append((JournalChange(sequence), candidate))
+        return candidate
+
+    def coverage(self):
+        return self._add(1, _CandidateBasis.COVERAGE, "coverage")
+
+    def disputes(self, *, grouped=True):
+        return (
+            self._add(2, _CandidateBasis.OWNERSHIP, "first-dispute"),
+            self._add(2 if grouped else 3, _CandidateBasis.OWNERSHIP, "second-dispute"),
+        )
+
+
+@pytest.fixture
+def recovery_policy(monkeypatch):
+    return _RecoveryPolicy(monkeypatch)
+
+
 @pytest.mark.parametrize("after_link", [False, True], ids=["before-link", "after-link"])
 def test_view_cannot_escape_before_recovery_fsync(
     coverage_candidate, monkeypatch, after_link
 ):
-    from aitm_usage import monitor_recovery
-
     journal, root, candidate = coverage_candidate
     fence = RecoveryFence(journal, root)
     publish = monitor_recovery._publish
@@ -129,16 +217,23 @@ def test_restore_with_only_old_witness_holds_replay(dispute_candidates, tmp_path
 
 
 @pytest.mark.parametrize("missing", [True, False], ids=["missing", "modified"])
-def test_recovery_holds_at_the_authenticated_prefix(dispute_candidates, missing):
-    journal, root, first, second = dispute_candidates
+def test_recovery_holds_at_the_authenticated_prefix(request, missing):
+    if missing:
+        journal, root, first, second = request.getfixturevalue("dispute_candidates")
+    else:
+        policy = request.getfixturevalue("recovery_policy")
+        journal, root = policy.journal, policy.root
+        first, second = policy.disputes()
     fence = RecoveryFence(journal, root)
     one = fence.protect(first)
     two = fence.protect(second)
-    tail = sorted(root.iterdir())[-1]
     if missing:
-        tail.unlink()
+        max(root.iterdir()).unlink()
     else:
-        tail.write_bytes(tail.read_bytes().replace(b"monitor-recovery/v1", b"invalid"))
+        tail = max(policy.files)
+        policy.files[tail] = policy.files[tail].replace(
+            b"monitor-recovery/v1", b"invalid"
+        )
     assert fence.recover(two.anchor).common == one.anchor
     with pytest.raises(LedgerError):
         fence.protect(second)
@@ -176,27 +271,27 @@ def test_claude_coverage_gap_cannot_escape_before_recovery_fsync(
     assert journal.as_of() == before
 
 
-def test_same_sequence_set_refuses_a_divergent_readback(
-    dispute_candidates, monkeypatch
-):
-    journal, root, first, second = dispute_candidates
+def test_same_sequence_set_refuses_a_divergent_readback(recovery_policy, monkeypatch):
+    journal, root = recovery_policy.journal, recovery_policy.root
+    first, second = recovery_policy.disputes()
     fence = RecoveryFence(journal, root)
     one = fence.protect(first)
     two = fence.protect(second)
     assert one.anchor.ordinal == 1 and two.anchor.ordinal == 2
     changes = journal.dispute_changes(first.sequence - 1)
     assert len(changes) == 2
-    # A restored listing can omit a member even when the other candidate
-    # still reconstructs through the real journal.
+    # A restored listing can omit a member while the other candidate remains valid.
     monkeypatch.setattr(journal, "dispute_changes", lambda _: changes[:1])
     assert journal.publication_candidate(changes[0]) == first
     with pytest.raises(LedgerError):
         fence.protect(first)
-    assert len(list(root.iterdir())) == 2
+    assert len(recovery_policy.files) == 2
 
 
 @pytest.mark.parametrize("dispute_candidates", [False], indirect=True)
-def test_fence_refuses_an_unwitnessed_older_candidate(dispute_candidates):
+def test_fence_refuses_an_unwitnessed_older_candidate(
+    dispute_candidates, recovery_policy
+):
     journal, root, first, second = dispute_candidates
     assert first.sequence < second.sequence
     fence = RecoveryFence(journal, root)
@@ -204,7 +299,7 @@ def test_fence_refuses_an_unwitnessed_older_candidate(dispute_candidates):
     with pytest.raises(LedgerError):
         fence.protect(first)
     assert fence.protect(second) == newest
-    assert len(list(root.iterdir())) == 1
+    assert len(recovery_policy.files) == 1
 
 
 def test_forged_candidate_against_keyless_registry_creates_no_key(
@@ -375,9 +470,10 @@ def test_interrupted_export_requires_receiver_reconciliation(coverage_candidate)
 
 
 def test_receiver_refuses_a_fresh_key_or_changed_bytes_for_the_same_publication(
-    coverage_candidate,
+    recovery_policy,
 ):
-    journal, root, candidate = coverage_candidate
+    journal, root = recovery_policy.journal, recovery_policy.root
+    candidate = recovery_policy.coverage()
     fence = RecoveryFence(journal, root, verify_receiver=_verify_receiver)
     delivery = _receiver_delivery(journal, fence.protect(candidate))
     first = fence.record_export_intent(delivery)
@@ -389,13 +485,14 @@ def test_receiver_refuses_a_fresh_key_or_changed_bytes_for_the_same_publication(
         with pytest.raises(LedgerError):
             fence.record_export_intent(changed)
     assert fence.record_export_intent(delivery) == replace(first, can_send=False)
-    assert len(list(root.iterdir())) == 2
+    assert len(recovery_policy.files) == 2
 
 
 def test_receiver_holds_unknown_mismatched_and_unauthenticated_proof(
-    coverage_candidate,
+    recovery_policy,
 ):
-    journal, root, candidate = coverage_candidate
+    journal, root = recovery_policy.journal, recovery_policy.root
+    candidate = recovery_policy.coverage()
     fence = RecoveryFence(journal, root, verify_receiver=_verify_receiver)
     delivery = _receiver_delivery(journal, fence.protect(candidate))
     proof = fence.record_export_intent(delivery)
@@ -418,4 +515,4 @@ def test_receiver_holds_unknown_mismatched_and_unauthenticated_proof(
         is ReceiverDisposition.HELD
     )
     assert not fence.record_export_intent(delivery).can_send
-    assert len(list(root.iterdir())) == 2
+    assert len(recovery_policy.files) == 2

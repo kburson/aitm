@@ -517,9 +517,26 @@ def queued_disable_policy(registry_policy):
     )
 
 
+def _observe_locator(monkeypatch, scenario, native, source, observe):
+    """Supply a filesystem observation for the exact previously enrolled file."""
+
+    def presence(root, evidence, locator, incarnation, *, root_identity, prior):
+        assert (root, evidence) == (scenario.root.path, scenario.root.evidence)
+        assert root_identity == native._identity(root)
+        assert (locator, incarnation) == (source.locator_ref, source.incarnation_ref)
+        assert (prior.locator_ref, prior.incarnation_ref) == (locator, incarnation)
+        return observe()
+
+    monkeypatch.setattr(scenario.module, "_capture_locator_presence", presence)
+
+
 @pytest.mark.parametrize("quiet", ["idle", "removed", "removed-after-arm"])
-def test_source_wide_disable_reaches_a_quiet_stream_after_restart(request, quiet):
-    fixture = "queued_disable_policy" if quiet == "idle" else "queued_disable"
+def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
+    request, monkeypatch, quiet
+):
+    fixture = (
+        "queued_disable" if quiet == "removed-after-arm" else "queued_disable_policy"
+    )
     scenario = request.getfixturevalue(fixture)
     second_log, second_start = scenario.enroll_second()
     second_prefix = _physical_ordinal(second_log)
@@ -531,7 +548,20 @@ def test_source_wide_disable_reaches_a_quiet_stream_after_restart(request, quiet
     second_log.append(2)
     second_fence = _physical_ordinal(second_log)
     if quiet == "removed":
-        second_log.path.unlink()
+        from scanner_policy_cases import scanner
+
+        native = request.getfixturevalue("registry_policy").native
+        source = _locate(
+            scenario.reader, scenario.root, second_start.stream_ref
+        )._source
+        del native.contents[second_log.path]
+        _observe_locator(
+            monkeypatch,
+            scenario,
+            native,
+            source,
+            lambda: scanner._CaptureLocatorPresence(False, False, None, False, False),
+        )
 
     status = scenario.module.ControlStatus
     assert scenario.submit().status is status.QUEUED
@@ -589,21 +619,36 @@ def test_source_wide_disable_reaches_a_quiet_stream_after_restart(request, quiet
 
 
 def test_returning_original_stream_needs_prospective_enrollment(
-    queued_disable, tmp_path
+    queued_disable_policy, registry_policy, monkeypatch
 ):
-    scenario = queued_disable
+    from scanner_policy_cases import scanner
+
+    scenario = queued_disable_policy
+    native = registry_policy.native
     log, start = scenario.enroll_second()
     stream = start.stream_ref
     prefix = _physical_ordinal(log)
     log.append(2)
-    stored = tmp_path / "temporarily-offline.jsonl"
-    log.path.rename(stored)
+    source = _locate(scenario.reader, scenario.root, stream)._source
+    stored = native.contents.pop(log.path)
+
+    def observe():
+        current = native.contents.get(log.path)
+        return scanner._CaptureLocatorPresence(
+            current is not None,
+            current is not None,
+            None if current is None else len(current),
+            current is not None,
+            False,
+        )
+
+    _observe_locator(monkeypatch, scenario, native, source, observe)
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     assert scenario.poll() == ()
     (receipt,) = scenario.poll()
     assert receipt.status is scenario.module.ControlStatus.APPLIED
 
-    stored.rename(log.path)
+    native.contents[log.path] = stored
     assert _locate(scenario.reader, scenario.root, stream).stream_ref == stream
     assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
     repeated_disable = scenario.module.ControlCommand(UUID(int=199), scenario.disable)
@@ -1298,15 +1343,28 @@ def test_persisted_collection_progress_survives_a_later_truncation(queued_disabl
     )
 
 
-def test_capture_disable_detects_an_in_place_native_session_replacement(queued_disable):
-    scenario = queued_disable
+def test_capture_disable_detects_an_in_place_native_session_replacement(
+    queued_disable_policy, registry_policy, monkeypatch
+):
+    from scanner_policy_cases import scanner
+
+    scenario = queued_disable_policy
+    native = registry_policy.native
     prefix = _physical_ordinal(scenario.log)
-    original = scenario.log.path.read_bytes()
+    original = scenario.log.read_bytes()
+    source = _locate(scenario.reader, scenario.root)._source
     rewritten = original.replace(str(SESSION).encode(), str(UUID(int=999)).encode())
     assert len(rewritten) == len(original) and rewritten != original
-    scenario.log.path.write_bytes(rewritten)
+    scenario.log.write_bytes(rewritten)
     assert _locate(scenario.reader, scenario.root).stream_ref != scenario.stream
 
+    _observe_locator(
+        monkeypatch,
+        scenario,
+        native,
+        source,
+        lambda: scanner._CaptureLocatorPresence(True, True, len(rewritten), True, True),
+    )
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     assert scenario.poll() == ()
     (receipt,) = scenario.poll()
@@ -1345,9 +1403,15 @@ def test_disable_future_enrollment_while_approved_root_is_unavailable(
 @pytest.mark.parametrize("timing", ["before-arm", "after-arm"])
 @pytest.mark.parametrize("reuse_name", [False, True], ids=["vacant", "occupied"])
 def test_moved_enrolled_stream_does_not_stall_disable(
-    queued_disable, callback, timing, reuse_name
+    request, monkeypatch, callback, timing, reuse_name
 ):
-    scenario = queued_disable
+    durable = (reuse_name, timing, callback) in {
+        (True, "after-arm", "omitted"),
+        (False, "before-arm", "supplied"),
+    }
+    fixture = "queued_disable" if durable else "queued_disable_policy"
+    scenario = request.getfixturevalue(fixture)
+    native = None if durable else request.getfixturevalue("registry_policy").native
     log, start = scenario.enroll_second()
     prefix = _physical_ordinal(log)
     stream = start.stream_ref
@@ -1355,17 +1419,71 @@ def test_moved_enrolled_stream_does_not_stall_disable(
     log.append(2)
     healthy_fence = _physical_ordinal(scenario.log)
     archive = scenario.root.path / "archive"
-    archive.mkdir()
     old_path = log.path
-    original = old_path.stat()
 
-    def archive_stream():
-        log.path = old_path.rename(archive / old_path.name)
-        assert os.path.samestat(log.path.stat(), original)
-        if reuse_name:
-            replacement = _DesktopLog(old_path, log.checkout, session=UUID(int=1000))
-            assert not os.path.samestat(replacement.path.stat(), original)
-        assert _locate(scenario.reader, scenario.root, stream)._source._path == log.path
+    if native is None:
+        archive.mkdir()
+        original = old_path.stat()
+
+        def archive_stream():
+            log.path = old_path.rename(archive / old_path.name)
+            assert os.path.samestat(log.path.stat(), original)
+            if reuse_name:
+                replacement = _DesktopLog(
+                    old_path, log.checkout, session=UUID(int=1000)
+                )
+                assert not os.path.samestat(replacement.path.stat(), original)
+            assert (
+                _locate(scenario.reader, scenario.root, stream)._source._path
+                == log.path
+            )
+
+    else:
+        from scanner_policy_cases import scanner
+
+        original = native._identity(old_path)
+        old = _locate(scenario.reader, scenario.root, stream)._source
+
+        def transcripts(descriptor, root):
+            assert native._identity(root) == descriptor
+            return sorted(path for path in native.contents if path.is_relative_to(root))
+
+        monkeypatch.setattr(scanner, "_transcripts", transcripts)
+        monkeypatch.setattr(
+            scanner,
+            "_within_source_roots",
+            lambda candidate: (
+                candidate._path in native.contents
+                and candidate._path.is_relative_to(scenario.root.path)
+            ),
+        )
+
+        def archive_stream():
+            log.path = archive / old_path.name
+            native.contents[log.path] = native.contents.pop(old_path)
+            native.identities[log.path] = native.identities.pop(old_path)
+            assert native._identity(log.path) == original
+            if reuse_name:
+                _MemoryDesktopLog(native, old_path, session=UUID(int=1000))
+                assert native._identity(old_path) != original
+            assert (
+                _locate(scenario.reader, scenario.root, stream)._source._path
+                == log.path
+            )
+
+            _observe_locator(
+                monkeypatch,
+                scenario,
+                native,
+                old,
+                lambda: scanner._CaptureLocatorPresence(
+                    at_locator=reuse_name,
+                    same_incarnation=True,
+                    locator_size=len(native.contents[old_path]) if reuse_name else None,
+                    locator_is_original=False,
+                    prefix_changed=False,
+                ),
+            )
 
     def locate(change, known):
         assert change in (scenario.disable, scenario.enable)

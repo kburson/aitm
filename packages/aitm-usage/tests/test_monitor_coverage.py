@@ -1,11 +1,11 @@
 import json
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from shutil import copytree
 from types import SimpleNamespace
-from unittest.mock import Mock, call
+from unittest.mock import MagicMock, Mock, call
 from uuid import UUID
 
 import pytest
@@ -18,14 +18,24 @@ from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
 from aitm_usage.monitor_registry import (
     ApprovedSource,
+    CaptureChange,
+    CaptureEpoch,
+    CaptureFrontier,
     Registry,
     SourceApprovalRequest,
     _directory,
     _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import ScopeState
-from aitm_usage.sources.adapter import SourceRoot
-from aitm_usage.types import Provider, _encode
+from aitm_usage.monitor_types import NativeSurface
+from aitm_usage.sources.adapter import SourceLocator, SourceRoot
+from aitm_usage.types import (
+    Provider,
+    ProviderCheckpoint,
+    SourceCheckpoint,
+    SourceCursor,
+    _encode,
+)
 
 
 @pytest.fixture
@@ -44,6 +54,105 @@ def admitted_sources(tmp_path, monkeypatch):
 def store_version(journal):
     with journal._store.transaction() as connection:
         return journal._store._current_version(connection)
+
+
+class _CoveragePolicyStore:
+    """Observe staging and represent only committed coverage to later readers."""
+
+    def __init__(self, evidence):
+        self.evidence = evidence
+        self.committed = SimpleNamespace(version=4, sequence=0, events={})
+        self.attempt = None
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        view = self.committed
+        if write:
+            view = SimpleNamespace(
+                version=view.version, sequence=view.sequence, events=dict(view.events)
+            )
+            self.attempt = view
+
+        def execute(sql, params=()):
+            if sql.startswith("SELECT cursor FROM progress "):
+                return SimpleNamespace(fetchone=lambda: None)
+            if sql == "SELECT coalesce(max(sequence), 0) FROM commits":
+                return SimpleNamespace(fetchone=lambda: (view.sequence,))
+            if sql == monitor_journal._COVERAGE_ROWS + " WHERE s.identity=?":
+                return SimpleNamespace(fetchone=lambda: view.events.get(params[0]))
+            if (
+                sql
+                == monitor_journal._COVERAGE_ROWS
+                + " WHERE s.sequence>? ORDER BY s.sequence"
+            ):
+                return tuple(row for row in view.events.values() if row[1] > params[0])
+            assert write, f"Read-only coverage issued {sql}"
+            if sql == "INSERT OR IGNORE INTO commits VALUES (?)":
+                (view.sequence,) = params
+                return None
+            assert sql == "INSERT INTO source_coverage VALUES (?,?,?,?)"
+            key, sequence, payload, seal = params
+            assert sequence == view.sequence
+            view.events[key] = (key, sequence, view.sequence, payload, seal)
+            return None
+
+        yield SimpleNamespace(execute=execute, view=view, write=write)
+        if write:
+            self.committed = view
+
+    def _enable_coverage(self, connection):
+        assert connection.write
+        connection.view.version = 6
+
+    def _current_version(self, connection):
+        return connection.view.version
+
+
+def _consented_view(view, source_id, locator, evidence):
+    project = view.projects[0].project_id
+    candidate = locator._source
+    cursor = SourceCursor(
+        locator.stream_ref,
+        candidate.locator_ref,
+        candidate.incarnation_ref,
+        0,
+        evidence.pseudonymize("fixture", "anchor"),
+    )
+    frontier = CaptureFrontier(
+        SourceCheckpoint(cursor, ProviderCheckpoint(candidate.provider)), 0
+    )
+    epoch = CaptureEpoch(
+        project,
+        source_id,
+        locator.stream_ref,
+        1,
+        evidence.pseudonymize("fixture", "capture-boundary"),
+        1,
+        True,
+        frontier,
+        frontier,
+    )
+    return replace(
+        view,
+        permissions=(*view.permissions, CaptureChange(project, source_id, True)),
+        epochs=(*view.epochs, epoch),
+    )
+
+
+def _coverage_policy(monkeypatch, source, *, provider=Provider.CLAUDE):
+    from test_codex import CUTOFF
+
+    authority = qualification_policy(monkeypatch, source, CUTOFF, provider=provider)
+    writer, locator = authority.writer, authority.locator
+    store = _CoveragePolicyStore(writer.source_evidence())
+    authority.view = _consented_view(authority.view, source, locator, store.evidence)
+    monkeypatch.setattr(writer, "view", lambda: authority.view)
+    monkeypatch.setattr(
+        writer, "capture_read_limit", Registry.capture_read_limit.__get__(writer)
+    )
+    monkeypatch.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+    state = ScopeState(writer)
+    return authority, state, RoutingJournal(writer, state), store
 
 
 @pytest.mark.parametrize("version", (4, 5))
@@ -209,6 +318,20 @@ def test_only_stable_profile_denials_become_coverage(
     if not records and case != "replaced-root":
         _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude)
         return
+    if case == "omitted":
+        authority, _, journal, store = _coverage_policy(
+            monkeypatch, SOURCE, provider=Provider.CODEX
+        )
+        authority.writer._live_profile = replace(authority.profile, installations=())
+        with pytest.raises(LedgerError, match="qualification"):
+            journal.prepare(SOURCE, authority.locator)
+        (change,) = journal.coverage_changes(0)
+        assert change.coverage.generation == authority.profile.generation
+        assert change.coverage.reason == "UNQUALIFIED_SOURCE"
+        assert store.committed.sequence == change.sequence == 1
+        assert store_version(journal) == 6
+        assert journal.cursor_for(SOURCE, authority.locator) is None
+        return
 
     admitted_sources = request.getfixturevalue("admitted_sources")
     tmp_path = request.getfixturevalue("tmp_path")
@@ -241,8 +364,13 @@ def test_only_stable_profile_denials_become_coverage(
 @pytest.mark.parametrize("failure", ("policy", "consent", "location"))
 @pytest.mark.parametrize("confirmation", (1, 2))
 def test_changed_authority_rolls_back_any_migration_and_event(
-    admitted_sources, monkeypatch, failure, confirmation
+    request, monkeypatch, failure, confirmation
 ):
+    if confirmation == 1 or failure == "policy":
+        _assert_changed_authority_policy(monkeypatch, failure, confirmation)
+        return
+
+    admitted_sources = request.getfixturevalue("admitted_sources")
     native, claude = admitted_sources
     with native.registry.writer() as writer:
         qualify(writer)
@@ -256,9 +384,7 @@ def test_changed_authority_rolls_back_any_migration_and_event(
             nonlocal checks
             checks += 1
             if checks == confirmation:
-                if failure == "policy":
-                    qualify(writer)
-                elif failure == "consent":
+                if failure == "consent":
                     before = writer.view()
                     writer._save(
                         replace(
@@ -285,6 +411,58 @@ def test_changed_authority_rolls_back_any_migration_and_event(
         assert journal.as_of().sequence == 0
         assert journal.cursor_for(claude.source_id, locator) is None
         assert store_version(journal) == 4
+
+
+def _assert_changed_authority_policy(monkeypatch, failure, confirmation):
+    authority, state, journal, store = _coverage_policy(monkeypatch, SOURCE)
+    writer, locator = authority.writer, authority.locator
+    confirm = state._confirm_live_exclusion
+    observed_directory = monitor_registry._directory
+    checks = 0
+
+    def changed_directory(path, **kwargs):
+        directory = observed_directory(path, **kwargs)
+        if path == authority.approved.directory.path:
+            return replace(directory, identity=(1, 99))
+        return directory
+
+    def changed(*args):
+        nonlocal checks
+        checks += 1
+        if checks == confirmation:
+            if failure == "policy":
+                writer._live_profile = replace(
+                    authority.profile,
+                    generation=store.evidence.pseudonymize(
+                        "fixture", "next-generation"
+                    ),
+                )
+            elif failure == "consent":
+                authority.view = replace(authority.view, permissions=())
+            else:
+                monkeypatch.setattr(monitor_registry, "_directory", changed_directory)
+        return confirm(*args)
+
+    monkeypatch.setattr(state, "_confirm_live_exclusion", changed)
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, locator)
+    assert checks == confirmation
+    if confirmation == 1:
+        assert (
+            store.attempt.version,
+            store.attempt.sequence,
+            store.attempt.events,
+        ) == (4, 0, {})
+    else:
+        assert (store.attempt.version, store.attempt.sequence) == (6, 1)
+        (row,) = store.attempt.events.values()
+        change = monitor_journal._stored_coverage(row, store.evidence)
+        assert change.sequence == 1
+        assert change.coverage.generation == authority.profile.generation
+    assert journal.coverage_changes(0) == ()
+    assert store.committed.sequence == 0
+    assert journal.cursor_for(SOURCE, locator) is None
+    assert store_version(journal) == 4
 
 
 @pytest.mark.parametrize(
@@ -335,41 +513,71 @@ def _sample_coverage():
 
 
 def test_copied_scope_and_missing_consent_cannot_publish_coverage(
-    admitted_sources, monkeypatch
+    monkeypatch,
 ):
     from aitm_usage._monitor_qualification import _LiveSourceUnavailable
 
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        state = ScopeState(writer)
-        journal = RoutingJournal(writer, state)
-        with pytest.raises(_LiveSourceUnavailable) as initial:
-            state.read_source(claude.source_id, claude.locator())
-        original = state.read_source
-
-        def copy_denial(*_, **__):
-            raise _LiveSourceUnavailable(
-                replace(initial.value.decision, source_id=SOURCE)
-            )
-
-        monkeypatch.setattr(state, "read_source", copy_denial)
-        with pytest.raises(_LiveSourceUnavailable):
-            journal.prepare(SOURCE, native.locator())
-        assert journal.coverage_changes(0) == ()
-
-        monkeypatch.setattr(state, "read_source", original)
-        before = writer.view()
-        writer._save(
-            replace(
-                before,
-                permissions=tuple(
-                    p for p in before.permissions if p.source_id != claude.source_id
-                ),
-            )
+    authority, state, journal, store = _coverage_policy(
+        monkeypatch, SOURCE, provider=Provider.CODEX
+    )
+    claude = UUID(int=6)
+    approved = replace(
+        authority.approved,
+        approval=replace(
+            authority.approved.approval,
+            source_id=claude,
+            provider="claude",
+            surface="claude-code-macos",
+            client_version="2.1.318",
+        ),
+    )
+    locator = SourceLocator(
+        replace(
+            authority.locator._source,
+            provider=Provider.CLAUDE,
+            stream_ref=store.evidence.pseudonymize("fixture", "claude-stream"),
+            _native_surface=NativeSurface.CLAUDE_CODE_MACOS,
         )
-        with pytest.raises(LedgerError, match="no admitted unbounded read"):
-            journal.prepare(claude.source_id, claude.locator())
-        assert journal.coverage_changes(0) == ()
+    )
+    authority.view = _consented_view(
+        replace(authority.view, sources=(*authority.view.sources, approved)),
+        claude,
+        locator,
+        store.evidence,
+    )
+    discovered = {
+        SOURCE: (authority.approved, authority.locator),
+        claude: (approved, locator),
+    }
+
+    def current_candidate(view, source_id, candidate, **kwargs):
+        source, current = discovered[source_id]
+        assert source in view.sources and candidate is current
+        return source, current
+
+    monkeypatch.setattr(authority.writer, "_current_candidate", current_candidate)
+    with pytest.raises(_LiveSourceUnavailable) as initial:
+        state.read_source(claude, locator)
+
+    def copy_denial(*_, **__):
+        raise _LiveSourceUnavailable(replace(initial.value.decision, source_id=SOURCE))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(state, "read_source", copy_denial)
+        with pytest.raises(_LiveSourceUnavailable):
+            journal.prepare(SOURCE, authority.locator)
+    assert journal.coverage_changes(0) == ()
+
+    authority.view = replace(
+        authority.view,
+        permissions=tuple(
+            p for p in authority.view.permissions if p.source_id != claude
+        ),
+    )
+    with pytest.raises(LedgerError, match="no admitted unbounded read"):
+        journal.prepare(claude, locator)
+    assert journal.coverage_changes(0) == ()
+    assert store_version(journal) == 4
 
 
 def test_unrelated_unavailable_source_key_cannot_mint_coverage(admitted_sources):
@@ -390,29 +598,27 @@ def test_unrelated_unavailable_source_key_cannot_mint_coverage(admitted_sources)
         assert store_version(journal) == 4
 
 
-def test_lease_loss_is_not_reported_as_a_policy_refusal(admitted_sources, monkeypatch):
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        state = ScopeState(writer)
-        journal = RoutingJournal(writer, state)
-        lease = writer.lease
-        stable = writer._stable_live_exclusion
+def test_lease_loss_is_not_reported_as_a_policy_refusal(monkeypatch):
+    authority, _, journal, store = _coverage_policy(monkeypatch, SOURCE)
+    writer = authority.writer
+    lease = writer.lease
+    stable = writer._stable_live_exclusion
 
-        def lose_lease(approved):
-            result = stable(approved)
-            writer._writer = None
-            return result
+    def lose_lease(approved):
+        result = stable(approved)
+        writer._writer = None
+        return result
 
-        monkeypatch.setattr(writer, "_stable_live_exclusion", lose_lease)
-        try:
-            with pytest.raises(LedgerError, match="coordinator lease is required"):
-                journal.prepare(claude.source_id, claude.locator())
-        finally:
-            writer._writer = lease
+    monkeypatch.setattr(writer, "_stable_live_exclusion", lose_lease)
+    try:
+        with pytest.raises(LedgerError, match="coordinator lease is required"):
+            journal.prepare(SOURCE, authority.locator)
+    finally:
+        writer._writer = lease
 
-        assert journal.as_of().sequence == 0
-        assert journal.coverage_changes(0) == ()
-        assert store_version(journal) == 4
+    assert store.committed.sequence == 0
+    assert journal.coverage_changes(0) == ()
+    assert store_version(journal) == 4
 
 
 @pytest.mark.parametrize("alter", ("identity", "seal", "commit"))
@@ -454,28 +660,42 @@ def test_coverage_readback_rejects_deleted_commit_on_disk(admitted_sources):
             journal.coverage_changes(0)
 
 
-def test_open_refuses_unknown_schema_version(admitted_sources):
-    from test_monitor_journal_store import _sqlite
+def test_open_refuses_unknown_schema_version(monkeypatch):
+    from test_monitor_journal_store import _journal_metadata, _journal_observations
 
-    from aitm_usage._monitor_journal_store import (
-        _DATABASE,
-        _DELIVERY_SCHEMA_VERSION,
-        _STORE,
-    )
+    from aitm_usage import _monitor_journal_store as store
 
-    native, _ = admitted_sources
-    with native.registry.writer() as writer:
-        RoutingJournal(writer, ScopeState(writer))
-        with _sqlite(writer.root / _STORE / _DATABASE) as conn:
-            conn.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION}")
-        with pytest.raises(LedgerError, match="Invalid routing journal table schema"):
-            RoutingJournal(writer, ScopeState(writer))
-        with _sqlite(writer.root / _STORE / _DATABASE) as conn:
-            conn.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
-        with pytest.raises(
-            LedgerError, match="Unsupported routing journal schema version"
-        ):
-            RoutingJournal(writer, ScopeState(writer))
+    validate = store._validate_identity
+    memory = _journal_observations(monkeypatch)
+    monkeypatch.setattr(store, "_validate_identity", validate)
+    for version, damage, message in (
+        (
+            store._DELIVERY_SCHEMA_VERSION,
+            "ALTER TABLE claims ADD COLUMN unexpected TEXT",
+            "Invalid routing journal table schema",
+        ),
+        (
+            store._DELIVERY_SCHEMA_VERSION + 1,
+            None,
+            "Unsupported routing journal schema version",
+        ),
+    ):
+        metadata = _journal_metadata(monkeypatch, version, damage)
+        connection = MagicMock()
+
+        def read(sql):
+            if sql == "BEGIN":
+                return None
+            return metadata.execute(sql)
+
+        connection.execute.side_effect = read
+        memory.open_database.return_value = nullcontext(connection)
+        memory.open_database.reset_mock()
+        with pytest.raises(LedgerError, match=message):
+            RoutingJournal(memory.writer, ScopeState(memory.writer))
+        memory.open_database.assert_called_once_with(
+            memory.store / store._DATABASE, write=False
+        )
 
 
 @pytest.mark.parametrize("consent", (False, True))

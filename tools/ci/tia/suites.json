@@ -335,6 +335,81 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_copied_scope_and_missing_consent_cannot_publish_coverage",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_lease_loss_is_not_reported_as_a_policy_refusal",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_open_refuses_unknown_schema_version",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_append_reuses_sealed_earlier_cursor_and_holds_on_prefix_change",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_progress_seal_binds_the_current_locator",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_grok_unsettled_mark_cannot_claim_or_advance",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_grok_delivery.py::test_unverified_grok_mark_does_not_advance_another_streams_cursor",
+      "suite": "unit",
+      "isolation_group": "monitor_grok_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_codex_exclusion_requires_consent_for_its_exact_source",
+      "suite": "unit",
+      "isolation_group": "monitor_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_qualification.py::test_retained_grok_refuses_before_payload",
+      "suite": "unit",
+      "isolation_group": "monitor_qualification-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_refuses_an_unwitnessed_older_candidate",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_receiver_holds_unknown_mismatched_and_unauthenticated_proof",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_receiver_refuses_a_fresh_key_or_changed_bytes_for_the_same_publication",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_same_sequence_set_refuses_a_divergent_readback",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_capture_disable_detects_an_in_place_native_session_replacement",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_returning_original_stream_needs_prospective_enrollment",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_claude.py::test_initial_unproven_processing_stays_unknown_after_standard_revision",
       "suite": "unit",
       "isolation_group": "claude-policy"

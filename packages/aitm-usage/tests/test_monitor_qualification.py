@@ -1,6 +1,5 @@
 from contextlib import nullcontext
 from dataclasses import replace
-from datetime import UTC, datetime
 from pathlib import Path
 from shutil import copytree
 from types import SimpleNamespace
@@ -8,6 +7,7 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy  # noqa: F401, F811
 from qualification_policy_cases import CaptureInbox, CapturePolicy, qualification_policy
 from test_codex import CUTOFF
 
@@ -195,62 +195,24 @@ def test_retained_codex_refuses_before_payload(approval_policy, monkeypatch):
     read.assert_not_called()
 
 
-def test_retained_grok_refuses_before_payload(previously_admitted, monkeypatch):
-    from test_grok import FIXTURES, GROK_BINARY, SESSION
+def test_retained_grok_refuses_before_payload(
+    grok_capture_policy,  # noqa: F811
+    monkeypatch,
+):
+    from aitm_usage._monitor_qualification import _LiveSourceUnavailable
+    from aitm_usage.sources.grok import GrokAdapter
 
-    from aitm_usage.monitor_scope import ScopeState
-    from aitm_usage.sources.adapter import SourceRoot
-    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
-
-    root = previously_admitted.registry.root.parent / "grok"
-    session = root / SESSION
-    session.mkdir(parents=True)
-    for filename in ("updates.jsonl", "usage.json"):
-        (session / filename).write_bytes((FIXTURES / filename).read_bytes())
-
-    with previously_admitted.registry.writer() as writer:
-        source_id = UUID(int=99)
-        approved = SourceApprovalRequest(
-            source_id,
-            "grok",
-            "grok-build-macos",
-            "Darwin",
-            "arm64",
-            "1.0.77",
-            1,
-            str(root),
-        )
-        directory = _directory(str(root))
-        before = writer.view()
-        writer._save(
-            replace(
-                before, sources=(*before.sources, ApprovedSource(approved, directory))
-            )
-        )
-        evidence = writer.source_evidence()
-        origin = GrokOrigin(
-            session_id=SESSION,
-            system="Darwin",
-            architecture="arm64",
-            version="1.0.77",
-            build="50ca579fa996",
-            executable_digest=GROK_BINARY,
-            format_version=1,
-            lineage_id=SESSION,
-            incarnation=evidence.pseudonymize("grok-incarnation", "fixture"),
-            checkout=None,
-        )
-        reader = GrokAdapter(
-            lambda p: origin if p.parent == session else None, lambda *_: None
-        )
-        source_root = SourceRoot(root, datetime(2026, 1, 1, tzinfo=UTC), (), evidence)
-        (locator,) = reader.discover(source_root)
-        monkeypatch.setattr(
-            GrokAdapter, "read_delta", lambda *a, **k: pytest.fail("Grok payload read")
-        )
-        with pytest.raises(LedgerError, match="qualification") as result:
-            ScopeState(writer, grok_reader=reader).read_source(source_id, locator)
-        assert result.value.decision is None
+    capture = grok_capture_policy
+    locator = capture.locator()
+    capture.writer._live_profile = None
+    original = capture.writer.view()
+    read = Mock(side_effect=AssertionError("unqualified Grok payload read"))
+    monkeypatch.setattr(GrokAdapter, "read_delta", read)
+    with pytest.raises(_LiveSourceUnavailable, match="qualification") as result:
+        capture.state.read_source(capture.source_id, locator)
+    assert result.value.decision is None
+    assert capture.writer.view() == original
+    read.assert_not_called()
 
 
 @pytest.mark.parametrize("change", ("supersede", "revoke", "verifier-unavailable"))
@@ -263,7 +225,7 @@ def test_reserve_revalidates_the_exact_prepared_authority(
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
 
-    if (change, existing_progress) not in {("supersede", False), ("revoke", True)}:
+    if (change, existing_progress) != ("revoke", True):
         _assert_prepared_authority_rechecked(
             monkeypatch, LIVE, change, existing_progress
         )
@@ -275,18 +237,11 @@ def test_reserve_revalidates_the_exact_prepared_authority(
         journal = RoutingJournal(writer, ScopeState(writer))
         locator = previously_admitted.locator()
         prepared = journal.prepare(LIVE, locator)
-        if existing_progress:
-            journal.reserve_batch(prepared)
-            assert journal.cursor_for(LIVE, locator) == prepared.progress
-        before = journal.as_of()
+        journal.reserve_batch(prepared)
         progress = journal.cursor_for(LIVE, locator)
-
-        if change == "supersede":
-            qualify(writer)
-        elif change == "revoke":
-            writer._live_profile = None
-        else:
-            writer._live_profile = replace(writer._live_profile, current=None)
+        assert progress == prepared.progress
+        before = journal.as_of()
+        writer._live_profile = None
         with pytest.raises(LedgerError, match="qualification"):
             journal.reserve_batch(prepared)
         assert journal.as_of() == before
@@ -596,58 +551,24 @@ def _assert_profile_mismatch_refuses_approval_and_read(
 
 @pytest.mark.parametrize("with_cursor", (False, True))
 def test_codex_exclusion_requires_consent_for_its_exact_source(
-    request, monkeypatch, with_cursor
+    approval_policy, monkeypatch, with_cursor
 ):
-    from test_monitor_journal import COPY, LIVE
+    from test_monitor_journal import COPY
 
-    from aitm_usage.monitor_journal import RoutingJournal
-    from aitm_usage.monitor_scope import ScopeState
-
-    if not with_cursor:
-        capture = request.getfixturevalue("approval_policy")
-        enable = _enable_capture(capture)
-        writer = capture.writer
-        writer._live_profile = None
-        capture.view = replace(
-            capture.view, permissions=(replace(enable, source_id=COPY),)
+    capture = approval_policy
+    enable = _enable_capture(capture)
+    writer = capture.writer
+    (epoch,) = writer.view().epochs
+    cursor = StreamCursor(epoch.frontier.checkpoint) if with_cursor else None
+    writer._live_profile = None
+    capture.view = replace(capture.view, permissions=(replace(enable, source_id=COPY),))
+    before = writer.view()
+    read = Mock(side_effect=AssertionError("unconsented payload read"))
+    monkeypatch.setattr(ProviderAdapter, "read_delta", read)
+    with pytest.raises(LedgerError, match="no admitted unbounded read") as refusal:
+        monitor_scope.ScopeState(writer).read_source(
+            enable.source_id, capture.first, cursor=cursor
         )
-        before = writer.view()
-        read = Mock(side_effect=AssertionError("unconsented payload read"))
-        monkeypatch.setattr(ProviderAdapter, "read_delta", read)
-        with pytest.raises(LedgerError, match="no admitted unbounded read") as refusal:
-            ScopeState(writer).read_source(enable.source_id, capture.first)
-        assert getattr(refusal.value, "decision", None) is None
-        assert writer.view() is before
-        read.assert_not_called()
-        return
-
-    previously_admitted = request.getfixturevalue("previously_admitted")
-    with previously_admitted.registry.writer() as writer:
-        qualify(writer)
-        state = ScopeState(writer)
-        journal = RoutingJournal(writer, state)
-        locator = previously_admitted.locator()
-        prepared = journal.prepare(LIVE, locator)
-        journal.reserve_batch(prepared)
-        cursor = journal.cursor_for(LIVE, locator)
-        assert cursor is not None
-
-        original = writer.view()
-        writer._save(
-            replace(
-                original,
-                permissions=tuple(
-                    p for p in original.permissions if p.source_id == COPY
-                ),
-            )
-        )
-        writer._live_profile = None
-        monkeypatch.setattr(
-            ProviderAdapter,
-            "read_delta",
-            lambda *a, **k: pytest.fail("unconsented read"),
-        )
-        with pytest.raises(LedgerError, match="no admitted unbounded read") as refusal:
-            state.read_source(LIVE, locator, cursor=cursor)
-        assert getattr(refusal.value, "decision", None) is None
-        assert journal.cursor_for(LIVE, locator) == cursor
+    assert getattr(refusal.value, "decision", None) is None
+    assert writer.view() is before
+    read.assert_not_called()

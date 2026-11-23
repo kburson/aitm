@@ -10,9 +10,10 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
 
-from aitm_usage import backup, install, service
+from aitm_usage import backup, install, monitor_journal, service
 from aitm_usage._monitor_journal_store import _DATABASE, _STORE
 from aitm_usage.ledger import Ledger, LedgerError, _connection
 from aitm_usage.monitor_control import ControlInbox
@@ -104,6 +105,23 @@ def _enable_delivery(f, journal):
 def _stored_progress(journal, prepared):
     with journal._store.transaction() as conn:
         return journal._cursor(conn, prepared._read.stream)
+
+
+@pytest.fixture
+def grok_delivery_policy(grok_capture_policy, monkeypatch):
+    from test_grok import PROMPT_A, SESSION
+    from test_monitor_journal import _ClaimJournalRows
+
+    capture = grok_capture_policy
+    capture.receipt = capture.refs[SESSION, PROMPT_A, "synthetic-event-1"]
+    rows = _ClaimJournalRows(capture.writer.source_evidence())
+
+    def open_rows(writer):
+        assert writer is capture.writer
+        return rows
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
+    return capture
 
 
 def test_legacy_claim_and_revision_bytes_match_protected_trunk():
@@ -214,8 +232,8 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
     assert len(reloaded.as_of().claims) == 2
 
 
-def test_grok_unsettled_mark_cannot_claim_or_advance(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_unsettled_mark_cannot_claim_or_advance(grok_delivery_policy):
+    f = grok_delivery_policy
     _load_turns(f, mark=False, second=False)
     journal = RoutingJournal(f.writer, f.state)
     before = journal.as_of()
@@ -244,10 +262,10 @@ def test_grok_revocation_between_prepare_and_reserve_cannot_claim(
 
 
 def test_grok_append_reuses_sealed_earlier_cursor_and_holds_on_prefix_change(
-    isolated_grok_capture,
+    grok_delivery_policy,
     monkeypatch,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     _load_turns(f, second=False)
     journal = RoutingJournal(f.writer, f.state)
     first = journal.prepare(f.source_id, f.locator())
@@ -282,29 +300,28 @@ def test_grok_append_reuses_sealed_earlier_cursor_and_holds_on_prefix_change(
     assert resume.as_of() == before
 
 
-def test_grok_progress_seal_binds_the_current_locator(isolated_grok_capture):
-    f = isolated_grok_capture
+def test_grok_progress_seal_binds_the_current_locator(grok_delivery_policy):
+    f = grok_delivery_policy
     _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     prepared = journal.prepare(f.source_id, f.locator())
     journal.reserve_batch(prepared)
     stream = prepared._read.stream
     evidence = f.writer.source_evidence()
-    with journal._store.transaction(write=True) as conn:
-        (wire,) = conn.execute("SELECT cursor FROM progress").fetchone()
-        saved = _decode(wire, _GrokProgress)
-        other = evidence.pseudonymize("fixture-alternate-locator", "different")
-        changed = _encode(replace(saved, locator=other), _GrokProgress).encode()
-        conn.execute("UPDATE progress SET cursor = ?", (changed,))
+    saved = _decode(journal._store.progress[stream], _GrokProgress)
+    assert _stored_progress(journal, prepared) == prepared.progress
+    other = evidence.pseudonymize("fixture-alternate-locator", "different")
+    changed = _encode(replace(saved, locator=other), _GrokProgress).encode()
+    journal._store.progress[stream] = changed
     assert stream[3] == saved.locator.value
     with pytest.raises(LedgerError, match="progress seal changed"):
         journal.prepare(f.source_id, f.locator())
 
 
 def test_unverified_grok_mark_does_not_advance_another_streams_cursor(
-    isolated_grok_capture,
+    grok_delivery_policy,
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
     other, write_other = f.add_stream()
     f.submit(203, True)
     assert f.evaluate()
