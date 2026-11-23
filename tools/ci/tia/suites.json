@@ -335,6 +335,61 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_current_catalog_matches_legacy_locator_fields_and_skips_parked_open",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_existing_journal_entry_uses_only_explicit_inventory_cycle",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_reader_refuses_invalid_stored_evidence",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_disposition_requires_live_issuer_even_on_replay",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidates_refuse_pre_content_dispute_schema",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_refuses_mismatched_v1_first_claim_payload",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_native_transcript_copy_deduplicates_but_a_distinct_retry_counts",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_terminal_receipt_without_following_usage_requires_exact_scope_event",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_retained_hold_refuses_capacity_gap_before_publication",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_stored_route_disposition_id_is_reserved_against_legacy_writes",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_v2_invalid_snapshot_cannot_be_published",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_copied_scope_and_missing_consent_cannot_publish_coverage",
       "suite": "unit",
       "isolation_group": "monitor_coverage-policy"

@@ -136,6 +136,12 @@ class NativeScopeFixture:
     def _replace_transcript(self, data):
         self.path.write_bytes(data)
 
+    def _scope_bytes(self):
+        return _scope_file(self).read_bytes()
+
+    def _replace_scope_bytes(self, data):
+        _scope_file(self).write_bytes(data)
+
     def locator(self):
         (locator,) = self.adapter.discover(self.root)
         return locator
@@ -362,6 +368,9 @@ class MemoryNativeScopeFixture(NativeScopeFixture):
 
     def _scope_bytes(self):
         return self.state_files.files[self.registry.root]["scope-v1.json"]
+
+    def _replace_scope_bytes(self, data):
+        self.state_files.files[self.registry.root]["scope-v1.json"] = data
 
 
 @pytest.fixture
@@ -1591,9 +1600,12 @@ def test_grok_scope_proves_native_target_and_holds_without_capture(native, opera
 
 
 @pytest.mark.parametrize("cause", ["revoked", "replaced-inode"])
-def test_scope_native_read_requires_current_enrolled_physical_source(native, cause):
+def test_scope_native_read_requires_current_enrolled_physical_source(request, cause):
     from aitm_usage.monitor_scope import ScopeState
 
+    native = request.getfixturevalue(
+        "native_scope_policy" if cause == "revoked" else "native"
+    )
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         assert state.read_source(SOURCE, native.locator()).observations
@@ -1611,9 +1623,12 @@ def test_scope_native_read_requires_current_enrolled_physical_source(native, cau
 
 
 @pytest.mark.parametrize("changed", ["source-inode", "source-prefix", "anchor"])
-def test_scope_proof_requires_current_physical_identity_before_apply(native, changed):
+def test_scope_proof_requires_current_physical_identity_before_apply(request, changed):
     from aitm_usage.monitor_scope import ScopeState
 
+    native = request.getfixturevalue(
+        "native_scope_policy" if changed == "source-prefix" else "native"
+    )
     command_id = UUID(int=0x301)
     with native.registry.writer() as writer:
         state = ScopeState(writer)
@@ -1630,10 +1645,10 @@ def test_scope_proof_requires_current_physical_identity_before_apply(native, cha
             native.path.write_bytes(retired.read_bytes())
             assert native.path.stat().st_ino != retired.stat().st_ino
         elif changed == "source-prefix":
-            accepted = native.path.read_bytes()
+            accepted = native._transcript_bytes()
             rewritten = accepted.replace(b"Codex Desktop", b"Codex desktop", 1)
             assert rewritten != accepted
-            native.path.write_bytes(rewritten)
+            native._replace_transcript(rewritten)
         else:
             anchor = native.anchors[A]
             retired = anchor.with_name("retired-worktree")
@@ -1734,8 +1749,7 @@ def _append_storage_fixture_terminal(native, command_id):
     call["timestamp"] = output["timestamp"] = time.isoformat()
     native.total += 4
     total, delta = usage(native.total, native.total), usage(4, 4)
-    write(
-        native.path,
+    native._append_rows(
         [
             *begin(native.anchors[A], turn, time=time),
             call,
@@ -1745,8 +1759,7 @@ def _append_storage_fixture_terminal(native, command_id):
             counter(total, delta, time=time),
             output,
             end(turn, time=time),
-        ],
-        append=True,
+        ]
     )
     native.append()
 
@@ -1767,8 +1780,7 @@ def _stored_disposition_fixture(state, native):
     receipt = _verify(state, native, command, owner, batch, held_at)
     hold = state.hold(receipt)
 
-    path = _scope_file(native)
-    payload = json.loads(path.read_bytes())
+    payload = json.loads(native._scope_bytes())
     terminal = Disposition(terminal_id, A, held_id, native.receipt_ref(terminal_id))
     state.authorize(terminal, owner)
     _append_storage_fixture_terminal(native, terminal_id)
@@ -1799,7 +1811,7 @@ def _stored_disposition_fixture(state, native):
             "checkout": native.anchor_ref(A).value,
         }
     ]
-    path.write_bytes(_scope_bytes(payload))
+    native._replace_scope_bytes(_scope_bytes(payload))
     return hold, legacy, legacy_receipt, terminal, terminal_receipt, payload
 
 
@@ -1904,19 +1916,21 @@ def test_route_target_requires_the_receipts_anchored_owner(monkeypatch, checkout
     assert len(scope.snapshot.holds) == 1
 
 
-def test_retained_hold_refuses_capacity_gap_before_publication(native, monkeypatch):
+def test_retained_hold_refuses_capacity_gap_before_publication(
+    native_scope_policy, monkeypatch
+):
     from aitm_usage import monitor_scope
 
+    native = native_scope_policy
     monkeypatch.setattr(monitor_scope, "_MAX_HOLDS", 1)
     with native.registry.writer() as writer:
         state = monitor_scope.ScopeState(writer)
         first = state.hold(_held_receipt(state, native, UUID(int=0x501)))
         second = _held_receipt(state, native, UUID(int=0x502))
-        path = _scope_file(native)
-        data = path.read_bytes()
+        data = native._scope_bytes()
         with pytest.raises(LedgerError, match="route target.*capacity"):
             state.hold(second, retain_route_target=True)
-        assert path.read_bytes() == data
+        assert native._scope_bytes() == data
         overflow = state.hold(second)
         assert overflow.state == "gap"
         assert state.view().holds == (first, overflow)
@@ -1973,9 +1987,12 @@ def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
 
 
 @pytest.mark.parametrize("operation", ["mark", "handoff", "hold", "expire", "dispose"])
-def test_legacy_writers_preserve_both_v2_collections(native, operation):
+def test_legacy_writers_preserve_both_v2_collections(request, operation):
     from aitm_usage.monitor_scope import Mark, ScopeState
 
+    native = request.getfixturevalue(
+        "native" if operation == "dispose" else "native_scope_policy"
+    )
     with native.registry.writer() as writer:
         moment = AFTER
         state = ScopeState(writer, clock=lambda: moment)
@@ -2018,7 +2035,7 @@ def test_legacy_writers_preserve_both_v2_collections(native, operation):
             assert len(state.expire()) == 1
         else:
             assert state.dispose(legacy, legacy_receipt).state == "gap"
-        data = _scope_file(native).read_bytes()
+        data = native._scope_bytes()
         assert data != _scope_bytes(payload)
         updated = json.loads(data)
         assert data == _scope_bytes(updated)
@@ -2035,23 +2052,23 @@ def test_v2_decoder_rejects_malformed_or_unowned_shape(monkeypatch, changed):
     assert_rejects_snapshot(snapshot_reader(monkeypatch), changed)
 
 
-def test_v2_invalid_snapshot_cannot_be_published(native):
+def test_v2_invalid_snapshot_cannot_be_published(native_scope_policy):
     from aitm_usage.monitor_scope import ScopeState
 
+    native = native_scope_policy
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         *_, payload = _stored_disposition_fixture(state, native)
         payload["route_dispositions"][0]["prefix"]["offset"] = payload[
             "held_route_targets"
         ][0]["prefix"]["offset"]
-        path = _scope_file(native)
         data = _scope_bytes(payload)
-        path.write_bytes(data)
+        native._replace_scope_bytes(data)
         with pytest.raises(LedgerError, match="Invalid private scope"):
             ScopeState(native.registry).view()
         with pytest.raises(LedgerError, match="Invalid private scope"):
             state.expire()
-        assert path.read_bytes() == data
+        assert native._scope_bytes() == data
 
 
 @pytest.mark.parametrize(
@@ -2159,14 +2176,16 @@ def test_v2_snapshot_does_not_follow_a_link_to_another_file(native):
         assert external.read_bytes() == data
 
 
-def test_stored_route_disposition_id_is_reserved_against_legacy_writes(native):
+def test_stored_route_disposition_id_is_reserved_against_legacy_writes(
+    native_scope_policy,
+):
     from aitm_usage.monitor_scope import Mark, ScopeState
 
+    native = native_scope_policy
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         _, _, _, command, receipt, _ = _stored_disposition_fixture(state, native)
-        path = _scope_file(native)
-        data = path.read_bytes()
+        data = native._scope_bytes()
         assert state.receipt(command, state.operator(A)) is None
         with pytest.raises(LedgerError, match="route disposition ID"):
             state.dispose(command, receipt)
@@ -2183,7 +2202,7 @@ def test_stored_route_disposition_id_is_reserved_against_legacy_writes(native):
         )
         with pytest.raises(LedgerError, match="route disposition ID"):
             fresh.apply_mark(mark, mark_receipt)
-        assert path.read_bytes() == data
+        assert native._scope_bytes() == data
 
 
 def _append_ordered_disposition(native, command_id, request_path, stdout):
@@ -3161,7 +3180,7 @@ def test_issued_route_disposition_requires_current_evidence(
     from aitm_usage.monitor_control import _filename
     from aitm_usage.monitor_scope import HoldState, ScopeState
 
-    if change in {"consumed", "withdrawn", "advertisement-expired"}:
+    if change in {"consumed", "withdrawn", "revoked", "advertisement-expired"}:
         case = route_admission_case(monkeypatch, CUTOFF)
         proof = case.state.verify_route_disposition(case.command, case.terminal)
         record = case.state.require_route_disposition(proof)
@@ -3171,6 +3190,9 @@ def test_issued_route_disposition_requires_current_evidence(
         elif change == "withdrawn":
             case.reader.withdraw(case.request.grant_id)
             message = "Scope consumer is unavailable"
+        elif change == "revoked":
+            case.reader.revoke(case.request.grant_id)
+            message = "Scope producer grant is unavailable"
         else:
             case.witness_at += timedelta(minutes=2)
             message = "Scope consumer is unavailable"
@@ -3243,8 +3265,6 @@ def test_issued_route_disposition_requires_current_evidence(
                 is HoldState.GAP
             )
             assert native.path.read_bytes() == prefix
-        elif change == "revoked":
-            current.reader.revoke(current.request.grant_id)
         elif change == "source-relocated":
             native.path.rename(native.path.with_name("relocated.jsonl"))
         before = state.view()
