@@ -2468,16 +2468,14 @@ def test_claude_rewritten_common_prefix_cannot_create_a_content_dispute(
 
 @pytest.mark.parametrize("ownership_first", [True, False], ids=["before", "after"])
 def test_claude_content_and_ownership_disputes_remain_separate(
-    request, monkeypatch, ownership_first
+    journal_claude_policy, monkeypatch, ownership_first
 ):
     from test_claude import usage as claude_usage
 
-    fixture = "journal_claude_policy" if ownership_first else "journal_claude"
-    native = request.getfixturevalue(fixture)
+    native = journal_claude_policy
     source_id, other_source = UUID(int=7), UUID(int=8)
-    if ownership_first:
-        _expose_claude_archive_directory(native, source_id, monkeypatch)
-        _expose_claude_archive_directory(native, other_source, monkeypatch)
+    _expose_claude_archive_directory(native, source_id, monkeypatch)
+    _expose_claude_archive_directory(native, other_source, monkeypatch)
     with native.native.registry.writer() as writer:
         journal, ordinal, prefix = _common_claude_revision(native, writer)
         _, locate = _claude_archive(
@@ -3888,8 +3886,89 @@ def test_paired_settlement_can_follow_a_coverage_first_v6_upgrade(
         assert journal._store._current_version(connection) == 6
 
 
-def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(native):
-    from aitm_usage.monitor_journal import RoutingJournal
+class _DisputePublicationRows(_ClaimJournalRows):
+    """Expose canonical ownership rows and their original claim to publication."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.version = 4
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        with super().transaction(write=write) as connection:
+            self._current_version(connection)
+            yield connection
+            self._current_version(connection)
+
+    def _current_version(self, connection):
+        assert connection is self
+        return self.version
+
+    def _enable_delivery(self, connection):
+        assert connection is self and self.version == 6
+        self.version = 7
+
+    def execute(self, sql, parameters=()):
+        from aitm_usage.monitor_journal import (
+            _CONTENT_DISPUTE_ROWS,
+            _OWNERSHIP_DISPUTE_ROWS,
+        )
+
+        if sql.startswith(
+            (
+                _CONTENT_DISPUTE_ROWS,
+                "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements",
+            )
+        ):
+            return _Rows()
+        order = " ORDER BY d.sequence,d.key,d.contender,d.digest,d.evidence"
+        rows = []
+        if sql == _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence > ?" + order:
+            (after,) = parameters
+            selected = (
+                (key, contender, digest, evidence, sequence)
+                for (
+                    key,
+                    contender,
+                    digest,
+                    evidence,
+                ), sequence in self.disputes.items()
+                if sequence > after
+            )
+        elif sql == _OWNERSHIP_DISPUTE_ROWS + " WHERE d.sequence=? AND d.key=?" + order:
+            selected = (
+                (key, contender, digest, evidence, sequence)
+                for (
+                    key,
+                    contender,
+                    digest,
+                    evidence,
+                ), sequence in self.disputes.items()
+                if (sequence, key) == parameters
+            )
+        else:
+            return super().execute(sql, parameters)
+        for key, contender, digest, evidence, sequence in sorted(
+            selected, key=lambda row: (row[-1], *row[:-1])
+        ):
+            project, claim_digest, raw, _ = self.claims[key]
+            rows.append(
+                (key, contender, project, digest, evidence, sequence, raw, claim_digest)
+            )
+        return _Rows(rows)
+
+
+def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(monkeypatch):
+    from test_monitor_journal_store import _journal_metadata
+
+    from aitm_usage import monitor_journal
+    from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, JournalStore
+    from aitm_usage.monitor_journal import ClaimEvidence, RoutingJournal
+    from aitm_usage.types import _decode
+
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    store = _DisputePublicationRows(native.evidence)
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
 
     for number in (3, 4):
         native.append(LIVE, native.turn(number))
@@ -3912,34 +3991,27 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
         assert one.identity != two.identity
         assert journal.publication_candidate(first) == one
         assert journal.as_of() == before
+        owner = writer.view().projects[0]
+        ledger = Ledger.open(Path(owner.state.path), A)
         for false in (
             replace(first.dispute, row_digest="0" * 64),
             replace(first.dispute, identity=two.identity),
             replace(
                 first.dispute,
-                identity=native.ledgers[A].pseudonymize(
-                    "foreign-journal-proof", "candidate"
-                ),
+                identity=ledger.pseudonymize("foreign-journal-proof", "candidate"),
             ),
             replace(first.dispute, record=second.dispute.record),
         ):
             for _ in range(2):
                 with pytest.raises(LedgerError):
                     journal.publication_candidate(replace(first, dispute=false))
-        from aitm_usage._monitor_journal_store import _DELIVERY_SCHEMA_VERSION, _open
-        from aitm_usage.monitor_journal import ClaimEvidence
-        from aitm_usage.types import _decode
-
         key = first.dispute.record.key.value
-        with journal._store.transaction(write=True) as connection:
-            (raw,) = connection.execute(
-                "SELECT evidence FROM disputes WHERE key=?", (key,)
-            ).fetchone()
-            noncanonical = raw + b" "
-            assert _decode(noncanonical, ClaimEvidence) == first.dispute.record.evidence
-            connection.execute(
-                "UPDATE disputes SET evidence=? WHERE key=?", (noncanonical, key)
-            )
+        (identity,) = (row for row in store.disputes if row[0] == key)
+        raw = identity[-1]
+        noncanonical = raw + b" "
+        assert _decode(noncanonical, ClaimEvidence) == first.dispute.record.evidence
+        altered = (*identity[:-1], noncanonical)
+        store.disputes[altered] = store.disputes.pop(identity)
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
@@ -3947,38 +4019,36 @@ def test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence(nativ
         assert journal.publication_candidate(second) == two
 
         previous_commit = first.sequence - 1
-        with journal._store.transaction(write=True) as connection:
-            assert connection.execute(
-                "SELECT sequence FROM commits WHERE sequence=?", (previous_commit,)
-            ).fetchone() == (previous_commit,)
-            connection.execute(
-                "UPDATE disputes SET sequence=?,evidence=? WHERE key=?",
-                (previous_commit, raw, key),
-            )
+        assert previous_commit in store.commits
+        del store.disputes[altered]
+        store.disputes[identity] = previous_commit
         moved, unchanged = journal.dispute_changes(0)
         assert moved.sequence == previous_commit and unchanged == second
         assert journal.publication_candidate(moved).identity != one.identity
         with pytest.raises(LedgerError, match="Verified journal-only publication"):
             journal.publication_candidate(first)
 
-        with journal._store.transaction(write=True) as connection:
-            journal._store._enable_coverage(connection)
+        # Observe supported schema transitions while keeping the encoded rows fixed.
+        store.version = 6
         journal.enable_delivery(journal.as_of().sequence)
         assert journal.dispute_changes(0) == (moved, second)
         assert journal.publication_candidate(second) == two
-        database = writer.root / "routing-journal-v1" / "journal.sqlite3"
-        with _open(database, write=True) as connection:
-            connection.execute(f"PRAGMA user_version = {_DELIVERY_SCHEMA_VERSION + 1}")
+        schema = _journal_metadata(monkeypatch, _DELIVERY_SCHEMA_VERSION + 1)
+        schema_owner = SimpleNamespace(_key_id="fixture-key")
+        monkeypatch.setattr(
+            store,
+            "_current_version",
+            lambda _: JournalStore._current_version(schema_owner, schema),
+        )
         for read in (
             lambda: journal.dispute_changes(0),
             lambda: journal.publication_candidate(second),
         ):
             with pytest.raises(LedgerError, match="Unsupported routing journal schema"):
                 read()
-        with _open(database, write=False) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone() == (
-                _DELIVERY_SCHEMA_VERSION + 1,
-            )
+        assert schema.execute("PRAGMA user_version").fetchone() == (
+            _DELIVERY_SCHEMA_VERSION + 1,
+        )
 
 
 def test_journal_only_candidates_refuse_pre_content_dispute_schema(

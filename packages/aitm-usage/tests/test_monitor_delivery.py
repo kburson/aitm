@@ -10,8 +10,8 @@ from uuid import UUID
 
 import pytest
 from delivery_policy_cases import (
-    DestinationRows,
     delivery_destination,
+    delivery_destinations,
     delivery_journal_rows,
 )
 from test_monitor_journal import (
@@ -143,10 +143,6 @@ def test_stale_ack_never_rewinds_publication(journal_transcript_policy, monkeypa
 
 
 def test_full_destination_queue_preserves_independent_progress(monkeypatch):
-    from test_ledger import _memory_ledger
-
-    from aitm_usage import ledger as ledger_module
-
     native = _MemoryJournalTranscripts(
         monkeypatch, competing=True, independent_copy=True
     )
@@ -154,20 +150,7 @@ def test_full_destination_queue_preserves_independent_progress(monkeypatch):
     assert native.locator(LIVE).stream_ref != native.locator(COPY).stream_ref
     with native.registry.writer() as registry:
         journal = _journal(registry, cap=1)
-        destinations = {project: DestinationRows() for project in (A, B)}
-
-        @contextmanager
-        def destination(project):
-            registered = _project(registry.view(), project)
-            ledger = replace(
-                _memory_ledger(ledger_module, project, project.bytes),
-                root=Path(registered.state.path),
-            )
-            with monkeypatch.context() as patch:
-                writer, _ = delivery_destination(
-                    patch, journal, ledger, rows=destinations[project]
-                )
-                yield writer
+        destination = delivery_destinations(monkeypatch, journal, A, B)
 
         (original,) = _reserve(native, journal)
         store.delivery_enabled = True

@@ -309,8 +309,8 @@ packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_compl
 packages/aitm-usage/tests/test_export.py::test_competing_destination_keeps_complete_atomic_visibility[True]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_exact_replay_resyncs_parent_after_interrupted_publication	systems-integration	yes	yes
 packages/aitm-usage/tests/test_export.py::test_export_allowlists_refs_and_gap_only_coverage	fast-unit	yes	yes
-packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease	systems-integration	yes	yes
-packages/aitm-usage/tests/test_export.py::test_receiver_checks_reconciled_observation_after_reopen	local-integration	yes	yes
+packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease	fast-unit	yes	yes
+packages/aitm-usage/tests/test_export.py::test_receiver_checks_reconciled_observation_after_reopen	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_refuses_duplicate_source_and_authenticated_tag	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_refuses_invalid_manifest_before_writing[cutoff-True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_export.py::test_receiver_refuses_invalid_manifest_before_writing[diagnostics-value5]	fast-unit	yes	yes
@@ -507,7 +507,7 @@ packages/aitm-usage/tests/test_isolated_qualification.py::test_reader_exceptions
 packages/aitm-usage/tests/test_isolated_qualification.py::test_revocation_is_terminal_and_writer_thread_is_private	systems-integration	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_signed_supersession_invalidates_the_prior_generation	fast-unit	yes	yes
 packages/aitm-usage/tests/test_isolated_qualification.py::test_valid_owner_signature_is_bound_to_revision_and_lease	systems-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[control-inside-state-existing]	local-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[control-inside-state-existing]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[control-inside-state-missing]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[equal-existing]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[equal-missing]	fast-unit	yes	yes
@@ -522,7 +522,7 @@ packages/aitm-usage/tests/test_ledger.py::test_control_location_cannot_be_inside
 packages/aitm-usage/tests/test_ledger.py::test_control_location_rejects_case_alias_of_project_state	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_cursor_replay_never_rewinds_current_provider_state	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_distinct_apfs_alias_cannot_admit_a_second_writer	systems-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_distinct_project_can_write_while_first_uuid_guard_held	local-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_distinct_project_can_write_while_first_uuid_guard_held	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_existing_state_refuses_missing_control_guard	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_extended_grant_on_private_key_refused_before_read	systems-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_genuine_pseudonyms_and_project_identity_survive_reopen	fast-unit	yes	yes
@@ -818,7 +818,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_claude_common_usage_repe
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody[disabled]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody[equal-child]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_conflict_requires_distinct_usage_and_current_independent_custody[relocated]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[after]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[after]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate[before]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_genesis_alone_cannot_prove_a_common_dispute_parent	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_journal_never_bypasses_a_disabled_intermediate	fast-unit	yes	yes
@@ -858,7 +858,7 @@ packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_independen
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_keyed_grok_contradiction_without_touching_codex	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics[aggregate-overlap]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_holds_native_claude_agent_overlap_and_mixed_diagnostics[mixed]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidates_refuse_pre_content_dispute_schema	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_reconfirms_visible_scope_replacement_before_durable_progress	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_journal_records_native_disposition_without_settlement[gap]	fast-unit	yes	yes
@@ -1068,7 +1068,7 @@ packages/aitm-usage/tests/test_monitor_qualification.py::test_unqualified_physic
 packages/aitm-usage/tests/test_monitor_qualification.py::test_unqualified_physical_custody_cannot_approve_or_read[missing-installation]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_qualification.py::test_unqualified_physical_custody_cannot_approve_or_read[replaced-approved-directory]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_qualification.py::test_unqualified_physical_custody_cannot_approve_or_read[replaced-profile-root]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_claude_coverage_gap_cannot_escape_before_recovery_fsync	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_claude_coverage_gap_cannot_escape_before_recovery_fsync	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_refuses_an_unwitnessed_older_candidate[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_refuses_lost_coordinator_custody	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_fence_rejects_forged_types_and_a_root_inside_journal	fast-unit	yes	yes
@@ -1133,13 +1133,13 @@ packages/aitm-usage/tests/test_monitor_registry.py::test_unfinished_codex_tail_f
 packages/aitm-usage/tests/test_monitor_registry.py::test_unfinished_codex_tail_fences_without_new_native_completion[partial]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_approved_real_locator_can_issue_wake	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_decoder_failure_refuses_wake_and_keeps_listener_live	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scheduler.py::test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scheduler.py::test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_due_turns_rotate_by_stream_inside_one_project	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_duplicate_and_missing_hooks_keep_idempotent_progress	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_full_project_does_not_starve_another_due_project	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_park_final_catchup_then_late_write_reopens	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_real_socket_and_park_cli_retain_only_keyed_wake_bytes	systems-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_scheduler.py::test_replaced_endpoint_is_refused_and_preserved[root]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scheduler.py::test_replaced_endpoint_is_refused_and_preserved[root]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_replaced_endpoint_is_refused_and_preserved[socket]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_restart_recovers_pending_wake_without_its_old_lease	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scheduler.py::test_saturated_listener_is_preserved_and_sender_returns	fast-unit	yes	yes
@@ -1221,7 +1221,7 @@ packages/aitm-usage/tests/test_monitor_scope.py::test_handoff_A_to_B_to_C_with_r
 packages/aitm-usage/tests/test_monitor_scope.py::test_handoff_consumes_the_first_verified_receipt_target_once	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_hold_overflow_becomes_a_gap_without_displacing_existing_hold	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_interrupted_retained_hold_publication_preserves_atomic_snapshot[after-replace]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_scope.py::test_interrupted_retained_hold_publication_preserves_atomic_snapshot[before-replace]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scope.py::test_interrupted_retained_hold_publication_preserves_atomic_snapshot[before-replace]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_issued_route_disposition_requires_current_evidence[advertisement-expired]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_issued_route_disposition_requires_current_evidence[consumed]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_issued_route_disposition_requires_current_evidence[expire]	fast-unit	yes	yes
@@ -1241,7 +1241,7 @@ packages/aitm-usage/tests/test_monitor_scope.py::test_legacy_writers_preserve_bo
 packages/aitm-usage/tests/test_monitor_scope.py::test_legacy_writers_preserve_both_v2_collections[hold]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_legacy_writers_preserve_both_v2_collections[mark]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_native_boundary_cannot_be_substituted_between_streams	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scope.py::test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scope.py::test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[expired-gap]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[gap]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[resolved]	fast-unit	yes	yes

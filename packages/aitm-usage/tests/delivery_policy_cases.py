@@ -2,10 +2,12 @@
 
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from journal_disposition_cases import _Rows
+from test_ledger import _memory_ledger
 from test_monitor_journal import _ClaudeJournalRows
 
 from aitm_usage import ledger as ledger_module
@@ -116,6 +118,26 @@ def delivery_journal_rows(monkeypatch, registry):
 
     monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
     return rows
+
+
+def delivery_destinations(monkeypatch, journal, *projects):
+    """Keep each destination's recorded rows across separate writer lifetimes."""
+    destinations = {project: DestinationRows() for project in projects}
+
+    @contextmanager
+    def open_destination(project):
+        registered = _project(journal._writer.view(), project)
+        ledger = replace(
+            _memory_ledger(ledger_module, project, project.bytes),
+            root=Path(registered.state.path),
+        )
+        with monkeypatch.context() as patch:
+            writer, _ = delivery_destination(
+                patch, journal, ledger, rows=destinations[project]
+            )
+            yield writer
+
+    return open_destination
 
 
 class DestinationRows:

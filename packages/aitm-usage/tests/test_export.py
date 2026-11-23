@@ -3,6 +3,7 @@ import os
 import stat
 import subprocess
 import sys
+from collections import Counter
 from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -15,7 +16,7 @@ from uuid import UUID
 
 import pytest
 from test_accounting import reference_rates as reference_rates
-from test_ledger import _memory_ledger
+from test_ledger import _LedgerRows, _memory_ledger
 from test_ledger import ledger_path_metadata as ledger_path_metadata
 from test_ledger import modules as modules
 
@@ -237,7 +238,18 @@ def test_replay_cutoff_and_pending_finalization(project, tmp_path):
     card = load_rate_card()
     before = project.as_of()
     original = tmp_path / "original"
+    with project.writer() as writer:
+        result = _invoke_installed_export(
+            project, tmp_path, before.sequence, card.basis.identifier, original
+        )
+        assert result.returncode == 0, result.stderr
+        assert writer.as_of().sequence == before.sequence
     receipt = export_as_of(before, card, original)
+    cli_receipt = json.loads(result.stdout)
+    assert (cli_receipt["cutoff"], cli_receipt["sha256"]) == (
+        before.sequence,
+        receipt.sha256,
+    )
     original_manifest, original_data = _snapshot(original)
     rows = {row["source"]: row for row in map(json.loads, original_data.splitlines())}
     assert rows[first_key]["scope"]["item"] == {"kind": "issue", "id": 91}
@@ -423,6 +435,10 @@ def test_replay_cutoff_and_pending_finalization(project, tmp_path):
         receiver.import_snapshot(observation_revision)
         assert receiver.accepted[first_key] == accepted_first
         assert receiver.reconciliation == {first_key: 3, second_key: 1}
+    with Receiver(database, PROJECT) as receiver:
+        assert receiver.reconciliation == {first_key: 3, second_key: 1}
+        assert receiver.accepted[first_key] == accepted_first
+        assert receiver.watermark == project.as_of().sequence
 
     replay = tmp_path / "replay"
     assert export_as_of(project.as_of(before.sequence), card, replay) == receipt
@@ -517,22 +533,67 @@ def test_export_allowlists_refs_and_gap_only_coverage(
     )
 
 
-def test_export_cli_reads_existing_project_without_writer_lease(project, tmp_path):
-    _seed(project)
-    output = tmp_path / "cli-output"
-    card = load_rate_card()
+def _invoke_installed_export(project, tmp_path, cutoff, rate, destination):
     runner = (
         "import runpy, sys; from pathlib import Path; from aitm_usage import ledger;"
         f"ledger._control_root = lambda: Path({str(tmp_path / 'control')!r});"
         "runpy.run_path(str(Path(sys.executable).with_name('aitm-usage')), run_name='__main__')"
     )
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            runner,
+            "--project",
+            str(project.root),
+            "export",
+            "--as-of",
+            str(cutoff),
+            "--rate-card",
+            rate,
+            "--output",
+            str(destination),
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
+def test_export_cli_reads_existing_project_without_writer_lease(
+    export_evidence, reference_rates, monkeypatch, capsys
+):
+    from aitm_usage import cli, export
+
+    project, card = export_evidence, reference_rates
+    view, *_ = _projected_view(project, card)
+    rows = _LedgerRows(project.identity, store.APPLICATION_ID, ())
+    with rows.connect(write=True) as connection:
+        connection.execute("INSERT INTO commits VALUES (?)", (view.sequence,))
+        store._append_revisions(connection, view.sequence, view.revisions)
+    writes = rows.writes.copy()
+    opened = Mock(return_value=project)
+    writer = Mock(side_effect=AssertionError("A read-only export acquired a writer"))
+    monkeypatch.setattr(cli, "open_project", opened)
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(cli, "load_rate_card", {card.version: card}.__getitem__)
+    monkeypatch.setattr(Ledger, "writer", writer)
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    published = {}
+
+    def publish(destination, files):
+        assert published.setdefault(destination, files) == files
+
+    monkeypatch.setattr(export, "_publish", publish)
 
     def invoke(cutoff, rate, destination):
-        return subprocess.run(
+        monkeypatch.setattr(
+            sys,
+            "argv",
             [
-                sys.executable,
-                "-c",
-                runner,
+                "aitm-usage",
                 "--project",
                 str(project.root),
                 "export",
@@ -544,32 +605,31 @@ def test_export_cli_reads_existing_project_without_writer_lease(project, tmp_pat
                 str(destination),
                 "--json",
             ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=10,
         )
+        return cli.main(), capsys.readouterr()
 
-    with project.writer() as writer:
-        cutoff = writer.as_of().sequence
-        result = invoke(cutoff, card.basis.identifier, output)
-        assert result.returncode == 0, result.stderr
-        assert invoke(cutoff, card.version, output).stdout == result.stdout
-        assert writer.as_of().sequence == cutoff
-        for invalid_cutoff, invalid_rate in (
-            (cutoff + 1, card.version),
-            (cutoff, f"standard-api-USD:{card.version}:sha256:{CANARY}"),
-        ):
-            invalid_path = tmp_path / f"{CANARY}-invalid"
-            rejected = invoke(invalid_cutoff, invalid_rate, invalid_path)
-            assert rejected.returncode == 1
-            assert not rejected.stdout and CANARY not in rejected.stderr
-            assert not invalid_path.exists()
-    receipt = json.loads(result.stdout)
-    manifest, _ = _snapshot(output)
+    cutoff = view.sequence
+    output = Path("/fixture/cli-output")
+    code, result = invoke(cutoff, card.basis.identifier, output)
+    assert code == 0, result.err
+    assert invoke(cutoff, card.version, output) == (0, result)
+    for invalid_cutoff, invalid_rate in (
+        (cutoff + 1, card.version),
+        (cutoff, f"standard-api-USD:{card.version}:sha256:{CANARY}"),
+    ):
+        invalid_path = output.with_name(f"{CANARY}-invalid")
+        code, rejected = invoke(invalid_cutoff, invalid_rate, invalid_path)
+        assert code == 1
+        assert not rejected.out and CANARY not in rejected.err
+        assert invalid_path not in published
+    receipt = json.loads(result.out)
+    manifest = published[output][export.MANIFEST_NAME]
     assert receipt["cutoff"] == cutoff
     assert receipt["sha256"] == json.loads(manifest)["sha256"]
-    assert CANARY not in result.stdout
+    assert CANARY not in result.out
+    assert opened.call_args_list == [call(project.root)] * 3
+    writer.assert_not_called()
+    assert rows.writes == writes
 
 
 @pytest.mark.parametrize(
@@ -1079,51 +1139,140 @@ def _assert_component_conflict(project, card, kind):
         assert pending == {source: (sha256(payload).hexdigest(), payload)}
 
 
-def test_receiver_checks_reconciled_observation_after_reopen(project, tmp_path):
-    export_as_of = _export()
+class _ReceiverHistory:
+    """Store the observed receiver rows independently of the reader lifetime."""
+
+    def __init__(self):
+        self.watermark = None
+        self.snapshots = {}
+        self.components = {}
+        self.accepted = {}
+        self.pending = {}
+        self.reconciliation = {}
+
+    @contextmanager
+    def transaction(self):
+        before = {
+            name: value.copy() if isinstance(value, dict) else value
+            for name, value in vars(self).items()
+        }
+        try:
+            yield
+        except Exception:
+            vars(self).update(before)
+            raise
+
+    def execute(self, statement, values=()):
+        sql = " ".join(statement.split())
+        row = None
+        if sql == "SELECT watermark FROM meta":
+            row = (self.watermark,)
+        elif sql == "SELECT source, digest FROM accepted":
+            return tuple((key, data[0]) for key, data in self.accepted.items())
+        elif sql == "SELECT source, COUNT(*) FROM reconciliation GROUP BY source":
+            return tuple(Counter(key for key, _ in self.reconciliation).items())
+        elif (
+            sql
+            == "SELECT basis, digest, projection_digest FROM snapshot WHERE cutoff = ?"
+        ):
+            return tuple(
+                (basis, *data)
+                for (cutoff, basis), data in self.snapshots.items()
+                if (cutoff,) == values
+            )
+        elif sql == "SELECT payload FROM component WHERE kind = ? AND identity = ?":
+            if values in self.components:
+                row = (self.components[values],)
+        elif sql == "SELECT digest FROM accepted WHERE source = ?":
+            (key,) = values
+            if key in self.accepted:
+                row = (self.accepted[key][0],)
+        elif sql == "INSERT INTO component VALUES(?, ?, ?)":
+            kind, identity, payload = values
+            self.components[kind, identity] = payload
+        elif sql == "INSERT OR IGNORE INTO accepted VALUES(?, ?, ?)":
+            key, digest, payload = values
+            assert key not in self.accepted
+            self.accepted[key] = (digest, payload)
+            return SimpleNamespace(rowcount=1)
+        elif sql.startswith("INSERT INTO pending VALUES(?, ?, ?) ON CONFLICT(source)"):
+            key, digest, payload = values
+            self.pending[key] = (digest, payload)
+        elif sql == "DELETE FROM pending WHERE source = ?":
+            self.pending.pop(values[0], None)
+        elif sql == "INSERT OR IGNORE INTO reconciliation VALUES(?, ?, ?)":
+            key, digest, payload = values
+            self.reconciliation.setdefault((key, digest), payload)
+        elif sql == "INSERT INTO snapshot VALUES(?, ?, ?, ?)":
+            cutoff, basis, digest, projection = values
+            self.snapshots[cutoff, basis] = (digest, projection)
+        else:
+            assert sql == "UPDATE meta SET watermark = ?", sql
+            (self.watermark,) = values
+        return SimpleNamespace(fetchone=lambda: row)
+
+
+def test_receiver_checks_reconciled_observation_after_reopen(
+    export_evidence, reference_rates, monkeypatch
+):
     from fixtures.receiver import Receiver, ReceiverConflict
 
-    first, _, _ = _seed(project)
-    card = load_rate_card()
-    original = tmp_path / "original"
-    export_as_of(project.as_of(), card, original)
+    from aitm_usage import export
+
+    project, card = export_evidence, reference_rates
+    initial, first, *_ = _projected_view(project, card)
+    files = {}
+
+    def render(name, view, rates):
+        directory = Path("/fixture") / name
+        _, raw = export._render(view, rates)
+        files.update({directory / name: data for name, data in raw.items()})
+        return directory
+
+    monkeypatch.setattr(Path, "read_bytes", lambda path: files[path])
+    original = render("original", initial, card)
     newer = replace(
         first,
         revision=2,
         record=replace(first.record, client_version=ClientVersion.UNKNOWN),
     )
-    project.apply(LedgerBatch((newer,)))
-    view = project.as_of()
-    revision = tmp_path / "revision"
-    export_as_of(view, card, revision)
-    database = tmp_path / "receiver.sqlite"
-    with Receiver(database, PROJECT) as receiver:
-        receiver.import_snapshot(original)
-        receiver.import_snapshot(revision)
-        accepted = receiver.accepted
-        assert receiver.reconciliation == {_public(first.key): 1}
+    view = replace(initial, sequence=2, revisions=(*initial.revisions, newer))
+    revision = render("revision", view, card)
+    history = _ReceiverHistory()
+
+    def reopen():
+        receiver = object.__new__(Receiver)
+        receiver._project_id = PROJECT
+        receiver._db = history
+        receiver._transaction = history.transaction
+        return receiver
+
+    receiver = reopen()
+    assert receiver.import_snapshot(original) == "imported"
+    assert receiver.import_snapshot(revision) == "imported"
+    accepted = receiver.accepted
+    assert receiver.reconciliation == {_public(first.key): 1}
 
     new_card = replace(card, version="2026-11-10")
-    repriced = tmp_path / "repriced"
-    export_as_of(view, new_card, repriced)
+    repriced = render("repriced", view, new_card)
 
     def contradict(rows):
         row = next(item for item in rows if item["source"] == _public(first.key))
         row["tokens"]["input_tokens"] = 501
 
     # A later cutoff and a new card do not erase the remembered revision.
-    altered = _changed_snapshot(
-        repriced,
-        tmp_path / "altered",
+    altered = Path("/fixture/altered")
+    manifest, data = _changed_snapshot_bytes(
+        *_snapshot(repriced),
         mutate_row=contradict,
         mutate_manifest=lambda manifest: manifest.update(cutoff=view.sequence + 1),
     )
-    with Receiver(database, PROJECT) as receiver:
-        with pytest.raises(
-            ReceiverConflict, match=r"source provenance \(observation\)"
-        ):
-            receiver.import_snapshot(altered)
-        assert receiver.watermark == view.sequence
-        assert receiver.accepted == accepted
-        assert receiver.reconciliation == {_public(first.key): 1}
-        assert receiver.import_snapshot(repriced) == "imported"
+    files[altered / export.MANIFEST_NAME] = manifest
+    files[altered / export.USAGE_NAME] = data
+    reopened = reopen()
+    with pytest.raises(ReceiverConflict, match=r"source provenance \(observation\)"):
+        reopened.import_snapshot(altered)
+    assert reopened.watermark == view.sequence
+    assert reopened.accepted == accepted
+    assert reopened.reconciliation == {_public(first.key): 1}
+    assert reopened.import_snapshot(repriced) == "imported"

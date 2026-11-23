@@ -13,14 +13,17 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
+from qualification_policy_cases import qualification_policy
+from test_codex import CUTOFF
+from test_monitor_coverage import _consented_view, _CoveragePolicyStore
 from test_monitor_coverage import admitted_sources as admitted_sources
 from test_monitor_journal import COPY, LIVE, B, NativeJournalFixture
 from test_monitor_journal_store import _journal_observations
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
+from aitm_usage import _monitor_journal_store, monitor_journal, monitor_recovery, scopes
 from aitm_usage import ledger as ledger_module
-from aitm_usage import monitor_recovery, scopes
 from aitm_usage._monitor_journal_store import _STORE as _JOURNAL_STORE
 from aitm_usage._monitor_journal_store import JournalStore
 from aitm_usage.ledger import Ledger, LedgerError, _pin_directory
@@ -44,6 +47,7 @@ from aitm_usage.monitor_registry import (
     _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import ScopeState
+from aitm_usage.types import Provider
 
 
 @pytest.fixture
@@ -150,6 +154,7 @@ class _RecoveryPolicy:
         self.journal._writer = writer
         self.journal._store = JournalStore(writer)
         self.evidence = self.journal._store.evidence
+        self.connection = memory.open_database.return_value.enter_result
         self.pin = memory.pin
         self.key_path = writer.root / _SOURCE_KEY_FILE
         self.key_stats = memory.files
@@ -226,6 +231,8 @@ def test_view_cannot_escape_before_recovery_fsync(request, monkeypatch, after_li
     journal, root, candidate = coverage_candidate
     fence = RecoveryFence(journal, root)
     publish = monitor_recovery._publish
+    before = journal.as_of()
+    assert before.claims
 
     def interrupted(*args, **kwargs):
         publish(*args, **kwargs)
@@ -250,12 +257,41 @@ def test_view_cannot_escape_before_recovery_fsync(request, monkeypatch, after_li
     assert recovered.candidate == candidate
     assert recovered.anchor.ordinal == 1
     assert fence.protect(candidate) == recovered
+    assert journal.as_of() == before
     assert len(list(root.iterdir())) == 1
 
 
 def _assert_retry_after_unpublished_witness(policy, monkeypatch):
     fence = RecoveryFence(policy.journal, policy.root)
     candidate = policy.coverage()
+    staged, staged_fd, publish = _observe_witness_publication(policy, monkeypatch)
+    sync = monitor_recovery.os.fsync
+    witness_fd = policy.witness_fd
+    rename = Mock(side_effect=(OSError("interrupted before witness link"), True))
+
+    def publish_after_fault(*args):
+        rename(*args)
+        return publish(*args)
+
+    monkeypatch.setattr(scopes, "publish_noreplace", publish_after_fault)
+    with pytest.raises(LedgerError, match="Verified publication recovery is held"):
+        fence.protect(candidate)
+    assert not staged and not policy.files
+    sync.assert_called_once_with(staged_fd)
+
+    recovered = fence.protect(candidate)
+    assert recovered.candidate == candidate and recovered.anchor.ordinal == 1
+    assert [invocation.args for invocation in sync.call_args_list] == [
+        (staged_fd,),
+        (staged_fd,),
+        (witness_fd,),
+    ]
+    assert not staged and len(policy.files) == 1
+    assert fence.protect(candidate) == recovered
+    assert rename.call_count == 2
+
+
+def _observe_witness_publication(policy, monkeypatch):
     staged = {}
     sync = monitor_recovery.os.fsync
     witness_fd = policy.witness_fd
@@ -306,28 +342,7 @@ def _assert_retry_after_unpublished_witness(policy, monkeypatch):
             unlink=unlink_stage,
         ),
     )
-    rename = Mock(side_effect=(OSError("interrupted before witness link"), True))
-
-    def publish_after_fault(*args):
-        rename(*args)
-        return publish(*args)
-
-    monkeypatch.setattr(scopes, "publish_noreplace", publish_after_fault)
-    with pytest.raises(LedgerError, match="Verified publication recovery is held"):
-        fence.protect(candidate)
-    assert not staged and not policy.files
-    sync.assert_called_once_with(staged_fd)
-
-    recovered = fence.protect(candidate)
-    assert recovered.candidate == candidate and recovered.anchor.ordinal == 1
-    assert [invocation.args for invocation in sync.call_args_list] == [
-        (staged_fd,),
-        (staged_fd,),
-        (witness_fd,),
-    ]
-    assert not staged and len(policy.files) == 1
-    assert fence.protect(candidate) == recovered
-    assert rename.call_count == 2
+    return staged, staged_fd, publish
 
 
 def test_restore_with_only_old_witness_holds_replay(dispute_candidates, tmp_path):
@@ -372,9 +387,59 @@ def test_recovery_holds_at_the_authenticated_prefix(recovery_policy, missing):
 
 
 def test_claude_coverage_gap_cannot_escape_before_recovery_fsync(
-    coverage_candidate, monkeypatch
+    recovery_custody_policy, monkeypatch
 ):
-    journal, root, candidate = coverage_candidate
+    policy = recovery_custody_policy
+    with monkeypatch.context() as produce:
+        authority = qualification_policy(
+            produce,
+            SOURCE,
+            CUTOFF,
+            provider=Provider.CLAUDE,
+            evidence_key=policy.evidence.key,
+        )
+        assert authority.writer.source_evidence().key_id == policy.evidence.key_id
+        authority.view = _consented_view(
+            authority.view, SOURCE, authority.locator, policy.evidence
+        )
+        writer = authority.writer
+        produce.setattr(writer, "view", lambda: authority.view)
+        produce.setattr(
+            writer, "capture_read_limit", Registry.capture_read_limit.__get__(writer)
+        )
+        store = _CoveragePolicyStore(policy.evidence)
+        produce.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+        producing = RoutingJournal(writer, ScopeState(writer))
+        writer._live_profile = None
+        with pytest.raises(LedgerError, match="qualification"):
+            producing.prepare(SOURCE, authority.locator)
+    (committed,) = store.committed.events.values()
+
+    def observe_rows(sql, params=()):
+        assert not sql.startswith(("INSERT", "DELETE", "UPDATE"))
+        if sql == "SELECT coalesce(max(sequence), 0) FROM commits":
+            return Mock(fetchone=lambda: (store.committed.sequence,))
+        if sql == monitor_journal._COVERAGE_ROWS + " WHERE s.sequence=?":
+            assert params == (committed[1],)
+            return Mock(fetchall=lambda: [committed])
+        if (
+            sql
+            == monitor_journal._COVERAGE_ROWS
+            + " WHERE s.sequence>? ORDER BY s.sequence"
+        ):
+            return (committed,) if committed[1] > params[0] else ()
+        return ()
+
+    policy.connection.execute.side_effect = observe_rows
+    monkeypatch.setattr(
+        _monitor_journal_store,
+        "_validate_identity",
+        Mock(return_value=store.committed.version),
+    )
+    writer = policy.journal._writer
+    journal = RoutingJournal(writer, ScopeState(writer))
+    (change,) = journal.coverage_changes(0)
+    candidate = journal.publication_candidate(change)
     assert candidate.basis.value == "coverage"
     before = journal.as_of()
 
@@ -384,22 +449,31 @@ def test_claude_coverage_gap_cannot_escape_before_recovery_fsync(
     monkeypatch.setattr(Ledger, "open", destination_access)
     monkeypatch.setattr(Ledger, "writer", destination_access)
     monkeypatch.setattr(journal, "ack", destination_access)
-    os_fsync = os.fsync
+    staged, staged_fd, publish = _observe_witness_publication(policy, monkeypatch)
+    monkeypatch.setattr(scopes, "publish_noreplace", publish)
+    sync = monitor_recovery.os.fsync
 
-    def fail_first_witness_directory_sync(fd):
-        if os.fstat(fd).st_ino == root.stat().st_ino:
+    def fail_witness_directory_sync(fd):
+        if fd == policy.witness_fd:
             raise OSError("witness parent not synchronized")
-        return os_fsync(fd)
 
-    fence = RecoveryFence(journal, root)
-    with monkeypatch.context() as fault:
-        fault.setattr(os, "fsync", fail_first_witness_directory_sync)
-        with pytest.raises(LedgerError):
-            fence.protect(candidate)
+    fence = RecoveryFence(journal, policy.root)
+    sync.side_effect = fail_witness_directory_sync
+    with pytest.raises(LedgerError, match="Verified publication recovery is held"):
+        fence.protect(candidate)
+    assert [call.args for call in sync.call_args_list] == [
+        (staged_fd,),
+        (policy.witness_fd,),
+    ]
+    assert not staged and len(policy.files) == 1
+    published = policy.files.copy()
     assert journal.as_of() == before
+    sync.reset_mock(side_effect=True)
     ready = fence.protect(candidate)
+    sync.assert_called_once_with(policy.witness_fd)
     assert ready.candidate == candidate
     assert ready.anchor.ordinal == 1
+    assert policy.files == published
     assert journal.as_of() == before
 
 

@@ -14,18 +14,18 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, call
 
 import pytest
-from test_monitor_delivery import _enable, _journal, _reserve
+from delivery_policy_cases import delivery_destinations, delivery_journal_rows
+from test_monitor_delivery import _journal, _reserve
 from test_monitor_journal import (
     COPY,
     LIVE,
     A,
     B,
-    NativeJournalFixture,
     _MemoryJournalTranscripts,
 )
 
 from aitm_usage import cli, monitor_control, monitor_registry, monitor_scheduler
-from aitm_usage.ledger import Ledger, LedgerError
+from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_control import WakeIngress
 from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 from aitm_usage.monitor_scheduler import (
@@ -66,11 +66,6 @@ def wake():
     with TemporaryDirectory(prefix="aitm-wake-") as temporary:
         with Registry(Path(temporary).resolve() / "m").writer() as writer:
             yield _wake_context(writer)
-
-
-@pytest.fixture
-def independent(tmp_path, monkeypatch):
-    return NativeJournalFixture(tmp_path, monkeypatch, independent_copy=True)
 
 
 def _wake_context(writer):
@@ -355,15 +350,19 @@ def test_due_turns_rotate_by_stream_inside_one_project(wake_policy):
     assert third.stream == original
 
 
-@pytest.mark.usefixtures("legacy_monitor_qualification")
 def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
-    independent,
+    monkeypatch,
 ):
-    native = independent
+    native = _MemoryJournalTranscripts(
+        monkeypatch, competing=True, independent_copy=True
+    )
+    _attach_wake_files(monkeypatch)
+    store = delivery_journal_rows(monkeypatch, native.registry)
     with native.registry.writer() as writer:
         journal = _journal(writer, cap=1)
+        open_destination = delivery_destinations(monkeypatch, journal, A, B)
         (original,) = _reserve(native, journal)
-        _enable(native, journal)
+        store.delivery_enabled = True
         prior = journal.cursor_for(LIVE, native.locator(LIVE))
         native.append(LIVE, native.turn(3))
         now = [0.0]
@@ -396,7 +395,7 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         independent_item = wake_source(COPY, B)
         (other,) = _reserve(native, journal, COPY)
         assert (other.status, other.project_id) == ("pending", B)
-        with Ledger.open(native.ledgers[B].root, B).writer() as destination:
+        with open_destination(B) as destination:
             delivery = ProjectDelivery.attach(journal, destination)
             ticket = journal.reserve_delivery(other.key, 1)
             result = delivery.commit(ticket)
@@ -407,7 +406,7 @@ def test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack(
         assert journal.cursor_for(LIVE, native.locator(LIVE)) == prior
         assert scheduler.take_due(now[0], 1) == ()
 
-        with Ledger.open(native.ledgers[A].root, A).writer() as destination:
+        with open_destination(A) as destination:
             delivery = ProjectDelivery.attach(journal, destination)
             original_ticket = journal.reserve_delivery(original.key, 1)
             journal.ack(delivery, original_ticket, delivery.commit(original_ticket))
@@ -566,28 +565,47 @@ def test_sender_unavailable_and_listener_refuses_an_unsafe_endpoint(wake):
 
 
 @pytest.mark.parametrize("replace_root", [False, True], ids=["socket", "root"])
-def test_replaced_endpoint_is_refused_and_preserved(wake, replace_root):
+def test_replaced_endpoint_is_refused_and_preserved(request, monkeypatch, replace_root):
+    if replace_root:
+        scheduler, resolver, now, listener, _, _ = request.getfixturevalue(
+            "listener_policy"
+        )
+        changed = LedgerError("Private ledger path identity changed")
+        listener.directory.check.side_effect = changed
+        accept = Mock(side_effect=AssertionError("Changed root accepted a connection"))
+        unlink, sync = Mock(), Mock()
+        monkeypatch.setattr(listener.server, "accept", accept)
+        monkeypatch.setattr(monitor_control.os, "unlink", unlink, raising=False)
+        monkeypatch.setattr(monitor_control.os, "fsync", sync, raising=False)
+        assert not listener.serve_once()
+        assert resolver.calls == []
+        WakeIngress._retire(listener.directory, scheduler.lease, listener.identity)
+        accept.assert_not_called()
+        unlink.assert_not_called()
+        sync.assert_not_called()
+        lease = scheduler.lease
+        lease.check.reset_mock()
+        lease.check.side_effect = changed
+        scheduler._writer = Registry(resolver.writer.root, lease)
+        with pytest.raises(LedgerError, match="Private ledger path"):
+            scheduler.take_due(now[0], 1)
+        lease.check.assert_called_once_with()
+        return
+
+    wake = request.getfixturevalue("wake")
     scheduler, resolver, _, now = wake
     root = resolver.writer.root
     endpoint = root / "wake.sock"
     with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as foreign:
         with WakeIngress(scheduler, resolver).listen() as listener:
-            if replace_root:
-                root.rename(root.with_name("previous"))
-                root.mkdir(mode=0o700)
-            else:
-                endpoint.unlink()
+            endpoint.unlink()
             foreign.bind(str(endpoint))
             endpoint.chmod(0o600)
             replacement = endpoint.lstat()
             assert not listener.serve_once()
             assert resolver.calls == []
         assert os.path.samestat(replacement, endpoint.lstat())
-    if replace_root:
-        with pytest.raises(LedgerError, match="Private ledger path"):
-            scheduler.take_due(now[0], 1)
-    else:
-        assert scheduler.take_due(now[0], 1) == ()
+    assert scheduler.take_due(now[0], 1) == ()
 
 
 def test_saturated_listener_is_preserved_and_sender_returns(

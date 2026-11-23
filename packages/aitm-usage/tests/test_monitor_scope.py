@@ -2123,18 +2123,23 @@ def test_retained_hold_refuses_capacity_gap_before_publication(
 
 @pytest.mark.parametrize("when", ["before-replace", "after-replace"])
 def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
-    native, monkeypatch, when
+    request, monkeypatch, when
 ):
     import os
 
+    from aitm_usage import monitor_scope
     from aitm_usage.monitor_scope import ScopeState
 
+    before_replace = when == "before-replace"
+    native = request.getfixturevalue(
+        "native_scope_policy" if before_replace else "native"
+    )
     with native.registry.writer() as writer:
         state = ScopeState(writer)
         first = state.hold(_held_receipt(state, native, UUID(int=0x501)))
         receipt = _held_receipt(state, native, UUID(int=0x502))
         path = _scope_file(native)
-        data = path.read_bytes()
+        data = native._scope_bytes()
         real_replace, real_fsync = os.replace, os.fsync
         published = False
 
@@ -2142,8 +2147,6 @@ def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
             nonlocal published
             if destination != path.name:
                 return real_replace(source, destination, **kwargs)
-            if when == "before-replace":
-                raise OSError("interrupted scope publication")
             real_replace(source, destination, **kwargs)
             published = True
 
@@ -2152,23 +2155,33 @@ def test_interrupted_retained_hold_publication_preserves_atomic_snapshot(
                 raise OSError("interrupted scope publication")
             real_fsync(fd)
 
+        def refuse_replace(directory, name, payload, *, replace_pending):
+            assert directory.path == writer.root
+            assert name == path.name and replace_pending
+            assert len(json.loads(payload)["holds"]) == 2
+            raise OSError("interrupted scope publication")
+
         with monkeypatch.context() as patch:
-            patch.setattr(os, "replace", interrupt_replace)
-            patch.setattr(os, "fsync", interrupt_sync)
+            if before_replace:
+                patch.setattr(monitor_scope, "_publish", refuse_replace)
+            else:
+                patch.setattr(os, "replace", interrupt_replace)
+                patch.setattr(os, "fsync", interrupt_sync)
             with pytest.raises(OSError, match="interrupted scope publication"):
                 state.hold(receipt, retain_route_target=True)
-        if when == "before-replace":
-            assert path.read_bytes() == data
+        if before_replace:
+            assert native._scope_bytes() == data
             assert state.view().holds == (first,)
         else:
-            payload = json.loads(path.read_bytes())
+            payload = json.loads(native._scope_bytes())
             assert len(payload["holds"]) == 2
             assert [row["hold_id"] for row in payload["held_route_targets"]] == [
                 str(receipt.command_id)
             ]
         hold = state.hold(receipt, retain_route_target=True)
         assert state.view().holds == (first, hold)
-        assert not list(path.parent.glob(".publishing-*"))
+        if not before_replace:
+            assert not list(path.parent.glob(".publishing-*"))
 
 
 @pytest.mark.parametrize("operation", ["mark", "handoff", "hold", "expire", "dispose"])
@@ -3651,38 +3664,40 @@ def test_legacy_resolution_blocks_first_route_proposal_without_rewriting_native_
 
 
 def test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure(
-    native, tmp_path, monkeypatch, capsys
+    native_scope_policy, monkeypatch
 ):
-    import os
+    from unittest.mock import Mock
 
+    from aitm_usage import monitor_scope
+
+    native = native_scope_policy
     with native.registry.writer() as writer:
-        current = _route_disposition_fixture(
-            native, writer, tmp_path, monkeypatch, capsys
-        )
+        current = _route_disposition_fixture(native, writer, monkeypatch=monkeypatch)
         state = current.state
-        scope_path = _scope_file(native)
-        old = scope_path.read_bytes()
+        old = native._scope_bytes()
         before = state.view()
-        actual_sync = os.fsync
+        publish = monitor_scope._publish
 
-        def fail_visible_proof(fd):
-            if (
-                os.path.samestat(os.fstat(fd), writer.root.stat())
-                and scope_path.read_bytes() != old
-            ):
-                raise OSError("route proof directory sync interrupted")
-            actual_sync(fd)
+        def fail_visible_proof(directory, name, data, *, replace_pending):
+            assert directory.path == writer.root and name == _scope_file(native).name
+            publish(directory, name, data, replace_pending=replace_pending)
+            assert native._scope_bytes() == data
+            raise OSError("route proof directory sync interrupted")
 
         with monkeypatch.context() as fault:
-            fault.setattr(os, "fsync", fail_visible_proof)
+            fault.setattr(monitor_scope, "_publish", fail_visible_proof)
             with pytest.raises(
                 (OSError, LedgerError), match="sync interrupted|publication failed"
             ):
                 state.verify_route_disposition(current.command, current.terminal)
             assert not state._route_proofs
-        assert scope_path.read_bytes() != old
+        assert native._scope_bytes() != old
         assert state.view() == before
+        synced = Mock()
+        monkeypatch.setattr(monitor_scope, "os", SimpleNamespace(fsync=synced))
         replay = state.verify_route_disposition(current.command, current.terminal)
+        with native.state_files.pin(writer.root) as directory:
+            synced.assert_any_call(directory.fd)
         assert (
             state.require_route_disposition(replay).hold_id == current.hold.command_id
         )

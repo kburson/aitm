@@ -39,8 +39,6 @@ def _uses_path_metadata(request):
         return request.node.callspec.id != "lock"
     if name == "test_inherited_macos_grant_refused_before_private_creation":
         return request.node.callspec.id == "guard"
-    if name == "test_apfs_firmlink_overlap_refused_before_private_creation":
-        return request.node.callspec.id != "control-inside-state-existing"
     return "ledger_path_metadata" in request.fixturenames
 
 
@@ -359,14 +357,10 @@ class _LedgerConnection:
 
 
 @pytest.fixture
-def ledger_rows(ledger_path_metadata, modules, monkeypatch):
-    ledger_module, types = modules
-    metadata = ledger_path_metadata
-    key = b"a" * 32
-    identity = ledger_module._identity(PROJECT, key)
-    ledger = ledger_module.Ledger(metadata.base / "parent" / "project", identity, key)
-    _observe_storage(metadata, ledger)
-    metadata.add_path(metadata.control / f"{OTHER_PROJECT}.lock", stat.S_IFREG | 0o600)
+def observe_ledger_rows(ledger_path_metadata, modules, monkeypatch):
+    ledger_module, _ = modules
+    keys = {}
+    databases = {}
 
     class KeyBytes(BytesIO):
         def __init__(self, descriptor, payload):
@@ -377,24 +371,41 @@ def ledger_rows(ledger_path_metadata, modules, monkeypatch):
             return self.descriptor
 
     def open_key(descriptor, mode):
-        assert (descriptor.path, mode) == (ledger.key_path, "rb")
-        return KeyBytes(descriptor, rows.key_bytes)
+        assert mode == "rb"
+        return KeyBytes(descriptor, keys[descriptor.path].key_bytes)
 
     schema = (
         ("table", "checkpoints", "checkpoints", "CREATE TABLE checkpoints (...)"),
         ("table", "revisions", "revisions", "CREATE TABLE revisions (...)"),
     )
-    rows = _LedgerRows(identity, ledger_module.APPLICATION_ID, schema)
-    rows.key_bytes = PROJECT.bytes + key
+
+    def observe(root, project_id, key):
+        identity = ledger_module._identity(project_id, key)
+        ledger = ledger_module.Ledger(root, identity, key)
+        _observe_storage(ledger_path_metadata, ledger)
+        rows = _LedgerRows(identity, ledger_module.APPLICATION_ID, schema)
+        rows.key_bytes = project_id.bytes + key
+        keys[ledger.key_path] = rows
+        databases[ledger.database_path] = rows
+        return rows
 
     def connection(path, *, write):
-        assert path == ledger.database_path
-        return nullcontext(rows.connect(write=write))
+        return nullcontext(databases[path].connect(write=write))
 
     monkeypatch.setattr(ledger_module.os, "fdopen", open_key, raising=False)
     monkeypatch.setattr(ledger_module, "_supported_schema", lambda version: schema)
     monkeypatch.setattr(ledger_module, "_connection", connection)
-    return ledger_module.Ledger.open(ledger.root, PROJECT), types, rows
+    return observe
+
+
+@pytest.fixture
+def ledger_rows(ledger_path_metadata, modules, observe_ledger_rows):
+    ledger_module, types = modules
+    metadata = ledger_path_metadata
+    root = metadata.base / "parent" / "project"
+    rows = observe_ledger_rows(root, PROJECT, b"a" * 32)
+    metadata.add_path(metadata.control / f"{OTHER_PROJECT}.lock", stat.S_IFREG | 0o600)
+    return ledger_module.Ledger.open(root, PROJECT), types, rows
 
 
 def sample_batch(ledger, types):
@@ -1397,15 +1408,56 @@ def test_control_location_cannot_be_inside_project_state(modules, ledger_path_me
     assert not root.exists()
 
 
-def test_distinct_project_can_write_while_first_uuid_guard_held(state, tmp_path):
-    ledger, types = state
+def test_distinct_project_can_write_while_first_uuid_guard_held(
+    ledger_rows, ledger_path_metadata, observe_ledger_rows, modules, monkeypatch
+):
+    ledger, types, first_rows = ledger_rows
+    ledger_module, _ = modules
+    metadata = ledger_path_metadata
+    other_root = metadata.base / "other"
+    other_rows = observe_ledger_rows(other_root, OTHER_PROJECT, b"b" * 32)
+    first_guard = metadata.control / f"{PROJECT}.lock"
+    other_guard = metadata.control / f"{OTHER_PROJECT}.lock"
+    held = {}
+    acquisitions = []
+
+    def flock(descriptor, flags):
+        assert flags == ledger_module.fcntl.LOCK_EX | ledger_module.fcntl.LOCK_NB
+        identity = (descriptor.status.st_dev, descriptor.status.st_ino)
+        if identity in held:
+            raise BlockingIOError
+        acquisitions.append((descriptor.path, tuple(pin.path for pin in held.values())))
+        held[identity] = descriptor
+
+    def close(descriptor):
+        identity = (descriptor.status.st_dev, descriptor.status.st_ino)
+        if held.get(identity) is descriptor:
+            del held[identity]
+
+    monkeypatch.setattr(ledger_module.fcntl, "flock", flock)
+    monkeypatch.setattr(ledger_module.os, "close", close)
     with ledger.writer():
-        other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+        other = type(ledger).initialize(other_root, OTHER_PROJECT)
         assert other.apply(sample_batch(other, types)) == 1
         assert other.identity.key_id != ledger.identity.key_id
         assert other.pseudonymize("session", CANARY) != ledger.pseudonymize(
             "session", CANARY
         )
+        assert tuple(pin.path for pin in held.values()) == (
+            first_guard,
+            ledger.lock_path,
+        )
+    assert not held
+    assert acquisitions == [
+        (first_guard, ()),
+        (ledger.lock_path, (first_guard,)),
+        (other_guard, (first_guard, ledger.lock_path)),
+        (other.lock_path, (first_guard, ledger.lock_path, other_guard)),
+        (other_guard, (first_guard, ledger.lock_path)),
+        (other.lock_path, (first_guard, ledger.lock_path, other_guard)),
+    ]
+    assert first_rows.history[0] == []
+    assert other_rows.history[0] == [(1,)]
 
 
 def test_control_location_rejects_case_alias_of_project_state(
@@ -1437,21 +1489,14 @@ def test_source_proof_also_requires_exact_wire_shape(memory_state):
     "relation", ["equal", "control-inside-state", "state-inside-control"]
 )
 def test_apfs_firmlink_overlap_refused_before_private_creation(
-    modules, existing, relation, request, path_metadata
+    modules, existing, relation, ledger_path_metadata
 ):
     ledger_module, _ = modules
-    metadata = path_metadata
-    if metadata is None:
-        tmp_path = request.getfixturevalue("tmp_path")
-        home = Path.home()
-        control = control_directory()
-        alias = tmp_path / "alias"
-        request.getfixturevalue("alias_directory_identity")(alias, home)
-    else:
-        home = metadata.home
-        control = metadata.control
-        alias = metadata.base / "alias"
-        metadata.alias_directory(alias, home)
+    metadata = ledger_path_metadata
+    home = metadata.home
+    control = metadata.control
+    alias = metadata.base / "alias"
+    metadata.alias_directory(alias, home)
     project = {
         "equal": alias / control.relative_to(home),
         "control-inside-state": alias / control.parent.relative_to(home),
@@ -1459,12 +1504,8 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
     }[relation]
     if existing:
         for path in (control, project):
-            if metadata is None:
-                path.mkdir(mode=0o700, parents=True, exist_ok=True)
-            else:
-                metadata.add_directory(path)
-    if metadata is not None:
-        before = dict(metadata.entries)
+            metadata.add_directory(path)
+    before = dict(metadata.entries)
 
     with pytest.raises(
         ledger_module.LedgerError, match="Writer guard must be outside project state"
@@ -1472,20 +1513,19 @@ def test_apfs_firmlink_overlap_refused_before_private_creation(
         ledger_module.Ledger.initialize(project, PROJECT)
 
     assert project.exists() == control.exists() == existing
-    if metadata is None:
-        assert not list(tmp_path.rglob("*.lock"))
-        assert not list(tmp_path.rglob("pseudonym.key"))
-        assert not list(tmp_path.rglob("usage.sqlite3"))
-    else:
-        assert metadata.entries == before
+    assert metadata.entries == before
 
 
-def test_distinct_apfs_alias_cannot_admit_a_second_writer(tmp_path, modules):
+def test_distinct_apfs_alias_cannot_admit_a_second_writer(
+    tmp_path, modules, alias_directory_identity
+):
     ledger_module, _ = modules
     root = tmp_path / "project"
     ledger = ledger_module.Ledger.initialize(root, PROJECT)
     identity = root.stat()
     with ledger.writer():
+        other = ledger_module.Ledger.initialize(tmp_path / "other", OTHER_PROJECT)
+        assert other.identity.key_id != ledger.identity.key_id
         alias = root.rename(tmp_path / "alias")
         try:
             assert os.path.samestat(alias.stat(), identity)
@@ -1493,3 +1533,16 @@ def test_distinct_apfs_alias_cannot_admit_a_second_writer(tmp_path, modules):
             assert try_writer_in_other_process(alias) == "writer-active"
         finally:
             alias.rename(root)
+
+    control = control_directory()
+    overlap_alias = tmp_path / "overlap-alias"
+    alias_directory_identity(overlap_alias, Path.home())
+    overlapping = overlap_alias / control.parent.relative_to(Path.home())
+    overlapping.mkdir(mode=0o700, parents=True)
+    before = sorted(control.iterdir())
+    with pytest.raises(
+        ledger_module.LedgerError, match="Writer guard must be outside project state"
+    ):
+        ledger_module.Ledger.initialize(overlapping, OTHER_PROJECT)
+    assert not list(overlapping.iterdir())
+    assert sorted(control.iterdir()) == before

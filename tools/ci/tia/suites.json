@@ -335,6 +335,51 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_export_cli_reads_existing_project_without_writer_lease",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_export.py::test_receiver_checks_reconciled_observation_after_reopen",
+      "suite": "unit",
+      "isolation_group": "export-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_distinct_project_can_write_while_first_uuid_guard_held",
+      "suite": "unit",
+      "isolation_group": "ledger-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_claude_content_and_ownership_disputes_remain_separate",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_journal_only_candidate_verifies_distinct_disputes_at_one_sequence",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_recovery_fence.py::test_claude_coverage_gap_cannot_escape_before_recovery_fsync",
+      "suite": "unit",
+      "isolation_group": "monitor_recovery_fence-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_delivery_hold_retries_its_exact_cursor_while_other_project_can_ack",
+      "suite": "unit",
+      "isolation_group": "monitor_scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned",
       "suite": "unit",
       "isolation_group": "codex-policy"
