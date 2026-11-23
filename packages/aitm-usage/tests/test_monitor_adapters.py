@@ -1748,13 +1748,10 @@ def test_claude_revision_witness_refuses_a_foreign_message(monkeypatch, native_f
 
 
 @pytest.mark.parametrize("case", ["desktop", "streamed", "nested", "receipt"])
-def test_every_native_split_matches_one_read_after_restart(monkeypatch, request, case):
-    if case == "receipt":
-        source = request.getfixturevalue("source")
-        write_rows = _write
-    else:
-        files = request.getfixturevalue("native_files")
-        source, write_rows = files.source, files.write
+def test_every_native_split_matches_one_read_after_restart(
+    monkeypatch, native_files, case
+):
+    source, write_rows = native_files.source, native_files.write
     module, adapter, root = _adapter(monkeypatch, source)
     key, directory, checkout = source
     path = directory / "restart.jsonl"

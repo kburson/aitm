@@ -300,6 +300,26 @@ def test_replay_cutoff_and_pending_finalization(project, tmp_path):
     project.apply(LedgerBatch((Revision(_ref(project, "gap"), 1, diagnostic),)))
     advanced = project.as_of()
     gap = tmp_path / "advanced"
+    changed_basis = tmp_path / "pending-new-basis"
+    export_as_of(advanced, replace(card, version="2026-11-10"), changed_basis)
+
+    def contradict_pending(rows):
+        row = next(item for item in rows if item["source"] == second_key)
+        row["tokens"]["input_tokens"] = 501
+
+    conflicting_pending = _changed_snapshot(
+        changed_basis, tmp_path / "pending-conflict", mutate_row=contradict_pending
+    )
+    with Receiver(database, PROJECT) as receiver:
+        with pytest.raises(
+            ReceiverConflict, match=r"source provenance \(observation\)"
+        ):
+            receiver.import_snapshot(conflicting_pending)
+        assert receiver.watermark == before.sequence
+        assert receiver.accepted == {first_key: accepted_first}
+        assert receiver.pending == {second_key}
+        assert receiver.reconciliation == {}
+
     # A snapshot can omit a withheld key. Moving the watermark must preserve
     # the receiver's unresolved disposition even without a row to reconsider.
     without_pending = replace(
@@ -964,45 +984,9 @@ def test_exact_replay_resyncs_parent_after_interrupted_publication(
     "kind", ["accepted-observation", "pending-observation", "scope", "price"]
 )
 def test_receiver_rejects_component_conflict_under_changed_provenance(
-    request, export_evidence, reference_rates, kind
+    export_evidence, reference_rates, kind
 ):
-    if kind != "pending-observation":
-        _assert_component_conflict(export_evidence, reference_rates, kind)
-        return
-
-    project = request.getfixturevalue("project")
-    tmp_path = request.getfixturevalue("tmp_path")
-    export_as_of = _export()
-    from fixtures.receiver import Receiver, ReceiverConflict
-
-    _, second, marker = _seed(project)
-    before = project.as_of()
-    card = load_rate_card()
-    original = tmp_path / "original"
-    export_as_of(before, card, original)
-    _correct(project, marker)
-    after = project.as_of()
-    selected = replace(card, version="2026-11-10")
-    candidate = tmp_path / "candidate"
-    export_as_of(after, selected, candidate)
-
-    def contradict(rows):
-        row = next(item for item in rows if item["source"] == _public(second.key))
-        row["tokens"]["input_tokens"] = 501
-
-    altered = _changed_snapshot(candidate, tmp_path / "altered", mutate_row=contradict)
-    with Receiver(tmp_path / "receiver.sqlite", PROJECT) as receiver:
-        assert receiver.import_snapshot(original) == "imported"
-        accepted = receiver.accepted
-        with pytest.raises(
-            ReceiverConflict, match=r"source provenance \(observation\)"
-        ):
-            receiver.import_snapshot(altered)
-        assert receiver.watermark == before.sequence
-        assert receiver.accepted == accepted
-        assert receiver.pending == {_public(second.key)}
-        assert receiver.reconciliation == {}
-        assert receiver.import_snapshot(candidate) == "imported"
+    _assert_component_conflict(export_evidence, reference_rates, kind)
 
 
 def _assert_component_conflict(project, card, kind):
@@ -1025,7 +1009,10 @@ def _assert_component_conflict(project, card, kind):
     )
     after = replace(before, sequence=2, revisions=(*before.revisions, corrected))
     selected = card if kind == "price" else replace(card, version="2026-11-10")
-    source = _public(second.key if kind == "scope" else first.key)
+    pending_observation = kind == "pending-observation"
+    source = _public(
+        second.key if kind in {"scope", "pending-observation"} else first.key
+    )
 
     def render_row(view, rates):
         _, files = export._render(view, rates)
@@ -1048,26 +1035,48 @@ def _assert_component_conflict(project, card, kind):
         component = "observation"
 
     components = {}
+    pending = {}
 
     def execute(statement, values):
         if statement.startswith("SELECT payload FROM component"):
             payload = components.get(values)
             return Mock(fetchone=lambda: (payload,) if payload is not None else None)
+        if statement == "SELECT digest FROM accepted WHERE source = ?":
+            assert pending_observation and values == (source,)
+            return Mock(fetchone=lambda: None)
+        if statement.startswith("INSERT INTO pending VALUES"):
+            pending_source, digest, payload = values
+            assert pending_observation and pending_source == source
+            pending[source] = (digest, payload)
+            return None
         assert statement.startswith("INSERT INTO component")
         key = values[:2]
         assert key not in components
         components[key] = values[2]
 
     # The receiver owns provenance keys and comparisons. This double stores
-    # only the component rows that those methods read and insert.
+    # the component and pending rows that those methods read and insert.
     receiver = object.__new__(Receiver)
     receiver._db = Mock(execute=execute)
-    receiver._remember_components(original)
+
+    def consider(row):
+        receiver._consider(row, _canonical(row))
+
+    store = consider if pending_observation else receiver._remember_components
+    store(original)
     baseline = components.copy()
+    initial_pending = pending.copy()
     with pytest.raises(ReceiverConflict, match=rf"source provenance \({component}\)"):
-        receiver._remember_components(altered)
+        store(altered)
+    assert pending == initial_pending
+    if pending_observation:
+        assert components == baseline
+        assert initial_pending[source][1] == _canonical(original)
     components = baseline
-    receiver._remember_components(candidate)
+    store(candidate)
+    if pending_observation:
+        payload = _canonical(candidate)
+        assert pending == {source: (sha256(payload).hexdigest(), payload)}
 
 
 def test_receiver_checks_reconciled_observation_after_reopen(project, tmp_path):

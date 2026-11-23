@@ -10,6 +10,7 @@ import pytest
 from grok_capture_policy_cases import grok_capture_policy  # noqa: F401, F811
 from qualification_policy_cases import CaptureInbox, CapturePolicy, qualification_policy
 from test_codex import CUTOFF
+from test_isolated_qualification import installed_policy as installed_policy
 
 from aitm_usage import monitor_journal, monitor_registry, monitor_scope
 from aitm_usage.ledger import LedgerError
@@ -221,6 +222,7 @@ def test_reserve_revalidates_the_exact_prepared_authority(
     request, monkeypatch, change, existing_progress
 ):
     from test_monitor_journal import LIVE
+    from test_monitor_scope import SOURCE
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
@@ -231,21 +233,22 @@ def test_reserve_revalidates_the_exact_prepared_authority(
         )
         return
 
-    previously_admitted = request.getfixturevalue("previously_admitted")
-    with previously_admitted.registry.writer() as writer:
-        qualify(writer)
-        journal = RoutingJournal(writer, ScopeState(writer))
-        locator = previously_admitted.locator()
-        prepared = journal.prepare(LIVE, locator)
+    native, writer, _, activate, _, _ = request.getfixturevalue("installed_policy")
+    activate()
+    journal = RoutingJournal(writer, ScopeState(writer))
+    locator = native.locator()
+    prepared = journal.prepare(SOURCE, locator)
+    assert prepared.candidates
+    journal.reserve_batch(prepared)
+    progress = journal.cursor_for(SOURCE, locator)
+    assert progress == prepared.progress
+    before = journal.as_of()
+    assert before.claims
+    writer._live_profile = None
+    with pytest.raises(LedgerError, match="qualification"):
         journal.reserve_batch(prepared)
-        progress = journal.cursor_for(LIVE, locator)
-        assert progress == prepared.progress
-        before = journal.as_of()
-        writer._live_profile = None
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.reserve_batch(prepared)
-        assert journal.as_of() == before
-        assert journal.cursor_for(LIVE, locator) == progress
+    assert journal.as_of() == before
+    assert journal.cursor_for(SOURCE, locator) == progress
 
 
 def _assert_prepared_authority_rechecked(

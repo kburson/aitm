@@ -4,6 +4,7 @@ import os
 import plistlib
 import socket
 import sqlite3
+import stat
 import subprocess
 import sys
 import time
@@ -11,10 +12,11 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from contextlib import closing, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 from uuid import UUID
 from zipfile import ZipFile
 
@@ -613,7 +615,7 @@ def test_backup_and_restore_reject_inherited_acl(project, tmp_path, grant_extra_
         restore(blocked / "backup", ledger.root, ledger.identity)
 
 
-def _wheel(parent, suffix, *, incompatible=False, legacy=False):
+def _wheel(parent, suffix, *, incompatible=False):
     directory = parent / suffix
     directory.mkdir()
     distribution = "aitm_usage-0.1.0.dist-info"
@@ -640,17 +642,6 @@ def _wheel(parent, suffix, *, incompatible=False, legacy=False):
                 )
             if incompatible and name == "aitm_usage/ledger.py":
                 data = data.replace(b"SCHEMA_VERSION = 1", b"SCHEMA_VERSION = 94")
-            if legacy and name == "aitm_usage/service.py":
-                start = data.index(b"class _Status(_LegacyStatus):")
-                end = data.index(b"def _read_status", start)
-                data = (
-                    data[:start]
-                    + b"class _Status(_LegacyStatus):\n    pass\n\n\n"
-                    + data[end:]
-                )
-                data = data.replace(
-                    b"            self.mode,\n            os.getpid(),\n", b""
-                )
             wheel.writestr(name, data)
             names.append(name)
         metadata = {
@@ -689,7 +680,6 @@ class _FakeLaunchControl:
         self.fail_digest = "never-match"
         self.defer_removal = False
         self.removal_requested = False
-        self.after_service_poll = None
 
     def close(self):
         if self.child is not None:
@@ -770,8 +760,6 @@ class _FakeLaunchControl:
                 witness = service.status_report(self.ledger.root, self.ledger)
                 if witness["producer_pid"] == self.child.pid:
                     assert witness["producer_mode"] == "service"
-                    if self.after_service_poll is not None:
-                        self.after_service_poll(Path(program))
                     return
                 assert self.child.poll() is None
                 time.sleep(0.02)
@@ -959,9 +947,8 @@ def test_owned_launchagent_and_recoverable_upgrade(project, tmp_path, launch_con
     assert ledger.as_of().sequence == success["backup"]["sequence"]
 
 
-def test_one_shot_from_other_pid_cannot_certify_install(
-    install_policy_ledger, runtime_receipt, monkeypatch, capsys
-):
+@pytest.fixture
+def activation_policy(install_policy_ledger, runtime_receipt, monkeypatch, capsys):
     case = runtime_receipt
     ledger = replace(install_policy_ledger, root=case.ledger.root)
     runtime = case.runtime
@@ -977,6 +964,8 @@ def test_one_shot_from_other_pid_cannot_certify_install(
         activation_timeout=0,
         loaded=None,
         disabled=False,
+        bootstraps=[],
+        after_bootstrap=lambda: None,
     )
     after = datetime(2026, 11, 20, tzinfo=UTC)
     clock = Mock(wraps=datetime)
@@ -990,9 +979,10 @@ def test_one_shot_from_other_pid_cannot_certify_install(
         runtime.interpreter_version,
         service.CollectionReport(view.sequence, 0, 0, 0, 0, 0, False),
         (),
-        service._ProducerMode.ONE_SHOT,
-        process.pid + 1,
+        service._ProducerMode.SERVICE,
+        process.pid,
     )
+    control.status = status
     owned = install._Agent(ledger, control)
 
     def bootstrap(path, interpreter):
@@ -1003,8 +993,10 @@ def test_one_shot_from_other_pid_cannot_certify_install(
         control.loaded = install.ServiceJob(
             owned.label, path, executable, arguments, process.pid
         )
-        files[service.STATUS_NAME] = _encode(status, service._Status).encode()
+        files[service.STATUS_NAME] = _encode(control.status, service._Status).encode()
         clock.now.return_value = after + timedelta(seconds=2)
+        control.bootstraps.append(path)
+        control.after_bootstrap()
 
     def bootout(label):
         assert label == owned.label and control.disabled
@@ -1021,7 +1013,7 @@ def test_one_shot_from_other_pid_cannot_certify_install(
     def write_plist(agent, data, expected):
         assert agent.read() == expected
         if data:
-            assert agent.program(data) == runtime.executable
+            agent.program(data)
             service_files[agent.plist] = data
         else:
             del service_files[agent.plist]
@@ -1089,25 +1081,50 @@ def test_one_shot_from_other_pid_cannot_certify_install(
     monkeypatch.setattr(cli, "open_project", lambda _: ledger)
     monkeypatch.setattr(cli, "ServiceSupervisor", lambda _: control)
 
-    command = _lifecycle_cli(ledger.root, monkeypatch, capsys)
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        Path("/fixture/candidate.whl"),
-        "--wheel-sha256",
-        case.wheel.digest,
-        "--interpreter",
-        runtime.interpreter,
-        expected=1,
+    def invoke(action):
+        return _lifecycle_cli(ledger.root, monkeypatch, capsys)(
+            "service",
+            action,
+            "--wheel",
+            Path("/fixture/candidate.whl"),
+            "--wheel-sha256",
+            case.wheel.digest,
+            "--interpreter",
+            runtime.interpreter,
+            expected=1,
+        )
+
+    return SimpleNamespace(
+        runtime_files=case,
+        ledger=ledger,
+        control=control,
+        process=process,
+        owned=owned,
+        project_files=files,
+        service_files=service_files,
+        records=recovery_records,
+        invoke=invoke,
+        command=_lifecycle_cli(ledger.root, monkeypatch, capsys),
     )
+
+
+def test_one_shot_from_other_pid_cannot_certify_install(activation_policy):
+    case = activation_policy
+    process = case.process
+    control = case.control
+    control.status = replace(
+        control.status,
+        producer_mode=service._ProducerMode.ONE_SHOT,
+        producer_pid=process.pid + 1,
+    )
+    result = case.invoke("install")
     assert result["status"] == "activation-rolled-back"
-    observed = service.status_report(ledger.root, ledger)
+    observed = service.status_report(case.ledger.root, case.ledger)
     assert observed["producer_mode"] == "one-shot"
-    assert observed["producer_pid"] == status.producer_pid != process.pid
-    assert observed["status_sequence"] == view.sequence
+    assert observed["producer_pid"] == control.status.producer_pid != process.pid
+    assert observed["status_sequence"] == case.ledger.as_of().sequence
     assert control.loaded is None and not control.disabled
-    assert not service_files and not recovery_records
+    assert not case.service_files and not case.records
 
 
 def test_unapproved_runtime_hook_never_executes(project, tmp_path, launch_control):
@@ -1135,29 +1152,31 @@ def test_unapproved_runtime_hook_never_executes(project, tmp_path, launch_contro
 
 
 def test_runtime_replaced_after_bootstrap_cannot_certify_readiness(
-    project, tmp_path, launch_control
+    activation_policy, monkeypatch
 ):
-    _, _, command = project
-    wheel, digest = _wheel(tmp_path, "changed-after-start")
+    case = activation_policy
+    runtime = case.runtime_files
+    tampered = b"#!/bin/sh\nexit 1\n"
+    read_owned = install._read_owned
+    launcher_reads = []
 
-    def replace_launcher(program):
-        program.write_bytes(b"#!/bin/sh\nexit 1\n")
+    def read_runtime_file(path, **options):
+        data = read_owned(path, **options)
+        if path == runtime.executable:
+            launcher_reads.append(data)
+        return data
 
-    launch_control.after_service_poll = replace_launcher
-    result = command(
-        "service",
-        "install",
-        "--wheel",
-        wheel,
-        "--wheel-sha256",
-        digest,
-        "--interpreter",
-        Path(sys._base_executable).resolve(strict=True),
-        expected=1,
+    monkeypatch.setattr(install, "_read_owned", read_runtime_file)
+    case.control.after_bootstrap = lambda: runtime.set_console(
+        tampered, update_receipt=False
     )
+    result = case.invoke("install")
     assert result["status"] == "activation-rolled-back"
-    assert launch_control.loaded is None
-    assert not list(launch_control.plist_directory.iterdir())
+    assert launcher_reads[-1] == tampered
+    assert launcher_reads[0] == install._launcher(runtime.python, runtime.site)
+    assert case.control.bootstraps == [case.owned.plist]
+    assert case.control.loaded is None
+    assert not case.service_files and not case.records
 
 
 def test_installed_console_ignores_environment_and_working_directory_hooks(
@@ -1196,62 +1215,71 @@ def test_installed_console_ignores_environment_and_working_directory_hooks(
 
 
 def test_upgrade_refuses_witness_incapable_running_prior(
-    project, tmp_path, launch_control
+    activation_policy, monkeypatch
 ):
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "legacy", legacy=True)
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    prior = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    agent = install._Agent(ledger, launch_control)
-    plist = plistlib.dumps(agent.payload(prior.executable))
-    agent.write(plist, b"")
-    args = tuple(plistlib.loads(plist)["ProgramArguments"])
-    child = subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    launch_control.child = child
-    launch_control.loaded = install.ServiceJob(
-        agent.label, agent.plist, prior.executable, args, child.pid
+    case = activation_policy
+    ledger, control, agent = case.ledger, case.control, case.owned
+    candidate = case.runtime_files.runtime
+    prior_digest = "b" * 64
+    prior_directory = (
+        ledger.root / install._VERSIONS / f"{candidate.version}-{prior_digest}"
     )
-    deadline = time.monotonic() + 5
-    while time.monotonic() < deadline:
-        status = service.status_report(ledger.root, ledger)
-        if status["heartbeat"] is not None:
-            break
-        assert child.poll() is None
-        time.sleep(0.02)
+    prior = replace(
+        candidate,
+        executable=prior_directory
+        / candidate.executable.relative_to(case.runtime_files.directory),
+        wheel_sha256=prior_digest,
+        witness_capable=False,
+    )
+    read_runtime = install._read_runtime
+
+    def observe_runtime(actual, directory, **options):
+        if directory == prior_directory:
+            assert actual is ledger
+            return prior
+        return read_runtime(actual, directory, **options)
+
+    monkeypatch.setattr(install, "_read_runtime", observe_runtime)
+    plist = plistlib.dumps(agent.payload(prior.executable))
+    case.service_files[agent.plist] = plist
+    args = tuple(plistlib.loads(plist)["ProgramArguments"])
+    job = install.ServiceJob(
+        agent.label, agent.plist, prior.executable, args, case.process.pid
+    )
+    control.loaded = job
+    observed = control.status
+    heartbeat = service._LegacyStatus(
+        observed.project_id,
+        observed.configuration_ref,
+        observed.heartbeat,
+        prior.version,
+        prior.interpreter_version,
+        observed.report,
+        (),
+    )
+    case.project_files[service.STATUS_NAME] = _encode(
+        heartbeat, service._LegacyStatus
+    ).encode()
+    status = service.status_report(ledger.root, ledger)
     assert status["heartbeat"] is not None
     assert status["producer_mode"] is status["producer_pid"] is None
-    candidate, next_digest = _wheel(tmp_path, "next")
-    result = command(
-        "service",
-        "upgrade",
-        "--wheel",
-        candidate,
-        "--wheel-sha256",
-        next_digest,
-        "--interpreter",
-        interpreter,
-        expected=1,
-    )
+    result = case.invoke("upgrade")
     assert result["status"] == "witness-unavailable"
-    assert child.poll() is None and not launch_control.disabled
-    assert agent.plist.read_bytes() == plist
-    assert not launch_control.bootstraps
+    assert control.loaded == job and not control.disabled
+    assert agent.read() == plist
+    assert not control.bootstraps and not case.records
 
     # Simulate an older interrupted upgrade whose record predates the refusal.
-    launch_control.close()
-    prepared = install._prepare(
-        ledger, install._wheel(candidate, next_digest), interpreter
-    )
-    pending_plist = plistlib.dumps(agent.payload(prepared.executable))
-    agent.write(pending_plist, plist)
+    control.loaded = None
+    pending_plist = plistlib.dumps(agent.payload(candidate.executable))
+    case.service_files[agent.plist] = pending_plist
     pending = install._Operation(plist, pending_plist, True, False, "", "")
-    record = tmp_path / "control" / f"{PROJECT}.service-recovery.plist"
-    record.write_bytes(pending.encode())
-    record.chmod(0o600)
-    assert command("service", "stop", expected=1)["status"] == "recovery-required"
-    assert agent.plist.read_bytes() == plist
-    assert record.read_bytes() == pending.encode()
-    assert launch_control.disabled and not launch_control.bootstraps
+    record = install._record_name(agent)
+    case.records[record] = pending.encode()
+    assert case.command("service", "stop", expected=1)["status"] == "recovery-required"
+    assert agent.read() == plist
+    assert case.records[record] == pending.encode()
+    assert control.disabled and not control.bootstraps
 
 
 def test_same_pid_with_different_start_cannot_certify_health(
@@ -1924,38 +1952,74 @@ def test_portable_supervisor_refuses_stop_without_writer_exclusion(
     sleep.assert_not_called()
 
 
-def test_portable_supervisor_owner_refuses_a_reaped_child():
-    from tempfile import TemporaryDirectory
-    from threading import Thread
+def test_portable_supervisor_owner_refuses_a_reaped_child(monkeypatch):
+    from aitm_usage import supervisor
 
-    from aitm_usage.supervisor import _confirms_live_child, _Launch, _respond
+    directory = Path("/fixture/service-owner")
+    endpoint = directory / "owner"
+    record = supervisor._Launch(
+        "a" * 32,
+        ("/fixture/aitm-usage", "--project", str(directory), "service", "run"),
+        "/fixture/python",
+        str(endpoint),
+        5302,
+        datetime(2026, 11, 20, tzinfo=UTC),
+    )
+    uid = 501
+    metadata = SimpleNamespace(
+        st_mode=stat.S_IFSOCK | 0o600, st_uid=uid, st_dev=1, st_ino=17
+    )
 
-    with (
-        TemporaryDirectory(
-            prefix="aitm-owner-test-", dir=Path("/tmp").resolve()
-        ) as directory,
-        socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server,
-    ):
-        endpoint = Path(directory) / "owner"
-        server.bind(str(endpoint))
-        endpoint.chmod(0o600)
-        server.listen(1)
-        server.settimeout(2)
-        started = datetime.now(UTC)
-        child = subprocess.Popen([sys.executable, "-c", "pass"])
-        assert child.wait(timeout=5) == 0
-        record = _Launch(
-            "a" * 32,
-            (sys.executable, "--project", directory, "service", "run"),
-            str(Path(sys._base_executable).resolve()),
-            str(endpoint),
-            child.pid,
-            started,
-        )
-        responder = Thread(target=_respond, args=(server, child, record), daemon=True)
-        responder.start()
-        try:
-            assert not _confirms_live_child(record)
-        finally:
-            responder.join(3)
-        assert not responder.is_alive()
+    class ObservedEndpoint:
+        parent = directory
+
+        def __str__(self):
+            return str(endpoint)
+
+        def lstat(self):
+            return metadata
+
+    observed_endpoint = ObservedEndpoint()
+    child = SimpleNamespace(poll=Mock(side_effect=(None, 0)))
+    pinned = SimpleNamespace(check=Mock())
+    buffer = bytearray()
+    peer = MagicMock()
+    peer.sendall.side_effect = buffer.extend
+    server = SimpleNamespace(accept=lambda: (peer, None))
+
+    def connect(address):
+        assert address == str(endpoint)
+        buffer.clear()
+        supervisor._respond(server, child, record)
+
+    client = SimpleNamespace(
+        connect=connect,
+        settimeout=Mock(),
+        makefile=lambda _: BytesIO(bytes(buffer)),
+    )
+    socket_factory = Mock(return_value=nullcontext(client))
+    monkeypatch.setattr(
+        supervisor,
+        "socket",
+        SimpleNamespace(
+            AF_UNIX=socket.AF_UNIX,
+            SOCK_STREAM=socket.SOCK_STREAM,
+            socket=socket_factory,
+        ),
+    )
+    monkeypatch.setattr(
+        supervisor,
+        "os",
+        SimpleNamespace(geteuid=lambda: uid, path=os.path),
+    )
+    monkeypatch.setattr(
+        supervisor, "Path", {record.endpoint: observed_endpoint}.__getitem__
+    )
+    monkeypatch.setattr(supervisor, "_pin_directory", lambda _: nullcontext(pinned))
+    monkeypatch.setattr(supervisor, "_check_acl", Mock())
+    monkeypatch.setattr(supervisor, "_peer_uid", lambda _: uid)
+
+    assert supervisor._confirms_live_child(record)
+    assert not supervisor._confirms_live_child(record)
+    peer.sendall.assert_called_once_with(_encode(record, supervisor._Launch).encode())
+    assert child.poll.call_count == 2

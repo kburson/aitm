@@ -1003,12 +1003,15 @@ def test_rearming_a_capture_change_invalidates_earlier_native_proof(monkeypatch)
 def test_disable_commits_with_last_verified_prefix_when_source_changes(
     request, monkeypatch, interruption
 ):
-    fixture = (
-        "queued_disable_policy"
-        if interruption in {"platform", "native-version"}
-        else "queued_disable"
-    )
-    scenario = request.getfixturevalue(fixture)
+    if interruption == "truncated":
+        scenario, _ = request.getfixturevalue("queued_disable_metadata")
+    else:
+        fixture = (
+            "queued_disable"
+            if interruption == "root-replacement"
+            else "queued_disable_policy"
+        )
+        scenario = request.getfixturevalue(fixture)
     prefix = _physical_ordinal(scenario.log)
     scenario.log.append(2)
     original = scenario.log.read_bytes()

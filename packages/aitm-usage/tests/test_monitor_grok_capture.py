@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from hashlib import sha256
 from pathlib import Path
 from uuid import UUID
@@ -7,7 +8,6 @@ import pytest
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_grok import _policy_locator
 from test_grok import grok_policy as grok_policy
-from test_grok import grok_source as grok_source
 
 from aitm_usage import monitor_registry as registry
 from aitm_usage import monitor_scope as scope
@@ -183,31 +183,29 @@ def test_grok_command_without_callback_holds_only_its_edge(grok_capture_policy):
     )
 
 
+@contextmanager
 def _grok_reader(source, rows, verifier):
     from aitm_usage.sources.grok import GrokAdapter
 
-    updates = source.directory / "updates.jsonl"
-    updates.write_bytes(b"".join(rows))
-    (source.directory / "usage.json").write_text(json.dumps(source.snapshot))
-    reader = GrokAdapter(
-        lambda path: source.origin if path == updates else None, verifier
-    )
-    (locator,) = reader.discover(source.root)
-    return reader, locator
+    reader = GrokAdapter(lambda _: source.origin, verifier)
+    with _policy_locator(source, rows, source.snapshot) as locator:
+        yield reader, locator
 
 
-def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_source):
+def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_policy):
     from aitm_usage.sources import grok
 
-    source = grok_source
+    source = grok_policy
     rows = [row for i, row in enumerate(source.rows) if i != 6]
 
     def verifier(*parts):
         return source.pending_receipts.get(parts)
 
-    reader, locator = _grok_reader(source, rows, verifier)
     proofs = []
-    batch = reader.read_delta(locator, None, _proofs=proofs, _receipt_verifier=verifier)
+    with _grok_reader(source, rows, verifier) as (reader, locator):
+        batch = reader.read_delta(
+            locator, None, _proofs=proofs, _receipt_verifier=verifier
+        )
     marked, hookless = proofs
     assert type(marked) is grok._VerifiedGrokMark
     assert type(hookless) is grok._VerifiedGrokHookless
@@ -219,16 +217,16 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
     assert hookless.end == batch.observations[1].position.ordinal + 1
     assert batch.cursor.checkpoint.offset == len(b"".join(rows))
     replay_proofs = []
-    reloaded, new_locator = _grok_reader(source, rows, verifier)
-    replay = reloaded.read_delta(
-        new_locator, batch.cursor, _proofs=replay_proofs, _receipt_verifier=verifier
-    )
-    assert replay.cursor == batch.cursor
-    assert replay.observations == () and replay_proofs == []
-    observational = reloaded.read_delta(new_locator, None)
-    refused = reloaded.read_delta(
-        new_locator, observational.cursor, _proofs=[], _receipt_verifier=verifier
-    )
+    with _grok_reader(source, rows, verifier) as (reloaded, new_locator):
+        replay = reloaded.read_delta(
+            new_locator, batch.cursor, _proofs=replay_proofs, _receipt_verifier=verifier
+        )
+        assert replay.cursor == batch.cursor
+        assert replay.observations == () and replay_proofs == []
+        observational = reloaded.read_delta(new_locator, None)
+        refused = reloaded.read_delta(
+            new_locator, observational.cursor, _proofs=[], _receipt_verifier=verifier
+        )
     assert refused.observations == ()
     assert "source-replaced" in {row.code.value for row in refused.diagnostics}
 
@@ -246,24 +244,17 @@ def test_strict_grok_proves_mark_and_hookless_separately_and_restarts(grok_sourc
         "mismatch",
     ],
 )
-def test_strict_grok_attempt_holds_at_start_and_can_retry(request, receipt_case):
+def test_strict_grok_attempt_holds_at_start_and_can_retry(grok_policy, receipt_case):
     from aitm_usage.sources import grok
 
-    durable = receipt_case == "missing"
-    source = request.getfixturevalue("grok_source" if durable else "grok_policy")
+    source = grok_policy
     rows = source.rows.copy()
 
     def verifier(*parts):
         return source.pending_receipts.get(parts)
 
     def read(rows, issuer, selected, cursor=None, *, proofs):
-        if durable:
-            reader, locator = _grok_reader(source, rows, issuer)
-            return reader.read_delta(
-                locator, cursor, _proofs=proofs, _receipt_verifier=selected
-            )
-        reader = grok.GrokAdapter(lambda _: source.origin, issuer)
-        with _policy_locator(source, rows, source.snapshot) as locator:
+        with _grok_reader(source, rows, issuer) as (reader, locator):
             return reader.read_delta(
                 locator, cursor, _proofs=proofs, _receipt_verifier=selected
             )
@@ -566,6 +557,10 @@ def test_queued_grok_enable_routes_exact_marker_and_project_only_hookless_then_r
     from aitm_usage.sources.grok import GrokAdapter
 
     f = isolated_grok_capture
+    _assert_original_journal_read_only(f)
+    transcript = f.locator()._source.path
+    transcript.write_bytes(b"")
+    transcript.with_name("usage.json").unlink()
     # Both commands and marker proof go through persisted owner and writer authority.
     enable = f.submit(21, True)
     (applied,) = f.evaluate()
@@ -810,11 +805,24 @@ def test_unsupported_grok_surface_refuses_before_native_read(
     assert refused.value.code is DiagnosticCode.UNSUPPORTED_FORMAT
 
 
-def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_capture):
+def test_original_journal_remains_read_only_on_grok_prepare(
+    grok_capture_policy, monkeypatch
+):
+    from journal_disposition_cases import DispositionRows
+
+    from aitm_usage import monitor_journal
+
+    case = grok_capture_policy
+    rows = DispositionRows(case.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda writer: rows)
+    _assert_original_journal_read_only(case)
+    assert not rows.commits and not rows.rows and not rows.writes
+
+
+def _assert_original_journal_read_only(f):
     from aitm_usage.ledger import LedgerError
     from aitm_usage.monitor_journal import RoutingJournal
 
-    f = isolated_grok_capture
     f.write(f.rows, 2)
     batch = f.state.read_source(f.source_id, f.locator())
     assert len(batch.observations) == 2
@@ -823,6 +831,8 @@ def test_original_journal_remains_read_only_on_grok_prepare(isolated_grok_captur
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.prepare(f.source_id, f.locator())
     assert journal.as_of() == before
+    with journal._store.transaction() as connection:
+        assert journal._store._current_version(connection) == 4
 
 
 def test_prior_grok_offer_cannot_be_reused_by_another_command(

@@ -320,24 +320,30 @@ def test_mixed_or_interrupted_upgrade_rolls_back(project, monkeypatch, tmp_path)
 
 
 @pytest.mark.parametrize("version", [1, 2])
-def test_schema_tag_requires_its_exact_tables(request, version):
+def test_schema_tag_requires_its_exact_tables(catalog_policy, version):
+    observed, supported = catalog_policy
     if version == 2:
-        observed, supported = request.getfixturevalue("catalog_policy")
-        project, queries, openings = observed(1, reported=2, catalog=supported(1))
-        with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
-            ledger.Ledger.open(project.root, PROJECT)
-        assert openings == [False]
-        assert (
-            queries[-1]
-            == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+        catalog = supported(1)
+    else:
+        unexpected = (
+            "table",
+            "monitor_revisions",
+            "monitor_revisions",
+            "CREATE TABLE monitor_revisions (payload TEXT)",
         )
-        return
-
-    project = request.getfixturevalue("project")
-    with project.writer() as writer, writer._write_transaction() as conn:
-        conn.execute("CREATE TABLE monitor_revisions (payload TEXT)")
+        catalog = (*supported(1), unexpected)
+    project, queries, openings = observed(1, reported=version, catalog=catalog)
     with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
         ledger.Ledger.open(project.root, PROJECT)
+    _assert_rejected_catalog_read(queries, openings)
+
+
+def _assert_rejected_catalog_read(queries, openings):
+    assert openings == [False]
+    assert (
+        queries[-1]
+        == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
+    )
 
 
 @pytest.mark.parametrize(
@@ -351,57 +357,43 @@ def test_schema_tag_requires_its_exact_tables(request, version):
     ids=["future-version", "missing-table", "incompatible-v2-layout", "stale-head"],
 )
 def test_delivery_upgrade_refuses_unknown_or_incomplete_catalog(
-    request, version, mutation
+    catalog_policy, version, mutation
 ):
-    if mutation != "DROP TABLE monitor_delivery_receipts":
-        observed, supported = request.getfixturevalue("catalog_policy")
-        if mutation is None:
-            store, queries, openings = observed(version)
-            with pytest.raises(
-                ledger.ConflictError,
-                match="Ledger changed before delivery schema upgrade",
-            ):
-                store.upgrade_delivery_schema(2)
-            assert openings == [False, True]
-            assert queries[-1] == "SELECT COALESCE(MAX(sequence), 0) FROM commits"
-        elif mutation == "PRAGMA user_version = 4":
-            store, queries, openings = observed(version, reported=4)
-            with pytest.raises(ledger.LedgerError, match="Unsupported ledger schema"):
-                store.upgrade_delivery_schema(1)
-            assert openings == [False]
-            assert queries == ["BEGIN", "PRAGMA user_version"]
-        else:
-            extra = (
-                "table",
-                "monitor_delivery_receipts",
-                "monitor_delivery_receipts",
-                mutation,
-            )
-            catalog = tuple(
-                sorted((*supported(version), extra), key=lambda row: row[1])
-            )
-            store, queries, openings = observed(version, catalog=catalog)
-            with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
-                store.upgrade_delivery_schema(1)
-            assert openings == [False]
-            assert (
-                queries[-1]
-                == "SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY name"
-            )
+    observed, supported = catalog_policy
+    if mutation is None:
+        store, queries, openings = observed(version)
+        with pytest.raises(
+            ledger.ConflictError,
+            match="Ledger changed before delivery schema upgrade",
+        ):
+            store.upgrade_delivery_schema(2)
+        assert openings == [False, True]
+        assert queries[-1] == "SELECT COALESCE(MAX(sequence), 0) FROM commits"
+        return
+    if mutation == "PRAGMA user_version = 4":
+        store, queries, openings = observed(version, reported=4)
+        with pytest.raises(ledger.LedgerError, match="Unsupported ledger schema"):
+            store.upgrade_delivery_schema(1)
+        assert openings == [False]
+        assert queries == ["BEGIN", "PRAGMA user_version"]
         return
 
-    project = request.getfixturevalue("project")
-    sequence = project.as_of().sequence
-    project.upgrade_monitor_schema(sequence)
-    store = ledger.Ledger.open(project.root, PROJECT)
-    store.upgrade_delivery_schema(sequence)
-    store = ledger.Ledger.open(project.root, PROJECT)
-    with store.writer() as writer, writer._write_transaction() as conn:
-        conn.execute(mutation)
-    before = _durable_bytes(store)
+    if mutation == "DROP TABLE monitor_delivery_receipts":
+        catalog = tuple(
+            row for row in supported(version) if row[1] != "monitor_delivery_receipts"
+        )
+    else:
+        extra = (
+            "table",
+            "monitor_delivery_receipts",
+            "monitor_delivery_receipts",
+            mutation,
+        )
+        catalog = tuple(sorted((*supported(version), extra), key=lambda row: row[1]))
+    store, queries, openings = observed(version, catalog=catalog)
     with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
-        store.upgrade_delivery_schema(sequence)
-    assert _durable_bytes(store) == before
+        store.upgrade_delivery_schema(1)
+    _assert_rejected_catalog_read(queries, openings)
 
 
 def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
@@ -493,6 +485,13 @@ def test_v3_restore_authenticates_delivery_rows(project, tmp_path, monkeypatch):
     assert _durable_bytes(store) == before
     assert store._monitor_delivery_receipt(receipt.key, receipt.revision) == receipt
 
+    with store.writer() as writer, writer._write_transaction() as conn:
+        conn.execute("DROP TABLE monitor_delivery_receipts")
+    incomplete = _durable_bytes(store)
+    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
+        store.upgrade_delivery_schema(restored.sequence)
+    assert _durable_bytes(store) == incomplete
+
 
 def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     project, tmp_path, monkeypatch
@@ -554,6 +553,13 @@ def test_new_runtime_accepts_unmodified_legacy_store_backup_and_installer_probe(
     observed["schema"].append(fingerprint(3))
     for version in (1, 2, 3):
         assert install._probe_runtime(*args, schema_version=version).witness_capable
+
+    with project.writer() as writer, writer._write_transaction() as conn:
+        conn.execute("CREATE TABLE monitor_revisions (payload TEXT)")
+    unexpected = _durable_bytes(project)
+    with pytest.raises(ledger.LedgerError, match="Invalid ledger table schema"):
+        ledger.Ledger.open(project.root, PROJECT)
+    assert _durable_bytes(project) == unexpected
 
 
 def test_legacy_global_state_and_report_project_uuid_are_separate(monkeypatch, capsys):

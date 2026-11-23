@@ -1000,15 +1000,16 @@ def test_later_enrollment_keeps_earlier_pending_segment_replayable(
     assert resumed.cursor.offset == len(files.contents[path])
 
 
-def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
+def test_added_checkout_anchor_preserves_committed_outside_enrollment(
+    scanner_replay_ledger,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, _ = scanner_replay_ledger
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     review = root.parent / "newly-registered"
-    review.mkdir()
     path = root / "review.jsonl"
-    path.write_bytes(_header(checkout) + _turn(review) + _usage(7) + _usage(11))
+    files.contents[path] = _header(checkout) + _turn(review) + _usage(7) + _usage(11)
     (candidate,) = scanner.discover(registration)
     lookahead = scanner.scan(candidate, None, CUTOFF)
     marker, boundary = _marker_and_boundary(store, lookahead.frames[-1])
@@ -1024,6 +1025,7 @@ def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
         if isinstance(revision.record, ScopeEnrollment)
     )
 
+    files.checkout_paths.add(review)
     expanded = replace(registration, checkout_anchors=(checkout, review))
     (new_candidate,) = scanner.discover(expanded)
     stale_selector = new_candidate.with_enrollment(
@@ -1037,8 +1039,7 @@ def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
     first = scanner.scan(selected, None, CUTOFF)
     assert [tokens for _, tokens in _fixture_debits(first)] == [11]
     store.apply(LedgerBatch(checkpoint=_checkpoint(first)))
-    with path.open("ab") as output:
-        output.write(_usage(14))
+    files.contents[path] += _usage(14)
 
     reopened = Ledger.open(store.root, PROJECT)
     (durable,) = reopened.as_of().checkpoints
@@ -1053,7 +1054,7 @@ def test_added_checkout_anchor_preserves_committed_outside_enrollment(project):
     assert continued.commit_frames[0].anchor_ref == scanner.checkout_anchor_reference(
         reopened, review
     )
-    assert continued.cursor.offset == path.stat().st_size
+    assert continued.cursor.offset == len(files.contents[path])
 
 
 def test_directory_moved_outside_root_and_restored_during_read_is_quarantined(
@@ -1342,15 +1343,15 @@ def test_native_claude_bookkeeping_preserves_timed_segment_and_safe_sideband(
     assert str(owner_id) not in repr(batch)
 
 
-def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project):
+def test_native_claude_sideband_respects_enrollment_frontier_and_restart(
+    scanner_replay_ledger,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, _ = scanner_replay_ledger
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     review = root.parent / "review"
     unrelated = root.parent / "unrelated"
-    review.mkdir()
-    unrelated.mkdir()
     path = root / "native.jsonl"
     before = _claude_timed("user", checkout, time=BEFORE) + _claude_cost()
     complete = (
@@ -1362,7 +1363,7 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
         + _claude_timed("user", review)
     )
     torn_terminal = _claude_cost()
-    path.write_bytes(complete + torn_terminal[:-1])
+    files.contents[path] = complete + torn_terminal[:-1]
     (candidate,) = scanner.discover(registration)
     lookahead = scanner.scan(candidate, None, CUTOFF)
     assert lookahead.cursor.offset == len(before)
@@ -1409,10 +1410,9 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
     measured = _claude_fixture_observation(reopened, admitted.commit_frames[-2])
     reopened.apply(LedgerBatch((measured,), committed, held))
 
-    with path.open("ab") as output:
-        output.write(
-            torn_terminal[-1:] + _claude_timed("user", unrelated) + _claude_cost()
-        )
+    files.contents[path] += (
+        torn_terminal[-1:] + _claude_timed("user", unrelated) + _claude_cost()
+    )
     reopened = Ledger.open(store.root, PROJECT)
     (durable,) = reopened.as_of().checkpoints
     (rediscovered,) = scanner.discover(registration)
@@ -1430,7 +1430,7 @@ def test_native_claude_sideband_respects_enrollment_frontier_and_restart(project
         selected.with_exclusion(after_restart.frames[0]), durable, CUTOFF
     )
     assert [entry.ordinal for entry in excluded.commit_sideband] == [7]
-    assert excluded.cursor.offset == path.stat().st_size
+    assert excluded.cursor.offset == len(files.contents[path])
 
 
 @pytest.mark.parametrize(

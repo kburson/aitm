@@ -213,6 +213,7 @@ def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong
     from test_service import _fixtures
 
     from aitm_usage import install
+    from aitm_usage.pricing import load_rate_card
     from aitm_usage.qualification import (
         QualificationError,
         _verify_running,
@@ -267,6 +268,15 @@ def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong
             launch_control,
         )
     assert len(launch_control.bootstraps) == 1
+
+    selected = _selected_source_evidence(verified)
+    view = ledger.as_of()
+    rates = load_rate_card()
+    qualification._verify_selected_sources(ledger, view, selected, rates)
+    source = registration.source_roots[0] / "claude.jsonl"
+    source.rename(tmp_path / "no-longer-approved.jsonl")
+    with pytest.raises(QualificationError, match="selected-source-gap"):
+        qualification._verify_selected_sources(ledger, view, selected, rates)
 
 
 def _write_private(path, data):
@@ -580,7 +590,6 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     from hashlib import sha256
 
     import test_claude as claude
-    import test_codex as codex
     from test_service_process import PROJECT, _mark_args
 
     from aitm_usage.ledger import Ledger
@@ -599,12 +608,9 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         register_project,
         remember_claude_session,
     )
-    from aitm_usage.types import Provider, UsageObservation
+    from aitm_usage.types import UsageObservation
 
-    if (provider, arrival, withhold_target) not in {
-        ("codex", "marker-first", False),
-        ("claude", "boundary-first", False),
-    }:
+    if (provider, arrival, withhold_target) != ("claude", "boundary-first", False):
         _assert_processing_order_in_memory(
             request.getfixturevalue("collector_policy"),
             monkeypatch,
@@ -640,36 +646,26 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
     )
     marker = command.payload
     target, kind = command.command_id, marker.provider
-    if kind is Provider.CODEX:
-        write = codex.write
-    else:
-        write = claude.write
-        remember_claude_session(ledger, marker.session_ref)
+    remember_claude_session(ledger, marker.session_ref)
 
     assert enqueue_command(root, command) is None
     queued = root / INBOX_NAME / f"{target}.json"
     saved = _write_private(tmp_path / "original-publication.json", queued.read_bytes())
-    if arrival == "boundary-first":
-        queued.unlink()
-        write(source, rows)
-        source.chmod(0o600)
-    before_prefix = source.read_bytes() if source.exists() else b""
+    queued.unlink()
+    claude.write(source, rows)
+    source.chmod(0o600)
+    before_prefix = source.read_bytes()
     before_source = _write_private(tmp_path / "prior-source.jsonl", before_prefix)
     before_captured_at = datetime.now(UTC)
     before = collect_once(registration, ledger)
     snapshot = _write_private(
         tmp_path / "prior-status.json", (root / STATUS_NAME).read_bytes()
     )
-    assert (source.read_bytes() if source.exists() else b"") == before_prefix
+    assert source.read_bytes() == before_prefix
     before_confirmed_at = datetime.now(UTC)
-    released_at = None
-    if arrival == "marker-first":
-        write(source, rows)
-        source.chmod(0o600)
-    else:
-        assert before.held_sources == 1
-        _write_private(queued, saved.read_bytes())
-        released_at = datetime.now(UTC)
+    assert before.held_sources == 1
+    _write_private(queued, saved.read_bytes())
+    released_at = datetime.now(UTC)
     collect_once(registration, ledger)
     after = collect_once(registration, ledger)
     settled = _write_private(
@@ -1366,39 +1362,53 @@ def test_retry_and_nested_observations_cannot_be_claimed_without_evidence(
             )
 
 
-def test_selected_source_gap_refuses_missing_live_file_without_penalizing_unrelated_hold(
-    project,
-    tmp_path,
-):
+def _selected_source_evidence(status):
     from dataclasses import replace
 
-    from test_service import _fixtures
-
-    from aitm_usage import qualification, service
-    from aitm_usage.pricing import load_rate_card
     from aitm_usage.types import Provider
 
-    registration, ledger, _ = project
-    approved = registration.source_roots[0]
-    _fixtures(approved, registration.checkout_anchors[0])
-    _unbound_claude_source(registration, tmp_path / "unbound")
-    service.collect_once(registration, ledger)
-    status = service.status_report(ledger.root, ledger)
-    assert status["held_sources"] == 1
     fixture = qualification.decode_activation_receipt(FIXTURE.read_bytes())
     providers = {entry.provider: entry for entry in fixture.providers}
-    entries = tuple(
+    return tuple(
         replace(
             providers[Provider(row["provider"])], stream=row["source_ref"].split(":")[1]
         )
         for row in status["sources"]
         if row["observed_through"] is not None
     )
+
+
+def test_selected_source_gap_refuses_missing_live_file_without_penalizing_unrelated_hold(
+    collector_policy, reference_rates
+):
+    from datetime import timedelta
+
+    from test_claude import request, usage, user
+    from test_service import FIXTURES
+
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    unrelated = native.checkout.with_name("unbound-checkout")
+    rows = [user(unrelated), request(unrelated, counts=usage())]
+    for row in rows:
+        row["sessionId"] = "00000000-0000-4000-8000-00000000aaaa"
+    native.write(native.root / "unrelated.jsonl", rows)
+    case.configure()
+    case.use_ledger_rows()
+    for provider in ("codex", "claude"):
+        data = (FIXTURES / provider / "usage.jsonl").read_bytes()
+        native.contents[native.root / f"{provider}.jsonl"] = data.replace(
+            b"CHECKOUT", str(native.checkout).encode()
+        )
+    case.clock.now.return_value += timedelta(minutes=1)
+    status = case.collect()
+    assert status["held_sources"] == 1
+    entries = _selected_source_evidence(status)
     assert len(entries) == 2
     view = ledger.as_of()
-    card = load_rate_card()
-    qualification._verify_selected_sources(ledger, view, entries, card)
+    qualification._verify_selected_sources(ledger, view, entries, reference_rates)
 
-    (approved / "claude.jsonl").rename(tmp_path / "no-longer-approved.jsonl")
+    del native.contents[native.root / "claude.jsonl"]
     with pytest.raises(qualification.QualificationError, match="selected-source-gap"):
-        qualification._verify_selected_sources(ledger, view, entries, card)
+        qualification._verify_selected_sources(ledger, view, entries, reference_rates)
+    assert ledger.as_of() == view

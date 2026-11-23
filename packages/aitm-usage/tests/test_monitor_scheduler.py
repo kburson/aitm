@@ -594,14 +594,18 @@ def test_saturated_listener_is_preserved_and_sender_returns(
     for connection in (sender, probe):
         connection.connect_ex.return_value = errno.EAGAIN
     pin = Mock(side_effect=lambda path: nullcontext(directory))
-    opened = Mock(side_effect=map(nullcontext, (sender, server, probe)))
+    opened = Mock(side_effect=map(nullcontext, (sender, server, probe, sender)))
     for module in (hooks, monitor_control):
         monkeypatch.setattr(module, "_pin_directory", pin)
         monkeypatch.setattr(
             module,
             "socket",
             SimpleNamespace(
-                socket=opened, AF_UNIX=socket.AF_UNIX, SOCK_STREAM=socket.SOCK_STREAM
+                socket=opened,
+                AF_UNIX=socket.AF_UNIX,
+                SOCK_STREAM=socket.SOCK_STREAM,
+                SOL_SOCKET=socket.SOL_SOCKET,
+                SO_ERROR=socket.SO_ERROR,
             ),
         )
     unlink, fsync = Mock(), Mock()
@@ -626,6 +630,16 @@ def test_saturated_listener_is_preserved_and_sender_returns(
     server.bind.assert_not_called()
     unlink.assert_not_called()
     fsync.assert_not_called()
+
+    writable.reset_mock()
+    writable.side_effect = [([], [sender], []), ([], [sender], []), ([], [], [])]
+    sender.getsockopt.return_value = 0
+    sender.send.side_effect = BlockingIOError
+    assert HookSender(root).notify(event) is WakeDisposition.UNAVAILABLE
+    sender.getsockopt.assert_called_once_with(socket.SOL_SOCKET, socket.SO_ERROR)
+    sender.send.assert_called_once()
+    assert bytes(sender.send.call_args.args[0]) == hooks._frame(event)
+    assert writable.call_count == 3
 
 
 def test_wake_socket_refuses_a_path_past_the_native_byte_limit(

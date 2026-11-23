@@ -374,11 +374,7 @@ def test_adopted_legacy_invocations_preserve_command_and_receipt(
 ):
     # Unclassifiable legacy bytes would halt relationship enqueue. Adoption
     # leaves those bytes in place and uses the monitor queue instead.
-    memory = (
-        request.getfixturevalue("memory_legacy")
-        if action in {"bind", "correct", "parent"}
-        else None
-    )
+    memory = request.getfixturevalue("memory_legacy") if action != "mark" else None
     if memory is None:
         ledger, _, run = request.getfixturevalue("legacy")
         args, payload, session = invocation(ledger, action, provider=provider)
@@ -427,26 +423,38 @@ def test_adopted_legacy_invocations_preserve_command_and_receipt(
 
 @pytest.mark.parametrize("action", ["mark", "alias"])
 def test_adoption_wins_between_legacy_selection_and_publication(
-    legacy, monkeypatch, action
+    request, monkeypatch, action
 ):
-    ledger, _, run = legacy
+    memory = request.getfixturevalue("memory_legacy") if action == "alias" else None
+    if memory is None:
+        ledger, _, run = request.getfixturevalue("legacy")
+    else:
+        ledger, run = memory.ledger, memory.run
     args, payload, session = invocation(ledger, action, provider=Provider.CLAUDE)
-    captured = install_adopted_capture(monkeypatch, ledger)
+    captured = install_adopted_capture(
+        monkeypatch, ledger, physical_lock=memory is None
+    )
     original_publication = scopes._publication
     committed = False
 
     @contextmanager
     def publication_after_adoption(inbox):
         nonlocal committed
-        if not committed:
+        if memory is None and not committed:
             committed = True
             commit_adoption(ledger, ADOPTION)
         with original_publication(inbox):
+            if memory is not None:
+                assert not committed
+                committed = True
+                memory.publish_adoption()
             yield
+            assert not captured
 
     monkeypatch.setattr(scopes, "_publication", publication_after_adoption)
     code, output = run(args)
 
+    assert committed
     assert code == 0, output
     reported_id = UUID(json.loads(output.out)["command_id"])
     if action == "alias":
@@ -456,8 +464,11 @@ def test_adoption_wins_between_legacy_selection_and_publication(
     assert captured == [
         (encode_command(InboxCommand(reported_id, PROJECT, payload)), session)
     ]
-    assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
-    assert list((ledger.root / "inbox").iterdir()) == []
+    if memory is None:
+        assert not (ledger.root / CLAUDE_SESSIONS_NAME).exists()
+        assert list((ledger.root / "inbox").iterdir()) == []
+    else:
+        assert not memory.inbox
 
 
 def provision_legacy_reader(writer, inbox, ledger):

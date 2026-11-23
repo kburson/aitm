@@ -1317,9 +1317,12 @@ def test_reservation_and_cursor_commit_together(native, monkeypatch):
         assert claim.usage.tokens.input_tokens == 4
 
 
-def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(native):
+def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         initial = journal.prepare(LIVE, native.locator())
@@ -1684,12 +1687,12 @@ def _prepare_claude_mark(state, native):
     return command, boundary
 
 
-def test_causal_revision_survives_stale_replay_after_restart(journal_claude):
+def test_causal_revision_survives_stale_replay_after_restart(journal_claude_policy):
     from test_claude import usage as claude_usage
 
     from aitm_usage.monitor_journal import RoutingJournal
 
-    native = journal_claude
+    native = journal_claude_policy
     registry = native.native.registry
     with registry.writer() as writer:
         native.approve(writer)
@@ -2678,54 +2681,17 @@ def test_claude_conflict_requires_distinct_usage_and_current_independent_custody
 
 
 def test_journal_holds_keyed_grok_contradiction_without_touching_codex(monkeypatch):
-    from test_grok import FIXTURES, GROK_BINARY, SESSION
     from test_monitor_scope import SOURCE, MemoryNativeScopeFixture
 
     from aitm_usage import monitor_journal
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import resolve_route
-    from aitm_usage.sources import grok
-    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
     native = MemoryNativeScopeFixture(monkeypatch, with_grok=True)
     store = _ClaimJournalRows(native.evidence)
     monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: store)
     source_id = UUID(int=6)
-    approved_root = native.transcripts.with_name("grok-transcripts")
-    session = approved_root / SESSION
-    updates = session / "updates.jsonl"
-    usage_path = session / "usage.json"
-    for path in (updates, usage_path):
-        native.files.contents[path] = (FIXTURES / path.name).read_bytes()
-    monkeypatch.setattr(grok, "_directory", native.files._directory)
-    monkeypatch.setattr(grok, "_probe", native.files._snapshot)
-    monkeypatch.setattr(grok, "_open_snapshot", native.files._open_snapshot)
-    monkeypatch.setattr(grok, "_verify_snapshot", native.files._verify_snapshot)
-
-    def grok_transcripts(directory, path):
-        assert directory == native.files._identity(approved_root)
-        assert path == approved_root
-        return iter((updates,))
-
-    monkeypatch.setattr(grok, "_transcripts", grok_transcripts)
-    root = replace(
-        native.root, path=approved_root, cutoff=datetime(2026, 1, 1, tzinfo=UTC)
-    )
-    origin = GrokOrigin(
-        session_id=SESSION,
-        system="Darwin",
-        architecture="arm64",
-        version="1.0.77",
-        build="50ca579fa996",
-        executable_digest=GROK_BINARY,
-        format_version=1,
-        lineage_id=SESSION,
-        incarnation=native.evidence.pseudonymize("grok-incarnation", "fixture"),
-        checkout=native.anchor_ref(A),
-    )
-    reader = GrokAdapter(
-        lambda path: origin if path == updates else None, lambda *_: None
-    )
+    root, reader, usage_path = native.grok_source(monkeypatch, lambda *_: None)
     (locator,) = reader.discover(root)
 
     with native.registry.writer() as writer:
@@ -2745,7 +2711,7 @@ def test_journal_holds_keyed_grok_contradiction_without_touching_codex(monkeypat
                 "arm64",
                 "1.0.77",
                 1,
-                str(approved_root),
+                str(root.path),
             )
         )
         original_view = state.view()

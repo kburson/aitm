@@ -15,7 +15,7 @@ from uuid import UUID
 import pytest
 from monitor_inbox_cases import MonitorInboxFiles
 
-from aitm_usage import cli, monitor_control, monitor_registry
+from aitm_usage import cli, monitor_control, monitor_registry, scope_admission
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
@@ -46,17 +46,17 @@ def isolated_writer_guard(request, monkeypatch):
         )
 
 
+def _mark_document():
+    return {
+        "command_id": str(COMMAND),
+        "grant_id": str(GRANT),
+        "scope": {"project_id": str(PROJECT)},
+    }
+
+
 def _request_file(tmp_path):
     path = tmp_path / "scope.json"
-    path.write_text(
-        json.dumps(
-            {
-                "command_id": str(COMMAND),
-                "grant_id": str(GRANT),
-                "scope": {"project_id": str(PROJECT)},
-            }
-        )
-    )
+    path.write_text(json.dumps(_mark_document()))
     path.chmod(0o600)
     return path
 
@@ -71,16 +71,30 @@ def _cli(monkeypatch, path):
 
 
 def test_scope_cli_refuses_uninitialized_admission_without_creating_state(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    root = tmp_path / "monitor"
+    root = Path("/fixture/missing-monitor")
+    path = Path("/fixture/scope.json")
+    exists = Mock(return_value=False)
+    owner_document = Mock(return_value=_mark_document())
+    pin = Mock(side_effect=AssertionError("Missing admission reached a directory pin"))
+    publish = Mock(side_effect=AssertionError("Missing admission reached publication"))
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    assert _cli(monkeypatch, _request_file(tmp_path)) == 1
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(monitor_control, "_owner_document", owner_document)
+    monkeypatch.setattr(scope_admission, "_path_exists", exists)
+    monkeypatch.setattr(scope_admission, "_pin_directory", pin)
+    monkeypatch.setattr(ControlInbox, "publication", publish)
+
+    assert _cli(monkeypatch, path) == 1
     assert json.loads(capsys.readouterr().out) == {
         "command_id": str(COMMAND),
         "status": "unavailable",
     }
-    assert not root.exists()
+    owner_document.assert_called_once_with(path)
+    exists.assert_called_once_with(root)
+    pin.assert_not_called()
+    publish.assert_not_called()
 
 
 def test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain(
@@ -91,6 +105,12 @@ def test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain(
     monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
     inbox = ControlInbox(root)
     path = _request_file(tmp_path)
+    assert _cli(monkeypatch, path) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "command_id": str(COMMAND),
+        "status": "unavailable",
+    }
+    assert not root.exists()
     request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
     anchor = tmp_path / "checkout"
     anchor.mkdir()
@@ -628,46 +648,43 @@ def test_adopted_scope_shape_refuses_separate_source_anchor_command():
         adopted_request(command, UUID(int=92), None)
 
 
-def test_typed_adopted_producer_cannot_republish_durable_legacy_command(tmp_path):
-    from test_scope_legacy import commit_adoption
+def test_typed_adopted_producer_cannot_republish_durable_legacy_command(
+    monkeypatch, capsys
+):
+    from test_scope_legacy import ADOPTION, _memory_legacy
 
-    from aitm_usage import scopes
     from aitm_usage.scope_admission import adopted_request, legacy_grant_id
-    from aitm_usage.types import InboxCommand, ItemKey, ItemKind, ItemParent
-
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
-    payload = ItemParent(
-        COMMAND, PROJECT, ItemKey(ItemKind.ISSUE, 1), ItemKey(ItemKind.ISSUE, 2)
+    from aitm_usage.types import (
+        CommandReceipt,
+        InboxCommand,
+        ItemKey,
+        ItemKind,
+        ItemParent,
+        MarkerDisposition,
     )
-    command = InboxCommand(COMMAND, PROJECT, payload)
-    assert scopes.enqueue_command(ledger.root, command) is None
-    with ledger.writer() as legacy_writer:
-        (stored,) = scopes.drain_inbox(legacy_writer, ()).receipts
-        assert stored.disposition == "accepted"
 
-    adoption_id = UUID(int=77)
-    commit_adoption(ledger, adoption_id)
-    root = tmp_path / "monitor"
-    inbox = ControlInbox(root)
-    with Registry(root).writer() as writer:
-        registered = writer.register_project(
-            ProjectRegistrationRequest(PROJECT, str(ledger.root), "Project")
-        )
-        with inbox.publication():
-            adopted = replace(registered, adopted_key_id=ledger.identity.key_id)
-            writer._save(replace(writer.view(), projects=(adopted,)))
-        writer.source_evidence()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(
-            legacy_grant_id(PROJECT, adoption_id),
-            PROJECT,
-            ("legacy",),
-            adoption_id=adoption_id,
-        )
-        request = adopted_request(command, adoption_id, None)
-        reader.advertise(reader.probe(request))
+    memory = _memory_legacy(monkeypatch, capsys, monitor_registered=True)
+    ledger = memory.ledger
+    project = ledger.identity.project_id
+    payload = ItemParent(
+        COMMAND, project, ItemKey(ItemKind.ISSUE, 1), ItemKey(ItemKind.ISSUE, 2)
+    )
+    command = InboxCommand(COMMAND, project, payload)
+    stored = CommandReceipt(
+        command, ledger.validate_command(command), MarkerDisposition.ACCEPTED
+    )
+    memory.store_receipt(stored)
+    memory.publish_adoption()
+    inbox = memory.monitor.inbox
+    reader = ScopeInboxReader(memory.monitor.writer, inbox)
+    reader.register(
+        legacy_grant_id(project, ADOPTION), project, ("legacy",), adoption_id=ADOPTION
+    )
+    request = adopted_request(command, ADOPTION, None)
+    reader.advertise(reader.probe(request))
 
-        with pytest.raises(LedgerError, match="legacy command already has a receipt"):
-            inbox.enqueue_scope(request)
-        assert not tuple(root.glob("inbox/*.json"))
-        assert ledger.command_receipt(command) == stored
+    with pytest.raises(LedgerError, match="legacy command already has a receipt"):
+        inbox.enqueue_scope(request)
+    assert not memory.monitor.inbox_files
+    assert not memory.inbox
+    assert ledger.command_receipt(command) == stored

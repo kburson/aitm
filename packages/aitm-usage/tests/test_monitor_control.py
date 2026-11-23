@@ -4,6 +4,7 @@ import os
 import stat
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
@@ -264,26 +265,6 @@ def test_pending_commands_keep_enqueue_order_when_request_ids_sort_backwards(
 
     with monitor.publication() as locked:
         assert list(monitor.iter_pending(locked)) == [enable, disable]
-
-
-def _private_config(path, payload):
-    path.write_text(json.dumps(payload))
-    path.chmod(0o600)
-    return path
-
-
-def _registration(tmp_path, monkeypatch):
-    state = tmp_path / "private-project-state"
-    monkeypatch.setattr(ledger, "_control_root", lambda: tmp_path / "control")
-    ledger.Ledger.initialize(state, PROJECT)
-    return _private_config(
-        tmp_path / "private-owner-declaration.json",
-        {
-            "project_id": str(PROJECT),
-            "state_dir": str(state),
-            "display_name": "Private project",
-        },
-    )
 
 
 @pytest.fixture
@@ -581,9 +562,18 @@ def test_rejected_command_status_contains_no_owner_paths(
 
 
 def test_restart_retires_exact_queue_entry_after_durable_commit(
-    monitor, tmp_path, monkeypatch, capsys
+    registration_policy, monkeypatch, capsys
 ):
-    config = _registration(tmp_path, monkeypatch)
+    state, config, _ = registration_policy
+    monitor = state.inbox
+    registry = Registry(monitor.root)
+
+    def open_lease(path, *, create):
+        assert path == monitor.root / monitor_registry._COORDINATOR_FILE and create
+        return nullcontext(Mock())
+
+    monkeypatch.setattr(monitor_registry, "_ensure_private_directory", state.ensure)
+    monkeypatch.setattr(monitor_registry, "_lease", open_lease)
     args = (
         "project",
         "register",
@@ -600,16 +590,17 @@ def test_restart_retires_exact_queue_entry_after_durable_commit(
 
     with monkeypatch.context() as failed_process:
         failed_process.setattr(monitor, "discard", interrupted_retirement)
-        with Registry(monitor.root).writer() as writer:
+        with registry.writer() as writer:
             with pytest.raises(RuntimeError, match="simulated exit"):
                 writer.apply_pending(monitor, writer.lease, None)
 
-    queue_entry = monitor.root / "inbox" / f"{REQUEST}.json"
-    assert queue_entry.is_file()
+    name = f"{REQUEST}.json"
+    queued = state.inbox_files[name]
     assert _status(monkeypatch) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "applied"
     assert _run(monkeypatch, *args) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "applied"
+    assert state.inbox_files[name] == queued
 
     recovered = Registry(monitor.root)
     recorded = recovered.view()
@@ -618,7 +609,7 @@ def test_restart_retires_exact_queue_entry_after_durable_commit(
     with recovered.writer() as writer:
         assert writer.apply_pending(monitor, writer.lease, None) == ()
     assert recovered.view() == recorded
-    assert not queue_entry.exists()
+    assert not state.inbox_files
 
 
 def test_exact_retry_resyncs_a_publication_after_directory_sync_fails(

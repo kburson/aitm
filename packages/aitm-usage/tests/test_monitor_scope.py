@@ -405,6 +405,49 @@ class MemoryNativeScopeFixture(NativeScopeFixture):
     def _replace_scope_bytes(self, data):
         self.state_files.files[self.registry.root]["scope-v1.json"] = data
 
+    def grok_source(self, monkeypatch, verify_receipt):
+        from test_grok import FIXTURES, GROK_BINARY, SESSION
+
+        from aitm_usage.sources import grok
+        from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
+
+        root = replace(
+            self.root,
+            path=self.transcripts.with_name("grok-transcripts"),
+            cutoff=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        updates = root.path / SESSION / "updates.jsonl"
+        accounting = updates.with_name("usage.json")
+        for path in (updates, accounting):
+            self.files.contents[path] = (FIXTURES / path.name).read_bytes()
+        monkeypatch.setattr(grok, "_directory", self.files._directory)
+        monkeypatch.setattr(grok, "_probe", self.files._snapshot)
+        monkeypatch.setattr(grok, "_open_snapshot", self.files._open_snapshot)
+        monkeypatch.setattr(grok, "_verify_snapshot", self.files._verify_snapshot)
+
+        def discover(directory, path):
+            assert directory == self.files._identity(root.path)
+            assert path == root.path
+            return iter((updates,))
+
+        monkeypatch.setattr(grok, "_transcripts", discover)
+        origin = GrokOrigin(
+            session_id=SESSION,
+            system="Darwin",
+            architecture="arm64",
+            version="1.0.77",
+            build="50ca579fa996",
+            executable_digest=GROK_BINARY,
+            format_version=1,
+            lineage_id=SESSION,
+            incarnation=self.evidence.pseudonymize("grok-incarnation", "fixture"),
+            checkout=self.anchor_ref(A),
+        )
+        reader = GrokAdapter(
+            lambda path: origin if path == updates else None, verify_receipt
+        )
+        return root, reader, accounting
+
 
 @pytest.fixture
 def native_scope_policy(monkeypatch):
@@ -704,18 +747,13 @@ def test_develop_mark_requires_accepted_destination_worktree_owner(native_scope_
 
 @pytest.mark.parametrize("matching_session", [True, False], ids=["same", "other"])
 def test_develop_mark_requires_the_native_stream_of_its_accepted_owner(
-    request, monkeypatch, matching_session
+    native_scope_policy, monkeypatch, matching_session
 ):
     from unittest.mock import Mock
 
     from aitm_usage import monitor_scope
     from aitm_usage.monitor_scope import Mark, Scope, ScopeState
-    from aitm_usage.scopes import (
-        BoundaryEvidence,
-        attest_marker,
-        drain_inbox,
-        enqueue_command,
-    )
+    from aitm_usage.scopes import attest_marker
     from aitm_usage.types import (
         DevelopmentBinding,
         InboxCommand,
@@ -726,9 +764,7 @@ def test_develop_mark_requires_the_native_stream_of_its_accepted_owner(
         ScopeMarker,
     )
 
-    native = request.getfixturevalue(
-        "native" if matching_session else "native_scope_policy"
-    )
+    native = native_scope_policy
     owner_id, command_id = UUID(int=0x301), UUID(int=0x302)
     ledger, worktree = native.ledgers[A], native.anchors[A]
     _, owner_ordinal = native.append(owner_id, bind=True)
@@ -774,29 +810,24 @@ def test_develop_mark_requires_the_native_stream_of_its_accepted_owner(
         attempt,
     )
     binding = DevelopmentBinding(marker, anchor, 1)
-    if matching_session:
-        enqueue_command(ledger.root, InboxCommand(owner_id, A, binding))
-        with ledger.writer() as writer:
-            result = drain_inbox(writer, (BoundaryEvidence(boundary, anchor),))
-            assert result.receipts[0].disposition is MarkerDisposition.ACCEPTED
-    else:
-        assert attest_marker(marker, boundary) is MarkerDisposition.ACCEPTED
-        enrollment = ScopeEnrollment(marker, boundary, anchor, 1)
-        key = ledger.pseudonymize("scope-enrollment", str(owner_id))
-        owner_view = LedgerView(A, 1, (Revision(key, 1, enrollment),), ())
-        prior_view = Ledger.as_of
+    ledger.validate_command(InboxCommand(owner_id, A, binding))
+    assert attest_marker(marker, boundary) is MarkerDisposition.ACCEPTED
+    enrollment = ScopeEnrollment(marker, boundary, anchor, 1)
+    key = ledger.pseudonymize("scope-enrollment", str(owner_id))
+    owner_view = LedgerView(A, 1, (Revision(key, 1, enrollment),), ())
+    prior_view = Ledger.as_of
 
-        def as_of(actual, sequence=None):
-            if actual is ledger and sequence in (None, 1):
-                return owner_view
-            return prior_view(actual, sequence)
+    def as_of(actual, sequence=None):
+        if actual is ledger and sequence in (None, 1):
+            return owner_view
+        return prior_view(actual, sequence)
 
-        monkeypatch.setattr(Ledger, "as_of", as_of)
-        read_prefix = Mock(wraps=native.files._open_snapshot)
-        monkeypatch.setattr(monitor_scope, "_open_snapshot", read_prefix)
-        monkeypatch.setattr(
-            monitor_scope, "_verify_snapshot", native.files._verify_snapshot
-        )
+    monkeypatch.setattr(Ledger, "as_of", as_of)
+    read_prefix = Mock(wraps=native.files._open_snapshot)
+    monkeypatch.setattr(monitor_scope, "_open_snapshot", read_prefix)
+    monkeypatch.setattr(
+        monitor_scope, "_verify_snapshot", native.files._verify_snapshot
+    )
 
     scope = Scope(
         A, item, WorkPhase.DEVELOPMENT, participant, ReviewRole.AUTHOR, attempt
@@ -812,6 +843,7 @@ def test_develop_mark_requires_the_native_stream_of_its_accepted_owner(
             proof = _verify(state, native, command, owner, batch, ordinal)
             assert state.apply_mark(command, proof).status == "applied"
             assert native.routed(state, batch, ordinal).scope == scope
+            read_prefix.assert_called()
         else:
             with pytest.raises(LedgerError):
                 _verify(state, native, command, owner, batch, ordinal)
@@ -1095,8 +1127,10 @@ def claude_scope_policy(monkeypatch):
     return ClaudeScopeFixture(MemoryNativeScopeFixture(monkeypatch, with_claude=True))
 
 
-def test_late_claude_revision_keeps_its_original_native_scope(claude_scope):
-    _assert_late_claude_revision_preserves_scope(claude_scope, same_project=False)
+def test_late_claude_revision_keeps_its_original_native_scope(claude_scope_policy):
+    _assert_late_claude_revision_preserves_scope(
+        claude_scope_policy, same_project=False
+    )
 
 
 def test_late_claude_revision_keeps_original_scope_after_ordinary_mark(
@@ -1614,12 +1648,13 @@ def test_handoff_consumes_the_first_verified_receipt_target_once(native_scope_po
 
 
 @pytest.mark.parametrize("operation", ["mark", "handoff"])
-def test_grok_scope_proves_native_target_and_holds_without_capture(request, operation):
-    from test_grok import FIXTURES, GROK_BINARY, PROMPT_A
+def test_grok_scope_proves_native_target_and_holds_without_capture(
+    request, monkeypatch, operation
+):
+    from test_grok import PROMPT_A
     from test_grok import SESSION as GROK_SESSION
 
     from aitm_usage.monitor_scope import Handoff, Mark, ScopeState
-    from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
     source_id, command_id = UUID(int=6), UUID(int=0x301)
     if operation == "mark":
@@ -1641,29 +1676,8 @@ def test_grok_scope_proves_native_target_and_holds_without_capture(request, oper
         )
         return
 
-    native = request.getfixturevalue("native")
-    approved_root = native.transcripts.parent / "grok-transcripts"
-    session_dir = approved_root / GROK_SESSION
-    session_dir.mkdir(parents=True)
-    updates = session_dir / "updates.jsonl"
-    updates.write_bytes((FIXTURES / "updates.jsonl").read_bytes())
-    (session_dir / "usage.json").write_bytes((FIXTURES / "usage.json").read_bytes())
-    root = replace(
-        native.root, path=approved_root, cutoff=datetime(2026, 1, 1, tzinfo=UTC)
-    )
+    native = MemoryNativeScopeFixture(monkeypatch, with_grok=True)
     receipt_ref = native.evidence.pseudonymize("grok-receipt", str(command_id))
-    origin = GrokOrigin(
-        session_id=GROK_SESSION,
-        system="Darwin",
-        architecture="arm64",
-        version="1.0.77",
-        build="50ca579fa996",
-        executable_digest=GROK_BINARY,
-        format_version=1,
-        lineage_id=GROK_SESSION,
-        incarnation=native.evidence.pseudonymize("grok-incarnation", "fixture"),
-        checkout=native.anchor_ref(A),
-    )
 
     def verify_receipt(*hook):
         return (
@@ -1672,9 +1686,7 @@ def test_grok_scope_proves_native_target_and_holds_without_capture(request, oper
             else None
         )
 
-    reader = GrokAdapter(
-        lambda path: origin if path == updates else None, verify_receipt
-    )
+    root, reader, _ = native.grok_source(monkeypatch, verify_receipt)
     (locator,) = reader.discover(root)
     with native.registry.writer() as writer:
         writer.approve_source(
@@ -1686,7 +1698,7 @@ def test_grok_scope_proves_native_target_and_holds_without_capture(request, oper
                 "arm64",
                 "1.0.77",
                 1,
-                str(approved_root),
+                str(root.path),
             )
         )
         state = ScopeState(writer, grok_reader=reader)
@@ -1754,11 +1766,13 @@ def test_scope_native_read_requires_current_enrolled_physical_source(request, ca
 
 
 @pytest.mark.parametrize("changed", ["source-inode", "source-prefix", "anchor"])
-def test_scope_proof_requires_current_physical_identity_before_apply(request, changed):
+def test_scope_proof_requires_current_physical_identity_before_apply(
+    request, monkeypatch, changed
+):
     from aitm_usage.monitor_scope import ScopeState
 
     native = request.getfixturevalue(
-        "native_scope_policy" if changed == "source-prefix" else "native"
+        "native" if changed == "source-inode" else "native_scope_policy"
     )
     command_id = UUID(int=0x301)
     with native.registry.writer() as writer:
@@ -1782,10 +1796,17 @@ def test_scope_proof_requires_current_physical_identity_before_apply(request, ch
             native._replace_transcript(rewritten)
         else:
             anchor = native.anchors[A]
-            retired = anchor.with_name("retired-worktree")
-            anchor.rename(retired)
-            anchor.mkdir()
-            assert anchor.stat().st_ino != retired.stat().st_ino
+            observe = monitor_registry._directory
+            original = observe(str(anchor))
+
+            def directory(path, **options):
+                observed = observe(path, **options)
+                if observed == original:
+                    device, inode = observed.identity
+                    return replace(observed, identity=(device, inode + 100))
+                return observed
+
+            monkeypatch.setattr(monitor_registry, "_directory", directory)
 
         with pytest.raises(LedgerError):
             state.apply_handoff(command, proof)
@@ -3455,7 +3476,7 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
     ],
 )
 def test_issued_route_disposition_requires_current_evidence(
-    request, monkeypatch, capsys, change
+    request, monkeypatch, change
 ):
 
     from aitm_usage.monitor_control import _filename
@@ -3512,19 +3533,12 @@ def test_issued_route_disposition_requires_current_evidence(
         case.publish.assert_not_called()
         return
 
-    if change in {"later-usage", "legacy-dispose"}:
-        native = request.getfixturevalue("native_scope_policy")
-        tmp_path = None
-    else:
-        native = request.getfixturevalue("native")
-        tmp_path = request.getfixturevalue("tmp_path")
+    native = request.getfixturevalue("native_scope_policy")
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
             native,
             writer,
-            tmp_path,
-            monkeypatch,
-            capsys,
+            monkeypatch=monkeypatch,
             preexisting_legacy=change == "legacy-dispose",
         )
         state = current.state
@@ -3551,7 +3565,15 @@ def test_issued_route_disposition_requires_current_evidence(
             )
             assert native._transcript_bytes() == prefix
         elif change == "source-relocated":
-            native.path.rename(native.path.with_name("relocated.jsonl"))
+            relocated = native.path.with_name("relocated.jsonl")
+            native.files.contents[relocated] = native.files.contents.pop(native.path)
+            native.files.identities[relocated] = native.files.identities.pop(
+                native.path
+            )
+            assert (
+                native.locator()._source.incarnation_ref
+                == locator._source.incarnation_ref
+            )
         before = state.view()
         error = (
             "Current scope hold cannot authorize"

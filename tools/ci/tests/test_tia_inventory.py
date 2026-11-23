@@ -439,7 +439,7 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
     "nodeid",
     [
         _PRODUCT
-        + "test_scope_admission.py::test_scope_cli_refuses_uninitialized_admission_without_creating_state",
+        + "test_scope_admission.py::test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain",
         _PRODUCT
         + "test_scope_legacy.py::test_adopted_replay_returns_the_exact_durable_legacy_outcome[accepted-mark-claude]",
     ],

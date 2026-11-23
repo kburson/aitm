@@ -10,7 +10,11 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from delivery_policy_cases import DeliveryJournalRows, delivery_destination
+from delivery_policy_cases import (
+    DeliveryJournalRows,
+    DestinationRows,
+    delivery_destination,
+)
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from test_ledger import _memory_ledger
 from test_monitor_grok_capture import isolated_grok_capture as isolated_grok_capture
@@ -176,9 +180,11 @@ def test_legacy_claim_and_revision_bytes_match_protected_trunk():
 
 
 def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
-    isolated_grok_capture,
+    grok_delivery_policy, monkeypatch
 ):
-    f = isolated_grok_capture
+    f = grok_delivery_policy
+    journal_rows = DeliveryJournalRows(f.writer.source_evidence())
+    monkeypatch.setattr(monitor_journal, "JournalStore", lambda _: journal_rows)
     marked_scope = _load_turns(f)
     journal = RoutingJournal(f.writer, f.state)
     current = journal.prepare(f.source_id, f.locator())
@@ -204,10 +210,13 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
     with pytest.raises(LedgerError, match="no verified native session"):
         journal.cursor_for(f.source_id, f.locator())
 
-    _enable_delivery(f, journal)
+    journal_rows.delivery_enabled = True
     tickets = [journal.reserve_delivery(row.key, 1) for row in outcomes]
     assert [ticket.claim.scope for ticket in tickets] == [marked_scope, None]
-    with _ledger(f).writer() as writer:
+    ledger = _ledger(f)
+    destination_rows = DestinationRows()
+    with monkeypatch.context() as patch:
+        writer, _ = delivery_destination(patch, journal, ledger, rows=destination_rows)
         deliver = ProjectDelivery.attach(journal, writer)
         receipts = [deliver.commit(ticket) for ticket in tickets]
         rows = writer.monitor_as_of(receipts[-1].sequence).revisions
@@ -215,7 +224,7 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
         assert {row.observation for row in rows} == {
             ticket.claim.usage for ticket in tickets
         }
-    # Reopen guarded destination after a lost ACK, without reopening live authority.
+    # Recreate the readers over committed rows after a lost ACK.
     reloaded = RoutingJournal(
         f.writer,
         ScopeState(f.writer, grok_reader=GrokAdapter(f.find_origin, f.verifier)),
@@ -224,7 +233,10 @@ def test_verified_grok_marked_and_hookless_rows_write_once_through_real_ack(
         assert (
             reloaded.reserve_delivery(ticket.claim.key, ticket.claim.revision) == ticket
         )
-        with _ledger(f).writer() as writer:
+        with monkeypatch.context() as patch:
+            writer, _ = delivery_destination(
+                patch, reloaded, ledger, rows=destination_rows
+            )
             deliver = ProjectDelivery.attach(reloaded, writer)
             assert deliver.commit(ticket) == receipt
             ack = reloaded.ack(deliver, ticket, receipt)
