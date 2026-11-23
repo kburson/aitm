@@ -2,12 +2,13 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from test_install import launch_control as launch_control
 from test_install import project as project
 
-from aitm_usage import cli
+from aitm_usage import cli, qualification
 
 FIXTURE = Path(__file__).parent / "fixtures" / "activation" / "receipt.json"
 CHECKED = datetime(2026, 11, 9, 15, 0, 5, tzinfo=UTC)
@@ -142,21 +143,39 @@ def _cli(monkeypatch, capsys, root, receipt, *extra):
 
 
 def test_cli_sanitizes_malformed_input_and_disallows_duplicate_fields(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    path = tmp_path / "receipt.json"
-    path.write_text('{"project_id": "/private/canary", "project_id": "two"}')
-    assert _cli(monkeypatch, capsys, tmp_path, path) == (
-        1,
-        {"status": "invalid-receipt"},
+    root = Path("/fixture/project")
+    path = root / "receipt.json"
+    reader = Mock(
+        return_value=b'{"project_id": "/private/canary", "project_id": "two"}'
+    )
+    monkeypatch.setattr(qualification, "_read_owned", reader)
+
+    assert _cli(monkeypatch, capsys, root, path) == (1, {"status": "invalid-receipt"})
+    reader.assert_called_once_with(
+        path, private=False, limit=qualification._MAX_EVIDENCE_BYTES
     )
 
 
-def test_cli_requires_installed_proof_for_actual_qualification(
-    tmp_path, monkeypatch, capsys
-):
-    from aitm_usage import qualification
+def test_cli_requires_installed_proof_for_actual_qualification(monkeypatch, capsys):
+    root = Path("/fixture/project")
+    path = root / "receipt.json"
+    monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
+    monkeypatch.setattr(
+        qualification, "_read_owned", Mock(return_value=json.dumps(_receipt()).encode())
+    )
+    exists = Mock(return_value=False)
+    open_project = Mock()
+    monkeypatch.setattr(Path, "exists", lambda path: exists(path))
+    monkeypatch.setattr(cli, "open_project", open_project)
 
+    assert _cli(monkeypatch, capsys, root, path) == (1, {"status": "proof-required"})
+    exists.assert_called_once_with(root / qualification.PROOF_NAME)
+    open_project.assert_not_called()
+
+
+def test_qualification_reads_owned_receipt_on_disk(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(qualification, "_now", lambda: CHECKED)
     path = tmp_path / "actual-shaped.json"
     path.write_text(json.dumps(_receipt()))

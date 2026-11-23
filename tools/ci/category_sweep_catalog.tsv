@@ -51,14 +51,15 @@ packages/aitm-usage/tests/test_accounting.py::test_standard_rates_and_account_on
 packages/aitm-usage/tests/test_accounting.py::test_wire_values_are_canonical_closed_and_private	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_activation_requires_live_both_providers_and_parity	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_cli_cannot_use_receipt_from_another_registered_project	local-integration	yes	yes
-packages/aitm-usage/tests/test_activation_receipt.py::test_cli_requires_installed_proof_for_actual_qualification	local-integration	yes	yes
-packages/aitm-usage/tests/test_activation_receipt.py::test_cli_sanitizes_malformed_input_and_disallows_duplicate_fields	local-integration	yes	yes
+packages/aitm-usage/tests/test_activation_receipt.py::test_cli_requires_installed_proof_for_actual_qualification	fast-unit	yes	yes
+packages/aitm-usage/tests/test_activation_receipt.py::test_cli_sanitizes_malformed_input_and_disallows_duplicate_fields	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_fixed_export_uses_actual_ledger_and_replay_bytes	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_processing_orders_require_native_prefix_and_fixed_ledger[claude-boundary-first-False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_processing_orders_require_native_prefix_and_fixed_ledger[claude-marker-first-False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_processing_orders_require_native_prefix_and_fixed_ledger[codex-boundary-first-False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_processing_orders_require_native_prefix_and_fixed_ledger[codex-marker-first-False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_processing_orders_require_native_prefix_and_fixed_ledger[held-without-target]	local-integration	yes	yes
+packages/aitm-usage/tests/test_activation_receipt.py::test_qualification_reads_owned_receipt_on_disk	local-integration	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_qualification_refuses_contradictory_evidence[path0-fixture-only-fixture-only]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_qualification_refuses_contradictory_evidence[path1-2026-11-09T14:57:55+00:00-stale-heartbeat]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_activation_receipt.py::test_qualification_refuses_contradictory_evidence[path10-boundary-first-processing-order]	fast-unit	yes	yes
@@ -462,10 +463,11 @@ packages/aitm-usage/tests/test_install.py::test_backup_refuses_output_inside_rep
 packages/aitm-usage/tests/test_install.py::test_backup_refuses_store_through_physical_path_alias	local-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_fixed_snapshot_restores_exact_authority_key_and_export	local-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_installed_console_ignores_environment_and_working_directory_hooks	systems-integration	yes	yes
-packages/aitm-usage/tests/test_install.py::test_installed_runtime_checks_interpreter_digest_before_any_execution	systems-integration	yes	yes
+packages/aitm-usage/tests/test_install.py::test_installed_runtime_checks_interpreter_digest_before_any_execution	fast-unit	yes	yes
+packages/aitm-usage/tests/test_install.py::test_installed_runtime_detects_changed_launcher_on_disk	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues	systems-integration	yes	yes
-packages/aitm-usage/tests/test_install.py::test_launcher_verification_selects_exact_receipt_variant[False]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_install.py::test_launcher_verification_selects_exact_receipt_variant[True]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_install.py::test_launcher_verification_selects_exact_receipt_variant[False]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_install.py::test_launcher_verification_selects_exact_receipt_variant[True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_legacy_scope_launcher_matches_golden_bytes_and_digest	fast-unit	yes	yes
 packages/aitm-usage/tests/test_install.py::test_one_shot_from_other_pid_cannot_certify_install	systems-integration	yes	yes
 packages/aitm-usage/tests/test_install.py::test_owned_launchagent_and_recoverable_upgrade	systems-integration	yes	yes
@@ -1299,6 +1301,7 @@ packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_requires_service
 packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_requires_service_custody_before_mutation[target-prefix]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_v2_writer_requires_service_custody_before_mutation[target-receipt]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_verified_disposition_only_releases_its_covered_hold	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_alias_storage_rejects_foreign_project_without_leaking_private_data	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_failed_relationship_commit_leaves_later_commands_uncommitted	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_final_relationship_replay_checks_effect_identity_without_revalidating_graph	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_graduation_and_inclusive_rollup	systems-integration	yes	yes
@@ -1317,19 +1320,26 @@ packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_rel
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[revision-key]	local-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[revision-number]	local-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_guarded_commit_requires_exact_relationship_decision[unexpected-boundary]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_installed_item_cli_refuses_missing_project	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[duplicate]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[malformed]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[missing]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_invalid_relationship_order_halts_only_relationships[unclassifiable]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[guard]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[identity]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[key]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[missing]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[other-project]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[schema]	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[sidecar]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[guard]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[identity]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[missing]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[other-project]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[schema]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state[sidecar]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_item_inbox_refuses_alias_conflicts_and_canonical_cycles	systems-integration	yes	yes
-packages/aitm-usage/tests/test_rollup.py::test_item_wire_envelope_is_closed_and_project_bound	systems-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[guard]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[identity]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[key]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[other-project]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[schema]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_refuses_untrusted_filesystem_state[sidecar]	local-integration	yes	yes
+packages/aitm-usage/tests/test_rollup.py::test_item_wire_envelope_is_closed_and_project_bound	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_public_batch_refuses_unreceipted_relationship[alias-project_id0]	local-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_public_batch_refuses_unreceipted_relationship[alias-project_id1]	local-integration	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_public_batch_refuses_unreceipted_relationship[parent-project_id0]	local-integration	yes	yes
@@ -2372,9 +2382,9 @@ tools/ci/tests/test_scheduled_sweep_flag.py::test_equal_result_after_ambiguous_p
 tools/ci/tests/test_scheduled_sweep_flag.py::test_replacement_binding_cannot_bootstrap_from_pre_recovery_result	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_unverified_newer_candidate_preserves_existing_clear_over_older_failure	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_baseline_cannot_be_reinterpreted_as_a_failure	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[200-{"id": 42}-expected0]	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[404-{"message": "Not Found"}-None]	fast-unit	yes	yes
-tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[403-{"message": "Forbidden"}-hold]	fast-unit	yes	yes
+"tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[200-{""id"": 42}-expected0]"	fast-unit	yes	yes
+"tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[404-{""message"": ""Not Found""}-None]"	fast-unit	yes	yes
+"tools/ci/tests/test_scheduled_sweep_flag.py::test_cached_attempt_lookup_distinguishes_missing_from_unavailable[403-{""message"": ""Forbidden""}-hold]"	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_check_authenticates_linked_attempt_without_writing[active-failure]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_check_authenticates_linked_attempt_without_writing[clear-success]	fast-unit	yes	yes
 tools/ci/tests/test_scheduled_sweep_flag.py::test_check_reports_unavailable_without_writing[uninitialized-uninitialized]	fast-unit	yes	yes

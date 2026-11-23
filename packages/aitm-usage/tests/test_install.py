@@ -8,11 +8,13 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
-from contextlib import closing
+from contextlib import closing, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 from zipfile import ZipFile
 
@@ -1121,64 +1123,131 @@ def test_legacy_scope_launcher_matches_golden_bytes_and_digest():
     )
 
 
-@pytest.mark.parametrize("legacy", [False, True])
-def test_launcher_verification_selects_exact_receipt_variant(
-    project, tmp_path, monkeypatch, legacy
-):
-    _, ledger, _ = project
-    wheel, digest = _wheel(tmp_path, "receipt-variant")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    generator = install._launcher
-    with monkeypatch.context() as old:
-        if legacy:
-            old.setattr(
-                install,
-                "_launcher",
-                lambda python, site: generator(python, site, legacy=True),
-            )
-        runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    executable = runtime.executable
-    directory = executable.parents[2]
-    receipt_path = directory / install._RUNTIME
-    receipt = json.loads(receipt_path.read_bytes())
-    site = install._site(executable.parents[1], runtime.interpreter_version)
+@pytest.fixture
+def runtime_receipt(monkeypatch):
+    ledger = SimpleNamespace(
+        root=Path("/ledger"), identity=SimpleNamespace(schema_version=4)
+    )
+    version, digest, python_version = "0.1.0", "a" * 64, "3.13.9"
+    interpreter = Path("/pinned/python3")
+    directory = ledger.root / install._VERSIONS / f"{version}-{digest}"
+    environment = directory / ("venv-" + "b" * 32)
+    executable = environment / "bin" / "aitm-usage"
+    site = install._site(environment, python_version)
     python = executable.with_name("python")
-    assert executable.read_bytes() == generator(python, site, legacy=legacy)
-    assert install._read_runtime(ledger, directory) == runtime
+    wheel = install._Wheel(version, digest, b"retained wheel", {})
+    runtime = install._Runtime(
+        executable, version, digest, python_version, interpreter, True
+    )
+    receipt = {
+        "format": install._RUNTIME_FORMAT,
+        "environment": environment.name,
+        "interpreter": str(interpreter),
+        "interpreter_sha256": hashlib.sha256(b"interpreter").hexdigest(),
+    }
+    files = {interpreter: b"interpreter"}
+    pinned = object()
 
-    def refuse_probe(*args, **kwargs):
-        pytest.fail("Unverified launcher reached the runtime probe")
+    def read_receipt(parent, name):
+        assert (parent, name) == (pinned, install._RUNTIME)
+        return json.dumps(receipt, sort_keys=True).encode()
 
-    monkeypatch.setattr(install, "_probe_runtime", refuse_probe)
-    executable.write_bytes(generator(python, site, legacy=not legacy))
+    pin = Mock(return_value=nullcontext(pinned))
+    inspect_interpreter = Mock(return_value=python_version)
+    probe = Mock(return_value=runtime)
+    read_wheel = Mock(return_value=wheel)
+    monkeypatch.setattr(install, "_pin_directory", pin)
+    monkeypatch.setattr(install, "_read_private", read_receipt)
+    monkeypatch.setattr(install, "_read_owned", lambda path, **_options: files[path])
+    monkeypatch.setattr(install, "_wheel", read_wheel)
+    monkeypatch.setattr(install, "_interpreter", inspect_interpreter)
+    monkeypatch.setattr(install, "_probe_runtime", probe)
+
+    def set_console(data, *, update_receipt=True):
+        files[executable] = data
+        if update_receipt:
+            receipt["console_sha256"] = hashlib.sha256(data).hexdigest()
+
+    return SimpleNamespace(
+        ledger=ledger,
+        directory=directory,
+        executable=executable,
+        interpreter=interpreter,
+        python=python,
+        python_version=python_version,
+        site=site,
+        wheel=wheel,
+        runtime=runtime,
+        receipt=receipt,
+        set_console=set_console,
+        pin=pin,
+        read_wheel=read_wheel,
+        inspect_interpreter=inspect_interpreter,
+        probe=probe,
+    )
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_launcher_verification_selects_exact_receipt_variant(runtime_receipt, legacy):
+    case = runtime_receipt
+    launcher = install._launcher(case.python, case.site, legacy=legacy)
+    case.set_console(launcher)
+    assert install._read_runtime(case.ledger, case.directory) == case.runtime
+    case.pin.assert_called_once_with(case.directory)
+    case.read_wheel.assert_called_once_with(
+        case.ledger.root
+        / install._WHEELS
+        / case.wheel.digest
+        / "aitm_usage-0.1.0-py3-none-any.whl",
+        case.wheel.digest,
+        private=True,
+    )
+    case.probe.assert_called_once_with(
+        case.executable,
+        case.interpreter,
+        case.python_version,
+        case.wheel,
+        launcher,
+        schema_version=case.ledger.identity.schema_version,
+    )
+
+    case.probe.reset_mock()
+    case.set_console(
+        install._launcher(case.python, case.site, legacy=not legacy),
+        update_receipt=False,
+    )
     with pytest.raises(install.InstallError, match="Verified runtime files changed"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
 
-    unknown = b"#!/bin/sh\nexit 99\n"
-    executable.write_bytes(unknown)
-    receipt["console_sha256"] = hashlib.sha256(unknown).hexdigest()
-    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+    case.set_console(b"#!/bin/sh\nexit 99\n")
     with pytest.raises(install.InstallError, match="unknown launcher"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
+    case.probe.assert_not_called()
 
 
 def test_installed_runtime_checks_interpreter_digest_before_any_execution(
-    project, tmp_path, monkeypatch
+    runtime_receipt,
 ):
+    case = runtime_receipt
+    case.set_console(install._launcher(case.python, case.site))
+    case.receipt["interpreter_sha256"] = "0" * 64
+
+    with pytest.raises(install.InstallError, match="Verified runtime files changed"):
+        install._read_runtime(case.ledger, case.directory)
+
+    case.inspect_interpreter.assert_not_called()
+    case.probe.assert_not_called()
+
+
+def test_installed_runtime_detects_changed_launcher_on_disk(project, tmp_path):
     _, ledger, _ = project
-    wheel, digest = _wheel(tmp_path, "interpreter-pin")
+    wheel, digest = _wheel(tmp_path, "runtime-boundary")
     interpreter = Path(sys._base_executable).resolve(strict=True)
     runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
     directory = runtime.executable.parents[2]
-    receipt_path = directory / install._RUNTIME
-    receipt = json.loads(receipt_path.read_bytes())
-    receipt["interpreter_sha256"] = "0" * 64
-    receipt_path.write_bytes(json.dumps(receipt, sort_keys=True).encode())
+    assert install._read_runtime(ledger, directory) == runtime
 
-    def refuse_execution(*args):
-        pytest.fail("Interpreter ran before its receipt digest was verified")
-
-    monkeypatch.setattr(install, "_interpreter", refuse_execution)
+    runtime.executable.write_bytes(b"#!/bin/sh\nexit 99\n")
     with pytest.raises(install.InstallError, match="Verified runtime files changed"):
         install._read_runtime(ledger, directory)
 

@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import sqlite3
 import stat
 import subprocess
 import sys
@@ -11,11 +12,13 @@ from datetime import UTC, datetime
 from decimal import Context, Decimal, Inexact, Rounded, localcontext
 from pathlib import Path
 from threading import Event, current_thread
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
 
-from aitm_usage import accounting, pricing, scopes
+from aitm_usage import accounting, cli, pricing, scopes
 from aitm_usage import ledger as store
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError, WriterActive
 from aitm_usage.rollup import rollup
@@ -304,26 +307,36 @@ def test_item_inbox_refuses_alias_conflicts_and_canonical_cycles(project, item_c
         assert enqueue_command(writer.root, accepted.command) == accepted
 
 
-def test_item_wire_envelope_is_closed_and_project_bound(project, item_cli):
+def test_item_wire_envelope_is_closed_and_project_bound():
+    command_id = UUID(int=81)
+    command = InboxCommand(
+        command_id, PROJECT, DraftAlias(command_id, PROJECT, DRAFT, CHILD)
+    )
+    encoded = encode_command(command)
+    assert decode_command(encoded) == command
+    serialized = json.loads(encoded)
+    payload = serialized["payload"]["command"]
+    payload["private_note"] = "raw-item-canary"
+    with pytest.raises(ValueError):
+        decode_command(json.dumps(serialized).encode())
+    del payload["private_note"]
+    payload["issue"]["identifier"] = True
+    with pytest.raises(ValueError):
+        decode_command(json.dumps(serialized).encode())
+    foreign = UUID(int=999)
+    with pytest.raises(ValueError):
+        InboxCommand(command_id, PROJECT, replace(command.payload, project_id=foreign))
+    with pytest.raises(ValueError):
+        DraftAlias(command_id, PROJECT, CHILD, DRAFT)
+
+
+def test_alias_storage_rejects_foreign_project_without_leaking_private_data(
+    project, item_cli
+):
     with project.writer() as writer:
-        receipt = _consume(writer, item_cli, "alias", DRAFT, CHILD)
-        command = receipt.command
-        serialized = json.loads(encode_command(command))
-        payload = serialized["payload"]["command"]
-        payload["private_note"] = "raw-item-canary"
-        with pytest.raises(ValueError):
-            decode_command(json.dumps(serialized).encode())
-        del payload["private_note"]
-        payload["issue"]["identifier"] = True
-        with pytest.raises(ValueError):
-            decode_command(json.dumps(serialized).encode())
+        command = _consume(writer, item_cli, "alias", DRAFT, CHILD).command
+        before = project.database_path.read_bytes()
         foreign = UUID(int=999)
-        with pytest.raises(ValueError):
-            InboxCommand(
-                command.command_id,
-                PROJECT,
-                replace(command.payload, project_id=foreign),
-            )
         with pytest.raises(store.LedgerError):
             enqueue_command(
                 writer.root,
@@ -333,20 +346,89 @@ def test_item_wire_envelope_is_closed_and_project_bound(project, item_cli):
                     replace(command.payload, project_id=foreign),
                 ),
             )
-        with pytest.raises(ValueError):
-            DraftAlias(command.command_id, PROJECT, CHILD, DRAFT)
-    assert b"raw-item-canary" not in project.database_path.read_bytes()
+    assert project.database_path.read_bytes() == before
+    assert b"raw-item-canary" not in before
+
+
+_ITEM_STATE_FAILURES = {
+    "missing": FileNotFoundError,
+    "identity": LedgerError,
+    "other-project": LedgerError,
+    "schema": sqlite3.DatabaseError,
+    "sidecar": PermissionError,
+    "guard": OSError,
+    "key": ValueError,
+}
+
+
+def _invoke_item_alias(monkeypatch, root):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "aitm-usage",
+            "--project",
+            str(root),
+            "item",
+            "alias",
+            "--draft",
+            str(DRAFT.identifier),
+            "--issue",
+            str(CHILD.identifier),
+        ],
+    )
+    return cli.main()
+
+
+def _assert_item_refusal(stdout, stderr):
+    assert stdout == ""
+    assert stderr == "aitm-usage: invalid private inbox command or project\n"
+
+
+@pytest.mark.parametrize("defect", list(_ITEM_STATE_FAILURES))
+def test_item_cli_refuses_untrusted_state(monkeypatch, capsys, defect):
+    root = Path("/private/project")
+    problem = _ITEM_STATE_FAILURES[defect](
+        "private-identity-canary at /private/project"
+    )
+    if defect in {"missing", "identity", "other-project", "schema"}:
+        open_project = Mock(side_effect=problem)
+        enqueue = Mock()
+    else:
+        open_project = Mock(
+            return_value=SimpleNamespace(identity=SimpleNamespace(project_id=PROJECT))
+        )
+        enqueue = Mock(side_effect=problem)
+    monkeypatch.setattr(cli, "open_project", open_project)
+    monkeypatch.setattr(cli, "enqueue_command", enqueue)
+
+    assert _invoke_item_alias(monkeypatch, root) == 1
+    _assert_item_refusal(*capsys.readouterr())
+    open_project.assert_called_once_with(root)
+    if open_project.side_effect is not None:
+        enqueue.assert_not_called()
+    else:
+        enqueue.assert_called_once()
+        path, command = enqueue.call_args.args
+        assert path == root and command.project_id == PROJECT
+        assert command.payload.draft == DRAFT and command.payload.issue == CHILD
+
+
+def test_installed_item_cli_refuses_missing_project(item_cli, tmp_path):
+    root = tmp_path / "missing"
+    result = item_cli(root, "alias", "--draft", str(DRAFT.identifier), "--issue", "85")
+
+    assert result.returncode == 1
+    _assert_item_refusal(result.stdout, result.stderr)
+    assert not root.exists()
 
 
 @pytest.mark.parametrize(
-    "defect",
-    ["missing", "identity", "other-project", "schema", "sidecar", "guard", "key"],
+    "defect", [key for key in _ITEM_STATE_FAILURES if key != "missing"]
 )
-def test_item_cli_refuses_untrusted_state(project, item_cli, tmp_path, defect):
+def test_item_refuses_untrusted_filesystem_state(project, monkeypatch, capsys, defect):
     root = project.root
-    if defect == "missing":
-        root = tmp_path / "missing"
-    elif defect in ("identity", "other-project", "schema"):
+    if defect in ("identity", "other-project", "schema"):
         with store._connection(project.database_path, write=True) as conn, conn:
             if defect == "schema":
                 conn.execute("PRAGMA user_version = 999")
@@ -363,15 +445,9 @@ def test_item_cli_refuses_untrusted_state(project, item_cli, tmp_path, defect):
         store._guard_path(root, PROJECT).unlink()
     else:
         project.key_path.write_bytes(PROJECT.bytes + b"x" * 32)
-    result = item_cli(root, "alias", "--draft", str(DRAFT.identifier), "--issue", "85")
-    assert result.returncode != 0
-    assert result.stdout == ""
-    assert "private-identity-canary" not in result.stderr
-    assert str(root) not in result.stderr
-    assert result.stderr == "aitm-usage: invalid private inbox command or project\n"
+    assert _invoke_item_alias(monkeypatch, root) == 1
+    _assert_item_refusal(*capsys.readouterr())
     assert not (root / "inbox").exists()
-    if defect == "missing":
-        assert not root.exists()
 
 
 @dataclass(frozen=True, slots=True)

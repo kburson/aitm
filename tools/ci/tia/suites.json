@@ -335,6 +335,36 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_installed_runtime_checks_interpreter_digest_before_any_execution",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_launcher_verification_selects_exact_receipt_variant",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_cli_sanitizes_malformed_input_and_disallows_duplicate_fields",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_cli_requires_installed_proof_for_actual_qualification",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_item_wire_envelope_is_closed_and_project_bound",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_item_cli_refuses_untrusted_state",
+      "suite": "unit",
+      "isolation_group": "install-and-cli-validation"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_competing_receipts_conflict_in_both_native_delivery_orders",
       "suite": "unit",
       "isolation_group": "monitor-policy"
