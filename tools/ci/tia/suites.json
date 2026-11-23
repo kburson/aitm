@@ -335,6 +335,106 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_cancellation_concurrent_turns_and_invalid_clock_fail_closed",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_complete_native_only_counts_with_corroboration_gap",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_conflicting_native_turn_counts_hold_overlap",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_duplicate_cannot_evade_dispute_by_crossing_the_cutoff",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_duplicate_prompt_with_conflicting_verified_marker_disputes_after_restart",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_fork_excludes_inherited_turns",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_grok_observation_round_trips_in_the_versioned_payload",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_grok_positions_match_the_marked_and_next_unmarked_completions",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_headless_projection_is_only_corroboration",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_hookless_eligible_completion_keeps_native_interval",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_internally_conflicting_snapshot_disputes_the_matched_turn",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_late_folded_parent_never_adds_to_child",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_late_hook_cannot_backdate_a_receipt",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_native_cache_creation_uses_its_own_bucket",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_nearby_excluded_turn_does_not_dispute_an_eligible_turn",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_receipts_only_carry_verified_keyed_evidence",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_retained_snapshot_dispute_allows_later_turns_and_cannot_clear_itself",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_snapshot_conflict_and_cache_categories",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_snapshot_only_does_not_charge",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok.py::test_unsupported_source_never_emits_usage",
+      "suite": "unit",
+      "isolation_group": "grok-adapter-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes",
       "suite": "unit",
       "isolation_group": "journal-validation"
