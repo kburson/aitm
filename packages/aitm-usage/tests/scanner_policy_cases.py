@@ -71,18 +71,24 @@ class NativeTranscriptFiles:
     def _identity(self, path):
         return self.identities.setdefault(path, (1, len(self.identities) + 1))
 
+    def _identity_chain(self, path):
+        return tuple(self._identity(entry) for entry in (*reversed(path.parents), path))
+
     def _directory(self, path):
-        return nullcontext((self._identity(path), (self._identity(path),), ()))
+        chain = self._identity_chain(path)
+        return nullcontext((chain[-1], chain, ()))
 
     def _transcripts(self, descriptor, root):
         assert descriptor == self._identity(root)
         return sorted(path for path in self.contents if path.parent == root)
 
     def _snapshot(self, path):
-        identity = (self._identity(path.parent), self._identity(path))
+        identity = self._identity_chain(path)
+        data = self.contents[path]
+        version = int.from_bytes(sha256(data).digest()[:8])
         return SimpleNamespace(
             identity=identity,
-            stat=SimpleNamespace(st_size=len(self.contents[path])),
+            stat=SimpleNamespace(st_size=len(data), st_mtime_ns=version),
             same_path=lambda other: other.identity == identity,
         )
 

@@ -1561,9 +1561,9 @@ def test_claude_holds_linked_receipt_until_adjoining_request(monkeypatch, native
     assert proof.boundary.ordinal == len(rows) - 1
 
 
-def _restart_rows(case, checkout):
+def _restart_rows(case, checkout, *, initial_rows=None):
     if case == "desktop":
-        rows = _desktop(checkout)
+        rows = _desktop(checkout) if initial_rows is None else initial_rows
         first_turn_end = len(rows)
         turn = UUID(int=0x199)
         time = AFTER + timedelta(seconds=1)

@@ -2,17 +2,24 @@
 
 import json
 import os
+from contextlib import contextmanager
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from monitor_inbox_cases import MonitorInboxFiles
 from qualification_policy_cases import CaptureInbox, CapturePolicy
+from scanner_policy_cases import NativeTranscriptFiles
 from test_codex import AFTER, CUTOFF, SESSION, begin, counter, end, response, usage
-from test_monitor_adapters import _adapter, _restart_rows
+from test_ledger import _memory_ledger
+from test_monitor_adapters import CODEX_FIXTURE, _adapter, _restart_rows
 from test_monitor_adapters import source as source
 
+from aitm_usage._monitor_qualification import _InstallationProof, _LiveProfile
 from aitm_usage.ledger import ConflictError, Ledger, LedgerError
 from aitm_usage.types import Eligibility
 
@@ -21,6 +28,7 @@ pytestmark = pytest.mark.usefixtures("legacy_monitor_qualification")
 PROJECT_A = UUID(int=116)
 PROJECT_B = UUID(int=117)
 SOURCE = UUID(int=118)
+_CODEX_TRANSCRIPT = CODEX_FIXTURE.read_text()
 
 
 def _module():
@@ -76,12 +84,12 @@ def test_two_clones_share_identity_but_nested_foreign_anchor_fails(tmp_path):
 
 
 class _DesktopLog:
-    def __init__(self, path, checkout, *, session=SESSION):
+    def __init__(self, path, checkout, *, session=SESSION, initial_rows=None):
         self.path = path
         self.checkout = checkout
         self.session = session
         self.turns = 2
-        rows, _ = _restart_rows("desktop", checkout)
+        rows, _ = _restart_rows("desktop", checkout, initial_rows=initial_rows)
         self.total = rows[-2]["payload"]["info"]["total_token_usage"]
         self._emit(rows, mode="w")
 
@@ -90,6 +98,12 @@ class _DesktopLog:
             for row in rows:
                 stream.write(json.dumps(row).replace(str(SESSION), str(self.session)))
                 stream.write("\n")
+
+    def read_bytes(self):
+        return self.path.read_bytes()
+
+    def write_bytes(self, data):
+        self.path.write_bytes(data)
 
     def append(self, turns=1, *, complete=True):
         for _ in range(turns):
@@ -120,13 +134,12 @@ class _DesktopLog:
             )
 
 
-def _native_fixture(tmp_path, monkeypatch, source, *, service=True):
+def _native_fixture(tmp_path, monkeypatch, source):
     module = _module()
     _, reader, root = _adapter(monkeypatch, source)
     _, directory, checkout = source
-    if service:
-        with module.Registry(tmp_path / "monitor").writer() as writer:
-            root = replace(root, evidence=writer.source_evidence())
+    with module.Registry(tmp_path / "monitor").writer() as writer:
+        root = replace(root, evidence=writer.source_evidence())
     return module, reader, root, _DesktopLog(directory / "live.jsonl", checkout)
 
 
@@ -137,16 +150,6 @@ def _locate(reader, root, stream_ref=None):
         if stream_ref is None or item.stream_ref == stream_ref
     )
     return locator
-
-
-def _second_log(first_log, reader, root, first):
-    log = _DesktopLog(
-        root.path / "second.jsonl", first_log.checkout, session=UUID(int=999)
-    )
-    (locator,) = (
-        item for item in reader.discover(root) if item.stream_ref != first.stream_ref
-    )
-    return log, locator
 
 
 def _boundaries(reader, locator):
@@ -176,11 +179,122 @@ def _approve(writer, module, root):
     )
 
 
-def test_disable_reenable_excludes_late_disabled_interval(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+@pytest.fixture
+def registry_policy(monkeypatch):
+    module = _module()
+    native = NativeTranscriptFiles(monkeypatch)
+    evidence = module._ServiceEvidence(b"r" * 32)
+    control_path, project_path = Path("/fixture/monitor"), Path("/fixture/project")
+    paths = (control_path, project_path, native.root)
+    directories = {
+        str(path): module._PhysicalDirectory(str(path), native._identity(path))
+        for path in paths
+    }
+    real_resolve = Path.resolve
+
+    def resolve(path, *args, **kwargs):
+        if path in paths:
+            return path
+        return real_resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setattr(module, "_directory", lambda path, **_: directories[path])
+    monkeypatch.setattr(module, "_probe", native._snapshot)
+    _, reader, root = _adapter(monkeypatch, (evidence, native.root, native.checkout))
+    root = replace(root, evidence=evidence)
+    control, project, transcripts = (directories[str(path)] for path in paths)
+    initial = module.RegistryView(
+        projects=(module.RegisteredProject(PROJECT_A, project, "A", None, (), None),),
+        source_key_id=evidence.key_id,
+    )
+
+    installation = _InstallationProof(
+        transcripts,
+        module._LiveSourceTuple(
+            "codex", "codex-desktop-macos", "Darwin", "arm64", "0.167.0-alpha.3.2", 1
+        ),
+        evidence.pseudonymize("executable", "codex"),
+    )
+
+    def writer_for(lease):
+        writer = module.Registry(control_path, lease)
+        writer._live_profile = _LiveProfile(
+            control,
+            lease,
+            evidence.pseudonymize("generation", "fixture"),
+            (installation,),
+            lambda _: True,
+        )
+        return writer
+
+    initial_writer = writer_for(Mock())
+    monkeypatch.setattr(initial_writer, "source_evidence", lambda: evidence)
+    files = MonitorInboxFiles(
+        monkeypatch, PROJECT_A, writer=initial_writer, initial_view=initial
+    )
+    monkeypatch.setattr(
+        module,
+        "_read_private",
+        files.read,
+    )
+    registry = module.Registry(control_path)
+
+    @contextmanager
+    def open_writer(registry):
+        assert registry.root == control_path
+        writer = writer_for(Mock())
+        try:
+            yield writer
+        finally:
+            writer._writer = None
+
+    monkeypatch.setattr(module.Registry, "writer", open_writer)
+    return SimpleNamespace(
+        native=native,
+        module=module,
+        registry=registry,
+        reader=reader,
+        root=root,
+        inbox=files.inbox,
+    )
+
+
+class _MemoryDesktopLog(_DesktopLog):
+    def __init__(self, native, path, *, session=SESSION):
+        self.contents = native.contents
+        rows = [
+            json.loads(line)
+            for line in _CODEX_TRANSCRIPT.replace(
+                "CHECKOUT", str(native.checkout)
+            ).splitlines()
+        ]
+        rows[0]["payload"]["originator"] = "Codex Desktop"
+        super().__init__(path, native.checkout, session=session, initial_rows=rows)
+
+    def _emit(self, rows, *, mode):
+        data = b"".join(
+            json.dumps(row).replace(str(SESSION), str(self.session)).encode() + b"\n"
+            for row in rows
+        )
+        prior = self.contents[self.path] if mode == "a" else b""
+        self.contents[self.path] = prior + data
+
+    def read_bytes(self):
+        return self.contents[self.path]
+
+    def write_bytes(self, data):
+        self.contents[self.path] = data
+
+
+def test_disable_reenable_excludes_late_disabled_interval(registry_policy):
+    policy = registry_policy
+    module, reader, root, registry = (
+        policy.module,
+        policy.reader,
+        policy.root,
+        policy.registry,
+    )
+    log = _MemoryDesktopLog(policy.native, root.path / "live.jsonl")
     stream = _locate(reader, root).stream_ref
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
     disable = replace(enable, enabled=False)
@@ -189,7 +303,6 @@ def test_disable_reenable_excludes_late_disabled_interval(
         return registry.span_disposition(PROJECT_A, SOURCE, stream, start, end)
 
     with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
         _approve(writer, module, root)
         start = _advance(writer, enable, log, reader, root)
         first = writer.set_permission(enable, start)
@@ -279,19 +392,19 @@ def test_shared_installation_keeps_project_permissions_independent(monkeypatch):
     assert writer.source_read_allowed(PROJECT_B, SOURCE)
 
 
-def test_destination_key_cannot_issue_a_native_capture_boundary(
-    tmp_path, monkeypatch, source
-):
-    module, reader, root, _ = _native_fixture(
-        tmp_path, monkeypatch, source, service=False
-    )
-    registry = module.Registry(tmp_path / "monitor")
+def test_destination_key_cannot_issue_a_native_capture_boundary(registry_policy):
+    from aitm_usage import ledger
+
+    policy = registry_policy
+    module = policy.module
+    foreign = _memory_ledger(ledger, PROJECT_A, b"d" * 32)
+    root = replace(policy.root, evidence=foreign)
+    _MemoryDesktopLog(policy.native, root.path / "live.jsonl")
     change = module.CaptureChange(PROJECT_A, SOURCE, True)
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
+    with policy.registry.writer() as writer:
         _approve(writer, module, root)
         with pytest.raises(LedgerError, match="monitor source namespace"):
-            writer.capture_frontier(change, _locate(reader, root))
+            writer.capture_frontier(change, _locate(policy.reader, root))
 
 
 def test_adopted_path_and_key_are_pinned(tmp_path, monkeypatch):
@@ -345,24 +458,23 @@ def test_lease_free_snapshot_read_survives_atomic_replacement(tmp_path, monkeypa
 
 
 def _physical_ordinal(log):
-    return log.path.read_bytes().count(b"\n")
+    return log.read_bytes().count(b"\n")
 
 
 class _QueuedDisable:
-    def __init__(self, tmp_path, monkeypatch, source):
-        from aitm_usage.monitor_control import ControlInbox
-
-        self.module, self.reader, self.root, self.log = _native_fixture(
-            tmp_path, monkeypatch, source
-        )
-        self.registry = self.module.Registry(tmp_path / "monitor")
-        self.inbox = ControlInbox(self.registry.root)
+    def __init__(
+        self, module, reader, root, registry, inbox, log, log_factory, project
+    ):
+        self.module, self.reader, self.root, self.log = module, reader, root, log
+        self.registry, self.inbox = registry, inbox
+        self.log_factory = log_factory
         self.enable = self.module.CaptureChange(PROJECT_A, SOURCE, True)
         self.disable = replace(self.enable, enabled=False)
         self.command = self.module.ControlCommand(UUID(int=300), self.disable)
         self.stream = _locate(self.reader, self.root).stream_ref
         with self.registry.writer() as writer:
-            writer.register_project(_request(self.module, tmp_path))
+            if project is not None:
+                writer.register_project(project)
             _approve(writer, self.module, self.root)
             self.start = _advance(writer, self.enable, self.log, self.reader, self.root)
             writer.set_permission(self.enable, self.start)
@@ -370,7 +482,12 @@ class _QueuedDisable:
 
     def enroll_second(self):
         first = _locate(self.reader, self.root, self.stream)
-        log, second = _second_log(self.log, self.reader, self.root, first)
+        log = self.log_factory(self.root.path / "second.jsonl", session=UUID(int=999))
+        (second,) = (
+            item
+            for item in self.reader.discover(self.root)
+            if item.stream_ref != first.stream_ref
+        )
         with self.registry.writer() as writer:
             proof = _advance(
                 writer, self.enable, log, self.reader, self.root, second.stream_ref
@@ -406,22 +523,56 @@ class _QueuedDisable:
 
 @pytest.fixture
 def queued_disable(tmp_path, monkeypatch, source):
-    return _QueuedDisable(tmp_path, monkeypatch, source)
+    from aitm_usage.monitor_control import ControlInbox
+
+    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
+    registry = module.Registry(tmp_path / "monitor")
+
+    def log_factory(path, *, session):
+        return _DesktopLog(path, log.checkout, session=session)
+
+    return _QueuedDisable(
+        module,
+        reader,
+        root,
+        registry,
+        ControlInbox(registry.root),
+        log,
+        log_factory,
+        _request(module, tmp_path),
+    )
+
+
+@pytest.fixture
+def queued_disable_policy(registry_policy):
+    policy = registry_policy
+
+    def log_factory(path, *, session):
+        return _MemoryDesktopLog(policy.native, path, session=session)
+
+    return _QueuedDisable(
+        policy.module,
+        policy.reader,
+        policy.root,
+        policy.registry,
+        policy.inbox,
+        log_factory(policy.root.path / "live.jsonl", session=SESSION),
+        log_factory,
+        None,
+    )
 
 
 @pytest.mark.parametrize("quiet", ["idle", "removed", "removed-after-arm"])
-def test_source_wide_disable_reaches_a_quiet_stream_after_restart(
-    queued_disable, quiet
-):
-    scenario = queued_disable
+def test_source_wide_disable_reaches_a_quiet_stream_after_restart(request, quiet):
+    fixture = "queued_disable_policy" if quiet == "idle" else "queued_disable"
+    scenario = request.getfixturevalue(fixture)
     second_log, second_start = scenario.enroll_second()
     second_prefix = _physical_ordinal(second_log)
     scenario.log.append(2)
     first_history_end = _physical_ordinal(scenario.log)
-    with scenario.log.path.open("ab") as stream:
-        stream.write(b"malformed physical row\n")
+    scenario.log.write_bytes(scenario.log.read_bytes() + b"malformed physical row\n")
     first_fence = _physical_ordinal(scenario.log)
-    first_bytes = scenario.log.path.stat().st_size
+    first_bytes = len(scenario.log.read_bytes())
     second_log.append(2)
     second_fence = _physical_ordinal(second_log)
     if quiet == "removed":
@@ -591,24 +742,21 @@ def test_pending_disable_prevents_new_enrollment_and_ignores_unrelated_locator(
 
 
 @pytest.mark.parametrize("tail", ["open-turn", "partial", "completed-after-arm"])
-def test_unfinished_codex_tail_fences_without_new_native_completion(
-    queued_disable, tail
-):
-    scenario = queued_disable
+def test_unfinished_codex_tail_fences_without_new_native_completion(request, tail):
+    fixture = "queued_disable" if tail == "partial" else "queued_disable_policy"
+    scenario = request.getfixturevalue(fixture)
     first_held = _physical_ordinal(scenario.log)
     if tail == "open-turn":
         scenario.log.append(complete=False)
         expected = _physical_ordinal(scenario.log)
     else:
-        with scenario.log.path.open("ab") as stream:
-            stream.write(b'{"type":"private-test"')
+        scenario.log.write_bytes(scenario.log.read_bytes() + b'{"type":"private-test"')
         expected = first_held + 1
 
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
     assert scenario.poll() == ()
     if tail == "completed-after-arm":
-        with scenario.log.path.open("ab") as stream:
-            stream.write(b"}\n")
+        scenario.log.write_bytes(scenario.log.read_bytes() + b"}\n")
         scenario.log.append()
 
     (receipt,) = scenario.poll()
@@ -757,20 +905,18 @@ def test_transient_native_read_failure_leaves_capture_command_queued(
     assert writer.source_read_allowed(PROJECT_A, SOURCE)
 
 
-def test_capture_frontier_waits_for_complete_native_tail(tmp_path, monkeypatch, source):
-    module, reader, root, log = _native_fixture(tmp_path, monkeypatch, source)
-    registry = module.Registry(tmp_path / "monitor")
+def test_capture_frontier_waits_for_complete_native_tail(registry_policy):
+    policy = registry_policy
+    module, reader, root = policy.module, policy.reader, policy.root
+    log = _MemoryDesktopLog(policy.native, root.path / "live.jsonl")
     enable = module.CaptureChange(PROJECT_A, SOURCE, True)
-    with registry.writer() as writer:
-        writer.register_project(_request(module, tmp_path))
+    with policy.registry.writer() as writer:
         _approve(writer, module, root)
-        complete_size = log.path.stat().st_size
-        with log.path.open("ab") as stream:
-            stream.write(b'{"type":"event_msg"')
+        complete = log.contents[log.path]
+        log.contents[log.path] = complete + b'{"type":"event_msg"'
         with pytest.raises(module.BoundaryUnavailable):
             writer.capture_frontier(enable, _locate(reader, root))
-        with log.path.open("r+b") as stream:
-            stream.truncate(complete_size)
+        log.contents[log.path] = complete
         proof = _advance(writer, enable, log, reader, root)
         assert writer.set_permission(enable, proof).enabled
 
@@ -799,12 +945,17 @@ def test_rearming_a_capture_change_invalidates_earlier_native_proof(monkeypatch)
     "interruption", ["root-replacement", "platform", "native-version", "truncated"]
 )
 def test_disable_commits_with_last_verified_prefix_when_source_changes(
-    queued_disable, monkeypatch, interruption
+    request, monkeypatch, interruption
 ):
-    scenario = queued_disable
+    fixture = (
+        "queued_disable_policy"
+        if interruption in {"platform", "native-version"}
+        else "queued_disable"
+    )
+    scenario = request.getfixturevalue(fixture)
     prefix = _physical_ordinal(scenario.log)
     scenario.log.append(2)
-    original = scenario.log.path.read_bytes()
+    original = scenario.log.read_bytes()
     locator = _locate(scenario.reader, scenario.root)
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
 
@@ -818,7 +969,7 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
             moved = path.with_name("original-approved-root")
             path.rename(moved)
             path.mkdir()
-            scenario.log.path.write_bytes(original)
+            scenario.log.write_bytes(original)
 
             def unexpected_discovery(*args):
                 pytest.fail("The replacement root was read")
@@ -829,9 +980,9 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
         elif interruption == "native-version":
             changed = original.replace(b"0.167.0-alpha.3.2", b"0.167.0-alpha.3.9", 1)
             assert changed != original
-            scenario.log.path.write_bytes(changed)
+            scenario.log.write_bytes(changed)
         else:
-            scenario.log.path.write_bytes(b"")
+            scenario.log.write_bytes(b"")
 
         applied = scenario.poll(locate)
         if not applied:
@@ -845,7 +996,7 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
         path.rmdir()
         moved.rename(path)
     if interruption in {"truncated", "native-version"}:
-        scenario.log.path.write_bytes(original)
+        scenario.log.write_bytes(original)
 
     assert scenario.status() is scenario.module.ControlStatus.APPLIED
     assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
@@ -1083,9 +1234,9 @@ def test_reappearing_stream_invalidates_an_earlier_absence(queued_disable, tmp_p
 
 
 def test_native_parser_valueerror_keeps_disable_queued_with_prior_read_bound(
-    queued_disable, monkeypatch
+    queued_disable_policy, monkeypatch
 ):
-    scenario = queued_disable
+    scenario = queued_disable_policy
     prefix = _physical_ordinal(scenario.log)
     scenario.log.append()
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED

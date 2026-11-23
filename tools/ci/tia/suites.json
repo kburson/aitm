@@ -335,6 +335,26 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_capture_frontier_waits_for_complete_native_tail",
+      "suite": "unit",
+      "isolation_group": "registry-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_destination_key_cannot_issue_a_native_capture_boundary",
+      "suite": "unit",
+      "isolation_group": "registry-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_disable_reenable_excludes_late_disabled_interval",
+      "suite": "unit",
+      "isolation_group": "registry-capture-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_native_parser_valueerror_keeps_disable_queued_with_prior_read_bound",
+      "suite": "unit",
+      "isolation_group": "registry-capture-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_grok_capture.py::test_another_scope_reader_cannot_change_current_grok_receipt_verifier",
       "suite": "unit",
       "isolation_group": "grok-capture-policy"

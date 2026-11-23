@@ -74,26 +74,7 @@ def grok_capture_policy(monkeypatch):
         lambda _: True,
     )
     monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
-    view, command_status = registry.Registry.view, registry.Registry.command_status
-    with monkeypatch.context() as setup:
-        setup.setattr(writer, "view", lambda: initial)
-        files = MonitorInboxFiles(monkeypatch, project, writer=writer)
-    monkeypatch.setattr(registry.Registry, "view", view)
-    monkeypatch.setattr(registry.Registry, "command_status", command_status)
-
-    def publish(directory, name, data, *, replace_pending):
-        assert replace_pending
-        files.files[directory.path][name] = data
-
-    for module in (registry, scope):
-        monkeypatch.setattr(module, "_path_exists", files.files.__contains__)
-        monkeypatch.setattr(module, "_pin_directory", files.pin)
-        monkeypatch.setattr(module, "_publish", publish)
-        monkeypatch.setattr(
-            module, "_read_state", lambda parent, name, _: files.read(parent, name)
-        )
-        monkeypatch.setattr(module, "os", SimpleNamespace(fsync=Mock()))
-    writer._save(initial)
+    files = MonitorInboxFiles(monkeypatch, project, writer=writer, initial_view=initial)
 
     origin = grok.GrokOrigin(
         SESSION,
@@ -234,7 +215,6 @@ def grok_capture_policy(monkeypatch):
         submit=submit,
         rows=list(_UPDATES),
         write=write,
-        receipt=refs[SESSION, PROMPT_A, "synthetic-event-1"],
         verifier=verify_receipt,
         root=root,
         refs=refs,

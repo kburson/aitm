@@ -6,7 +6,13 @@ from unittest.mock import Mock
 
 from test_ledger import _memory_ledger
 
-from aitm_usage import ledger, monitor_control, scope_admission
+from aitm_usage import (
+    ledger,
+    monitor_control,
+    monitor_registry,
+    monitor_scope,
+    scope_admission,
+)
 from aitm_usage.ledger import Ledger
 from aitm_usage.monitor_registry import (
     RegisteredProject,
@@ -20,7 +26,7 @@ from aitm_usage.monitor_registry import (
 class MonitorInboxFiles:
     """Supply queued bytes and pinned identities to the real monitor inbox."""
 
-    def __init__(self, monkeypatch, project_id, *, writer=None):
+    def __init__(self, monkeypatch, project_id, *, writer=None, initial_view=None):
         self.descriptors = {}
         self.identities = {}
         self.ledger = _memory_ledger(ledger, project_id, b"p" * 32)
@@ -39,7 +45,7 @@ class MonitorInboxFiles:
             monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
         else:
             self.root = writer.root
-            view = writer.view()
+            view = writer.view() if initial_view is None else initial_view
             evidence = writer.source_evidence()
             state = scope_admission._project(view, project_id).state
             self.ledger = replace(self.ledger, root=Path(state.path))
@@ -57,8 +63,12 @@ class MonitorInboxFiles:
             assert root == self.ledger.root and requested_project == project_id
             return self.ledger
 
-        monkeypatch.setattr(Registry, "view", read_registry)
-        monkeypatch.setattr(Registry, "command_status", Mock(return_value=None))
+        if initial_view is None:
+            monkeypatch.setattr(Registry, "view", read_registry)
+            monkeypatch.setattr(Registry, "command_status", Mock(return_value=None))
+        else:
+            self._attach_state(monkeypatch, host_fsync=Mock())
+            writer._save(initial_view)
         monkeypatch.setattr(Ledger, "open", open_ledger)
         host = SimpleNamespace(
             listdir=self.listdir, unlink=self.unlink, fsync=Mock(), stat=self.stat
@@ -73,6 +83,23 @@ class MonitorInboxFiles:
         monkeypatch.setattr(scope_admission, "_directory", self.identity)
         monkeypatch.setattr(monitor_control, "_publication", lambda _: nullcontext())
         monkeypatch.setattr(monitor_control, "_ensure_private_directory", self.ensure)
+
+    def _attach_state(self, monkeypatch, *, host_fsync):
+        """Route registry and scope serialization through the in-memory files."""
+
+        def read_state(directory, name, _limit):
+            return self.read(directory, name)
+
+        def replace_state(directory, name, data, *, replace_pending):
+            assert replace_pending
+            self.files[directory.path][name] = data
+
+        for module in (monitor_registry, monitor_scope):
+            monkeypatch.setattr(module, "_path_exists", self.files.__contains__)
+            monkeypatch.setattr(module, "_pin_directory", self.pin)
+            monkeypatch.setattr(module, "_publish", replace_state)
+            monkeypatch.setattr(module, "_read_state", read_state)
+            monkeypatch.setattr(module, "os", SimpleNamespace(fsync=host_fsync))
 
     @property
     def inbox_files(self):
