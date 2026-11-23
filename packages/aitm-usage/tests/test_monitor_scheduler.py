@@ -4,10 +4,13 @@ import errno
 import os
 import socket
 import sys
+from contextlib import nullcontext
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from time import monotonic
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from test_monitor_coverage import admitted_sources as admitted_sources
@@ -17,10 +20,10 @@ from test_monitor_journal import COPY, LIVE, A, B
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE
 
-from aitm_usage import cli, monitor_control, monitor_registry
+from aitm_usage import cli, monitor_control, monitor_registry, monitor_scheduler
 from aitm_usage.ledger import Ledger, LedgerError
 from aitm_usage.monitor_control import WakeIngress
-from aitm_usage.monitor_registry import Registry
+from aitm_usage.monitor_registry import Registry, RegistryView, _ServiceEvidence
 from aitm_usage.monitor_scheduler import (
     ResolvedWake,
     Scheduler,
@@ -58,24 +61,68 @@ def wake():
     # Native sun_path is shorter than many pytest basetemp paths.
     with TemporaryDirectory(prefix="aitm-wake-") as temporary:
         with Registry(Path(temporary).resolve() / "m").writer() as writer:
-            evidence = writer.source_evidence()
-            now = [0.0]
-            scheduler = Scheduler(writer, clock=lambda: now[0], lease_ttl=3.0)
+            yield _wake_context(writer)
 
-            def ref(name):
-                return evidence.pseudonymize("wake-test", name)
 
-            facts = ResolvedWake(
-                MonitorProvider.CODEX,
-                ref("stream"),
-                ref("raw-session-canary"),
-                ref("raw-turn-canary"),
-                ref("project"),
-                ref("raw-cursor-canary"),
-                current_stop=True,
-            )
-            resolver = Resolver(writer, facts)
-            yield scheduler, resolver, ref, now
+def _wake_context(writer):
+    evidence = writer.source_evidence()
+    now = [0.0]
+    scheduler = Scheduler(writer, clock=lambda: now[0], lease_ttl=3.0)
+
+    def ref(name):
+        return evidence.pseudonymize("wake-test", name)
+
+    facts = ResolvedWake(
+        MonitorProvider.CODEX,
+        ref("stream"),
+        ref("raw-session-canary"),
+        ref("raw-turn-canary"),
+        ref("project"),
+        ref("raw-cursor-canary"),
+        current_stop=True,
+    )
+    return scheduler, Resolver(writer, facts), ref, now
+
+
+@pytest.fixture
+def wake_policy(monkeypatch):
+    evidence = _ServiceEvidence(b"wake-policy-fixture")
+    view = RegistryView(source_key_id=evidence.key_id)
+    writer = SimpleNamespace(
+        root=Path("/fixture/monitor"),
+        lease=Mock(),
+        view=lambda: view,
+        source_evidence=lambda: evidence,
+    )
+    files = {}
+    root = SimpleNamespace(check=Mock())
+    directory = SimpleNamespace(fd=7, check=Mock())
+
+    def read(location, filename):
+        assert location is directory
+        return files.get(filename)
+
+    def publish(location, filename, data, *, replace_pending):
+        assert location is directory
+        assert replace_pending == (filename in files)
+        files[filename] = data
+        return True
+
+    monkeypatch.setattr(
+        monitor_scheduler, "_pin_directory", lambda path: nullcontext(root)
+    )
+    monkeypatch.setattr(
+        monitor_scheduler, "_private_child", lambda *args, **_: nullcontext(directory)
+    )
+    monkeypatch.setattr(monitor_scheduler, "_publication", nullcontext)
+    monkeypatch.setattr(
+        monitor_scheduler,
+        "os",
+        SimpleNamespace(listdir=lambda fd: tuple(files), fsync=Mock()),
+    )
+    monkeypatch.setattr(monitor_scheduler, "_read_private", read)
+    monkeypatch.setattr(monitor_scheduler, "_publish", publish)
+    return _wake_context(writer)
 
 
 def _change(scheduler, resolver, kind=WakeKind.CHANGE):
@@ -90,8 +137,8 @@ def _new_fact(resolver, **changes):
     )
 
 
-def test_park_final_catchup_then_late_write_reopens(wake):
-    scheduler, resolver, ref, now = wake
+def test_park_final_catchup_then_late_write_reopens(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     (first,) = scheduler.take_due(now[0], 1)
     assert first.state is ScheduleState.ACTIVE
@@ -110,8 +157,8 @@ def test_park_final_catchup_then_late_write_reopens(wake):
     assert reopened.generation > last.generation
 
 
-def test_stale_stop_cannot_park_newer_turn(wake):
-    scheduler, resolver, ref, now = wake
+def test_stale_stop_cannot_park_newer_turn(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     older = resolver.result
     _new_fact(resolver, turn=ref("second-turn"), fact=ref("second-fact"))
@@ -128,8 +175,8 @@ def test_stale_stop_cannot_park_newer_turn(wake):
     ]
 
 
-def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake):
-    scheduler, resolver, ref, now = wake
+def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     assert _change(scheduler, resolver, WakeKind.STOP)
     (first,) = scheduler.take_due(now[0], 1)
@@ -152,8 +199,8 @@ def test_verified_stop_only_new_turn_gets_exactly_one_catchup(wake):
     }
 
 
-def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake):
-    scheduler, resolver, ref, now = wake
+def test_duplicate_and_missing_hooks_keep_idempotent_progress(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     assert _change(scheduler, resolver)
     (item,) = scheduler.take_due(now[0], 3)
@@ -188,8 +235,8 @@ def test_restart_recovers_pending_wake_without_its_old_lease(wake):
     assert len(restored.take_due(now[0], 1)) == 1
 
 
-def test_full_project_does_not_starve_another_due_project(wake):
-    scheduler, resolver, ref, now = wake
+def test_full_project_does_not_starve_another_due_project(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     assert _change(scheduler, resolver)
     first_project = resolver.result.facts.project
     for label in ("two", "three"):
@@ -210,8 +257,8 @@ def test_full_project_does_not_starve_another_due_project(wake):
     assert scheduler.take_due(now[0], 1) == ()
 
 
-def test_due_turns_rotate_by_stream_inside_one_project(wake):
-    scheduler, resolver, ref, now = wake
+def test_due_turns_rotate_by_stream_inside_one_project(wake_policy):
+    scheduler, resolver, ref, now = wake_policy
     original = resolver.result.facts.stream
     assert _change(scheduler, resolver)
     now[0] += 1
@@ -395,10 +442,10 @@ def test_decoder_failure_refuses_wake_and_keeps_listener_live(wake, monkeypatch)
         assert len(scheduler.take_due(now[0], 1)) == 1
 
 
-def test_wake_publication_failure_creates_no_memory_only_due_work(wake, monkeypatch):
-    from aitm_usage import monitor_scheduler
-
-    scheduler, resolver, _, now = wake
+def test_wake_publication_failure_creates_no_memory_only_due_work(
+    wake_policy, monkeypatch
+):
+    scheduler, resolver, _, now = wake_policy
     with monkeypatch.context() as fault:
         fault.setattr(monitor_scheduler, "_publish", lambda *_a, **_k: False)
         with pytest.raises(LedgerError):

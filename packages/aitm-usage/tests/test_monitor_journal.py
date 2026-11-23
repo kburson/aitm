@@ -3,15 +3,20 @@
 import json
 import os
 import shlex
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from shutil import copyfile
 from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from paired_settlement_cases import assert_pair_refuses_changed_completion
+from monitor_scope_snapshot_cases import disposition_snapshot
+from paired_settlement_cases import (
+    assert_pair_refuses_changed_authority,
+    assert_pair_refuses_changed_completion,
+)
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -391,8 +396,13 @@ def test_journal_disposition_conflicting_durable_replay_preserves_the_row(
     "damage", ["foreign-field", "noncanonical", "empty", "wrong-receipt", "wrong-hold"]
 )
 def test_journal_disposition_reader_refuses_invalid_stored_evidence(
-    journal_disposition, damage
+    request, monkeypatch, damage
 ):
+    if damage != "wrong-hold":
+        _assert_disposition_reader_refuses_row(monkeypatch, damage)
+        return
+
+    journal_disposition = request.getfixturevalue("journal_disposition")
     with journal_disposition() as case:
         journal = case.journal
         written = journal.record_disposition(case.proof)
@@ -400,21 +410,9 @@ def test_journal_disposition_reader_refuses_invalid_stored_evidence(
             (raw,) = connection.execute(
                 "SELECT payload FROM route_dispositions"
             ).fetchone()
-            decoded = json.loads(raw)
-            hold = str(case.proof.hold.command_id)
-            if damage == "foreign-field":
-                decoded["foreign"] = None
-            elif damage == "empty":
-                decoded["end"] = decoded["start"]
-            elif damage == "wrong-receipt":
-                decoded["record"]["boundary"]["receipt_ref"] = (
-                    journal._store.evidence.pseudonymize("scope-receipt", "other").value
-                )
-            elif damage == "wrong-hold":
-                hold = str(UUID(int=0x635))
-            raw = json.dumps(decoded, separators=(",", ":")).encode("utf-8")
-            if damage == "noncanonical":
-                raw += b"\n"
+            hold, raw = _damage_disposition_row(
+                str(case.proof.hold.command_id), raw, damage, journal._store.evidence
+            )
             connection.execute(
                 "UPDATE route_dispositions SET payload = ?, hold = ? WHERE sequence = ?",
                 (raw, hold, written.sequence),
@@ -424,6 +422,68 @@ def test_journal_disposition_reader_refuses_invalid_stored_evidence(
         ):
             journal.as_of()
         assert not journal.as_of(written.sequence - 1).dispositions
+
+
+def _damage_disposition_row(hold, raw, damage, evidence):
+    contents = json.loads(raw)
+    if damage == "foreign-field":
+        contents["foreign"] = None
+    elif damage == "empty":
+        contents["end"] = contents["start"]
+    elif damage == "wrong-receipt":
+        contents["record"]["boundary"]["receipt_ref"] = evidence.pseudonymize(
+            "scope-receipt", "other"
+        ).value
+    elif damage == "wrong-hold":
+        hold = str(UUID(int=0x635))
+    changed = json.dumps(contents, separators=(",", ":")).encode("utf-8")
+    return hold, changed + b"\n" if damage == "noncanonical" else changed
+
+
+def _assert_disposition_reader_refuses_row(monkeypatch, damage):
+    from aitm_usage import monitor_journal
+    from aitm_usage.types import _encode
+
+    snapshot, evidence = disposition_snapshot()
+    (hold,), (record,) = snapshot.holds, snapshot.route_dispositions
+    payload = monitor_journal._JournalDispositionPayload(
+        hold.project_id,
+        hold.position,
+        hold.affected.start,
+        hold.affected.end,
+        hold.command_digest,
+        record,
+    )
+    raw = _encode(
+        payload, type(payload), validate_ref=evidence.validate_source_ref
+    ).encode()
+    row = (str(record.command_id), str(record.hold_id), 1, 1, raw)
+
+    def execute(sql, parameters=()):
+        if "coalesce(max(sequence)" in sql:
+            return SimpleNamespace(fetchone=lambda: (1,))
+        assert sql.startswith("SELECT ")
+        if "FROM route_dispositions d" in sql and parameters[0] == 1:
+            return (row,)
+        return ()
+
+    connection = SimpleNamespace(execute=execute)
+    store = SimpleNamespace(
+        evidence=evidence,
+        transaction=lambda: nullcontext(connection),
+        _current_version=lambda _: 4,
+    )
+    monkeypatch.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+    coordinator = SimpleNamespace(lease=object())
+    journal = monitor_journal.RoutingJournal(coordinator, ScopeState(coordinator))
+    assert journal.as_of().dispositions[0].change.disposition == payload
+    altered_hold, altered_bytes = _damage_disposition_row(
+        row[1], row[4], damage, evidence
+    )
+    row = row[0], altered_hold, row[2], row[3], altered_bytes
+    with pytest.raises(LedgerError, match="Invalid stored routing journal disposition"):
+        journal.as_of()
+    assert journal.as_of(0).dispositions == ()
 
 
 def test_journal_disposition_projects_each_matching_origin_once(journal_disposition):
@@ -2716,40 +2776,24 @@ def test_pair_settles_two_frontiers_and_preserves_first_ownership(journal_pair):
     ["late", "copy", "grant", "expired-hold", "changed-route", "disabled", "swap"],
 )
 def test_pair_refuses_one_bad_side_without_moving_either_frontier(
-    journal_pair, broken, failure
+    request, monkeypatch, broken, failure
 ):
-    case = journal_pair
+    index = int(broken == "rival")
+    if failure in {"copy", "expired-hold", "changed-route"}:
+        assert_pair_refuses_changed_authority(monkeypatch, index, failure)
+        return
+
+    case = request.getfixturevalue("journal_pair")
     journal = case.journal
     good = [case.owner.prove(), case.rival.prove()]
     carriers = (case.owner, case.rival)
-    index = int(broken == "rival")
     source = carriers[index]
     prior = journal.as_of()
     original_rows = _prior_journal_rows(journal)
     if failure == "late":
         source.late_usage()
-    elif failure == "copy":
-        good[index] = replace(good[index])
     elif failure == "grant":
         source.reader.withdraw(source.request.grant_id)
-    elif failure == "expired-hold":
-        source.state._clock = lambda: source.hold.expires_at
-    elif failure == "changed-route":
-        state = source.state._snapshot()
-        event = next(
-            item for item in state.events if item.position.source_id == source.source_id
-        )
-        changed = replace(
-            event, scope=replace(event.scope, item=ItemKey(ItemKind.ISSUE, 999))
-        )
-        source.state._save(
-            replace(
-                state,
-                events=tuple(
-                    changed if item is event else item for item in state.events
-                ),
-            )
-        )
     elif failure == "disabled":
         source.append()
         change = CaptureChange(source.project, source.source_id, False)

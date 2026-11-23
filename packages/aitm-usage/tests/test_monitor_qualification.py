@@ -1,22 +1,39 @@
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from shutil import copytree
+from types import SimpleNamespace
+from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
+from qualification_policy_cases import qualification_policy
 
+from aitm_usage import monitor_journal, monitor_scope
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_control import ControlInbox
 from aitm_usage.monitor_registry import (
     ApprovedSource,
     CaptureChange,
+    CaptureEpoch,
+    CaptureFrontier,
     ControlCommand,
     ControlStatus,
     ProjectRegistrationRequest,
     Registry,
     SourceApprovalRequest,
     _directory,
+    _PhysicalDirectory,
+)
+from aitm_usage.sources.adapter import AdapterBatch, ProviderAdapter, StreamCursor
+from aitm_usage.sources.scan import _CapturePosition
+from aitm_usage.types import (
+    ClientVersion,
+    Provider,
+    ProviderCheckpoint,
+    SourceCheckpoint,
+    SourceCursor,
 )
 
 
@@ -209,13 +226,20 @@ def test_retained_grok_refuses_before_payload(previously_admitted, monkeypatch):
 @pytest.mark.parametrize("change", ("supersede", "revoke", "verifier-unavailable"))
 @pytest.mark.parametrize("existing_progress", (False, True))
 def test_reserve_revalidates_the_exact_prepared_authority(
-    previously_admitted, change, existing_progress
+    request, monkeypatch, change, existing_progress
 ):
     from test_monitor_journal import LIVE
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
 
+    if (change, existing_progress) not in {("supersede", False), ("revoke", True)}:
+        _assert_prepared_authority_rechecked(
+            monkeypatch, LIVE, change, existing_progress
+        )
+        return
+
+    previously_admitted = request.getfixturevalue("previously_admitted")
     with previously_admitted.registry.writer() as writer:
         qualify(writer)
         journal = RoutingJournal(writer, ScopeState(writer))
@@ -237,6 +261,117 @@ def test_reserve_revalidates_the_exact_prepared_authority(
             journal.reserve_batch(prepared)
         assert journal.as_of() == before
         assert journal.cursor_for(LIVE, locator) == progress
+
+
+def _assert_prepared_authority_rechecked(
+    monkeypatch, source_id, change, existing_progress
+):
+    from test_codex import CUTOFF
+
+    case = qualification_policy(monkeypatch, source_id, CUTOFF)
+    writer, locator = case.writer, case.locator
+    source = locator._source
+    evidence = writer.source_evidence()
+    cursor = SourceCursor(
+        source.stream_ref,
+        source.locator_ref,
+        source.incarnation_ref,
+        123,
+        evidence.pseudonymize("fixture", "prefix"),
+    )
+    client = ClientVersion.CODEX_0_167_0_ALPHA_3_2
+    checkpoint = SourceCheckpoint(
+        cursor,
+        ProviderCheckpoint(Provider.CODEX, client_version=client, format_version=1),
+    )
+    frontier = CaptureFrontier(checkpoint, 1)
+    epoch = CaptureEpoch(
+        case.view.projects[0].project_id,
+        source_id,
+        source.stream_ref,
+        0,
+        evidence.pseudonymize("fixture", "boundary"),
+        1,
+        True,
+        frontier,
+        frontier,
+        position=cursor,
+    )
+    view = replace(case.view, epochs=(epoch,))
+    monkeypatch.setattr(writer, "view", lambda **_: view)
+    position = _CapturePosition(
+        cursor, 2, None, Provider.CODEX, source._native_surface, client, 1
+    )
+
+    def capture(native, prior, *, fixed=None):
+        assert native is source and prior in (None, cursor)
+        assert fixed == prior
+        return position
+
+    monkeypatch.setattr(monitor_scope, "_capture_position", capture)
+    monkeypatch.setattr(monitor_scope, "_check_capture_root", Mock())
+    read_delta = Mock(return_value=AdapterBatch(cursor=StreamCursor(checkpoint)))
+    monkeypatch.setattr(ProviderAdapter, "read_delta", read_delta)
+    state = monitor_scope.ScopeState(writer)
+    monkeypatch.setattr(state, "_snapshot", lambda **_: monitor_scope._ScopeSnapshot())
+
+    committed = {}
+
+    def execute(sql, parameters=()):
+        if sql.startswith("SELECT cursor FROM progress"):
+            result = committed.get("cursor")
+        elif sql.startswith("SELECT coalesce(max(sequence)"):
+            result = (committed.get("sequence", 0),)
+        elif sql.startswith("INSERT OR IGNORE INTO commits"):
+            committed["sequence"] = parameters[0]
+            result = None
+        elif sql.startswith("INSERT INTO progress"):
+            committed["cursor"] = (parameters[-1],)
+            result = None
+        else:
+            pytest.fail(f"Unexpected journal statement {sql}")
+        return SimpleNamespace(fetchone=lambda: result)
+
+    connection = SimpleNamespace(execute=Mock(side_effect=execute))
+    store = SimpleNamespace(
+        transaction=lambda **_: nullcontext(connection),
+        _current_version=lambda _: 4,
+        evidence=evidence,
+    )
+    monkeypatch.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+    journal = monitor_journal.RoutingJournal(writer, state)
+    prepared = journal.prepare(source_id, locator)
+    assert prepared.progress == StreamCursor(checkpoint)
+    read_delta.assert_called_once()
+    if existing_progress:
+        journal.reserve_batch(prepared)
+        assert journal.cursor_for(source_id, locator) == prepared.progress
+    before = committed.copy()
+    connection.execute.reset_mock()
+    _change_prepared_authority(writer, change)
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.reserve_batch(prepared)
+    assert committed == before
+    assert all(
+        query.args[0].startswith("SELECT ")
+        for query in connection.execute.call_args_list
+    )
+    read_delta.assert_called_once()
+
+
+def _change_prepared_authority(writer, change):
+    profile = writer._live_profile
+    if change == "supersede":
+        writer._live_profile = replace(
+            profile,
+            generation=writer.source_evidence().pseudonymize(
+                "generation", "replacement"
+            ),
+        )
+    elif change == "revoke":
+        writer._live_profile = None
+    else:
+        writer._live_profile = replace(profile, current=None)
 
 
 def test_claude_and_mismatched_build_refuse_under_an_active_profile(tmp_path, approval):
@@ -357,13 +492,19 @@ def test_old_capture_frontier_cannot_cross_a_profile_generation(previously_admit
     ),
 )
 def test_unqualified_physical_custody_cannot_approve_or_read(
-    previously_admitted, tmp_path, mismatch
+    request, monkeypatch, mismatch
 ):
     from test_monitor_journal import LIVE
 
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
 
+    if mismatch not in {"replaced-profile-root", "replaced-approved-directory"}:
+        _assert_profile_mismatch_refuses_approval_and_read(monkeypatch, LIVE, mismatch)
+        return
+
+    previously_admitted = request.getfixturevalue("previously_admitted")
+    tmp_path = request.getfixturevalue("tmp_path")
     registry = previously_admitted.registry
     expired_root = _directory(str(registry.root), private=True)
     if mismatch == "replaced-profile-root":
@@ -375,9 +516,6 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
         qualify(writer)
         profile = writer._live_profile
         approved = next(s for s in writer.view().sources if s.source_id == LIVE)
-        installation = next(
-            i for i in profile.installations if i.directory == approved.directory
-        )
         locator = previously_admitted.locator()
         state = ScopeState(writer)
         journal = RoutingJournal(writer, state)
@@ -385,32 +523,11 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
         progress = journal.cursor_for(LIVE, locator)
         if mismatch == "replaced-profile-root":
             writer._live_profile = replace(profile, root=expired_root)
-        elif mismatch == "foreign-profile-root":
-            foreign = tmp_path / "foreign-registry"
-            foreign.mkdir(mode=0o700)
-            writer._live_profile = replace(
-                profile, root=_directory(str(foreign), private=True)
-            )
-        elif mismatch == "foreign-installation-directory":
-            sibling = tmp_path / "foreign-installation"
-            sibling.mkdir()
-            writer._live_profile = replace(
-                profile,
-                installations=(
-                    replace(installation, directory=_directory(str(sibling))),
-                ),
-            )
         elif mismatch == "replaced-approved-directory":
             retained = Path(approved.directory.path)
             prior_location = retained.with_name("previous-installation")
             retained.rename(prior_location)
             copytree(prior_location, retained)
-        elif mismatch == "missing-installation":
-            writer._live_profile = replace(profile, installations=())
-        else:
-            writer._live_profile = replace(
-                profile, installations=(installation, installation)
-            )
 
         with pytest.raises(LedgerError, match="qualification"):
             writer.approve_source(approved.approval)
@@ -418,6 +535,37 @@ def test_unqualified_physical_custody_cannot_approve_or_read(
             state.read_source(LIVE, locator)
         assert writer.view() == before
         assert journal.cursor_for(LIVE, locator) == progress
+
+
+def _assert_profile_mismatch_refuses_approval_and_read(
+    monkeypatch, source_id, mismatch
+):
+    from test_codex import CUTOFF
+
+    case = qualification_policy(monkeypatch, source_id, CUTOFF)
+    writer, approved, profile = case.writer, case.approved, case.profile
+    (installation,) = profile.installations
+    changes = {
+        "foreign-profile-root": {
+            "root": _PhysicalDirectory(str(case.foreign.root), (1, 2))
+        },
+        "foreign-installation-directory": {
+            "installations": (replace(installation, directory=case.root),)
+        },
+        "missing-installation": {"installations": ()},
+        "ambiguous-installation": {"installations": (installation, installation)},
+    }
+    payload_read = Mock()
+    monkeypatch.setattr(ProviderAdapter, "read_delta", payload_read)
+    expected = writer._require_live_source(approved)
+    assert expected.installation == installation
+    writer._live_profile = replace(profile, **changes[mismatch])
+    with pytest.raises(LedgerError, match="qualification"):
+        writer.approve_source(approved.approval)
+    with pytest.raises(LedgerError, match="qualification"):
+        monitor_scope.ScopeState(writer).read_source(source_id, case.locator)
+    writer._save.assert_not_called()
+    payload_read.assert_not_called()
 
 
 @pytest.mark.parametrize("with_cursor", (False, True))

@@ -335,6 +335,41 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_due_turns_rotate_by_stream_inside_one_project",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_duplicate_and_missing_hooks_keep_idempotent_progress",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_full_project_does_not_starve_another_due_project",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_park_final_catchup_then_late_write_reopens",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_stale_stop_cannot_park_newer_turn",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_verified_stop_only_new_turn_gets_exactly_one_catchup",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scheduler.py::test_wake_publication_failure_creates_no_memory_only_due_work",
+      "suite": "unit",
+      "isolation_group": "scheduler-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_claude_processing_invalidation_requires_accepted_counts",
       "suite": "unit",
       "isolation_group": "native-admission-policy"

@@ -28,7 +28,14 @@ from aitm_usage.sources.adapter import (
     SourceRoot,
     StreamCursor,
 )
-from aitm_usage.types import ClientVersion, Eligibility, Provider, SourceCheckpoint
+from aitm_usage.types import (
+    ClientVersion,
+    Eligibility,
+    ItemKey,
+    ItemKind,
+    Provider,
+    SourceCheckpoint,
+)
 
 
 def _bytes(rows):
@@ -221,7 +228,7 @@ def _build_side(project, session, registry, contents, identity, monkeypatch):
     )
 
 
-def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
+def _issued_pair(monkeypatch):
     contents = {}
     identity = _capture_inputs(monkeypatch, contents)
     registry = SimpleNamespace(lease=object())
@@ -245,6 +252,15 @@ def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
         tuple(item.held_target for item in carriers),
         (),
     )
+    case = SimpleNamespace(
+        snapshot=snapshot,
+        registry=registry,
+        contents=contents,
+        carriers=carriers,
+        publish=Mock(
+            side_effect=AssertionError("rejected pair reached scope publication")
+        ),
+    )
     requests = {id(item.command): item.request for item in carriers}
     confirm_requests = Mock()
 
@@ -256,15 +272,23 @@ def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
     for item in carriers:
         item.batch = replace(item.batch, _completion_scope=snapshot)
         item.issuer._batches[id(item.batch)] = item.batch
-        monkeypatch.setattr(item.issuer, "_snapshot", lambda **options: snapshot)
+        monkeypatch.setattr(item.issuer, "_snapshot", lambda **options: case.snapshot)
+        monkeypatch.setattr(item.issuer, "_save", case.publish)
         monkeypatch.setattr(item.issuer, "_route_requests", route_requests)
 
-    proofs = tuple(
+    case.proofs = tuple(
         item.issuer.verify_settlement_side(
             item.command, item.authority, item.batch, item.target
         )
         for item in carriers
     )
+    case.confirm_requests = confirm_requests
+    return case
+
+
+def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
+    case = _issued_pair(monkeypatch)
+    carriers, contents, proofs = case.carriers, case.contents, case.proofs
     bad, good = carriers[side], carriers[1 - side]
     _damage_completion_rows(
         bad.rows,
@@ -294,11 +318,51 @@ def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
     )
     assert current_good.hold == proofs[1 - side].hold
     assert current_good.progress.cursor == proofs[1 - side].progress.cursor
-    confirm_requests.reset_mock()
     assert (
         bad.issuer.completion_witness(bad.command, bad.authority, bad.batch, bad.target)
         is None
     )
+    _assert_pair_refuses_before_write(
+        monkeypatch, case, proofs, "current owned completion proof"
+    )
+
+
+def assert_pair_refuses_changed_authority(monkeypatch, side, failure):
+    case = _issued_pair(monkeypatch)
+    proofs = list(case.proofs)
+    carrier = case.carriers[side]
+    message = "current owned completion proof"
+    if failure == "copy":
+        proofs[side] = replace(proofs[side])
+        message = "current settlement side from its scope writer"
+    elif failure == "expired-hold":
+        monkeypatch.setattr(carrier.issuer, "_clock", lambda: carrier.hold.expires_at)
+        good = case.carriers[1 - side]
+        assert good.issuer.completion_witness(
+            good.command, good.authority, good.batch, good.target
+        )
+    else:
+        changed = replace(
+            carrier.event,
+            scope=replace(carrier.event.scope, item=ItemKey(ItemKind.ISSUE, 999)),
+        )
+        case.snapshot = replace(
+            case.snapshot,
+            events=tuple(
+                changed if event is carrier.event else event
+                for event in case.snapshot.events
+            ),
+        )
+        message = "current owned completion proof|scope snapshot changed"
+
+    snapshot = case.snapshot
+    _assert_pair_refuses_before_write(monkeypatch, case, proofs, message)
+    assert case.snapshot is snapshot
+
+
+def _assert_pair_refuses_before_write(monkeypatch, case, proofs, message):
+    registry = case.registry
+    case.confirm_requests.reset_mock()
 
     transaction = Mock(return_value=nullcontext(object()))
     monkeypatch.setattr(
@@ -306,13 +370,14 @@ def assert_pair_refuses_changed_completion(monkeypatch, side, disproof):
         "JournalStore",
         Mock(return_value=SimpleNamespace(transaction=transaction)),
     )
-    journal = monitor_journal.RoutingJournal(registry, carriers[0].issuer)
+    journal = monitor_journal.RoutingJournal(registry, case.carriers[0].issuer)
     write = Mock(side_effect=AssertionError("stale proof reached settlement writes"))
     monkeypatch.setattr(journal, "_build_settlement_change", write)
-    with pytest.raises(LedgerError, match="current owned completion proof"):
+    with pytest.raises(LedgerError, match=message):
         journal.settle_disposition(
             registry.source_evidence().pseudonymize("fixture", "dispute"), *proofs
         )
     transaction.assert_called_once_with(write=True)
     write.assert_not_called()
-    confirm_requests.assert_not_called()
+    case.publish.assert_not_called()
+    case.confirm_requests.assert_not_called()

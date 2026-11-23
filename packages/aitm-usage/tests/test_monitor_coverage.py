@@ -9,31 +9,22 @@ from unittest.mock import Mock, call
 from uuid import UUID
 
 import pytest
+from qualification_policy_cases import qualification_policy
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
 
 from aitm_usage import monitor_journal, monitor_registry
-from aitm_usage._monitor_qualification import (
-    _InstallationProof,
-    _LiveProfile,
-    _LiveSourceTuple,
-)
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
 from aitm_usage.monitor_registry import (
     ApprovedSource,
-    RegisteredProject,
     Registry,
-    RegistryView,
     SourceApprovalRequest,
     _directory,
-    _PhysicalDirectory,
     _ServiceEvidence,
 )
 from aitm_usage.monitor_scope import ScopeState
-from aitm_usage.monitor_types import NativeSurface
-from aitm_usage.sources.adapter import SourceLocator, SourceRoot
-from aitm_usage.sources.scan import CandidateSource
+from aitm_usage.sources.adapter import SourceRoot
 from aitm_usage.types import Provider, _encode
 
 
@@ -168,78 +159,15 @@ def _changed_live_profile(profile, case, approved, foreign, old_root):
 def _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude):
     from test_codex import CUTOFF
 
-    lease = Mock()
-    writer = Registry(Path("/fixture/monitor"), lease)
-    foreign = Registry(Path("/fixture/other-monitor"), Mock())
-    evidence = _ServiceEvidence(b"coverage-profile-policy")
-    other_evidence = _ServiceEvidence(b"other-coverage-profile")
-    root, foreign_root, directory = (
-        _PhysicalDirectory(path, (1, index))
-        for index, path in enumerate(
-            (str(writer.root), str(foreign.root), "/fixture/transcripts"), start=1
-        )
+    authority = qualification_policy(
+        monkeypatch,
+        SOURCE,
+        CUTOFF,
+        provider=Provider.CLAUDE if use_claude else Provider.CODEX,
     )
-    provider, surface, version = (
-        (Provider.CLAUDE, NativeSurface.CLAUDE_CODE_MACOS, "2.1.318")
-        if use_claude
-        else (Provider.CODEX, NativeSurface.CODEX_DESKTOP_MACOS, "0.167.0-alpha.3.2")
-    )
-    approved = ApprovedSource(
-        SourceApprovalRequest(
-            SOURCE,
-            provider.value,
-            surface.value,
-            "Darwin",
-            "arm64",
-            version,
-            1,
-            directory.path,
-        ),
-        directory,
-    )
-    project = RegisteredProject(UUID(int=1), root, "Fixture", None, (), None)
-    view = RegistryView(
-        projects=(project,), sources=(approved,), source_key_id=evidence.key_id
-    )
-    directories = {item.path: item for item in (root, foreign_root, directory)}
-    monkeypatch.setattr(
-        monitor_registry, "_directory", lambda path, **_: directories[path]
-    )
-    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
-    monkeypatch.setattr(foreign, "source_evidence", lambda: other_evidence)
-    monkeypatch.setattr(writer, "view", lambda: view)
-    monkeypatch.setattr(writer, "capture_read_limit", Mock(return_value=None))
-    profile = _LiveProfile(
-        root,
-        lease,
-        evidence.pseudonymize("generation", "local"),
-        (
-            _InstallationProof(
-                directory,
-                _LiveSourceTuple.from_approval(approved),
-                evidence.pseudonymize("executable", "local"),
-            ),
-        ),
-        lambda _: True,
-    )
-    writer._live_profile = _changed_live_profile(profile, case, approved, foreign, root)
-    path = Path(directory.path)
-    locator = SourceLocator(
-        CandidateSource(
-            provider,
-            evidence.pseudonymize("fixture", "session"),
-            evidence.pseudonymize("fixture", "stream"),
-            evidence.pseudonymize("fixture", "locator"),
-            evidence.pseudonymize("fixture", "incarnation"),
-            path / "capture.jsonl",
-            (),
-            SourceRoot(path, CUTOFF, (), evidence),
-            evidence,
-            _native_surface=surface,
-        )
-    )
-    monkeypatch.setattr(
-        writer, "_current_candidate", Mock(return_value=(approved, locator))
+    writer, locator = authority.writer, authority.locator
+    writer._live_profile = _changed_live_profile(
+        authority.profile, case, authority.approved, authority.foreign, authority.root
     )
     reader, connection = Mock(), Mock()
     reader.execute.return_value.fetchone.return_value = None
@@ -555,17 +483,13 @@ def test_grok_coverage_rechecks_exact_consent_before_payload(
     admitted_sources, monkeypatch, tmp_path, consent
 ):
     from datetime import UTC, datetime
-    from uuid import UUID
 
     from test_grok import FIXTURES, GROK_BINARY, SESSION
     from test_monitor_scope import A
 
     from aitm_usage.monitor_registry import (
-        ApprovedSource,
         CaptureChange,
-        SourceApprovalRequest,
     )
-    from aitm_usage.sources.adapter import SourceRoot
     from aitm_usage.sources.grok import GrokAdapter, GrokOrigin
 
     native, _ = admitted_sources

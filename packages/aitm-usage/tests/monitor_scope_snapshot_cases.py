@@ -40,7 +40,7 @@ def reference(label):
     return _EVIDENCE.pseudonymize("fixture", label)
 
 
-def snapshot_reader(monkeypatch):
+def disposition_snapshot():
     hold_id, terminal_id = UUID(int=0x501), UUID(int=0x503)
     seen = datetime(2026, 1, 1, tzinfo=UTC)
     target = SourceBoundary(
@@ -100,6 +100,11 @@ def snapshot_reader(monkeypatch):
             ),
         ),
     )
+    return snapshot, _EVIDENCE
+
+
+def snapshot_reader(monkeypatch):
+    snapshot, _ = disposition_snapshot()
     raw = _encode(snapshot, _ScopeSnapshotV2).encode()
     reader = Mock(return_value=raw)
     monkeypatch.setattr(monitor_scope, "_path_exists", lambda _path: True)
@@ -108,7 +113,7 @@ def snapshot_reader(monkeypatch):
     )
     monkeypatch.setattr(monitor_scope, "_read_state", reader)
     state = ScopeState(SimpleNamespace(root=Path("unused"), _writer=None))
-    assert state.view().holds == (hold,)
+    assert state.view().holds == snapshot.holds
     return json.loads(raw), reader, state
 
 

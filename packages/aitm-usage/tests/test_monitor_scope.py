@@ -17,7 +17,7 @@ from monitor_scope_snapshot_cases import (
     custody_writer,
     snapshot_reader,
 )
-from scope_state_cases import MemoryScope
+from scope_state_cases import MemoryScope, route_policy_case
 from test_codex import (
     AFTER,
     CUTOFF,
@@ -2997,13 +2997,41 @@ def test_ordered_native_disposition_records_only_proof_and_replays_after_restart
     ],
 )
 def test_issued_route_disposition_requires_current_evidence(
-    native, tmp_path, monkeypatch, capsys, change
+    request, monkeypatch, capsys, change
 ):
     import os
 
     from aitm_usage.monitor_control import _filename
     from aitm_usage.monitor_scope import HoldState, ScopeState
 
+    if change in {"expire", "expired-proposal"}:
+        case = route_policy_case(
+            monkeypatch, CUTOFF, release=change == "expired-proposal"
+        )
+        proof = case.state.verify_route_disposition(case.command, case.terminal)
+        record = case.state.require_route_disposition(proof)
+        case.when = case.hold.expires_at + timedelta(seconds=1)
+        if change == "expire":
+            assert record.outcome is HoldState.GAP
+            assert case.state.expire() == (replace(case.hold, state=HoldState.GAP),)
+        else:
+            assert case.state.view().holds == (case.hold,)
+        before = case.snapshot
+        case.publish.reset_mock()
+        message = (
+            "Scope disposition is no longer current"
+            if change == "expire"
+            else "original scope cannot be proposed"
+        )
+        with pytest.raises(LedgerError, match=message):
+            case.state.require_route_disposition(proof)
+        assert case.snapshot is before
+        assert case.snapshot.route_dispositions == (record,)
+        case.publish.assert_not_called()
+        return
+
+    native = request.getfixturevalue("native")
+    tmp_path = request.getfixturevalue("tmp_path")
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
             native,
@@ -3011,7 +3039,6 @@ def test_issued_route_disposition_requires_current_evidence(
             tmp_path,
             monkeypatch,
             capsys,
-            release=change == "expired-proposal",
             preexisting_legacy=change == "legacy-dispose",
         )
         state = current.state
@@ -3030,13 +3057,6 @@ def test_issued_route_disposition_requires_current_evidence(
             later = state.verify_boundary(current.command, current.owner, batch, target)
             with pytest.raises(LedgerError, match="unsettled native terminal"):
                 state.verify_route_disposition(current.command, later)
-        elif change in ("expire", "expired-proposal"):
-            current.clock[0] = current.hold.expires_at + timedelta(seconds=1)
-            if change == "expire":
-                assert record.outcome is HoldState.GAP
-                assert state.expire() == (replace(current.hold, state=HoldState.GAP),)
-            else:
-                assert state.view().holds == (current.hold,)
         elif change == "legacy-dispose":
             prefix = native.path.read_bytes()
             assert (
@@ -3059,11 +3079,11 @@ def test_issued_route_disposition_requires_current_evidence(
             future = datetime.now(UTC) + timedelta(minutes=2)
             monkeypatch.setattr("aitm_usage.monitor_control._scope_now", lambda: future)
         before = state.view()
-        error = {
-            "expire": "Scope disposition is no longer current",
-            "expired-proposal": "original scope cannot be proposed",
-            "legacy-dispose": "Current scope hold cannot authorize",
-        }.get(change)
+        error = (
+            "Current scope hold cannot authorize"
+            if change == "legacy-dispose"
+            else None
+        )
         with pytest.raises(LedgerError, match=error):
             state.require_route_disposition(proof)
         assert state.view() == before
@@ -3162,8 +3182,36 @@ def test_native_disposition_reconfirms_visible_proof_after_directory_sync_failur
     ],
 )
 def test_disposition_proposal_needs_current_owned_span_and_receipt(
-    native, tmp_path, monkeypatch, capsys, control
+    request, monkeypatch, capsys, control
 ):
+    if control in {"wrong-scope", "copied-receipt", "wrong-owner"}:
+        case = route_policy_case(
+            monkeypatch,
+            CUTOFF,
+            release=control == "wrong-scope",
+        )
+        terminal, command = case.terminal, case.command
+        expected = {
+            "wrong-scope": "original scope cannot",
+            "copied-receipt": "current writer-verified",
+            "wrong-owner": "authority does not match",
+        }[control]
+        if control == "wrong-scope":
+            event = replace(case.event, scope=replace(case.event.scope, project_id=B))
+            case.snapshot = replace(case.snapshot, events=(event,))
+        elif control == "copied-receipt":
+            terminal = replace(terminal)
+        elif control == "wrong-owner":
+            command = replace(command, project_id=B)
+        before = case.snapshot
+        with pytest.raises(LedgerError, match=expected):
+            case.state.verify_route_disposition(command, terminal)
+        assert case.snapshot is before
+        case.publish.assert_not_called()
+        return
+
+    native = request.getfixturevalue("native")
+    tmp_path = request.getfixturevalue("tmp_path")
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
             native,
@@ -3171,20 +3219,15 @@ def test_disposition_proposal_needs_current_owned_span_and_receipt(
             tmp_path,
             monkeypatch,
             capsys,
-            release=control == "wrong-scope",
-            prior=control != "wrong-scope",
             disabled=control == "disabled",
             wrong_type=control == "wrong-typed-request",
         )
         state = current.state
         terminal, command = current.terminal, current.command
         expected = {
-            "wrong-scope": "original scope cannot",
             "disabled": "unsettled native terminal",
             "raw-rewrite": "source prefix changed",
-            "copied-receipt": "current writer-verified",
             "wrong-typed-request": "typed disposition is unavailable",
-            "wrong-owner": "authority does not match",
         }[control]
         if control == "raw-rewrite":
             rows = [json.loads(line) for line in native.path.read_bytes().splitlines()]
@@ -3198,10 +3241,6 @@ def test_disposition_proposal_needs_current_owned_span_and_receipt(
             terminal = state.verify_boundary(
                 current.command, current.owner, batch, target
             )
-        elif control == "copied-receipt":
-            terminal = replace(terminal)
-        elif control == "wrong-owner":
-            command = replace(command, project_id=B)
         before = state.view()
         old = _scope_file(native).read_bytes()
         with pytest.raises(LedgerError, match=expected):
