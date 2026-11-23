@@ -1436,77 +1436,11 @@ def test_zero_held_frontier_pins_identity_before_source_replacement(project):
 
 @pytest.mark.parametrize("loss", ["after-interrupted-ack", "before-first-ack"])
 def test_unproven_accepted_anchor_preserves_queue_until_proof_restored(
-    request, monkeypatch, loss
+    anchor_policy, monkeypatch, loss
 ):
     from aitm_usage import scopes
 
-    if loss == "before-first-ack":
-        case = request.getfixturevalue("anchor_policy")
-        _assert_anchor_requires_restored_proof(case, monkeypatch)
-        return
-
-    project = request.getfixturevalue("project")
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("private-proof-lost")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
-    anchor_id = UUID(int=935)
-    anchor = _json_file(
-        root.parent,
-        "proof-lost.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
-    assert command(*args)["status"] == "queued"
-    queued = root / "inbox" / f"{anchor_id}.json"
-    ack = root / "inbox" / "acks" / f"{anchor_id}.json"
-    proof_dir = root / "source-anchors"
-
-    def interrupt_ack(*args, **kwargs):
-        raise OSError("synthetic interruption before acknowledgment")
-
-    with monkeypatch.context() as patch:
-        patch.setattr(scopes, "_acknowledge", interrupt_ack)
-        assert command("collect-once", "--json", expected=1) == {
-            "status": "collection-failed"
-        }
-    assert queued.exists()
-    assert not ack.exists()
-    (proof,) = proof_dir.glob(f"{anchor_id}.*.attested")
-    data = proof.read_bytes()
-    proof.unlink()
-    sequence = ledger.as_of().sequence
-    assert command("collect-once", "--json", expected=1) == {
-        "status": "collection-failed"
-    }
-    retry = command(*args, expected=1)
-    assert retry.strip() == "aitm-usage: invalid private inbox command or project"
-    status = command("status", "--json")
-    assert status["registration_gap"] is True
-    assert status["read_gap"] is False
-    assert str(added) not in json.dumps(status)
-    assert queued.exists()
-    assert not ack.exists()
-    assert ledger.as_of().sequence == sequence
-    assert not ledger.as_of().checkpoints
-
-    proof.write_bytes(data)
-    proof.chmod(0o600)
-    command("collect-once", "--json")
-    assert command(*args)["status"] == "accepted"
-    assert ack.exists()
-    assert not queued.exists()
-    assert command("status", "--json")["registration_gap"] is False
-    assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
-
-
-def _assert_anchor_requires_restored_proof(case, monkeypatch):
+    case = anchor_policy
     anchor_id = UUID(int=935)
     name = f"{anchor_id}.json"
     ledger, command = case.ledger, case.command
@@ -1516,18 +1450,31 @@ def _assert_anchor_requires_restored_proof(case, monkeypatch):
     queued = case.files[case.inbox]
     original_commit = Ledger.commit_command
 
+    saved = {}
+
+    def lose_proof():
+        (proof,) = [key for key in attestations if key.endswith(".attested")]
+        saved[proof] = attestations.pop(proof)
+
     def commit_without_proof(*args, **kwargs):
         receipt = original_commit(*args, **kwargs)
-        (proof,) = [key for key in attestations if key.endswith(".attested")]
-        saved.update({proof: attestations.pop(proof)})
+        lose_proof()
         return receipt
 
-    saved = {}
+    def interrupt_ack(*args, **kwargs):
+        raise OSError("synthetic interruption before acknowledgment")
+
     with monkeypatch.context() as patch:
-        patch.setattr(Ledger, "commit_command", commit_without_proof)
+        if loss == "after-interrupted-ack":
+            patch.setattr(scopes, "_acknowledge", interrupt_ack)
+        else:
+            patch.setattr(Ledger, "commit_command", commit_without_proof)
         assert command("collect-once", "--json", expected=1) == {
             "status": "collection-failed"
         }
+    if loss == "after-interrupted-ack":
+        lose_proof()
+
     acks = case.files[case.acks]
     assert name in queued and name not in acks
     sequence = ledger.as_of().sequence

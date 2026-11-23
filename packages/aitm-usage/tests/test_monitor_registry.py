@@ -1003,15 +1003,10 @@ def test_rearming_a_capture_change_invalidates_earlier_native_proof(monkeypatch)
 def test_disable_commits_with_last_verified_prefix_when_source_changes(
     request, monkeypatch, interruption
 ):
-    if interruption == "truncated":
-        scenario, _ = request.getfixturevalue("queued_disable_metadata")
+    if interruption in {"root-replacement", "truncated"}:
+        scenario, native = request.getfixturevalue("queued_disable_metadata")
     else:
-        fixture = (
-            "queued_disable"
-            if interruption == "root-replacement"
-            else "queued_disable_policy"
-        )
-        scenario = request.getfixturevalue(fixture)
+        scenario = request.getfixturevalue("queued_disable_policy")
     prefix = _physical_ordinal(scenario.log)
     scenario.log.append(2)
     original = scenario.log.read_bytes()
@@ -1019,20 +1014,31 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
     assert scenario.submit().status is scenario.module.ControlStatus.QUEUED
 
     def locate(_change, known):
+        assert interruption != "root-replacement", "The replacement root was read"
         assert known == frozenset({scenario.stream})
         return (locator,)
 
     with monkeypatch.context() as patch:
         if interruption == "root-replacement":
             path = scenario.root.path
-            moved = path.with_name("original-approved-root")
-            path.rename(moved)
-            path.mkdir()
-            scenario.log.write_bytes(original)
+            before = native._identity(path)
+            replacement = (before[0], before[1] + 10_000)
+            directory = scenario.module._directory
+            observed = []
+
+            def observe_root(raw, **options):
+                result = directory(raw, **options)
+                if result.path == str(path):
+                    assert result.identity == before
+                    result = replace(result, identity=native._identity(path))
+                    observed.append(result.identity)
+                return result
 
             def unexpected_discovery(*args):
                 pytest.fail("The replacement root was read")
 
+            patch.setitem(native.identities, path, replacement)
+            patch.setattr(scenario.module, "_directory", observe_root)
             patch.setattr(type(scenario.reader), "discover", unexpected_discovery)
         elif interruption == "platform":
             patch.setattr(scenario.module.platform, "machine", lambda: "unsupported")
@@ -1049,11 +1055,9 @@ def test_disable_commits_with_last_verified_prefix_when_source_changes(
         (receipt,) = applied
         assert receipt.status is scenario.module.ControlStatus.APPLIED
         assert not scenario.registry.source_read_allowed(PROJECT_A, SOURCE)
+        if interruption == "root-replacement":
+            assert observed and set(observed) == {replacement}
 
-    if interruption == "root-replacement":
-        scenario.log.path.unlink()
-        path.rmdir()
-        moved.rename(path)
     if interruption in {"truncated", "native-version"}:
         scenario.log.write_bytes(original)
 

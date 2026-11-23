@@ -44,7 +44,6 @@ from aitm_usage.types import (
     TokenCounts,
     WorkPhase,
     encode_binding,
-    encode_marker,
 )
 
 PROJECT = UUID(int=0x100)
@@ -707,41 +706,17 @@ def test_monitor_scope_receipt_at_first_desktop_request(
     ],
 )
 def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
-    request,
-    monkeypatch,
+    memory_replay,
     native_output,
     aligned,
     carrier_suffix,
 ):
     codex = adapter()
-    durable = (native_output, aligned, carrier_suffix) == ("message", True, "")
-    replay = TranscriptReplay(request, monkeypatch, PROJECT, CUTOFF, durable=durable)
+    replay = memory_replay
     ledger, outside = replay.ledger, replay.outside
     first, last = usage(8, 2), usage(6, 2)
     scope = marker(codex, ledger)
     marker_path = ledger.root / "marker-secret.json"
-    stdout = None
-    if durable:
-        capsys = request.getfixturevalue("capsys")
-        marker_path.write_bytes(encode_marker(scope))
-        monkeypatch.setenv("CODEX_THREAD_ID", str(SESSION))
-        monkeypatch.setattr(
-            sys,
-            "argv",
-            [
-                "aitm-usage",
-                "--project",
-                str(ledger.root),
-                "scope",
-                "mark",
-                "--marker",
-                str(marker_path),
-                "--json",
-            ],
-        )
-        assert main() == 0
-        stdout = capsys.readouterr().out
-        assert json.loads(stdout) == {"command_id": str(COMMAND), "status": "queued"}
     output = {
         "message": {"type": "message", "role": "assistant", "content": []},
         "reasoning": {"type": "reasoning", "summary": []},
@@ -761,7 +736,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
         *begin(outside),
         call,
         response("before-marker-secret", first, first),
-        tool_output(stdout=stdout),
+        tool_output(),
         counter(first, first),
         *([] if output is None else [row("response_item", output)]),
         response("after-marker-secret", usage(14, 4), last),
@@ -783,16 +758,7 @@ def test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned(
     assert result.provider_checkpoint.baseline is None
     proof = lookahead.scope_evidence(boundary)
     assert proof is not None
-    if durable:
-        with ledger.writer() as writer:
-            drain_inbox(writer, [proof])
-        (enrollment,) = [
-            entry.record
-            for entry in ledger.as_of().current
-            if isinstance(entry.record, ScopeEnrollment)
-        ]
-    else:
-        enrollment = _admit_replayed_scope(replay, scope, proof)
+    enrollment = _admit_replayed_scope(replay, scope, proof)
     selected = candidate.with_enrollment(enrollment, batch=lookahead, evidence=proof)
     batch, result = replay.read(codex.read_codex, selected, state)
     if aligned:

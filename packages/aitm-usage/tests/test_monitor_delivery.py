@@ -3,7 +3,7 @@
 import hashlib
 import json
 import sqlite3
-from contextlib import closing, contextmanager, nullcontext
+from contextlib import closing, contextmanager
 from dataclasses import replace
 from pathlib import Path
 from uuid import UUID
@@ -22,7 +22,6 @@ from test_monitor_journal import (
     NativeJournalFixture,
     _MemoryJournalTranscripts,
 )
-from test_monitor_journal import journal_claude as journal_claude
 from test_monitor_journal import journal_claude_policy as journal_claude_policy
 from test_monitor_journal import journal_transcript_policy as journal_transcript_policy
 
@@ -215,15 +214,11 @@ def test_full_destination_queue_preserves_independent_progress(monkeypatch):
 
 @pytest.mark.parametrize("ack_before_dispute", [True, False])
 def test_late_conflict_after_ack_produces_dispute_without_new_write(
-    request, monkeypatch, ack_before_dispute
+    monkeypatch, ack_before_dispute
 ):
-    store = None
-    if ack_before_dispute:
-        native = request.getfixturevalue("native")
-    else:
-        native = _MemoryJournalTranscripts(monkeypatch, competing=True)
-        store = delivery_journal_rows(monkeypatch, native.registry)
-        _read_single_dispute(monkeypatch, store)
+    native = _MemoryJournalTranscripts(monkeypatch, competing=True)
+    store = delivery_journal_rows(monkeypatch, native.registry)
+    _read_single_dispute(monkeypatch, store)
 
     native.append(LIVE, native.turn(3))
     with native.registry.writer() as registry:
@@ -231,56 +226,46 @@ def test_late_conflict_after_ack_produces_dispute_without_new_write(
         _, original = _reserve(native, journal)
         project = _project(registry.view(), A)
         ledger = Ledger.open(Path(project.state.path), A)
-        if store is None:
-            _enable(native, journal)
-            destination_writer = Ledger.open(ledger.root, A).writer()
-        else:
-            store.delivery_enabled = True
-            writer, destination = delivery_destination(monkeypatch, journal, ledger)
-            destination_writer = nullcontext(writer)
+        store.delivery_enabled = True
+        writer, destination = delivery_destination(monkeypatch, journal, ledger)
 
-        with destination_writer as writer:
-            delivery = ProjectDelivery.attach(journal, writer)
-            ticket = journal.reserve_delivery(original.key, 1)
-            receipt = delivery.commit(ticket)
-            if ack_before_dispute:
-                ack = journal.ack(delivery, ticket, receipt)
-            native.append(COPY, native.turn(3, checkout=B))
-            _, disputed = _reserve(native, journal, COPY)
-            assert disputed.status == "disputed"
-            if not ack_before_dispute:
-                prior = journal.as_of().sequence
-                ack = journal.ack(delivery, ticket, receipt)
-                assert ack.sequence == prior + 1
-            assert journal.ack(delivery, ticket, receipt) == ack
-            with pytest.raises(_DeliveryRefused):
-                journal.ack(delivery, ticket, replace(receipt, claim_digest="0" * 64))
-            forged = writer.pseudonymize("test-destination", "not-a-service-claim")
-            with pytest.raises(LedgerError):
-                journal.reserve_delivery(forged, 1)
-            if store is None:
-                with writer._write_transaction() as conn:
-                    conn.execute("UPDATE monitor_delivery_receipts SET seal='forged'")
-            else:
-                key = receipt.key.value, receipt.revision
-                sequence, payload, _ = destination.receipts[key]
-                destination.receipts[key] = sequence, payload, "forged"
-            with pytest.raises(_DeliveryRefused):
-                journal.ack(delivery, ticket, receipt)
-            assert writer.as_of().sequence == receipt.sequence
-            assert len(writer.monitor_as_of(receipt.sequence).revisions) == 1
-            (change,) = journal.dispute_changes(0)
-            assert change.sequence == disputed.sequence
-            material = json.dumps(
-                ["ownership", change.sequence, change.dispute.identity.value],
-                separators=(",", ":"),
-            )
-            expected = registry.source_evidence().pseudonymize(
-                "monitor-journal-publication-v1", material
-            )
-            assert journal.publication_candidate(change) == PublicationCandidate(
-                disputed.sequence, _CandidateBasis.OWNERSHIP, expected
-            )
+        delivery = ProjectDelivery.attach(journal, writer)
+        ticket = journal.reserve_delivery(original.key, 1)
+        receipt = delivery.commit(ticket)
+        if ack_before_dispute:
+            ack = journal.ack(delivery, ticket, receipt)
+        native.append(COPY, native.turn(3, checkout=B))
+        _, disputed = _reserve(native, journal, COPY)
+        assert disputed.status == "disputed"
+        if not ack_before_dispute:
+            prior = journal.as_of().sequence
+            ack = journal.ack(delivery, ticket, receipt)
+            assert ack.sequence == prior + 1
+        assert journal.ack(delivery, ticket, receipt) == ack
+        with pytest.raises(_DeliveryRefused):
+            journal.ack(delivery, ticket, replace(receipt, claim_digest="0" * 64))
+        forged = writer.pseudonymize("test-destination", "not-a-service-claim")
+        with pytest.raises(LedgerError):
+            journal.reserve_delivery(forged, 1)
+        key = receipt.key.value, receipt.revision
+        sequence, payload, _ = destination.receipts[key]
+        destination.receipts[key] = sequence, payload, "forged"
+        with pytest.raises(_DeliveryRefused):
+            journal.ack(delivery, ticket, receipt)
+        assert writer.as_of().sequence == receipt.sequence
+        assert len(writer.monitor_as_of(receipt.sequence).revisions) == 1
+        (change,) = journal.dispute_changes(0)
+        assert change.sequence == disputed.sequence
+        material = json.dumps(
+            ["ownership", change.sequence, change.dispute.identity.value],
+            separators=(",", ":"),
+        )
+        expected = registry.source_evidence().pseudonymize(
+            "monitor-journal-publication-v1", material
+        )
+        assert journal.publication_candidate(change) == PublicationCandidate(
+            disputed.sequence, _CandidateBasis.OWNERSHIP, expected
+        )
 
 
 def test_destination_transaction_rolls_back_when_receipt_insert_fails(
@@ -506,17 +491,13 @@ def test_delivery_upgrades_are_explicit_and_keep_existing_histories(native):
 
 @pytest.mark.parametrize("written_before_supersession", [False, True])
 def test_superseded_revision_cannot_create_an_ack(
-    request, monkeypatch, written_before_supersession
+    journal_claude_policy, monkeypatch, written_before_supersession
 ):
     from test_claude import usage as claude_usage
     from test_monitor_journal import _claude_candidates
 
-    store = None
-    if written_before_supersession:
-        native = request.getfixturevalue("journal_claude")
-    else:
-        native = request.getfixturevalue("journal_claude_policy")
-        store = delivery_journal_rows(monkeypatch, native.native.registry)
+    native = journal_claude_policy
+    store = delivery_journal_rows(monkeypatch, native.native.registry)
     with native.native.registry.writer() as registry:
         native.approve(registry)
         ordinal = native.append(native.request(3, stop=None))
@@ -526,36 +507,31 @@ def test_superseded_revision_cannot_create_an_ack(
         accepted = journal.reserve(original, prepared.progress)
         assert accepted.status == "pending"
         ledger = Ledger.open(native.native.ledgers[A].root, A)
-        if store is None:
-            _enable(native.native, journal)
-            destination_writer = Ledger.open(ledger.root, A).writer()
-        else:
-            store.delivery_enabled = True
-            writer, destination = delivery_destination(monkeypatch, journal, ledger)
-            destination_writer = nullcontext(writer)
+        store.delivery_enabled = True
+        writer, _ = delivery_destination(monkeypatch, journal, ledger)
         old = journal.reserve_delivery(accepted.key, 1)
 
-        with destination_writer as writer:
-            delivery = ProjectDelivery.attach(journal, writer)
-            early = delivery.commit(old) if written_before_supersession else None
-            native.append(native.request(3, counts=claude_usage(output=6)))
-            rewritten = journal.prepare(native.source_id, native.locator())
-            _, successor = _claude_candidates(rewritten, ordinal)
-            assert journal.reserve(successor, rewritten.progress).status == "pending"
-            tip = journal.as_of().sequence
+        delivery = ProjectDelivery.attach(journal, writer)
+        early = delivery.commit(old) if written_before_supersession else None
+        native.append(native.request(3, counts=claude_usage(output=6)))
+        rewritten = journal.prepare(native.source_id, native.locator())
+        _, successor = _claude_candidates(rewritten, ordinal)
+        assert journal.reserve(successor, rewritten.progress).status == "pending"
+        tip = journal.as_of().sequence
+        with pytest.raises(_DeliveryRefused):
+            delivery.commit(old)
+        if early is not None:
             with pytest.raises(_DeliveryRefused):
-                delivery.commit(old)
-            if early is not None:
-                with pytest.raises(_DeliveryRefused):
-                    journal.ack(delivery, old, early)
-            assert journal.as_of().sequence == tip
-            latest = journal.reserve_delivery(accepted.key, 2)
-            receipt = delivery.commit(latest)
-            assert receipt.revision == 2
-            ack = journal.ack(delivery, latest, receipt)
-            committed = writer.monitor_as_of(receipt.sequence)
-            expected = (1, 2) if written_before_supersession else (2,)
-            assert tuple(row.revision for row in committed.revisions) == expected
-            if store is not None:
-                assert writer._monitor_delivery_receipt(receipt.key, 2) == receipt
-                assert journal.ack(delivery, latest, receipt) == ack
+                journal.ack(delivery, old, early)
+        assert journal.as_of().sequence == tip
+        latest = journal.reserve_delivery(accepted.key, 2)
+        receipt = delivery.commit(latest)
+        assert receipt.revision == 2
+        ack = journal.ack(delivery, latest, receipt)
+        committed = writer.monitor_as_of(receipt.sequence)
+        expected = (1, 2) if written_before_supersession else (2,)
+        assert tuple(row.revision for row in committed.revisions) == expected
+        assert writer._monitor_delivery_receipt(receipt.key, 2) == receipt
+        assert journal.ack(delivery, latest, receipt) == ack
+        if early is not None:
+            assert writer._monitor_delivery_receipt(early.key, 1) == early

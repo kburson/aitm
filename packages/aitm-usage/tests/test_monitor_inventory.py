@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from hashlib import sha256
 from importlib import import_module
 from pathlib import Path
-from shutil import copyfile
+from shutil import copyfile, copytree
 from time import time_ns
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -699,20 +699,45 @@ def test_previously_cached_origin_reauthenticates_if_clock_is_racy_or_future(
         assert case.parked in case.opened
 
 
-def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
+def test_replaced_approved_root_never_reuses_a_warm_origin(siblings, monkeypatch):
     native, selected, parked = siblings
     root = parked.parent
+    nested = root / "nested"
+    nested.mkdir()
+    parked.rename(nested / parked.name)
     retired = root.with_name("retired-source-root")
     cache = _OriginCache()
     with native.registry.writer() as writer:
+        marker = root / "membership-change"
+        before = source_scan._directory_witness(root.stat())
+        revalidate_catalog = source_scan._revalidate_catalog
+
+        with monkeypatch.context() as patch:
+
+            def revalidate_after_real_change(catalog):
+                patch.setattr(source_scan, "_revalidate_catalog", revalidate_catalog)
+                marker.touch()
+                revalidate_catalog(catalog)
+
+            patch.setattr(
+                source_scan, "_revalidate_catalog", revalidate_after_real_change
+            )
+            with writer._inventory_cycle(cache) as inventory:
+                for _ in range(2):
+                    with pytest.raises(BoundaryUnavailable, match="Complete metadata"):
+                        writer._current_candidate(
+                            writer.view(), LIVE, selected, inventory=inventory
+                        )
+        assert marker.exists()
+        assert source_scan._directory_witness(root.stat()) != before
+        assert not cache._entries
+
         with writer._inventory_cycle(cache) as inventory:
             writer._current_candidate(
                 writer.view(), LIVE, selected, inventory=inventory
             )
         root.rename(retired)
-        root.mkdir()
-        for original in retired.iterdir():
-            copyfile(original, root / original.name)
+        copytree(retired, root)
         with writer._inventory_cycle(cache) as inventory:
             with pytest.raises(LedgerError, match="identity changed"):
                 writer._current_candidate(
@@ -726,60 +751,34 @@ def test_replaced_approved_root_never_reuses_a_warm_origin(siblings):
 def test_superseded_directory_witness_holds_catalog_without_staging(
     request, monkeypatch, when
 ):
-    if when == "root-revalidation":
-        native, selected, parked = request.getfixturevalue("siblings")
-        changed = parked.parent
-        nested = changed / "nested"
-        nested.mkdir()
-        parked.rename(nested / parked.name)
-        marker = changed / "membership-change"
-        before = source_scan._directory_witness(changed.stat())
-        original = source_scan._revalidate_catalog
+    native, parked, tree = _metadata_catalog(request, monkeypatch, nested=True)
+    selected = native.locator(LIVE)
+    changed = native.roots[LIVE].path if when == "root-revalidation" else parked.parent
+    marker = changed / "membership-change"
+
+    def change_directory():
+        native.files.contents[marker] = b""
+        tree.versions[changed] += 1
+
+    if when == "during-walk":
+
+        @contextmanager
+        def change_after_scan(fd):
+            with tree.scandir(fd) as entries:
+                yield entries
+            if tree.descriptors[fd] == changed:
+                monkeypatch.setattr(source_scan.os, "scandir", tree.scandir)
+                change_directory()
+
+        monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
+    else:
 
         def revalidate(catalog):
-            monkeypatch.setattr(source_scan, "_revalidate_catalog", original)
-            marker.touch()
-            original(catalog)
-
-        def verify_change():
-            assert marker.exists()
-            assert source_scan._directory_witness(changed.stat()) != before
+            monkeypatch.setattr(source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG)
+            change_directory()
+            _REVALIDATE_CATALOG(catalog)
 
         monkeypatch.setattr(source_scan, "_revalidate_catalog", revalidate)
-    else:
-        native, parked, tree = _metadata_catalog(request, monkeypatch, nested=True)
-        selected = native.locator(LIVE)
-        changed = parked.parent
-        marker = changed / "membership-change"
-
-        def change_directory():
-            native.files.contents[marker] = b""
-            tree.versions[changed] += 1
-
-        def verify_change():
-            assert marker in native.files.contents and tree.versions[changed] == 2
-
-        if when == "during-walk":
-
-            @contextmanager
-            def change_after_scan(fd):
-                with tree.scandir(fd) as entries:
-                    yield entries
-                if tree.descriptors[fd] == changed:
-                    monkeypatch.setattr(source_scan.os, "scandir", tree.scandir)
-                    change_directory()
-
-            monkeypatch.setattr(source_scan.os, "scandir", change_after_scan)
-        else:
-
-            def revalidate(catalog):
-                monkeypatch.setattr(
-                    source_scan, "_revalidate_catalog", _REVALIDATE_CATALOG
-                )
-                change_directory()
-                _REVALIDATE_CATALOG(catalog)
-
-            monkeypatch.setattr(source_scan, "_revalidate_catalog", revalidate)
 
     cache = _OriginCache()
     with native.registry.writer() as writer:
@@ -789,7 +788,7 @@ def test_superseded_directory_witness_holds_catalog_without_staging(
                     writer._current_candidate(
                         writer.view(), LIVE, selected, inventory=inventory
                     )
-            verify_change()
+            assert marker in native.files.contents and tree.versions[changed] == 2
             assert not cache._entries
         with writer._inventory_cycle(cache) as refreshed:
             _, current = writer._current_candidate(

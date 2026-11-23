@@ -12,15 +12,29 @@ from aitm_usage.ledger import LedgerError, _pin_directory
 
 
 @pytest.mark.parametrize("directory", [False, True], ids=["file", "directory"])
-def test_existing_destination_survives_noreplace(tmp_path, directory):
+def test_existing_destination_survives_noreplace(request, monkeypatch, directory):
+    if directory:
+        # JournalStore also exercises a real competing directory at publication.
+        def occupied(*args):
+            ctypes.set_errno(errno.EEXIST)
+            return -1
+
+        rename = Mock(side_effect=occupied)
+        resolve_rename = Mock(return_value=rename)
+        monkeypatch.setattr(host_fs, "_native_rename", resolve_rename)
+        monkeypatch.setattr(host_fs, "os", SimpleNamespace(fsencode=os.fsencode))
+        assert not host_fs.publish_noreplace(11, "source", 12, "destination")
+        symbol = "renameatx_np" if sys.platform == "darwin" else "renameat2"
+        flags = 0x4 if sys.platform == "darwin" else 0x1
+        resolve_rename.assert_called_once_with(symbol)
+        rename.assert_called_once_with(11, b"source", 12, b"destination", flags)
+        return
+
+    tmp_path = request.getfixturevalue("tmp_path")
     source = tmp_path / "source"
     destination = tmp_path / "destination"
-    if directory:
-        source.mkdir()
-        destination.mkdir()
-    else:
-        source.write_bytes(b"source")
-        destination.write_bytes(b"destination")
+    source.write_bytes(b"source")
+    destination.write_bytes(b"destination")
     source_before = source.stat()
     destination_before = destination.stat()
     with _pin_directory(tmp_path) as parent:
@@ -29,9 +43,8 @@ def test_existing_destination_survives_noreplace(tmp_path, directory):
         )
     assert os.path.samestat(source_before, source.stat())
     assert os.path.samestat(destination_before, destination.stat())
-    if not directory:
-        assert source.read_bytes() == b"source"
-        assert destination.read_bytes() == b"destination"
+    assert source.read_bytes() == b"source"
+    assert destination.read_bytes() == b"destination"
 
 
 def _restore_parents(tmp_path):

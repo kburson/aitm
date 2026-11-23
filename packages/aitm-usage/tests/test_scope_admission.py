@@ -98,73 +98,61 @@ def test_scope_cli_refuses_uninitialized_admission_without_creating_state(
 
 
 def test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain(
-    tmp_path, monkeypatch, capsys
+    monkeypatch, capsys
 ):
-    root = tmp_path / "monitor"
-    ledger = Ledger.initialize(tmp_path / "project", PROJECT)
-    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
-    inbox = ControlInbox(root)
-    path = _request_file(tmp_path)
+    state, anchor = _admission_control_files(monkeypatch)
+    writer, inbox = state.writer, state.inbox
+    _, reader, request = _admit_mark(state, monkeypatch, advertise=False)
+    path = state.root / "mark-input.json"
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: state.root)
+    monkeypatch.setattr(
+        monitor_control, "_owner_document", {path: _mark_document()}.__getitem__
+    )
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    original_registry = state.files[state.root][monitor_registry._STATE_FILE]
+    name = f"{COMMAND}.json"
     assert _cli(monkeypatch, path) == 1
     assert json.loads(capsys.readouterr().out) == {
         "command_id": str(COMMAND),
         "status": "unavailable",
     }
-    assert not root.exists()
-    request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
-    anchor = tmp_path / "checkout"
-    anchor.mkdir()
-    monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
-    with Registry(root).writer() as writer:
-        writer.register_project(
-            ProjectRegistrationRequest(PROJECT, str(ledger.root), "Project")
-        )
-        writer.source_evidence()
-        registry_path = root / "registry-v1.json"
-        original_registry = registry_path.read_bytes()
-        reader = ScopeInboxReader(writer, inbox)
-        reader.register(GRANT, PROJECT, ("mark",))
-        assert _cli(monkeypatch, path) == 1
-        assert json.loads(capsys.readouterr().out)["status"] == "unavailable"
-        proof = reader.probe(request)
-        reader.advertise(proof)
-        assert _cli(monkeypatch, path) == 0
-        assert capsys.readouterr().out == (
-            f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
-        )
-        publication = root / "inbox" / f"{COMMAND}.json"
-        original = publication.read_bytes()
-        monkeypatch.setattr(
-            monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=10)
-        )
-        reader.advertise(reader.probe(request))
-        assert registry_path.read_bytes() == original_registry
-        assert _cli(monkeypatch, path) == 0
-        assert publication.read_bytes() == original
-        assert str(PROJECT) in original.decode()
+    assert not state.inbox_files
+    reader.advertise(reader.probe(request))
+    assert _cli(monkeypatch, path) == 0
+    assert capsys.readouterr().out == (
+        f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
+    )
+    original = state.inbox_files[name]
+    monkeypatch.setattr(
+        monitor_control, "_scope_now", lambda: NOW + timedelta(seconds=10)
+    )
+    reader.advertise(reader.probe(request))
+    assert state.files[state.root][monitor_registry._STATE_FILE] == original_registry
+    assert _cli(monkeypatch, path) == 0
+    assert state.inbox_files[name] == original
+    assert str(PROJECT) in original.decode()
 
-        control = ControlCommand(CONTROL, AnchorRequest(PROJECT, str(anchor)))
-        inbox.enqueue(control)
-        expected = {
-            "command": {
-                "command_id": str(CONTROL),
-                "format": control.format,
-                "payload": {"project_id": str(PROJECT), "anchor": str(anchor)},
-            },
-            "order": 2,
-        }
-        assert (root / "inbox" / f"{CONTROL}.json").read_bytes() == json.dumps(
-            expected, sort_keys=True, separators=(",", ":")
-        ).encode()
-        with inbox.publication() as locked:
-            proposals = tuple(reader.iter_verified(locked))
-        assert len(proposals) == 1
-        assert proposals[0].command_id == COMMAND
-        (applied,) = writer.apply_pending(inbox, writer.lease, None)
-        assert applied.command_id == CONTROL
-        assert applied.status == "applied"
-        assert publication.read_bytes() == original
-        assert writer.command_status(COMMAND) is None
+    control = ControlCommand(CONTROL, AnchorRequest(PROJECT, anchor))
+    inbox.enqueue(control)
+    expected = {
+        "command": {
+            "command_id": str(CONTROL),
+            "format": control.format,
+            "payload": {"project_id": str(PROJECT), "anchor": anchor},
+        },
+        "order": 2,
+    }
+    assert (
+        state.inbox_files[f"{CONTROL}.json"]
+        == json.dumps(expected, sort_keys=True, separators=(",", ":")).encode()
+    )
+    with inbox.publication() as locked:
+        (proposal,) = reader.iter_verified(locked)
+    assert proposal.command_id == COMMAND
+    (applied,) = writer.apply_pending(inbox, writer.lease, None)
+    assert (applied.command_id, applied.status) == (CONTROL, ControlStatus.APPLIED)
+    assert state.inbox_files == {name: original}
+    assert writer.command_status(COMMAND) is None
 
 
 @pytest.fixture
@@ -192,17 +180,23 @@ def admission_policy(monkeypatch):
     return _admit_mark(state, monkeypatch)
 
 
-def _admit_mark(state, monkeypatch):
+def _admit_mark(state, monkeypatch, *, advertise=True):
     monkeypatch.setattr(monitor_control, "_scope_now", lambda: NOW)
     reader = ScopeInboxReader(state.writer, state.inbox)
     reader.register(GRANT, PROJECT, ("mark",))
     request = MarkRequest(COMMAND, GRANT, Scope(PROJECT))
-    reader.advertise(reader.probe(request))
+    if advertise:
+        reader.advertise(reader.probe(request))
     return state, reader, request
 
 
 @pytest.fixture
 def admission_control_policy(monkeypatch):
+    state, anchor = _admission_control_files(monkeypatch)
+    return (*_admit_mark(state, monkeypatch), anchor)
+
+
+def _admission_control_files(monkeypatch):
     root = Path("/fixture/monitor")
     state_directory = _PhysicalDirectory("/fixture/project", (1, 10))
     anchor = _PhysicalDirectory("/fixture/checkout", (1, 11))
@@ -222,7 +216,7 @@ def admission_control_policy(monkeypatch):
         source_key_id=evidence.key_id,
     )
     state = MonitorInboxFiles(monkeypatch, PROJECT, writer=writer, initial_view=initial)
-    return (*_admit_mark(state, monkeypatch), anchor.path)
+    return state, anchor.path
 
 
 def test_witness_issuance_requires_exact_capability_from_same_reader(admission_policy):
@@ -571,9 +565,18 @@ def test_scope_request_refuses_noncanonical_selectors(monkeypatch, capsys):
 
 
 def test_project_substitution_during_preparation_cannot_publish(
-    ready, tmp_path, monkeypatch
+    request, tmp_path, monkeypatch, capsys
 ):
-    _, inbox, _, request = ready
+    root = tmp_path / "monitor"
+    monkeypatch.setattr(monitor_registry, "default_monitor_root", lambda: root)
+    assert _cli(monkeypatch, _request_file(tmp_path)) == 1
+    assert json.loads(capsys.readouterr().out) == {
+        "command_id": str(COMMAND),
+        "status": "unavailable",
+    }
+    assert not root.exists()
+
+    _, inbox, _, mark = request.getfixturevalue("ready")
     pending = monitor_control._pending
     state = tmp_path / "project"
 
@@ -585,7 +588,7 @@ def test_project_substitution_during_preparation_cannot_publish(
 
     monkeypatch.setattr(monitor_control, "_pending", substituted)
     with pytest.raises(LedgerError):
-        inbox.enqueue_scope(request)
+        inbox.enqueue_scope(mark)
     assert not tuple(inbox.root.glob("inbox/*.json"))
 
 

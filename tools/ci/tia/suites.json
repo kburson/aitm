@@ -335,6 +335,71 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned",
+      "suite": "unit",
+      "isolation_group": "codex-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_restart_and_late_growth_do_not_duplicate_coverage_or_commit",
+      "suite": "unit",
+      "isolation_group": "monitor_coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_late_conflict_after_ack_produces_dispute_without_new_write",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_delivery.py::test_superseded_revision_cannot_create_an_ack",
+      "suite": "unit",
+      "isolation_group": "monitor_delivery-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging",
+      "suite": "unit",
+      "isolation_group": "monitor_inventory-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes",
+      "suite": "unit",
+      "isolation_group": "monitor_registry-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_preserves_journal_after_restart",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_scope.py::test_queued_monitor_scope_cli_joins_only_first_native_target",
+      "suite": "unit",
+      "isolation_group": "monitor_scope-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_activation_cutoff_and_archive_continuity",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_admission.py::test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain",
+      "suite": "unit",
+      "isolation_group": "scope_admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_unproven_accepted_anchor_preserves_queue_until_proof_restored",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified",
       "suite": "unit",
       "isolation_group": "grok_scope_receipts-policy"

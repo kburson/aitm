@@ -168,11 +168,11 @@ def _stage(f, command, checkout, process, session=SESSION):
 
 
 def test_one_use_receipt_routes_only_the_original_verified_mark(
-    staged_scope, monkeypatch
+    staged_scope_policy, monkeypatch
 ):
     from aitm_usage.sources import grok_scope_hook
 
-    f, _, command, checkout, process = staged_scope
+    f, _, command, checkout, process = staged_scope_policy
     monkeypatch.setattr(grok_scope_hook, "_has_process_ancestor", lambda *_: True)
     staged = _stage(f, command, checkout, process)
     assert _stage(f, command, checkout, process) == staged
@@ -1021,6 +1021,10 @@ def test_first_application_holds_the_revocation_publication_lock(
             mark, f.state.verify_boundary(mark, owner, batch, boundary)
         )
         assert verdict.status is HandoffStatus.APPLIED
+        (observation,) = batch.observations
+        assert resolve_route(
+            observation, f.writer.view(), f.state.view(batch)
+        ).scope == (request.scope)
     reader.revoke(request.grant_id)
 
 

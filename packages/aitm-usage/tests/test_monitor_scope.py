@@ -1824,32 +1824,45 @@ def test_scope_proof_requires_current_physical_identity_before_apply(
 
 
 def test_queued_monitor_scope_cli_joins_only_first_native_target(
-    native, monkeypatch, capsys
+    native_scope_policy, monkeypatch, capsys
 ):
+    import os
     import sys
+    from io import BytesIO
+    from unittest.mock import Mock
 
-    from aitm_usage import cli, monitor_registry
-    from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
+    from aitm_usage import cli, monitor_control, monitor_registry
+    from aitm_usage.monitor_control import ScopeInboxReader
     from aitm_usage.monitor_scope import Mark, ScopeState
     from aitm_usage.scope_admission import MarkRequest
 
     command_id, grant_id = UUID(int=0x410), UUID(int=0x411)
     scope = _issue(A, 116)
+    native = native_scope_policy
     request = native.path.parent.parent / "scope-request.json"
-    request.write_text(
-        json.dumps(
-            {
-                "command_id": str(command_id),
-                "grant_id": str(grant_id),
-                "scope": {
-                    "project_id": str(A),
-                    "item": {"kind": "issue", "identifier": 116},
-                    "phase": "planning",
-                },
-            }
-        )
-    )
-    request.chmod(0o600)
+    payload = json.dumps(
+        {
+            "command_id": str(command_id),
+            "grant_id": str(grant_id),
+            "scope": {
+                "project_id": str(A),
+                "item": {"kind": "issue", "identifier": 116},
+                "phase": "planning",
+            },
+        }
+    ).encode()
+    descriptor = 41
+    validated = Mock(return_value=((1, descriptor),))
+    pinned = SimpleNamespace(check=Mock())
+    pin = Mock(return_value=pinned)
+    open_input = Mock(return_value=descriptor)
+    read_input = Mock(return_value=BytesIO(payload))
+    monkeypatch.setattr(monitor_control, "_validated_path", validated)
+    monkeypatch.setattr(monitor_control, "_PinnedPath", pin)
+    for flag in ("O_RDONLY", "O_NOFOLLOW", "O_NONBLOCK"):
+        monkeypatch.setattr(monitor_control.os, flag, getattr(os, flag), raising=False)
+    monkeypatch.setattr(monitor_control.os, "open", open_input, raising=False)
+    monkeypatch.setattr(monitor_control.os, "fdopen", read_input, raising=False)
     monkeypatch.setattr(
         monitor_registry, "default_monitor_root", lambda: native.registry.root
     )
@@ -1859,13 +1872,20 @@ def test_queued_monitor_scope_cli_joins_only_first_native_target(
         ["aitm-usage", "monitor", "scope", "mark", "--request", str(request), "--json"],
     )
     with native.registry.writer() as writer:
-        inbox = ControlInbox(writer.root)
+        inbox = native.state_files.inbox
         reader = ScopeInboxReader(writer, inbox)
         reader.register(grant_id, A, ("mark",))
         reader.advertise(reader.probe(MarkRequest(command_id, grant_id, scope)))
         assert cli.main() == 0
         output = capsys.readouterr().out
         assert output == f'{{"command_id": "{command_id}", "status": "queued"}}\n'
+        validated.assert_called_once_with(request, directory=False)
+        open_input.assert_called_once_with(
+            request, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        )
+        read_input.assert_called_once_with(descriptor, "rb")
+        pin.assert_called_once_with(request, descriptor, False, validated.return_value)
+        assert pinned.check.call_count == 2
         with inbox.publication() as locked:
             (envelope,) = reader.iter_verified(locked)
         assert envelope.body.request == MarkRequest(command_id, grant_id, scope)
@@ -2752,11 +2772,22 @@ def _scope_policy_journal(monkeypatch, writer, state):
     rows = _ClaimJournalRows(writer.source_evidence())
 
     def open_rows(actual):
-        assert actual is writer
+        assert actual.root == writer.root and actual.source_evidence() == rows.evidence
         return rows
 
     monkeypatch.setattr(monitor_journal, "JournalStore", open_rows)
     return monitor_journal.RoutingJournal(writer, state)
+
+
+def _observed_journal_state(journal):
+    rows = journal._store
+    return (
+        rows.commits.copy(),
+        rows.rows.copy(),
+        rows.claims.copy(),
+        rows.progress.copy(),
+        tuple(rows.writes),
+    )
 
 
 @pytest.fixture
@@ -2929,25 +2960,22 @@ def test_settlement_side_requires_live_typed_release_and_keeps_scope_held(
             state.verify_settlement_side(case.command, case.owner, batch, target)
 
 
-def test_completion_qualification_preserves_journal_after_restart(
-    native, tmp_path, monkeypatch, capsys
-):
+def test_completion_qualification_preserves_journal_after_restart(monkeypatch):
     from aitm_usage.monitor_journal import RoutingJournal
     from aitm_usage.monitor_scope import ScopeState
 
-    with _completed_disposition(native, tmp_path, monkeypatch, capsys) as case:
-        old_scope = case.scope_file.read_bytes()
-        old_journal = _scope_journal_bytes(case.journal_root)
+    with _completion_policy(monkeypatch, with_journal=True) as (native, case):
+        old_scope = native._scope_bytes()
+        old_journal = _observed_journal_state(case.journal)
         batch = case.state.read_source(
             SOURCE, native.locator(), qualify_completion=True
         )
         target = native.target(batch, case.command.command_id)
         witness = case.state.completion_witness(case.command, case.owner, batch, target)
         assert witness is not None
-        assert _scope_journal_bytes(case.journal_root) == old_journal
-        assert case.scope_file.read_bytes() == old_scope
+        assert _observed_journal_state(case.journal) == old_journal
+        assert native._scope_bytes() == old_scope
         assert case.journal.cursor_for(SOURCE, native.locator()) == case.journal_cursor
-        journal_before_restart = _scope_journal_bytes(case.journal_root)
 
     with native.registry.writer() as writer:
         state = ScopeState(writer, clock=lambda: case.clock[0])
@@ -2964,13 +2992,10 @@ def test_completion_qualification_preserves_journal_after_restart(
             )
             == witness
         )
-        assert _scope_journal_bytes(writer.root) == journal_before_restart
-        assert (
-            RoutingJournal(writer, state).cursor_for(SOURCE, native.locator())
-            == case.journal_cursor
-        )
-        assert _scope_journal_bytes(writer.root)[:2] == old_journal[:2]
-        assert case.scope_file.read_bytes() == old_scope
+        journal = RoutingJournal(writer, state)
+        assert journal.cursor_for(SOURCE, native.locator()) == case.journal_cursor
+        assert _observed_journal_state(journal) == old_journal
+        assert native._scope_bytes() == old_scope
 
 
 def test_completion_qualification_keeps_ordinary_scope_read_unchanged(
@@ -3395,30 +3420,20 @@ def _scope_journal_bytes(root):
 
 @pytest.mark.parametrize("case", ["gap", "resolved", "expired-gap"])
 def test_ordered_native_disposition_records_only_proof_and_replays_after_restart(
-    request, monkeypatch, capsys, case
+    native_scope_policy, monkeypatch, case
 ):
     from aitm_usage.monitor_scope import HoldState, ScopeState
 
     release = case == "resolved"
-    native = request.getfixturevalue("native" if release else "native_scope_policy")
-    tmp_path = request.getfixturevalue("tmp_path") if release else None
+    native = native_scope_policy
 
     with native.registry.writer() as writer:
         current = _route_disposition_fixture(
-            native, writer, tmp_path, monkeypatch, capsys, release=release
+            native, writer, monkeypatch=monkeypatch, release=release
         )
 
         def journal_storage():
-            if release:
-                return _scope_journal_bytes(writer.root)
-            rows = current.journal._store
-            return (
-                rows.commits.copy(),
-                rows.rows.copy(),
-                rows.claims.copy(),
-                rows.progress.copy(),
-                tuple(rows.writes),
-            )
+            return _observed_journal_state(current.journal)
 
         state = current.state
         expected_hold = HoldState.HELD

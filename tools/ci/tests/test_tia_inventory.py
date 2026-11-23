@@ -439,7 +439,7 @@ def test_hosted_and_advisory_preserve_distinct_provenance():
     "nodeid",
     [
         _PRODUCT
-        + "test_scope_admission.py::test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain",
+        + "test_scope_admission.py::test_project_substitution_during_preparation_cannot_publish",
         _PRODUCT
         + "test_scope_legacy.py::test_replay_finds_receipt_committed_while_adoption_wins_the_legacy_lock[codex]",
     ],

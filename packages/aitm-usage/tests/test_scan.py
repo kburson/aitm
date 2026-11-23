@@ -172,15 +172,15 @@ def _codes(batch):
     return {record.code for record in batch.diagnostics}
 
 
-def test_activation_cutoff_and_archive_continuity(project):
+def test_activation_cutoff_and_archive_continuity(scanner_replay_ledger):
     scanner = _scanner()
-    registration, store = project
+    files, registration, store, _ = scanner_replay_ledger
     live = registration.source_roots[0] / "live-secret.jsonl"
     archived = registration.source_roots[0] / "archived-secret.jsonl"
     header = _header(registration.checkout_anchors[0])
     complete = header + _usage(12, BEFORE) + _usage(15, CUTOFF)
     partial = _usage(19)
-    live.write_bytes(complete + partial[:-1])
+    files.contents[live] = complete + partial[:-1]
 
     (source,) = scanner.discover(registration)
     first = scanner.scan(source, None, CUTOFF)
@@ -196,8 +196,8 @@ def test_activation_cutoff_and_archive_continuity(project):
     prior = _checkpoint(first)
     store.apply(LedgerBatch(checkpoint=prior))
 
-    archived.write_bytes(complete + partial)
-    live.unlink()
+    files.contents[archived] = complete + partial
+    del files.contents[live]
     restored = Ledger.open(store.root, PROJECT).as_of().checkpoints[0]
     (archive_source,) = scanner.discover(registration)
     archive = scanner.scan(archive_source, restored, CUTOFF)
@@ -214,7 +214,7 @@ def test_activation_cutoff_and_archive_continuity(project):
     assert scanner.scan(archive_source, advanced, CUTOFF).frames == ()
 
     overlap = registration.source_roots[0] / "overlap-secret.jsonl"
-    overlap.write_bytes(header + _usage(66, BEFORE) + _usage(99, CUTOFF) + partial)
+    files.contents[overlap] = header + _usage(66, BEFORE) + _usage(99, CUTOFF) + partial
     bad = next(
         candidate
         for candidate in scanner.discover(registration)

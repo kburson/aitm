@@ -12,7 +12,12 @@ import pytest
 from grok_capture_policy_cases import grok_capture_policy as grok_capture_policy
 from qualification_policy_cases import qualification_policy
 from test_monitor_qualification import qualify
-from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
+from test_monitor_scope import (
+    SOURCE,
+    ClaudeScopeFixture,
+    MemoryNativeScopeFixture,
+    NativeScopeFixture,
+)
 
 from aitm_usage import monitor_journal, monitor_registry
 from aitm_usage.ledger import LedgerError
@@ -85,6 +90,17 @@ class _CoveragePolicyStore:
                 + " WHERE s.sequence>? ORDER BY s.sequence"
             ):
                 return tuple(row for row in view.events.values() if row[1] > params[0])
+            if sql.startswith(
+                (
+                    "SELECT key,project,payload,digest,sequence FROM claims",
+                    "SELECT key, contender, evidence, sequence FROM disputes",
+                    "SELECT d.key,c.project,c.payload,c.digest,d.sequence,d.payload"
+                    " FROM content_disputes",
+                    monitor_journal._DISPOSITION_ROWS,
+                    "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements",
+                )
+            ):
+                return ()
             assert write, f"Read-only coverage issued {sql}"
             self.writes.append((sql, params))
             if sql == "INSERT OR IGNORE INTO commits VALUES (?)":
@@ -206,21 +222,38 @@ def test_stable_exclusion_is_durable_and_independent_of_healthy_progress(
         assert store_version(journal) == 6
 
 
-def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(admitted_sources):
-    native, claude = admitted_sources
+def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(monkeypatch):
+    require_live = Registry._require_live_source
+    native = MemoryNativeScopeFixture(monkeypatch, with_claude=True)
+    claude = ClaudeScopeFixture(native)
     with native.registry.writer() as writer:
+        claude.approve(writer)
+    monkeypatch.setattr(Registry, "_require_live_source", require_live)
+    store = _CoveragePolicyStore(native.evidence)
+
+    def open_store(writer):
+        assert writer.root == native.registry.root
+        assert writer.source_evidence() == store.evidence
+        return store
+
+    monkeypatch.setattr(monitor_journal, "JournalStore", open_store)
+    with native.registry.writer() as writer:
+        writer._live_profile = None
         journal = RoutingJournal(writer, ScopeState(writer))
         with pytest.raises(LedgerError, match="qualification"):
             journal.prepare(claude.source_id, claude.locator())
         (event,) = journal.coverage_changes(0)
+        writes = store.writes.copy()
 
     claude.append(claude.request(10))
     with native.registry.writer() as writer:
+        writer._live_profile = None
         reopened = RoutingJournal(writer, ScopeState(writer))
         with pytest.raises(LedgerError, match="qualification"):
             reopened.prepare(claude.source_id, claude.locator())
         assert reopened.coverage_changes(0) == (event,)
         assert reopened.as_of().sequence == event.sequence
+        assert store.writes == writes
         with pytest.raises(LedgerError, match="qualification"):
             reopened.prepare(SOURCE, native.locator())
         (new,) = reopened.coverage_changes(event.sequence)

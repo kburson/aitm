@@ -244,7 +244,7 @@ packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_re
 packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[None-True-]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[message-False-]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[message-True-\n]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[message-True-]	local-integration	yes	yes
+packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[message-True-]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[next-tool-True-]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_lookahead_receipt_enrolls_exact_request_and_aggregate_stays_unassigned[reasoning-True-]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_codex.py::test_monitor_scope_receipt_at_first_desktop_request[abbreviated]	fast-unit	yes	yes
@@ -388,7 +388,7 @@ packages/aitm-usage/tests/test_grok_scope_receipts.py::test_linux_scope_staging_
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_marker_cannot_be_applied_by_a_different_scope_owner	fast-unit	yes	yes
-packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark	local-integration	yes	yes
+packages/aitm-usage/tests/test_grok_scope_receipts.py::test_one_use_receipt_routes_only_the_original_verified_mark	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_ordinary_checkout_mode_can_be_physically_identified	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_envelope_and_sealed_prompt_record_cannot_be_substituted	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_original_owner_and_live_process_are_required	fast-unit	yes	yes
@@ -408,7 +408,7 @@ packages/aitm-usage/tests/test_grok_scope_receipts.py::test_rotation_between_bin
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_source_approval_profile_and_command_witness_do_not_transfer	fast-unit	yes	yes
 packages/aitm-usage/tests/test_grok_scope_receipts.py::test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_directory_exchange_and_durability	systems-integration	yes	yes
-packages/aitm-usage/tests/test_host_fs_publication.py::test_existing_destination_survives_noreplace[directory]	systems-integration	yes	yes
+packages/aitm-usage/tests/test_host_fs_publication.py::test_existing_destination_survives_noreplace[directory]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_existing_destination_survives_noreplace[file]	systems-integration	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_failure_preserves_caller_errors_and_cleans_stage	local-integration	yes	yes
 packages/aitm-usage/tests/test_host_fs_publication.py::test_publication_requires_leaf_names[..]	fast-unit	yes	yes
@@ -719,7 +719,7 @@ packages/aitm-usage/tests/test_monitor_coverage.py::test_only_stable_profile_den
 packages/aitm-usage/tests/test_monitor_coverage.py::test_open_refuses_unknown_schema_version	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_coverage.py::test_reading_coverage_cannot_upgrade_an_empty_older_store[4]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_coverage.py::test_reading_coverage_cannot_upgrade_an_empty_older_store[5]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_coverage.py::test_restart_and_late_growth_do_not_duplicate_coverage_or_commit	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_coverage.py::test_restart_and_late_growth_do_not_duplicate_coverage_or_commit	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_coverage.py::test_stable_exclusion_is_durable_and_independent_of_healthy_progress	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_coverage.py::test_unqualified_source_gap_publishes_without_project_write_or_ack	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_coverage.py::test_unrelated_unavailable_source_key_cannot_mint_coverage	fast-unit	yes	yes
@@ -730,11 +730,11 @@ packages/aitm-usage/tests/test_monitor_delivery.py::test_destination_transaction
 packages/aitm-usage/tests/test_monitor_delivery.py::test_foreign_writer_and_substituted_project_keys_cannot_deliver	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_delivery.py::test_full_destination_queue_preserves_independent_progress	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_delivery.py::test_late_conflict_after_ack_produces_dispute_without_new_write[False]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_delivery.py::test_late_conflict_after_ack_produces_dispute_without_new_write[True]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_delivery.py::test_late_conflict_after_ack_produces_dispute_without_new_write[True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_delivery.py::test_restart_at_reserve_commit_and_ack_yields_one_row	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_delivery.py::test_stale_ack_never_rewinds_publication	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_delivery.py::test_superseded_revision_cannot_create_an_ack[False]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_delivery.py::test_superseded_revision_cannot_create_an_ack[True]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_delivery.py::test_superseded_revision_cannot_create_an_ack[True]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_grok_capture.py::test_another_scope_reader_cannot_change_current_grok_receipt_verifier	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_bad_open_terminal_closes_disable_at_verified_start[cancelled]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_grok_capture.py::test_grok_bad_open_terminal_closes_disable_at_verified_start[malformed]	fast-unit	yes	yes
@@ -811,7 +811,7 @@ packages/aitm-usage/tests/test_monitor_inventory.py::test_previously_cached_orig
 packages/aitm-usage/tests/test_monitor_inventory.py::test_replaced_approved_root_never_reuses_a_warm_origin	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[during-walk]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[nested-revalidation]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[root-revalidation]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_inventory.py::test_superseded_directory_witness_holds_catalog_without_staging[root-revalidation]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_causal_revision_survives_stale_replay_after_restart	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_changed_same_owner_usage_is_held_without_advancing_prior_cursor	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal.py::test_claude_common_usage_repeat_cannot_create_a_content_dispute	fast-unit	yes	yes
@@ -1092,7 +1092,7 @@ packages/aitm-usage/tests/test_monitor_registry.py::test_capture_frontier_waits_
 packages/aitm-usage/tests/test_monitor_registry.py::test_destination_key_cannot_issue_a_native_capture_boundary	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes[native-version]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes[platform]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes[root-replacement]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes[root-replacement]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_registry.py::test_disable_commits_with_last_verified_prefix_when_source_changes[truncated]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_registry.py::test_disable_future_enrollment_while_approved_root_is_unavailable	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_registry.py::test_disable_reenable_excludes_late_disabled_interval	fast-unit	yes	yes
@@ -1167,7 +1167,7 @@ packages/aitm-usage/tests/test_monitor_scope.py::test_competing_native_receipts_
 packages/aitm-usage/tests/test_monitor_scope.py::test_competing_receipts_conflict_in_both_native_delivery_orders[B-first]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_competing_receipts_conflict_in_both_native_delivery_orders[C-first]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_keeps_ordinary_scope_read_unchanged	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_preserves_journal_after_restart	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_preserves_journal_after_restart	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows[abort]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows[accounted-before-close]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_completion_qualification_refuses_incomplete_or_ambiguous_native_rows[backdated-counter]	fast-unit	yes	yes
@@ -1244,10 +1244,10 @@ packages/aitm-usage/tests/test_monitor_scope.py::test_native_boundary_cannot_be_
 packages/aitm-usage/tests/test_monitor_scope.py::test_native_disposition_reconfirms_visible_proof_after_directory_sync_failure	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[expired-gap]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[gap]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[resolved]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scope.py::test_ordered_native_disposition_records_only_proof_and_replays_after_restart[resolved]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_ordinary_mark_routes_unanchored_usage_after_native_rescan	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_project_wide_mark_is_distinct_from_anchor_only_scope	fast-unit	yes	yes
-packages/aitm-usage/tests/test_monitor_scope.py::test_queued_monitor_scope_cli_joins_only_first_native_target	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_scope.py::test_queued_monitor_scope_cli_joins_only_first_native_target	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_receipts_at_different_ordinals_conflict_at_the_same_native_target	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_resolved_hold_rejects_original_handoff_after_restart	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_scope.py::test_retained_hold_refuses_capacity_gap_before_publication	fast-unit	yes	yes
@@ -1358,7 +1358,7 @@ packages/aitm-usage/tests/test_rollup.py::test_rollup_prices_only_current_observ
 packages/aitm-usage/tests/test_rollup.py::test_rollup_sums_durable_prices_exactly[ordinary-low-precision]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_rollup_sums_durable_prices_exactly[wide-default-precision]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_rollup.py::test_rollup_sums_durable_prices_exactly[wide-restricted-context]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_scan.py::test_activation_cutoff_and_archive_continuity	local-integration	yes	yes
+packages/aitm-usage/tests/test_scan.py::test_activation_cutoff_and_archive_continuity	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_added_checkout_anchor_preserves_committed_outside_enrollment	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_capture_locator_presence_fails_closed_on_unreadable_directory	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scan.py::test_capture_locator_presence_finds_moved_inode_and_replacement_type	fast-unit	yes	yes
@@ -1452,7 +1452,7 @@ packages/aitm-usage/tests/test_scope_admission.py::test_scope_cli_handoff_and_di
 packages/aitm-usage/tests/test_scope_admission.py::test_scope_cli_refuses_uninitialized_admission_without_creating_state	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_admission.py::test_scope_credential_cannot_authenticate_reader_witness	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_admission.py::test_scope_request_refuses_noncanonical_selectors	fast-unit	yes	yes
-packages/aitm-usage/tests/test_scope_admission.py::test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain	local-integration	yes	yes
+packages/aitm-usage/tests/test_scope_admission.py::test_scope_witness_renewal_preserves_exact_bytes_and_mixed_control_drain	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_admission.py::test_stale_or_future_witness_cannot_publish[-6]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_admission.py::test_stale_or_future_witness_cannot_publish[60]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_scope_admission.py::test_stale_or_future_witness_cannot_publish[61]	fast-unit	yes	yes
@@ -1557,7 +1557,7 @@ packages/aitm-usage/tests/test_service.py::test_status_refuses_malformed_or_half
 packages/aitm-usage/tests/test_service.py::test_status_refuses_malformed_or_half_producer_witness[invalid3]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_service.py::test_status_refuses_malformed_or_half_producer_witness[invalid4]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_service.py::test_status_refuses_malformed_or_half_producer_witness[invalid5]	fast-unit	yes	yes
-packages/aitm-usage/tests/test_service.py::test_unproven_accepted_anchor_preserves_queue_until_proof_restored[after-interrupted-ack]	local-integration	yes	yes
+packages/aitm-usage/tests/test_service.py::test_unproven_accepted_anchor_preserves_queue_until_proof_restored[after-interrupted-ack]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_service.py::test_unproven_accepted_anchor_preserves_queue_until_proof_restored[before-first-ack]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_service.py::test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded[False]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_service.py::test_unresolved_earlier_segment_holds_frontier_unless_positively_excluded[True]	fast-unit	yes	yes
