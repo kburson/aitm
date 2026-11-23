@@ -227,6 +227,28 @@ clears it. A rerun, cancelled run, manual sweep or missing slot does not alter
 the decision. The timestamp is GitHub's last update time for the accepted
 original attempt. It is not a heartbeat.
 
+From the repository checkout, use the GitHub CLI's authenticated session
+with read access to the issue, runs, checks and repository contents.
+
+```sh
+python tools/ci/scheduled_sweep_flag.py check
+python tools/ci/scheduled_sweep_flag.py check --json
+```
+
+Both commands read #418 and check its linked attempt directly against
+GitHub Actions. A clear result also requires verification of the
+attempt's reconcile job and source. The commands return 0 for a verified
+active or clear flag and 2 when unavailable. JSON includes the advisory
+record and `run_url` for an active or clear result. Unavailable output
+has `run: null` and a `reason` such as `uninitialized`,
+`store-unavailable`, `invalid-record`, `evidence-unavailable`, or
+`evidence-mismatch`.
+
+The result is as of the linked attempt's UTC timestamp. A delayed
+publisher or newly scheduled attempt can make the issue's link older
+than the latest Actions history. Use the workflow's run history to
+investigate gaps.
+
 Completion and manual requests use the same serialized publisher. After a
 missed update or a failed publisher job, reconcile from authenticated Actions
 history on `trunk`.

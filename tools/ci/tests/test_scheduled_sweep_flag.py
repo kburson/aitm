@@ -1,3 +1,4 @@
+import json
 import sys
 from copy import deepcopy
 from pathlib import Path
@@ -495,3 +496,130 @@ def test_cached_attempt_lookup_distinguishes_missing_from_unavailable(
             github.optional_attempt(42)
     else:
         assert github.optional_attempt(42) == expected
+
+
+@pytest.mark.parametrize(
+    "state,conclusion", [("active", "failure"), ("clear", "success")]
+)
+def test_check_authenticates_linked_attempt_without_writing(state, conclusion):
+    run = attempt(7, conclusion)
+    advertised = decision(run, state)
+    github = Provider(run)
+    store = Store(advertised)
+    expected_url = (
+        f"https://github.com/kburson/aitm/actions/runs/{run['id']}/attempts/1"
+    )
+    assert flag.check_record(github, store) == {**advertised, "run_url": expected_url}
+    assert f"actions/runs/{run['id']}/attempts/1" in github.paths
+    assert not store.writes
+
+
+@pytest.mark.parametrize(
+    "case,reason",
+    [
+        ("uninitialized", "uninitialized"),
+        ("malformed", "invalid-record"),
+        ("unreadable", "store-unavailable"),
+        ("unreachable-attempt", "evidence-unavailable"),
+        ("missing-reconcile", "evidence-unavailable"),
+        ("manual-run", "evidence-mismatch"),
+        ("edited-conclusion", "evidence-mismatch"),
+        ("edited-timestamp", "evidence-mismatch"),
+        ("prior-to-activation", "invalid-record"),
+    ],
+)
+def test_check_reports_unavailable_without_writing(case, reason, monkeypatch):
+    real = attempt(7, "success")
+    record = decision(real, "clear")
+    github = Provider(real)
+    store = Store(record)
+    activation_floor = 4
+    if case == "uninitialized":
+        store.record = None
+    elif case == "malformed":
+
+        def malformed():
+            return flag.validate_snapshot(
+                {
+                    "nameWithOwner": flag.REPO,
+                    "databaseId": flag.REPO_ID,
+                    "issue": {
+                        "number": 999,
+                        "databaseId": 1000,
+                        "state": "OPEN",
+                        "title": flag.TITLE,
+                        "body": "manually edited",
+                        "lastEditedAt": END,
+                        "editor": None,
+                    },
+                },
+                BINDING,
+            )
+
+        monkeypatch.setattr(store, "read", malformed)
+    elif case == "unreadable":
+
+        def unreadable():
+            raise Hold("issue binding or provider read unavailable")
+
+        monkeypatch.setattr(store, "read", unreadable)
+    elif case == "unreachable-attempt":
+        github.attempt_error.add(real["id"])
+    elif case == "missing-reconcile":
+        github.job_passing = False
+    elif case == "manual-run":
+        github.runs[real["id"]]["event"] = "workflow_dispatch"
+    elif case == "edited-conclusion":
+        github.runs[real["id"]]["conclusion"] = "failure"
+    elif case == "edited-timestamp":
+        record["run"]["result_at"] = START
+    else:
+        activation_floor = 8
+    assert flag.check_record(github, store, activation_floor=activation_floor) == {
+        "schema": flag.SCHEMA,
+        "state": "unavailable",
+        "run": None,
+        "reason": reason,
+    }
+    assert not store.writes
+
+
+@pytest.mark.parametrize("machine", [False, True])
+@pytest.mark.parametrize(
+    "state,conclusion",
+    [("active", "failure"), ("clear", "success"), ("unavailable", None)],
+)
+def test_check_cli_returns_status_and_keeps_formats_consistent(
+    machine, state, conclusion, monkeypatch, capsys
+):
+    run = attempt(7, conclusion)
+    store = Store(decision(run, state) if conclusion else None)
+    monkeypatch.setattr(flag, "SweepGitHub", lambda repo: Provider(run))
+    monkeypatch.setattr(flag, "IssueStore", lambda github, binding: store)
+    monkeypatch.setattr(flag, "load_binding", lambda: BINDING)
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    expected_url = (
+        f"https://github.com/kburson/aitm/actions/runs/{run['id']}/attempts/1"
+    )
+    assert flag.main(["check", "--json"] if machine else ["check"]) == (
+        0 if conclusion else 2
+    )
+    result = capsys.readouterr()
+    assert not result.err and not store.writes
+    if machine:
+        data = json.loads(result.out)
+        assert data["state"] == state
+        if conclusion:
+            assert data == {**decision(run, state), "run_url": expected_url}
+        else:
+            assert data == {
+                "schema": flag.SCHEMA,
+                "state": "unavailable",
+                "run": None,
+                "reason": "uninitialized",
+            }
+    elif conclusion:
+        assert expected_url in result.out and END in result.out
+        assert ("failed" if state == "active" else "clear") in result.out
+    else:
+        assert "unavailable" in result.out and "uninitialized" in result.out

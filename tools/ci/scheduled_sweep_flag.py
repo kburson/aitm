@@ -55,6 +55,7 @@ JOB_FIELDS = (
 )
 MAX_BODY = 8192
 HISTORY_CAP = 1000
+READ_ERRORS = (ValueError, TypeError, KeyError, AttributeError, OSError, RecursionError)
 HISTORY_LIST = f"actions/workflows/{WORKFLOW_ID}/runs"
 ISSUE_QUERY = """
 query($number: Int!) {
@@ -199,6 +200,10 @@ class Snapshot:
     record: dict | None
 
 
+class InvalidRecord(Hold):
+    """The advisory issue is readable but its body is invalid."""
+
+
 def validate_snapshot(repo, binding):
     require(
         repo
@@ -216,7 +221,10 @@ def validate_snapshot(repo, binding):
         "advisory issue is closed or binding disagrees",
     )
     body, edited_at, editor = issue["body"], issue["lastEditedAt"], issue["editor"]
-    record = parse_body(body)
+    try:
+        record = parse_body(body)
+    except READ_ERRORS as exc:
+        raise InvalidRecord("invalid advisory issue body") from exc
     if edited_at is not None:
         utc_timestamp(edited_at)
     editor_id = editor.get("databaseId") if isinstance(editor, dict) else None
@@ -551,10 +559,80 @@ def publish(github, store, *, activation_floor=FLOOR):
     raise Hold("advisory write was not confirmed after bounded retry")
 
 
+def unavailable(reason):
+    return {"schema": SCHEMA, "state": "unavailable", "run": None, "reason": reason}
+
+
+def check_record(github, store, *, activation_floor=FLOOR):
+    """Verify the issue's linked sweep attempt without publishing anything."""
+    try:
+        advertised = store.read().record
+    except InvalidRecord:
+        return unavailable("invalid-record")
+    except READ_ERRORS:
+        return unavailable("store-unavailable")
+    if advertised is None:
+        return unavailable("uninitialized")
+    run = advertised["run"]
+    if run["run_number"] < activation_floor:
+        return unavailable("invalid-record")
+    try:
+        attempt = github.document(attempt_route(run["run_id"]))
+        try:
+            linked = identity(attempt)
+        except Hold:
+            return unavailable("evidence-mismatch")
+        if (linked.run_id, linked.number, linked.source) != (
+            run["run_id"],
+            run["run_number"],
+            run["head_sha"],
+        ):
+            return unavailable("evidence-mismatch")
+        verified = record_for_attempt(github, linked, attempt)
+    except READ_ERRORS:
+        return unavailable("evidence-unavailable")
+    if verified != advertised:
+        return unavailable("evidence-mismatch")
+    return {**verified, "run_url": attempt_url(verified["run"])}
+
+
+def run_check(as_json):
+    try:
+        binding = load_binding()
+        github = SweepGitHub(REPO)
+        result = check_record(
+            github,
+            IssueStore(github, binding),
+            activation_floor=binding["activation_floor"],
+        )
+    except READ_ERRORS:
+        result = unavailable("store-unavailable")
+    state = result["state"]
+    if as_json:
+        print(json.dumps(result))
+    elif state == "unavailable":
+        reason = result["reason"].replace("-", " ")
+        print(f"Scheduled category full sweep advisory unavailable ({reason}).")
+    else:
+        label = "failed" if state == "active" else "flag clear"
+        print(
+            f"Scheduled category full sweep {label} as of {result['run']['result_at']}."
+        )
+        print(result["run_url"])
+    return 2 if state == "unavailable" else 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("operation", choices=("bootstrap-body", "publish"))
+    parser.add_argument("operation", choices=("bootstrap-body", "publish", "check"))
+    parser.add_argument(
+        "--json", action="store_true", help="machine-readable check output"
+    )
     args = parser.parse_args(argv)
+    if args.operation == "check":
+        return run_check(args.json)
+    if args.json:
+        parser.error("--json requires check")
     try:
         if args.operation == "bootstrap-body":
             print(render_body(None), end="")
@@ -572,7 +650,7 @@ def main(argv=None):
     except Hold as exc:
         print(f"Scheduled sweep reconciliation unavailable: {exc}", file=sys.stderr)
         return 2
-    except (ValueError, TypeError, KeyError, AttributeError, OSError, RecursionError):
+    except READ_ERRORS:
         print(
             "Scheduled sweep reconciliation unavailable: invalid or incomplete provider response",
             file=sys.stderr,
