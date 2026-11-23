@@ -594,6 +594,19 @@ def _native_tool_turn(checkout, command, output, *, case="valid"):
     return [call, result, attachment, telemetry, target]
 
 
+@pytest.fixture
+def monitor_receipt_project(request):
+    if request.node.callspec.params["case"] in {
+        "mark",
+        "legacy",
+        "missing-call-session",
+        "missing-result-session",
+        "wrong-result-session",
+    }:
+        return request.getfixturevalue("project")
+    return None
+
+
 @pytest.mark.parametrize(
     "case",
     [
@@ -621,10 +634,16 @@ def _native_tool_turn(checkout, command, output, *, case="valid"):
         "unlinked-request",
     ],
 )
-def test_monitor_scope_receipt_at_first_claude_request(project, monkeypatch, case):
-    ledger, registration, path, checkout, _ = project
-    monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
+def test_monitor_scope_receipt_at_first_claude_request(
+    monitor_receipt_project, adapter_frames, monkeypatch, case
+):
+    project = monitor_receipt_project
+    if project is None:
+        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    else:
+        ledger, registration, path, checkout, _ = project
+        monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
+        monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
     action = case if case in {"mark", "handoff", "dispose"} else "mark"
     command = (
         f"aitm-usage monitor scope {action} --request '/private/tmp/a b.json' --json"
@@ -671,25 +690,24 @@ def test_monitor_scope_receipt_at_first_claude_request(project, monkeypatch, cas
         output["sessionId"] = str(UUID(int=0x999))
     elif case == "unlinked-request":
         target["requestRef"] = "unlinked"
-    write(
-        path,
-        [
-            user(checkout),
-            call,
-            output,
-            attachment,
-            telemetry,
-            target,
-            request(
-                checkout,
-                uuid=str(UUID(int=0x219)),
-                parentUuid=target["uuid"],
-                isSidechain=False,
-                req="req-second",
-                msg="msg-second",
-            ),
-        ],
-    )
+    rows = [
+        user(checkout),
+        call,
+        output,
+        attachment,
+        telemetry,
+        target,
+        request(
+            checkout,
+            uuid=str(UUID(int=0x219)),
+            parentUuid=target["uuid"],
+            isSidechain=False,
+            req="req-second",
+            msg="msg-second",
+        ),
+    ]
+    if project is not None:
+        write(path, rows)
     if case == "legacy":
         claude = adapter()
         _, result = read(
@@ -699,10 +717,13 @@ def test_monitor_scope_receipt_at_first_claude_request(project, monkeypatch, cas
         assert len(result.revisions) == 3
         return
 
-    provider = native.ProviderAdapter()
-    root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
-    (locator,) = provider.discover(root)
-    result = provider.read_delta(locator, None)
+    if project is None:
+        result = adapter_frames.read_monitor(rows, monkeypatch)
+    else:
+        provider = native.ProviderAdapter()
+        root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
+        (locator,) = provider.discover(root)
+        result = provider.read_delta(locator, None)
     linked = [item.boundary for item in result.boundaries if item.boundary.receipt_ref]
     if case not in {"mark", "handoff", "dispose", "trimmed-result", "trimmed-native"}:
         assert linked == []
@@ -716,7 +737,8 @@ def test_monitor_scope_receipt_at_first_claude_request(project, monkeypatch, cas
         "claude-scope-next-request", f"{session.value}:{receipt_id}"
     )
     assert len(result.observations) == 3
-    assert not ledger.as_of().current
+    if project is not None:
+        assert not ledger.as_of().current
 
 
 @pytest.mark.parametrize(

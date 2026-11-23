@@ -513,10 +513,16 @@ def tool_output(command_id=COMMAND, *, stdout=None):
         "wrong-owner",
     ],
 )
-def test_monitor_scope_receipt_at_first_desktop_request(project, monkeypatch, case):
-    ledger, registration, path, checkout, _ = project
-    monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
-    monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
+def test_monitor_scope_receipt_at_first_desktop_request(
+    request, adapter_frames, monkeypatch, case
+):
+    project = request.getfixturevalue("project") if case in {"mark", "legacy"} else None
+    if project is None:
+        ledger, checkout = adapter_frames.ledger, adapter_frames.checkout
+    else:
+        ledger, registration, path, checkout, _ = project
+        monkeypatch.setattr(native.platform, "system", lambda: "Darwin")
+        monkeypatch.setattr(native.platform, "machine", lambda: "arm64")
     action = case if case in {"mark", "handoff", "dispose"} else "mark"
     command = (
         f"aitm-usage monitor scope {action} --request '/private/tmp/a b.json' --json"
@@ -570,29 +576,28 @@ def test_monitor_scope_receipt_at_first_desktop_request(project, monkeypatch, ca
         output["payload"]["call_id"] = "unpaired"
     first, last, third = usage(8, 2), usage(14, 4), usage(20, 6)
     followup = UUID(int=0x211)
-    write(
-        path,
-        [
-            startup(checkout, originator="Codex Desktop"),
-            *begin(checkout),
-            call,
-            response("before-scope", first, first),
-            output,
-            counter(first, first),
-            response(
-                "first-after-scope",
-                last,
-                usage(6, 2),
-                thread=CHILD if case == "wrong-owner" else SESSION,
-            ),
-            counter(last, usage(6, 2)),
-            response("second-after-scope", third, usage(6, 2)),
-            counter(third, usage(6, 2)),
-            end(),
-            *begin(checkout, followup),
-            end(followup),
-        ],
-    )
+    rows = [
+        startup(checkout, originator="Codex Desktop"),
+        *begin(checkout),
+        call,
+        response("before-scope", first, first),
+        output,
+        counter(first, first),
+        response(
+            "first-after-scope",
+            last,
+            usage(6, 2),
+            thread=CHILD if case == "wrong-owner" else SESSION,
+        ),
+        counter(last, usage(6, 2)),
+        response("second-after-scope", third, usage(6, 2)),
+        counter(third, usage(6, 2)),
+        end(),
+        *begin(checkout, followup),
+        end(followup),
+    ]
+    if project is not None:
+        write(path, rows)
     if case == "legacy":
         codex = adapter()
         _, result = read(codex, source(registration), codex.CodexState(ledger))
@@ -600,10 +605,13 @@ def test_monitor_scope_receipt_at_first_desktop_request(project, monkeypatch, ca
         assert len(result.revisions) == 3
         return
 
-    provider = native.ProviderAdapter()
-    root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
-    (locator,) = provider.discover(root)
-    result = provider.read_delta(locator, None)
+    if project is None:
+        result = adapter_frames.read_monitor(rows, monkeypatch)
+    else:
+        provider = native.ProviderAdapter()
+        root = native.SourceRoot(path.parent, CUTOFF, (checkout,), ledger)
+        (locator,) = provider.discover(root)
+        result = provider.read_delta(locator, None)
     linked = [item.boundary for item in result.boundaries if item.boundary.receipt_ref]
     if case not in {"mark", "handoff", "dispose"}:
         assert linked == []
@@ -619,7 +627,8 @@ def test_monitor_scope_receipt_at_first_desktop_request(project, monkeypatch, ca
         "codex-scope-next-request", f"{session.value}:{receipt_id}"
     )
     assert len(result.observations) == 3
-    assert not ledger.as_of().current
+    if project is not None:
+        assert not ledger.as_of().current
 
 
 @pytest.mark.parametrize(

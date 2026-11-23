@@ -8,8 +8,16 @@ from pathlib import Path
 from uuid import UUID
 
 from aitm_usage.monitor_registry import _ServiceEvidence
+from aitm_usage.monitor_types import NativeSurface
 from aitm_usage.scopes import session_reference
-from aitm_usage.sources.scan import FrameBatch, SidebandFrame, SidebandKind, SourceFrame
+from aitm_usage.sources import adapter
+from aitm_usage.sources.scan import (
+    CandidateSource,
+    FrameBatch,
+    SidebandFrame,
+    SidebandKind,
+    SourceFrame,
+)
 from aitm_usage.types import (
     ClientVersion,
     Eligibility,
@@ -31,6 +39,38 @@ class AdapterFrames:
     cutoff: datetime
     ledger = _AdapterEvidence(b"adapter-frame-policy-fixture")
     checkout = Path("/fixture/checkout")
+
+    def read_monitor(self, rows, monkeypatch):
+        frames = self.batch(rows)
+        first = frames.frames[0]
+        path = Path("/fixture/transcripts/native.jsonl")
+        source = CandidateSource(
+            self.provider,
+            first.session_ref,
+            first.stream_ref,
+            frames.cursor.locator_ref,
+            frames.cursor.incarnation_ref,
+            path,
+            ((1, 2), (1, 3)),
+            adapter.SourceRoot(path.parent, self.cutoff, (self.checkout,), self.ledger),
+            self.ledger,
+            _native_surface={
+                Provider.CODEX: NativeSurface.CODEX_DESKTOP_MACOS,
+                Provider.CLAUDE: NativeSurface.CLAUDE_CODE_MACOS,
+            }[self.provider],
+            _monitor=True,
+        )
+
+        def read(candidate, checkpoint, cutoff, *, _capture_limit):
+            assert candidate is source
+            assert checkpoint is None and cutoff == self.cutoff
+            assert _capture_limit is None
+            return frames
+
+        monkeypatch.setattr(adapter, "scan", read)
+        monkeypatch.setattr(adapter.platform, "system", lambda: "Darwin")
+        monkeypatch.setattr(adapter.platform, "machine", lambda: "arm64")
+        return adapter.ProviderAdapter().read_delta(adapter.SourceLocator(source), None)
 
     def batch(self, rows):
         evidence = self.ledger
