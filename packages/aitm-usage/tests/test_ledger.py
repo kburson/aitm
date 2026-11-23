@@ -10,8 +10,10 @@ import sys
 from contextlib import closing, contextmanager
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
+from hashlib import sha256
 from importlib.util import find_spec
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -24,7 +26,10 @@ ROOT_PREFIX = "Library/Application Support/aitm-usage"
 
 
 @pytest.fixture(autouse=True)
-def isolated_control_home(tmp_path, monkeypatch):
+def isolated_control_home(request, monkeypatch):
+    if "memory_state" in request.fixturenames:
+        return
+    tmp_path = request.getfixturevalue("tmp_path")
     home = tmp_path / "home"
     home.mkdir(mode=0o700)
     monkeypatch.setenv("HOME", str(home))
@@ -54,6 +59,23 @@ def state(tmp_path, modules):
     root = tmp_path / "project"
     ledger_module, types = modules
     return ledger_module.Ledger.initialize(root, PROJECT), types
+
+
+def _memory_ledger(ledger_module, project_id, key):
+    return ledger_module.Ledger(
+        Path("/fixture/project"),
+        ledger_module.LedgerIdentity(project_id, sha256(key).hexdigest()),
+        key,
+    )
+
+
+@pytest.fixture
+def memory_state(modules, monkeypatch):
+    ledger_module, types = modules
+    ledger = _memory_ledger(ledger_module, PROJECT, b"a" * 32)
+    writer = Mock(side_effect=AssertionError("invalid input reached the ledger writer"))
+    monkeypatch.setattr(ledger_module.Ledger, "writer", writer)
+    return ledger, types, writer
 
 
 def sample_batch(ledger, types):
@@ -194,6 +216,7 @@ def test_writer_refusal_read_snapshot_and_release_on_process_exit(state):
             "-c",
             """import sys
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
@@ -382,11 +405,9 @@ def test_symlink_state_root_and_hardlinked_private_key_are_refused(state, tmp_pa
         ledger.apply(types.LedgerBatch())
 
 
-def test_closed_batch_rejects_raw_fields_before_write(state):
-    ledger, types = state
-    batch = sample_batch(ledger, types)
+def _invalid_batch_variants(batch):
     record = batch.revisions[0]
-    invalid = [
+    return [
         replace(batch, revisions=(replace(record, record={"prompt": CANARY}),)),
         replace(
             batch,
@@ -412,10 +433,22 @@ def test_closed_batch_rejects_raw_fields_before_write(state):
             ),
         ),
     ]
-    for malformed in invalid:
+
+
+def test_closed_batch_rejects_raw_fields_before_write(memory_state):
+    ledger, types, writer = memory_state
+    for malformed in _invalid_batch_variants(sample_batch(ledger, types)):
         with pytest.raises((ValueError, TypeError)):
             ledger.apply(malformed)
-        assert ledger.as_of().sequence == 0
+    writer.assert_not_called()
+
+
+def test_ledger_admission_and_real_commit_preserve_private_state(state):
+    ledger, types = state
+    batch = sample_batch(ledger, types)
+    with pytest.raises((ValueError, TypeError)):
+        ledger.apply(_invalid_batch_variants(batch)[0])
+    assert ledger.as_of().sequence == 0
     assert ledger.apply(batch) == 1
     assert ledger.as_of().checkpoints[0].provider.request_prefix
     for path in ledger.root.rglob("*"):
@@ -423,8 +456,8 @@ def test_closed_batch_rejects_raw_fields_before_write(state):
             assert CANARY.encode() not in path.read_bytes(), path.name
 
 
-def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(state):
-    ledger, types = state
+def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(memory_state):
+    ledger, types, writer = memory_state
     marker = types.ScopeMarker(
         UUID("e6b3d931-55f4-4edd-8ee0-f642dfd2404a"),
         types.Provider.CODEX,
@@ -457,7 +490,7 @@ def test_marker_wire_allowlist_rejects_extra_or_raw_source_fields(state):
     )
     with pytest.raises(LedgerError):
         ledger.apply(types.LedgerBatch((revision,)))
-    assert ledger.as_of().sequence == 0
+    writer.assert_not_called()
 
 
 def test_installed_console_entry_uses_package_and_project_prefix(tmp_path):
@@ -538,6 +571,7 @@ def try_writer_in_other_process(root):
             "-c",
             """import sys
 from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger, WriterActive
@@ -681,10 +715,11 @@ def test_raw_credential_shaped_metadata_is_normalized_before_durable_write(
 
 
 @pytest.mark.parametrize("kind", ["foreign-project", "foreign-key", "fabricated"])
-def test_authenticated_refusal_for_nested_pseudonyms(state, tmp_path, kind):
+def test_authenticated_refusal_for_nested_pseudonyms(memory_state, modules, kind):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    ledger, types, writer = memory_state
+    ledger_module, _ = modules
     batch = sample_batch(ledger, types)
     genuine = batch.checkpoint.cursor.anchor_ref
     if kind == "fabricated":
@@ -693,7 +728,7 @@ def test_authenticated_refusal_for_nested_pseudonyms(state, tmp_path, kind):
         invalid = types.SourceRef(":".join((prefix, changed, *proof)))
     else:
         other_id = OTHER_PROJECT if kind == "foreign-project" else PROJECT
-        other = type(ledger).initialize(tmp_path / "other", other_id)
+        other = _memory_ledger(ledger_module, other_id, b"b" * 32)
         invalid = other.pseudonymize("validation-anchor", CANARY)
     batch = replace(
         batch,
@@ -702,11 +737,9 @@ def test_authenticated_refusal_for_nested_pseudonyms(state, tmp_path, kind):
             cursor=replace(batch.checkpoint.cursor, anchor_ref=invalid),
         ),
     )
-    before = durable_data(ledger)
     with pytest.raises(LedgerError):
         ledger.apply(batch)
-    assert durable_data(ledger) == before
-    assert ledger.as_of().sequence == 0
+    writer.assert_not_called()
 
 
 def test_genuine_pseudonyms_and_project_identity_survive_reopen(state):
@@ -734,8 +767,8 @@ def quota_sample(ledger, types):
     )
 
 
-def test_quota_envelope_roundtrips_only_account_window_evidence(state):
-    ledger, types = state
+def test_quota_envelope_roundtrips_only_account_window_evidence(memory_state):
+    ledger, types, _ = memory_state
     quota = quota_sample(ledger, types)
     result = types.AdapterResult(quota=(quota,))
     assert result.quota == (quota,)
@@ -771,19 +804,20 @@ def test_quota_envelope_roundtrips_only_account_window_evidence(state):
         {"source": "tool_arguments"},
     ],
 )
-def test_quota_rejects_out_of_contract_scalar_values(state, change):
-    ledger, types = state
+def test_quota_rejects_out_of_contract_scalar_values(memory_state, change):
+    ledger, types, _ = memory_state
     quota = quota_sample(ledger, types)
     with pytest.raises(ValueError):
         replace(quota, **change)
 
 
-def test_quota_rejects_foreign_account_reference(state, tmp_path):
+def test_quota_rejects_foreign_account_reference(memory_state, modules):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    ledger, types, _ = memory_state
     quota = quota_sample(ledger, types)
-    other = type(ledger).initialize(tmp_path / "other", OTHER_PROJECT)
+    ledger_module, _ = modules
+    other = _memory_ledger(ledger_module, OTHER_PROJECT, b"b" * 32)
     foreign = replace(quota, account_ref=other.pseudonymize("codex-account", CANARY))
     with pytest.raises(LedgerError):
         ledger.validate_quota(foreign)
@@ -825,10 +859,10 @@ def test_control_location_rejects_case_alias_of_project_state(modules):
     assert not root.exists()
 
 
-def test_source_proof_also_requires_exact_wire_shape(state):
+def test_source_proof_also_requires_exact_wire_shape(memory_state):
     from aitm_usage.ledger import LedgerError
 
-    ledger, types = state
+    ledger, types, _ = memory_state
     genuine = ledger.pseudonymize("request", CANARY)
     _, digest, tag = genuine.value.split(":")
     invalid = object.__new__(types.SourceRef)

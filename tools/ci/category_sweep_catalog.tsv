@@ -514,10 +514,10 @@ packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_bef
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[state-inside-control-existing]	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_apfs_firmlink_overlap_refused_before_private_creation[state-inside-control-missing]	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_atomic_cursor_and_revisions	local-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[fabricated]	local-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[foreign-key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[foreign-project]	local-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_closed_batch_rejects_raw_fields_before_write	local-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[fabricated]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[foreign-key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms[foreign-project]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_closed_batch_rejects_raw_fields_before_write	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_control_location_cannot_be_inside_project_state	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_control_location_rejects_case_alias_of_project_state	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_cursor_replay_never_rewinds_current_provider_state	local-integration	yes	yes
@@ -537,7 +537,8 @@ packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_d
 packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_durable_writes[project]	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_invalid_identity_refuses_before_durable_writes[schema]	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_key_is_project_bound_and_pseudonyms_survive_restart	local-integration	yes	yes
-packages/aitm-usage/tests/test_ledger.py::test_marker_wire_allowlist_rejects_extra_or_raw_source_fields	local-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_ledger_admission_and_real_commit_preserve_private_state	local-integration	yes	yes
+packages/aitm-usage/tests/test_ledger.py::test_marker_wire_allowlist_rejects_extra_or_raw_source_fields	fast-unit	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_open_refuses_missing_state_without_creating_it	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_private_path_rejects_mismatched_owner	local-integration	yes	yes
 packages/aitm-usage/tests/test_ledger.py::test_private_paths_have_exact_modes_and_reject_looser_modes[database]	local-integration	yes	yes

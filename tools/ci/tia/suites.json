@@ -335,6 +335,21 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms",
+      "suite": "unit",
+      "isolation_group": "ledger-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_closed_batch_rejects_raw_fields_before_write",
+      "suite": "unit",
+      "isolation_group": "ledger-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_ledger.py::test_marker_wire_allowlist_rejects_extra_or_raw_source_fields",
+      "suite": "unit",
+      "isolation_group": "ledger-admission-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_grok.py::test_cancellation_concurrent_turns_and_invalid_clock_fail_closed",
       "suite": "unit",
       "isolation_group": "grok-adapter-policy"
