@@ -261,15 +261,15 @@ def _graduated_relationships(ledger):
     )
 
 
-def test_graduation_and_inclusive_rollup(project, item_cli, monkeypatch, capsys):
+def test_graduation_and_inclusive_rollup(relationship_transport_policy):
+    case = relationship_transport_policy
+    project = case.project
     with project.writer() as writer:
-        with pytest.raises(WriterActive), project.writer():
-            pass
-        _consume(writer, item_cli, "parent", DRAFT, EPIC)
-        _consume(writer, item_cli, "parent", CHILD, EPIC)
-        _consume(writer, item_cli, "parent", SECOND, EPIC)
+        case.consume(writer, "parent", DRAFT, EPIC)
+        case.consume(writer, "parent", CHILD, EPIC)
+        case.consume(writer, "parent", SECOND, EPIC)
         grandchild = ItemKey(ItemKind.ISSUE, 99)
-        _consume(writer, item_cli, "parent", grandchild, SECOND)
+        case.consume(writer, "parent", grandchild, SECOND)
         _record_usage(writer, grandchild, 3)
         _record_usage(writer, EPIC, 11)
         _record_usage(writer, DRAFT, 7)
@@ -279,13 +279,15 @@ def test_graduation_and_inclusive_rollup(project, item_cli, monkeypatch, capsys)
         before = writer.as_of()
         direct = DraftAlias(UUID(int=100), PROJECT, DRAFT, CHILD)
         revision = Revision(writer.pseudonymize("fixture", "alias"), 1, direct)
-        durable = _durable_bytes(project)
+        prior_rows = case.rows.history
+        writes = case.rows.writes.copy()
         with pytest.raises(LedgerError, match="require atomic command admission"):
             writer.apply(LedgerBatch((revision,)))
-        assert _durable_bytes(project) == durable
+        assert case.rows.history == prior_rows
+        assert case.rows.writes == writes
         assert writer.as_of() == before
         assert writer.command_receipt(_command(direct)) is None
-        receipt = _consume(writer, item_cli, "alias", DRAFT, CHILD)
+        receipt = case.consume(writer, "alias", DRAFT, CHILD)
         graduated = writer.as_of()
         assert enqueue_command(writer.root, receipt.command) == receipt
         assert writer.as_of().sequence == graduated.sequence
@@ -313,17 +315,19 @@ def test_graduation_and_inclusive_rollup(project, item_cli, monkeypatch, capsys)
         lone_effect = Revision(
             writer.pseudonymize("item-parent", f"draft:{DRAFT.identifier}"), 2, payload
         )
-        prior_bytes = _durable_bytes(reopened)
+        prior_rows = case.rows.history
+        writes = case.rows.writes.copy()
         with pytest.raises(ConflictError, match="effects do not match ledger history"):
             writer.commit_command(
                 receipt, (lone_effect,), expected_sequence=graduated.sequence
             )
         assert writer.command_receipt(command) is None
-        assert _durable_bytes(reopened) == prior_bytes
+        assert case.rows.history == prior_rows
+        assert case.rows.writes == writes
         assert writer.as_of() == graduated
         assert rollup(EPIC, writer.as_of()) == total
 
-        reparented = _consume(writer, item_cli, "parent", DRAFT, OTHER_EPIC)
+        reparented = case.consume(writer, "parent", DRAFT, OTHER_EPIC)
         current = writer.as_of()
         assert enqueue_command(writer.root, reparented.command) == reparented
         assert writer.as_of() == current
@@ -335,16 +339,6 @@ def test_graduation_and_inclusive_rollup(project, item_cli, monkeypatch, capsys)
     assert rollup(DRAFT, reopened.as_of(before.sequence)).direct.tokens == {
         "output_tokens": 7
     }
-
-    wal = Path(f"{project.database_path}-wal")
-    prior_bytes = _durable_bytes(project)
-    wal.chmod(0o644)
-    try:
-        assert _invoke_item_alias(monkeypatch, project.root) == 1
-        _assert_item_refusal(*capsys.readouterr())
-        assert _durable_bytes(project) == prior_bytes
-    finally:
-        wal.chmod(0o600)
 
 
 @pytest.fixture
@@ -1185,11 +1179,6 @@ def test_final_relationship_replay_checks_effect_identity_without_revalidating_g
     connection.execute.assert_not_called()
 
 
-def _conflicting_links(writer, item_cli):
-    _consume(writer, item_cli, "parent", DRAFT, EPIC)
-    _consume(writer, item_cli, "parent", CHILD, OTHER_EPIC)
-
-
 def test_relationship_cli_drains_in_publication_order(relationship_transport_policy):
     case = relationship_transport_policy
     with case.project.writer() as writer:
@@ -1239,21 +1228,32 @@ def test_relationship_cli_drains_in_publication_order(relationship_transport_pol
 
 
 def test_failed_relationship_commit_leaves_later_commands_uncommitted(
-    project, item_cli, monkeypatch
+    relationship_transport_policy, monkeypatch
+):
+    case = relationship_transport_policy
+    _assert_relationship_append_rolls_back(
+        case.project,
+        case.consume,
+        case.queue,
+        lambda command: f"{command.command_id}.json" in case.inbox,
+        monkeypatch,
+    )
+
+
+def _assert_relationship_append_rolls_back(
+    project, consume, queue, pending, monkeypatch
 ):
     with project.writer() as writer:
-        _conflicting_links(writer, item_cli)
-        first = _queue_cli(
-            writer, item_cli, "parent", CHILD, EPIC, command_id=UUID(int=300)
-        )
-        second = _queue_cli(
-            writer, item_cli, "alias", DRAFT, CHILD, command_id=UUID(int=100)
-        )
+        consume(writer, "parent", DRAFT, EPIC)
+        consume(writer, "parent", CHILD, OTHER_EPIC)
+        first = queue(writer, "parent", CHILD, EPIC, command_id=UUID(int=310))
+        second = queue(writer, "alias", DRAFT, CHILD, command_id=UUID(int=110))
         prior = writer.as_of()
         append = store._append_revisions
 
         def interrupt_first(conn, sequence, revisions):
             if revisions[-1].record.command == first:
+                assert len(revisions) == 2
                 append(conn, sequence, revisions[:1])
                 raise OSError("controlled relationship append failure")
             return append(conn, sequence, revisions)
@@ -1265,7 +1265,7 @@ def test_failed_relationship_commit_leaves_later_commands_uncommitted(
         assert writer.as_of() == prior
         for command in (first, second):
             assert writer.command_receipt(command) is None
-            assert _publication_path(writer, command.command_id).is_file()
+            assert pending(command)
 
     with Ledger.open(project.root, PROJECT).writer() as writer:
         result = drain_inbox(writer, ()).receipts
@@ -1273,6 +1273,7 @@ def test_failed_relationship_commit_leaves_later_commands_uncommitted(
             (first, MarkerDisposition.ACCEPTED),
             (second, MarkerDisposition.ACCEPTED),
         ]
+        assert not any(pending(command) for command in (first, second))
 
 
 def test_relationship_conflict_is_final_and_does_not_block_next(
@@ -1306,9 +1307,11 @@ def test_relationship_conflict_is_final_and_does_not_block_next(
 
 
 def test_relationship_snapshot_releases_mutex_and_preserves_order_after_restart(
-    project, item_cli, monkeypatch
+    project, item_cli, monkeypatch, capsys
 ):
     with project.writer() as writer:
+        with pytest.raises(WriterActive), project.writer():
+            pass
         first = _queue_cli(
             writer, item_cli, "parent", CHILD, EPIC, command_id=UUID(int=500)
         )
@@ -1422,6 +1425,42 @@ def test_relationship_snapshot_releases_mutex_and_preserves_order_after_restart(
             == 1
         )
         assert drain_inbox(writer, ()).receipts[0].command == fifth
+
+    def consume(writer, *args):
+        return _consume(writer, item_cli, *args)
+
+    def queue(writer, *args, **kwargs):
+        return _queue_cli(writer, item_cli, *args, **kwargs)
+
+    _assert_relationship_append_rolls_back(
+        project,
+        consume,
+        queue,
+        lambda command: _publication_path(project, command.command_id).is_file(),
+        monkeypatch,
+    )
+    with Ledger.open(project.root, PROJECT).writer() as writer:
+        _record_usage(writer, DRAFT, 7)
+        graduated = writer.as_of()
+        assert rollup(CHILD, graduated).direct.tokens == {"output_tokens": 7}
+        assert rollup(EPIC, graduated).inclusive.tokens == {"output_tokens": 7}
+        receipt = consume(writer, "parent", DRAFT, OTHER_EPIC)
+        assert enqueue_command(writer.root, receipt.command) == receipt
+        assert rollup(OTHER_EPIC, writer.as_of()).inclusive.tokens == {
+            "output_tokens": 7
+        }
+        assert rollup(EPIC, writer.as_of(graduated.sequence)).inclusive.tokens == {
+            "output_tokens": 7
+        }
+    wal = Path(f"{project.database_path}-wal")
+    prior = _durable_bytes(project)
+    wal.chmod(0o644)
+    try:
+        assert _invoke_item_alias(monkeypatch, project.root) == 1
+        _assert_item_refusal(*capsys.readouterr())
+        assert _durable_bytes(project) == prior
+    finally:
+        wal.chmod(0o600)
 
 
 def _drain_invalid_relationship_transport(monkeypatch, defect):

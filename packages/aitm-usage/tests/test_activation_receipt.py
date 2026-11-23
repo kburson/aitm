@@ -721,36 +721,94 @@ def test_processing_orders_require_native_prefix_and_fixed_ledger(
         _verify_order(entry, proof, load_rate_card())
 
 
-def test_fixed_export_uses_actual_ledger_and_replay_bytes(project, tmp_path):
+def test_fixed_export_uses_actual_ledger_and_replay_bytes(reference_rates, monkeypatch):
+    import os
+    import stat
+    from contextlib import nullcontext
     from dataclasses import replace
+    from io import BytesIO
+    from types import SimpleNamespace
 
     from test_export import _observation
+    from test_install import PROJECT
+    from test_ledger import _LedgerRows, _memory_ledger
 
-    from aitm_usage.export import export_as_of
-    from aitm_usage.pricing import load_rate_card
+    from aitm_usage import export
+    from aitm_usage import ledger as store
+    from aitm_usage.ledger import Ledger
     from aitm_usage.qualification import QualificationError, _verify_exports
     from aitm_usage.types import LedgerBatch
 
-    _, ledger, _ = project
+    ledger = replace(_memory_ledger(store, PROJECT, b"q" * 32), _writer=object())
+    rows = _LedgerRows(ledger.identity, store.APPLICATION_ID, ())
+    monkeypatch.setattr(Ledger, "require_writer", lambda _: None)
+    monkeypatch.setattr(Ledger, "reader", lambda _: rows.connect(write=False))
+    monkeypatch.setattr(
+        Ledger, "_write_transaction", lambda _: rows.connect(write=True)
+    )
     usage, _ = _observation(ledger, "first")
     ledger.apply(LedgerBatch((usage,)))
     view = ledger.as_of()
-    card = load_rate_card()
-    before, after = tmp_path / "before", tmp_path / "after"
-    receipt = export_as_of(view, card, before)
-    export_as_of(view, card, after)
-    _verify_exports(view, card, receipt.sha256, 1, (str(before), str(after)))
+    card = reference_rates
+    receipt, serialized = export._render(view, card)
+    snapshots = {ledger.root / name: dict(serialized) for name in ("before", "after")}
+    folders = dict(enumerate(snapshots, 1))
+    entries = {
+        (parent, name): (index, snapshots[folder][name])
+        for parent, folder in folders.items()
+        for index, name in enumerate(serialized, 10 * parent)
+    }
+    by_descriptor = {fd: data for fd, data in entries.values()}
+
+    def file_status(fd):
+        data = by_descriptor[fd]
+        return os.stat_result(
+            (stat.S_IFREG | 0o600, fd, 1, 1, os.geteuid(), 0, len(data), 0, 0, 0)
+        )
+
+    def file_open(name, flags, *, dir_fd):
+        assert flags == os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+        return entries[dir_fd, name][0]
+
+    def file_stat(name, *, dir_fd, follow_symlinks):
+        assert not follow_symlinks
+        return file_status(entries[dir_fd, name][0])
+
+    pins = {
+        folder: SimpleNamespace(fd=fd, identities=((1, fd),), check=Mock())
+        for fd, folder in folders.items()
+    }
+    monkeypatch.setattr(
+        qualification, "_pin_directory", lambda path: nullcontext(pins[path])
+    )
+    monkeypatch.setattr(export, "_check_acl", Mock())
+    monkeypatch.setattr(
+        export,
+        "os",
+        SimpleNamespace(
+            O_RDONLY=os.O_RDONLY,
+            O_NOFOLLOW=os.O_NOFOLLOW,
+            O_NONBLOCK=os.O_NONBLOCK,
+            listdir=lambda fd: tuple(snapshots[folders[fd]]),
+            open=file_open,
+            fdopen=lambda fd, mode: BytesIO(by_descriptor[fd]),
+            fstat=file_status,
+            stat=file_stat,
+            path=os.path,
+        ),
+    )
+    before, after = map(str, snapshots)
+    _verify_exports(view, card, receipt.sha256, 1, (before, after))
+    assert all(pin.check.call_count == 1 for pin in pins.values())
     with pytest.raises(QualificationError, match="export-parity"):
-        _verify_exports(view, card, "0" * 64, 1, (str(before), str(after)))
+        _verify_exports(view, card, "0" * 64, 1, (before, after))
     with pytest.raises(QualificationError, match="export-parity"):
-        _verify_exports(view, card, receipt.sha256, 1, (str(before), str(before)))
+        _verify_exports(view, card, receipt.sha256, 1, (before, before))
 
     duplicate = replace(usage, key=ledger.pseudonymize("activation-test", "duplicate"))
     ledger.apply(LedgerBatch((duplicate,)))
     with pytest.raises(QualificationError, match="duplicate-observation"):
-        _verify_exports(
-            ledger.as_of(), card, receipt.sha256, 1, (str(before), str(after))
-        )
+        _verify_exports(ledger.as_of(), card, receipt.sha256, 1, (before, after))
 
 
 @pytest.mark.parametrize(

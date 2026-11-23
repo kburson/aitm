@@ -354,12 +354,19 @@ def _codex_transcript(checkout):
     ]
 
 
-def test_service_commands_and_coverage(project):
+def test_service_commands_and_coverage(project, monkeypatch):
     from importlib.metadata import version
     from platform import python_version
 
     root, sources, checkout, config, command = project
     _fixtures(sources, checkout, partial=True)
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            Ledger, "apply", Mock(side_effect=OSError("registration interrupted"))
+        )
+        command("register", "--config", str(config), "--json", expected=1)
+    assert Ledger.open(root, PROJECT).as_of().sequence == 0
+    assert (root / service.REGISTRATION_NAME).stat().st_mode & 0o777 == 0o600
     result = command("register", "--config", str(config), "--json")
     assert result["cutoff"] == CUTOFF
     ledger = Ledger.open(root, PROJECT)
@@ -429,36 +436,77 @@ def test_service_commands_and_coverage(project):
 
 
 def test_registration_retry_requires_exact_private_and_typed_authority(
-    project, monkeypatch
+    collector_policy, monkeypatch, capsys
 ):
-    root, sources, checkout, config, command = project
-    _fixtures(sources, checkout)
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    _, files = case.use_ledger_rows()
+    config = ledger.root / "fixture-config.json"
+    data = {
+        "project_id": str(PROJECT),
+        "source_roots": [str(native.root)],
+        "checkout_anchors": [str(native.checkout)],
+        "cutoff": CUTOFF,
+    }
+    altered = {**data, "cutoff": "2026-11-09T15:00:00+00:00"}
+    supplied = data
+    path_open = Path.open
 
-    def interrupted(self, batch):
-        raise OSError("synthetic interrupted registration")
+    def open_config(path, mode, *args, **kwargs):
+        if path == config:
+            assert mode == "rb" and not args and not kwargs
+            return BytesIO(json.dumps(supplied).encode())
+        return path_open(path, mode, *args, **kwargs)
+
+    def publish(directory, name, content, *, replace_pending=False):
+        assert name == service.REGISTRATION_NAME and not replace_pending
+        assert name not in files
+        files[name] = content
+        return True
+
+    def run(*arguments, expected=0):
+        argv = ["aitm-usage", "--project", str(ledger.root), *arguments, "--json"]
+        monkeypatch.setattr(sys, "argv", argv)
+        assert cli.main() == expected, capsys.readouterr()
+        capsys.readouterr()
+
+    monkeypatch.setattr(Path, "open", open_config)
+    monkeypatch.setattr(service, "_publish", publish)
+    monkeypatch.setattr(
+        service, "_path_exists", lambda path: path == ledger.database_path.parent
+    )
+    monkeypatch.setattr(
+        service,
+        "_directory_available",
+        lambda path: path in (native.root, native.checkout),
+    )
+    monkeypatch.setattr(service.monitor_registry, "check_legacy_mutation", Mock())
+    monkeypatch.setattr(cli, "open_project", lambda _: ledger)
+    monkeypatch.setattr(cli, "version", lambda _: "1.2.3")
+    register = ("register", "--config", str(config))
 
     with monkeypatch.context() as patch:
-        patch.setattr(Ledger, "apply", interrupted)
-        command("register", "--config", str(config), "--json", expected=1)
-    ledger = Ledger.open(root, PROJECT)
+        patch.setattr(
+            Ledger, "apply", Mock(side_effect=OSError("interrupted registration"))
+        )
+        run(*register, expected=1)
+    original = files[service.REGISTRATION_NAME]
     assert ledger.as_of().sequence == 0
-    command("collect-once", "--json", expected=1)
+    run("collect-once", expected=1)
     assert ledger.as_of().sequence == 0
 
-    data = json.loads(config.read_text())
-    config.write_text(json.dumps({**data, "cutoff": "2026-11-09T15:00:00+00:00"}))
-    command("register", "--config", str(config), "--json", expected=1)
-    config.write_text(json.dumps(data))
-    command("register", "--config", str(config), "--json")
-    sequence = ledger.as_of().sequence
-    assert sequence == 1
-    command("register", "--config", str(config), "--json")
-    assert ledger.as_of().sequence == sequence
-    stored = root / "registration.json"
-    assert stored.stat().st_mode & 0o777 == 0o600
-    stored.write_text(json.dumps({**data, "cutoff": "2026-11-09T15:00:00+00:00"}))
-    command("collect-once", "--json", expected=1)
-    assert ledger.as_of().sequence == sequence
+    supplied = altered
+    run(*register, expected=1)
+    assert files[service.REGISTRATION_NAME] == original
+    supplied = data
+    run(*register)
+    assert ledger.as_of().sequence == 1
+    run(*register)
+    assert ledger.as_of().sequence == 1
+    assert files[service.REGISTRATION_NAME] == original
+    files[service.REGISTRATION_NAME] = json.dumps(altered).encode()
+    run("collect-once", expected=1)
+    assert ledger.as_of().sequence == 1
 
 
 def _json_file(directory, name, payload):
@@ -838,6 +886,8 @@ def test_continuous_writer_acknowledges_binding_correction_and_anchor(
             marked = command(*mark_args)
             bound = command(*bind_args)
             assert marked["status"] == bound["status"] == "queued"
+            (memo,) = (root / service.CLAUDE_SESSIONS_NAME).iterdir()
+            assert memo.read_bytes() == json.dumps(cl_session.value).encode()
             shell = shlex.join(("aitm-usage", "--project", str(root), *mark_args))
             claude.write(
                 sources / "claude.jsonl",
@@ -1343,33 +1393,27 @@ def test_generic_anchor_writes_cannot_replace_inbox_admission(
 
 
 def test_anchor_route_retry_after_private_attestation_interruption(
-    project, monkeypatch
+    anchor_policy, monkeypatch
 ):
-    from aitm_usage import service
     from aitm_usage.types import Diagnostic, DiagnosticCode, LedgerBatch, Revision
 
-    root, sources, checkout, config, command = project
-    added = checkout.with_name("retry-after-attestation")
-    added.mkdir()
-    _fixtures(sources, added)
-    command("register", "--config", str(config), "--json")
-    ledger = Ledger.open(root, PROJECT)
+    case = anchor_policy
+    ledger, command, added = case.ledger, case.command, case.added
+    checkout = case.native.checkout
     anchor_id = UUID(int=934)
-    anchor = _json_file(
-        root.parent,
-        "retry-anchor.json",
-        {
-            "command_id": str(anchor_id),
-            "project_id": str(PROJECT),
-            "checkout": str(added),
-        },
-    )
-    args = ("source", "add-anchor", "--anchor", str(anchor), "--json")
+    args = case.proposal(anchor_id)
     assert command(*args)["status"] == "queued"
-    proofs = root / "source-anchors"
+    proofs = case.files[case.anchors]
+
+    def attestations():
+        return [
+            name
+            for name in proofs
+            if name.startswith(f"{anchor_id}.") and name.endswith(".attested")
+        ]
 
     def interrupted(*args, **kwargs):
-        assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 1
+        assert len(attestations()) == 1
         raise OSError("synthetic interruption after attestation")
 
     with monkeypatch.context() as patch:
@@ -1377,8 +1421,8 @@ def test_anchor_route_retry_after_private_attestation_interruption(
         command("collect-once", "--json", expected=1)
     assert service.load_registration(ledger).checkout_anchors == (checkout,)
     assert command(*args)["status"] == "queued"
-    (orphan,) = proofs.glob(f"{anchor_id}.*.attested")
-    original = orphan.read_bytes()
+    (orphan,) = attestations()
+    original = proofs[orphan]
 
     # Retry after another legitimate commit moved the expected sequence.
     ledger.apply(
@@ -1400,22 +1444,20 @@ def test_anchor_route_retry_after_private_attestation_interruption(
     assert service.load_registration(ledger).checkout_anchors == tuple(
         sorted((checkout, added))
     )
-    assert orphan.read_bytes() == original
-    assert len(list(proofs.glob(f"{anchor_id}.*.attested"))) == 2
+    assert proofs[orphan] == original
+    assert len(attestations()) == 2
     command("collect-once", "--json")
     assert any(isinstance(r.record, UsageObservation) for r in ledger.as_of().current)
 
 
-def test_zero_held_frontier_pins_identity_before_source_replacement(project):
-    root, sources, checkout, config, command = project
-    unapproved = checkout.with_name("unbound-private")
-    unapproved.mkdir()
-    source = sources / "codex.jsonl"
-    fixture = (FIXTURES / "codex" / "usage.jsonl").read_bytes()
-    source.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(unapproved)))
-    command("register", "--config", str(config), "--json")
-    command("collect-once", "--json")
-    ledger = Ledger.open(root, PROJECT)
+def test_zero_held_frontier_pins_identity_before_source_replacement(collector_policy):
+    case = collector_policy
+    ledger, native = case.ledger, case.native
+    case.configure()
+    source = native.root / "codex.jsonl"
+    unapproved = native.checkout.with_name("unbound-private")
+    native.write(source, _codex_transcript(unapproved))
+    case.collect()
     (checkpoint,) = ledger.as_of().checkpoints
     assert checkpoint.cursor.offset == checkpoint.provider.ordinal == 0
     assert checkpoint.provider.baseline is None
@@ -1424,14 +1466,15 @@ def test_zero_held_frontier_pins_identity_before_source_replacement(project):
         isinstance(r.record, UsageObservation) for r in ledger.as_of().current
     )
 
-    replacement = sources / "replacement"
-    replacement.write_bytes(fixture.replace(b"CHECKOUT", os.fsencode(checkout)))
-    replacement.replace(source)
-    command("collect-once", "--json")
+    # The same locator now observes a second inode with eligible checkout bytes.
+    old_identity = native.identities.pop(source)
+    native.write(source, _codex_transcript(native.checkout))
+    status = case.collect()
+    assert native.identities[source] != old_identity
     view = ledger.as_of()
     assert view.checkpoints == (checkpoint,)
     assert not any(isinstance(r.record, UsageObservation) for r in view.current)
-    assert command("status", "--json")["coverage"]["codex"]["diagnostics"] > 0
+    assert status["coverage"]["codex"]["diagnostics"] > 0
 
 
 @pytest.mark.parametrize("loss", ["after-interrupted-ack", "before-first-ack"])

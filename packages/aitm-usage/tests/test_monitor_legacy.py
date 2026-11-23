@@ -267,28 +267,43 @@ def test_legacy_register_uses_read_only_opener_for_existing_store(
 
 
 def test_legacy_anchor_rechecks_under_publication_lock_before_staging(
-    legacy, adopt, monkeypatch
+    legacy_policy, monkeypatch
 ):
-    root, _, anchor, run = legacy
-    (root / "inbox").mkdir(mode=0o700)
+    anchor = Path("/fixture/anchor.json")
+    command_id = UUID(int=118)
+    legacy_policy.inputs[anchor] = json.dumps(
+        {
+            "command_id": str(command_id),
+            "project_id": str(legacy_policy.ledger.identity.project_id),
+            "checkout": "/fixture/new-checkout",
+        }
+    ).encode()
     original_publication = scopes._publication
+    locked = Mock()
 
     @contextmanager
     def publication_after_cutover(inbox):
         with original_publication(inbox):
-            adopt()
+            locked(inbox)
+            legacy_policy.adopt_current()
             yield
 
+    stage = Mock(side_effect=AssertionError("Adopted anchor reached staging"))
+    monkeypatch.setattr(service, "_stage_source_anchor", stage)
     monkeypatch.setattr(scopes, "_publication", publication_after_cutover)
-    status, output = run("source", "add-anchor", "--anchor", str(anchor))
-
-    assert not (root / "source-anchors").exists()
-    assert not (root / "inbox" / f"{ANCHOR_COMMAND}.json").exists()
+    status, output = legacy_policy.run(
+        ("source", "add-anchor", "--anchor", str(anchor)), as_json=False
+    )
+    locked.assert_called_once()
+    stage.assert_not_called()
+    assert not legacy_policy.inbox
     assert status == 1
     assert output.err.strip() == "aitm-usage: project-adopted-use-monitor"
 
 
-def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(legacy):
+def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(
+    legacy, request, monkeypatch
+):
     root, _, anchor, run = legacy
     with Ledger.open(root, PROJECT).writer():
         status, output = run("source", "add-anchor", "--anchor", str(anchor), "--json")
@@ -301,6 +316,33 @@ def test_pre_adoption_legacy_anchor_enqueues_while_collector_holds_writer(legacy
     assert (root / "source-anchors" / f"{ANCHOR_COMMAND}.json").is_file()
     assert (root / "inbox" / f"{ANCHOR_COMMAND}.json").is_file()
     assert not monitor_registry.default_monitor_root().exists()
+
+    adopt = request.getfixturevalue("adopt")
+    new_id = UUID(int=118)
+    anchor_data = json.loads(anchor.read_bytes())
+    anchor.write_text(json.dumps(anchor_data | {"command_id": str(new_id)}))
+    before = {
+        path: path.read_bytes()
+        for directory in (root / "source-anchors", root / "inbox")
+        for path in directory.iterdir()
+    }
+    original_publication = scopes._publication
+
+    @contextmanager
+    def publication_after_cutover(inbox):
+        with original_publication(inbox):
+            adopt()
+            yield
+
+    monkeypatch.setattr(scopes, "_publication", publication_after_cutover)
+    status, output = run("source", "add-anchor", "--anchor", str(anchor))
+    assert status == 1
+    assert output.err.strip() == "aitm-usage: project-adopted-use-monitor"
+    assert {
+        path: path.read_bytes()
+        for directory in (root / "source-anchors", root / "inbox")
+        for path in directory.iterdir()
+    } == before
 
 
 def test_invalid_legacy_anchor_input_leaves_inbox_untouched(legacy_policy, monkeypatch):

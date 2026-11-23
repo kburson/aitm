@@ -4,7 +4,7 @@ import stat
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from threading import Barrier, Event
@@ -841,10 +841,27 @@ def test_publication_and_consumption_reject_unsafe_or_untyped_inputs(
     assert len(project.as_of().revisions) == 2
 
 
-def test_local_commit_rolls_back_effect_and_replays_before_ack(project, monkeypatch):
+def test_local_commit_rolls_back_effect_and_replays_before_ack(
+    scope_receipt_transport, monkeypatch
+):
+    project, transport = scope_receipt_transport
+    _assert_scope_commit_rolls_back_and_replays(
+        project,
+        monkeypatch,
+        lambda name: any(
+            name in files
+            for fd, files in transport.states.items()
+            if fd != transport.inbox.fd
+        ),
+    )
+    assert [sql for sql, _ in transport.rows.writes].count(
+        "INSERT INTO revisions VALUES (?, ?, ?, ?)"
+    ) == 3
 
+
+def _assert_scope_commit_rolls_back_and_replays(project, monkeypatch, acknowledged):
     f = Fixture(project)
-    marker = f.marker(1, 1, CHILD, "retry")
+    marker = f.marker(99, 1, CHILD, "retry", provider=Provider.CLAUDE, session=CLAUDE)
     scopes.enqueue_marker(project.root, marker)
     proof = f.boundary(marker, 8)
     append = store._append_revisions
@@ -871,15 +888,14 @@ def test_local_commit_rolls_back_effect_and_replays_before_ack(project, monkeypa
         committed = writer.as_of()
         assert committed.sequence == 1
         assert len(committed.revisions) == 2
-        assert not (
-            project.root / "inbox" / "acks" / f"{marker.marker_id}.json"
-        ).exists()
+        assert not acknowledged(f"{marker.marker_id}.json")
 
     with Ledger.open(project.root, PROJECT).writer() as writer:
         report = scopes.drain_inbox(writer, ())
         assert report.receipts[0].disposition is MarkerDisposition.ACCEPTED
         assert writer.as_of() == committed
         assert scopes.drain_inbox(writer, ()).receipts == ()
+    assert acknowledged(f"{marker.marker_id}.json")
 
 
 def test_correction_can_recover_quarantined_scope_with_recorded_proof(scope_policy):
@@ -944,7 +960,7 @@ def test_bound_owner_cannot_claim_development_in_an_unproven_stream(scope_policy
         assert resolve_scope(usage, writer.as_of()).reason is MarkerDisposition.CONFLICT
 
 
-def test_exclusive_publication_keeps_one_concurrent_command(project):
+def test_exclusive_publication_keeps_one_concurrent_command(project, monkeypatch):
 
     f = Fixture(project)
     marker = f.marker(1, 1, CHILD, "shared-command-id")
@@ -969,11 +985,59 @@ def test_exclusive_publication_keeps_one_concurrent_command(project):
         assert outcomes.receipts[0].disposition is MarkerDisposition.ACCEPTED
         assert not path.exists()
 
+    _assert_native_final_commit_cannot_race_publication(project, monkeypatch)
 
-def test_final_commit_cannot_race_conflicting_publication(project, monkeypatch):
 
+def test_final_commit_cannot_race_conflicting_publication(
+    scope_receipt_transport, monkeypatch
+):
+    project, transport = scope_receipt_transport
     f = Fixture(project)
-    marker = f.marker(1, 1, CHILD, "shared-command-id")
+    marker = f.marker(2, 2, CHILD, "shared-command-id-retry")
+    command = InboxCommand(marker.marker_id, PROJECT, marker)
+    conflicting = replace(command, payload=replace(marker, item=OTHER_CHILD))
+    scopes.enqueue_command(project.root, command)
+    original_read = Ledger.command_receipt
+    locked = False
+    observed_reads = []
+    committed = []
+
+    @contextmanager
+    def publication(inbox):
+        nonlocal locked
+        assert inbox is transport.inbox and not locked
+        locked = True
+        try:
+            yield
+        finally:
+            locked = False
+
+    def interleave_commit(ledger, proposed):
+        if proposed != conflicting:
+            return original_read(ledger, proposed)
+        observed_reads.append(locked)
+        previous = original_read(ledger, proposed)
+        if not locked:
+            assert previous is None
+            (receipt,) = scopes.drain_inbox(project, (f.boundary(marker, 2),)).receipts
+            committed.append(receipt)
+        return previous
+
+    monkeypatch.setattr(scopes, "_publication", publication)
+    monkeypatch.setattr(Ledger, "command_receipt", interleave_commit)
+    with pytest.raises(ConflictError):
+        scopes.enqueue_command(project.root, conflicting)
+    assert observed_reads == [False, True]
+    (receipt,) = committed
+    assert receipt.disposition is MarkerDisposition.ACCEPTED
+    assert transport.states[transport.inbox.fd] == {}
+    assert project.command_receipt(command) == receipt
+    assert scopes.drain_inbox(project, ()).receipts == ()
+
+
+def _assert_native_final_commit_cannot_race_publication(project, monkeypatch):
+    f = Fixture(project)
+    marker = f.marker(2, 2, CHILD, "shared-command-id-retry")
     command = InboxCommand(marker.marker_id, PROJECT, marker)
     conflicting = replace(command, payload=replace(marker, item=OTHER_CHILD))
     scopes.enqueue_command(project.root, command)
@@ -993,7 +1057,7 @@ def test_final_commit_cannot_race_conflicting_publication(project, monkeypatch):
         retry = pool.submit(scopes.enqueue_command, project.root, conflicting)
         try:
             assert publisher_read.wait(timeout=5)
-            outcome = scopes.drain_inbox(writer, (f.boundary(marker, 1),)).receipts[0]
+            outcome = scopes.drain_inbox(writer, (f.boundary(marker, 2),)).receipts[0]
             assert outcome.disposition is MarkerDisposition.ACCEPTED
         finally:
             retirement_done.set()
@@ -1076,7 +1140,12 @@ def test_delayed_owner_boundary_quarantines_already_seen_contradictory_marker(
         )
 
 
-def test_publication_mutex_excludes_other_process_on_pinned_inbox(project):
+def test_publication_mutex_excludes_other_process_on_pinned_inbox(project, monkeypatch):
+    _assert_scope_commit_rolls_back_and_replays(
+        project,
+        monkeypatch,
+        lambda name: (project.root / "inbox" / "acks" / name).is_file(),
+    )
 
     f = Fixture(project)
     enqueue_marker(project.root, f.marker(1, 1, CHILD, "publication-mutex"))

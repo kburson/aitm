@@ -893,48 +893,8 @@ def test_invalid_local_adoption_refuses_without_any_legacy_or_monitor_write(
 
 @pytest.mark.parametrize("monitor_corrupt", [False, True])
 def test_pre_adoption_claude_records_memo_and_replays_receipt_despite_monitor_state(
-    request, monkeypatch, capsys, monitor_corrupt
+    monkeypatch, capsys, monitor_corrupt
 ):
-    if monitor_corrupt:
-        _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys)
-        return
-
-    legacy = request.getfixturevalue("legacy")
-    ledger, monitor_root, run = legacy
-
-    def read_registry(*args, **kwargs):
-        pytest.fail("pre-adoption command reached the unrelated monitor registry")
-
-    monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
-    args, marker, session = invocation(ledger, "mark", provider=Provider.CLAUDE)
-    boundary = SourceBoundary(
-        Provider.CLAUDE,
-        ledger.pseudonymize("fixture", "stream"),
-        session,
-        1,
-        BoundaryKind.REQUEST,
-        marker.boundary_ref,
-        receipt_ref=marker.receipt_ref,
-    )
-
-    with ledger.writer() as writer:
-        code, output = run(args)
-        assert code == 0, output
-        assert output.out == f'{{"command_id": "{COMMAND}", "status": "queued"}}\n'
-        sessions = ledger.root / CLAUDE_SESSIONS_NAME
-        (memo,) = list(sessions.iterdir())
-        assert memo.read_bytes() == json.dumps(session.value).encode()
-        assert str(CLAUDE).encode() not in memo.read_bytes()
-
-        drain = scopes.drain_inbox(writer, (scopes.BoundaryEvidence(boundary),))
-        assert drain.receipts[0].disposition is MarkerDisposition.ACCEPTED
-        code, output = run(args)
-        assert code == 0, output
-        assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
-    assert not monitor_root.exists()
-
-
-def _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys):
     memory = _memory_legacy(
         monkeypatch, capsys, monitor_registered=False, claude_memo=True
     )
@@ -950,7 +910,14 @@ def _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys):
     files = {project: {service.REGISTRATION_NAME: configuration}, sessions: {}}
     monitor = memory.monitor
     broken = {"registry-v1.json": b"private invalid registry"}
-    monitor.files[monitor.root] = broken.copy()
+    if monitor_corrupt:
+        monitor.files[monitor.root] = broken.copy()
+    else:
+
+        def read_registry(*args, **kwargs):
+            pytest.fail("pre-adoption command reached the unrelated monitor registry")
+
+        monkeypatch.setattr(monitor_registry.Registry, "view", read_registry)
 
     def pin_project(path):
         assert path == ledger.root
@@ -991,7 +958,10 @@ def _assert_pre_adoption_with_corrupt_monitor(monkeypatch, capsys):
     assert code == 0, output
     assert output.out == f'{{"command_id": "{COMMAND}", "status": "accepted"}}\n'
     assert not memory.inbox
-    assert monitor.files[monitor.root] == broken
+    if monitor_corrupt:
+        assert monitor.files[monitor.root] == broken
+    else:
+        assert monitor.root not in monitor.files
 
 
 @pytest.mark.parametrize("action", ["bind", "correct", "alias", "parent"])

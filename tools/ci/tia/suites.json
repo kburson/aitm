@@ -335,6 +335,81 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_activation_receipt.py::test_fixed_export_uses_actual_ledger_and_replay_bytes",
+      "suite": "unit",
+      "isolation_group": "activation_receipt-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_control.py::test_exact_retry_resyncs_a_publication_after_directory_sync_fails",
+      "suite": "unit",
+      "isolation_group": "monitor_control-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_corrupt_pair_payload_refuses_routing_without_moving_frontiers",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_pair_preserves_frontiers_when_one_native_completion_is_invalid",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal.py::test_stale_expected_prior_and_replaced_incarnation_are_refused",
+      "suite": "unit",
+      "isolation_group": "monitor_journal-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_legacy.py::test_legacy_anchor_rechecks_under_publication_lock_before_staging",
+      "suite": "unit",
+      "isolation_group": "monitor_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_failed_relationship_commit_leaves_later_commands_uncommitted",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_rollup.py::test_graduation_and_inclusive_rollup",
+      "suite": "unit",
+      "isolation_group": "rollup-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_pre_adoption_claude_records_memo_and_replays_receipt_despite_monitor_state",
+      "suite": "unit",
+      "isolation_group": "scope_legacy-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_final_commit_cannot_race_conflicting_publication",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scopes.py::test_local_commit_rolls_back_effect_and_replays_before_ack",
+      "suite": "unit",
+      "isolation_group": "scopes-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_anchor_route_retry_after_private_attestation_interruption",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_registration_retry_requires_exact_private_and_typed_authority",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_zero_held_frontier_pins_identity_before_source_replacement",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_accounting.py::test_standard_rates_and_account_only_evidence",
       "suite": "unit",
       "isolation_group": "accounting-policy"

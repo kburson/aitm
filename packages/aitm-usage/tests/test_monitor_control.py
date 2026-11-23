@@ -613,24 +613,33 @@ def test_restart_retires_exact_queue_entry_after_durable_commit(
 
 
 def test_exact_retry_resyncs_a_publication_after_directory_sync_fails(
-    monitor, monkeypatch
+    inbox_policy, monkeypatch
 ):
+    state = inbox_policy
+    monitor = state.inbox
     command = ControlCommand(REQUEST, CaptureChange(PROJECT, SOURCE, True))
-    entry = monitor.root / "inbox" / f"{REQUEST}.json"
-    real_sync = os.fsync
+    name = f"{REQUEST}.json"
     queue_syncs = 0
 
     def interrupted_once(fd):
         nonlocal queue_syncs
-        if entry.exists() and os.path.samestat(os.fstat(fd), entry.parent.stat()):
-            queue_syncs += 1
-            if queue_syncs == 1:
-                raise OSError("simulated directory sync failure")
-        real_sync(fd)
+        assert state.descriptors[fd] == monitor.root / monitor_control.INBOX_NAME
+        assert name in state.inbox_files
+        queue_syncs += 1
+        if queue_syncs == 1:
+            raise OSError("simulated directory sync failure")
 
-    monkeypatch.setattr(os, "fsync", interrupted_once)
+    def publish_then_sync(directory, name, data, **options):
+        published = state.publish(directory, name, data, **options)
+        if published:
+            monitor_control.os.fsync(directory.fd)
+        return published
+
+    monkeypatch.setattr(monitor_control, "_publish", publish_then_sync)
+    monkeypatch.setattr(monitor_control.os, "fsync", interrupted_once)
     with pytest.raises(ledger.LedgerError):
         monitor.enqueue(command)
-    assert entry.is_file()
+    queued = state.inbox_files[name]
     assert monitor.enqueue(command).status.value == "queued"
+    assert state.inbox_files == {name: queued}
     assert queue_syncs == 2

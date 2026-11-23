@@ -146,6 +146,7 @@ def _bundle_bytes(path):
 def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_path):
     from aitm_usage.backup import BackupError, backup, restore
     from aitm_usage.ledger import DATABASE_NAME, STORE_NAME
+    from aitm_usage.qualification import _verify_exports
 
     registration, ledger, command = project
     _add_anchor(registration, ledger, tmp_path, 941)
@@ -219,6 +220,13 @@ def test_fixed_snapshot_restores_exact_authority_key_and_export(project, tmp_pat
     }
     assert export_as_of(ledger.as_of(), load_rate_card(), after) == expected_export
     assert _bundle_bytes(before) == _bundle_bytes(after)
+    _verify_exports(
+        ledger.as_of(),
+        load_rate_card(),
+        expected_export.sha256,
+        expected_export.row_count,
+        (str(before), str(after)),
+    )
     assert (
         command("backup", "--output", tmp_path / "cli-backup")["sequence"]
         == saved.sequence

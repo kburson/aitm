@@ -393,6 +393,26 @@ def test_scanner_revalidates_open_snapshot(request, monkeypatch, mutation):
         assert batch.cursor is None
         assert _codes(batch) == {DiagnosticCode.SOURCE_REPLACED}
         assert "replacement-secret" not in repr(batch)
+    if mutation == "rename":
+        # Unlinking the replacement while its descriptor is open reports a
+        # zero link count. The original rename left the open inode linked.
+        (replacement,) = scanner.discover(registration)
+        unlinked = False
+
+        def unlink_during_read(raw):
+            nonlocal unlinked
+            row = decode(raw)
+            if row and row["type"] == "event_msg" and not unlinked:
+                path.unlink()
+                unlinked = True
+            return row
+
+        monkeypatch.setattr(scanner, "_decode_row", unlink_during_read)
+        batch = scanner.scan(replacement, None, CUTOFF)
+        assert unlinked and not path.exists()
+        assert batch.frames == batch.commit_frames == ()
+        assert batch.cursor is None
+        assert _codes(batch) == {DiagnosticCode.SOURCE_REPLACED}
 
 
 @pytest.mark.parametrize(

@@ -6,7 +6,6 @@ from contextlib import ExitStack, contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from shutil import copyfile
 from types import SimpleNamespace
 from unittest.mock import Mock
 from uuid import UUID
@@ -1378,9 +1377,12 @@ def test_partial_batch_keeps_prior_across_reopen_until_whole_batch_settles(
         assert len(reopened.as_of().claims) == 3
 
 
-def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
+def test_stale_expected_prior_and_replaced_incarnation_are_refused(
+    journal_transcript_policy,
+):
     from aitm_usage.monitor_journal import RoutingJournal
 
+    native = journal_transcript_policy
     with native.registry.writer() as writer:
         journal = RoutingJournal(writer, ScopeState(writer))
         old = journal.prepare(LIVE, native.locator())
@@ -1393,10 +1395,9 @@ def test_stale_expected_prior_and_replaced_incarnation_are_refused(native):
 
         original = native.paths[LIVE]
         prior = native.locator()
-        replacement = original.with_suffix(".new")
-        copyfile(original, replacement)
-        replacement.replace(original)
+        old_identity = native.files.identities.pop(original)
         replaced = native.locator()
+        assert native.files.identities[original] != old_identity
         assert prior.stream_ref == replaced.stream_ref
         assert journal.cursor_for(LIVE, replaced) is None
         with pytest.raises(LedgerError):
@@ -3025,17 +3026,46 @@ def journal_pair(native, tmp_path, monkeypatch, capsys):
 
 
 class _PairedClaimJournalRows(_ClaimJournalRows):
-    """Expose the committed ownership inputs to the actual swap validation."""
+    """Expose committed ownership, settlement, and progress bytes to the journal."""
+
+    def __init__(self, evidence):
+        super().__init__(evidence)
+        self.version = 4
+        self.pairs = {}
+        self.progress_by_commit = {}
+
+    @contextmanager
+    def transaction(self, *, write=False):
+        before = (self.version, self.pairs.copy(), self.progress_by_commit.copy())
+        try:
+            with super().transaction(write=write):
+                yield self
+        except Exception:
+            self.version, self.pairs, self.progress_by_commit = before
+            raise
+        if not write:
+            assert (self.version, self.pairs, self.progress_by_commit) == before
+
+    def _current_version(self, connection):
+        assert connection is self
+        return self.version
+
+    def _enable_paired(self, connection):
+        assert connection is self and self.version == 4
+        self.version = 5
 
     def execute(self, sql, parameters=()):
-        if sql == (
+        if sql in {
             "SELECT 1 FROM route_dispositions WHERE command IN (?,?,?,?)"
-            " OR hold IN (?,?,?,?) LIMIT 1"
-        ):
+            " OR hold IN (?,?,?,?) LIMIT 1",
+            "SELECT 1 FROM route_dispositions WHERE command IN (?,?)"
+            " OR hold IN (?,?) LIMIT 1",
+        }:
+            count = len(parameters) // 2
             return _Rows(
                 (1,)
                 for command, hold, *_ in self.rows.values()
-                if command in parameters[:4] or hold in parameters[4:]
+                if command in parameters[:count] or hold in parameters[count:]
             )
         if sql == "SELECT sequence FROM claims WHERE key = ?":
             (key,) = parameters
@@ -3052,6 +3082,37 @@ class _PairedClaimJournalRows(_ClaimJournalRows):
             )
         if sql == "SELECT 1 FROM content_disputes WHERE key = ?":
             return _Rows()
+        if sql == "SELECT payload,digest FROM claims WHERE key = ?":
+            (key,) = parameters
+            row = self.claims.get(key)
+            return _Rows([(row[2], row[1])] if row is not None else [])
+        if sql.startswith("INSERT INTO progress("):
+            *key, data = parameters
+            result = super().execute(sql, parameters)
+            self.progress_by_commit[tuple(key)] = data
+            return result
+        if sql == (
+            "SELECT cursor FROM progress"
+            " WHERE (source,surface,stream,locator,incarnation,sequence) = (?,?,?,?,?,?)"
+        ):
+            cursor = self.progress_by_commit.get(parameters)
+            return _Rows([(cursor,)] if cursor is not None else [])
+        if sql == "INSERT INTO paired_settlements VALUES (?,?)":
+            sequence, data = parameters
+            assert sequence in self.commits and sequence not in self.pairs
+            self.pairs[sequence] = data
+            return _Rows()
+        if sql == (
+            "SELECT s.sequence,s.payload,c.sequence FROM paired_settlements s"
+            " LEFT JOIN commits c ON c.sequence=s.sequence"
+            " WHERE s.sequence <= ? ORDER BY s.sequence"
+        ):
+            (limit,) = parameters
+            return _Rows(
+                (seq, data, seq if seq in self.commits else None)
+                for seq, data in sorted(self.pairs.items())
+                if seq <= limit
+            )
         return super().execute(sql, parameters)
 
 
@@ -3503,12 +3564,12 @@ def test_pair_rolls_back_staged_upgrade_claims_and_both_cursors(
 
 
 def test_committed_pair_survives_expired_grant_hold_and_late_same_turn_usage(
-    journal_pair, monkeypatch
+    journal_pair_policy, monkeypatch
 ):
     from aitm_usage.monitor_control import _scope_now
     from aitm_usage.scope_admission import WITNESS_LIFETIME
 
-    case = journal_pair
+    case = journal_pair_policy
     journal = case.journal
     owner, rival = case.owner.prove(), case.rival.prove()
     change = journal.settle_disposition(case.key, owner, rival)
@@ -3628,17 +3689,15 @@ def test_committed_pair_conflict_stalls_affected_source_without_regressing_histo
     assert journal.prepare(case.rival.source_id, case.rival.locator()).candidates
 
 
-def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(journal_pair):
-    case = journal_pair
+def test_corrupt_pair_payload_refuses_routing_without_moving_frontiers(
+    journal_pair_policy,
+):
+    case = journal_pair_policy
     journal, carrier = case.journal, case.owner
     owner, rival = carrier.prove(), case.rival.prove()
     before = journal.as_of()
     change = journal.settle_disposition(case.key, owner, rival)
-    with journal._store.transaction(write=True) as connection:
-        connection.execute(
-            "UPDATE paired_settlements SET payload = ? WHERE sequence = ?",
-            (b"{}", change.sequence),
-        )
+    journal._store.pairs[change.sequence] = b"{}"
     assert journal.as_of(before.sequence) == before
     with pytest.raises(LedgerError, match="Invalid stored paired settlement"):
         journal.as_of()
@@ -3667,8 +3726,7 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
         _assert_pair_refuses_changed_prefix(monkeypatch, side, disproof)
         return
 
-    memory = disproof in {"different-checkout", "missing-baseline"}
-    case = request.getfixturevalue("journal_pair_policy" if memory else "journal_pair")
+    case = request.getfixturevalue("journal_pair_policy")
     carriers = (case.owner, case.rival)
     bad, other = carriers[side], carriers[1 - side]
     prior, rows = case.journal.as_of(), case.recorded_rows()
@@ -3697,16 +3755,13 @@ def test_pair_preserves_frontiers_when_one_native_completion_is_invalid(
             bad.state.completion_witness(bad.command, bad.auth, batch, target) is None
             for target in targets
         )
-    if memory:
-        monkeypatch.setattr(
-            case.journal,
-            "_build_settlement_change",
-            Mock(
-                side_effect=AssertionError(
-                    "invalid completion reached settlement writes"
-                )
-            ),
-        )
+    monkeypatch.setattr(
+        case.journal,
+        "_build_settlement_change",
+        Mock(
+            side_effect=AssertionError("invalid completion reached settlement writes")
+        ),
+    )
     with pytest.raises(LedgerError):
         case.journal.settle_disposition(case.key, *proofs)
     assert case.journal.as_of() == prior
