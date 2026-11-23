@@ -335,6 +335,26 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_unverified_mode_cannot_advance_cursor",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_adapters.py::test_linux_codex_withholds_unpaired_marker",
+      "suite": "unit",
+      "isolation_group": "native-admission-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_coverage_readback_rejects_corrupted_event_binding",
+      "suite": "unit",
+      "isolation_group": "journal-coverage-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_coverage.py::test_coverage_rejects_only_reserved_variants_with_matching_key_and_seal",
+      "suite": "unit",
+      "isolation_group": "journal-coverage-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_ledger.py::test_authenticated_refusal_for_nested_pseudonyms",
       "suite": "unit",
       "isolation_group": "ledger-admission-policy"

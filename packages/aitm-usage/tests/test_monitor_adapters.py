@@ -12,6 +12,7 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from adapter_frame_cases import AdapterFrames
 from test_claude import MODEL, _native_tool_turn, cost, model_counts, request, user
 from test_claude import row as claude_row
 from test_claude import usage as claude_usage
@@ -37,14 +38,17 @@ from test_scan import _native_startup_rows
 
 from aitm_usage.ledger import Ledger
 from aitm_usage.monitor_registry import _ServiceEvidence
+from aitm_usage.monitor_types import NativeSurface
 from aitm_usage.sources import adapter as provider_adapter
 from aitm_usage.sources.scan import CandidateSource, _capture_position, _origin, scan
 from aitm_usage.types import (
     Availability,
     BoundaryKind,
+    ClientVersion,
     DiagnosticCode,
     LedgerView,
     ProcessingTier,
+    Provider,
     Revision,
     _decode,
     _encode,
@@ -661,6 +665,43 @@ def test_linux_codex_rejects_unverified_origin(monkeypatch, system, arch, metada
     _assert_unqualified_origin(monkeypatch, rows, system, arch)
 
 
+def _read_linux_policy(monkeypatch, rows):
+    checkout = Path("/fixture/checkout")
+    root_path = Path("/fixture/logs")
+    evidence = AdapterFrames(
+        Provider.CODEX,
+        ClientVersion.CODEX_0_167_0_ALPHA_3_2,
+        UUID(rows[0]["payload"]["id"]),
+        CUTOFF,
+    )
+    frames = evidence.batch(rows)
+    root = provider_adapter.SourceRoot(root_path, CUTOFF, (checkout,), evidence.ledger)
+    source = CandidateSource(
+        Provider.CODEX,
+        frames.frames[0].session_ref,
+        frames.cursor.source_ref,
+        frames.cursor.locator_ref,
+        frames.cursor.incarnation_ref,
+        root_path / "source.jsonl",
+        (),
+        root,
+        evidence.ledger,
+        _native_surface=NativeSurface.CODEX_CLI_LINUX,
+        _monitor=True,
+    )
+    read = Mock(return_value=frames)
+    monkeypatch.setattr(provider_adapter, "scan", read)
+    monkeypatch.setattr(provider_adapter.platform, "system", lambda: "Linux")
+    monkeypatch.setattr(provider_adapter.platform, "machine", lambda: "aarch64")
+
+    result = provider_adapter.ProviderAdapter().read_delta(
+        provider_adapter.SourceLocator(source), None
+    )
+
+    read.assert_called_once_with(source, None, CUTOFF, _capture_limit=None)
+    return result
+
+
 @pytest.mark.parametrize(
     "field,value",
     [
@@ -670,16 +711,11 @@ def test_linux_codex_rejects_unverified_origin(monkeypatch, system, arch, metada
         ("turn_id", "foreign-turn"),
     ],
 )
-def test_linux_codex_unverified_mode_cannot_advance_cursor(
-    monkeypatch, source, field, value
-):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_unverified_mode_cannot_advance_cursor(monkeypatch, field, value):
+    checkout = Path("/fixture/checkout")
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)[:22]
     rows[7]["payload"][field] = value
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert not result.observations
     assert not any(boundary.boundary.receipt_ref for boundary in result.boundaries)
     assert result.cursor is None
@@ -701,9 +737,8 @@ def test_linux_codex_unverified_mode_cannot_advance_cursor(
         "parallel_tool",
     ],
 )
-def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
-    _, adapter, root = _adapter(monkeypatch, source, system="Linux", arch="aarch64")
-    _, directory, checkout = source
+def test_linux_codex_withholds_unpaired_marker(monkeypatch, variation):
+    checkout = Path("/fixture/checkout")
     rows = _rows(LINUX_CODEX_FIXTURE, checkout)
     # Leave a later clean turn so a rejected marker cannot leak to its response.
     id_field = {
@@ -730,9 +765,7 @@ def test_linux_codex_withholds_unpaired_marker(monkeypatch, source, variation):
         second = json.loads(json.dumps(rows[12]))
         second["payload"]["call_id"] = "other-tool"
         rows.insert(13, second)
-    _write(directory / "cli.jsonl", rows)
-    (locator,) = adapter.discover(root)
-    result = adapter.read_delta(locator, None)
+    result = _read_linux_policy(monkeypatch, rows)
     assert not any(item.boundary.receipt_ref for item in result.boundaries)
     assert not any(item.usage.boundary.receipt_ref for item in result.observations)
     assert not any(

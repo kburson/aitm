@@ -1,4 +1,6 @@
+import json
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
 from shutil import copytree
 
@@ -8,8 +10,9 @@ from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
 
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
-from aitm_usage.monitor_registry import Registry, _directory
+from aitm_usage.monitor_registry import Registry, _directory, _ServiceEvidence
 from aitm_usage.monitor_scope import ScopeState
+from aitm_usage.types import _encode
 
 
 @pytest.fixture
@@ -240,44 +243,42 @@ def test_changed_authority_rolls_back_any_migration_and_event(
         {"root": "broader-root"},
     ),
 )
-def test_coverage_rejects_only_reserved_variants_with_matching_key_and_seal(
-    admitted_sources, override
-):
-    import json
+def test_coverage_rejects_only_reserved_variants_with_matching_key_and_seal(override):
+    from aitm_usage import monitor_journal
 
-    from aitm_usage.monitor_journal import _coverage_seal
+    evidence, event = _sample_coverage()
+    payload = json.loads(_encode(event, monitor_journal.JournalCoverage)) | override
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    identity_fields = {
+        field: value for field, value in payload.items() if field != "observed_at"
+    }
+    identity = evidence.pseudonymize(
+        "journal-coverage-key-v1",
+        json.dumps(identity_fields, separators=(",", ":"), sort_keys=True),
+    )
+    seal = monitor_journal._coverage_seal(1, raw, evidence)
+    row = (identity.value, 1, 1, raw, seal.value)
+    if override:
+        with pytest.raises(LedgerError, match="Invalid private journal coverage"):
+            monitor_journal._stored_coverage(row, evidence)
+    else:
+        assert monitor_journal._stored_coverage(
+            row, evidence
+        ) == monitor_journal.JournalChange(1, coverage=event)
 
-    native, claude = admitted_sources
-    with native.registry.writer() as writer:
-        journal = RoutingJournal(writer, ScopeState(writer))
-        with pytest.raises(LedgerError, match="qualification"):
-            journal.prepare(claude.source_id, claude.locator())
-        (original,) = journal.coverage_changes(0)
-        with journal._store.transaction(write=True) as connection:
-            sequence, raw = connection.execute(
-                "SELECT sequence,payload FROM source_coverage"
-            ).fetchone()
-            altered = json.dumps(
-                json.loads(raw) | override, separators=(",", ":"), sort_keys=True
-            ).encode()
-            evidence = journal._store.evidence
-            identity_fields = json.loads(altered)
-            del identity_fields["observed_at"]
-            identity = evidence.pseudonymize(
-                "journal-coverage-key-v1",
-                json.dumps(identity_fields, separators=(",", ":"), sort_keys=True),
-            )
-            seal = _coverage_seal(sequence, altered, evidence)
-            connection.execute(
-                "UPDATE source_coverage SET identity=?,payload=?,seal=?",
-                (identity.value, altered, seal.value),
-            )
-        if override:
-            with pytest.raises(LedgerError, match="Invalid private journal coverage"):
-                journal.coverage_changes(0)
-        else:
-            assert journal.coverage_changes(0) == (original,)
-        assert journal.as_of().sequence == sequence
+
+def _sample_coverage():
+    from aitm_usage import monitor_journal
+
+    evidence = _ServiceEvidence(b"journal-coverage-policy-fixture")
+    value = monitor_journal.JournalCoverage(
+        monitor_journal._CoverageReason.UNQUALIFIED_SOURCE,
+        evidence.pseudonymize("fixture", "installation"),
+        evidence.pseudonymize("fixture", "generation"),
+        monitor_journal._CoverageExtent.UNKNOWN,
+        datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    return evidence, value
 
 
 def test_copied_scope_and_missing_consent_cannot_publish_coverage(
@@ -362,7 +363,25 @@ def test_lease_loss_is_not_reported_as_a_policy_refusal(admitted_sources, monkey
 
 
 @pytest.mark.parametrize("alter", ("identity", "seal", "commit"))
-def test_coverage_readback_rejects_corrupted_event_binding(admitted_sources, alter):
+def test_coverage_readback_rejects_corrupted_event_binding(alter):
+    from aitm_usage import monitor_journal
+
+    evidence, event = _sample_coverage()
+    raw = _encode(event, monitor_journal.JournalCoverage).encode()
+    key = monitor_journal._coverage_key(event, evidence).value
+    seal = monitor_journal._coverage_seal(1, raw, evidence).value
+    valid = (key, 1, 1, raw, seal)
+    assert monitor_journal._stored_coverage(valid, evidence).coverage == event
+    damaged = {
+        "identity": ("invalid", 1, 1, raw, seal),
+        "seal": (key, 1, 1, raw, "invalid"),
+        "commit": (key, 1, None, raw, seal),
+    }[alter]
+    with pytest.raises(LedgerError, match="Invalid private journal coverage"):
+        monitor_journal._stored_coverage(damaged, evidence)
+
+
+def test_coverage_readback_rejects_deleted_commit_on_disk(admitted_sources):
     from test_monitor_journal_store import _sqlite
 
     from aitm_usage._monitor_journal_store import _DATABASE, _STORE
@@ -375,15 +394,9 @@ def test_coverage_readback_rejects_corrupted_event_binding(admitted_sources, alt
         (event,) = journal.coverage_changes(0)
         path = writer.root / _STORE / _DATABASE
         with _sqlite(path) as connection:
-            if alter == "commit":
-                connection.execute(
-                    "DELETE FROM commits WHERE sequence=?", (event.sequence,)
-                )
-            else:
-                column = {"identity": "identity", "seal": "seal"}[alter]
-                connection.execute(
-                    f"UPDATE source_coverage SET {column}=?", ("invalid",)
-                )
+            connection.execute(
+                "DELETE FROM commits WHERE sequence=?", (event.sequence,)
+            )
         with pytest.raises(LedgerError, match="Invalid private journal coverage"):
             journal.coverage_changes(0)
 
