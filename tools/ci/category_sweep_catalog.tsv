@@ -958,40 +958,42 @@ packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_i
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_attachment_never_initializes_or_adopts_source_key[unrecorded]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_body_failure_rolls_back_private_transaction	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_content_dispute_table_enforces_private_strict_foreign_keys	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[1]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[2]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[3]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_damaged_current_store_is_left_byte_for_byte_unchanged	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_damaged_legacy_store_is_left_byte_for_byte_unchanged	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[2]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes[3]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v1_upgrade_preserves_rows_and_matches_fresh_v2	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v1_validation_refuses_v2_without_modifying_either_store	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v2_upgrade_preserves_rows_and_matches_fresh_v3	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_v3_upgrade_preserves_rows_and_matches_fresh_v4	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[ALTER TABLE claims ADD COLUMN unexpected TEXT]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[DELETE FROM identity]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[PRAGMA application_id = 0]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[PRAGMA user_version = 0]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[UPDATE identity SET key_id = 'foreign']	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[ALTER TABLE claims ADD COLUMN unexpected TEXT]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[DELETE FROM identity]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[PRAGMA application_id = 0]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[PRAGMA user_version = 0]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair[UPDATE identity SET key_id = 'foreign']	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_genesis_is_private_and_retains_exact_identity_on_reopen	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_genesis_refuses_a_replaced_staging_database	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_interrupted_parent_sync_is_confirmed_on_reopen	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[CREATE TABLE claim_revisions (key TEXT) STRICT-table schema]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA application_id = 0-application]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA user_version = 2-table schema]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA user_version = 3-schema version]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[UPDATE claims SET sequence = 999-foreign key]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[UPDATE identity SET key_id = 'foreign'-source key identity]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[CREATE TABLE claim_revisions (key TEXT) STRICT-table schema]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA application_id = 0-application]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA user_version = 2-table schema]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[PRAGMA user_version = 3-schema version]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[UPDATE claims SET sequence = 999-foreign key]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade[UPDATE identity SET key_id = 'foreign'-source key identity]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_legacy_upgrade_uses_one_transaction_and_only_final_version[1]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_legacy_upgrade_uses_one_transaction_and_only_final_version[2]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_legacy_upgrade_uses_one_transaction_and_only_final_version[3]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_live_handle_refuses_replacement_key_with_identical_bytes	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_live_handle_refuses_store_swap_and_rolls_back_staged_sequence	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[CREATE TABLE content_disputes (key TEXT) STRICT-1]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[CREATE TABLE content_disputes (key TEXT) STRICT-2]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 0-1]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 0-2]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 4-1]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 4-2]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[UPDATE identity SET key_id = 'foreign'-1]	local-integration	yes	yes
-packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[UPDATE identity SET key_id = 'foreign'-2]	local-integration	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[CREATE TABLE content_disputes (key TEXT) STRICT-1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[CREATE TABLE content_disputes (key TEXT) STRICT-2]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 0-1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 0-2]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 4-1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[PRAGMA user_version = 4-2]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[UPDATE identity SET key_id = 'foreign'-1]	fast-unit	yes	yes
+packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration[UPDATE identity SET key_id = 'foreign'-2]	fast-unit	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_paired_journal_upgrade_occurs_only_with_first_committed_pair	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_preexisting_empty_store_is_never_replaced[False]	local-integration	yes	yes
 packages/aitm-usage/tests/test_monitor_journal_store.py::test_preexisting_empty_store_is_never_replaced[True]	local-integration	yes	yes

@@ -335,6 +335,26 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes",
+      "suite": "unit",
+      "isolation_group": "journal-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_foreign_or_damaged_schema_refuses_without_repair",
+      "suite": "unit",
+      "isolation_group": "journal-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_invalid_v1_is_refused_before_upgrade",
+      "suite": "unit",
+      "isolation_group": "journal-validation"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_monitor_journal_store.py::test_mixed_or_unknown_legacy_schema_is_refused_without_migration",
+      "suite": "unit",
+      "isolation_group": "journal-validation"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_requires_the_entire_proven_native_chain",
       "suite": "unit",
       "isolation_group": "scanner-policy"

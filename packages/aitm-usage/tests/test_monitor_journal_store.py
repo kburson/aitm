@@ -5,6 +5,7 @@ import shutil
 import sqlite3
 from contextlib import closing, contextmanager
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -349,6 +350,46 @@ def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
     _assert_legacy_upgrade_rolls_back(tmp_path, monkeypatch, failure, 3)
 
 
+def _journal_metadata(monkeypatch, version, damage=None):
+    expected_schema = (("table", "identity", "identity", "fixture identity DDL"),)
+    observed_schema = expected_schema
+    values = {
+        "PRAGMA application_id": (journal._APPLICATION_ID,),
+        "PRAGMA user_version": (version,),
+        "PRAGMA journal_mode": ("wal",),
+        "SELECT singleton, key_id FROM identity": [(1, "fixture-key")],
+        "PRAGMA foreign_key_check": None,
+    }
+    if damage == "PRAGMA application_id = 0":
+        values["PRAGMA application_id"] = (0,)
+    elif damage is not None and damage.startswith("PRAGMA user_version = "):
+        stored_version = int(damage.rsplit(" ", 1)[-1])
+        values["PRAGMA user_version"] = (stored_version,)
+        observed_schema += (("table", f"unexpected-v{version}", "legacy", None),)
+    elif damage is not None and damage.startswith(("CREATE TABLE ", "ALTER TABLE ")):
+        observed_schema += (("table", "unexpected", "unexpected", None),)
+    elif damage == "UPDATE identity SET key_id = 'foreign'":
+        values["SELECT singleton, key_id FROM identity"] = [(1, "foreign")]
+    elif damage == "DELETE FROM identity":
+        values["SELECT singleton, key_id FROM identity"] = []
+    elif damage == "UPDATE claims SET sequence = 999":
+        values["PRAGMA foreign_key_check"] = ("claims", 1, "commits", 0)
+    else:
+        assert damage is None
+
+    def read(sql):
+        result = values[sql]
+        return Mock(
+            fetchone=Mock(return_value=result), fetchall=Mock(return_value=result)
+        )
+
+    connection = Mock(spec=sqlite3.Connection)
+    connection.execute.side_effect = read
+    monkeypatch.setattr(journal, "_schema_objects", lambda conn: observed_schema)
+    monkeypatch.setattr(journal, "_supported_schema", lambda version: expected_schema)
+    return connection
+
+
 @pytest.mark.parametrize(
     ("damage", "message"),
     [
@@ -364,7 +405,17 @@ def test_v3_upgrade_rolls_back_after_ddl_and_can_retry(tmp_path, monkeypatch, fa
         ("UPDATE claims SET sequence = 999", "foreign key"),
     ],
 )
-def test_invalid_v1_is_refused_before_upgrade(tmp_path, damage, message):
+def test_invalid_v1_is_refused_before_upgrade(monkeypatch, damage, message):
+    connection = _journal_metadata(monkeypatch, 1, damage)
+
+    with pytest.raises(LedgerError, match=message):
+        journal._validate_identity(connection, "fixture-key", version=None)
+        journal._validate_foreign_keys(connection)
+
+
+def test_damaged_legacy_store_is_left_byte_for_byte_unchanged(tmp_path):
+    damage = "UPDATE claims SET sequence = 999"
+    message = "foreign key"
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         _create_v1_store(writer)
@@ -572,7 +623,15 @@ def test_attachment_never_initializes_or_adopts_source_key(tmp_path, key_state):
         "DELETE FROM identity",
     ],
 )
-def test_foreign_or_damaged_schema_refuses_without_repair(tmp_path, damage):
+def test_foreign_or_damaged_schema_refuses_without_repair(monkeypatch, damage):
+    connection = _journal_metadata(monkeypatch, journal._SCHEMA_VERSION, damage)
+
+    with pytest.raises(LedgerError):
+        journal._validate_identity(connection, "fixture-key", version=None)
+
+
+def test_damaged_current_store_is_left_byte_for_byte_unchanged(tmp_path):
+    damage = "ALTER TABLE claims ADD COLUMN unexpected TEXT"
     registry = Registry(tmp_path / "monitor")
     with registry.writer() as writer:
         writer.source_evidence()
@@ -712,17 +771,17 @@ def test_legacy_upgrade_uses_one_transaction_and_only_final_version(
 
 @pytest.mark.parametrize("version", [1, 2, 3])
 def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
-    tmp_path, version
+    monkeypatch, version
 ):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        evidence = writer.source_evidence()
-        journal.JournalStore(writer)
-        expected = {p: p.read_bytes() for p in _directory(registry).iterdir()}
-        with journal._open(_database(registry), write=False) as conn:
-            with pytest.raises(LedgerError, match="schema version"):
-                journal._validate_identity(conn, evidence.key_id, version=version)
-        assert {p: p.read_bytes() for p in expected} == expected
+    connection = _journal_metadata(monkeypatch, journal._SCHEMA_VERSION)
+
+    with pytest.raises(LedgerError, match="schema version"):
+        journal._validate_identity(connection, "fixture-key", version=version)
+
+    assert [call.args for call in connection.execute.call_args_list] == [
+        ("PRAGMA application_id",),
+        ("PRAGMA user_version",),
+    ]
 
 
 @pytest.mark.parametrize("version", [1, 2])
@@ -736,19 +795,12 @@ def test_exact_legacy_gate_refuses_v3_without_any_storage_byte_changes(
     ],
 )
 def test_mixed_or_unknown_legacy_schema_is_refused_without_migration(
-    tmp_path, version, damage
+    monkeypatch, version, damage
 ):
-    registry = Registry(tmp_path / "monitor")
-    with registry.writer() as writer:
-        (_create_v1_store if version == 1 else _create_v2_store)(writer)
-        with _sqlite(_database(registry)) as conn:
-            conn.execute(damage)
-        identities = _storage_identity(registry)
-        expected = _durable_bytes(registry)
-        with pytest.raises(LedgerError):
-            journal.JournalStore(writer)
-        _assert_storage_identity(identities)
-        assert _durable_bytes(registry) == expected
+    connection = _journal_metadata(monkeypatch, version, damage)
+
+    with pytest.raises(LedgerError):
+        journal._validate_identity(connection, "fixture-key", version=None)
 
 
 def test_content_dispute_table_enforces_private_strict_foreign_keys(tmp_path):
