@@ -10,6 +10,7 @@ from uuid import UUID
 
 import pytest
 from adapter_frame_cases import AdapterFrames
+from scanner_policy_cases import TranscriptReplay
 
 from aitm_usage.accounting import account_observations
 from aitm_usage.cli import main
@@ -1324,26 +1325,34 @@ def test_unknown_model_labels_do_not_merge_conflicting_revisions(project):
     assert b"unknown-model-one" not in ledger.database_path.read_bytes()
 
 
+@pytest.fixture
+def quota_replay(request, monkeypatch, reopen, old_owner):
+    return TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=reopen and old_owner == ACCOUNT
+    )
+
+
 @pytest.mark.parametrize("reopen", [False, True])
 @pytest.mark.parametrize("old_owner", [None, ACCOUNT, OTHER_ACCOUNT])
-def test_quota_requires_owner_in_current_committed_prefix(project, reopen, old_owner):
+def test_quota_requires_owner_in_current_committed_prefix(
+    quota_replay, reopen, old_owner
+):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
+    ledger, checkout = quota_replay.ledger, quota_replay.checkout
     account = ledger.pseudonymize("claude-account", str(ACCOUNT))
     state = claude.ClaudeState(ledger, account_ref=account)
-    write(
-        path, [user(checkout), *([owner(old_owner)] if old_owner is not None else [])]
+    quota_replay.write(
+        [user(checkout), *([owner(old_owner)] if old_owner is not None else [])]
     )
-    candidate = source(registration)
-    first, result = read(claude, candidate, state)
-    prior = commit(ledger, first, result)
+    candidate = quota_replay.candidate()
+    first, result = quota_replay.read(claude.read_claude, candidate, state)
+    prior = quota_replay.commit(first, result)
     if reopen:
-        ledger = Ledger.open(ledger.root, PROJECT)
-        state = claude.ClaudeState(ledger, account_ref=account)
+        state = claude.ClaudeState(quota_replay.reopen(), account_ref=account)
     else:
         state = claude.advance_claude_state(state, first, result)
-    write(path, [rate_event(checkout)], append=True)
-    batch, result = read(claude, candidate, state, prior)
+    quota_replay.write([rate_event(checkout)], append=True)
+    batch, result = quota_replay.read(claude.read_claude, candidate, state, prior)
     assert batch.commit_sideband == ()
     assert result.quota == ()
     assert DiagnosticCode.COVERAGE_GAP in diagnostics(result)
@@ -1443,6 +1452,14 @@ def _with_processing(counts, metadata):
     return counts
 
 
+@pytest.fixture
+def pricing_replay(request, monkeypatch, processing):
+    durable = processing in ({}, {"speed": "fast", "inference_geo": "us"})
+    return TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=durable
+    ), durable
+
+
 @pytest.mark.parametrize(
     ("processing", "expected_tier", "expected_price"),
     [
@@ -1463,41 +1480,54 @@ def _with_processing(counts, metadata):
     ],
 )
 def test_streamed_processing_evidence_controls_accounting_across_restart(
-    project, processing, expected_tier, expected_price
+    pricing_replay, processing, expected_tier, expected_price
 ):
     claude = adapter()
-    ledger, registration, path, checkout, _ = project
-    write(path, [user(checkout), request(checkout, counts=usage(3), stop=None)])
-    candidate = source(registration)
-    initial, prior, first_sequence = _accounted_scan(claude, ledger, candidate)
+    transcript, durable = pricing_replay
+    ledger, checkout = transcript.ledger, transcript.checkout
+    transcript.write([user(checkout), request(checkout, counts=usage(3), stop=None)])
+    candidate = transcript.candidate()
+
+    def accounted(prior=None):
+        if durable:
+            return _accounted_scan(claude, ledger, candidate, prior)
+        batch, result = transcript.read(
+            claude.read_claude, candidate, claude.ClaudeState(ledger), prior
+        )
+        accounting = account_observations(result, load_rate_card(), ledger=ledger)
+        checkpoint = transcript.commit(
+            batch, result, revisions=accounting.revisions, prior=prior
+        )
+        return result, checkpoint, ledger.as_of().sequence
+
+    initial, prior, first_sequence = accounted()
     (r1,) = initial.revisions
     assert r1.record.availability is Availability.PARTIAL
     assert r1.record.processing_tier is ProcessingTier.STANDARD
 
-    ledger = Ledger.open(ledger.root, PROJECT)
-    write(
-        path,
+    ledger = transcript.reopen()
+    transcript.write(
         [request(checkout, counts=_with_processing(usage(), processing))],
         append=True,
     )
-    changed, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    changed, prior, _ = accounted(prior)
     (r2,) = changed.revisions
     assert (r2.key, r2.revision) == (r1.key, 2)
     assert r2.record.processing_tier is expected_tier
     assert r2.record.boundary == r1.record.boundary
     assert r2.record.tokens == TokenCounts(7, 5, 3, 4, 4, 2, 18)
 
-    ledger = Ledger.open(ledger.root, PROJECT)
-    write(path, [cost(**{MODEL: model_counts()})], append=True)
-    terminal, prior, _ = _accounted_scan(claude, ledger, candidate, prior)
+    ledger = transcript.reopen()
+    transcript.write([cost(**{MODEL: model_counts()})], append=True)
+    terminal, prior, _ = accounted(prior)
     (r3,) = terminal.revisions
     assert (r3.key, r3.revision) == (r1.key, 3)
     assert r3.record.availability is Availability.COMPLETE
     assert r3.record.processing_tier is expected_tier
 
-    ledger = Ledger.open(ledger.root, PROJECT)
-    write(path, [request(checkout)], append=True)
-    replay, _, _ = _accounted_scan(claude, ledger, candidate, prior)
+    ledger = transcript.reopen()
+    transcript.write([request(checkout)], append=True)
+    replay, _, _ = accounted(prior)
     assert replay.revisions == ()
     item = ItemKey(ItemKind.DRAFT, UUID(int=0x310))
     before = rollup(item, ledger.as_of(first_sequence)).unattributed

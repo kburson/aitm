@@ -3,31 +3,40 @@ import hmac
 import json
 import os
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
+from io import BytesIO
+from pathlib import Path
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
 from aitm_usage import cli, monitor_control, monitor_registry, scopes
+from aitm_usage import ledger as ledger_module
 from aitm_usage.ledger import Ledger
 from aitm_usage.scope_admission import adopted_request, legacy_grant_id
 from aitm_usage.service import CLAUDE_SESSIONS_NAME, register_project
 from aitm_usage.types import (
     BoundaryKind,
+    CommandReceipt,
     DevelopmentBinding,
     DraftAlias,
     InboxCommand,
     ItemKey,
     ItemKind,
     ItemParent,
+    LedgerView,
     MarkerDisposition,
     Provider,
+    Revision,
     ScopeCorrection,
     ScopeMarker,
     SourceBoundary,
     WorkPhase,
+    _encode,
     encode_binding,
     encode_command,
     encode_correction,
@@ -101,7 +110,9 @@ def legacy(tmp_path, monkeypatch, capsys):
     return Ledger.open(root, PROJECT), monitor_root, run
 
 
-def invocation(ledger, action, *, provider=Provider.CODEX):
+def invocation(
+    ledger, action, *, provider=Provider.CODEX, write_input=Path.write_bytes
+):
     def ref(namespace, name):
         return ledger.pseudonymize(namespace, name)
 
@@ -139,7 +150,7 @@ def invocation(ledger, action, *, provider=Provider.CODEX):
     input_file = ledger.root.parent / "scope-input.json"
     session_args = ("--session-id", str(CLAUDE)) if provider is Provider.CLAUDE else ()
     if action == "mark":
-        input_file.write_bytes(encode_marker(marker))
+        write_input(input_file, encode_marker(marker))
         return (
             ("scope", "mark", "--marker", str(input_file), *session_args),
             marker,
@@ -150,7 +161,7 @@ def invocation(ledger, action, *, provider=Provider.CODEX):
             marker, phase=WorkPhase.DEVELOPMENT, attempt_ref=ref("fixture", "attempt")
         )
         binding = DevelopmentBinding(owner, ref("fixture", "anchor"), 1)
-        input_file.write_bytes(encode_binding(binding))
+        write_input(input_file, encode_binding(binding))
         return (
             ("development", "bind", "--binding", str(input_file), *session_args),
             binding,
@@ -162,7 +173,7 @@ def invocation(ledger, action, *, provider=Provider.CODEX):
         replace(marker, marker_id=DRAFT, receipt_ref=ref("scope-receipt", str(DRAFT))),
         ref("fixture", "correction"),
     )
-    input_file.write_bytes(encode_correction(correction))
+    write_input(input_file, encode_correction(correction))
     return ("scope", "correct", "--correction", str(input_file)), correction, None
 
 
@@ -301,11 +312,12 @@ def legacy_boundary(ledger, marker, anchor=None):
     )
 
 
-def establish_legacy_outcome(ledger, command, status):
+def _legacy_outcome_inputs(ledger, command, status):
     payload = command.payload
     conflict = status is MarkerDisposition.CONFLICT
     evidence = ()
     prior = None
+    prior_evidence = ()
     if isinstance(payload, ScopeCorrection):
         original = replace(payload.replacement, item=ItemKey(ItemKind.ISSUE, 3))
         if conflict:
@@ -339,6 +351,11 @@ def establish_legacy_outcome(ledger, command, status):
                     replace(proof, boundary=replace(proof.boundary, ordinal=2)),
                 )
 
+    return prior, prior_evidence, evidence
+
+
+def establish_legacy_outcome(ledger, command, status):
+    prior, prior_evidence, evidence = _legacy_outcome_inputs(ledger, command, status)
     with ledger.writer() as writer:
         if prior is not None:
             scopes.enqueue_command(ledger.root, prior)
@@ -346,6 +363,34 @@ def establish_legacy_outcome(ledger, command, status):
             assert receipt.disposition is MarkerDisposition.ACCEPTED
         scopes.enqueue_command(ledger.root, command)
         (receipt,) = scopes.drain_inbox(writer, evidence).receipts
+    assert receipt.disposition is status
+    return receipt
+
+
+def _evaluate_replayed_receipt(ledger, command, status):
+    prior, prior_evidence, evidence = _legacy_outcome_inputs(ledger, command, status)
+
+    def evaluate(command, view, evidence, receipts):
+        disposition, proof, effects = scopes._evaluate(
+            ledger, command, view, evidence, receipts
+        )
+        receipt = CommandReceipt(
+            command,
+            ledger.validate_command(command),
+            disposition,
+            None if proof is None else proof.boundary,
+            None if proof is None else proof.anchor_ref,
+        )
+        return receipt, effects
+
+    view = LedgerView(PROJECT, 0, (), ())
+    receipts = {}
+    if prior is not None:
+        accepted, effects = evaluate(prior, view, prior_evidence, receipts)
+        assert accepted.disposition is MarkerDisposition.ACCEPTED
+        view = LedgerView(PROJECT, 1, effects, ())
+        receipts[prior.command_id] = accepted
+    receipt, _ = evaluate(command, view, evidence, receipts)
     assert receipt.disposition is status
     return receipt
 
@@ -361,6 +406,76 @@ def adopted_with_witness(ledger, monitor_root):
         probe = InboxCommand(probe_id, PROJECT, replace(example, command_id=probe_id))
         reader.advertise(reader.probe(adopted_request(probe, ADOPTION, None)))
         yield inbox
+
+
+_DURABLE_REPLAY_CASES = {
+    (MarkerDisposition.ACCEPTED, "alias", Provider.CODEX),
+    (MarkerDisposition.ACCEPTED, "mark", Provider.CLAUDE),
+    (MarkerDisposition.CONFLICT, "bind", Provider.CODEX),
+}
+
+
+def _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status):
+    ledger = _memory_ledger(ledger_module, PROJECT, b"l" * 32)
+    inputs = {}
+    args, payload, session = invocation(
+        ledger, action, provider=provider, write_input=inputs.__setitem__
+    )
+    command = InboxCommand(COMMAND, PROJECT, payload)
+    expected = _evaluate_replayed_receipt(ledger, command, status)
+    key = ledger.pseudonymize("inbox-command", str(COMMAND))
+    connection = Mock()
+    connection.execute.return_value.fetchone.return_value = (
+        1,
+        _encode(Revision(key, 1, expected), Revision),
+    )
+    publication = Mock(
+        side_effect=AssertionError("replay opened the publication queue")
+    )
+    monitor_write = Mock(side_effect=AssertionError("replay forwarded the command"))
+
+    def open_ledger(directory, project_id):
+        assert (directory, project_id) == (ledger.root, PROJECT)
+        return ledger
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Ledger, "open", staticmethod(open_ledger))
+        patch.setattr(Ledger, "reader", lambda self: nullcontext(connection))
+        patch.setattr(scopes, "_pin_directory", lambda path: nullcontext(object()))
+        patch.setattr(scopes, "read_monitor_adoption", Mock(return_value=ADOPTION))
+        patch.setattr(scopes, "_inbox_publication", publication)
+        patch.setattr(monitor_control, "enqueue_adopted_scope", monitor_write)
+        if inputs:
+
+            def open_input(path, mode):
+                assert mode == "rb"
+                return BytesIO(inputs[path])
+
+            patch.setattr(Path, "open", open_input)
+            patch.setattr(cli, "version", lambda _: "0.0.0")
+            patch.setenv("CODEX_THREAD_ID", str(CODEX))
+            patch.setattr(
+                sys,
+                "argv",
+                ["aitm-usage", "--project", str(ledger.root), *args, "--json"],
+            )
+            assert cli.main() == 0
+            output = capsys.readouterr()
+            assert (
+                output.out
+                == f'{{"command_id": "{COMMAND}", "status": "{status.value}"}}\n'
+            )
+            assert output.err == ""
+        assert (
+            scopes.enqueue_command(ledger.root, command, claude_session=session)
+            == expected
+        )
+
+    reads = connection.execute.call_args_list
+    assert len(reads) == 1 + bool(inputs)
+    assert all(args[1] == (key.value,) for args, _ in reads)
+    publication.assert_not_called()
+    monitor_write.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -379,8 +494,13 @@ def adopted_with_witness(ledger, monitor_root):
     "status", [MarkerDisposition.ACCEPTED, MarkerDisposition.CONFLICT]
 )
 def test_adopted_replay_returns_the_exact_durable_legacy_outcome(
-    legacy, action, provider, status
+    request, monkeypatch, capsys, action, provider, status
 ):
+    if (status, action, provider) not in _DURABLE_REPLAY_CASES:
+        _assert_adopted_receipt_replay(monkeypatch, capsys, action, provider, status)
+        return
+
+    legacy = request.getfixturevalue("legacy")
     ledger, monitor_root, run = legacy
     args, payload, session = invocation(ledger, action, provider=provider)
     command = InboxCommand(COMMAND, PROJECT, payload)

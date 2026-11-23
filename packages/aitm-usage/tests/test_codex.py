@@ -10,6 +10,7 @@ from uuid import UUID
 
 import pytest
 from adapter_frame_cases import AdapterFrames
+from scanner_policy_cases import TranscriptReplay
 
 from aitm_usage.cli import main
 from aitm_usage.ledger import Ledger
@@ -1432,9 +1433,14 @@ def test_progress_without_a_response_cannot_skip_duplicate_detection_after_resta
 
 
 @pytest.mark.parametrize("split", ["new-context", "restart", "unknown-tier"])
-def test_configured_processing_tier_is_bound_to_current_context(project, split):
+def test_configured_processing_tier_is_bound_to_current_context(
+    request, monkeypatch, split
+):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart"
+    )
+    ledger, checkout = replay.ledger, replay.checkout
     amount = usage(8, 2)
     settings = {
         "thread_id": str(SESSION),
@@ -1444,8 +1450,7 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
             "service_tier": "default",
         },
     }
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1454,17 +1459,17 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
             counter(amount, amount),
         ],
     )
-    candidate = source(registration)
+    candidate = replay.candidate()
     state = codex.CodexState(ledger)
     if split == "restart":
-        write(path, [end()], append=True)
-    batch, first = read(codex, candidate, state)
+        replay.write([end()], append=True)
+    batch, first = replay.read(codex.read_codex, candidate, state)
     (record,) = observations(first)
     assert record.processing_tier is ProcessingTier.STANDARD
-    prior = commit(ledger, batch, first)
+    prior = replay.commit(batch, first)
     later = TURN
     if split == "restart":
-        state = codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        state = codex.CodexState(replay.reopen())
         later = UUID(int=0x164)
         context = begin(checkout, later)
     else:
@@ -1475,8 +1480,7 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
             settings["thread_settings"]["service_tier"] = "experimental"
             context = [event("thread_settings_applied", **settings)]
     total = usage(16, 4)
-    write(
-        path,
+    replay.write(
         [
             *context,
             response("next-config", total, amount, turn=later),
@@ -1485,7 +1489,7 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
         ],
         append=True,
     )
-    _, second = read(codex, candidate, state, prior)
+    _, second = replay.read(codex.read_codex, candidate, state, prior)
     (record,) = observations(second)
     assert record.tokens.total_tokens == 10
     assert record.processing_tier is None
@@ -1494,18 +1498,25 @@ def test_configured_processing_tier_is_bound_to_current_context(project, split):
 @pytest.mark.parametrize("stale_in", ["excluded", "eligible"])
 @pytest.mark.parametrize("restart", [False, True])
 def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
-    project, stale_in, restart
+    request, monkeypatch, stale_in, restart
 ):
     codex = adapter()
-    ledger, registration, path, checkout, outside = project
+    replay = TranscriptReplay(
+        request,
+        monkeypatch,
+        PROJECT,
+        CUTOFF,
+        durable=restart and stale_in == "excluded",
+    )
+    ledger, checkout = replay.ledger, replay.checkout
+    outside = replay.outside
     unrelated, returned, later = (UUID(int=value) for value in (0x180, 0x181, 0x182))
     first = usage(8, 2)
     stale = counter(first, first, rate_limits={"limit_id": "codex", "primary": None})
     outside_rows = [*begin(outside, unrelated)]
     returned_rows = [*begin(checkout, returned)]
     (outside_rows if stale_in == "excluded" else returned_rows).append(stale)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1517,22 +1528,21 @@ def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
             end(returned),
         ],
     )
-    candidate = source(registration)
-    held = scan(candidate, None, CUTOFF)
+    candidate = replay.candidate()
+    held = replay.scan(candidate)
     candidate = candidate.with_exclusion(
         next(frame for frame in held.frames if frame.boundary_only)
     )
     state = codex.CodexState(ledger)
-    batch, result = read(codex, candidate, state)
+    batch, result = replay.read(codex.read_codex, candidate, state)
     assert [record.tokens.total_tokens for record in observations(result)] == [10]
-    prior = commit(ledger, batch, result)
+    prior = replay.commit(batch, result)
     state = (
-        codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        codex.CodexState(replay.reopen())
         if restart
         else codex.advance_codex_state(state, batch, result)
     )
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             counter(first, first, rate_limits={"limit_id": "codex", "secondary": None}),
@@ -1542,22 +1552,25 @@ def test_stale_quota_counter_cannot_separate_unmeasured_exclusion(
         ],
         append=True,
     )
-    _, result = read(codex, candidate, state, prior)
+    _, result = replay.read(codex.read_codex, candidate, state, prior)
     assert [record.tokens.total_tokens for record in observations(result)] == [9]
 
 
 @pytest.mark.parametrize("phase", ["excluded", "pre-cutoff", "suppressed"])
 @pytest.mark.parametrize("restart", [False, True])
 def test_unpublished_response_identity_is_deduplicated_after_commit(
-    project, phase, restart
+    request, monkeypatch, phase, restart
 ):
     codex = adapter()
-    ledger, registration, path, checkout, outside = project
+    replay = TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=restart and phase == "excluded"
+    )
+    ledger, checkout = replay.ledger, replay.checkout
+    outside = replay.outside
     time = BEFORE if phase == "pre-cutoff" else AFTER
     cwd = outside if phase == "excluded" else checkout
     first = usage(8, 2)
-    write(
-        path,
+    replay.write(
         [
             startup(cwd, time),
             *begin(cwd, time=time),
@@ -1566,12 +1579,12 @@ def test_unpublished_response_identity_is_deduplicated_after_commit(
             end(time=time),
         ],
     )
-    candidate = source(registration)
+    candidate = replay.candidate()
     if phase == "excluded":
-        batch = scan(candidate, None, CUTOFF)
+        batch = replay.scan(candidate)
         candidate = candidate.with_exclusion(batch.frames[0])
     state = codex.CodexState(ledger)
-    batch = scan(candidate, None, CUTOFF)
+    batch = replay.scan(candidate)
     eligibility = (
         Eligibility.EXCLUDED if phase == "suppressed" else Eligibility.ELIGIBLE
     )
@@ -1581,16 +1594,15 @@ def test_unpublished_response_identity_is_deduplicated_after_commit(
     assert tombstone.ordinal == 3
     assert tombstone.tokens == TokenCounts()
     assert b"already-observed-secret" not in repr(tombstone).encode()
-    prior = commit(ledger, batch, result)
+    prior = replay.commit(batch, result)
     state = (
-        codex.CodexState(Ledger.open(ledger.root, PROJECT))
+        codex.CodexState(replay.reopen())
         if restart
         else codex.advance_codex_state(state, batch, result)
     )
     later = UUID(int=0x183)
     total = usage(16, 4)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             response("already-observed-secret", total, first, turn=later),
@@ -1599,7 +1611,7 @@ def test_unpublished_response_identity_is_deduplicated_after_commit(
         ],
         append=True,
     )
-    _, result = read(codex, candidate, state, prior)
+    _, result = replay.read(codex.read_codex, candidate, state, prior)
     assert result.revisions == ()
     assert (8, DiagnosticCode.IDENTITY_CONFLICT) in codes(result)
 
@@ -1620,13 +1632,15 @@ def compaction(record):
 
 
 @pytest.mark.parametrize("split", ["same-batch", "warm", "restart"])
-def test_compaction_reconciles_separate_counter_windows(project, split):
+def test_compaction_reconciles_separate_counter_windows(request, monkeypatch, split):
     codex = adapter()
-    ledger, registration, path, checkout, _ = project
+    replay = TranscriptReplay(
+        request, monkeypatch, PROJECT, CUTOFF, durable=split == "restart"
+    )
+    ledger, checkout = replay.ledger, replay.checkout
     first, compact_amount, next_amount = usage(8, 2), usage(4, 1), usage(6, 1)
     compact_response = response("compaction-response", usage(12, 3), compact_amount)
-    write(
-        path,
+    replay.write(
         [
             startup(checkout),
             *begin(checkout),
@@ -1649,24 +1663,23 @@ def test_compaction_reconciles_separate_counter_windows(project, split):
             end(),
         ],
     )
-    candidate = source(registration)
+    candidate = replay.candidate()
     state = codex.CodexState(ledger)
     prior = None
     if split != "same-batch":
-        batch, result = read(codex, candidate, state)
+        batch, result = replay.read(codex.read_codex, candidate, state)
         assert [
             (record.tokens.total_tokens, record.availability)
             for record in observations(result)
         ] == [(10, Availability.COMPLETE)]
-        prior = commit(ledger, batch, result)
+        prior = replay.commit(batch, result)
         state = (
-            codex.CodexState(Ledger.open(ledger.root, PROJECT))
+            codex.CodexState(replay.reopen())
             if split == "restart"
             else codex.advance_codex_state(state, batch, result)
         )
     later = UUID(int=0x184)
-    write(
-        path,
+    replay.write(
         [
             *begin(checkout, later),
             response("post-compaction-first", usage(18, 4), next_amount, turn=later),
@@ -1677,7 +1690,7 @@ def test_compaction_reconciles_separate_counter_windows(project, split):
         ],
         append=True,
     )
-    _, result = read(codex, candidate, state, prior)
+    _, result = replay.read(codex.read_codex, candidate, state, prior)
     projected = [
         (record.tokens.total_tokens, record.availability)
         for record in observations(result)
