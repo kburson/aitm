@@ -43,6 +43,21 @@ PROJECT = UUID(int=940)
 CUTOFF = "2026-11-09T16:00:00+00:00"
 
 
+def _lifecycle_cli(root, monkeypatch, capsys):
+    def command(*args, expected=0):
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            ["aitm-usage", "--project", str(root), *map(str, args), "--json"],
+        )
+        result = cli.main()
+        captured = capsys.readouterr()
+        assert result == expected, captured.err
+        return json.loads(captured.out)
+
+    return command
+
+
 @pytest.fixture
 def project(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("aitm_usage.ledger._control_root", lambda: tmp_path / "control")
@@ -75,18 +90,7 @@ def project(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(install, "ServiceSupervisor", StoppedLaunchControl)
 
-    def command(*args, expected=0):
-        monkeypatch.setattr(
-            sys,
-            "argv",
-            ["aitm-usage", "--project", str(root), *map(str, args), "--json"],
-        )
-        result = cli.main()
-        captured = capsys.readouterr()
-        assert result == expected, captured.err
-        return json.loads(captured.out)
-
-    return registration, ledger, command
+    return registration, ledger, _lifecycle_cli(root, monkeypatch, capsys)
 
 
 def _parent(number):
@@ -1079,49 +1083,106 @@ def test_backup_refuses_store_through_physical_path_alias(
     assert not destination.exists()
 
 
-def test_restore_preserves_backup_inside_replaceable_store(project, tmp_path):
-    from aitm_usage.backup import BackupError, backup, restore
+@pytest.fixture
+def recovery_paths(monkeypatch):
+    from aitm_usage import backup as recovery
 
-    _, ledger, _ = project
-    bundle = tmp_path / "backup"
-    backup(ledger, bundle)
-    inside = ledger.database_path.parent / "nested-backup"
-    bundle.rename(inside)
-    before = _bundle_bytes(inside)
-    with pytest.raises(BackupError):
-        restore(inside, ledger.root, ledger.identity)
-    assert _bundle_bytes(inside) == before
+    pins = {}
+
+    def observe(path, *inodes):
+        pins[path] = SimpleNamespace(
+            path=path, identities=tuple((1, inode) for inode in inodes), check=Mock()
+        )
+
+    def pin(path):
+        return nullcontext(pins[path])
+
+    ancestry = Mock(side_effect=lambda path, **kwargs: pins[path].identities)
+    monkeypatch.setattr(recovery, "_pin_directory", pin)
+    monkeypatch.setattr(install, "_pin_directory", pin)
+    monkeypatch.setattr(recovery, "_validated_path", ancestry)
+    return observe, ancestry
+
+
+def test_restore_preserves_backup_inside_replaceable_store(
+    lifecycle_policy, recovery_paths, monkeypatch
+):
+    from aitm_usage import backup as recovery
+
+    ledger, control = lifecycle_policy
+    observe, ancestry = recovery_paths
+    store = ledger.database_path.parent
+    inside = store / "nested-backup"
+    staged = ledger.root / ".restore-staging"
+    observe(ledger.root, 1, 2, 3)
+    observe(store, 1, 2, 3, 4)
+    observe(inside, 1, 2, 3, 4, 5)
+    observe(staged, 1, 2, 3, 6)
+    verify = Mock(side_effect=AssertionError("nested backup reached restore staging"))
+    swap = Mock(side_effect=AssertionError("nested backup reached the store swap"))
+    monkeypatch.setattr(Ledger, "open", Mock(return_value=ledger))
+    monkeypatch.setattr(install, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(recovery, "project_guard", lambda *_: nullcontext(object()))
+    monkeypatch.setattr(recovery, "_lease", lambda *_: nullcontext(object()))
+    monkeypatch.setattr(recovery, "TemporaryDirectory", lambda **_: nullcontext(staged))
+    monkeypatch.setattr(recovery, "_verify_bundle", verify)
+    monkeypatch.setattr(recovery, "_swap_store", swap)
+
+    with pytest.raises(recovery.BackupError, match="overlaps"):
+        recovery.restore(inside, ledger.root, ledger.identity)
+
+    ancestry.assert_called_once_with(inside, directory=True, allow_missing=False)
+    verify.assert_not_called()
+    swap.assert_not_called()
 
 
 def test_prune_preserves_nested_recovery_material(
-    project, tmp_path, launch_control, monkeypatch
+    lifecycle_policy, recovery_paths, monkeypatch, capsys
 ):
-    from aitm_usage.backup import backup
-
-    _, ledger, command = project
-    wheel, digest = _wheel(tmp_path, "prune")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    version_dir = runtime.executable.parents[2]
+    ledger, control = lifecycle_policy
+    observe, ancestry = recovery_paths
+    digest = "a" * 64
+    version_dir = ledger.root / install._VERSIONS / f"0.1.0-{digest}"
     bundle = version_dir / "backup"
-    backup(ledger, bundle)
+    external = ledger.root / "external-backup"
+    observe(version_dir, 1, 2, 3, 4, 5)
+    observe(bundle, 1, 2, 3, 4, 5, 6)
+    observe(external, 1, 2, 3, 7)
+    verify = Mock(
+        side_effect=AssertionError("nested recovery material reached verification")
+    )
+    remove = Mock(
+        side_effect=AssertionError("prune would delete nested recovery material")
+    )
+    read_wheel = Mock(side_effect=AssertionError("prune opened a retained wheel"))
+    monkeypatch.setattr(cli, "open_project", Mock(return_value=ledger))
+    monkeypatch.setattr(cli, "ServiceSupervisor", Mock(return_value=control))
+    monkeypatch.setattr(cli, "version", lambda _: "0.1.0")
+    monkeypatch.setattr(install, "verify_backup", verify)
+    monkeypatch.setattr(install, "_wheel", read_wheel)
+    monkeypatch.setattr(install, "shutil", SimpleNamespace(rmtree=remove))
+    command = _lifecycle_cli(ledger.root, monkeypatch, capsys)
     arguments = ("service", "prune", "--version", "0.1.0", "--wheel-sha256", digest)
-    before = _bundle_bytes(bundle)
+
     assert (
         command(*arguments, "--backup", bundle, expected=1)["status"] == "prune-failed"
     )
-    assert _bundle_bytes(bundle) == before
-    external = tmp_path / "external"
-    bundle.rename(external)
+    ancestry.assert_called_once_with(bundle, directory=True, allow_missing=False)
+    ancestry.reset_mock()
+
     retained = install._wheel_path(ledger, "0.1.0", digest)
     inside = version_dir / retained.name
-    retained.rename(inside)
+    observe(inside, 1, 2, 3, 4, 5, 8)
     monkeypatch.setattr(install, "_wheel_path", lambda *args: inside)
     assert (
         command(*arguments, "--backup", external, expected=1)["status"]
         == "prune-failed"
     )
-    assert inside.exists() and runtime.executable.exists()
+    assert ancestry.call_count == 2
+    ancestry.assert_called_with(inside, directory=False, allow_missing=False)
+    verify.assert_not_called()
+    read_wheel.assert_not_called()
+    remove.assert_not_called()
 
 
 @pytest.mark.parametrize("case", ["matching", "wrong", "unset", "empty", "hostile"])
@@ -1301,17 +1362,18 @@ def test_installed_runtime_checks_interpreter_digest_before_any_execution(
     case.probe.assert_not_called()
 
 
-def test_installed_runtime_detects_changed_launcher_on_disk(project, tmp_path):
-    _, ledger, _ = project
-    wheel, digest = _wheel(tmp_path, "runtime-boundary")
-    interpreter = Path(sys._base_executable).resolve(strict=True)
-    runtime = install._prepare(ledger, install._wheel(wheel, digest), interpreter)
-    directory = runtime.executable.parents[2]
-    assert install._read_runtime(ledger, directory) == runtime
+def test_installed_runtime_detects_changed_launcher_on_disk(runtime_receipt):
+    case = runtime_receipt
+    case.set_console(install._launcher(case.python, case.site))
+    assert install._read_runtime(case.ledger, case.directory) == case.runtime
 
-    runtime.executable.write_bytes(b"#!/bin/sh\nexit 99\n")
+    case.inspect_interpreter.reset_mock()
+    case.probe.reset_mock()
+    case.set_console(b"#!/bin/sh\nexit 99\n", update_receipt=False)
     with pytest.raises(install.InstallError, match="Verified runtime files changed"):
-        install._read_runtime(ledger, directory)
+        install._read_runtime(case.ledger, case.directory)
+    case.inspect_interpreter.assert_not_called()
+    case.probe.assert_not_called()
 
 
 def test_installed_scope_launcher_upgrade_preserves_old_receipt_and_queues(

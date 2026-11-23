@@ -2,6 +2,7 @@
 
 import json
 import os
+import stat
 import subprocess
 import sys
 from dataclasses import replace
@@ -12,12 +13,14 @@ from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
+from grok_capture_policy_cases import grok_capture_policy  # noqa: F401, F811
 from test_grok import PROMPT_A, PROMPT_B, SESSION
 from test_monitor_grok_capture import isolated_grok_capture  # noqa: F401, F811
 
 from aitm_usage import process_identity, scope_admission
 from aitm_usage.ledger import ConflictError, LedgerError
 from aitm_usage.monitor_control import ControlInbox, ScopeInboxReader
+from aitm_usage.monitor_registry import _ServiceEvidence
 from aitm_usage.monitor_scope import HandoffStatus, Scope, resolve_route
 from aitm_usage.types import DiagnosticCode, ItemKey, ItemKind, WorkPhase
 
@@ -282,11 +285,19 @@ def test_wrong_pilot_receipt_or_rewritten_verified_event_cannot_apply_scope(
 
 
 def test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt(
-    staged_scope,
-    monkeypatch,
+    grok_capture_policy,  # noqa: F811
 ):
-    f, _, _, checkout, attempt, _, bind = _ready_scope(staged_scope, monkeypatch)
-    assert bind(f.writer.root, attempt, SESSION, PROMPT_A, checkout)
+    f = grok_capture_policy
+    receipt = scope_admission.scope_receipt_ref(
+        f.writer.source_evidence(), UUID(int=33502)
+    )
+
+    def verify(session, prompt, _event):
+        return receipt if (session, prompt) == (SESSION, PROMPT_A) else None
+
+    f.reader.verify_receipt = verify
+    f.submit(33505, True)
+    assert f.evaluate()
     f.write([f.rows[0], *f.rows[:5]], 1)
     duplicate = f.state.read_source(f.source_id, f.locator())
     assert duplicate.boundaries == ()
@@ -296,28 +307,31 @@ def test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt(
     )
     f.write(f.rows, 2)
     later = f.state.read_source(f.source_id, f.locator())
-    assert len(later.boundaries) == 1 and len(later.observations) == 1
+    (boundary,) = later.boundaries
+    assert boundary.boundary.receipt_ref == receipt
+    assert len(later.observations) == 1
     assert later.diagnostics
 
 
-def test_module_accepts_exact_native_input_and_prints_nothing(
-    staged_scope,
-    monkeypatch,
-    capsys,
-):
+def test_module_accepts_exact_native_input_and_prints_nothing(monkeypatch, capsys):
     import io
 
     from aitm_usage.sources import grok_scope_hook
 
-    f, _, _, checkout, attempt, lookup, _ = _ready_scope(staged_scope, monkeypatch)
+    evidence = _ServiceEvidence(b"g" * 32)
+    monitor = Path("/fixture/monitor")
+    checkout = Path("/fixture/checkout")
+    attempt = evidence.pseudonymize("grok-scope-attempt", "fixture")
     event = {
         "hookEventName": "user_prompt_submit",
         "sessionId": SESSION,
         "promptId": PROMPT_A,
         "workspaceRoot": str(checkout),
     }
-    monkeypatch.setattr(grok_scope_hook, "default_monitor_root", lambda: f.writer.root)
+    monkeypatch.setattr(grok_scope_hook, "default_monitor_root", lambda: monitor)
     monkeypatch.setattr(grok_scope_hook.sys, "argv", ["grok_scope_hook", attempt.value])
+    bind = Mock()
+    monkeypatch.setattr(grok_scope_hook, "bind_grok_prompt", bind)
 
     def invoke(payload):
         monkeypatch.setattr(
@@ -327,26 +341,25 @@ def test_module_accepts_exact_native_input_and_prints_nothing(
         captured = capsys.readouterr()
         assert captured.out == captured.err == ""
 
-    invoke(json.dumps(event).encode())
-    assert lookup(SESSION, PROMPT_A, "native") is None
+    payload = json.dumps(event).encode()
+    monkeypatch.delenv("GROK_HOOK_EVENT", raising=False)
+    invoke(payload)
+    bind.assert_not_called()
     monkeypatch.setenv("GROK_HOOK_EVENT", "user_prompt_submit")
     monkeypatch.setenv("GROK_SESSION_ID", "mismatch")
-    invoke(json.dumps(event).encode())
-    assert lookup(SESSION, PROMPT_A, "native") is None
+    invoke(payload)
+    bind.assert_not_called()
     monkeypatch.setenv("GROK_SESSION_ID", SESSION)
-    invoke(b'{"sessionId":"duplicate","sessionId":"bad"}')
-    invoke(b"x" * (grok_scope_hook._MAX_HOOK_BYTES + 1))
+    invoke(b'{"sessionId":"duplicate",' + payload[1:])
+    invoke(payload + b" " * grok_scope_hook._MAX_HOOK_BYTES)
+    bind.assert_not_called()
 
-    def fail_binding(*args):
-        raise RuntimeError("native process inspection failed")
-
-    with monkeypatch.context() as trial:
-        trial.setattr(grok_scope_hook, "bind_grok_prompt", fail_binding)
-        invoke(json.dumps(event).encode())
-    assert lookup(SESSION, PROMPT_A, "native") is None
-
-    invoke(json.dumps(event).encode())
-    assert lookup(SESSION, PROMPT_A, "native") is not None
+    bind.side_effect = RuntimeError("native process inspection failed")
+    invoke(payload)
+    bind.assert_called_once_with(monitor, attempt, SESSION, PROMPT_A, checkout)
+    bind.reset_mock(side_effect=True)
+    invoke(payload)
+    bind.assert_called_once_with(monitor, attempt, SESSION, PROMPT_A, checkout)
 
 
 @pytest.mark.parametrize(
@@ -379,20 +392,32 @@ def test_darwin_process_identity_refuses_ambiguous_executable(
 ):
     inspect_path = Mock(side_effect=AssertionError("invalid path reached inspection"))
     malformed = problem in {"truncated", "length"}
-    uid = 501 if malformed else os.geteuid()
-    if malformed:
-        root = Path("/fixture")
-        monkeypatch.setattr(process_identity, "Path", inspect_path)
-        monkeypatch.setattr(
-            process_identity, "os", SimpleNamespace(geteuid=lambda: uid)
-        )
-    else:
-        root = request.getfixturevalue("tmp_path")
+    physical_replacement = problem == "image-changed"
+    uid = os.geteuid() if physical_replacement else 501
+    root = (
+        request.getfixturevalue("tmp_path")
+        if physical_replacement
+        else Path("/fixture")
+    )
     image = root / "candidate"
     replacement = root / "replacement"
-    if not malformed:
+    if malformed:
+        monkeypatch.setattr(process_identity, "Path", inspect_path)
+    elif physical_replacement:
         image.write_bytes(b"original executable")
         replacement.write_bytes(b"replacement executable")
+    else:
+        paths = {
+            str(image): _observed_executable(17),
+            str(replacement): _observed_executable(18),
+        }
+        monkeypatch.setattr(process_identity, "Path", paths.__getitem__)
+    if not physical_replacement:
+        monkeypatch.setattr(
+            process_identity,
+            "os",
+            SimpleNamespace(geteuid=lambda: uid, fsdecode=os.fsdecode),
+        )
 
     class Proc:
         path_reads = 0
@@ -425,31 +450,47 @@ def test_darwin_process_identity_refuses_ambiguous_executable(
     if malformed:
         assert proc.path_reads == 1
         inspect_path.assert_not_called()
+    else:
+        assert proc.path_reads == 2
 
 
-def test_darwin_walk_rechecks_parent_incarnation_and_image(staged_scope, monkeypatch):
+def _observed_executable(inode):
+    executable = Mock(spec=Path)
+    executable.is_absolute.return_value = True
+    executable.resolve.return_value = executable
+    executable.stat.return_value = SimpleNamespace(
+        st_mode=stat.S_IFREG | 0o700,
+        st_dev=3,
+        st_ino=inode,
+        st_size=4096,
+        st_mtime_ns=71,
+    )
+    return executable
+
+
+def test_darwin_walk_rechecks_parent_incarnation_and_image(monkeypatch):
     from aitm_usage.sources import grok_scope_hook
 
-    f, _, _, _, process = staged_scope
+    evidence = _ServiceEvidence(b"g" * 32)
+    start = datetime(2026, 11, 9, 12, tzinfo=UTC)
+    process = process_identity.ProcessIdentity(33503, start, _observed_executable(17))
     monkeypatch.setattr(process_identity, "sys", SimpleNamespace(platform="darwin"))
-    evidence = f.writer.source_evidence()
-    start = process.started.replace(microsecond=0)
+    monkeypatch.setattr(process_identity, "os", SimpleNamespace(geteuid=lambda: 501))
 
     class Proc:
         def proc_pidinfo(self, pid, _flavor, _arg, pointer, size):
             row = pointer._obj
             row.pid = pid
-            row.uid = os.geteuid()
+            row.uid = 501
             row.parent_pid = process.pid if pid == 33540 else 1
             row.start_seconds = int(start.timestamp())
             return size
 
     proc = Proc()
-    expected = replace(process, started=start)
     name = scope_admission._grok_process_ref(evidence, process.pid, start)
     image = scope_admission._grok_image_ref(evidence, process.executable)
     monkeypatch.setattr(process_identity, "_libproc", lambda: proc)
-    monkeypatch.setattr(process_identity, "read_process_identity", lambda _: expected)
+    monkeypatch.setattr(process_identity, "read_process_identity", lambda _: process)
     monkeypatch.setattr(grok_scope_hook.os, "getpid", lambda: 33540)
     monkeypatch.setattr(grok_scope_hook.os, "getppid", lambda: process.pid)
     assert grok_scope_hook._has_process_ancestor(evidence, name, image)
@@ -468,13 +509,13 @@ def test_darwin_walk_rechecks_parent_incarnation_and_image(staged_scope, monkeyp
     assert not grok_scope_hook._has_process_ancestor(evidence, name, image)
 
 
-def test_darwin_walk_refuses_invalid_parent_depth_and_birth_order(
-    staged_scope, monkeypatch
-):
+def test_darwin_walk_refuses_invalid_parent_depth_and_birth_order(monkeypatch):
     from aitm_usage.sources import grok_scope_hook
 
-    f, _, _, _, process = staged_scope
-    evidence = f.writer.source_evidence()
+    evidence = _ServiceEvidence(b"g" * 32)
+    start = datetime(2026, 11, 9, 12, tzinfo=UTC)
+    process = process_identity.ProcessIdentity(33503, start, _observed_executable(17))
+    monkeypatch.setattr(process_identity, "sys", SimpleNamespace(platform="darwin"))
     name = scope_admission._grok_process_ref(evidence, process.pid, process.started)
     image = scope_admission._grok_image_ref(evidence, process.executable)
     caller = process.pid + 9
@@ -511,16 +552,25 @@ def test_darwin_walk_refuses_invalid_parent_depth_and_birth_order(
 
 @pytest.mark.parametrize("same_path", [False, True], ids=["new-path", "same-path"])
 def test_hook_refuses_executable_change_during_final_ancestry_check(
-    staged_scope, monkeypatch, tmp_path, same_path
+    request, monkeypatch, same_path
 ):
     from aitm_usage.sources import grok_scope_hook
 
-    f, _, _, _, process = staged_scope
-    evidence = f.writer.source_evidence()
+    evidence = _ServiceEvidence(b"g" * 32)
+    start = datetime(2026, 11, 9, 12, tzinfo=UTC)
+    if same_path:
+        root = request.getfixturevalue("tmp_path")
+        image_path = root / "candidate"
+        replacement = root / "replacement"
+        image_path.write_bytes(b"original executable image")
+        replacement.write_bytes(b"new executable image")
+    else:
+        image_path = _observed_executable(17)
+        replacement = _observed_executable(18)
+        monkeypatch.setattr(process_identity, "process_reference_domain", lambda: "")
+    process = process_identity.ProcessIdentity(33503, start, image_path)
     name = scope_admission._grok_process_ref(evidence, process.pid, process.started)
     image = scope_admission._grok_image_ref(evidence, process.executable)
-    replacement = tmp_path / "other-image"
-    replacement.write_bytes(b"new executable image")
     caller = process.pid + 1
     observed = process
     image_read = False
@@ -548,6 +598,7 @@ def test_hook_refuses_executable_change_during_final_ancestry_check(
     assert not grok_scope_hook._has_process_ancestor(
         evidence, name, image, read_hop=read_hop
     )
+    assert changed
 
 
 def test_platform_native_process_custody_has_no_provider_request(

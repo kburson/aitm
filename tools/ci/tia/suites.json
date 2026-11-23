@@ -335,6 +335,86 @@
   },
   "overrides": [
     {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_rechecks_parent_incarnation_and_image",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_darwin_walk_refuses_invalid_parent_depth_and_birth_order",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_module_accepts_exact_native_input_and_prints_nothing",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_grok_scope_receipts.py::test_native_duplicate_hook_and_later_unbound_prompt_do_not_get_the_receipt",
+      "suite": "unit",
+      "isolation_group": "grok_scope_receipts-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_installed_runtime_detects_changed_launcher_on_disk",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_prune_preserves_nested_recovery_material",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_install.py::test_restore_preserves_backup_inside_replaceable_store",
+      "suite": "unit",
+      "isolation_group": "install-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_capture_position_authenticates_zero_origin_and_rejects_truncation",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_claude_startup_prefix_preserves_ordinals_and_archive_authentication",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_unsupported_file_never_yields_boundary_proof",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_scan.py::test_zero_cursor_detects_a_rewritten_origin_after_rediscovery",
+      "suite": "unit",
+      "isolation_group": "scan-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_collection_does_not_scan_after_the_qualifying_drain",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_reused_locator_keeps_previous_checkpoint_and_reports_missing_stream",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_status_interruption_does_not_claim_new_observed_time_and_busy_keeps_heartbeat",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
+      "selector": "packages/aitm-usage/tests/test_service.py::test_unstaged_typed_anchor_command_cannot_enroll",
+      "suite": "unit",
+      "isolation_group": "service-policy"
+    },
+    {
       "selector": "packages/aitm-usage/tests/test_scope_legacy.py::test_adopted_replay_keeps_the_pending_legacy_receipt_without_monitor_state",
       "suite": "unit",
       "isolation_group": "legacy-scope-policy"

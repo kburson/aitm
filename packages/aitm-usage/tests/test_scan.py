@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from scanner_policy_cases import NativeTranscriptFiles, ScannerPolicy
+from scanner_policy_cases import NativeTranscriptFiles, ScannerPolicy, _ReplayEvidence
 
 from aitm_usage.ledger import Ledger
 from aitm_usage.scopes import (
@@ -31,6 +31,7 @@ from aitm_usage.types import (
     ItemKey,
     ItemKind,
     LedgerBatch,
+    LedgerView,
     MarkerDisposition,
     Provider,
     Registration,
@@ -309,13 +310,13 @@ def test_unsupported_format_never_yields_boundary_proof(monkeypatch, header_chan
     assert "unknown-version-secret" not in repr(batch)
 
 
-def test_unsupported_file_never_yields_boundary_proof(project):
+def test_unsupported_file_never_yields_boundary_proof(native_scanner):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     path = registration.source_roots[0] / "unsupported.jsonl"
-    path.write_bytes(
-        _header(registration.checkout_anchors[0], format_version=48) + _usage(20)
-    )
+    files.contents[path] = _header(
+        registration.checkout_anchors[0], format_version=48
+    ) + _usage(20)
     (candidate,) = scanner.discover(registration)
 
     batch = scanner.scan(candidate, None, CUTOFF)
@@ -765,25 +766,23 @@ def test_scan_rejects_candidate_from_another_approved_root_set(project):
     assert _codes(batch) == {DiagnosticCode.SOURCE_REPLACED}
 
 
-def test_zero_cursor_detects_a_rewritten_origin_after_rediscovery(project):
+def test_zero_cursor_detects_a_rewritten_origin_after_rediscovery(native_scanner):
     scanner = _scanner()
-    registration, store = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     unanchored = root.parent / "unanchored"
-    unanchored.mkdir()
     path = root / "rollout.jsonl"
-    path.write_bytes(_header(unanchored) + _usage(7))
+    files.contents[path] = _header(unanchored) + _usage(7)
     (candidate,) = scanner.discover(registration)
     held = scanner.scan(candidate, None, CUTOFF)
     assert held.cursor.offset == 0
-    store.apply(LedgerBatch(checkpoint=_checkpoint(held)))
+    prior = _checkpoint(held)
 
     # Retain the same inode and provider session, but replace the origin bytes.
-    path.write_bytes(_header(checkout) + _usage(71))
+    files.contents[path] = _header(checkout) + _usage(71)
     (updated,) = scanner.discover(registration)
     assert updated.incarnation_ref == candidate.incarnation_ref
-    prior = Ledger.open(store.root, PROJECT).as_of().checkpoints[0]
     changed = scanner.scan(updated, prior, CUTOFF)
     assert changed.cursor is None
     assert changed.frames == ()
@@ -1401,15 +1400,21 @@ def _claude_fixture_observation(store, frame):
     )
 
 
-def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(project):
+def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(
+    native_scanner,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration = native_scanner
+    store = _ReplayEvidence(
+        b"scanner-terminal-policy", PROJECT, [LedgerView(PROJECT, 0, (), ())]
+    )
+    files.evidence = store
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     newly_registered = root.parent / "later-anchor"
-    newly_registered.mkdir()
+    files.checkout_paths.add(newly_registered)
     path = root / "native.jsonl"
-    path.write_bytes(
+    files.contents[path] = (
         _claude_timed("user", checkout)
         + _claude_timed("assistant", checkout, request="prior-admitted")
         + _claude_timed("assistant", newly_registered, request="historically-excluded")
@@ -1424,10 +1429,8 @@ def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(pro
     checkpoint = _checkpoint(initial)
     store.apply(LedgerBatch((earlier,), checkpoint))
 
-    with path.open("ab") as output:
-        output.write(_claude_cost())
-    reopened = Ledger.open(store.root, PROJECT)
-    durable = reopened.as_of()
+    files.contents[path] += _claude_cost()
+    durable = store.as_of()
     assert durable.checkpoints == (checkpoint,)
     assert durable.current == (earlier,)
     expanded = replace(registration, checkout_anchors=(checkout, newly_registered))
@@ -1438,7 +1441,7 @@ def test_native_claude_prior_excluded_segment_cannot_gain_terminal_admission(pro
     (terminal,) = result.sideband
     assert terminal.timed_ordinal == 2
     assert result.commit_sideband == ()
-    assert result.cursor.offset == path.stat().st_size
+    assert result.cursor.offset == len(files.contents[path])
 
 
 def _native_startup_rows(cwd):
@@ -1508,9 +1511,11 @@ def _startup_bytes(rows):
     )
 
 
-def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(project):
+def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(
+    native_scanner,
+):
     scanner = _scanner()
-    registration, store = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     (checkout,) = registration.checkout_anchors
     path = root / "startup.jsonl"
@@ -1525,7 +1530,7 @@ def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(pro
         }
     )
     payload = _startup_bytes(rows)
-    path.write_bytes(payload)
+    files.contents[path] = payload
     (candidate,) = scanner.discover(registration)
     batch = scanner.scan(candidate, None, CUTOFF)
     assert [frame.ordinal for frame in batch.frames] == [6, 7]
@@ -1536,24 +1541,21 @@ def test_claude_startup_prefix_preserves_ordinals_and_archive_authentication(pro
     assert batch.observed_through == AFTER
     assert _codes(batch) == set()
     prior = _checkpoint(batch)
-    store.apply(LedgerBatch(checkpoint=prior))
 
-    path.unlink()
+    del files.contents[path]
     archive = root / "archived.jsonl"
     continuation = _claude_timed("assistant", checkout, request="continuation")
-    archive.write_bytes(payload + continuation)
-    reopened = Ledger.open(store.root, PROJECT)
-    (durable,) = reopened.as_of().checkpoints
+    files.contents[archive] = payload + continuation
     (archived,) = scanner.discover(registration)
-    replay = scanner.scan(archived, durable, CUTOFF)
+    replay = scanner.scan(archived, prior, CUTOFF)
     assert [frame.ordinal for frame in replay.commit_frames] == [8]
-    assert replay.cursor.source_ref == durable.cursor.source_ref
+    assert replay.cursor.source_ref == prior.cursor.source_ref
     assert replay.cursor.offset == len(payload + continuation)
 
-    archive.write_bytes(
+    files.contents[archive] = (
         payload.replace(b"private-queued-input", b"changed-queued-input") + continuation
     )
-    changed = scanner.scan(archived, durable, CUTOFF)
+    changed = scanner.scan(archived, prior, CUTOFF)
     assert changed.commit_frames == ()
     assert _codes(changed) == {DiagnosticCode.OVERLAP_UNVERIFIED}
 
@@ -1891,14 +1893,15 @@ def test_capture_position_counts_absolute_rows_and_pins_torn_prefix(
     assert [frame.ordinal for frame in ordinary.frames] == [5]
 
 
-def test_capture_position_authenticates_zero_origin_and_rejects_truncation(project):
+def test_capture_position_authenticates_zero_origin_and_rejects_truncation(
+    native_scanner,
+):
     scanner = _scanner()
-    registration, _ = project
+    files, registration = native_scanner
     (root,) = registration.source_roots
     path = root / "live.jsonl"
     unanchored = root.parent / "unanchored"
-    unanchored.mkdir()
-    path.write_bytes(_header(unanchored) + _usage(11))
+    files.contents[path] = _header(unanchored) + _usage(11)
     (source,) = scanner.discover(registration)
     held = scanner.scan(source, None, CUTOFF)
     assert held.cursor.offset == 0
@@ -1908,7 +1911,7 @@ def test_capture_position_authenticates_zero_origin_and_rejects_truncation(proje
     assert zero.next_ordinal == 0
     assert zero.partial_ordinal is None
 
-    path.write_bytes(b"")
+    files.contents[path] = b""
     with pytest.raises(scanner._CaptureDiscontinuity):
         scanner._capture_position(source, held.cursor)
     with pytest.raises(ValueError):
