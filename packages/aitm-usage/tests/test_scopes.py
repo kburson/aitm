@@ -10,6 +10,7 @@ from threading import Barrier, Event
 from uuid import UUID
 
 import pytest
+from test_ledger import _memory_ledger
 
 from aitm_usage import (
     ledger as store,
@@ -38,6 +39,7 @@ from aitm_usage.types import (
     Availability,
     BoundaryKind,
     ClientVersion,
+    CommandReceipt,
     DevelopmentBinding,
     Diagnostic,
     DiagnosticCode,
@@ -45,6 +47,7 @@ from aitm_usage.types import (
     ItemKey,
     ItemKind,
     LedgerBatch,
+    LedgerView,
     MarkerDisposition,
     Provider,
     ReviewRole,
@@ -339,9 +342,13 @@ def test_planning_scope_and_development_owner(project):
         {"stream_ref": "different-stream", "receipt_ref": None},
     ],
 )
-def test_only_matching_source_proof_attests_pre_turn(project, changes):
-
-    f = Fixture(project)
+def test_only_matching_source_proof_attests_pre_turn(request, changes):
+    exercise_inbox = changes == {"receipt_ref": None}
+    if exercise_inbox:
+        ledger = request.getfixturevalue("project")
+    else:
+        ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    f = Fixture(ledger)
     marker = f.marker(1, 1, CHILD, "claimed-next-turn", kind=BoundaryKind.TURN)
     changes = {
         name: f.ref(value) if type(value) is str else value
@@ -349,14 +356,39 @@ def test_only_matching_source_proof_attests_pre_turn(project, changes):
     }
     proof = f.boundary(marker, 1, **changes)
     assert attest_marker(marker, proof.boundary) is MarkerDisposition.PENDING
-    enqueue_marker(project.root, marker)
-    with project.writer() as writer:
+    proven = f.boundary(marker, 1)
+    if not exercise_inbox:
+        command = InboxCommand(marker.marker_id, PROJECT, marker)
+        view = LedgerView(PROJECT, 0, (), ())
+        status, evidence, effects = scopes._evaluate(
+            ledger, command, view, (proof,), {}
+        )
+        assert status is MarkerDisposition.PENDING and effects == ()
+        pending = CommandReceipt(
+            command,
+            ledger.validate_command(command),
+            status,
+            None if evidence is None else evidence.boundary,
+        )
+        status, evidence, effects = scopes._evaluate(
+            ledger, command, view, (proven,), {command.command_id: pending}
+        )
+        assert status is MarkerDisposition.ACCEPTED
+        assert evidence == proven
+        (effect,) = effects
+        assert effect.revision == 1
+        assert effect.record.marker == marker
+        assert effect.record.boundary == proven.boundary
+        return
+
+    enqueue_marker(ledger.root, marker)
+    with ledger.writer() as writer:
         assert (
             drain_inbox(writer, (proof,)).receipts[0].disposition
             is MarkerDisposition.PENDING
         )
         assert (
-            drain_inbox(writer, (f.boundary(marker, 1),)).receipts[0].disposition
+            drain_inbox(writer, (proven,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
 
@@ -1048,9 +1080,13 @@ def test_development_marker_waits_for_owner_binding(project):
     ],
 )
 def test_same_stream_binding_generations_follow_proven_order(
-    project, generation, ordinal, expected
+    request, generation, ordinal, expected
 ):
-    f = Fixture(project)
+    if expected is MarkerDisposition.ACCEPTED:
+        ledger = request.getfixturevalue("project")
+    else:
+        ledger = _memory_ledger(store, PROJECT, b"s" * 32)
+    f = Fixture(ledger)
     anchor = f.ref("anchor")
     known = f.marker(
         1,
@@ -1068,33 +1104,42 @@ def test_same_stream_binding_generations_follow_proven_order(
         phase=WorkPhase.DEVELOPMENT,
         attempt_ref=f.ref("proposed-attempt"),
     )
-    with project.writer() as writer:
-        enqueue_command(
-            project.root,
-            InboxCommand(
-                known.marker_id, PROJECT, DevelopmentBinding(known, anchor, 2)
-            ),
+    known_command = InboxCommand(
+        known.marker_id, PROJECT, DevelopmentBinding(known, anchor, 2)
+    )
+    proposed_command = InboxCommand(
+        proposed.marker_id, PROJECT, DevelopmentBinding(proposed, anchor, generation)
+    )
+    known_proof = f.boundary(known, 20, anchor=anchor)
+    proof = f.boundary(proposed, ordinal, anchor=anchor)
+    if expected is MarkerDisposition.CONFLICT:
+        view = LedgerView(PROJECT, 0, (), ())
+        status, evidence, effects = scopes._evaluate(
+            ledger, known_command, view, (known_proof,), {}
         )
-        known_proof = f.boundary(known, 20, anchor=anchor)
+        assert status is MarkerDisposition.ACCEPTED and evidence == known_proof
+        (effect,) = effects
+        assert effect.record.generation == 2
+        view = LedgerView(PROJECT, 1, effects, ())
+        assert scopes._evaluate(ledger, proposed_command, view, (proof,), {}) == (
+            MarkerDisposition.CONFLICT,
+            proof,
+            (),
+        )
+        return
+
+    with ledger.writer() as writer:
+        enqueue_command(ledger.root, known_command)
         assert (
             drain_inbox(writer, (known_proof,)).receipts[0].disposition
             is MarkerDisposition.ACCEPTED
         )
-        enqueue_command(
-            project.root,
-            InboxCommand(
-                proposed.marker_id,
-                PROJECT,
-                DevelopmentBinding(proposed, anchor, generation),
-            ),
-        )
-        proof = f.boundary(proposed, ordinal, anchor=anchor)
+        enqueue_command(ledger.root, proposed_command)
         assert drain_inbox(writer, (proof,)).receipts[0].disposition is expected
-        if expected is MarkerDisposition.ACCEPTED:
-            old = f.observe(writer, proof)
-            new = f.observe(writer, known_proof)
-            assert resolve_scope(old, writer.as_of()).scope.generation == 1
-            assert resolve_scope(new, writer.as_of()).scope.generation == 2
+        old = f.observe(writer, proof)
+        new = f.observe(writer, known_proof)
+        assert resolve_scope(old, writer.as_of()).scope.generation == 1
+        assert resolve_scope(new, writer.as_of()).scope.generation == 2
 
 
 @pytest.mark.parametrize(
