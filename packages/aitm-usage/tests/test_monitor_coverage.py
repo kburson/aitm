@@ -1,18 +1,40 @@
 import json
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from shutil import copytree
+from types import SimpleNamespace
+from unittest.mock import Mock, call
+from uuid import UUID
 
 import pytest
 from test_monitor_qualification import qualify
 from test_monitor_scope import SOURCE, ClaudeScopeFixture, NativeScopeFixture
 
+from aitm_usage import monitor_journal, monitor_registry
+from aitm_usage._monitor_qualification import (
+    _InstallationProof,
+    _LiveProfile,
+    _LiveSourceTuple,
+)
 from aitm_usage.ledger import LedgerError
 from aitm_usage.monitor_journal import RoutingJournal
-from aitm_usage.monitor_registry import Registry, _directory, _ServiceEvidence
+from aitm_usage.monitor_registry import (
+    ApprovedSource,
+    RegisteredProject,
+    Registry,
+    RegistryView,
+    SourceApprovalRequest,
+    _directory,
+    _PhysicalDirectory,
+    _ServiceEvidence,
+)
 from aitm_usage.monitor_scope import ScopeState
-from aitm_usage.types import _encode
+from aitm_usage.monitor_types import NativeSurface
+from aitm_usage.sources.adapter import SourceLocator, SourceRoot
+from aitm_usage.sources.scan import CandidateSource
+from aitm_usage.types import Provider, _encode
 
 
 @pytest.fixture
@@ -106,6 +128,137 @@ def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(admitted_so
         assert new.coverage.installation != event.coverage.installation
 
 
+def _changed_live_profile(profile, case, approved, foreign, old_root):
+    def unavailable(_):
+        raise OSError("verifier unavailable")
+
+    item = next(i for i in profile.installations if i.directory == approved.directory)
+    fields = {
+        "omitted": {"installations": ()},
+        "valid-matrix-exclusion": {},
+        "duplicates": {"installations": (item, item)},
+        "missing-verifier": {"current": None},
+        "rejected-verifier": {"current": lambda _: False},
+        "verifier-error": {"current": unavailable},
+        "foreign-root": {
+            "root": monitor_registry._directory(str(foreign.root), private=True)
+        },
+        "replaced-root": {"root": old_root},
+        "foreign-generation": {
+            "generation": foreign.source_evidence().pseudonymize("generation", "other")
+        },
+        "foreign-lease": {"lease": foreign.lease},
+        "wrong-profile-type": {},
+    }[case]
+    if case == "wrong-profile-type":
+
+        class DifferentProfile(type(profile)):
+            pass
+
+        profile = DifferentProfile(
+            profile.root,
+            profile.lease,
+            profile.generation,
+            profile.installations,
+            profile.current,
+        )
+    return replace(profile, **fields)
+
+
+def _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude):
+    from test_codex import CUTOFF
+
+    lease = Mock()
+    writer = Registry(Path("/fixture/monitor"), lease)
+    foreign = Registry(Path("/fixture/other-monitor"), Mock())
+    evidence = _ServiceEvidence(b"coverage-profile-policy")
+    other_evidence = _ServiceEvidence(b"other-coverage-profile")
+    root, foreign_root, directory = (
+        _PhysicalDirectory(path, (1, index))
+        for index, path in enumerate(
+            (str(writer.root), str(foreign.root), "/fixture/transcripts"), start=1
+        )
+    )
+    provider, surface, version = (
+        (Provider.CLAUDE, NativeSurface.CLAUDE_CODE_MACOS, "2.1.318")
+        if use_claude
+        else (Provider.CODEX, NativeSurface.CODEX_DESKTOP_MACOS, "0.167.0-alpha.3.2")
+    )
+    approved = ApprovedSource(
+        SourceApprovalRequest(
+            SOURCE,
+            provider.value,
+            surface.value,
+            "Darwin",
+            "arm64",
+            version,
+            1,
+            directory.path,
+        ),
+        directory,
+    )
+    project = RegisteredProject(UUID(int=1), root, "Fixture", None, (), None)
+    view = RegistryView(
+        projects=(project,), sources=(approved,), source_key_id=evidence.key_id
+    )
+    directories = {item.path: item for item in (root, foreign_root, directory)}
+    monkeypatch.setattr(
+        monitor_registry, "_directory", lambda path, **_: directories[path]
+    )
+    monkeypatch.setattr(writer, "source_evidence", lambda: evidence)
+    monkeypatch.setattr(foreign, "source_evidence", lambda: other_evidence)
+    monkeypatch.setattr(writer, "view", lambda: view)
+    monkeypatch.setattr(writer, "capture_read_limit", Mock(return_value=None))
+    profile = _LiveProfile(
+        root,
+        lease,
+        evidence.pseudonymize("generation", "local"),
+        (
+            _InstallationProof(
+                directory,
+                _LiveSourceTuple.from_approval(approved),
+                evidence.pseudonymize("executable", "local"),
+            ),
+        ),
+        lambda _: True,
+    )
+    writer._live_profile = _changed_live_profile(profile, case, approved, foreign, root)
+    path = Path(directory.path)
+    locator = SourceLocator(
+        CandidateSource(
+            provider,
+            evidence.pseudonymize("fixture", "session"),
+            evidence.pseudonymize("fixture", "stream"),
+            evidence.pseudonymize("fixture", "locator"),
+            evidence.pseudonymize("fixture", "incarnation"),
+            path / "capture.jsonl",
+            (),
+            SourceRoot(path, CUTOFF, (), evidence),
+            evidence,
+            _native_surface=surface,
+        )
+    )
+    monkeypatch.setattr(
+        writer, "_current_candidate", Mock(return_value=(approved, locator))
+    )
+    reader, connection = Mock(), Mock()
+    reader.execute.return_value.fetchone.return_value = None
+
+    def transaction(*, write=False):
+        return nullcontext(connection if write else reader)
+
+    store = SimpleNamespace(
+        transaction=Mock(side_effect=transaction), _enable_coverage=Mock()
+    )
+    monkeypatch.setattr(monitor_journal, "JournalStore", Mock(return_value=store))
+    journal = RoutingJournal(writer, ScopeState(writer))
+    with pytest.raises(LedgerError, match="qualification"):
+        journal.prepare(SOURCE, locator)
+    assert store.transaction.call_args_list == [call(), call(write=True)]
+    store._enable_coverage.assert_not_called()
+    connection.execute.assert_not_called()
+
+
 @pytest.mark.parametrize(
     ("case", "use_claude", "records"),
     (
@@ -123,13 +276,16 @@ def test_restart_and_late_growth_do_not_duplicate_coverage_or_commit(admitted_so
     ),
 )
 def test_only_stable_profile_denials_become_coverage(
-    admitted_sources, tmp_path, case, use_claude, records
+    request, monkeypatch, case, use_claude, records
 ):
+    if not records and case != "replaced-root":
+        _assert_unstable_profile_does_not_stage_coverage(monkeypatch, case, use_claude)
+        return
+
+    admitted_sources = request.getfixturevalue("admitted_sources")
+    tmp_path = request.getfixturevalue("tmp_path")
     native, claude = admitted_sources
     source = claude.source_id if use_claude else SOURCE
-
-    def unavailable(_):
-        raise OSError("verifier unavailable")
 
     old_root = _directory(str(native.registry.root), private=True)
     if case == "replaced-root":
@@ -140,41 +296,10 @@ def test_only_stable_profile_denials_become_coverage(
     other = Registry(tmp_path / "other-monitor")
     with native.registry.writer() as writer, other.writer() as foreign:
         qualify(writer)
-        profile = writer._live_profile
         approved = next(s for s in writer.view().sources if s.source_id == source)
-        item = next(
-            i for i in profile.installations if i.directory == approved.directory
+        writer._live_profile = _changed_live_profile(
+            writer._live_profile, case, approved, foreign, old_root
         )
-        fields = {
-            "omitted": {"installations": ()},
-            "valid-matrix-exclusion": {},
-            "duplicates": {"installations": (item, item)},
-            "missing-verifier": {"current": None},
-            "rejected-verifier": {"current": lambda _: False},
-            "verifier-error": {"current": unavailable},
-            "foreign-root": {"root": _directory(str(foreign.root), private=True)},
-            "replaced-root": {"root": old_root},
-            "foreign-generation": {
-                "generation": foreign.source_evidence().pseudonymize(
-                    "generation", "other"
-                ),
-            },
-            "foreign-lease": {"lease": foreign.lease},
-            "wrong-profile-type": {},
-        }[case]
-        if case == "wrong-profile-type":
-
-            class DifferentProfile(type(profile)):
-                pass
-
-            profile = DifferentProfile(
-                profile.root,
-                profile.lease,
-                profile.generation,
-                profile.installations,
-                profile.current,
-            )
-        writer._live_profile = replace(profile, **fields)
         locator = claude.locator() if use_claude else native.locator()
         journal = RoutingJournal(writer, ScopeState(writer))
         with pytest.raises(LedgerError, match="qualification"):
