@@ -1,0 +1,591 @@
+{
+  "schema": "aitm.research.xpr-usage-delivery/v1",
+  "story": 431,
+  "date": "2026-11-24",
+  "aipr_version": "0.4.1",
+  "mode": "broker-owned manual XPR; no-commit test mode",
+  "delivery_order": [
+    "claude-main-r2",
+    "claude-main-r1",
+    "grok-main-r2",
+    "grok-main-r1",
+    "claude-interrupted-r1",
+    "grok-interrupted-r1"
+  ],
+  "deliveries": {
+    "claude-main-r1": {
+      "envelope": {
+        "story": 431,
+        "run": "claude-main",
+        "phase": "reviewer",
+        "attempt": "claude-main-r1",
+        "review": "b1eae3b45d5101e5da40cf1e",
+        "round": 1,
+        "provider": "claude",
+        "native_session_ref": "054b1fbda96383cad8abd1f1",
+        "native_turn_ref": "d2b84a64c380ecba85c80f2a",
+        "provider_turn_ordinal": null,
+        "status": "settled",
+        "measurement": {
+          "basis": "terminal per-result and exact retained request usage",
+          "native_tokens": {
+            "input_tokens": 14,
+            "cache_read_input_tokens": 225330,
+            "cache_creation_input_tokens": 28340,
+            "output_tokens": 2187
+          },
+          "observed_tokens": 255871,
+          "api_equivalent_usd": "0.1577910",
+          "provider_cost_usd_ticks": null
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": "reviewer-revisions-requested"
+      },
+      "decision_at_first_delivery": {
+        "decision": "reviewer-revisions-requested",
+        "response_digest": "sha256:e671e91717a8d967e775c7769003f9a3165cdda82b628ee1eca66984a00395e2",
+        "observed_at": "2026-11-24T20:29:20.159336+00:00",
+        "stream_line": 29,
+        "settlement": "pending"
+      },
+      "terminal": {
+        "reason": "completed",
+        "observed_at": "2026-11-24T20:29:22.022764+00:00",
+        "stream_line": 31
+      },
+      "process_exited_at": "2026-11-24T20:29:22.365902+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "054b1fbda96383cad8abd1f1",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "runtime",
+        "aipr_round": 1,
+        "aipr_decision": "reviewer-revisions-requested",
+        "sealed_response_digest_verified": true,
+        "model": "claude-sonnet-5-5",
+        "native_prompt_ref": "d2b84a64c380ecba85c80f2a",
+        "request_count": 7,
+        "terminal_reason": "completed",
+        "aipr_launcher_status": "submitted",
+        "sealed_decision_observed": true,
+        "native_per_result_tokens": {
+          "input_tokens": 14,
+          "cache_read_input_tokens": 225330,
+          "cache_creation_input_tokens": 28340,
+          "output_tokens": 2187
+        },
+        "retained_request_token_sum": {
+          "input_tokens": 14,
+          "cache_read_input_tokens": 225330,
+          "cache_creation_input_tokens": 28340,
+          "output_tokens": 2187
+        },
+        "native_list_cost_usd": "0.1577910",
+        "price_basis": "list",
+        "native_cumulative_usd": "0.1577910",
+        "native_cache_write_5m_tokens": 0,
+        "native_cache_write_1h_tokens": 28340,
+        "result_before_terminal_usage": true,
+        "public_launcher_has_usage_fields": false
+      },
+      "decision_to_usage_delivery_ms": 177789,
+      "result_usable_while_usage_pending": true,
+      "delivered_at": "2026-11-24T20:32:17.949302+00:00",
+      "replay_disposition": "replayed",
+      "author_used_decision_before_usage_delivery": true,
+      "author_revision_sealed_at": "2026-11-24T20:29:22.610Z"
+    },
+    "claude-main-r2": {
+      "envelope": {
+        "story": 431,
+        "run": "claude-main",
+        "phase": "reviewer",
+        "attempt": "claude-main-r2",
+        "review": "b1eae3b45d5101e5da40cf1e",
+        "round": 2,
+        "provider": "claude",
+        "native_session_ref": "054b1fbda96383cad8abd1f1",
+        "native_turn_ref": "7f5afc601e70d1e6a9523bf5",
+        "provider_turn_ordinal": null,
+        "status": "settled",
+        "measurement": {
+          "basis": "terminal per-result and exact retained request usage",
+          "native_tokens": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 212694,
+            "cache_creation_input_tokens": 6822,
+            "output_tokens": 1771
+          },
+          "observed_tokens": 221297,
+          "api_equivalent_usd": "0.0662874",
+          "provider_cost_usd_ticks": null
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": "reviewer-accepted"
+      },
+      "decision_at_first_delivery": {
+        "decision": "reviewer-accepted",
+        "response_digest": "sha256:491e02138be1ba03cc63e12796f5f5044f129c8abb3ed9d1253d8b762e4a0558",
+        "observed_at": "2026-11-24T20:29:36.393591+00:00",
+        "stream_line": 22,
+        "settlement": "pending"
+      },
+      "terminal": {
+        "reason": "completed",
+        "observed_at": "2026-11-24T20:29:38.029550+00:00",
+        "stream_line": 24
+      },
+      "process_exited_at": "2026-11-24T20:29:38.433036+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "054b1fbda96383cad8abd1f1",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "runtime",
+        "aipr_round": 2,
+        "aipr_decision": "reviewer-accepted",
+        "sealed_response_digest_verified": true,
+        "model": "claude-sonnet-5-5",
+        "native_prompt_ref": "7f5afc601e70d1e6a9523bf5",
+        "request_count": 5,
+        "terminal_reason": "completed",
+        "aipr_launcher_status": "submitted",
+        "sealed_decision_observed": true,
+        "native_per_result_tokens": {
+          "input_tokens": 10,
+          "cache_read_input_tokens": 212694,
+          "cache_creation_input_tokens": 6822,
+          "output_tokens": 1771
+        },
+        "retained_request_token_sum": {
+          "input_tokens": 10,
+          "cache_read_input_tokens": 212694,
+          "cache_creation_input_tokens": 6822,
+          "output_tokens": 1771
+        },
+        "native_list_cost_usd": "0.0662874",
+        "price_basis": "list",
+        "native_cumulative_usd": "0.2240784",
+        "native_cache_write_5m_tokens": 0,
+        "native_cache_write_1h_tokens": 6822,
+        "result_before_terminal_usage": true,
+        "public_launcher_has_usage_fields": false
+      },
+      "decision_to_usage_delivery_ms": 161555,
+      "result_usable_while_usage_pending": true,
+      "delivered_at": "2026-11-24T20:32:17.948683+00:00",
+      "replay_disposition": "replayed",
+      "author_used_decision_before_usage_delivery": null
+    },
+    "claude-interrupted-r1": {
+      "envelope": {
+        "story": 431,
+        "run": "claude-interrupted",
+        "phase": "reviewer",
+        "attempt": "claude-interrupted-r1",
+        "review": "1e5fc8c178e1aea7c72a81ab",
+        "round": 1,
+        "provider": "claude",
+        "native_session_ref": "374dead2ac89ef7ce522f8e7",
+        "native_turn_ref": "6cf6b8048444597f96fd6597",
+        "provider_turn_ordinal": null,
+        "status": "partial",
+        "measurement": {
+          "basis": "terminal per-result and exact retained request usage",
+          "native_tokens": {
+            "input_tokens": 6,
+            "cache_read_input_tokens": 77660,
+            "cache_creation_input_tokens": 25086,
+            "output_tokens": 615
+          },
+          "observed_tokens": 103367,
+          "api_equivalent_usd": "0.1142720",
+          "provider_cost_usd_ticks": null
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": null
+      },
+      "decision_at_first_delivery": null,
+      "terminal": {
+        "reason": "aborted_streaming",
+        "observed_at": "2026-11-24T20:29:54.964898+00:00",
+        "stream_line": 19
+      },
+      "process_exited_at": "2026-11-24T20:29:55.397494+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "374dead2ac89ef7ce522f8e7",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "runtime",
+        "model": "claude-sonnet-5-5",
+        "native_prompt_ref": "6cf6b8048444597f96fd6597",
+        "request_count": 3,
+        "terminal_reason": "aborted_streaming",
+        "aipr_launcher_status": "failed",
+        "sealed_decision_observed": false,
+        "native_per_result_tokens": {
+          "input_tokens": 6,
+          "cache_read_input_tokens": 77660,
+          "cache_creation_input_tokens": 25086,
+          "output_tokens": 615
+        },
+        "retained_request_token_sum": {
+          "input_tokens": 6,
+          "cache_read_input_tokens": 77660,
+          "cache_creation_input_tokens": 25086,
+          "output_tokens": 615
+        },
+        "native_list_cost_usd": "0.1142720",
+        "price_basis": "list",
+        "native_cumulative_usd": "0.1142720",
+        "native_cache_write_5m_tokens": 0,
+        "native_cache_write_1h_tokens": 25086,
+        "result_before_terminal_usage": null,
+        "public_launcher_has_usage_fields": false
+      },
+      "delivered_at": "2026-11-24T20:32:17.950031+00:00",
+      "replay_disposition": "replayed"
+    },
+    "grok-main-r1": {
+      "envelope": {
+        "story": 431,
+        "run": "grok-main",
+        "phase": "reviewer",
+        "attempt": "grok-main-r1",
+        "review": "70b6877e0f516af72e515aa7",
+        "round": 1,
+        "provider": "grok",
+        "native_session_ref": "02a721f98c4f351a07d0067d",
+        "native_turn_ref": "eff106b5225f607e9d332c98",
+        "provider_turn_ordinal": 1,
+        "status": "settled",
+        "measurement": {
+          "basis": "terminal end and exact retained turn",
+          "native_tokens": {
+            "input_tokens": 46527,
+            "cache_read_input_tokens": 208768,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 2123,
+            "reasoning_tokens": 897,
+            "total_tokens": 257418
+          },
+          "observed_tokens": 257418,
+          "api_equivalent_usd": null,
+          "provider_cost_usd_ticks": 1429196800
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": "reviewer-revisions-requested"
+      },
+      "decision_at_first_delivery": {
+        "decision": "reviewer-revisions-requested",
+        "response_digest": "sha256:a0328219c87ed6895545d09af505204c557524faaa2eb3dd8825da25ed9f0a29",
+        "observed_at": "2026-11-24T20:29:29.075404+00:00",
+        "stream_line": 123,
+        "settlement": "pending"
+      },
+      "terminal": {
+        "reason": "end_turn",
+        "observed_at": "2026-11-24T20:29:31.888933+00:00",
+        "stream_line": 244
+      },
+      "process_exited_at": "2026-11-24T20:29:33.155930+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "02a721f98c4f351a07d0067d",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "declared",
+        "aipr_round": 1,
+        "aipr_decision": "reviewer-revisions-requested",
+        "sealed_response_digest_verified": true,
+        "native_persisted_turn_ordinal": 1,
+        "native_final_usage": {
+          "input_tokens": 46527,
+          "cache_read_input_tokens": 208768,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 2123,
+          "reasoning_tokens": 897,
+          "total_tokens": 257418
+        },
+        "retained_exact_turn": {
+          "turnNumber": 1,
+          "totalTokens": 257418,
+          "inputTokens": 255295,
+          "cachedReadTokens": 208768,
+          "cacheCreationTokens": 0,
+          "outputTokens": 2123,
+          "reasoningTokens": 897,
+          "costUsdTicks": 1429196800,
+          "modelCalls": 10
+        },
+        "native_cost_usd_ticks": 1429196800,
+        "model": "grok-4.7-build-fast",
+        "result_before_terminal_usage": true,
+        "native_request_ref": "eff106b5225f607e9d332c98",
+        "terminal_reason": "end_turn",
+        "signature_keyed_usage_frames": 10,
+        "native_usage_frame_sum": {
+          "input_tokens": 46527,
+          "cache_read_input_tokens": 208768,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 2123,
+          "reasoning_tokens": 897
+        },
+        "sealed_decision_observed": true
+      },
+      "decision_to_usage_delivery_ms": 168874,
+      "result_usable_while_usage_pending": true,
+      "delivered_at": "2026-11-24T20:32:17.949809+00:00",
+      "replay_disposition": "replayed",
+      "author_used_decision_before_usage_delivery": true,
+      "author_revision_sealed_at": "2026-11-24T20:29:33.343Z"
+    },
+    "grok-main-r2": {
+      "envelope": {
+        "story": 431,
+        "run": "grok-main",
+        "phase": "reviewer",
+        "attempt": "grok-main-r2",
+        "review": "70b6877e0f516af72e515aa7",
+        "round": 2,
+        "provider": "grok",
+        "native_session_ref": "02a721f98c4f351a07d0067d",
+        "native_turn_ref": "24be1ce6100ea19b503b6f8c",
+        "provider_turn_ordinal": 2,
+        "status": "settled",
+        "measurement": {
+          "basis": "terminal end and exact retained turn",
+          "native_tokens": {
+            "input_tokens": 3382,
+            "cache_read_input_tokens": 154880,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 1094,
+            "reasoning_tokens": 234,
+            "total_tokens": 159356
+          },
+          "observed_tokens": 159356,
+          "api_equivalent_usd": null,
+          "provider_cost_usd_ticks": 617222400
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": "reviewer-accepted"
+      },
+      "decision_at_first_delivery": {
+        "decision": "reviewer-accepted",
+        "response_digest": "sha256:790024bcf307fdbb74b06b336522b09e317e743907073ec82abf081c11b0f0ba",
+        "observed_at": "2026-11-24T20:29:46.050775+00:00",
+        "stream_line": 66,
+        "settlement": "pending"
+      },
+      "terminal": {
+        "reason": "end_turn",
+        "observed_at": "2026-11-24T20:29:48.168757+00:00",
+        "stream_line": 186
+      },
+      "process_exited_at": "2026-11-24T20:29:50.198067+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "02a721f98c4f351a07d0067d",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "declared",
+        "aipr_round": 2,
+        "aipr_decision": "reviewer-accepted",
+        "sealed_response_digest_verified": true,
+        "native_persisted_turn_ordinal": 2,
+        "native_final_usage": {
+          "input_tokens": 3382,
+          "cache_read_input_tokens": 154880,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 1094,
+          "reasoning_tokens": 234,
+          "total_tokens": 159356
+        },
+        "retained_exact_turn": {
+          "turnNumber": 2,
+          "totalTokens": 159356,
+          "inputTokens": 158262,
+          "cachedReadTokens": 154880,
+          "cacheCreationTokens": 0,
+          "outputTokens": 1094,
+          "reasoningTokens": 234,
+          "costUsdTicks": 617222400,
+          "modelCalls": 5
+        },
+        "native_cost_usd_ticks": 617222400,
+        "model": "grok-4.7-build-fast",
+        "result_before_terminal_usage": true,
+        "native_request_ref": "24be1ce6100ea19b503b6f8c",
+        "terminal_reason": "end_turn",
+        "signature_keyed_usage_frames": 5,
+        "native_usage_frame_sum": {
+          "input_tokens": 3382,
+          "cache_read_input_tokens": 154880,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 1094,
+          "reasoning_tokens": 234
+        },
+        "sealed_decision_observed": true
+      },
+      "decision_to_usage_delivery_ms": 151898,
+      "result_usable_while_usage_pending": true,
+      "delivered_at": "2026-11-24T20:32:17.949570+00:00",
+      "replay_disposition": "replayed",
+      "author_used_decision_before_usage_delivery": null
+    },
+    "grok-interrupted-r1": {
+      "envelope": {
+        "story": 431,
+        "run": "grok-interrupted",
+        "phase": "reviewer",
+        "attempt": "grok-interrupted-r1",
+        "review": "51ea5f2f7ea7a10097aed2b0",
+        "round": 1,
+        "provider": "grok",
+        "native_session_ref": "a8563e2cb0bcb00fcb9981df",
+        "native_turn_ref": "098837bd736a3f50136e790f",
+        "provider_turn_ordinal": null,
+        "status": "partial",
+        "measurement": {
+          "basis": "observed native usage frames",
+          "native_tokens": {
+            "input_tokens": 49100,
+            "cache_read_input_tokens": 64128,
+            "cache_creation_input_tokens": 0,
+            "output_tokens": 838,
+            "reasoning_tokens": 465
+          },
+          "observed_tokens": 114066,
+          "api_equivalent_usd": null,
+          "provider_cost_usd_ticks": null
+        },
+        "nested_coverage": "direct reviewer",
+        "decision": null
+      },
+      "decision_at_first_delivery": null,
+      "terminal": {
+        "reason": "cancelled",
+        "observed_at": "2026-11-24T20:30:13.814757+00:00",
+        "stream_line": 82
+      },
+      "process_exited_at": "2026-11-24T20:30:14.200084+00:00",
+      "native_result_reconciliation": {
+        "native_session_ref": "a8563e2cb0bcb00fcb9981df",
+        "aipr_participant_fingerprint_verified": true,
+        "registered_identity_source": "declared",
+        "native_final_usage": null,
+        "native_cost_usd_ticks": null,
+        "result_before_terminal_usage": null,
+        "retained_usage_disposition": "no numeric turn found",
+        "native_incomplete_flag": true,
+        "native_request_ref": "098837bd736a3f50136e790f",
+        "terminal_reason": "cancelled",
+        "signature_keyed_usage_frames": 5,
+        "native_usage_frame_sum": {
+          "input_tokens": 49100,
+          "cache_read_input_tokens": 64128,
+          "cache_creation_input_tokens": 0,
+          "output_tokens": 838,
+          "reasoning_tokens": 465
+        },
+        "sealed_decision_observed": false
+      },
+      "delivered_at": "2026-11-24T20:32:17.950294+00:00",
+      "replay_disposition": "replayed"
+    }
+  },
+  "reviewer_subtotals": {
+    "claude": {
+      "settled": {
+        "attempts": 2,
+        "observed_tokens": 477168,
+        "api_equivalent_usd": "0.2240784",
+        "provider_cost_usd_ticks": null
+      },
+      "partial": {
+        "attempts": 1,
+        "observed_tokens": 103367,
+        "api_equivalent_usd": "0.1142720",
+        "provider_cost_usd_ticks": null
+      }
+    },
+    "grok": {
+      "settled": {
+        "attempts": 2,
+        "observed_tokens": 416774,
+        "api_equivalent_usd": null,
+        "provider_cost_usd_ticks": 2046419200
+      },
+      "partial": {
+        "attempts": 1,
+        "observed_tokens": 114066,
+        "api_equivalent_usd": null,
+        "provider_cost_usd_ticks": null
+      }
+    }
+  },
+  "orchestrator": {
+    "provider": "codex",
+    "version": "0.171.0-alpha.13",
+    "role": "interactive author and orchestrator",
+    "story_binding": "exact #431 user turn, still active at checkpoint",
+    "native_session_ref": "3586a95f179d1d5e4169a843",
+    "native_turn_ref": "881911b309dcc69d8a935f1a",
+    "native_source": "exact rollout token_usage_record.turn_token_usage",
+    "checkpoint_at": "2026-11-24T20:32:17.925Z",
+    "status": "partial-active-turn",
+    "usage": {
+      "input_tokens": 5372133,
+      "cached_input_tokens": 5354880,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 12343,
+      "reasoning_output_tokens": 3411,
+      "total_tokens": 5384476
+    },
+    "api_equivalent_usd": null,
+    "verified_billed_usd": null
+  },
+  "coverage_controls": {
+    "single_provider_projection": "passed both providers independently, no new SPR was run",
+    "inclusive_and_child_overlap": "rejected in fixture, live nested case outside this run",
+    "fresh_attempt_with_old_native_turn": "rejected in fixture, no interrupted reviewer relaunch",
+    "codex_aipr_reviewer": "not qualified on tested macOS review-lock path",
+    "verified_story_billed_usd": null,
+    "native_reconciliation_after_delivery": "identical exact readback, no model invocation"
+  },
+  "replay_readback": {
+    "before_sha256": "b40be6da538899d0ff23da446dccbcc535d034261798e0e49cdece81cfe39150",
+    "after_sha256": "b40be6da538899d0ff23da446dccbcc535d034261798e0e49cdece81cfe39150",
+    "before_rows": 6,
+    "after_rows": 6,
+    "results": {
+      "claude-main-r1": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      },
+      "claude-main-r2": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      },
+      "claude-interrupted-r1": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      },
+      "grok-main-r1": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      },
+      "grok-main-r2": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      },
+      "grok-interrupted-r1": {
+        "exact_replay": "replayed",
+        "wrong_review": "refused-assignment",
+        "changed_outcome": "refused-conflict"
+      }
+    }
+  },
+  "provider_versions": {
+    "claude": "2.1.331",
+    "grok": "1.0.92",
+    "codex": "0.171.0-alpha.13"
+  }
+}

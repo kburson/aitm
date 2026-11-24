@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 431
 title: "[Spike] Deliver a usage receipt with every headless XPR turn"
 kind: "spike"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/431"
 parent: 426
 children: []
 blocking: [433, 434]
 blocked-by: [430]
 created: "2026-11-24T15:08:31Z"
-updated: "2026-11-24T19:21:34Z"
+updated: "2026-11-24T20:35:54Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/xpr-delivery-results.md", "attachments/xpr-delivery-receipt.json", "attachments/independent-evidence-review.md"]}
 expansions: []
 trips: []
 ---
@@ -43,3 +43,7 @@ Deliver sanitized handoff evidence, a receipt example, and a summary of provider
 - Exercise an interactive orchestrator and an independent reviewer on a different provider's native headless harness in a real two-round XPR handoff. Exercise each qualified reviewer route and check that the same receipt contract also works with a single-provider configuration.
 - Correlate story, run, phase, attempt, review and round with the native turn. Deliver one receipt after the review text, replay a delivery, distinguish it from a genuine retry, and reconcile one interrupted or unmeasurable turn. Verify that the review remains usable and pending or missing cost stays visible.
 - Report orchestrator and reviewer contributions against the same story. Verify late or replayed delivery enriches the original turn once. When only an inclusive provider total is available, preserve its coverage so child detail plus the aggregate cannot inflate the subtotal. Hand the receipt contract and remaining gaps to #433 for multi-story trails.
+
+## Results
+
+[Research findings](attachments/xpr-delivery-results.md) · [Sanitized receipt](attachments/xpr-delivery-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).
