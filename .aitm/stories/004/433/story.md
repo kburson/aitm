@@ -3,19 +3,19 @@ schema: "aitm.story/v0"
 id: 433
 title: "[Spike] Measure usage and time across epic trails"
 kind: "spike"
-state: "backlog"
+state: "review"
 issue: "https://github.com/kburson/aitm/issues/433"
 parent: 426
 children: []
 blocking: []
 blocked-by: [431]
 created: "2026-11-24T19:20:11Z"
-updated: "2026-11-24T19:20:11Z"
+updated: "2026-11-24T21:55:45Z"
 last-branch: "planning"
 estimate: {"agent-hours": null, "size": null}
 priority: null
 origin: null
-files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": []}
+files: {"draft": null, "events": "events.jsonl", "design": [], "plan": [], "attachments": ["attachments/epic-trail-results.md", "attachments/epic-trail-receipt.json", "attachments/independent-evidence-review.md"]}
 expansions: []
 trips: []
 ---
@@ -42,3 +42,7 @@ Use disposable child stories and an unrelated control chat on the same account. 
 ## Evidence
 
 Produce sanitized assignment markers, handoff and delayed-attribution examples, and reconciled per-session, per-story, and epic totals. Show orchestrator, worker, and reviewer contributions, coverage gaps, engaged time, and elapsed time. Distinguish genuinely shared epic work from child-specific work. Report timing or usage that cannot be safely split as a gap. Record provider, harness version, surface, authentication and billing mode, and whether each boundary was demonstrated, unsupported, or inconclusive. A bounded overnight-style rehearsal may simulate the idle interval. State what unattended behavior was actually observed.
+
+## Results
+
+[Research findings](attachments/epic-trail-results.md) · [Sanitized receipt](attachments/epic-trail-receipt.json) · [Independent evidence review](attachments/independent-evidence-review.md).
