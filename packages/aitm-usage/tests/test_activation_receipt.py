@@ -330,10 +330,13 @@ def test_running_witness_rejects_same_pid_different_start_and_same_version_wrong
     monkeypatch.setattr(
         qualification, "_now", lambda: collector.heartbeat + timedelta(seconds=1)
     )
+    guard = Mock(return_value=Path("/fixture/qualification-control/writer.lock"))
+    monkeypatch.setattr(qualification, "_guard_path", guard)
     monkeypatch.setattr(qualification, "_path_exists", Mock(return_value=False))
     verified = _verify_running(case.ledger, collector, lifecycle, case.control)
     assert verified["producer_mode"] == "service"
     assert verified["producer_pid"] == case.process.pid
+    guard.assert_called_once_with(case.ledger.root, case.ledger.identity.project_id)
 
     reused_start = collector.producer_started - timedelta(seconds=1)
     with pytest.raises(QualificationError, match="process-incarnation"):
